@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.89  2003/04/23 08:38:55  midas
+  Added warning if max. number of attachments reached
+
   Revision 1.88  2003/04/22 09:57:23  midas
   Fixed missing translation strings
 
@@ -5691,10 +5694,18 @@ time_t now;
       }
 
     /* field for add attachment */
-    rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), i+1);
-    rsprintf("<td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile\" accept=\"filetype/*\">\n");
-    rsprintf("&nbsp;&nbsp;<input type=submit name=cmd value=\"%s\">\n", loc("Upload"));
-    rsprintf("</td></tr>\n");
+    if (att[MAX_ATTACHMENTS-1][0])
+      {
+      rsprintf("<tr><td colspan=2 class=\"attribname\">%s</td>\n", loc("Maximum number of attachments reached"));
+      rsprintf("</td></tr>\n");
+      }
+    else
+      {
+      rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), i+1);
+      rsprintf("<td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile\" accept=\"filetype/*\">\n");
+      rsprintf("&nbsp;&nbsp;<input type=submit name=cmd value=\"%s\">\n", loc("Upload"));
+      rsprintf("</td></tr>\n");
+      }
     }
 
   rsprintf("</td></tr></table>\n");
