@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.328  2004/05/21 13:02:51  midas
+   Fixed bug with date attributes and 'subst on edit'
+
    Revision 1.327  2004/05/19 20:27:50  midas
    Added <hr> and <br> to be recognized as HTML in attributes
 
@@ -6665,7 +6668,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          if (getcfg(lbs->name, str, preset)) {
             /* check if already second reply */
             if (orig_tag[0] == 0) {
-               i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+
+               /* do not format date for date attributes */
+               i = build_subst_list(lbs, slist, svalue, attrib,
+                     (attr_flags[index] & AF_DATE) == 0);
                sprintf(str, "%d", message_id);
                add_subst_list(slist, svalue, "message id", str, &i);
                add_subst_time(lbs, slist, svalue, "entry time", date, &i);
@@ -6681,7 +6687,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       for (index = 0; index < lbs->n_attr; index++) {
          sprintf(str, "Subst on edit %s", attr_list[index]);
          if (getcfg(lbs->name, str, preset)) {
-            i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+
+            /* do not format date for date attributes */
+            i = build_subst_list(lbs, slist, svalue, attrib, 
+                 (attr_flags[index] & AF_DATE) == 0);
+
             sprintf(str, "%d", message_id);
             add_subst_list(slist, svalue, "message id", str, &i);
             add_subst_time(lbs, slist, svalue, "entry time", date, &i);
@@ -8737,7 +8747,10 @@ void show_new_user_page(LOGBOOK * lbs)
 {
    /*---- header ----*/
 
-   show_standard_header(lbs, TRUE, loc("ELOG new user"), "");
+   show_html_header(NULL, TRUE, loc("ELOG new user"), TRUE);
+   rsprintf("<body><center><p><p>\n");
+   show_top_text(lbs);
+   rsprintf("<form name=form1 method=\"GET\" action=\"\">\n\n");
 
    /*---- title ----*/
 
