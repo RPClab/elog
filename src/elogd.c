@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.64  2003/04/03 08:08:50  midas
+  Added option 'Summary page title'
+
   Revision 1.63  2003/04/02 08:11:49  midas
   Fixed bug with missing link in reply/upload
 
@@ -4628,14 +4631,16 @@ time_t         now;
 struct tm      *ts;
 
   /* copy attribute list */
-  for (i=0 ; i<lbs->n_attr ; i++)
-    {
-    strcpy(list[i], attr_list[i]);
-    if (attrib)
-      strcpy(value[i], attrib[i]);
-    else
-      strcpy(value[i], getparam(attr_list[i]));
-    }
+  i = 0;
+  if (attrib != NULL)
+    for (; i<lbs->n_attr ; i++)
+      {
+      strcpy(list[i], attr_list[i]);
+      if (attrib)
+        strcpy(value[i], attrib[i]);
+      else
+        strcpy(value[i], getparam(attr_list[i]));
+      }
 
   /* add remote host */
   strcpy(list[i], "remote_host");
@@ -8453,6 +8458,14 @@ LOGBOOK *lbs_cur;
     }
   
   /*---- header ----*/
+
+  if (getcfg(lbs->name, "Summary Page Title", str))
+    {
+    i = build_subst_list(lbs, slist, svalue, NULL);
+    strsubst(str, slist, svalue, i);
+    }
+  else
+    strcpy(str, "ELOG");
 
   sprintf(str, "ELOG %s", lbs->name);
   show_standard_header(lbs, TRUE, str, NULL);
