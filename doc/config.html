@@ -313,7 +313,7 @@ defined. Typical values are "<I>Author</I>", "<I>Subject</I>" or "<I>Type</I>".
 
 <LI><b><code>Options &lt;attribute&gt; = &lt;list&gt;</code></b>
 <br>
-Usually, an text field is used for an attribute, where the user can fill in
+Usually, a text field is used for an attribute, where the user can fill in
 text of up to 100 characters. If instead a drop-down box with preset items is
 better for a given attribute, these items can be defined with this statement.
 Up to 100 items can be defined, separated by commas.
@@ -331,6 +331,21 @@ checkboxes can be checked for an entry. The attribue value then becomes
 </pre>
 In the "<I>find</I>" page only one of these values can be specified, which is then
 treated as a substring in the search filter.
+<p>
+
+<LI><b><code>IOptions &lt;attribute&gt; = &lt;list&gt;</code></b>
+<br>
+As an alternative, icons can be used as values of attributes. The name of the icon
+image files (ususlly GIF files) are specified with this option. The icons have to
+be present in the <code><b>icons</b></code> subdirectory of the themes directory.
+A configuration line like <p>
+<pre>
+IOptions Type = icon1.gif, icon2.gif, icon3.gif, icon4.gif
+</pre>
+
+results in following browser display:<p>
+
+<img src="icons.gif">
 <p>
 
 <LI><b><code>Options &lt;attribute&gt; = boolean</code></b>
@@ -679,7 +694,9 @@ Themes are layout and color schemes which determine the look and feel of a logbo
 Each theme resides in a separate subdirectory and is specified with the
 <b><code>theme = &lt;dir&gt;</code></b> option in the configuration file. The directory
 contains the file <b><code>theme.cfg</code></b> and a few images, which are used
-for the title banner and the browse buttons. A default theme is contained in the
+for the title banner and the browse buttons. In addition, an <code><b>icons</b></code>
+subdirectory contains icon files which can be used with the <code><b>IOptions</code></b>
+specification. A default theme is contained in the
 distribution. If new themes are developed by users, they can be sent back to the author,
 to be included in future releases.
 <p>
