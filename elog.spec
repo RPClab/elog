@@ -4,7 +4,7 @@
 
 Name:       elog
 Summary:    elog is a standalone electronic web logbook
-Version:    2.3.2
+Version:    2.5.4
 Release:    1
 Copyright:  GPL
 Group:      Applications/Networking
@@ -42,6 +42,8 @@ access control, etc. Moreover, a single server can host several weblogs, and
 each weblog can be totally different from the rest. 
 
 %changelog
+* Fri Mar 14 2003 Stefan Ritt <stefan.ritt@psi.ch>
+- Added %post to change ownership of elog files
 * Thu Jan 30 2003 Stefan Ritt <stefan.ritt@psi.ch>
 - Added installation of man pages, thanks to Serge Droz <serge.droz@psi.ch>
 * Tue Aug 13 2002 Stefan Ritt <stefan.ritt@psi.ch>
