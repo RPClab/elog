@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.219  2004/01/29 21:20:02  midas
+   Started working on calendar
+
    Revision 1.218  2004/01/29 09:53:27  midas
    Use \r\n in save_admin_config()
 
@@ -6808,6 +6811,15 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y1\">",
             loc("Year"));
 
+   rsprintf("\n<script language=\"javascript\" type=\"text/javascript\">\n");
+   rsprintf("if (navigator.javaEnabled()) {\n");
+   rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
+   rsprintf
+       ("  document.write(\"<input type=button value=\\\"%s\\\" onClick=window.open(\\\"cal.html\\\",\\\"\\\",\\\"width=300,height=220,dependent=yes,menubar=no,scrollbars=no,location=no\\\");>\");\n",
+        loc("Calendar"));
+   rsprintf("} \n");
+   rsprintf("</script>\n");
+
    rsprintf("&nbsp;&nbsp;/&nbsp;&nbsp;%s:&nbsp;", loc("Show last"));
 
    rsprintf("<select name=last>\n");
@@ -6838,6 +6850,16 @@ void show_find_form(LOGBOOK * lbs)
 
    rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y2\">",
             loc("Year"));
+
+   rsprintf("\n<script language=\"javascript\" type=\"text/javascript\">\n");
+   rsprintf("if (navigator.javaEnabled()) {\n");
+   rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
+   rsprintf
+       ("  document.write(\"<input type=button value=\\\"%s\\\" onClick=window.open(\\\"cal.html\\\",\\\"\\\",\\\"width=300,height=220,dependent=yes,menubar=no,scrollbars=no,location=no\\\");>\");\n",
+        loc("Calendar"));
+   rsprintf("} \n");
+   rsprintf("</script>\n");
+
    rsprintf("</td></tr>\n");
 
    for (i = 0; i < lbs->n_attr; i++) {
@@ -9233,12 +9255,14 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                   else
                      rsprintf("Error receiving message: %s\n", error_str);
                } else if (!bcron) {
-                
+
                   if (getcfg_topgroup())
-                     rsprintf("<a href=\"../%s/%d\">ID%d:</a>\t", lbs->name_enc, message_id, message_id);
+                     rsprintf("<a href=\"../%s/%d\">ID%d:</a>\t", lbs->name_enc,
+                              message_id, message_id);
                   else
-                     rsprintf("<a href=\"%s/%d\">ID%d:</a>\t", lbs->name_enc, message_id, message_id);
-                 
+                     rsprintf("<a href=\"%s/%d\">ID%d:</a>\t", lbs->name_enc, message_id,
+                              message_id);
+
                   rsprintf("%s\n", loc("Remote entry received"));
                }
 
@@ -9395,10 +9419,12 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                   } else if (!bcron) {
 
                      if (getcfg_topgroup())
-                        rsprintf("<a href=\"../%s/%d\">ID%d:</a>\t", lbs->name_enc, message_id, message_id);
+                        rsprintf("<a href=\"../%s/%d\">ID%d:</a>\t", lbs->name_enc,
+                                 message_id, message_id);
                      else
-                        rsprintf("<a href=\"%s/%d\">ID%d:</a>\t", lbs->name_enc, message_id, message_id);
-                 
+                        rsprintf("<a href=\"%s/%d\">ID%d:</a>\t", lbs->name_enc,
+                                 message_id, message_id);
+
                      rsprintf("%s\n", loc("Remote entry received"));
                   }
 
@@ -10792,10 +10818,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
    threaded = equal_ustring(mode, "threaded");
    csv = equal_ustring(mode, "CSV");
-   
+
    if (csv) {
-      page_n = -1;               /* display all pages */
-      show_attachments = FALSE;  /* hide attachments */
+      page_n = -1;              /* display all pages */
+      show_attachments = FALSE; /* hide attachments */
    }
 
    /* supersede mode if in parameter */
@@ -11241,12 +11267,12 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       /* no menus and tables */
       show_plain_header(0);
 
-      for (i=0 ; i<lbs->n_attr ; i++) {
+      for (i = 0; i < lbs->n_attr; i++) {
          strlcpy(str, attr_list[i], sizeof(str));
          while (strchr(str, '"'))
             *strchr(str, '"') = '\'';
          rsprintf("\"%s\"", str);
-         if (i<lbs->n_attr-1)
+         if (i < lbs->n_attr - 1)
             rsprintf(",");
          else
             rsprintf("\r\n");
@@ -11268,7 +11294,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       else if (page_n == -1)
          sprintf(str + strlen(str), loc("all entries"));
       else if (page_n)
-         sprintf(str + strlen(str), loc("Page %d of %d"), page_n, (n_msg - 1) / n_page + 1);
+         sprintf(str + strlen(str), loc("Page %d of %d"), page_n,
+                 (n_msg - 1) / n_page + 1);
       if (strlen(str) == 2)
          str[0] = 0;
 
@@ -11324,14 +11351,14 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                if (equal_ustring(menu_item[i], "Last x")) {
                   if (past_n) {
                      sprintf(str, loc("Last %d days"), past_n * 2);
-                     rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n * 2,
-                              mode, str);
+                     rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n",
+                              past_n * 2, mode, str);
                   }
 
                   if (last_n) {
                      sprintf(str, loc("Last %d entries"), last_n * 2);
-                     rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n * 2,
-                              mode, str);
+                     rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n",
+                              last_n * 2, mode, str);
                   }
                } else if (equal_ustring(menu_item[i], "Select")) {
                   strcpy(str, getparam("cmdline"));
@@ -11340,7 +11367,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                      if (strstr(str, "select=1")) {
                         *strstr(str, "select=1") = 0;
                         if (strlen(str) > 1
-                            && (str[strlen(str) - 1] == '&' || str[strlen(str) - 1] == '?'))
+                            && (str[strlen(str) - 1] == '&'
+                                || str[strlen(str) - 1] == '?'))
                            str[strlen(str) - 1] = 0;
                      }
                   } else {
@@ -11407,7 +11435,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
       /*---- display filters ----*/
 
-      disp_filter = *getparam("m1") || *getparam("y1") || *getparam("d1") || *getparam("m2")
+      disp_filter = *getparam("m1") || *getparam("y1") || *getparam("d1")
+          || *getparam("m2")
           || *getparam("y2") || *getparam("d2")
           || *getparam("subtext");
 
@@ -11515,8 +11544,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       size = printable ? 2 : 3;
 
       list[0] = 0;
-      if (!getcfg(lbs->name, "List display", list))        /* new 2.3.10 format */
-         getcfg(lbs->name, "Display search", list);        /* old 2.3.9  format */
+      if (!getcfg(lbs->name, "List display", list))     /* new 2.3.10 format */
+         getcfg(lbs->name, "Display search", list);     /* old 2.3.9  format */
 
       if (list[0])
          n_attr_disp = strbreak(list, disp_attr, MAX_N_ATTR);
@@ -11594,7 +11623,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
          rsprintf("</tr>\n\n");
       }
-   } /* if (!csv) */
+   }                            /* if (!csv) */
 
    /*---- display message list ----*/
 
@@ -11611,12 +11640,12 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
       if (csv) {
 
-         for (i=0 ; i<lbs->n_attr ; i++) {
+         for (i = 0; i < lbs->n_attr; i++) {
             strlcpy(str, attrib[i], sizeof(str));
             while (strchr(str, '"'))
                *strchr(str, '"') = '\'';
             rsprintf("\"%s\"", str);
-            if (i<lbs->n_attr-1)
+            if (i < lbs->n_attr - 1)
                rsprintf(",");
             else
                rsprintf("\r\n");
@@ -11636,9 +11665,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
             text1[i] = 0;
 
             text2[0] = 0;
-            pt = text;             /* original text */
-            pt1 = text1;           /* upper-case text */
-            pt2 = text2;           /* text with inserted coloring */
+            pt = text;          /* original text */
+            pt1 = text1;        /* upper-case text */
+            pt2 = text2;        /* text with inserted coloring */
             do {
                p = strstr(pt1, str);
                size = (int) (p - pt1);
@@ -11698,7 +11727,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                       index, mode, expand, 0, printable, n_line,
                       show_attachments, date, in_reply_to, reply_to,
                       n_attr_disp, disp_attr, attrib, lbs->n_attr, text,
-                      attachment, encoding, atoi(getparam("select")), &n_display, locked_by);
+                      attachment, encoding, atoi(getparam("select")), &n_display,
+                      locked_by);
 
          if (threaded) {
             if (reply_to[0] && expand > 0) {
@@ -11714,8 +11744,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                } while (*p);
             }
          }
-      } /* if (!csv) */
-   } /* for() */
+      }                         /* if (!csv) */
+   }                            /* for() */
 
    if (!csv) {
       rsprintf("</table>\n");
@@ -14035,6 +14065,116 @@ int do_self_register(LOGBOOK * lbs, char *command)
 
 /*------------------------------------------------------------------*/
 
+void show_calendar(LOGBOOK * lbs)
+{
+   int i, j, cur_mon, cur_day, cur_year, today_day, today_mon, today_year;
+   time_t now, stime;
+   struct tm *ts;
+   char str[256];
+
+   time(&now);
+   ts = localtime(&now);
+   today_mon = ts->tm_mon + 1;
+   today_day = ts->tm_mday;
+   today_year = ts->tm_year + 1900;
+
+   if (isparam("m") && isparam("y")) {
+      cur_mon = atoi(getparam("m"));
+      cur_year = atoi(getparam("y"));
+      cur_day = -1;
+      ts->tm_mday = 1;
+      ts->tm_mon = cur_mon - 1;
+      ts->tm_year = cur_year - 1900;
+      mktime(ts);
+   } else {
+      cur_mon = ts->tm_mon + 1;
+      cur_day = ts->tm_mday;
+      cur_year = ts->tm_year + 1900;
+   }
+
+   show_html_header(lbs, TRUE, loc("Calendar"));
+   rsprintf("<body>\n");
+   rsprintf
+       ("<table border=1 width=294 height=214><tr><td colspan=7 class=\"caltitle\">\n");
+
+   /* link to previous month */
+   if (cur_mon > 1)
+      rsprintf("<a href=\"?m=%d&y=%d\">&lt;</a>", cur_mon - 1, cur_year);
+   else
+      rsprintf("<a href=\"?m=%d&y=%d\">&lt;</a>", 12, cur_year - 1);
+
+   /* current month */
+   strftime(str, sizeof(str), "%B", ts);
+   rsprintf("&nbsp;%s&nbsp;", str);
+
+   /* link to next month */
+   if (cur_mon == 12)
+      rsprintf("<a href=\"?m=%d&y=%d\">&gt;</a>", 1, cur_year + 1);
+   else
+      rsprintf("<a href=\"?m=%d&y=%d\">&gt;</a>", cur_mon + 1, cur_year);
+
+   /* link to previous year */
+   rsprintf("&nbsp;&nbsp;");
+   rsprintf("<a href=\"?m=%d&y=%d\">&lt;</a>", cur_mon, cur_year - 1);
+
+   /* current year */
+   rsprintf("&nbsp;%d&nbsp;", cur_year);
+
+   /* link to next year */
+   rsprintf("<a href=\"?m=%d&y=%d\">&gt;</a>", cur_mon, cur_year + 1);
+
+   /* go to first day of month */
+   ts->tm_mday = 1;
+   stime = mktime(ts);
+
+   /* go to last sunday */
+   stime = stime - 3600 * 24 * ts->tm_wday;
+
+   rsprintf("<tr>\n");
+   for (i = 0; i < 7; i++) {
+      ts = localtime(&stime);
+      strftime(str, sizeof(str), "%a", ts);
+      rsprintf("<td class=\"calhead\">%s</td>\n", str);
+      stime += 3600 * 24;
+   }
+   rsprintf("</tr>\n");
+   stime -= 3600 * 24 * 7;
+   ts = localtime(&stime);
+
+   /* onClick='window.close(); opener.document.form1.y1 = 2004;'; */
+
+   for (i = 0; i < 6; i++) {
+      rsprintf("<tr>\n");
+
+      for (j = 0; j < 7; j++) {
+         if (ts->tm_mon + 1 == cur_mon)
+            sprintf(str, "%d", ts->tm_mday);
+         else
+            strcpy(str, "&nbsp;");
+
+         if (ts->tm_mday == today_day && ts->tm_mon + 1 == today_mon
+             && ts->tm_year + 1900 == today_year)
+            rsprintf("<td class=\"calcurday\">%s</td>\n", str);
+         else {
+            if (j == 0)
+               rsprintf("<td class=\"calhday\">%s</td>\n", str);
+            else
+               rsprintf("<td class=\"calday\">%s</td>\n", str);
+         }
+         stime += 3600 * 24;
+         ts = localtime(&stime);
+      }
+
+      rsprintf("</tr>\n");
+      if (ts->tm_mon + 1 != cur_mon)
+         break;
+   }
+
+   rsprintf("</body></html>\n");
+}
+
+/*------------------------------------------------------------------*/
+
 void interprete(char *lbook, char *path)
 /********************************************************************\
 
@@ -14820,6 +14960,12 @@ void interprete(char *lbook, char *path)
    /* check for start page */
    if (!_cmdline[0] && getcfg(lbs->name, "Start page", str) && str[0]) {
       redirect(lbs, str);
+      return;
+   }
+
+   /* check for calender */
+   if (equal_ustring(dec_path, "cal.html")) {
+      show_calendar(lbs);
       return;
    }
 
