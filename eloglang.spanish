@@ -264,27 +264,23 @@ Please enter numeric value for '%s' = Por favor ingrese valor numerico para '%s'
 Error: Attribute <b>%s</b> must be numeric = Error: El atributo <b>%s</b> debe ser numerico
 3 Months = 3 meses
 6 Months = 6 meses
-
-#
-#---------- please translate following items ----------#
-#
-Are you sure to delete this entry? = 
-ELOG CSV import = 
-Import = 
-Field separator = 
-Comma = 
-Semicolon = 
-Derive attributes from CSV file = 
-Ignore first line = 
-Preview import = 
-CSV filename = 
-CVS import preview of %s = 
-CSV Import = 
-Too many attributes in CSV file = 
-%d entries successfully imported = 
-Error sending local message = 
-Error receiving message = 
-Edit entry = 
-Delete entry = 
-From = 
-No 'Attributes' option present in %s = 
+Are you sure to delete this entry? = Esta seguro de borrar estas entradas?
+ELOG CSV import = Importar ELOG CSV
+Import = Importar
+Field separator = Separador de campos
+Comma = Coma
+Semicolon = Punto y coma
+Derive attributes from CSV file = Derivar atributos del archivo CSV
+Ignore first line = Ignorar la primera linea
+Preview import = Vista previa de importacion
+CSV filename = Archivo CVS
+CSV import preview of %s = Vista previa de importacion CSV %s
+CSV Import = Importar CSV
+Too many attributes in CSV file = Demasiados atributos en archivo CSV
+%d entries successfully imported = %d entradas importadas con exito
+Error sending local message = Error al enviar mensaje local
+Error receiving message = Error al recibir mensaje
+Edit entry = Editar entrada
+Delete entry = Borrar entrada
+From = Desde
+No 'Attributes' option present in %s = No se encuentra presente la opcion 'Attributes' en %s
