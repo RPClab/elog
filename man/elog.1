@@ -39,12 +39,12 @@ interact with the
 .B ELOG
 daemon (elogd). The
 .B elog
-message can either be submitted on the command line or in a file with the `\-m'
-flag.  For the former case, message with blanks must be enclosed in quotes.
-Multiple attributes can be specified as well as several attachments. The
-password must match the write password defined on the server.  If user level
-access is defined on the server (via the `Password file' option), a valid user
-name / password pair must be specified with the `\-u' option.
+message can either be submitted on the command line or piped through `stdin' or
+in a file with the `\-m' flag.  For the former case, message with blanks must
+be enclosed in quotes.  Multiple attributes can be specified as well as several
+attachments. The password must match the write password defined on the server.
+If user level access is defined on the server (via the `Password file' option),
+a valid user name / password pair must be specified with the `\-u' option.
 .PP
 The
 .B elog
