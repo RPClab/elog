@@ -95,7 +95,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				OutputFile=".\Debug/elconv.exe"
-				LinkIncremental="1"
+				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\Debug/elconv.pdb"

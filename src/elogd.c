@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.514  2004/11/23 11:33:59  midas
+   Fixed bug in XML export
+
    Revision 1.513  2004/11/17 14:39:16  midas
    Implemented USERLIST as attribute type
 
@@ -15099,7 +15102,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
       /* no menus and tables */
       show_plain_header(0, "export.xml");
-      rsprintf("<?xml version=\"1.0\" encoding=\"%S\"?>\n", DEFAULT_HTTP_CHARSET);
+      rsprintf("<?xml version=\"1.0\" encoding=\"%s\"?>\n", DEFAULT_HTTP_CHARSET);
       rsprintf("<!-- ELOGD Version %s export.xml -->\n", VERSION);
       rsprintf("<ELOG_LIST>\n");
 
