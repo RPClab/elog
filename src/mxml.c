@@ -6,6 +6,9 @@
    Contents:     Midas XML Library
 
    $Log$
+   Revision 1.5  2005/03/21 07:37:22  ritt
+   Changed file mode
+
    Revision 1.4  2005/03/03 15:36:05  ritt
    Fixed compiler warnings
 
@@ -38,8 +41,10 @@
 
 typedef int BOOL;
 
+#ifndef O_TEXT
 #define O_TEXT 0
 #define O_BINARY 0
+#endif
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -70,7 +75,7 @@ MXML_WRITER *mxml_open_document(const char *file_name)
 
    writer = malloc(sizeof(MXML_WRITER));
 
-   writer->fh = open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT, 0644);
+   writer->fh = open(file_name, O_RDWR | O_CREAT | O_TRUNC | O_TEXT, 0644);
 
    if (writer->fh == -1) {
       sprintf(line, "Unable to open file \"%s\": ", file_name);
