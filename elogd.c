@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.14  2002/06/13 12:46:09  midas
+  Fixed problem wiht 'reply to:' in subject
+
   Revision 2.13  2002/06/13 08:59:53  midas
   Made '../last10?mode=summary' work
 
@@ -1196,14 +1199,17 @@ int i;
 
 void el_decode(char *message, char *key, char *result)
 {
-char *pc;
+char *pc, *ph;
 
   if (result == NULL)
     return;
 
   *result = 0;
 
-  if (strstr(message, key))
+  ph = strstr(message, "========================================\n");
+
+  if ((pc = strstr(message, key)) != NULL &&
+       pc < ph && (*(pc-1) == '\n' || *(pc-1) == '\r'))
     {
     for (pc=strstr(message, key)+strlen(key) ; *pc != '\n' && *pc != '\r' ; )
       *result++ = *pc++;
