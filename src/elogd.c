@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.262  2004/02/24 19:05:16  midas
+   Removed javaEnabled()
+
    Revision 1.261  2004/02/19 20:27:17  midas
    Improved synchronization algorithm. Conflicting entries are properly copied if one of them got deleted
 
@@ -5440,11 +5443,7 @@ void show_error(char *error)
 
    /*
       rsprintf("<script language=\"javascript\" type=\"text/javascript\">\n");
-      rsprintf("if (!navigator.javaEnabled()) {\n");
-      rsprintf("  document.write(\"%s\")\n", loc("Please use your browser's back button to go back"));
-      rsprintf("} else {\n");
-      rsprintf("  document.write(\"<button type=button onClick=history.back()>%s</button>\")\n", loc("Back"));
-      rsprintf("} \n");
+      rsprintf("<button type=button onClick=history.back()>%s</button>\n", loc("Back"));
       rsprintf("</script>\n");
 
       rsprintf("<noscript>\n");
@@ -6033,13 +6032,11 @@ void show_date_selector(int day, int month, int year, char *index)
    rsprintf("scrollbars=no,location=no,resizable=yes\");\n");
    rsprintf("}\n\n");
 
-   rsprintf("if (navigator.javaEnabled()) {  \n");
    rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
    rsprintf("  document.write(\"<a href=\\\"javascript:opencal('%s')\\\">\");\n", index);
-   rsprintf
-       ("  document.writeln(\"<img src=\\\"cal.gif\\\" border=\\\"0\\\" alt=\\\"%s\\\"></a>\");\n",
-        loc("Pick a date"));
-   rsprintf("} \n");
+   rsprintf("  document.writeln(\"<img src=\\\"cal.gif\\\" border=\\\"0\\\"");
+   rsprintf("alt=\\\"%s\\\"></a>\");\n", loc("Pick a date"));
+
    rsprintf("//-->\n");
    rsprintf("</script>\n");
 }
@@ -6713,15 +6710,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                      if (is_cond_attr(index)) {
                         /* show "update" button only of javascript is not enabled */
-                        rsprintf
-                            ("<script language=\"javascript\" type=\"text/javascript\">\n");
-                        rsprintf("if (!navigator.javaEnabled()) {\n");
-                        rsprintf
-                            ("  document.write(\"<input type=submit value=\\\"%s\\\"\")\n",
-                             loc("Update"));
-                        rsprintf("} \n");
-                        rsprintf("</script>\n");
-
                         rsprintf("<noscript>\n");
                         rsprintf("<input type=submit value=\"%s\">\n", loc("Update"));
                         rsprintf("</noscript>\n");
@@ -8066,13 +8054,6 @@ void show_config_page(LOGBOOK * lbs)
       rsprintf("</select>\n");
 
       /* show "update" button only of javascript is not enabled */
-      rsprintf("<script language=\"javascript\" type=\"text/javascript\">\n");
-      rsprintf("if (!navigator.javaEnabled()) {\n");
-      rsprintf("  document.write(\"<input type=submit value=\\\"%s\\\"\")\n",
-               loc("Update"));
-      rsprintf("} \n");
-      rsprintf("</script>\n");
-
       rsprintf("<noscript>\n");
       rsprintf("<input type=submit value=\\\"%s\\\">\n", loc("Update"));
       rsprintf("</noscript>\n");
