@@ -1,3 +1,10 @@
+Version 2.0.2, released June 21st, 2002
+=======================================
+
+- Fixed problems with "find" and "threaded display"
+- Do "Re: " substituion only on first reply
+- Fixed problems where multiple logbooks shared the same data directory
+
 Version 2.0.1, released June 18th, 2002
 =======================================
 
