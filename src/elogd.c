@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.497  2004/10/14 21:27:29  midas
+   Finished regular expressions
+
    Revision 1.496  2004/10/14 19:40:40  midas
    Fixed 'append on edit' with uploads
 
@@ -8617,7 +8620,8 @@ void show_find_form(LOGBOOK * lbs)
 
    rsprintf("</td></tr>\n");
 
-   rsprintf("<tr><td class=\"form2\"><b>%s:</b><br>", loc("Filters"));
+   rsprintf("<tr><td class=\"form2\"><b>%s:</b>", loc("Filters"));
+   rsprintf("&nbsp;&nbsp;<span class=\"selcomment\">(%s)</span><br>", loc("Text fields may contain regular expressions"));
 
    /* table for two-column items */
    rsprintf("<table width=\"100%%\" cellspacing=0>\n");
@@ -8669,7 +8673,6 @@ void show_find_form(LOGBOOK * lbs)
          } else {
 
             rsprintf("<input type=\"text\" size=\"30\" maxlength=\"80\" name=\"%s\">\n", attr_list[i]);
-            rsprintf("<i>%s</i>\n", loc("(case insensitive substring)"));
          }
 
       } else {
@@ -8715,11 +8718,12 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf("<tr><td class=\"attribname\">%s:</td>", loc("Text"));
    rsprintf
        ("<td class=\"attribvalue\"><input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\">\n");
-   rsprintf("<i>%s</i></td></tr>\n", loc("(case insensitive substring)"));
 
    rsprintf("<tr><td><td class=\"attribvalue\">\n");
    rsprintf("<input type=checkbox id=\"sall\" name=\"sall\" value=1>\n");
    rsprintf("<label for=\"sall\">%s</label>\n", loc("Search text also in attributes"));
+   rsprintf("<input type=checkbox checked id=\"sall\" name=\"icase\" value=1>\n");
+   rsprintf("<label for=\"icase\">%s</label>\n", loc("Ignore case"));
 
    rsprintf("</td></tr></table></td></tr></table>\n");
    show_bottom_text(lbs);
@@ -14213,7 +14217,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
        n_display, reverse, n_attr_disp, total_n_msg, n_msg, search_all, message_id,
        n_page, i_start, i_stop, in_reply_to_id;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH],
-       *list, *text, *text1, *text2, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
+       *list, *text, *text1, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH], mode[80], mid[80],
        menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH], format[80];
@@ -14223,13 +14227,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
    LOGBOOK *lbs_cur;
-
-   /*
-   struct re_pattern_buffer re_buf;
-   struct re_registers re_regs;
-   char fastmap[(1 << 8)];
-   */
-   regex_t re_buf;
+   regex_t re_buf[MAX_N_ATTR+1];
    regmatch_t pmatch[10];
 
    /* redirect if enpty parameters */
@@ -14577,15 +14575,39 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
    text = xmalloc(TEXT_SIZE);
    text1 = xmalloc(TEXT_SIZE);
-   text2 = xmalloc(TEXT_SIZE);
 
    /* prepare for regex search */
-   memset(&re_buf, 0, sizeof(re_buf));
+   memset(re_buf, 0, sizeof(re_buf));
 
+   /* compile regex for subtext */
    if (*getparam("subtext")) {
       strcpy(str, getparam("subtext"));
+      flags = REG_EXTENDED;
+      if (isparam("icase"))
+         flags |= REG_ICASE;
+      regcomp(re_buf, str, flags);
+   }
+
+   /* compile regex for attributes */
+   for (i = 0; i < lbs->n_attr; i++) {
+      if (*getparam(attr_list[i])) {
+         strcpy(str, getparam(attr_list[i]));
+
+         /* if value starts with '$', substitute it */
+         if (str[0] == '$') {
+            j = build_subst_list(lbs,
+                                 (char (*)[NAME_LENGTH]) slist,
+                                 (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
+            add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
+                           (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
+
+            strsubst(str, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
+            setparam(attr_list[i], str);
+         }
+
       flags = isparam("icase") ? REG_ICASE : REG_EXTENDED;
-      regcomp(&re_buf, str, flags);
+      regcomp(re_buf+i+1, str, flags);
+      }
    }
 
    /* do filtering */
@@ -14655,7 +14677,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                   text1[j] = toupper(attrib[i][j]);
                text1[j] = 0;
 
-               if (strstr(text1, str) == NULL)
+               status = regexec(re_buf+1+i, attrib[i], 10, pmatch, 0);
+               if (status == REG_NOMATCH)
                   break;
             }
          }
@@ -14686,34 +14709,14 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             }
 
       if (*getparam("subtext")) {
-         strcpy(str, getparam("subtext"));
 
-         /*
-         status = re_search(&re_buf, text, strlen(text), 0, strlen(text), &re_regs);
-         */
-
-         status = regexec(&re_buf, text, 10, pmatch, 0);
-         if (status == REG_NOMATCH) {
-            msg_list[index].lbs = NULL;
-            continue;
-         }
-
-         /* old search 
-         for (i = 0; i < (int) strlen(str); i++)
-            str[i] = toupper(str[i]);
-         str[i] = 0;
-         for (i = 0; i < (int) strlen(text); i++)
-            text1[i] = toupper(text[i]);
-         text1[i] = 0;
-
-         if (atoi(getparam("sall")) && strstr(text1, str) == NULL) {
+         status = regexec(re_buf, text, 10, pmatch, 0);
+         if (atoi(getparam("sall")) && status == REG_NOMATCH) {
+            
             // search text in attributes
             for (i = 0; i < lbs->n_attr; i++) {
-               for (j = 0; j < (int) strlen(attrib[i]); j++)
-                  text1[j] = toupper(attrib[i][j]);
-               text1[j] = 0;
-
-               if (strstr(text1, str) != NULL)
+               status = regexec(re_buf, attrib[i], 10, pmatch, 0);
+               if (status != REG_NOMATCH)
                   break;
             }
 
@@ -14721,11 +14724,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                msg_list[index].lbs = NULL;
                continue;
             }
-         } else if (strstr(text1, str) == NULL) {
+         } else if (status == REG_NOMATCH) {
             msg_list[index].lbs = NULL;
             continue;
          }
-         old search */
       }
 
       /* in threaded mode, find message head */
@@ -14793,8 +14795,6 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       if (isparam("sort"))
          reverse = 0;
    }
-
-   regfree(&re_buf);
 
    /*---- remove duplicate messages ----*/
 
@@ -14882,6 +14882,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          } else
             rsprintf("\r\n");
       }
+   
    } else if (xml) {
 
       /* no menus and tables */
@@ -15362,6 +15363,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          /*---- add highlighting for searched subtext ----*/
 
          if (*getparam("subtext")) {
+            /*
             strcpy(str, getparam("subtext"));
             for (i = 0; i < (int) strlen(str); i++)
                str[i] = toupper(str[i]);
@@ -15369,20 +15371,19 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             for (i = 0; i < (int) strlen(text); i++)
                text1[i] = toupper(text[i]);
             text1[i] = 0;
+            */
 
-            text2[0] = 0;
+            text1[0] = 0;
             pt = text;          /* original text */
-            pt1 = text1;        /* upper-case text */
-            pt2 = text2;        /* text with inserted coloring */
+            pt1 = text1;        /* text with inserted coloring */
             do {
-               p = strstr(pt1, str);
-               size = (int) (p - pt1);
-               if (p != NULL) {
-                  pt1 = p + strlen(str);
+               status = regexec(re_buf, pt, 10, pmatch, 0);
+               if (status != REG_NOMATCH) {
+                  size = pmatch[0].rm_so;
 
                   /* copy first part original text */
-                  memcpy(pt2, pt, size);
-                  pt2 += size;
+                  memcpy(pt1, pt, size);
+                  pt1 += size;
                   pt += size;
 
                   /* add coloring 1st part */
@@ -15392,29 +15393,30 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
                   if (strieq(encoding, "plain")
                       || !strieq(mode, "Full"))
-                     strcpy(pt2, "\001B\004style=\003color:black;background-color:#ffff66\003\002");
+                     strcpy(pt1, "\001B\004style=\003color:black;background-color:#ffff66\003\002");
                   else
-                     strcpy(pt2, "<B style=\"color:black;background-color:#ffff66\">");
+                     strcpy(pt1, "<B style=\"color:black;background-color:#ffff66\">");
 
-                  pt2 += strlen(pt2);
+                  pt1 += strlen(pt1);
 
                   /* copy origial search text */
-                  memcpy(pt2, pt, strlen(str));
-                  pt2 += strlen(str);
-                  pt += strlen(str);
+                  size = pmatch[0].rm_eo-pmatch[0].rm_so;
+                  memcpy(pt1, pt, size);
+                  pt1 += size;
+                  pt += size;
 
                   /* add coloring 2nd part */
                   if (strieq(encoding, "plain")
                       || !strieq(mode, "Full"))
-                     strcpy(pt2, "\001/B\002");
+                     strcpy(pt1, "\001/B\002");
                   else
-                     strcpy(pt2, "</B>");
-                  pt2 += strlen(pt2);
+                     strcpy(pt1, "</B>");
+                  pt1 += strlen(pt1);
                }
-            } while (p != NULL);
+            } while (status != REG_NOMATCH);
 
-            strcpy(pt2, pt);
-            strcpy(text, text2);
+            strcpy(pt1, pt);
+            strcpy(text, text1);
          }
 
          /*---- display line ----*/
@@ -15476,6 +15478,11 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       rsputs("</ELOG_LIST>\n");
    }
 
+   regfree(re_buf);
+   for (i = 0; i < lbs->n_attr; i++) 
+      regfree(re_buf+1+i);
+
+
    xfree(slist);
    xfree(svalue);
    xfree(gattr);
@@ -15483,7 +15490,6 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    xfree(msg_list);
    xfree(text);
    xfree(text1);
-   xfree(text2);
 }
 
 /*------------------------------------------------------------------*/
