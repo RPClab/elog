@@ -291,6 +291,30 @@ Although the <code><b>elogd</b></code> program does not support secure
 connections over SSL directly, it is still possible to access <code><b>elogd</b></code>
 securely using one of the following methods:
 
+<h3><i>Using Apache</i>:</h3>
+
+The <a href="http://httpd.apache.org">Apache<a> web server can be used as a proxy
+server allowing secure connections. To do so, Apache has to be configured
+accordingly and a certificate has to be generated. See some
+<a href="http://slacksite.com/apache/certificate.html">instuctions</a>
+on how to create a certificate, and see <i>Running elogd under Apache</i>
+before on this page on how to run elogd under Apache. Once configured
+correctly, elogd can be accessed via <i>http://your.host</i> and via
+<i>https://your.host</i> simultaneously.<p>
+
+<h3><i>Using ssh</i>:</h3>
+
+<code><b>elogd</b></code> can be accessed through a a SSH tunnel.
+To do so, open an SSH tunnel like:
+<P>
+<ul><pre>ssh -L 1234:your.server.name:8080 your.server.name</pre></ul>
+<p>
+This opens a secure tunnel from your local host, port 1234, to the server host
+where the <code><b>elogd</b></code> daemon is running on port 8080. Now you can
+access <b> <code>http://localhost:1234</code></b> from your browser and reach
+<code><b>elogd</b></code> in a secure way.
+<p>
+
 <h3><i>Using stunnel</i>:</h3>
 
 To use <code><b>elogd</b></code> togethwer with
@@ -329,32 +353,10 @@ details.
 
 This reveals any potential error.<p></p></LI>
 </OL>
-<p>
 
-<h3><i>Using Apache</i>:</h3>
+<i>Please note that the stunnel syntax might be outdated by now. If anybody
+can figure out a more recent description I'm happy to include it here.</i><p></p>
 
-The <a href="http://httpd.apache.org">Apache<a> web server can be used as a proxy
-server allowing secure connections. To do so, Apache has to be configured
-accordingly and a certificate has to be generated. See some
-<a href="http://slacksite.com/apache/certificate.html">instuctions</a>
-on how to create a certificate, and see <i>Running elogd under Apache</i>
-before on this page on how to run elogd under Apache. Once configured
-correctly, elogd can be accessed via <i>http://your.host</i> and via
-<i>https://your.host</i> simultaneously. See the ELOG Forum for example
-via <a href="http://midas.psi.ch/elogs/forum/">nonsecure</a> and
-<a href="https://midas.psi.ch/elogs/forum/">secure</a> connection.<p>
-
-<h3><i>Using ssh</i>:</h3>
-
-<code><b>elogd</b></code> can be accessed through a a SSH tunnel.
-To do so, open an SSH tunnel like:
-<P>
-<ul><pre>ssh -L 1234:your.server.name:8080 your.server.name</pre></ul>
-<p>
-This opens a secure tunnel from your local host, port 1234, to the server host
-where the <code><b>elogd</b></code> daemon is running on port 8080. Now you can
-access <b> <code>http://localhost:1234</code></b> from your browser and reach
-<code><b>elogd</b></code> in a secure way.
 <p>
 
 <hr><a name="tech">
