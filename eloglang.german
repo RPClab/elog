@@ -135,3 +135,13 @@ Cannot write to <b>%s</b> = Datei <b>%s</b> kann nicht geschrieben werden
 No SMTP host defined in [global] section of configuration file = Kein SMTP Host im [global] Bereich der Konfigurationsdatei definiert
 Messags %s cannot be read from logook "%s" = Eintrag %s kann nicht aus dem Logbuch "%s" gelesen werden
 New message cannot be written to directory "%s" = Neuer Eintrag kann nicht ins Verzeichnis "%s" geschrieben werden
+
+#
+# New strings fro V2.0
+#
+Display full message = Ganzer Eintrag darstellen
+Display threads = Antwortkette darstellen
+Logbook is empty = Logbuch ist leer
+This message has been deleted = Dieser Eintrag wurde gelöscht
+
+
