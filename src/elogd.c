@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.377  2004/07/12 08:01:15  midas
+   Added 'fix text' flag
+
    Revision 1.376  2004/07/09 08:13:39  midas
    Fixed problem that admin user of top group could change global section
 
@@ -7259,7 +7262,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    if (!getcfg(lbs->name, "Show text", str)
        || atoi(str) == 1) {
-      rsprintf("<textarea rows=%d cols=%d wrap=hard name=\"Text\" onChange=\"mod();\">", height, width);
+
+      if (getcfg(lbs->name, "Fix text", str) && atoi(str) == 1)
+         strcpy(str, " readonly");
+      else
+         strcpy(str, "");
+       
+      rsprintf("<textarea rows=%d cols=%d wrap=hard %s name=\"Text\" onChange=\"mod();\">", height, width, str);
 
       if (bedit) {
          if (!preset_text) {

@@ -1091,6 +1091,27 @@ ID display = TAG-$message id
 would display the entry ID as "TAG-1","TAG-2", ... and so on.
 <p>
 
+<li><b><code>Prepend on reply = &lt;string&gt;</code></b>
+<br>
+With this option a string can be placed on top of a reply. Using string substition,
+this can be useful for adding the author and the date of a reply, like<br>
+<br>
+<code><b>Prepend on reply = Added $date by $long_name\n\n</code></b><br>
+<br>
+where "\n" causes a line break.
+<p>
+
+<li><b><code>Apend on reply = &lt;string&gt;</code></b>
+<br>
+Same as before, but gets added after the previous entry.
+<p>
+
+<li><b><code>Prepend on edit = &lt;string&gt;</code></b>
+<li><b><code>Apend on edit = &lt;string&gt;</code></b>
+</br>
+Same as before, but for editing entries.
+<p>
+
 </UL>
 
 <a name="conditional"><hr>
@@ -1642,27 +1663,6 @@ in a browser, in which case the stale locks still might appear.<br><br>
 
 Default for "Use Lock" is <b>0</b>.<p>
 
-<li><b><code>Prepend on reply = &lt;string&gt;</code></b>
-<br>
-With this option a string can be placed on top of a reply. Using string substition,
-this can be useful for adding the author and the date of a reply, like<br>
-<br>
-<code><b>Prepend on reply = Added $date by $long_name\n\n</code></b><br>
-<br>
-where "\n" causes a line break.
-<p>
-
-<li><b><code>Apend on reply = &lt;string&gt;</code></b>
-<br>
-Same as before, but gets added after the previous entry.
-<p>
-
-<li><b><code>Prepend on edit = &lt;string&gt;</code></b>
-<li><b><code>Apend on edit = &lt;string&gt;</code></b>
-</br>
-Same as before, but for editing entries.
-<p>
-
 <li><b><code>Show top groups = 0|1</code></b>
 <br>
 When using top groups, the root of the elogd server is not accessible any more, to avoid
@@ -1671,6 +1671,13 @@ unwanted, the flag <code><b>Show top groups</b></code> can be set to <code><b>1<
 in which case a list of available top groups is shown.
 <p>
 
+<li><b><code>Fix text = 0|1</code></b>
+<br>
+With this options the main text body can be fixed, so that it cannot be
+changed via the <b><code>Edit</code></b> button later. This feature can be
+useful for set-ups where some attributed must be changed later, but the
+text body should be preserved. The default is <b>0</b>.
+<p>
 
 </ul><p>
 
