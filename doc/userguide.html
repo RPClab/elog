@@ -252,11 +252,15 @@ elog -h hostname [-p port] [-l logbook]
 The password must match the write password defined on the server. If
 user level access is defined on the server (via the "<I>password file </I>=" option),
 a valid user name / password pair must be specified with the <b><code>-u</code></b> option.
-<p>
-Multiple attributes can be specified as well as several attachments.
+<br><br>
+Multiple attributes can be specified as well as several attachments. If
+attributes with multiple possible values are defined in a logbook (via the
+<i>"MOptions"</i> keyword), they have to be specified with an index number
+like <code><b>-a &lt;attribute&gt;_0=&lt;value1&gt; -a &lt;attribute&gt;_1=&lt;value2&gt;</b></code>
+etc, even if only a single value is submitted.
 The message text can be supplied directly at the command line or submitted
 from a file with the <b><code>-m</code></b> flag.
-<p>
+<br><br>
 The <b><code>elog</code></b> program makes it possible to submit logbook
 entries automatically by the system or from scripts. In some shift logbooks
 this feature is used to enter alarm messages automatically into the logbook.
