@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.373  2004/07/08 11:31:33  midas
+   Fixed compiler warning
+
    Revision 1.372  2004/07/08 11:30:29  midas
    Fixed string overflow in rsputs2()
 
@@ -4397,7 +4400,7 @@ void rsputs2(const char *str)
          if (strncmp(str + i, list[l], strlen(list[l])) == 0) {
             p = (char *) (str + i + strlen(list[l]));
             i += strlen(list[l]);
-            for (k = 0; *p && strcspn(p, " ,;\t\n\r({[)}]") && k<sizeof(link); k++, i++)
+            for (k = 0; *p && strcspn(p, " ,;\t\n\r({[)}]") && k<(int)sizeof(link); k++, i++)
                link[k] = *p++;
             link[k] = 0;
             i--;
