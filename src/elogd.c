@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.543  2005/01/21 22:51:25  ritt
+   Remove any CR/LF from attributes submitted from browser
+
    Revision 1.542  2005/01/21 22:21:24  ritt
    Fixed compiler warning
 
@@ -16717,6 +16720,12 @@ void submit_elog(LOGBOOK * lbs)
 
       } else {
          strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
+
+         /* remove any CR/LF */
+         if (strchr(attrib[i], '\r'))
+            *strchr(attrib[i], '\r') = 0;
+         if (strchr(attrib[i], '\n'))
+            *strchr(attrib[i], '\n') = 0;
 
          /* strip trailing "{...}" */
          if (is_cond_attr(i) && strchr(attrib[i], '{') && strchr(attrib[i], '}'))
