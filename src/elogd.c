@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.205  2004/01/21 16:25:07  midas
+   Changed 'message' to 'entry' consistently
+
    Revision 1.204  2004/01/20 21:05:39  midas
    Synchronization almost works
 
@@ -2516,7 +2519,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
                lbs->el_index =
                    realloc(lbs->el_index, sizeof(EL_INDEX) * (*lbs->n_el_index + 1));
                if (lbs->el_index == NULL) {
-                  printf("Not enough memory to allocate message index\n");
+                  printf("Not enough memory to allocate entry index\n");
                   return EL_MEM_ERROR;
                }
 
@@ -3030,7 +3033,7 @@ INT el_retrieve(LOGBOOK * lbs,
          if ((int) strlen(p) >= *textsize) {
             strlcpy(text, p, *textsize);
             show_error
-                ("Message too long to display. Please increase TEXT_SIZE and recompile elogd.");
+                ("Entry too long to display. Please increase TEXT_SIZE and recompile elogd.");
             return EL_FILE_ERROR;
          } else {
             strlcpy(text, p, *textsize);
@@ -3568,7 +3571,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
    }
 
    if (_logging_level > 1)
-      logf(lbs, "DELETE message #%d", message_id);
+      logf(lbs, "DELETE entry #%d", message_id);
 
    message[i] = 0;
 
@@ -4104,7 +4107,7 @@ int setparam(char *param, char *value)
    if (equal_ustring(param, "text")) {
       if (strlen(value) >= TEXT_SIZE) {
          sprintf(str,
-                 "Error: Message text too big (%d bytes). Please increase TEXT_SIZE and recompile elogd\n",
+                 "Error: Entry text too big (%d bytes). Please increase TEXT_SIZE and recompile elogd\n",
                  strlen(value));
          show_error(str);
          return 0;
@@ -5743,7 +5746,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       if (i < *lbs->n_el_index
           && time(NULL) > lbs->el_index[i].file_time + atof(str) * 3600) {
-         sprintf(str, loc("Message can only be edited %1.2lg hours after creation"),
+         sprintf(str, loc("Entry can only be edited %1.2lg hours after creation"),
                  atof(str));
          show_error(str);
          return;
@@ -6502,10 +6505,10 @@ void show_find_form(LOGBOOK * lbs)
    if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1) {
       if (equal_ustring(mode, "Full"))
          rsprintf("<input type=radio name=mode value=\"full\" checked>%s&nbsp;&nbsp;\n",
-                  loc("Display full message"));
+                  loc("Display full entries"));
       else
          rsprintf("<input type=radio name=mode value=\"full\">%s&nbsp;&nbsp;\n",
-                  loc("Display full message"));
+                  loc("Display full entries"));
 
       if (equal_ustring(mode, "Summary"))
          rsprintf
@@ -7744,7 +7747,7 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
                break;
          }
          if (i == atoi(getparam("nsel"))) {
-            show_error(loc("No message selected for deletion"));
+            show_error(loc("No entry selected for deletion"));
             return;
          }
       }
@@ -8049,7 +8052,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 
    if (status != EL_SUCCESS) {
       free(text);
-      strcpy(error_str, loc("Cannot read message from local logbook"));
+      strcpy(error_str, loc("Cannot read entry from local logbook"));
       return -1;
    }
 
@@ -8317,11 +8320,11 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
    /* check for correct ID */
    if (atoi(p + 8) != message_id) {
       free(message);
-      sprintf(error_str, loc("Received wrong message id \"%d\""), atoi(p + 8));
+      sprintf(error_str, loc("Received wrong entry id \"%d\""), atoi(p + 8));
       return -1;
    }
 
-   /* decode message */
+   /* decode entry */
    el_decode(p, "Date: ", date);
    el_decode(p, "Reply to: ", reply_to);
    el_decode(p, "In reply to: ", in_reply_to);
@@ -8353,7 +8356,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
    el_decode(p, "Locked by: ", locked_by);
    if (locked_by[0]) {
       free(message);
-      sprintf(error_str, loc("Message #%d is locked on remote server"), message_id);
+      sprintf(error_str, loc("Entry #%d is locked on remote server"), message_id);
       return -1;
    }
 
@@ -8377,7 +8380,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
       free(message);
 
       if (status != message_id) {
-         sprintf(error_str, loc("Cannot save remote message locally"));
+         sprintf(error_str, loc("Cannot save remote entry locally"));
          return -1;
       }
 
@@ -8545,7 +8548,7 @@ void synchronize(LOGBOOK * lbs, char *path)
 
       n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote);
       if (n_remote < 0) {
-         rsprintf("Error receiving remote message list from \"%s\"\n", list[index]);
+         rsprintf("Error receiving remote entry list from \"%s\"\n", list[index]);
          free(md5_remote);
          continue;
       }
@@ -8596,7 +8599,7 @@ void synchronize(LOGBOOK * lbs, char *path)
                if (error_str[0])
                   rsprintf("Error sending local message: %s\n", error_str);
                else
-                  rsprintf("Local message submitted\n");
+                  rsprintf("Local entry submitted\n");
 
                md5_cache[i_cache].message_id = 0;
 
@@ -8612,7 +8615,7 @@ void synchronize(LOGBOOK * lbs, char *path)
                if (error_str[0])
                   rsprintf("Error receiving message: %s\n", error_str);
                else
-                  rsprintf("Remote message received\n");
+                  rsprintf("Remote entry received\n");
 
                md5_cache[i_cache].message_id = 0;
 
@@ -8629,14 +8632,14 @@ void synchronize(LOGBOOK * lbs, char *path)
                sprintf(loc_ref, "<a href=\"%d\">%s</a>", message_id, loc("local"));
                sprintf(rem_ref, "<a href=\"http://%s%d\">%s</a>", str, message_id,
                        loc("remote"));
-               rsprintf("%s\n\t", loc("Message has been changed locally and remotely."));
-               rsprintf(loc("Please delete %s or %s message to resolve conflict"),
+               rsprintf("%s\n\t", loc("Entry has been changed locally and remotely."));
+               rsprintf(loc("Please delete %s or %s entry to resolve conflict"),
                         loc_ref, rem_ref);
                rsprintf(".\n");
             } else {
 
                /* messages are identical */
-               rsprintf("%s\n", loc("Message identical"));
+               rsprintf("%s\n", loc("Entry identical"));
                md5_cache[i_cache].message_id = 0;
             }
          }
@@ -8645,7 +8648,7 @@ void synchronize(LOGBOOK * lbs, char *path)
             it must have been deleted remotely, so remove it locally */
          if (exist_cache && !exist_remote) {
             el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
-            rsprintf("%s\n", loc("Message has been deleted locally"));
+            rsprintf("%s\n", loc("Entry has been deleted locally"));
             md5_cache[i_cache].message_id = 0;
 
             /* message got deleted from local message list, so redo current index */
@@ -8658,12 +8661,12 @@ void synchronize(LOGBOOK * lbs, char *path)
             remote_id = submit_message(lbs, list[index], message_id, error_str);
 
             if (remote_id != message_id)
-               rsprintf("Error: Submitting message #%d resulted in remote message #%d",
+               rsprintf("Error: Submitting entry #%d resulted in remote entry #%d",
                         message_id, remote_id);
             else if (error_str[0])
-               rsprintf("%s: %s\n", loc("Error sending local message"), error_str);
+               rsprintf("%s: %s\n", loc("Error sending local entry"), error_str);
             else
-               rsprintf("%s\n", loc("Local message submitted"));
+               rsprintf("%s\n", loc("Local entry submitted"));
          }
 
          flush_return_buffer();
@@ -8696,7 +8699,7 @@ void synchronize(LOGBOOK * lbs, char *path)
                   if (error_str[0])
                      rsprintf("Error receiving message: %s\n", error_str);
                   else
-                     rsprintf("Remote message received\n");
+                     rsprintf("Remote entry received\n");
 
                } else {
                   /* if message does not exist locally but in cache, delete remote message */
@@ -8705,9 +8708,9 @@ void synchronize(LOGBOOK * lbs, char *path)
                   retrieve_url(url, &buffer);
 
                   if (strstr(buffer, "Location: "))
-                     rsprintf(loc("Message has been deleted remotely"));
+                     rsprintf(loc("Entry has been deleted remotely"));
                   else
-                     rsprintf(loc("Error deleting remote message"));
+                     rsprintf(loc("Error deleting remote entry"));
 
                   free(buffer);
                }
@@ -10792,7 +10795,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       rsprintf("</tr>\n\n");
    }
 
-               /*---- display message list ----*/
+   /*---- display message list ----*/
 
    for (index = i_start; index <= i_stop; index++) {
       size = TEXT_SIZE;
@@ -10805,7 +10808,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       if (status != EL_SUCCESS)
          break;
 
-                  /*---- add highlighting for searched subtext ----*/
+      /*---- add highlighting for searched subtext ----*/
 
       if (*getparam("subtext")) {
          strcpy(str, getparam("subtext"));
@@ -11396,7 +11399,7 @@ void submit_elog(LOGBOOK * lbs)
    }
 
    if (_logging_level > 1 && message_id)
-      logf(lbs, "EDIT message #%d", message_id);
+      logf(lbs, "EDIT entry #%d", message_id);
 
    message_id =
        el_submit(lbs, message_id, bedit, date, attr_list, attrib, lbs->n_attr,
@@ -11404,7 +11407,7 @@ void submit_elog(LOGBOOK * lbs)
                  *getparam("html") ? "HTML" : "plain", att_file, TRUE, NULL);
 
    if (message_id <= 0) {
-      sprintf(str, loc("New message cannot be written to directory \"%s\""),
+      sprintf(str, loc("New entry cannot be written to directory \"%s\""),
               lbs->data_dir);
       strcat(str, "\n<p>");
       strcat(str, loc("Please check that it exists and elogd has write access"));
@@ -11413,7 +11416,7 @@ void submit_elog(LOGBOOK * lbs)
    }
 
    if (_logging_level > 1 && !*getparam("edit_id"))
-      logf(lbs, "NEW message #%d", message_id);
+      logf(lbs, "NEW entry #%d", message_id);
 
    /* resubmit thread if requested */
    if (resubmit_orig)
@@ -11596,7 +11599,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
       if (status != EL_SUCCESS) {
          sprintf(msg_str, "%d", source_id);
-         sprintf(str, loc("Message %s cannot be read from logbook \"%s\""), msg_str,
+         sprintf(str, loc("Entry %s cannot be read from logbook \"%s\""), msg_str,
                  lbs->name);
          show_error(str);
          free(text);
@@ -11615,7 +11618,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
             if (status != EL_SUCCESS) {
                sprintf(msg_str, "%d", source_id);
-               sprintf(str, loc("Message %s cannot be read from logbook \"%s\""), msg_str,
+               sprintf(str, loc("Entry %s cannot be read from logbook \"%s\""), msg_str,
                        lbs->name);
                show_error(str);
                free(text);
@@ -11669,7 +11672,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
                     "", encoding, attachment, TRUE, NULL);
 
       if (message_id <= 0) {
-         sprintf(str, loc("New message cannot be written to directory \"%s\""),
+         sprintf(str, loc("New entry cannot be written to directory \"%s\""),
                  lbs_dest->data_dir);
          strcat(str, "\n<p>");
          strcat(str, loc("Please check that it exists and elogd has write access"));
@@ -11714,10 +11717,10 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
    rsprintf("<tr><td colspan=2 class=\"dlgtitle\">\n");
 
    if (n_done == 0)
-      rsprintf(loc("No message selected"));
+      rsprintf(loc("No entry selected"));
    else {
       if (n_done == 1)
-         rsprintf(loc("One message"));
+         rsprintf(loc("One entry"));
       else
          rsprintf(loc("%d messages"), n_done);
 
@@ -11934,7 +11937,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
          message_error = status;
       else {
          if (_logging_level > 2)
-            logf(lbs, "READ message #%d", message_id);
+            logf(lbs, "READ entry #%d", message_id);
       }
    } else
       message_error = EL_EMPTY;
@@ -12105,7 +12108,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
                loc("Logbook is empty"));
    else if (message_error == EL_NO_MSG)
       rsprintf("<tr><td class=\"errormsg\" colspan=2>%s</td></tr>\n",
-               loc("This message has been deleted"));
+               loc("This entry has been deleted"));
    else {
       /* overall message table */
       rsprintf
@@ -13552,7 +13555,7 @@ void interprete(char *lbook, char *path)
       n = atoi(strchr(dec_path, '/') + 1) - 1;
       status = el_retrieve_attachment(lbs, message_id, n, attachment);
       if (status != EL_SUCCESS || n >= MAX_ATTACHMENTS) {
-         sprintf(str, "Attachment #%d of message #%d not found", n + 1, message_id);
+         sprintf(str, "Attachment #%d of entry #%d not found", n + 1, message_id);
          show_error(str);
       } else {
          redirect(lbs, attachment);
