@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.278  2004/03/05 21:40:01  midas
+   Substitution of $message id and $entry time now works on all possible places
+
    Revision 1.277  2004/03/05 20:39:09  midas
    Allocate heap memory in display_line
 
@@ -2496,6 +2499,33 @@ char *month_name(int m)
 
 /*-------------------------------------------------------------------*/
 
+time_t date_to_ltime(char *date)
+{
+   struct tm tms;
+   int i;
+
+   memset(&tms, 0, sizeof(struct tm));
+
+   for (i = 0; i < 12; i++)
+      if (strncmp(date + 4, mname[i], 3) == 0)
+         break;
+   tms.tm_mon = i;
+
+   tms.tm_mday = atoi(date + 8);
+   tms.tm_hour = atoi(date + 11);
+   tms.tm_min = atoi(date + 14);
+   tms.tm_sec = atoi(date + 17);
+   tms.tm_year = atoi(date + 20) - 1900;
+   tms.tm_isdst = -1;
+
+   if (tms.tm_year < 90)
+      tms.tm_year += 100;
+   
+   return mktime(&tms);
+}
+
+/*-------------------------------------------------------------------*/
+
 void check_config()
 {
    check_config_file();
@@ -2737,8 +2767,6 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
        *p, *pn, in_reply_to[80];
    int index, n, length;
    int i, fh, len;
-   time_t ltime;
-   struct tm tms;
 
    if (rebuild) {
       free(lbs->el_index);
@@ -2829,25 +2857,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
                el_decode(p, "Date: ", date);
                el_decode(p, "In reply to: ", in_reply_to);
 
-               memset(&tms, 0, sizeof(struct tm));
-
-               for (i = 0; i < 12; i++)
-                  if (strncmp(date + 4, mname[i], 3) == 0)
-                     break;
-               tms.tm_mon = i;
-
-               tms.tm_mday = atoi(date + 8);
-               tms.tm_hour = atoi(date + 11);
-               tms.tm_min = atoi(date + 14);
-               tms.tm_sec = atoi(date + 17);
-               tms.tm_year = atoi(date + 20) - 1900;
-               tms.tm_isdst = -1;
-
-               if (tms.tm_year < 90)
-                  tms.tm_year += 100;
-               ltime = mktime(&tms);
-
-               lbs->el_index[*lbs->n_el_index].file_time = ltime;
+               lbs->el_index[*lbs->n_el_index].file_time = date_to_ltime(date);
 
                lbs->el_index[*lbs->n_el_index].message_id = atoi(p + 8);
                lbs->el_index[*lbs->n_el_index].offset = (int) p - (int) buffer;
@@ -3554,7 +3564,6 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 \********************************************************************/
 {
    INT n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id;
-   struct tm tms;
    char file_name[256], dir[256], str[NAME_LENGTH];
    time_t now, ltime;
    char *message, *p, *buffer;
@@ -3656,17 +3665,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
          if (strncmp(date + 4, mname[i], 3) == 0)
             break;
 
-      memset(&tms, 0, sizeof(struct tm));
-      tms.tm_mon = i;
-      tms.tm_mday = atoi(date + 8);
-      tms.tm_hour = atoi(date + 11);
-      tms.tm_min = atoi(date + 14);
-      tms.tm_sec = atoi(date + 17);
-      tms.tm_year = atoi(date + 20) - 1900;
-
-      if (tms.tm_year < 90)
-         tms.tm_year += 100;
-      ltime = mktime(&tms);
+      ltime = date_to_ltime(date);
 
       if (date[8] == ' ')
          date[8] = '0';
@@ -5814,6 +5813,32 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
 
 /*------------------------------------------------------------------*/
 
+void add_subst_list(char list[][NAME_LENGTH], char value[][NAME_LENGTH],
+                    char *item, char *str, int *i)
+{
+   strcpy(list[*i], item);
+   strcpy(value[(*i)++], str);
+}
+
+void add_subst_time(LOGBOOK *lbs, 
+                    char list[][NAME_LENGTH], char value[][NAME_LENGTH],
+                    char *item, char *date, int *i)
+{
+   char format[80], str[256];
+   time_t ltime;
+   struct tm *pts;
+
+   if (!getcfg(lbs->name, "Time format", format))
+      strcpy(format, DEFAULT_TIME_FORMAT);
+   ltime = date_to_ltime(date);
+   pts = localtime(&ltime);
+   strftime(str, sizeof(str), format, pts);
+
+   add_subst_list(list, value, item, str, i);
+}
+
+/*------------------------------------------------------------------*/
+
 BOOL change_pwd(LOGBOOK * lbs, char *user, char *pwd)
 {
    char str[256], file_name[256], line[256], *p, *pl;
@@ -6335,6 +6360,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             /* check if already second reply */
             if (orig_tag[0] == 0) {
                i = build_subst_list(lbs, slist, svalue, attrib);
+               sprintf(str, "%d", message_id);
+               add_subst_list(slist, svalue, "message id", str, &i);
+               add_subst_time(lbs, slist, svalue, "entry time", date, &i);
                strsubst(preset, slist, svalue, i);
                strcpy(attrib[index], preset);
             }
@@ -6348,6 +6376,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          sprintf(str, "Subst on edit %s", attr_list[index]);
          if (getcfg_cond(lbs->name, condition, str, preset)) {
             i = build_subst_list(lbs, slist, svalue, attrib);
+            sprintf(str, "%d", message_id);
+            add_subst_list(slist, svalue, "message id", str, &i);
+            add_subst_time(lbs, slist, svalue, "entry time", date, &i);
+
             strsubst(preset, slist, svalue, i);
             if (strncmp(preset, "<br>", 4) == 0)
                strcpy(attrib[index], preset + 4);
@@ -6509,22 +6541,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       if (!getcfg_cond(lbs->name, condition, "Time format", format))
          strcpy(format, DEFAULT_TIME_FORMAT);
 
-      memset(&ts, 0, sizeof(ts));
-
-      for (i = 0; i < 12; i++)
-         if (strncmp(date + 4, mname[i], 3) == 0)
-            break;
-      ts.tm_mon = i;
-
-      ts.tm_mday = atoi(date + 8);
-      ts.tm_hour = atoi(date + 11);
-      ts.tm_min = atoi(date + 14);
-      ts.tm_sec = atoi(date + 17);
-      ts.tm_year = atoi(date + 20) - 1900;
-      ts.tm_isdst = -1;         /* let mktime compute DST */
-
-      mktime(&ts);
-      strftime(str, sizeof(str), format, &ts);
+      ltime = date_to_ltime(date);
+      pts = localtime(&ltime);
+      strftime(str, sizeof(str), format, pts);
    } else {
       if (getcfg_cond(lbs->name, condition, "Time format", format))
          strftime(str, sizeof(str), format, localtime(&now));
@@ -10213,12 +10232,11 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 {
    char str[NAME_LENGTH], ref[256], *nowrap, sclass[80], format[256],
        file_name[MAX_PATH_LENGTH], *slist, *svalue;
-//   char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
    char display[NAME_LENGTH], attr_icon[80];
    int i, j, i_line, index, colspan;
    BOOL skip_comma;
    FILE *f;
-   struct tm ts, *pts;
+   struct tm *pts;
    time_t ltime;
 
    slist = malloc((MAX_N_ATTR + 10)*NAME_LENGTH);
@@ -10297,35 +10315,16 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          }
       }
 
-      j = build_subst_list(lbs, (char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, attrib);
+      j = build_subst_list(lbs, (char (*)[NAME_LENGTH])slist, 
+                                (char (*)[NAME_LENGTH])svalue, attrib);
+      sprintf(str, "%d", message_id);
+      add_subst_list((char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, 
+         "message id", str, &j);
+      add_subst_time(lbs, (char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, 
+         "entry time", date, &j);
 
-      /* add message id and entry time */
-      strcpy(&slist[NAME_LENGTH*j], "Message ID");
-      sprintf(&svalue[NAME_LENGTH*j++], "%d", message_id);
-
-      strcpy(&slist[NAME_LENGTH*j], "entry time");
-
-      if (!getcfg(lbs->name, "Time format", format))
-         strcpy(format, DEFAULT_TIME_FORMAT);
-
-      memset(&ts, 0, sizeof(ts));
-
-      for (i = 0; i < 12; i++)
-         if (strncmp(date + 4, mname[i], 3) == 0)
-            break;
-      ts.tm_mon = i;
-
-      ts.tm_mday = atoi(date + 8);
-      ts.tm_hour = atoi(date + 11);
-      ts.tm_min = atoi(date + 14);
-      ts.tm_sec = atoi(date + 17);
-      ts.tm_year = atoi(date + 20) - 1900;
-      ts.tm_isdst = -1;         /* let mktime compute DST */
-
-      mktime(&ts);
-      strftime(&svalue[NAME_LENGTH*j++], sizeof(str), format, &ts);
-
-      strsubst(display, (char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, j);
+      strsubst(display, (char (*)[NAME_LENGTH])slist, 
+                        (char (*)[NAME_LENGTH])svalue, j);
 
       rsprintf("<a href=\"%s\">", ref);
       rsputs2(display);
@@ -10400,22 +10399,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             if (!getcfg(lbs->name, "Time format", format))
                strcpy(format, DEFAULT_TIME_FORMAT);
 
-            memset(&ts, 0, sizeof(ts));
-
-            for (i = 0; i < 12; i++)
-               if (strncmp(date + 4, mname[i], 3) == 0)
-                  break;
-            ts.tm_mon = i;
-
-            ts.tm_mday = atoi(date + 8);
-            ts.tm_hour = atoi(date + 11);
-            ts.tm_min = atoi(date + 14);
-            ts.tm_sec = atoi(date + 17);
-            ts.tm_year = atoi(date + 20) - 1900;
-            ts.tm_isdst = -1;   /* let mktime compute DST */
-
-            mktime(&ts);
-            strftime(str, sizeof(str), format, &ts);
+            ltime = date_to_ltime(date);
+            pts = localtime(&ltime);
+            strftime(str, sizeof(str), format, pts);
 
             if (strieq(mode, "Threaded")) {
                if (skip_comma) {
@@ -11509,7 +11495,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH],
        list[10000], *text, *text1, *text2, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
-       str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH], mode[80],
+       str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH], mode[80], mid[80],
        menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH];
    char *p, *pt, *pt1, *pt2;
    BOOL show_attachments, threaded, csv, mode_commands, expand, filtering, disp_filter;
@@ -11858,6 +11844,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                /* if value starts with '$', substitute it */
                if (str[0] == '$') {
                   j = build_subst_list(lbs, slist, svalue, attrib);
+                  sprintf(mid, "%d", message_id);                    
+                  add_subst_list(slist, svalue, "message id", mid, &j);
+                  add_subst_time(lbs, slist, svalue, "entry time", date, &j);
+
                   strsubst(str, slist, svalue, j);
                   setparam(attr_list[i], str);
                }
@@ -12639,6 +12629,8 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
 
    if (getcfg(lbs->name, "Use Email from", mail_from)) {
       j = build_subst_list(lbs, slist, svalue, attrib);
+      sprintf(str, "%d", message_id);
+      add_subst_list(slist, svalue, "message id", str, &j);
       strsubst(mail_from, slist, svalue, j);
       if (strncmp(mail_from, "mailto:", 7) == 0)
          strcpy(mail_from, mail_from + 7);
@@ -12720,6 +12712,8 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
    /* compose subject from attributes */
    if (getcfg(lbs->name, "Use Email Subject", subject)) {
       j = build_subst_list(lbs, slist, svalue, attrib);
+      sprintf(str, "%d", message_id);
+      add_subst_list(slist, svalue, "message id", str, &j);
       strsubst(subject, slist, svalue, j);
    } else {
       if (old_mail)
@@ -12818,7 +12812,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
 {
    int i;
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
-   char shell_cmd[1000];
+   char shell_cmd[1000], str[80];
 
    if (!enable_execute) {
       printf("Shell execution not enabled via -x flag.\n");
@@ -12828,11 +12822,8 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
    strlcpy(shell_cmd, sh_cmd, sizeof(shell_cmd));
 
    i = build_subst_list(lbs, slist, svalue, attrib);
-
-   /* add message id */
-   strcpy(slist[i], "Message ID");
-   sprintf(svalue[i++], "%d", message_id);
-
+   sprintf(str, "%d", message_id);
+   add_subst_list(slist, svalue, "message id", str, &i);
    strsubst(shell_cmd, slist, svalue, i);
 
    logf(lbs, "SHELL \"%s\"", shell_cmd);
@@ -13122,6 +13113,8 @@ void submit_elog(LOGBOOK * lbs)
 
    /* compile substitution list */
    n = build_subst_list(lbs, slist, svalue, attrib);
+   if (atoi(getparam("edit_id")))
+      add_subst_list(slist, svalue, "message id", getparam("edit_id"), &n);
 
    /* substitute attributes */
    for (i = 0; i < lbs->n_attr; i++) {
@@ -13258,6 +13251,9 @@ void submit_elog(LOGBOOK * lbs)
 
                for (i = 0; i < n; i++) {
                   j = build_subst_list(lbs, slist, svalue, attrib);
+                  sprintf(str, "%d", message_id);
+                  add_subst_list(slist, svalue, "message id", str, &j);
+                  add_subst_time(lbs, slist, svalue, "entry time", date, &j);
                   strsubst(mail_list[i], slist, svalue, j);
 
                   if ((int) strlen(mail_to) + (int) strlen(mail_list[i]) >= mail_to_size) {
@@ -13643,14 +13639,14 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
    char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], cmd_enc[256],
        orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
-       att[256], lattr[256];
+       att[256], lattr[256], mid[80];
    char menu_item[MAX_N_LIST][NAME_LENGTH], format[80], admin_user[80],
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], *p;
    char lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256], class_name[80], class_value[80],
        fl[8][NAME_LENGTH];
    FILE *f;
    BOOL first;
-   struct tm ts, *pts;
+   struct tm *pts;
    time_t ltime;
 
    message_id = atoi(dec_path);
@@ -13815,6 +13811,9 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
       if (getcfg(lbs->name, "Page Title", str)) {
          i = build_subst_list(lbs, slist, svalue, attrib);
+         sprintf(mid, "%d", message_id);
+         add_subst_list(slist, svalue, "message id", mid, &i);
+         add_subst_time(lbs, slist, svalue, "entry time", date, &i);
          strsubst(str, slist, svalue, i);
       } else
          strcpy(str, "ELOG");
@@ -14045,22 +14044,9 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
       if (!getcfg(lbs->name, "Time format", format))
          strcpy(format, DEFAULT_TIME_FORMAT);
 
-      memset(&ts, 0, sizeof(ts));
-
-      for (i = 0; i < 12; i++)
-         if (strncmp(date + 4, mname[i], 3) == 0)
-            break;
-      ts.tm_mon = i;
-
-      ts.tm_mday = atoi(date + 8);
-      ts.tm_hour = atoi(date + 11);
-      ts.tm_min = atoi(date + 14);
-      ts.tm_sec = atoi(date + 17);
-      ts.tm_year = atoi(date + 20) - 1900;
-      ts.tm_isdst = -1;         /* let mktime compute DST */
-
-      mktime(&ts);
-      strftime(str, sizeof(str), format, &ts);
+      ltime = date_to_ltime(date);
+      pts = localtime(&ltime);
+      strftime(str, sizeof(str), format, pts);
 
       rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;%s:&nbsp;<b>%s</b>\n", loc("Entry time"), str);
 
@@ -14729,10 +14715,9 @@ int node_contains(LBLIST pn, char *logbook)
 
 void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
 {
-   int i, index, j, expand;
-   char str[10000], format[256], date[256], ref[256], slist[MAX_N_ATTR + 10][NAME_LENGTH],
-       svalue[MAX_N_ATTR + 10][NAME_LENGTH];
-   struct tm ts;
+   int i, index, j, expand, message_id;
+   char str[10000], date[256], ref[256], slist[MAX_N_ATTR + 10][NAME_LENGTH],
+       svalue[MAX_N_ATTR + 10][NAME_LENGTH], mid[80];
 
    if (plb->n_members > 0) {
 
@@ -14809,9 +14794,9 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
             char attrib[MAX_N_ATTR][NAME_LENGTH];
 
             lb_list[index].n_attr = scan_attributes(lb_list[index].name, NULL);
-            j = el_search_message(&lb_list[index], EL_LAST, 0, FALSE);
+            message_id = el_search_message(&lb_list[index], EL_LAST, 0, FALSE);
             el_retrieve(&lb_list[index],
-                        j, date, attr_list, attrib, lb_list[index].n_attr, NULL, 0, NULL,
+                        message_id, date, attr_list, attrib, lb_list[index].n_attr, NULL, 0, NULL,
                         NULL, NULL, NULL, NULL);
             if (!getcfg(lb_list[index].name, "Last submission", str)) {
                sprintf(str, "$entry time");
@@ -14822,23 +14807,9 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
                   sprintf(str + strlen(str), " %s $author", loc("by"));
             }
             j = build_subst_list(&lb_list[index], slist, svalue, attrib);
-            strcpy(slist[j], "entry time");
-            if (!getcfg(lb_list[index].name, "Time format", format))
-               strcpy(format, DEFAULT_TIME_FORMAT);
-
-            memset(&ts, 0, sizeof(ts));
-            for (i = 0; i < 12; i++)
-               if (strncmp(date + 4, mname[i], 3) == 0)
-                  break;
-            ts.tm_mon = i;
-            ts.tm_mday = atoi(date + 8);
-            ts.tm_hour = atoi(date + 11);
-            ts.tm_min = atoi(date + 14);
-            ts.tm_sec = atoi(date + 17);
-            ts.tm_year = atoi(date + 20) - 1900;
-            ts.tm_isdst = -1;   /* let mktime compute DST */
-            mktime(&ts);
-            strftime(svalue[j++], sizeof(str), format, &ts);
+            sprintf(mid, "%d", message_id);
+            add_subst_list(slist, svalue, "message id", mid, &j);
+            add_subst_time(&lb_list[index], slist, svalue, "entry time", date, &j);
             strsubst(str, slist, svalue, j);
             rsputs(str);
          }
