@@ -115,10 +115,13 @@ ProxyRequests On
 ProxyPass /elog/ http://your.host.domain:8080/
 </pre></ul>
 <p>
-Make sure that the Apache modules mod_proxy.c and mod_alias.c are activated. The <i>Redirect</i> statement
-is necessary to automatically append a "/" to a request like
-<code><b>http://your.host.domain/elog</code></b>. Apache then works as a proxy and forwards all requests
+Make sure that the Apache modules mod_proxy.c and mod_alias.c are activated. The <i>Redirect</i>
+statement is necessary to automatically append a "/" to a request like <code><b>
+http://your.host.domain/elog</code></b>. Apache then works as a proxy and forwards all requests
 starint with <code><b>/elog</b></code> to the elogd daemon.<p>
+
+Note that the variable $remote_host cannot be used inside elogd since the remote host is always
+the proxy host (anybody knows how to fix that???).<p>
 
 <h3><hr><i>Notes for the Solaris platform</i>:</h3>
 
