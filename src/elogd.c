@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.100  2003/05/02 20:51:15  midas
+  Fixed wrong string
+
   Revision 1.99  2003/05/02 10:00:31  midas
   Added lock icon for protected logbooks
 
@@ -10963,7 +10966,7 @@ int   i, n;
       }
 
     /* show login password page */
-    sprintf(str, "ELOG %s", loc("login"));
+    sprintf(str, "ELOG %s", loc("Login"));
     show_html_header(lbs, TRUE, str);
 
     /* set focus on name field */
