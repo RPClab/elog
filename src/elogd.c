@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.506  2004/11/01 12:26:33  midas
+   Replaced 'Back' by 'List' on single entry display page
+
    Revision 1.505  2004/11/01 09:49:40  midas
    Made quick filter case insensitive
 
@@ -13632,7 +13635,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 
    /* default menu commands */
    if (menu_str[0] == 0) {
-      strcpy(menu_str, "Back, New, Edit, Delete, Reply, Find, ");
+      strcpy(menu_str, "List, New, Edit, Delete, Reply, Find, ");
 
       if (getcfg(lbs->name, "Password file", str, sizeof(str))) {
 
@@ -16770,7 +16773,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
    /* default menu commands */
    if (menu_str[0] == 0) {
-      strcpy(menu_str, "Back, New, Edit, Delete, Reply, Find, ");
+      strcpy(menu_str, "List, New, Edit, Delete, Reply, Find, ");
 
       if (getcfg(lbs->name, "Password file", str, sizeof(str))) {
          strcat(menu_str, "Config, Logout, ");
@@ -18857,15 +18860,15 @@ void interprete(char *lbook, char *path)
          return;
    }
 
-   /* check for "Back" button */
-   if (strieq(command, loc("Back"))
+   /* check for "List" button */
+   if (strieq(command, loc("List"))
        && getcfg(lbs->name, "Back to main", str, sizeof(str))
        && atoi(str) == 1) {
       redirect(lbs, "../");
       return;
    }
 
-   if (strieq(command, loc("Back"))) {
+   if (strieq(command, loc("List"))) {
       if (isparam("edit_id")) {
          /* unlock message */
          el_lock_message(lbs, atoi(getparam("edit_id")), NULL);
