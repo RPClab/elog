@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.129  2003/07/04 18:13:42  midas
+  Fixed small bug
+
   Revision 1.128  2003/07/04 18:06:44  midas
   Changed order of attrib format params
 
@@ -11039,8 +11042,8 @@ BOOL   first;
       if (getcfg(lbs->name, str, format))
         {
         n = strbreak(format, fl, 8);
-        if (n > 2)
-          format_flags[i] = atoi(fl[2]);
+        if (n > 0)
+          format_flags[i] = atoi(fl[0]);
         }
       }
 
