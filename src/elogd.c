@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.301  2004/03/19 10:30:56  midas
+   Fixed bug with topgroup initialization
+
    Revision 1.300  2004/03/17 21:11:04  midas
    Removed debug print
 
@@ -17035,6 +17038,9 @@ void server_loop(int tcp_port, int daemon)
             /* invalid request, make valid */
             strcpy(net_buffer, "GET / HTTP/1.0\r\n\r\n");
          }
+
+         /* initialize topgroups */
+         setcfg_topgroup("");
 
          p = strchr(net_buffer, '/') + 1;
          logbook[0] = 0;
