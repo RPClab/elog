@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.25  2002/06/18 13:15:29  midas
+  Version 2.0.1
+
   Revision 2.24  2002/06/18 07:48:33  midas
   Fixed bug with previous submission
 
@@ -176,7 +179,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.0.0"
+#define VERSION "2.0.1"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -9249,6 +9252,10 @@ usage:
 
     n++;
     }
+
+  /* get port from configuration file */
+  if (getcfg("global", "Port", str))
+    tcp_port = atoi(str);
 
   server_loop(tcp_port, daemon);
 
