@@ -1,6 +1,6 @@
 #
 # Dutch messages by djek@xs4all.nl
-# $Revision$ 
+# $Revision$
 # 01-03-2003
 #
 
@@ -174,7 +174,7 @@ name may not contain blanks = Naam mag geen spaties bevatten
 
 #
 # New strings for V2.1.1
-A new ELOG user has been registered on %s = Een nieuwe gebruiker heeft zich aangemeld op %s 
+A new ELOG user has been registered on %s = Een nieuwe gebruiker heeft zich aangemeld op %s
 Email = E-mail
 User "%s" registered on logbook "%s" = Gebruiker "%s" geregistreerd in logboek "%s"
 User [%s] has been deleted = Gebruiker [%s] is gewist
@@ -278,4 +278,14 @@ Your ELOG account has been activated = Het Elog account is geactiveerd
 Activate = Activeren
 Maximum number of attachments reached = Maximaal aantal bijlagen bereikt
 Invalid user name <i>"%s"</i> = Ongeldige gebruikersnaam <i>"%s"</i>
+
+# New string for V2.3.7
+User = Gebruiker
+on = op
+computer = Computer
+Entry is currently edited by = Bericht wordt momenteel gewijzigd door
+
+#
+# New string for V2.3.9
+recipients = Ontvanger
 
