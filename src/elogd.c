@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.135  2003/07/15 12:27:50  midas
+  Added resource directory in front of logging file
+
   Revision 1.134  2003/07/15 12:15:21  midas
   Added extended logging facilities
 
@@ -3952,14 +3955,17 @@ FILE*   f;
 time_t  now;
 char    buf[256];
 
-  if (!getcfg(lbs->name, "logfile", fname))
+  if (!getcfg(lbs->name, "logfile", str))
     return;
+
+  strlcpy(fname, resource_dir, sizeof(fname));
+  strlcat(fname, str, sizeof(fname));
 
   va_start(argptr, format);
   vsprintf(str, (char *) format, argptr);
   va_end(argptr);
 
-  f=fopen(fname,"a");
+  f = fopen(fname, "a");
   if (!f)
     return;
 
