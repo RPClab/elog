@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.347  2004/06/17 15:16:34  midas
+   Fixed bug with password recovery
+
    Revision 1.346  2004/06/16 12:27:00  midas
    Submit (unlock) unmodified entry upon unload
 
@@ -5973,20 +5976,22 @@ void show_change_pwd_page(LOGBOOK * lbs)
             wrong_pwd = 2;
       }
 
-      /* replace password */
-      if (!wrong_pwd)
-         change_pwd(lbs, user, new_pwd);
+      if (new_pwd[0]) {
+         /* replace password */
+         if (!wrong_pwd)
+            change_pwd(lbs, user, new_pwd);
 
-      if (!wrong_pwd && strcmp(user, getparam("unm")) == 0) {
-         set_login_cookies(lbs, user, new_pwd);
-         return;
-      }
+         if (!wrong_pwd && strcmp(user, getparam("unm")) == 0) {
+            set_login_cookies(lbs, user, new_pwd);
+            return;
+         }
 
-      if (!wrong_pwd) {
-         /* redirect back to configuration page */
-         sprintf(str, "?cmd=%s&cfg_user=%s", loc("Config"), getparam("config"));
-         redirect(lbs, str);
-         return;
+         if (!wrong_pwd) {
+            /* redirect back to configuration page */
+            sprintf(str, "?cmd=%s&cfg_user=%s", loc("Config"), getparam("config"));
+            redirect(lbs, str);
+            return;
+         }
       }
    }
 
@@ -6008,9 +6013,10 @@ void show_change_pwd_page(LOGBOOK * lbs)
 
    rsprintf("%s \"%s\"</td></tr>\n", loc("Change password for user"), user);
 
-   if (is_admin_user(lbs->name, getparam("unm"))) {
-      if (isparam("old_pwd"))
-         rsprintf("<input type=hidden name=oldpwd value=\"%s\"", getparam("old_pwd"));
+   /* do not ask for old pwasword if admin changes other user's password */
+   if (!is_admin_user(lbs->name, getparam("unm")) || stricmp(getparam("unm"), user) == 0) {
+      if (isparam("oldpwd"))
+         rsprintf("<input type=hidden name=oldpwd value=\"%s\"", getparam("oldpwd"));
       else {
          rsprintf("<tr><td align=right class=\"dlgform\">%s:\n", loc("Old password"));
          rsprintf("<td align=left class=\"dlgform\"><input type=password name=oldpwd>\n");
@@ -8488,7 +8494,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
                }
             }
 
-            sprintf(redir, "?cmd=%s&old_pwd=%s", loc("Change password"), pwd);
+            sprintf(redir, "?cmd=%s&oldpwd=%s", loc("Change password"), pwd);
             url_encode(redir, sizeof(redir));
             sprintf(str, "?redir=%s&uname=%s&upassword=%s", redir, login_name, pwd);
             strlcat(url, str, sizeof(url));
@@ -8523,11 +8529,13 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
                show_standard_header(lbs, FALSE, loc("ELOG password recovery"), "");
 
                rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
-               rsprintf("<tr><td colspan=2 class=\"dlgtitle\">\n");
+               rsprintf("<tr><td class=\"dlgtitle\">\n");
+               rsprintf(loc("Email notification"));
+               rsprintf("</td></tr>\n");
 
+               rsprintf("<tr><td align=center class=\"dlgform\">\n");
                rsprintf(loc("A new password for user <i>\"%s\"</i> has been sent to %s"),
                         full_name, user_email);
-
                rsprintf("</td></tr></table>\n");
                show_bottom_text(lbs);
                rsprintf("</body></html>\n");
