@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.24  2002/05/31 13:24:18  midas
+  Use Referer for mail notification URL
+
   Revision 1.23  2002/05/31 12:51:58  midas
   First version with truely relative paths
 
@@ -152,14 +155,14 @@ int  keep_alive;
 char header_buffer[1000];
 int  return_length;
 char host_name[256];
-char elogd_url[256];
-char elogd_full_url[256];
+char referer[256];
 char logbook[256];
 char logbook_enc[256];
 char data_dir[256];
 char cfg_file[256];
 char cfg_dir[256];
 char tcp_hostname[256];
+int  tcp_port = 80;
 
 #define MAX_GROUPS       32
 #define MAX_PARAM       100
@@ -5463,8 +5466,23 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
           else
             strcpy(subject, "New ELOG entry");
 
-          sprintf(mail_text+strlen(mail_text), "\r\n%s URL         : %s%s/%s\r\n", 
-                  loc("Logbook"), elogd_full_url, logbook_enc, tag);
+          /* try to get URL from referer */
+
+          if (!getcfg("global", "URL", str))
+            {
+            if (referer[0])
+              strcpy(str, referer);
+            else
+              {
+              if (tcp_port == 80)
+                sprintf(str, "http://%s/", host_name);
+              else
+                sprintf(str, "http://%s:%d/", host_name, tcp_port);
+              }
+            }
+
+         sprintf(mail_text+strlen(mail_text), "\r\n%s URL         : %s%s\r\n", 
+                  loc("Logbook"), str, tag);
 
           if (getcfg(logbook, "Email message body", str) &&
               atoi(str) == 1)
@@ -7733,6 +7751,22 @@ struct timeval       timeout;
           } while (*p && *p == ';');
         }
 
+      /* extract referer */
+      referer[0] = 0;
+      if ((p = strstr(net_buffer, "Referer:")) != NULL)
+        {
+        p += 9;
+        while (*p && *p == ' ')
+          p++;
+        strncpy(referer, p, sizeof(referer));
+        if (strchr(referer, '\r'))
+          *strchr(referer, '\r') = 0;
+        if (strchr(referer, '?'))
+          *strchr(referer, '?') = 0;
+        for (p=referer+strlen(referer)-1 ; p>referer && *p != '/' ; p--)
+          *p = 0;
+        }
+
       memset(return_buffer, 0, sizeof(return_buffer));
       strlen_retbuf = 0;
 
@@ -7834,26 +7868,6 @@ struct timeval       timeout;
         {
         free(cfgbuffer);
         cfgbuffer = NULL;
-        }
-
-      /* set my own URL */
-      getcfg("global", "URL", str);
-      if (str[0])
-        {
-        if (str[strlen(str)-1] != '/')
-          strcat(str, "/");
-        strcpy(elogd_url, str);
-        strcpy(elogd_full_url, str);
-        }
-      else
-        {
-        /* use relative pathnames */
-        sprintf(elogd_url, "/");
-
-        if (tcp_port == 80)
-          sprintf(elogd_full_url, "http://%s/", host_name);
-        else
-          sprintf(elogd_full_url, "http://%s:%d/", host_name, tcp_port);
         }
 
       /*---- check "hosts deny" ----*/
@@ -8264,7 +8278,7 @@ char *cfgbuffer, str[256], *p;
 int main(int argc, char *argv[])
 {
 int i, fh;
-int tcp_port = 80, daemon = FALSE;
+int daemon = FALSE;
 char read_pwd[80], write_pwd[80], admin_pwd[80], str[80];
 time_t now;
 struct tm *tms;
