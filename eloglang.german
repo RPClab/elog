@@ -245,4 +245,6 @@ Entry deleted remotely = Entfernter Eintrag gelöscht
 All entries identical = Alle Einträge identisch
 Invalid mirror_id or entry_date = Falsche mirror_id oder entry_date
 Synchronize all logbooks = Alle Logbücher synchronisieren
-
+Display comma-separated values (CSV) = Komma-getrennte Werte anzeigen (CSV)
+Calendar = Kalender
+Remote entry received = Entfernter Eintrag empfangen

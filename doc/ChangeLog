@@ -5,6 +5,7 @@ Version 2.5.1, released February xxth, 2004
 - Added CSV output
 - During synchronization, display link to received entries
 - Implemented calendar
+- Added entry counter
 
 Version 2.5.0, released January 28th, 2004
 ==========================================

@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.221  2004/01/30 09:50:51  midas
+   Added entry counter
+
    Revision 1.220  2004/01/30 09:25:17  midas
    Finished calendar in find form
 
@@ -10526,6 +10529,8 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, int n_page, BOOL to
          }
       }
 
+      rsprintf("&nbsp;<b>%d Entries</b>", n_msg);
+
       rsprintf("</td>\n");
    }
 
@@ -10707,8 +10712,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 {
    int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line;
    int current_year, current_month, current_day, printable, n_logbook,
-       n_display, reverse, n_attr_disp, n_msg, search_all, message_id, n_page, i_start,
-       i_stop, in_reply_to_id;
+       n_display, reverse, n_attr_disp, total_n_msg, n_msg, search_all, message_id, 
+       n_page, i_start, i_stop, in_reply_to_id;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH],
        list[10000], *text, *text1, *text2, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256];
@@ -11212,6 +11217,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
    /*---- compact messasges ----*/
 
+   total_n_msg = n_msg;
+
    for (i = j = 0; i < n_msg; i++)
       if (msg_list[i].lbs)
          memcpy(&msg_list[j++], &msg_list[i], sizeof(MSG_LIST));
@@ -11416,7 +11423,6 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
             fread(buf, 1, size, f);
             buf[size] = 0;
             fclose(f);
-
 
             rsputs(buf);
 
