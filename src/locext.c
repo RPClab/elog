@@ -7,6 +7,9 @@
                 them into eloglang.xxxx
 
   $Log$
+  Revision 1.5  2004/01/26 14:52:17  midas
+  Changed indentation
+
   Revision 1.4  2004/01/23 07:08:44  midas
   Adjusted comments
 
@@ -51,7 +54,7 @@ void read_buf(char *filename, char **buf)
    size = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
 
-   *buf = malloc(size+1);
+   *buf = malloc(size + 1);
    assert(*buf);
 
    i = read(fh, *buf, size);
@@ -120,9 +123,10 @@ int scan_file(char *infile, char *outfile)
          }
 
          if (first && !strstr(bufout, "please translate following")) {
-            sprintf(line, "\r\n#\r\n#---- please translate following items and then remove this comment ----#\r\n#\r\n");
+            sprintf(line,
+                    "\r\n#\r\n#---- please translate following items and then remove this comment ----#\r\n#\r\n");
             write(fho, line, strlen(line));
-         
+
             first = FALSE;
          }
 
@@ -162,15 +166,15 @@ int scan_file(char *infile, char *outfile)
       if (strlen(line) <= 1)
          continue;
 
-      while (line[strlen(line)-1] == ' ')
-         line[strlen(line)-1] = 0;
+      while (line[strlen(line) - 1] == ' ')
+         line[strlen(line) - 1] = 0;
 
       /* change " to \" */
-      for (i=0 ; i<(int)strlen(line) ; i++)
+      for (i = 0; i < (int) strlen(line); i++)
          if (line[i] == '"') {
-            strcpy(str, line+i);
+            strcpy(str, line + i);
             line[i++] = '\\';
-            strcpy(line+i, str);
+            strcpy(line + i, str);
          }
 
       sprintf(str, "loc(\"%s\")", line);
