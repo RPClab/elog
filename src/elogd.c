@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.570  2005/02/22 08:55:20  ritt
+   Fixed bug with $attachments substitution on shell command
+
    Revision 1.569  2005/02/22 08:15:19  ritt
    Applied patch from Emiliano Gabrielli to use chkext()
 
@@ -16531,6 +16534,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
       /* substitute attachments */
       p = stristr(shell_cmd, "$attachments");
       strlcpy(tail, p + strlen("$attachments"), sizeof(tail));
+      *p = 0;
       for (i=0 ; i<MAX_ATTACHMENTS ; i++)
          if (att_file[i][0] && 
               strlen(shell_cmd)+strlen(lbs->data_dir)+strlen(att_file[i]) < sizeof(shell_cmd)+1) {
