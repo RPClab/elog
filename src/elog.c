@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.4  2003/06/04 14:26:59  midas
+  elog utility can read text from stdin
+
   Revision 1.3  2003/06/03 13:18:00  midas
   Fixed bug in base64_encode
 
@@ -427,6 +430,7 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
   text[0] = textfile[0] = uname[0] = upwd[0] = 0;
   host_name[0] = logbook[0] = password[0] = subdir[0] = n_att = n_attr = reply = 0;
   port = 80;
+
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     {
     attachment[i][0] = 0;
@@ -486,7 +490,8 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
           {
   usage:
           printf("\nusage: elog\n");
-          printf("           -h <hostname> [-p port] [-s subdir] Name of host where elogd is running\n");
+          printf("           -h <hostname> [-p port] [-s subdir]\n");
+          printf("                                    Location where elogd is running\n");
           printf("           -l logbook/experiment    Name of logbook or experiment\n");
           printf("           [-v]                     for verbose output\n");
           printf("           [-w password]            write password defined on server\n");
@@ -496,9 +501,9 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
           printf("           [-r <id>]                Reply to existing message\n");
           printf("           -m <textfile>] | <text>\n");
           printf("\nArguments with blanks must be enclosed in quotes\n");
-          printf("The elog message can either be submitted on the command line\n");
-          printf("or in a file with the -m flag. Multiple attributes and attachments\n");
-          printf("can be supplied\n");
+          printf("The elog message can either be submitted on the command line, piped in like\n");
+          printf("\"cat text | elog -h ... -l ... -a ...\" or in a file with the -m flag.\n");
+          printf("Multiple attributes and attachments can be supplied\n");
           return 1;
           }
         }
@@ -525,13 +530,14 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
     return 1;
     }
 
+  fh = -1;
+
   if (text[0] == 0 && textfile[0] == 0)
     {
-    printf("Please specify message text either with the \"-m\" flag or directly.\n");
-    return 1;
+    /* use stdin */
+    fh = 0;
+    size = sizeof(text);
     }
-
-  /*---- open text file ----*/
 
   if (textfile[0])
     {
@@ -551,15 +557,33 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
       return 1;
       }
 
-    memset(text, 0, sizeof(text));
     i = read(fh, text, size);
+
     if (i < size)
       {
-      printf("Cannot fully read message file \"%s\".\n", textfile);
+      printf("Cannot fully read message from file %s.\n", textfile);
       return 1;
       }
 
     close(fh);
+    }
+
+  if (text[0] == 0 && textfile[0] == 0)
+    {
+    /* read from stdin */
+
+    n = 0;
+
+    do
+      {
+      i = getchar();
+
+      text[n++] = i;
+
+      } while (i != EOF);
+
+    if (n>0)
+      text[n-1] = 0;
     }
 
   /*---- open attachment file ----*/
@@ -580,13 +604,6 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
     lseek(fh, 0, SEEK_SET);
 
     buffer[i] = malloc(att_size[i]+1);
-    /*
-    if (buffer[i] == NULL || att_size[i] > 500*1024)
-      {
-      printf("Attachment file \"%s\" is too long (500k max).\n", attachment[i]);
-      return 1;
-      }
-    */
 
     n = read(fh, buffer[i], att_size[i]);
     if (n < att_size[i])
