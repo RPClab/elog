@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.293  2004/03/13 21:07:58  midas
+   Implemented and between conditions
+
    Revision 1.292  2004/03/13 15:00:05  midas
    Implemented OR's of several conditions
 
@@ -760,7 +763,7 @@ void show_error(char *error);
 BOOL enum_user_line(LOGBOOK * lbs, int n, char *user);
 int get_user_line(char *logbook_name, char *user, char *password, char *full_name,
                   char *email, char *email_notify);
-int strbreak(char *str, char list[][NAME_LENGTH], int size);
+int strbreak(char *str, char list[][NAME_LENGTH], int size, char *brk);
 int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH],
                   char *sh_cmd);
 BOOL isparam(char *param);
@@ -1507,7 +1510,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    logf(lbs, str);
 
    /* break recipients into list */
-   n = strbreak(to, list, 1024);
+   n = strbreak(to, list, 1024, ",");
 
    for (i = 0; i < n; i++) {
       snprintf(str, strsize - 1, "RCPT TO: <%s>\r\n", list[i]);
@@ -1996,8 +1999,9 @@ void set_condition(char *c)
 
 BOOL match_param(char *str, char *param)
 {
-   int ncl, npl, i, j;
-   char *p, pcond[256], clist[10][NAME_LENGTH], plist[10][NAME_LENGTH];
+   int ncl, npl, nand, i, j, k;
+   char *p, pcond[256], clist[10][NAME_LENGTH], plist[10][NAME_LENGTH],
+      alist[10][NAME_LENGTH];
 
    if (!_condition[0] || str[0] != '{')
       return strieq(str, param);
@@ -2014,8 +2018,8 @@ BOOL match_param(char *str, char *param)
    if (strchr(pcond, '{'))
       *strchr(pcond, '{') = ' ';
 
-   npl = strbreak(pcond, plist, 10);
-   ncl = strbreak(_condition, clist, 10);
+   npl = strbreak(pcond, plist, 10, ",");
+   ncl = strbreak(_condition, clist, 10, ",");
 
    for (i=0 ; i<ncl ; i++)
       for (j=0 ; j<npl ; j++)
@@ -2023,6 +2027,23 @@ BOOL match_param(char *str, char *param)
             /* condition matches */
             return strieq(p, param);
          }
+
+   /* check and'ed conditions */
+   for (i=0 ; i<npl ; i++)
+      if (strchr(plist[i], '&')) {
+         nand = strbreak(plist[i], alist, 10, "&");
+         for (j=0 ; j<nand ; j++) {
+            for (k=0 ; k<ncl ; k++)
+               if (strieq(clist[k], alist[j]))
+                  break;
+
+            if (k == ncl)
+               return FALSE;
+         }
+
+         if (j == nand)
+            return strieq(p, param);
+      }
 
    return 0;
 }
@@ -4170,13 +4191,13 @@ This routine corrects that. */
                reply_to, att_file, encoding, locked_by);
 
    /* go through in_reply_to list */
-   n = strbreak(in_reply_to, list, MAX_N_ATTR);
+   n = strbreak(in_reply_to, list, MAX_N_ATTR, ",");
    for (i = 0; i < n; i++) {
       size = sizeof(text);
       el_retrieve(lbs, atoi(list[i]), date, attr_list, attrib, lbs->n_attr,
                   text, &size, in_reply_to, reply_to, att_file, encoding, locked_by);
 
-      n1 = strbreak(reply_to, list1, MAX_N_ATTR);
+      n1 = strbreak(reply_to, list1, MAX_N_ATTR, ",");
       reply_to[0] = 0;
       for (i1 = 0; i1 < n1; i1++) {
          /* replace old ID by new ID */
@@ -4197,13 +4218,13 @@ This routine corrects that. */
                reply_to, att_file, encoding, locked_by);
 
    /* go through reply_to list */
-   n = strbreak(reply_to, list, MAX_N_ATTR);
+   n = strbreak(reply_to, list, MAX_N_ATTR, ",");
    for (i = 0; i < n; i++) {
       size = sizeof(text);
       el_retrieve(lbs, atoi(list[i]), date, attr_list, attrib, lbs->n_attr,
                   text, &size, in_reply_to, reply_to, att_file, encoding, locked_by);
 
-      n1 = strbreak(in_reply_to, list1, MAX_N_ATTR);
+      n1 = strbreak(in_reply_to, list1, MAX_N_ATTR, ",");
       in_reply_to[0] = 0;
       for (i1 = 0; i1 < n1; i1++) {
          /* replace old ID by new ID */
@@ -4255,7 +4276,7 @@ int el_move_message_thread(LOGBOOK * lbs, int message_id)
    /* move all replies recursively */
    if (getcfg(lbs->name, "Resubmit replies", str) && atoi(str) == 1) {
       if (reply_to[0]) {
-         n = strbreak(reply_to, list, MAX_N_ATTR);
+         n = strbreak(reply_to, list, MAX_N_ATTR, ",");
          for (i = 0; i < n; i++)
             el_move_message_thread(lbs, atoi(list[i]));
       }
@@ -4934,11 +4955,11 @@ void redirect(LOGBOOK * lbs, char *rel_path)
 
 /*------------------------------------------------------------------*/
 
-int strbreak(char *str, char list[][NAME_LENGTH], int size)
+int strbreak(char *str, char list[][NAME_LENGTH], int size, char *brk)
 /* break comma-separated list into char array, stripping leading
 and trailing blanks */
 {
-   int i;
+   int i, j;
    char *p;
 
    memset(list, 0, size * NAME_LENGTH);
@@ -4959,16 +4980,17 @@ and trailing blanks */
             *strchr(list[i], '"') = 0;
 
          p += strlen(list[i]) + 1;
-         while (*p == ' ' || *p == ',')
+         while (*p == ' ' || strchr(brk, *p))
             p++;
       } else {
          strlcpy(list[i], p, NAME_LENGTH);
 
-         if (strchr(list[i], ','))
-            *strchr(list[i], ',') = 0;
+         for (j=0 ; j<(int)strlen(list[i]) ; j++)
+            if (strchr(brk, list[i][j]))
+               list[i][j] = 0;
 
          p += strlen(list[i]);
-         while (*p == ' ' || *p == ',')
+         while (*p == ' ' || (*p && strchr(brk, *p)))
             p++;
       }
 
@@ -5001,37 +5023,37 @@ and attr_flags arrays */
 
       /* get attribute list */
       memset(attr_list, 0, sizeof(attr_list));
-      n = strbreak(list, attr_list, MAX_N_ATTR);
+      n = strbreak(list, attr_list, MAX_N_ATTR, ",");
 
       /* get options lists for attributes */
       memset(attr_options, 0, sizeof(attr_options));
       for (i = 0; i < n; i++) {
          sprintf(str, "Options %s", attr_list[i]);
          if (getcfg(logbook, str, list))
-            strbreak(list, attr_options[i], MAX_N_LIST);
+            strbreak(list, attr_options[i], MAX_N_LIST, ",");
 
          sprintf(str, "MOptions %s", attr_list[i]);
          if (getcfg(logbook, str, list)) {
-            strbreak(list, attr_options[i], MAX_N_LIST);
+            strbreak(list, attr_options[i], MAX_N_LIST, ",");
             attr_flags[i] |= AF_MULTI;
          }
 
          sprintf(str, "ROptions %s", attr_list[i]);
          if (getcfg(logbook, str, list)) {
-            strbreak(list, attr_options[i], MAX_N_LIST);
+            strbreak(list, attr_options[i], MAX_N_LIST, ",");
             attr_flags[i] |= AF_RADIO;
          }
 
          sprintf(str, "IOptions %s", attr_list[i]);
          if (getcfg(logbook, str, list)) {
-            strbreak(list, attr_options[i], MAX_N_LIST);
+            strbreak(list, attr_options[i], MAX_N_LIST, ",");
             attr_flags[i] |= AF_ICON;
          }
       }
 
       /* check if attribute required */
       getcfg(logbook, "Required Attributes", list);
-      m = strbreak(list, tmp_list, MAX_N_ATTR);
+      m = strbreak(list, tmp_list, MAX_N_ATTR, ",");
       for (i = 0; i < m; i++) {
          for (j = 0; j < n; j++)
             if (strieq(attr_list[j], tmp_list[i]))
@@ -5040,7 +5062,7 @@ and attr_flags arrays */
 
       /* check if locked attribute */
       getcfg(logbook, "Locked Attributes", list);
-      m = strbreak(list, tmp_list, MAX_N_ATTR);
+      m = strbreak(list, tmp_list, MAX_N_ATTR, ",");
       for (i = 0; i < m; i++) {
          for (j = 0; j < n; j++)
             if (strieq(attr_list[j], tmp_list[i]))
@@ -5049,7 +5071,7 @@ and attr_flags arrays */
 
       /* check if fixed attribute for Edit */
       getcfg(logbook, "Fixed Attributes Edit", list);
-      m = strbreak(list, tmp_list, MAX_N_ATTR);
+      m = strbreak(list, tmp_list, MAX_N_ATTR, ",");
       for (i = 0; i < m; i++) {
          for (j = 0; j < n; j++)
             if (strieq(attr_list[j], tmp_list[i]))
@@ -5058,7 +5080,7 @@ and attr_flags arrays */
 
       /* check if fixed attribute for Reply */
       getcfg(logbook, "Fixed Attributes Reply", list);
-      m = strbreak(list, tmp_list, MAX_N_ATTR);
+      m = strbreak(list, tmp_list, MAX_N_ATTR, ",");
       for (i = 0; i < m; i++) {
          for (j = 0; j < n; j++)
             if (strieq(attr_list[j], tmp_list[i]))
@@ -5067,7 +5089,7 @@ and attr_flags arrays */
 
       /* check for extendable options */
       getcfg(logbook, "Extendable Options", list);
-      m = strbreak(list, tmp_list, MAX_N_ATTR);
+      m = strbreak(list, tmp_list, MAX_N_ATTR, ",");
       for (i = 0; i < m; i++) {
          for (j = 0; j < n; j++)
             if (strieq(attr_list[j], tmp_list[i]))
@@ -5280,7 +5302,7 @@ LBLIST get_logbook_hierarchy(void)
          else
             strlcpy(root->member[n]->name, grpname + 10, 256);
 
-         m = strbreak(grpmembers, grplist, MAX_N_LIST);
+         m = strbreak(grpmembers, grplist, MAX_N_LIST, ",");
          root->member[n]->n_members = m;
 
          root->member[n]->member = calloc(sizeof(void *), m);
@@ -6453,7 +6475,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* remove attributes for replies */
    if (breply) {
       getcfg(lbs->name, "Remove on reply", str);
-      n = strbreak(str, list, MAX_N_ATTR);
+      n = strbreak(str, list, MAX_N_ATTR, ",");
       for (i = 0; i < n; i++)
          for (j = 0; j < lbs->n_attr; j++) {
             if (strieq(attr_list[j], list[i]))
@@ -6679,7 +6701,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       sprintf(str, "Format %s", attr_list[index]);
       if (getcfg(lbs->name, str, format)) {
-         n = strbreak(format, fl, 8);
+         n = strbreak(format, fl, 8, ",");
          if (n > 0)
             format_flags = atoi(fl[0]);
          if (n > 1)
@@ -9774,7 +9796,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
       return;
    }
 
-   nserver = strbreak(str, list, MAX_N_LIST);
+   nserver = strbreak(str, list, MAX_N_LIST, ",");
 
    for (index = 0; index < nserver; index++) {
 
@@ -10995,7 +11017,7 @@ BOOL is_user_allowed(LOGBOOK * lbs, char *command)
    sprintf(str, "Deny %s", command);
    if (getcfg(lbs->name, str, users)) {
       /* check if current user in list */
-      n = strbreak(users, list, MAX_N_LIST);
+      n = strbreak(users, list, MAX_N_LIST, ",");
       for (i = 0; i < n; i++)
          if (strieq(list[i], getparam("unm")))
             break;
@@ -11020,7 +11042,7 @@ BOOL is_user_allowed(LOGBOOK * lbs, char *command)
       return TRUE;
 
    /* check if current user in list */
-   n = strbreak(users, list, MAX_N_LIST);
+   n = strbreak(users, list, MAX_N_LIST, ",");
    for (i = 0; i < n; i++)
       if (strieq(list[i], getparam("unm")))
          return TRUE;
@@ -11087,7 +11109,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
       strcat(menu_str, "Help, ");
    } else {
       /* check for admin command */
-      n = strbreak(menu_str, menu_item, MAX_N_LIST);
+      n = strbreak(menu_str, menu_item, MAX_N_LIST, ",");
       menu_str[0] = 0;
       admin_user[0] = 0;
       getcfg(lbs->name, "Admin user", admin_user);
@@ -11164,13 +11186,13 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
    }
    /* check if command is present in the menu list */
    else if (command[0]) {
-      n = strbreak(menu_str, menu_item, MAX_N_LIST);
+      n = strbreak(menu_str, menu_item, MAX_N_LIST, ",");
       for (i = 0; i < n; i++)
          if (strieq(command, menu_item[i]) || strieq(command, loc(menu_item[i])))
             break;
 
       if (i == n) {
-         n = strbreak(other_str, menu_item, MAX_N_LIST);
+         n = strbreak(other_str, menu_item, MAX_N_LIST, ",");
          for (i = 0; i < n; i++)
             if (strieq(command, loc(menu_item[i])))
                break;
@@ -11282,7 +11304,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
 
    if (getcfg(lbs->name, "Quick filter", str)) {
       rsprintf("<td class=\"menu2b\">\n");
-      n = strbreak(str, list, MAX_N_LIST);
+      n = strbreak(str, list, MAX_N_LIST, ",");
 
       for (index = 0; index < n; index++) {
          if (strieq(list[index], loc("Date"))) {
@@ -11517,7 +11539,7 @@ void show_select_navigation(LOGBOOK * lbs)
       rsprintf("<select name=destc>\n");
 
       if (getcfg(lbs->name, "Copy to", str)) {
-         n_log = strbreak(str, lbk_list, MAX_N_LIST);
+         n_log = strbreak(str, lbk_list, MAX_N_LIST, ",");
 
          for (i = 0; i < n_log; i++)
             rsprintf("<option value=\"%s\">%s\n", lbk_list[i], lbk_list[i]);
@@ -11543,7 +11565,7 @@ void show_select_navigation(LOGBOOK * lbs)
       rsprintf("<select name=destm>\n");
 
       if (getcfg(lbs->name, "Move to", str)) {
-         n_log = strbreak(str, lbk_list, MAX_N_LIST);
+         n_log = strbreak(str, lbk_list, MAX_N_LIST, ",");
 
          for (i = 0; i < n_log; i++)
             rsprintf("<option value=\"%s\">%s\n", lbk_list[i], lbk_list[i]);
@@ -12317,7 +12339,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
             strcat(menu_str, "Last x, Help");
          }
 
-         n = strbreak(menu_str, menu_item, MAX_N_LIST);
+         n = strbreak(menu_str, menu_item, MAX_N_LIST, ",");
 
          for (i = 0; i < n; i++) {
             if (is_user_allowed(lbs, menu_item[i])) {
@@ -12561,7 +12583,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          getcfg(lbs->name, "Display search", list);     /* old 2.3.9  format */
 
       if (list[0]) {
-         n_attr_disp = strbreak(list, disp_attr, MAX_N_ATTR);
+         n_attr_disp = strbreak(list, disp_attr, MAX_N_ATTR, ",");
          if (search_all) {
             for (i = n_attr_disp - 1; i >= 0; i--)
                strcpy(disp_attr[i + 1], disp_attr[i]);
@@ -12980,7 +13002,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
          else
             strcat(mail_param, "&");
 
-         n = strbreak(mail_to, list, MAX_PARAM);
+         n = strbreak(mail_to, list, MAX_PARAM, ",");
 
          if (n < 10) {
             for (i = 0; i < n && i < MAX_PARAM; i++) {
@@ -13439,7 +13461,7 @@ void submit_elog(LOGBOOK * lbs)
                sprintf(str, "Email ALL");
 
             if (getcfg(lbs->name, str, list)) {
-               n = strbreak(list, mail_list, MAX_N_LIST);
+               n = strbreak(list, mail_list, MAX_N_LIST, ",");
 
                if (verbose)
                   printf("\n%s to %s\n\n", str, list);
@@ -13740,7 +13762,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
       n_done++;
 
       /* submit all replies */
-      n_reply = strbreak(reply_to, list, MAX_N_ATTR);
+      n_reply = strbreak(reply_to, list, MAX_N_ATTR, ",");
       for (i = 0; i < n_reply; i++) {
          copy_to(lbs, atoi(list[i]), dest_logbook, move, message_id);
       }
@@ -13865,7 +13887,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
       strcat(menu_str, "Help");
    } else {
       /* check for admin command */
-      n = strbreak(menu_str, menu_item, MAX_N_LIST);
+      n = strbreak(menu_str, menu_item, MAX_N_LIST, ",");
       menu_str[0] = 0;
       admin_user[0] = 0;
       getcfg(lbs->name, "Admin user", admin_user);
@@ -14032,7 +14054,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
    rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
    rsprintf("<tr><td class=\"menu1\">\n");
 
-   n = strbreak(menu_str, menu_item, MAX_N_LIST);
+   n = strbreak(menu_str, menu_item, MAX_N_LIST, ",");
 
    for (i = 0; i < n; i++) {
       /* display menu item */
@@ -14044,7 +14066,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
       if (strieq(cmd, "Copy to") || strieq(cmd, "Move to")) {
          if (getcfg(lbs->name, cmd, str)) {
-            n_log = strbreak(str, lbk_list, MAX_N_LIST);
+            n_log = strbreak(str, lbk_list, MAX_N_LIST, ",");
 
             for (j = 0; j < n_log; j++) {
                strcpy(ref, lbk_list[j]);
@@ -14297,7 +14319,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
          format_flags[i] = 0;
          sprintf(str, "Format %s", attr_list[i]);
          if (getcfg(lbs->name, str, format)) {
-            n = strbreak(format, fl, 8);
+            n = strbreak(format, fl, 8, ",");
             if (n > 0)
                format_flags[i] = atoi(fl[0]);
          }
@@ -14308,8 +14330,8 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
          strcpy(class_value, "attribvalue");
 
          sprintf(str, "Format %s", attr_list[i]);
-         if (getcfg(lbs->name, str, format)) {
-            n = strbreak(format, fl, 8);
+         if (getcfg(lbs->name, str, format), ",") {
+            n = strbreak(format, fl, 8, ",");
             if (n > 1)
                strlcpy(class_name, fl[1], sizeof(class_name));
             if (n > 2)
@@ -14742,7 +14764,7 @@ BOOL check_login_user(LOGBOOK * lbs, char *user)
    char list[MAX_N_LIST][NAME_LENGTH];
 
    if (getcfg(lbs->name, "Login user", str) && user[0]) {
-      n = strbreak(str, list, MAX_N_LIST);
+      n = strbreak(str, list, MAX_N_LIST, ",");
       for (i = 0; i < n; i++)
          if (strcmp(user, list[i]) == 0)
             break;
@@ -16372,7 +16394,7 @@ void check_cron()
       min_flag = hour_flag = day_flag = mon_flag = wday_flag = FALSE;
 
       for (i = 0; i < 5; i++) {
-         n = strbreak(cron[i], list, 60);
+         n = strbreak(cron[i], list, 60, ",");
 
          for (j = 0; j < n; j++) {
             /* minutes */
@@ -17019,7 +17041,7 @@ void server_loop(int tcp_port, int daemon)
          authorized = 1;
          if (getcfg(logbook, "Hosts deny", list)) {
             strcpy(rem_host_ip, (char *) inet_ntoa(rem_addr));
-            n = strbreak(list, host_list, MAX_N_LIST);
+            n = strbreak(list, host_list, MAX_N_LIST, ",");
             /* check if current connection matches anyone on the list */
             for (i = 0; i < n; i++) {
                if (strieq(rem_host, host_list[i]) || strieq(rem_host_ip, host_list[i])
@@ -17064,7 +17086,7 @@ void server_loop(int tcp_port, int daemon)
 
          if (getcfg(logbook, "Hosts allow", list)) {
             strcpy(rem_host_ip, (char *) inet_ntoa(acc_addr.sin_addr));
-            n = strbreak(list, host_list, MAX_N_LIST);
+            n = strbreak(list, host_list, MAX_N_LIST, ",");
             /* check if current connection matches anyone on the list */
             for (i = 0; i < n; i++) {
                if (strieq(rem_host, host_list[i]) || strieq(rem_host_ip, host_list[i])

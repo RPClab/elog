@@ -1134,7 +1134,14 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
 
 It is possible to specify an OR of several conditions like in the case {b,c}. This is 
 also possible over several conditions, like {1,a} would mean 
-<i>"The PC has Linux or is in the Main Building"</i>.
+<i>"The PC has Linux or is in the Main Building"</i>. To specify a AND between
+conditions, a "&" is used. The condition
+<p>
+<ul><pre>
+{1&a} ...
+</pre></ul>
+
+specifies for example the condition "Linux AND Main Building".<p>
 
 <a name="access"><hr>
 <div class=section>&nbsp; Access control &nbsp;</div>
