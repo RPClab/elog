@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.498  2004/10/25 21:07:07  midas
+   Implemented RSS feeds
+
    Revision 1.497  2004/10/14 21:27:29  midas
    Finished regular expressions
 
@@ -6005,7 +6008,7 @@ void show_plain_header(int size, char *file_name)
    rsprintf("\r\n");
 }
 
-void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head)
+void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head, BOOL rss_feed)
 {
    char css[256], str[256];
 
@@ -6031,13 +6034,19 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head)
    rsprintf("<link rel=\"shortcut icon\" href=\"favicon.ico\">\n");
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\">\n");
 
+   if (rss_feed) {
+      rsprintf("<link rel=\"rss feed\" type=\"application/rss+xml\" ");
+      rsprintf("title=\"ELOG %s\" ", lbs->name);
+      rsprintf("href=\"rss-feed\">\n");
+   }
+
    if (close_head)
       rsprintf("</head>\n");
 }
 
-void show_standard_header(LOGBOOK * lbs, BOOL expires, char *title, char *path)
+void show_standard_header(LOGBOOK * lbs, BOOL expires, char *title, char *path, BOOL rss_feed)
 {
-   show_html_header(lbs, expires, title, TRUE);
+   show_html_header(lbs, expires, title, TRUE, rss_feed);
 
    rsprintf("<body>\n");
 
@@ -6055,7 +6064,7 @@ void show_upgrade_page(LOGBOOK * lbs)
 {
    char str[1000];
 
-   show_html_header(lbs, FALSE, "ELOG Upgrade Information", TRUE);
+   show_html_header(lbs, FALSE, "ELOG Upgrade Information", TRUE, FALSE);
 
    rsprintf("<body>\n");
 
@@ -6552,7 +6561,7 @@ void show_bottom_text(LOGBOOK * lbs)
 void show_error(char *error)
 {
    /* header */
-   show_html_header(NULL, FALSE, "ELOG error", TRUE);
+   show_html_header(NULL, FALSE, "ELOG error", TRUE, FALSE);
 
    rsprintf("<body><center>\n");
    rsprintf("<table class=\"dlgframe\" width=\"50%%\" cellpadding=1 cellspacing=0");
@@ -6709,7 +6718,7 @@ void send_file_direct(char *file_name)
 
       close(fh);
    } else {
-      show_html_header(NULL, FALSE, "404 Not Found", TRUE);
+      show_html_header(NULL, FALSE, "404 Not Found", TRUE, FALSE);
 
       rsprintf("<body><h1>Not Found</h1>\r\n");
       rsprintf("The requested file <b>%s</b> was not found on this server<p>\r\n", file_name);
@@ -7077,7 +7086,7 @@ void show_change_pwd_page(LOGBOOK * lbs)
       }
    }
 
-   show_standard_header(lbs, TRUE, loc("ELOG change password"), NULL);
+   show_standard_header(lbs, TRUE, loc("ELOG change password"), NULL, FALSE);
 
    rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
 
@@ -7502,7 +7511,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* header */
-   show_html_header(lbs, FALSE, "ELOG", FALSE);
+   show_html_header(lbs, FALSE, "ELOG", FALSE, FALSE);
 
    /* java script for checking required attributes and to check for cancelled edits */
    rsprintf("<script type=\"text/javascript\">\n");
@@ -8508,7 +8517,7 @@ void show_find_form(LOGBOOK * lbs)
 
    /*---- header ----*/
 
-   show_standard_header(lbs, FALSE, loc("ELOG find"), NULL);
+   show_standard_header(lbs, FALSE, loc("ELOG find"), NULL, FALSE);
 
    /*---- title ----*/
 
@@ -8839,7 +8848,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
    /*---- header ----*/
 
    sprintf(str, "ELOG %s", loc("Admin"));
-   show_html_header(lbs, FALSE, str, TRUE);
+   show_html_header(lbs, FALSE, str, TRUE, FALSE);
 
    rsprintf("<body><form method=\"POST\" action=\"./\" enctype=\"multipart/form-data\">\n");
 
@@ -9836,7 +9845,7 @@ void show_config_page(LOGBOOK * lbs)
 
    /*---- header ----*/
 
-   show_standard_header(lbs, TRUE, loc("ELOG user config"), ".");
+   show_standard_header(lbs, TRUE, loc("ELOG user config"), ".", FALSE);
 
    /*---- title ----*/
 
@@ -10042,7 +10051,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
                change_pwd(lbs, login_name, pwd_encrypted);
 
                /* show notification web page */
-               show_standard_header(lbs, FALSE, loc("ELOG password recovery"), "");
+               show_standard_header(lbs, FALSE, loc("ELOG password recovery"), "", FALSE);
 
                rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
                rsprintf("<tr><td class=\"dlgtitle\">\n");
@@ -10075,7 +10084,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
    } else {
       /*---- header ----*/
 
-      show_standard_header(lbs, TRUE, loc("ELOG password recovery"), NULL);
+      show_standard_header(lbs, TRUE, loc("ELOG password recovery"), NULL, FALSE);
 
       rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
 
@@ -10103,7 +10112,7 @@ void show_new_user_page(LOGBOOK * lbs)
 {
    /*---- header ----*/
 
-   show_html_header(NULL, TRUE, loc("ELOG new user"), TRUE);
+   show_html_header(NULL, TRUE, loc("ELOG new user"), TRUE, FALSE);
    rsprintf("<body><center><p><p>\n");
    show_top_text(lbs);
    rsprintf("<form name=form1 method=\"GET\" action=\"\">\n\n");
@@ -10241,7 +10250,7 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
          sprintf(str, "%d", message_id);
       else
          str[0] = 0;
-      show_standard_header(lbs, TRUE, "Delete ELog entry", str);
+      show_standard_header(lbs, TRUE, "Delete ELog entry", str, FALSE);
 
       rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
       rsprintf("<tr><td class=\"dlgtitle\">\n");
@@ -10344,7 +10353,7 @@ void show_logbook_delete(LOGBOOK * lbs)
 
 
       strcpy(str, "Delete logbook");
-      show_standard_header(lbs, TRUE, str, "");
+      show_standard_header(lbs, TRUE, str, "", FALSE);
 
       rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
       rsprintf("<tr><td class=\"dlgtitle\">\n");
@@ -10395,7 +10404,7 @@ void show_logbook_rename(LOGBOOK * lbs)
 
 
       strcpy(str, loc("Rename logbook"));
-      show_standard_header(lbs, TRUE, str, "");
+      show_standard_header(lbs, TRUE, str, "", FALSE);
 
       rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
       rsprintf("<tr><td class=\"dlgtitle\">\n");
@@ -10446,7 +10455,7 @@ void show_logbook_new(LOGBOOK * lbs)
       return;
    }
 
-   show_standard_header(lbs, TRUE, "Delete Logbook", "");
+   show_standard_header(lbs, TRUE, "Delete Logbook", "", FALSE);
 
    rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
    rsprintf("<tr><td class=\"dlgtitle\">\n");
@@ -10615,7 +10624,7 @@ void show_import_page(LOGBOOK * lbs)
 
    /*---- header ----*/
 
-   show_html_header(lbs, FALSE, loc("ELOG CSV import"), TRUE);
+   show_html_header(lbs, FALSE, loc("ELOG CSV import"), TRUE, FALSE);
 
    rsprintf("<body><form method=\"POST\" action=\"./\" enctype=\"multipart/form-data\">\n");
 
@@ -10759,7 +10768,7 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
 
       /* title row */
       sprintf(str, loc("CSV import preview of %s"), csvfile);
-      show_standard_header(lbs, TRUE, str, "./");
+      show_standard_header(lbs, TRUE, str, "./", FALSE);
       rsprintf("<table class=\"frame\" cellpadding=0 cellspacing=0>\n");
       rsprintf("<tr><td class=\"title1\">%s</td></tr>\n", str, str);
 
@@ -12872,7 +12881,7 @@ void synchronize(LOGBOOK * lbs, int mode)
    char str[256], pwd[256];
 
    if (mode == SYNC_HTML) {
-      show_html_header(NULL, FALSE, loc("Synchronization"), TRUE);
+      show_html_header(NULL, FALSE, loc("Synchronization"), TRUE, FALSE);
       rsprintf("<body>\n");
    }
 
@@ -14210,6 +14219,126 @@ time_t retrieve_date(char *index, BOOL bstart)
 
 /*------------------------------------------------------------------*/
 
+void show_rss_feed(LOGBOOK * lbs)
+{
+   int i, size, index, status, message_id;
+   char str[256], url[256], attrib[MAX_N_ATTR][NAME_LENGTH], date[80], *text, title[2000],
+       slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
+
+   rsprintf("HTTP/1.1 200 Document follows\r\n");
+   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+
+   if (getcfg("global", "charset", str, sizeof(str)))
+      rsprintf("Content-Type: text/xml;charset=%s\r\n", str);
+   else
+      rsprintf("Content-Type: text/xml;charset=iso-8859-1\r\n");
+   rsprintf("\r\n");
+
+   rsprintf("<?xml version=\"1.0\" ?>\n");
+   rsprintf("<rss version=\"2.0\">\n");
+   rsprintf("<channel>\n");
+
+   rsprintf("<title>ELOG %s</title>\n", lbs->name_enc);
+
+   /* retrive URL */
+   getcfg(lbs->name, "URL", url, sizeof(url));
+
+   /* if HTTP request comes from localhost, use localhost as
+      absolute link (needed if running on DSL at home */
+   if (!url[0] && strstr(http_host, "localhost")) {
+      strcpy(url, "http://localhost");
+      if (elog_tcp_port != 80)
+         sprintf(url + strlen(url), ":%d", elog_tcp_port);
+      strcat(url, "/");
+   }
+
+   if (!url[0]) {
+      /* assemble absolute path from host name and port */
+      sprintf(url, "http://%s", host_name);
+      if (elog_tcp_port != 80)
+         sprintf(url + strlen(url), ":%d", elog_tcp_port);
+      strcat(url, "/");
+   }
+
+   /* add trailing '/' if not present */
+   if (url[strlen(url) - 1] != '/')
+      strcat(url, "/");
+
+   strlcat(url, lbs->name_enc, sizeof(url));
+
+   rsprintf("<link>%s</link>\n", url);
+
+   if (getcfg(lbs->name, "Comment", str, sizeof(str))) {
+      rsprintf("<description>");
+      xmlencode(str);
+      rsprintf("</description>\n");
+   }
+
+   rsprintf("<generator>ELOG V%s</generator>\n", VERSION);
+
+   rsprintf("<image>favicon.png</image>\n");
+
+   /*---- show last 15 items ----*/
+
+   text = xmalloc(TEXT_SIZE);
+   message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
+   for (index = 0 ; index < 15 ; index++) {
+      rsprintf("<item>\n");
+
+      size = TEXT_SIZE;
+      status = el_retrieve(lbs, message_id, date, attr_list, attrib,
+                        lbs->n_attr, text, &size, NULL, NULL, NULL, NULL, NULL);
+
+      if (getcfg(lbs->name, "RSS Title", title, sizeof(title))) {
+         i = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
+         sprintf(str, "%d", message_id);
+         add_subst_list((char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "message id", str, &i);
+         add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
+                        "entry time", date, &i);
+
+         strsubst(title, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, i);
+      } else {
+
+         title[0] = 0;
+         for (i = 0; i < lbs->n_attr; i++) {
+            strlcat(title, attrib[i], sizeof(title));
+            if (i < lbs->n_attr-1)
+               strlcat(title, ", ", sizeof(title));
+         }
+
+      }
+
+      rsprintf("<title>");
+      xmlencode(title);
+      rsprintf("</title>\n");
+
+      rsprintf("<link>");
+      strcpy(str, url);
+      sprintf(str+strlen(str), "/%d", message_id);
+      xmlencode(str);
+      rsprintf("</link>\n");
+
+      rsprintf("<description>\n");
+      xmlencode(text);
+      rsprintf("</description>\n");
+
+      rsprintf("<pubDate>\n");
+      rsprintf(date);
+      rsprintf("</pubDate>\n");
+
+      rsprintf("</item>\n");
+      message_id = el_search_message(lbs, EL_PREV, message_id, FALSE);
+      if (!message_id)
+         break;
+   }
+
+   xfree(text);
+   rsprintf("</channel>\n");
+   rsprintf("</rss>\n");
+}
+
+/*------------------------------------------------------------------*/
+
 void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *info)
 {
    int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line, flags;
@@ -14893,7 +15022,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
    } else {
 
-      show_standard_header(lbs, TRUE, str, NULL);
+      show_standard_header(lbs, TRUE, str, NULL, TRUE);
 
       /*---- title ----*/
 
@@ -16525,7 +16654,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
    /* display status message */
    sprintf(str, "%d", source_id);
-   show_standard_header(lbs, FALSE, loc("Copy ELog entry"), str);
+   show_standard_header(lbs, FALSE, loc("Copy ELog entry"), str, FALSE);
 
    rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
    rsprintf("<tr><td colspan=2 class=\"dlgtitle\">\n");
@@ -16771,11 +16900,11 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
       sprintf(ref, "%d", message_id);
       if (str[0])
-         show_standard_header(lbs, TRUE, str, ref);
+         show_standard_header(lbs, TRUE, str, ref, FALSE);
       else
-         show_standard_header(lbs, TRUE, lbs->name, ref);
+         show_standard_header(lbs, TRUE, lbs->name, ref, FALSE);
    } else
-      show_standard_header(lbs, TRUE, "", "");
+      show_standard_header(lbs, TRUE, "", "", FALSE);
 
    /*---- title ----*/
 
@@ -17445,7 +17574,7 @@ BOOL check_password(LOGBOOK * lbs, char *name, char *password, char *redir)
       }
 
       /* show web password page */
-      show_standard_header(lbs, FALSE, loc("ELOG password"), NULL);
+      show_standard_header(lbs, FALSE, loc("ELOG password"), NULL, FALSE);
 
       rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
 
@@ -17730,7 +17859,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
    /* display error message for invalid user */
    if (isparam("iusr")) {
       /* header */
-      show_html_header(NULL, FALSE, "ELOG error", TRUE);
+      show_html_header(NULL, FALSE, "ELOG error", TRUE, FALSE);
 
       rsprintf("<body><center>\n");
       rsprintf("<table class=\"dlgframe\" width=\"50%%\" cellpadding=1 cellspacing=0>");
@@ -17785,7 +17914,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
 
       /* show login password page */
       sprintf(str, "ELOG %s", loc("Login"));
-      show_html_header(lbs, TRUE, str, TRUE);
+      show_html_header(lbs, TRUE, str, TRUE, FALSE);
 
       /* set focus on name field */
       rsprintf("<body OnLoad=\"document.form1.uname.focus();\">\n");
@@ -18010,9 +18139,9 @@ void show_top_selection_page()
 
    if (getcfg("global", "Page Title", str, sizeof(str))) {
       strip_html(str);
-      show_html_header(NULL, TRUE, str, TRUE);
+      show_html_header(NULL, TRUE, str, TRUE, FALSE);
    } else
-      show_html_header(NULL, TRUE, "ELOG Logbook Selection", TRUE);
+      show_html_header(NULL, TRUE, "ELOG Logbook Selection", TRUE, FALSE);
    rsprintf("<body>\n\n");
    rsprintf("<table class=\"selframe\" cellspacing=0 align=center>\n");
    rsprintf("<tr><td class=\"dlgtitle\">\n");
@@ -18052,7 +18181,7 @@ void show_selection_page()
 
    /* check if at least one logbook define */
    if (!lb_list[0].name[0]) {
-      show_standard_header(NULL, FALSE, "ELOG", "");
+      show_standard_header(NULL, FALSE, "ELOG", "", FALSE);
 
       rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
       rsprintf("<tr><td class=\"dlgtitle\">\n");
@@ -18103,9 +18232,9 @@ void show_selection_page()
 
    if (getcfg("global", "Page Title", str, sizeof(str))) {
       strip_html(str);
-      show_html_header(NULL, TRUE, str, TRUE);
+      show_html_header(NULL, TRUE, str, TRUE, FALSE);
    } else
-      show_html_header(NULL, TRUE, "ELOG Logbook Selection", TRUE);
+      show_html_header(NULL, TRUE, "ELOG Logbook Selection", TRUE, FALSE);
    rsprintf("<body>\n\n");
    rsprintf("<table class=\"selframe\" cellspacing=0 align=center>\n");
    rsprintf("<tr><td colspan=13 class=\"dlgtitle\">\n");
@@ -18221,7 +18350,7 @@ int do_self_register(LOGBOOK * lbs, char *command)
 
    /* display account request notification */
    if (strieq(command, loc("Requested"))) {
-      show_standard_header(lbs, FALSE, loc("ELOG registration"), "");
+      show_standard_header(lbs, FALSE, loc("ELOG registration"), "", FALSE);
       rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
       rsprintf("<tr><td colspan=2 class=\"dlgtitle\">\n");
       rsprintf(loc
@@ -18283,7 +18412,7 @@ void show_calendar(LOGBOOK * lbs)
    else
       strcpy(index, "1");
 
-   show_html_header(lbs, FALSE, loc("Calendar"), TRUE);
+   show_html_header(lbs, FALSE, loc("Calendar"), TRUE, FALSE);
    rsprintf("<body class=\"calwindow\"><form name=form1 method=\"GET\" action=\"\">\n");
    rsprintf("<input type=hidden name=\"i\" value=\"%s\">\n", index);
    rsprintf("<input type=hidden name=\"y\" value=\"%d\">\n", cur_year);
@@ -18769,6 +18898,12 @@ void interprete(char *lbook, char *path)
    /* check for calender */
    if (strieq(dec_path, "cal.html")) {
       show_calendar(lbs);
+      return;
+   }
+
+   /* check for rss-feed */
+   if (strieq(dec_path, "rss-feed")) {
+      show_rss_feed(lbs);
       return;
    }
 

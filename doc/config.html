@@ -940,6 +940,26 @@ If a logbook uses some icons for an attribute, these icons can be displayed
 in the search result page instead of the default icons contained in the themes directory.
 <p>
 
+<LI><b><code>RSS Title = &lt;string&gt;</code></b>
+<br>
+ELOG supports so-called <i>RSS feeds</i>. Once can subscribe to new logbook entries
+with RSS readers such as Mozilla Firefox. Once new entries are submitted to the logbook,
+the become visible in the subscripition. By default, all attributes of the last 15
+logbook entries are used as the RSS title. With this option once can changed this
+behaviour. Following substitutions are possible:
+<p>
+<UL>
+<LI><b>$&lt;attribute&gt;</b>: The value of the attribute
+<LI><b>$logbook</b>: The name of the current logbook
+<LI><b>$entry time</b>: The message date and time, formatted via "<I>Time format</I>"
+<LI><b>$message id</b>: The message ID
+</UL>
+<br>
+A typical example would be
+<br>
+<pre>RSS Title = $subject, posted by $author on $entry time</pre>
+<p>
+
 <LI><b><code>Subst &lt;attribute&gt; = &lt;string&gt;</code></b>
 <br>
 When submitting logbook entries, attribute values can be substituted by some

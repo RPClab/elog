@@ -160,6 +160,9 @@
 						BrowseInformation="1"/>
 				</FileConfiguration>
 			</File>
+			<File
+				RelativePath="..\src\regex.c">
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
@@ -193,6 +196,9 @@
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl">
+			<File
+				RelativePath="..\src\regex.h">
+			</File>
 		</Filter>
 	</Files>
 	<Globals>
