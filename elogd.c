@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.47  2002/07/25 09:22:05  midas
+  Removed scandir() for Solaris compatibility
+
   Revision 2.46  2002/07/23 13:50:11  midas
   Improved speed for threaded display
 
@@ -1392,28 +1395,25 @@ INT ss_file_find(char *path, char *pattern, char **plist)
 \********************************************************************/
 {
 #ifdef OS_UNIX
-  int    i, j, n;
-  struct dirent **namelist;
+  DIR *dir_pointer;
+  struct dirent *dp;
 
-  n = scandir(path, &namelist, NULL, NULL);
-
-  if (n <= 0)
+  if ((dir_pointer = opendir(path)) == NULL)
     return 0;
-
   *plist = (char *) malloc(MAX_PATH_LENGTH);
-
-  for (i=j=0 ; i<n ; i++)
+  i = 0;
+  for (dp = readdir(dir_pointer); dp != NULL; dp = readdir(dir_pointer))
     {
-    if (fnmatch1(pattern, namelist[i]->d_name) == 0)
+    if (fnmatch1(pattern, dp->d_name) == 0)
       {
-      *plist = (char *)realloc(*plist, (j+1)*MAX_PATH_LENGTH);
-      strncpy(*plist+(j*MAX_PATH_LENGTH), namelist[i]->d_name, strlen(namelist[i]->d_name));
-      *(*plist+(j*MAX_PATH_LENGTH)+strlen(namelist[i]->d_name)) = '\0';
-      j++;
+      *plist = (char *)realloc(*plist, (i+1)*MAX_PATH_LENGTH);
+      strncpy(*plist+(i*MAX_PATH_LENGTH), dp->d_name, strlen(dp->d_name));
+      *(*plist+(i*MAX_PATH_LENGTH)+strlen(dp->d_name)) = '\0';
+      i++;
+      seekdir(dir_pointer, telldir(dir_pointer));
       }
     }
-  free(namelist);
-  return j;
+  closedir(dir_pointer);
 #endif
 
 #ifdef OS_WINNT
