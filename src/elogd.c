@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.279  2004/03/05 22:35:15  midas
+   Added Prepend/Append on Edit/Reply
+
    Revision 1.278  2004/03/05 21:40:01  midas
    Substitution of $message id and $entry time now works on all possible places
 
@@ -6170,7 +6173,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        reply_tag[MAX_REPLY_TO * 10], att[MAX_ATTACHMENTS][256], encoding[80],
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH],
        owner[256], locked_by[256], class_value[80], class_name[80], condition[256],
-       ua[NAME_LENGTH];
+       ua[NAME_LENGTH], mid[80];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts, ts;
@@ -6902,22 +6905,42 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       if (text[0]) {
          if (bedit) {
             if (bupload || (!bupload && !breedit)
-                || (breedit && !getcfg_cond(lbs->name, condition, "Preset text", str)))
+               || (breedit && !getcfg_cond(lbs->name, condition, "Preset text", str))) {
+
+               j = build_subst_list(lbs, slist, svalue, attrib);
+               sprintf(mid, "%d", message_id);                    
+               add_subst_list(slist, svalue, "message id", mid, &j);
+               add_subst_time(lbs, slist, svalue, "entry time", date, &j);
+
+               if (getcfg_cond(lbs->name, condition, "Prepend on edit", str)) {
+                  strsubst(str, slist, svalue, j);
+                  while (strstr(str, "\\n"))
+                     memcpy(strstr(str, "\\n"), "\r\n", 2);
+                  rsprintf(str);
+               }
+
                rsputs(text);
+
+               if (getcfg_cond(lbs->name, condition, "Append on edit", str)) {
+                  strsubst(str, slist, svalue, j);
+                  while (strstr(str, "\\n"))
+                     memcpy(strstr(str, "\\n"), "\r\n", 2);
+                  rsprintf(str);
+               }
+            }
          } else {
             if (!getcfg_cond(lbs->name, condition, "Quote on reply", str)
                 || atoi(str) > 0) {
-               if (getcfg_cond(lbs->name, condition, "Date on reply", str)
-                   && atoi(str) == 1) {
-                  time(&now);
-                  pts = localtime(&now);
-                  if (getcfg_cond(lbs->name, condition, "Time format", format))
-                     strftime(str, sizeof(str), format, pts);
-                  else {
-                     strcpy(str, ctime(&now));
-                     str[strlen(str) - 1] = 0;
-                  }
-                  rsprintf("%s\n\n", str);
+               if (getcfg_cond(lbs->name, condition, "Prepend on reply", str)) {
+                  j = build_subst_list(lbs, slist, svalue, attrib);
+                  sprintf(mid, "%d", message_id);                    
+                  add_subst_list(slist, svalue, "message id", mid, &j);
+                  add_subst_time(lbs, slist, svalue, "entry time", date, &j);
+
+                  strsubst(str, slist, svalue, j);
+                  while (strstr(str, "\\n"))
+                     memcpy(strstr(str, "\\n"), "\r\n", 2);
+                  rsprintf(str);
                }
 
                p = text;
@@ -6954,17 +6977,16 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                } while (TRUE);
 
-               if (getcfg_cond(lbs->name, condition, "Date on reply", str)
-                   && atoi(str) == 2) {
-                  time(&now);
-                  pts = localtime(&now);
-                  if (getcfg_cond(lbs->name, condition, "Time format", format))
-                     strftime(str, sizeof(str), format, pts);
-                  else {
-                     strcpy(str, ctime(&now));
-                     str[strlen(str) - 1] = 0;
-                  }
-                  rsprintf("%s\n\n", str);
+               if (getcfg_cond(lbs->name, condition, "Append on reply", str)) {
+
+                  j = build_subst_list(lbs, slist, svalue, attrib);
+                  sprintf(mid, "%d", message_id);                    
+                  add_subst_list(slist, svalue, "message id", mid, &j);
+                  add_subst_time(lbs, slist, svalue, "entry time", date, &j);
+                  strsubst(str, slist, svalue, j);
+                  while (strstr(str, "\\n"))
+                     memcpy(strstr(str, "\\n"), "\r\n", 2);
+                  rsprintf(str);
                }
             }
          }
@@ -10327,7 +10349,12 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                         (char (*)[NAME_LENGTH])svalue, j);
 
       rsprintf("<a href=\"%s\">", ref);
-      rsputs2(display);
+
+      if (is_html(display))
+         rsputs(display);
+      else
+         rsputs2(display);
+      
       rsprintf("</a>\n");
    } else {
       /* show select box */
@@ -10425,7 +10452,10 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                         } else
                            rsprintf(", ");
 
-                        rsputs2(attrib[i]);
+                        if (is_html(attrib[i]))
+                           rsputs(attrib[i]);
+                        else
+                           rsputs2(attrib[i]);
 
                         rsprintf("&nbsp");
                      }
@@ -10444,7 +10474,11 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      } else
                         rsprintf(", ");
 
-                     rsputs2(attrib[i]);
+                     if (is_html(attrib[i]))
+                        rsputs(attrib[i]);
+                     else
+                        rsputs2(attrib[i]);
+
                   }
                } else {
                   if (strieq(attr_options[i][0], "boolean")) {
@@ -10488,7 +10522,10 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                         rsputs(attrib[i]);
                      else  {
                         rsprintf("<a href=\"%s\">", ref);
-                        rsputs2(attrib[i]);
+                        if (is_html(attrib[i]))
+                           rsputs(attrib[i]);
+                        else
+                           rsputs2(attrib[i]);
                         rsprintf("</a>");
                      }
 

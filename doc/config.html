@@ -1528,14 +1528,27 @@ resulting in all messages being locked. In those cases locking has to be turned 
 
 Default for "Use Lock" is <b>0</b>.<p>
 
-<li><b><code>Date on reply = 0|1|2</code></b>
-</br>
-If this flag is nozero, the current date is placed between the quoted original entry
-and the new entry. <b>1</b> causes the date to appear on top of the quoted entry,
-<b>2</b> cuses the date to appear below the quoted entry.
-This can be useful for email notifications, if one wants to see the
-time history of all replies in the email messages. Default is <b>0</b>.
+<li><b><code>Prepend on reply = &lt;string&gt;</code></b>
+<br>
+With this option a string can be placed on top of a reply. Using string substition,
+this can be useful for adding the author and the date of a reply, like<br>
+<br>
+<code><b>Prepend on reply = Added $date by $long_name\n\n</code></b><br>
+<br>
+where "\n" causes a line break.
 <p>
+
+<li><b><code>Apend on reply = &lt;string&gt;</code></b>
+<br>
+Same as before, but gets added after the previous entry.
+<p>
+
+<li><b><code>Prepend on edit = &lt;string&gt;</code></b>
+<li><b><code>Apend on edit = &lt;string&gt;</code></b>
+</br>
+Same as before, but for editing entries.
+<p>
+
 
 </ul><p>
 
