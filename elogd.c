@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.17  2002/04/29 08:11:38  midas
+  Added icons via IOptions configuration
+
   Revision 1.16  2002/04/22 10:32:35  midas
   Version 1.3.4
 
@@ -193,6 +196,7 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 #define AF_LOCKED             (1<<1)
 #define AF_MULTI              (1<<2)
 #define AF_FIXED              (1<<3)
+#define AF_ICON               (1<<4)
 
 char attr_list[MAX_N_ATTR][NAME_LENGTH];
 char attr_options[MAX_N_ATTR][MAX_N_LIST][NAME_LENGTH];
@@ -2653,6 +2657,13 @@ int  i, j, n, m;
         strbreak(list, attr_options[i], MAX_N_LIST);
         attr_flags[i] |= AF_MULTI;
         }
+
+      sprintf(str, "IOptions %s", attr_list[i]);
+      if (getcfg(logbook, str, list))
+        {
+        strbreak(list, attr_options[i], MAX_N_LIST);
+        attr_flags[i] |= AF_ICON;
+        }
       }
 
     /* check if attribut required */
@@ -3532,7 +3543,17 @@ time_t now;
           sprintf(str, "%s%d", attr_list[index], i);
 
           if (strstr(attrib[index], attr_options[index][i]))
-            rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", str, attr_options[index][i]);
+            rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\">\n", str, attr_options[index][i]);
+          }
+        }
+      else if (attr_flags[index] & AF_ICON)
+        {
+        for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
+          {
+          sprintf(str, "%s%d", attr_list[index], i);
+
+          if (strstr(attrib[index], attr_options[index][i]))
+            rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\">\n", str, attr_options[index][i]);
           }
         }
       else
@@ -3566,9 +3587,28 @@ time_t now;
               sprintf(str, "%s%d", attr_list[index], i);
 
               if (strstr(attrib[index], attr_options[index][i]))
-                rsprintf("<input type=checkbox checked name=\"%s\" value=\"%s\">%s&nbsp;\n", str, attr_options[index][i], attr_options[index][i]);
+                rsprintf("<input type=checkbox checked name=\"%s\" value=\"%s\">%s&nbsp;\n", 
+                  str, attr_options[index][i], attr_options[index][i]);
               else
-                rsprintf("<input type=checkbox name=\"%s\" value=\"%s\">%s&nbsp;\n", str, attr_options[index][i], attr_options[index][i]);
+                rsprintf("<input type=checkbox name=\"%s\" value=\"%s\">%s&nbsp;\n", 
+                  str, attr_options[index][i], attr_options[index][i]);
+              }
+
+            rsprintf("</td></tr>\n");
+            }
+          else if (attr_flags[index] & AF_ICON)
+            {
+            /* display icons */
+            rsprintf("<td bgcolor=%s>\n", gt("Categories bgcolor2"));
+
+            for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
+              {
+              if (strstr(attrib[index], attr_options[index][i]))
+                rsprintf("<input type=radio checked name=\"%s\" value=\"%s\">", attr_list[index], attr_options[index][i]);
+              else
+                rsprintf("<input type=radio name=\"%s\" value=\"%s\">", attr_list[index], attr_options[index][i]);
+
+              rsprintf("<img src=\"/%s/icons/%s\">&nbsp;\n", logbook_enc, attr_options[index][i]);
               }
 
             rsprintf("</td></tr>\n");
@@ -3935,6 +3975,17 @@ char   str[256];
       {
       if (equal_ustring(attr_options[i][0], "boolean"))
         rsprintf("<input type=checkbox name=\"%s\" value=1>\n", attr_list[i]);
+
+      /* display image for icon */
+      else if (attr_flags[i] & AF_ICON)
+        {
+        for (j=0 ; j<MAX_N_LIST && attr_options[i][j][0] ; j++)
+          {
+          rsprintf("<input type=radio name=\"%s\" value=\"%s\">", attr_list[i], attr_options[i][j]);
+          rsprintf("<img src=\"/%s/icons/%s\">&nbsp;\n", logbook_enc, attr_options[i][j]);
+          }
+        }
+
       else
         {
         rsprintf("<select name=\"%s\">\n", attr_list[i]);
@@ -4879,6 +4930,15 @@ FILE   *f;
               else
                 rsprintf("<td align=center bgcolor=%s><input type=checkbox disabled></td>\n", col);
               }
+
+            else if (attr_flags[i] & AF_ICON)
+              {
+              rsprintf("<td align=center bgcolor=%s>", col);
+              if (attrib[i][0])
+                rsprintf("<img src=\"/%s/icons/%s\">", logbook_enc, attrib[i]);
+              rsprintf("&nbsp</td>");
+              }
+
             else
               {
               rsprintf("<td align=center bgcolor=%s><font size=%d>", col, size);
@@ -5048,6 +5108,15 @@ FILE   *f;
               else
                 rsprintf("<td align=center bgcolor=%s><input type=checkbox disabled></td>\n", col);
               }
+
+            else if (attr_flags[i] & AF_ICON)
+              {
+              rsprintf("<td align=center bgcolor=%s>", col);
+              if (attrib[i][0])
+                rsprintf("<img src=\"/%s/icons/%s\">", logbook_enc, attrib[i]);
+              rsprintf("&nbsp</td>");
+              }
+
             else
               rsprintf("<td align=center bgcolor=%s><font size=%d>%s&nbsp</font></td>", col, size, attrib[i]);
             }
@@ -6325,6 +6394,15 @@ FILE   *f;
         else
           rsprintf("<b>%s:</b></td><td bgcolor=%s><input type=checkbox disabled></td></tr>\n",
                    attr_list[i], gt("Categories bgcolor2"));
+        }
+      /* display image for icon */
+      else if (attr_flags[i] & AF_ICON)
+        {
+        rsprintf("<b>%s:</b></td><td bgcolor=%s>\n",
+                 attr_list[i], gt("Categories bgcolor2"));
+        if (attrib[i][0])
+          rsprintf("<img src=\"/%s/icons/%s\">", logbook_enc, attrib[i]);
+        rsprintf("&nbsp</td></tr>\n");
         }
       else
         {
