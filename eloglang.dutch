@@ -288,11 +288,7 @@ CSV import preview of %s = CSV import voorbeeld van %s
 Too many attributes in CSV file = Te veel attributen in CSV bestand 
 %d entries successfully imported = %d  berichten succesvol geïmporteerd
 No 'Attributes' option present in %s = Geen 'Attributen' optie aanwezig in %s
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-CSV ("," separated) = 
-CSV (";" separated) = 
-Login name = 
-Auto detect = 
+CSV ("," separated) = CSV (";" gescheiden)
+CSV (";" separated) = CSV (";" gescheiden)
+Login name = Loginnaam
+Auto detect = Auto ontdek
