@@ -371,6 +371,11 @@ Default mode for search display. On the find entry form, the checkboxes
 are set accordingly. The "Last xxx" page uses this setting directly.
 <p>
 
+<li><b><code>Entries per page = &lt;number&gt;</code></b>
+<br>
+Number of logbook entries displayed per page in a search result. The default is 20.
+<p>
+
 </UL>
 
 <a name="attrib"><hr>
@@ -447,7 +452,7 @@ down box by default.
 <LI><b><code>Preset text = &lt;string&gt; or &lt;file&gt;</code></b>
 <br>
 This preset value is used for the main body text. It can be a string or a file,
-which must be present in the same directory as the <code><b>elogd</b></code> file.
+which must be present in the same directory as the <code><b>elogd.cfg</b></code> file.
 <p>
 
 <LI><b><code>Locked Attributes = &lt;list&gt;</code></b>
@@ -495,10 +500,19 @@ message body is controlled by the <b><code>Display mode</code></b> and
 
 <LI><b><code>Thread display = &lt;string&gt;</code></b>
 <br>
-Optional way to specify the line contents in the threaded search result. All
-standard substitutions like as described in the <b>Subst</b> command can be
-used here, like<br>
-<pre>Thread display = $author, $subject</pre>
+Optional way to specify the line contents in the threaded search result. Following
+substitutions are possible:
+<p>
+<UL>
+<LI><b>$&lt;attribute&gt;</b>: The value of the attribute
+<LI><b>$logbook</b>: The name of the current logbook
+<LI><b>$entry date</b>: The message date, formatted via "<I>Date format</I>"
+<LI><b>$message id</b>: The message ID
+</UL>
+<br>
+A typical example would be
+<br>
+<pre>Thread display = $subject, posted by $author on $entry date</pre>
 <p>
 
 <LI><b><code>Thread icon = &lt;attribute&gt;</code></b>
