@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.286  2004/03/08 20:49:18  midas
+   Fixed bug with supressed email notification box and conditional attributes
+
    Revision 1.285  2004/03/08 13:00:12  midas
    Filter entries with invalid date
 
@@ -7078,7 +7081,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* Suppress email check box */
-   if (!(bedit && getcfg_cond(lbs->name, condition, "Suppress Email on edit", str)
+   if (!(bedit && !breedit && !bupload
+         && getcfg_cond(lbs->name, condition, "Suppress Email on edit", str)
          && atoi(str) == 1)) {
       if (getcfg_cond(lbs->name, condition, "Suppress default", str)) {
          if (atoi(str) == 0) {
