@@ -1,6 +1,6 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.5.5)
+# (for 2.5.6)
 # A more recent version may be available at :
 # http://midas.psi.ch/cgi-bin/cvsweb/elog/eloglang.french
 #
@@ -337,9 +337,5 @@ Attachment file <b>"%s"</b> empty or not found = Fichier joint <b>"%s"</b> vide 
 Text fields may contain regular expressions = Les champs "texte" peuvent contenir des expressions régulières
 Case sensitive = Tient compte de la casse
 List = Liste
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-From = 
-Date must be between 1970 and 2037 = 
+From = De
+Date must be between 1970 and 2037 = La date doit être comprise entre 1970 et 2037
