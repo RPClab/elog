@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.376  2004/07/09 08:13:39  midas
+   Fixed problem that admin user of top group could change global section
+
    Revision 1.375  2004/07/08 19:53:14  midas
    Fixed wrong link with 'show top groups' flag
 
@@ -542,6 +545,7 @@ BOOL check_login_user(LOGBOOK * lbs, char *user);
 LBLIST get_logbook_hierarchy(void);
 int is_logbook_in_group(LBLIST pgrp, char *logbook);
 BOOL is_admin_user(char *logbook, char *user);
+BOOL is_admin_user_global(char *user);
 void free_logbook_hierarchy(LBLIST root);
 void show_top_text(LOGBOOK * lbs);
 void show_bottom_text(LOGBOOK * lbs);
@@ -7944,7 +7948,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
    }
 
    if (is_group("global") && !strieq(top_group, "global")) {
-      if (is_admin_user("global", getparam("unm"))) {
+      if (is_admin_user_global(getparam("unm"))) {
          sprintf(str, loc("Change %s"), "[global]");
          rsprintf("<input type=submit name=cmd value=\"%s\">\n", str);
       }
@@ -16371,6 +16375,26 @@ BOOL is_admin_user(char *logbook, char *user)
    char list[MAX_N_LIST][NAME_LENGTH];
 
    if (getcfg(logbook, "Admin user", str) && user[0]) {
+      n = strbreak(str, list, MAX_N_LIST, ",");
+      for (i = 0; i < n; i++)
+         if (strcmp(user, list[i]) == 0)
+            break;
+
+      if (i == n)
+         return FALSE;
+   }
+   return TRUE;
+}
+
+/*------------------------------------------------------------------*/
+
+BOOL is_admin_user_global(char *user)
+{
+   int i, n;
+   char str[1000];
+   char list[MAX_N_LIST][NAME_LENGTH];
+
+   if (getcfg_simple("global", "Admin user", str) && user[0]) {
       n = strbreak(str, list, MAX_N_LIST, ",");
       for (i = 0; i < n; i++)
          if (strcmp(user, list[i]) == 0)
