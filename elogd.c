@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.4  2002/06/07 14:40:37  midas
+  Check URL tail before displaying logbook page
+
   Revision 2.3  2002/06/07 14:22:00  midas
   Workaround for Konqueror browser
 
@@ -5534,10 +5537,10 @@ LOGBOOK *lbs_dest;
 
 /*------------------------------------------------------------------*/
 
-void show_elog_page(LOGBOOK *lbs, int message_id)
+void show_elog_page(LOGBOOK *lbs, char *dec_path)
 {
 int    size, i, j, len, n, status, fh, length, message_error, index, n_attr;
-int    orig_message_id;
+int    message_id, orig_message_id;
 char   str[256], command[80], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char   date[80], text[TEXT_SIZE], menu_str[1000], other_str[1000], cmd[256],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
@@ -5545,6 +5548,8 @@ char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH], *p;
 FILE   *f;
 BOOL   first;
+
+  message_id = atoi(dec_path);
 
   n_attr = scan_attributes(lbs->name);
 
@@ -5723,6 +5728,13 @@ BOOL   first;
 
   if (equal_ustring(command, loc("Search")))
     {
+    if (dec_path[0] && atoi(dec_path) == 0)
+      {
+      sprintf(str, "Invalid URL: <b>%s</b>", dec_path);
+      show_error(str);
+      return;
+      }
+
     show_elog_submit_find(lbs, 0, 0);
     return;
     }
@@ -5920,6 +5932,15 @@ BOOL   first;
   if (!message_id && getcfg(lbs->name, "Start page", str) && str[0])
     {
     redirect(str);
+    return;
+    }
+
+  /*---- check for valid URL ---------------------------------------*/
+
+  if (dec_path[0] && atoi(dec_path) == 0)
+    {
+    sprintf(str, "Invalid URL: <b>%s</b>", dec_path);
+    show_error(str);
     return;
     }
 
@@ -7128,7 +7149,7 @@ LOGBOOK *cur_lb;
     return;
     }
 
-  show_elog_page(cur_lb, atoi(dec_path));
+  show_elog_page(cur_lb, dec_path);
   return;
 }
 
