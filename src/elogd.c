@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.385  2004/07/14 20:29:40  midas
+   Implemented 'tooltip <attribute>'
+
    Revision 1.384  2004/07/14 15:20:13  midas
    Fixed bug in el_enum_attr()
 
@@ -351,6 +354,12 @@ char pidfile[256];              /* Pidfile name */
 typedef int INT;
 
 #define TELL(fh) lseek(fh, 0, SEEK_CUR)
+
+#ifdef OS_WINNT
+#define TRUNCATE(fh) chsize(fh, TELL(fh))
+#else
+#define TRUNCATE(fh) ftruncate(fh, TELL(fh))
+#endif
 
 #define NAME_LENGTH  500
 
@@ -3766,11 +3775,9 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       }
 
       /* truncate file here */
-#ifdef _MSC_VER
-      chsize(fh, TELL(fh));
-#else
-      ftruncate(fh, TELL(fh));
-#endif
+      TRUNCATE(fh);
+
+
    }
 
    close(fh);
@@ -3992,11 +3999,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
    }
 
    /* truncate file here */
-#ifdef OS_WINNT
-   chsize(fh, TELL(fh));
-#else
-   ftruncate(fh, TELL(fh));
-#endif
+   TRUNCATE(fh);
 
    /* if file length gets zero, delete file */
    tail_size = lseek(fh, 0, SEEK_END);
@@ -6183,11 +6186,7 @@ BOOL change_pwd(LOGBOOK * lbs, char *user, char *pwd)
 
       write(fh, pl, strlen(pl));
 
-#ifdef _MSC_VER
-      chsize(fh, TELL(fh));
-#else
-      ftruncate(fh, TELL(fh));
-#endif
+      TRUNCATE(fh);
 
       free(buf);
       close(fh);
@@ -6981,7 +6980,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
 
       /* display text box */
-      rsprintf("<tr><td nowrap class=\"attribname\">%s%s:", attr_list[index], star);
+      rsprintf("<tr><td nowrap class=\"attribname\">");
+
+      /* display attribute name with optional tooltip */
+      sprintf(str, "Tooltip %s", attr_list[index]);
+      if (getcfg(lbs->name, str, comment))
+         rsprintf("<div title=\"%s\">%s%s:</div>", comment, attr_list[index], star);
+      else
+         rsprintf("<div title=\"%s\">%s%s:</div>", comment, attr_list[index], star);
 
       /* show optional comment */
       sprintf(str, "Comment %s", attr_list[index]);
@@ -8147,11 +8153,8 @@ int save_admin_config(char *section, char *buffer, char *error)
       free(buf);
       return 0;
    }
-#ifdef _MSC_VER
-   chsize(fh, TELL(fh));
-#else
-   ftruncate(fh, TELL(fh));
-#endif
+
+   TRUNCATE(fh);
 
    close(fh);
    free(buf);
@@ -8272,11 +8275,7 @@ int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_v
       return 0;
    }
 
-#ifdef _MSC_VER
-   chsize(fh, TELL(fh));
-#else
-   ftruncate(fh, TELL(fh));
-#endif
+   TRUNCATE(fh);
 
    close(fh);
    free(buf);
@@ -8335,11 +8334,7 @@ int delete_logbook(LOGBOOK *lbs, char *error)
       return 0;
    }
 
-#ifdef _MSC_VER
-   chsize(fh, TELL(fh));
-#else
-   ftruncate(fh, TELL(fh));
-#endif
+   TRUNCATE(fh);
 
    close(fh);
    free(buf);
@@ -8430,11 +8425,8 @@ int rename_logbook(LOGBOOK *lbs, char *new_name)
       free(buf);
       return 0;
    }
-#ifdef _MSC_VER
-   chsize(fh, TELL(fh));
-#else
-   ftruncate(fh, TELL(fh));
-#endif
+
+   TRUNCATE(fh);
 
    close(fh);
    free(buf);
@@ -8532,11 +8524,7 @@ int create_logbook(LOGBOOK *oldlbs, char *logbook, char *templ)
       return 0;
    }
 
-#ifdef _MSC_VER
-   chsize(fh, TELL(fh));
-#else
-   ftruncate(fh, TELL(fh));
-#endif
+   TRUNCATE(fh);
 
    close(fh);
    free(buf);
@@ -8580,11 +8568,7 @@ int save_config(char *buffer, char *error)
       return 0;
    }
 
-#ifdef _MSC_VER
-   chsize(fh, TELL(fh));
-#else
-   ftruncate(fh, TELL(fh));
-#endif
+   TRUNCATE(fh);
 
    close(fh);
 
@@ -8726,11 +8710,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 
          write(fh, pl, strlen(pl));
 
-#ifdef _MSC_VER
-         chsize(fh, TELL(fh));
-#else
-         ftruncate(fh, TELL(fh));
-#endif
+         TRUNCATE(fh);
       }
 
       free(buf);
@@ -8942,11 +8922,7 @@ int remove_user(LOGBOOK * lbs, char *user)
 
    write(fh, pl, strlen(pl));
 
-#ifdef _MSC_VER
-   chsize(fh, TELL(fh));
-#else
-   ftruncate(fh, TELL(fh));
-#endif
+   TRUNCATE(fh);
 
    free(buf);
    close(fh);
@@ -11043,11 +11019,8 @@ int adjust_config(char *url)
       free(buf);
       return 0;
    }
-#ifdef _MSC_VER
-   chsize(fh, TELL(fh));
-#else
-   ftruncate(fh, TELL(fh));
-#endif
+
+   TRUNCATE(fh);
 
    close(fh);
    free(buf);
@@ -14681,11 +14654,8 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue)
       free(buf);
       return 0;
    }
-#ifdef _MSC_VER
-   chsize(fh, TELL(fh));
-#else
-   ftruncate(fh, TELL(fh));
-#endif
+
+   TRUNCATE(fh);
 
    close(fh);
    free(buf);
@@ -14775,11 +14745,8 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
       free(buf);
       return 0;
    }
-#ifdef _MSC_VER
-   chsize(fh, TELL(fh));
-#else
-   ftruncate(fh, TELL(fh));
-#endif
+
+   TRUNCATE(fh);
 
    close(fh);
    free(buf);
@@ -18455,13 +18422,16 @@ void server_loop(int tcp_port, int daemon)
    /* if domain name is not in host name, hope to get it from phe */
    if (strchr(host_name, '.') == NULL && phe != NULL)
       strcpy(host_name, phe->h_name);
+   
    /* open configuration file */
    getcfg("dummy", "dummy", str);
+   
    /* initiate daemon */
    if (daemon) {
       printf("Becoming a daemon...\n");
       ss_daemon_init();
    }
+
 #ifdef OS_UNIX
    /* create PID file if given as command line parameter or if running under root */
 
@@ -18472,11 +18442,13 @@ void server_loop(int tcp_port, int daemon)
 
       if (pidfile[0] == 0)
          strcpy(pidfile, PIDFILE);
+
       /* check if file exists */
       if (stat(pidfile, &finfo) >= 0) {
          printf("File \"%s\" exists, using \"%s.%d\" instead.\n", pidfile, pidfile,
                 tcp_port);
          sprintf(pidfile + strlen(pidfile), ".%d", tcp_port);
+         
          /* check again for the new name */
          if (stat(pidfile, &finfo) >= 0) {
             /* never overwrite a file */
@@ -18538,9 +18510,11 @@ void server_loop(int tcp_port, int daemon)
 
    /* load initial configuration */
    check_config();
+   
    /* build logbook indices */
    if (el_index_logbooks() != EL_SUCCESS)
       exit(EXIT_FAILURE);
+   
    /* listen for connection */
    status = listen(lsock, SOMAXCONN);
    if (status < 0) {
@@ -18828,7 +18802,7 @@ void server_loop(int tcp_port, int daemon)
             strlcpy(str, p, sizeof(str));
             if (strchr(str, '\r'))
                *strchr(str, '\r') = 0;
-#ifdef _MSC_VER
+#ifdef OS_WINNT
             rem_addr.S_un.S_addr = inet_addr(str);
 #else
             rem_addr.s_addr = inet_addr(str);
@@ -19864,7 +19838,6 @@ int main(int argc, char *argv[])
 #else
    server_loop(tcp_port, daemon);
 #endif
-
 
    exit(EXIT_SUCCESS);
 }
