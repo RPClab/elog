@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.18  2002/04/30 13:40:33  midas
+  Version 1.3.5
+
   Revision 1.17  2002/04/29 08:11:38  midas
   Added icons via IOptions configuration
 
@@ -59,7 +62,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.3.4"
+#define VERSION "1.3.5"
 
 #include <stdio.h>
 #include <sys/types.h>
