@@ -10,6 +10,7 @@ Version 2.3.9, released June xxth, 2003
 - Don't send email notificatin to users which are not in the 'Login user' list
 - Replace 'Email message body' by 'Email format'
 - Send attachments as email attachments
+- Don't display more than 10 email recipients
 
 Version 2.3.8, released June 4th, 2003
 ======================================
