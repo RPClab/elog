@@ -1,6 +1,6 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.5.3)
+# (for 2.5.4)
 # A more recent version may be available at :
 # http://midas.psi.ch/cgi-bin/cvsweb/elog/eloglang.french
 #
@@ -258,7 +258,7 @@ Please enter attribute '%s' = Veuillez renseigner l'attribut '%s'
 Entry time = Heure de l'entrée
 Start = Début
 End = Fin
-From = De
+>From = De
 After = Après
 to = à
 Before = Avant
@@ -296,40 +296,36 @@ Fill text body = Remplir le champ texte
 Please re-enter filename = Veuillez re-saisir le nom du fichier
 Last x = x derniers
 Activate = Activer
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Entry has been modified = 
-No attachment file specified = 
-Submit modified ELOG entry? = 
-Delete this logbook = 
-Rename this logbook = 
-Create new logbook = 
-Syntax error in config file = 
-Email notification = 
-Are you sure to delete logbook "%s"? = 
-Logbook "%s" exists already, please choose different name = 
-Rename logbook = 
-Enter new logbook name = 
-Logbook name = 
-Use existing logbook as template = 
-none = 
-URL is redirected to: = 
-Remote config should be received = 
-Local entry should be submitted = 
-Remote entry should be received = 
-Local entry = 
-%s should be deleted = 
-Entry should be deleted locally = 
-Local entry ID should be changed to %d = 
-Remote entry = 
-Entry should be deleted remotely = 
-Click here to delete %s entries = 
-Click here to delete this entry = 
-Maximum number of attribute options exceeded = 
-Please increase MAX_N_LIST in elogd.c and recompile = 
-You can "steal" the lock by editing this entry = 
-Several logbooks groups are defined on this host = 
-Please select one to list the logbooks in that group = 
-No logbook defined on this server = 
+Entry has been modified = L'entrée a été modifiée
+No attachment file specified = Aucun fichier joint n'a été défini
+Submit modified ELOG entry? = Valider l'entrée ELOG modifiée ?
+Delete this logbook = Supprimer ce registre
+Rename this logbook = Renommer ce registre
+Create new logbook = Créer un nouveau registre
+Syntax error in config file = Erreur de syntaxe dans le fichier de configuration
+Email notification = Avertissement par mél
+Are you sure to delete logbook "%s"? = Etes-vous sûr(e) de vouloir supprimer le registre "%s" ?
+Logbook "%s" exists already, please choose different name = Le registre "%s" existe déjà, merci de choisir un autre nom
+Rename logbook = Renommer le registre
+Enter new logbook name = Saisissez le nom du nouveau registre
+Logbook name = Nom du registre
+Use existing logbook as template = Utiliser un registre existant comme modèle
+none = aucun
+URL is redirected to: = URL redirigée vers :
+Remote config should be received = Recevoir la configuration distante
+Local entry should be submitted = Emettre l'entrée locale
+Remote entry should be received = Recevoir l'entrée distante
+Local entry = Entrée locale
+%s should be deleted = Supprimer %s
+Entry should be deleted locally = Supprimer l'entrée localement
+Local entry ID should be changed to %d = Changer l'identifiant de l'entrée locale en %d
+Remote entry = Entrée distante
+Entry should be deleted remotely = Supprimer l'entrée distante
+Click here to delete %s entries = Cliquer ici pour supprimer %s entrées
+Click here to delete this entry = Cliquer ici pour supprimer cette entrée
+Maximum number of attribute options exceeded = Le maximum autorisé pour les options d'attributs est dépassé
+Please increase MAX_N_LIST in elogd.c and recompile = Veuillez augmenter la valeur MAX_N_LIST dans elogd.c et recompiler
+You can "steal" the lock by editing this entry = Vous pouvez vous approprier le verrou en modifiant cette entrée
+Several logbooks groups are defined on this host = Plusieurs groupes de registres sont définis sur ce serveur
+Please select one to list the logbooks in that group = Veuillez en sélectionner un pour en voir le contenu
+No logbook defined on this server = Aucun registre n'est défini sur ce serveur
