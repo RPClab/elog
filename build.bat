@@ -11,9 +11,9 @@ nmake -f elconv.mak CFG="elconv - Win32 Release"
 cd ..
 
 rem map network drive
-net use m: /d > nul
-net use m: \\pc2075\midas mi_das /user:midas
+net use n: /d > nul
+net use n: \\pc2075\midas mi_das /user:midas
 
 "\program files\NSIS\makensis" /DVERSION=%version% elog.nsi
 
-copy elog%version%.exe m:\html\elog\download\windows\
+copy elog%version%.exe n:\html\elog\download\windows\
