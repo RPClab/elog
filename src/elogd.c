@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.277  2004/03/05 20:39:09  midas
+   Allocate heap memory in display_line
+
    Revision 1.276  2004/03/03 10:29:56  midas
    Fixed bug with date attribute email notification
 
@@ -7253,7 +7256,7 @@ void show_find_form(LOGBOOK * lbs)
    if (i > 2) {
       if (!getcfg(lbs->name, "Search all logbooks", str) || atoi(str) == 1) {
          rsprintf("<input type=checkbox id=all name=all value=1>\n");
-         rsprintf("<label for=\"all\">%s</label>\n", loc("Search all logbooks"));
+         rsprintf("<label for=\"all\">%s</label><br>\n", loc("Search all logbooks"));
       }
    }
 
@@ -10209,14 +10212,17 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   BOOL select, int *n_display, char *locked_by)
 {
    char str[NAME_LENGTH], ref[256], *nowrap, sclass[80], format[256],
-       file_name[MAX_PATH_LENGTH];
-   char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
+       file_name[MAX_PATH_LENGTH], *slist, *svalue;
+//   char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
    char display[NAME_LENGTH], attr_icon[80];
    int i, j, i_line, index, colspan;
    BOOL skip_comma;
    FILE *f;
    struct tm ts, *pts;
    time_t ltime;
+
+   slist = malloc((MAX_N_ATTR + 10)*NAME_LENGTH);
+   svalue = malloc((MAX_N_ATTR + 10)*NAME_LENGTH);
 
    sprintf(ref, "../%s/%d", lbs->name_enc, message_id);
 
@@ -10291,13 +10297,13 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          }
       }
 
-      j = build_subst_list(lbs, slist, svalue, attrib);
+      j = build_subst_list(lbs, (char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, attrib);
 
       /* add message id and entry time */
-      strcpy(slist[j], "Message ID");
-      sprintf(svalue[j++], "%d", message_id);
+      strcpy(&slist[NAME_LENGTH*j], "Message ID");
+      sprintf(&svalue[NAME_LENGTH*j++], "%d", message_id);
 
-      strcpy(slist[j], "entry time");
+      strcpy(&slist[NAME_LENGTH*j], "entry time");
 
       if (!getcfg(lbs->name, "Time format", format))
          strcpy(format, DEFAULT_TIME_FORMAT);
@@ -10317,9 +10323,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       ts.tm_isdst = -1;         /* let mktime compute DST */
 
       mktime(&ts);
-      strftime(svalue[j++], sizeof(str), format, &ts);
+      strftime(&svalue[NAME_LENGTH*j++], sizeof(str), format, &ts);
 
-      strsubst(display, slist, svalue, j);
+      strsubst(display, (char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, j);
 
       rsprintf("<a href=\"%s\">", ref);
       rsputs2(display);
@@ -10655,6 +10661,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       if (!show_attachments && attachment[0][0])
          rsprintf("</td></tr>\n");
    }
+
+   free(slist);
+   free(svalue);
 }
 
 /*------------------------------------------------------------------*/
@@ -17187,6 +17196,8 @@ int main(int argc, char *argv[])
    char read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256];
    time_t now;
    struct tm *tms;
+
+   printf("elogd %s built %s\n", VERSION, __TIMESTAMP__);
 
 #ifdef OS_UNIX
    /* save gid/uid to regain later */
