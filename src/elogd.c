@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.454  2004/08/09 09:54:27  midas
+   Fixed some (trivial) memory leaks
+
    Revision 1.453  2004/08/09 08:50:46  midas
    Finished hiding of attachments
 
@@ -20518,6 +20521,15 @@ void server_loop(void)
       check_cron();
 
    } while (!_abort);
+
+   /* free all allocated memory */
+   for (i = 0; lb_list[i].name[0] ; i++) {
+      xfree(lb_list[i].el_index);
+      xfree(lb_list[i].n_el_index);
+   }
+
+   xfree(net_buffer);
+   xfree(return_buffer);
 
    eprintf("Server aborted.\n");
 }
