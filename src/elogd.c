@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.91  2003/04/23 09:59:46  midas
+  Fixed bug that administrator could not change passwords of other users
+
   Revision 1.90  2003/04/23 08:58:20  midas
   Fixed bug on login with guest access
 
@@ -4880,8 +4883,9 @@ int    wrong_pwd;
     {
     if (user[0] && get_user_line(lbs->name, user, act_pwd, NULL, NULL, NULL))
       {
+      /* administrator does not have to supply old password */
       if (getcfg(lbs->name, "Admin user", str) &&
-          strstr(str, user) != 0)
+          strstr(str, getparam("unm")) != 0)
         wrong_pwd = 0;
       else
         {
