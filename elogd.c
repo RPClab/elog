@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.9  2002/01/30 04:26:05  midas
+  Added flag 'restrict edit = 0/1'
+
   Revision 1.8  2002/01/29 10:06:23  midas
   Fixed various bugs with fixed attributes
 
@@ -3260,6 +3263,37 @@ time_t now;
       {
       sprintf(str, "p%s", attr_list[i]);
       strcpy(attrib[i], getparam(str));
+      }
+    }
+
+  /* check for author */
+  if (bedit && getcfg(logbook, "Restrict edit", str) && atoi(str) == 1)
+    {
+    /* search attribute which contains author */
+    for (i=0 ; i<n_attr ; i++)
+      {
+      sprintf(str, "Preset %s", attr_list[i]);
+      if (getcfg(logbook, str, preset))
+        {
+        if (strstr(preset, "$short_name"))
+          {
+          if (strstr(attrib[i], getparam("unm")) == NULL)
+            {
+            sprintf(str, loc("Only user <i>%s</i> can edit this entry"), attrib[i]);
+            show_error(str);
+            return;
+            }
+          }
+        if (strstr(preset, "$long_name"))
+          {
+          if (strstr(attrib[i], getparam("full_name")) == NULL)
+            {
+            sprintf(str, loc("Only user <i>%s</i> can edit this entry"), attrib[i]);
+            show_error(str);
+            return;
+            }
+          }
+        }
       }
     }
 
