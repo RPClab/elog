@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.410  2004/07/28 13:24:06  midas
+   Fixed problem that attachments could not be deleted
+
    Revision 1.409  2004/07/28 12:52:30  midas
    Added int_vasprintf from Recai Oktas
 
@@ -18354,12 +18357,6 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   message_id = atoi(dec_path);
-   if (strieq(command, loc("Upload"))) {
-      show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE, FALSE);
-      return;
-   }
-
    /* check for deletion of attachments */
    for (i = 0; i < MAX_ATTACHMENTS; i++) {
       sprintf(str, "delatt%d", i);
@@ -18384,6 +18381,12 @@ void interprete(char *lbook, char *path)
          show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE, FALSE);
          return;
       }
+   }
+
+   message_id = atoi(dec_path);
+   if (strieq(command, loc("Upload"))) {
+      show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE, FALSE);
+      return;
    }
 
    if (strieq(command, loc("Edit"))) {
