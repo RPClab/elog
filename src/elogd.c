@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.107  2003/05/15 10:39:47  midas
+  Sort correctly upper and lower case
+
   Revision 1.106  2003/05/12 20:15:03  midas
   Added warning if message is being edited
 
@@ -7653,12 +7656,12 @@ char   *p;
 
 int msg_compare(const void *m1, const void *m2)
 {
-  return strcmp(((MSG_LIST *)m1)->string, ((MSG_LIST *)m2)->string);
+  return stricmp(((MSG_LIST *)m1)->string, ((MSG_LIST *)m2)->string);
 }
 
 int msg_compare_reverse(const void *m1, const void *m2)
 {
-  return strcmp(((MSG_LIST *)m2)->string, ((MSG_LIST *)m1)->string);
+  return stricmp(((MSG_LIST *)m2)->string, ((MSG_LIST *)m1)->string);
 }
 
 /*------------------------------------------------------------------*/
