@@ -6,6 +6,9 @@
    Contents:     Midas XML Library
 
    $Log$
+   Revision 1.9  2005/03/22 16:10:09  ritt
+   Allow ' in xpath
+
    Revision 1.8  2005/03/22 14:26:19  ritt
    Implemented mxml_find_nodes()
 
@@ -524,110 +527,6 @@ PMXML_NODE mxml_subnode(PMXML_NODE pnode, int index)
 
 /*------------------------------------------------------------------*/
 
-PMXML_NODE mxml_find_node(PMXML_NODE tree, char *xml_path)
-/*
-   Search for a specific XML node with a subset of XPATH specifications.
-   Return first found node.
-
-   Following elemets are possible
-
-   /<node>/<node>/..../<node>          Find a node in the tree hierarchy
-   /<node>[index]                      Find child #[index] of node (index starts from 1)
-   /<node>[index]/<node>               Find subnode of the above
-   /<node>[<subnode>=<value>]          Find a node which has a specific subnode
-   /<node>[<subnode>=<value>]/<node>   Find subnode of the above
-*/
-{
-   PMXML_NODE pnode;
-   char *p1, *p2, *p3, node_name[256], condition[256], subnode[256], value[256];
-   int i, j, index;
-   size_t len;
-
-   p1 = xml_path;
-   pnode = tree;
-
-   /* skip leading '/' */
-   if (*p1 && *p1 == '/')
-      p1++;
-
-   do {
-      p2 = p1;
-      while (*p2 && *p2 != '/' && *p2 != '[')
-         p2++;
-      len = (size_t)p2 - (size_t)p1;
-      if (len >= sizeof(node_name))
-         return NULL;
-
-      memcpy(node_name, p1, len);
-      node_name[len] = 0;
-      index = 0;
-      subnode[0] = value[0] = 0;
-      if (*p2 == '[') {
-         p2++;
-         if (isdigit(*p2)) {
-            /* evaluate [index] */
-            index = atoi(p2);
-            p2 = strchr(p2, ']');
-            if (p2 == NULL)
-               return NULL;
-            p2++;
-         } else {
-            /* evaluate [<subnode>=<value>] */
-            while (*p2 && isspace(*p2))
-               p2++;
-            strlcpy(condition, p2, sizeof(condition));
-            if (strchr(condition, ']'))
-               *strchr(condition, ']') = 0;
-            else
-               return NULL;
-            p2 = strchr(p2, ']')+1;
-            if ((p3 = strchr(condition, '=')) != NULL) {
-               strlcpy(subnode, condition, sizeof(subnode));
-               *strchr(subnode, '=') = 0;
-               while (subnode[0] && isspace(subnode[strlen(subnode)-1]))
-                  subnode[strlen(subnode)-1] = 0;
-               p3++;
-               while (*p3 && isspace(*p3))
-                  p3++;
-               strlcpy(value, p3, sizeof(value));
-               while (value[0] && isspace(value[strlen(value)-1]))
-                  value[strlen(value)-1] = 0;
-            }
-         }
-      }
-
-      for (i=j=0 ; i<pnode->n_children ; i++) {
-         if (subnode[0]) {
-            /* search subnode */
-            for (j=0 ; j<pnode->child[i].n_children ; j++)
-               if (strcmp(pnode->child[i].child[j].name, subnode) == 0)
-                  break;
-            if (j == pnode->child[i].n_children)
-               return NULL;
-            if (strcmp(pnode->child[i].child[j].value, value) == 0)
-               break;
-         } else {
-            if (strcmp(pnode->child[i].name, node_name) == 0)
-               if (index == 0 || ++j == index)
-                  break;
-         }
-      }
-
-      if (i == pnode->n_children)
-         return NULL;
-
-      pnode = &pnode->child[i];
-      p1 = p2;
-      if (*p1 == '/')
-         p1++;
-
-   } while (*p2);
-
-   return pnode;
-}
-
-/*------------------------------------------------------------------*/
-
 int mxml_find_nodes1(PMXML_NODE tree, char *xml_path, PMXML_NODE **nodelist, int *found);
 
 int mxml_add_resultnode(PMXML_NODE node, char *xml_path, PMXML_NODE **nodelist, int *found)
@@ -720,6 +619,12 @@ int mxml_find_nodes1(PMXML_NODE tree, char *xml_path, PMXML_NODE **nodelist, int
                      value[strlen(value)-1] = 0;
                   if (value[0] && value[strlen(value)-1] == '\"')
                      value[strlen(value)-1] = 0;
+               } else if (*p3 == '\'') {
+                  strlcpy(value, p3+1, sizeof(value));
+                  while (value[0] && isspace(value[strlen(value)-1]))
+                     value[strlen(value)-1] = 0;
+                  if (value[0] && value[strlen(value)-1] == '\'')
+                     value[strlen(value)-1] = 0;
                } else {
                   strlcpy(value, p3, sizeof(value));
                   while (value[0] && isspace(value[strlen(value)-1]))
@@ -771,6 +676,27 @@ int mxml_find_nodes(PMXML_NODE tree, char *xml_path, PMXML_NODE **nodelist)
       return -1;
 
    return found;
+}
+
+/*------------------------------------------------------------------*/
+
+PMXML_NODE mxml_find_node(PMXML_NODE tree, char *xml_path)
+/*
+   Search for a specific XML node with a subset of XPATH specifications.
+   Return first found node. For syntax see mxml_find_nodes()
+*/
+{
+   PMXML_NODE *node, pnode;
+   int n;
+
+   n = mxml_find_nodes(tree, xml_path, &node);
+   if (n > 0)
+      pnode = node[0];
+   else
+      pnode = NULL;
+
+   free(node);
+   return pnode;
 }
 
 /*------------------------------------------------------------------*/
@@ -1368,11 +1294,15 @@ void mxml_test()
    tree = mxml_parse_file("c:\\elogdemo\\forum.xml", err, sizeof(err));
 
    node = NULL;
-   n = mxml_find_nodes(tree, "/list/user/full_name", &node);
+   n = mxml_find_nodes(tree, "/list/user[name='stefan']/full_name", &node);
    for (i=0 ; i<n ; i++)
       printf("%s\n", node[i]->value);
 
    free(node);
+
+   *node = mxml_find_node(tree, "/list/user[name='stefan']/full_name");
+   mxml_debug_tree(*node, 0);
+
    mxml_debug_tree(tree, 0);
    mxml_free_tree(tree);
 }
