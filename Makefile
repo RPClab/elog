@@ -13,6 +13,7 @@ CFLAGS = -g -O
 EXECS = elog elogd elconv
 DESTDIR = /usr/local/bin
 SDESTDIR = /usr/local/sbin
+MANDIR = /usr/local/man
 
 INSTALL = /usr/bin/install
 RM = /bin/rm
@@ -37,6 +38,8 @@ all: $(EXECS)
 install: $(EXECS)
 	$(INSTALL) -m 0755 -o bin -g bin elog elconv $(DESTDIR)
 	$(INSTALL) -m 0755 -o bin -g bin elogd $(SDESTDIR)
+	$(INSTALL) -m 0644 man/elog.1 man/elconv.1 $(MANDIR)/man1/
+	$(INSTALL) -m 0644 man/elogd.8 $(MANDIR)/man8/
 
 clean:
 	-$(RM) *~ $(EXECS)
