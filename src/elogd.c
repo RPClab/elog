@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.521  2004/12/17 21:50:28  midas
+   Fixed attribute substitutions in 'use email from'
+
    Revision 1.520  2004/12/17 21:32:50  midas
    Fixed problem with invalid RFC2822 date in email header for different locale
 
@@ -1059,6 +1062,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_value);
 int read_password(char *pwd, int size);
 int getcfg(char *group, char *param, char *value, int vsize);
+int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_LENGTH],
+                     char attrib[][NAME_LENGTH], BOOL format_date);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -3368,15 +3373,22 @@ void check_config()
 
 /*-------------------------------------------------------------------*/
 
-void retrieve_email_from(LOGBOOK * lbs, char *ret)
+void retrieve_email_from(LOGBOOK * lbs, char *ret, char attrib[MAX_N_ATTR][NAME_LENGTH])
 {
    char str[256];
+   char slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
+   int i;
 
    if (!getcfg(lbs->name, "Use Email from", str, sizeof(str))) {
       if (isparam("user_email") && *getparam("user_email"))
          strcpy(str, getparam("user_email"));
       else
          sprintf(str, "ELog@%s", host_name);
+   }
+
+   if (attrib) {
+      i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+      strsubst(str, slist, svalue, i);
    }
 
    strcpy(ret, str);
@@ -9780,7 +9792,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
          }
       }
 
-      retrieve_email_from(lbs, mail_from);
+      retrieve_email_from(lbs, mail_from, NULL);
 
       if (activate) {
          sprintf(subject, loc("Your ELOG account has been activated"));
@@ -10161,7 +10173,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             sprintf(str, "?redir=%s&uname=%s&upassword=%s", redir, login_name, pwd);
             strlcat(url, str, sizeof(url));
 
-            retrieve_email_from(lbs, mail_from);
+            retrieve_email_from(lbs, mail_from, NULL);
 
             if (lbs)
                sprintf(subject, loc("Password recovery for ELOG %s"), lbs->name);
@@ -15801,7 +15813,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
    if (getcfg(lbs->name, "Email format", str, sizeof(str)))
       flags = atoi(str);
 
-   retrieve_email_from(lbs, mail_from);
+   retrieve_email_from(lbs, mail_from, attrib);
 
    mail_text = xmalloc(TEXT_SIZE + 1000);
    mail_text[0] = 0;
