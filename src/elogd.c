@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.37  2003/03/04 21:14:47  midas
+  'Copy to' and 'Move to' now processes whole threads
+
   Revision 1.36  2003/03/01 16:08:02  midas
   Ignore <tab>'s in config file correctly
 
@@ -6465,7 +6468,7 @@ char   message[TEXT_SIZE+1000], *p;
 
 void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
                   int expand, int level, BOOL printable, int n_line, int show_attachments,
-                  char *date, char *reply_to,
+                  char *date, char *in_reply_to, char *reply_to,
                   int n_attr_disp, char disp_attr[MAX_N_ATTR+4][NAME_LENGTH],
                   char attrib[MAX_N_ATTR][NAME_LENGTH],
                   int n_attr, char *text,
@@ -6506,7 +6509,7 @@ FILE *f;
     rsprintf("<td align=left class=\"%s\">", sclass);
     
     /* show select box */
-    if (select)
+    if (select && level == 0)
       rsprintf("<input type=checkbox name=\"s%d\" value=%d>\n", (*n_display)++, message_id);
     
     for (i=0 ; i<level ; i++)
@@ -6594,9 +6597,11 @@ FILE *f;
     {
     /* show select box */
     if (select && !equal_ustring(mode, "Threaded"))
-      rsprintf("<td class=\"%s\"><input type=checkbox name=\"s%d\" value=%d>\n", 
-                sclass, (*n_display)++, message_id);
-
+      {
+      rsprintf("<td class=\"%s\">", sclass);
+      if (in_reply_to[0] == 0)
+        rsprintf("<input type=checkbox name=\"s%d\" value=%d>\n", (*n_display)++, message_id);
+      }
 
     if (equal_ustring(mode, "Threaded"))
       rsprintf("<a href=\"%s\">", ref);
@@ -6945,7 +6950,7 @@ char   *p;
     }
 
   display_line(lbs, message_id, 0, "threaded", expand, level, printable, n_line,
-               FALSE, date, reply_to, n_attr_disp, disp_attr,
+               FALSE, date, in_reply_to, reply_to, n_attr_disp, disp_attr,
                attrib, lbs->n_attr, text, NULL, encoding, 0, NULL);
 
   if (reply_to[0])
@@ -8572,7 +8577,7 @@ LOGBOOK *lbs_cur;
 
     display_line(msg_list[index].lbs, message_id, 
                  index, mode, expand, 0, printable, n_line,
-                 show_attachments, date, reply_to, n_attr_disp, disp_attr,
+                 show_attachments, date, in_reply_to, reply_to, n_attr_disp, disp_attr,
                  attrib, lbs->n_attr, text, attachment, encoding, atoi(getparam("select")), &n_display);
 
     if (threaded)
@@ -9068,12 +9073,13 @@ int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_or
 
 /*------------------------------------------------------------------*/
 
-void copy_to(LOGBOOK *lbs, int src_id, char *dest_logbook, int move)
+void copy_to(LOGBOOK *lbs, int src_id, char *dest_logbook, int move, int orig_id)
 {
-int     size, i, n, n_done, index, status, fh, source_id, message_id;
+int     size, i, n, n_done, n_reply, index, status, fh, source_id, message_id;
 char    str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 char    date[80], text[TEXT_SIZE], msg_str[32], in_reply_to[80], reply_to[256],
-        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], *buffer;
+        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], *buffer,
+        list[MAX_N_ATTR][NAME_LENGTH];
 LOGBOOK *lbs_dest;
 
   for (i=0 ; lb_list[i].name[0] ; i++)
@@ -9116,6 +9122,28 @@ LOGBOOK *lbs_dest;
       return;
       }
 
+    if (orig_id == 0)
+      {
+      /* search message head */
+      while (atoi(in_reply_to) > 0)
+        {
+        source_id = atoi(in_reply_to);
+        size = sizeof(text);
+        status = el_retrieve(lbs, source_id, date, attr_list, attrib, lbs->n_attr,
+                             text, &size, in_reply_to, reply_to,
+                             attachment, encoding);
+
+        if (status != EL_SUCCESS)
+          {
+          sprintf(msg_str, "%d", source_id);
+          sprintf(str, loc("Message %s cannot be read from logbook \"%s\""), msg_str, lbs->name);
+          show_error(str);
+          return;
+          }
+        }
+      }
+
+
     /* read attachments */
     for (i=0 ; i<MAX_ATTACHMENTS ; i++)
       if (attachment[i][0])
@@ -9152,11 +9180,16 @@ LOGBOOK *lbs_dest;
           attachment[i][0] = 0;
         }
 
+    /* if called recursively (for threads), put in correct in_reply_to */
+    str[0] = 0;
+    if (orig_id)
+      sprintf(str, "%d", orig_id);
+
     /* submit in destination logbook without links, submit all attributes from
        the source logbook even if the destination has a differnt number of attributes */
 
     message_id = el_submit(lbs_dest, 0, date, attr_list, attrib, lbs->n_attr, text,
-                       "", "", encoding,
+                       str, "", encoding,
                        attachment, TRUE);
 
     if (message_id <= 0)
@@ -9170,8 +9203,15 @@ LOGBOOK *lbs_dest;
 
     n_done++;
 
+    /* submit all replies */
+    n_reply = strbreak(reply_to, list, MAX_N_ATTR);
+    for (i=0 ; i<n_reply ; i++)
+      {
+      copy_to(lbs, atoi(list[i]), dest_logbook, move, message_id);
+      }
+
     /* delete original message for move */
-    if (move)
+    if (move && orig_id == 0)
       {
       el_delete_message(lbs, source_id, TRUE, NULL, TRUE, TRUE);
 
@@ -9183,6 +9223,9 @@ LOGBOOK *lbs_dest;
         source_id = el_search_message(lbs, EL_LAST, 0, FALSE);
       }
     }
+
+  if (orig_id)
+    return;
 
   /* display status message */
   sprintf(str, "%d", source_id);
@@ -10923,13 +10966,13 @@ FILE    *f;
 
   if (equal_ustring(command, loc("Copy to")))
     {
-    copy_to(lbs, message_id, getparam("destc"), 0);
+    copy_to(lbs, message_id, getparam("destc"), 0, 0);
     return;
     }
 
   if (equal_ustring(command, loc("Move to")))
     {
-    copy_to(lbs, message_id, getparam("destm"), 1);
+    copy_to(lbs, message_id, getparam("destm"), 1, 0);
     return;
     }
 
