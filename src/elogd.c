@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.42  2003/03/09 19:48:24  midas
+  Exchanged priviledge drop and directory creation (Recai Oktas)
+
   Revision 1.41  2003/03/06 10:51:51  midas
   Added 'X-Mailer: Elog'
 
@@ -675,6 +678,14 @@
   #define DIR_SEPARATOR '/'
   #define DIR_SEPARATOR_STR "/"
 
+  #ifndef DEFAULT_USER
+    #define DEFAULT_USER "nobody"
+  #endif
+
+  #ifndef DEFAULT_GROUP
+    #define DEFAULT_GROUP "nogroup"
+  #endif
+
   #ifndef PIDFILE
     #define PIDFILE "/var/run/elogd.pid"
   #endif
@@ -704,7 +715,11 @@
   #define O_BINARY 0
   #endif
 
+  gid_t orig_gid;      /* Original effective GID before dropping privilege */
+  uid_t orig_uid;      /* Original effective UID before dropping privilege */
 #endif
+
+char pidfile[256];   /* Pidfile name */
 
 typedef int INT;
 
@@ -1185,6 +1200,56 @@ void do_crypt(char *s, char *d)
 #endif
 }
 
+/* Wrapper for setegid. */
+int setgroup(char *str)
+{
+#ifdef OS_UNIX
+struct group  *gr;
+
+  gr = getgrnam(str);
+
+  if (gr != NULL)
+    if (setegid(gr->gr_gid) >= 0 && initgroups(gr->gr_name, gr->gr_gid) >= 0)
+      return 0;
+    else
+      {
+      printf("Cannot set effective GID to group \"%s\"\n", gr->gr_name);
+      perror("setgroup");
+      }
+  else
+    printf("Group \"%s\" not found\n", str);
+
+  return -1;
+#else
+  return 0;
+#endif
+}
+
+/* Wrapper for seteuid. */
+int setuser(char *str)
+{
+#ifdef OS_UNIX
+struct passwd  *pw;
+
+  pw = getpwnam(str);
+
+  if (pw != NULL)
+    if (seteuid(pw->pw_uid) >= 0)
+      return 0;
+    else
+      {
+      printf("Cannot set effective UID to user \"%s\"\n", str);
+      perror("setuser");
+      }
+  else
+    printf("User \"%s\" not found\n", str);
+
+  return -1;
+#else
+  return 0;
+#endif
+}
+
 /*-------------------------------------------------------------------*/
 
 INT recv_string(int sock, char *buffer, INT buffer_size, INT millisec)
@@ -1376,7 +1441,7 @@ INT ss_daemon_init()
   if ( (pid = fork()) < 0)
     return 0;
   else if (pid != 0)
-    exit(0); /* parent finished */
+    exit(EXIT_SUCCESS); /* parent finished */
 
   /* child continues here */
 
@@ -11364,7 +11429,7 @@ int ka_time[N_MAX_CONNECTION];
 struct in_addr remote_addr[N_MAX_CONNECTION];
 char remote_host[N_MAX_CONNECTION][256];
 
-void server_loop(int tcp_port, int daemon, char *pidfile)
+void server_loop(int tcp_port)
 {
 int                  status, i, n, n_error, authorized, min, i_min, i_conn, length;
 struct sockaddr_in   serv_addr, acc_addr;
@@ -11377,11 +11442,6 @@ struct hostent       *phe;
 fd_set               readfds;
 struct timeval       timeout;
 struct stat          cfg_stat;
-
-#ifdef OS_UNIX
-uid_t                saved_uid;
-gid_t                saved_gid;
-#endif
 
 #ifdef OS_WINNT
   {
@@ -11454,98 +11514,12 @@ gid_t                saved_gid;
   /* open configuration file */
   getcfg("dummy", "dummy", str);
 
-  if (daemon)
-    {
-    printf("Becoming a daemon...\n");
-    ss_daemon_init();
-    }
-
 #ifdef OS_UNIX
-  /* create PID file if given as command line parameter or if running under root */
-
-  if (geteuid() == 0 || pidfile[0])
-    {
-    int fd;
-    char buf[20];
-    struct stat finfo;
-
-    if (pidfile[0] == 0)
-      strcpy(pidfile, PIDFILE);
-
-    /* check if file exists */
-    if (stat(pidfile, &finfo) >= 0)
-      {
-      printf("File \"%s\" exists, using \"%s.%d\" instead.\n", pidfile, pidfile, tcp_port);
-      sprintf(pidfile + strlen(pidfile), ".%d", tcp_port);
-
-      /* check again for the new name */
-      if (stat(pidfile, &finfo) >= 0)
-        {
-        /* never overwrite a file */
-        printf("Refuse to overwrite existing file \"%s\".\n", pidfile);
-        exit(1);
-        }
-      }
-
-    fd = open(pidfile, O_CREAT | O_RDWR, 0644);
-    if (fd < 0)
-      {
-      sprintf(str, "Error creating pid file \"%s\"", pidfile);
-      perror(str);
-      exit(1);
-      }
-
-    sprintf(buf, "%d\n", (int)getpid());
-    if (write(fd, buf, strlen(buf)) == -1)
-      {
-      sprintf(str, "Error writing to pid file \"%s\"", pidfile);
-      perror(str);
-      exit(1);
-      }
-    close(fd);
-    }
 
   /* install signal handler */
   signal(SIGTERM, ctrlc_handler);
   signal(SIGINT, ctrlc_handler);
   signal(SIGPIPE, SIG_IGN);
-
-  /* save gid/uid to regain later for deleting the PID file */
-  saved_gid = getegid();
-  saved_uid = geteuid();
-
-  /* give up root privilege */
-
-  if (geteuid() == 0)
-    {
-    struct group  *gr;
-    struct passwd *pw;
-
-    if (getcfg("global", "Grp", str))
-      {
-      gr = getgrnam(str);
-
-      if (gr == NULL)
-        printf("Group \"%s\" not found\n", str);
-      else if (setegid(gr->gr_gid) < 0 || initgroups(gr->gr_name, gr->gr_gid) < 0)
-        printf("Cannot set effective GID to group \"%s\"\n", gr->gr_name);
-      }
-    else
-      setegid(getgid()); /* used for setuid programs */
-
-    if (getcfg("global", "Usr", str))
-      {
-      pw = getpwnam(str);
-
-      if (pw == NULL)
-        printf("User \"%s\" not found\n", str);
-      else if (seteuid(pw->pw_uid) < 0)
-        printf("Cannot set effective UID to user \"%s\\n", str);
-      }
-    else
-      seteuid(getuid()); /* used for setuid programs */
-
-    }
 #endif
 
   /* listen for connection */
@@ -12333,23 +12307,6 @@ finished:
     } while (!_abort);
 
   printf("Server aborted.\n");
-
-#ifdef OS_UNIX
-
-  /* regain original uid */
-  if (setegid(saved_gid) < 0 || seteuid(saved_uid) < 0)
-    printf("Cannot resotre original GID/UID.\n");
-
-  if (pidfile[0])
-    {
-    if (remove(pidfile) < 0)
-      {
-      sprintf(str, "Cannot remove pidfile \"%s\"\n", pidfile);
-      perror(str);
-      }
-    }
-#endif
-
 }
 
 /*------------------------------------------------------------------*/
@@ -12468,16 +12425,38 @@ char *cfgbuffer, str[256], *p;
   close(fh);
 }
 
+void cleanup(void)
+{
+#ifdef OS_UNIX
+  char str[256];
+
+  /* regain original uid */
+  if (setegid(orig_gid) < 0 || seteuid(orig_uid) < 0)
+    printf("Cannot restore original GID/UID.\n");
+    
+  if (pidfile[0])
+    {
+    if (remove(pidfile) < 0)
+      {
+      sprintf(str, "Cannot remove pidfile \"%s\"\n", pidfile);
+      perror(str);
+      }
+    }
+#endif
+}
+
 /*------------------------------------------------------------------*/
 
 int main(int argc, char *argv[])
 {
 int    i, fh, tcp_port_cl;
 int    daemon = FALSE;
-char   read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256],
-       pidfile[256];
+char   read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256];
 time_t now;
 struct tm *tms;
+
+  /* register cleanup function */
+  atexit(cleanup);
 
   tzset();
 
@@ -12591,6 +12570,99 @@ usage:
       }
     }
 
+  /* get port from configuration file */
+  if (tcp_port_cl != 0)
+    tcp_port = tcp_port_cl;
+  else
+    {
+    if (getcfg("global", "Port", str))
+      tcp_port = atoi(str);
+    }
+  
+  /* initiate daemon */
+  if (daemon)
+    {
+    printf("Becoming a daemon...\n");
+    ss_daemon_init();
+    }
+
+#ifdef OS_UNIX
+  /* create PID file if given as command line parameter or if running under root */
+
+  if (geteuid() == 0 || pidfile[0])
+    {
+    int fd;
+    char buf[20];
+    struct stat finfo;
+
+    if (pidfile[0] == 0)
+      strcpy(pidfile, PIDFILE);
+
+    /* check if file exists */
+    if (stat(pidfile, &finfo) >= 0)
+      {
+      printf("File \"%s\" exists, using \"%s.%d\" instead.\n", pidfile, pidfile, tcp_port);
+      sprintf(pidfile + strlen(pidfile), ".%d", tcp_port);
+
+      /* check again for the new name */
+      if (stat(pidfile, &finfo) >= 0)
+        {
+        /* never overwrite a file */
+        printf("Refuse to overwrite existing file \"%s\".\n", pidfile);
+        exit(EXIT_FAILURE);
+        }
+      }
+
+    fd = open(pidfile, O_CREAT | O_RDWR, 0644);
+    if (fd < 0)
+      {
+      sprintf(str, "Error creating pid file \"%s\"", pidfile);
+      perror(str);
+      exit(EXIT_FAILURE);
+      }
+
+    sprintf(buf, "%d\n", (int)getpid());
+    if (write(fd, buf, strlen(buf)) == -1)
+      {
+      sprintf(str, "Error writing to pid file \"%s\"", pidfile);
+      perror(str);
+      exit(EXIT_FAILURE);
+      }
+    close(fd);
+    }
+
+  /* save gid/uid to regain later for deleting the PID file */
+  orig_gid = getegid();
+  orig_uid = geteuid();
+ 
+  /* give up root privilege */
+
+  if (geteuid() == 0)
+    {
+    if (! getcfg("global", "Grp", str) || ! setgroup(str) < 0)
+      {
+      printf("Falling back to default group \"%s\"\n", DEFAULT_GROUP);
+      if (setgroup(DEFAULT_GROUP) < 0)
+        {
+        printf("Refuse to run as setgid root.\n");
+        printf("Please consider to define a Grp statement in configuration file\n");
+        exit(EXIT_FAILURE);
+        }
+      }
+
+    if (! getcfg("global", "Usr", str) || ! setuser(str) < 0)
+      {
+      printf("Falling back to default user \"%s\"\n", DEFAULT_USER);
+      if (setuser(DEFAULT_USER) < 0)
+        {
+        printf("Refuse to run as setuid root.\n");
+        printf("Please consider to define a Usr statement in configuration file\n");
+        exit(EXIT_FAILURE);
+        }
+      }
+    }
+#endif
+
   if (read_pwd[0])
     {
     if (!logbook[0])
@@ -12671,18 +12743,9 @@ usage:
 
   /* build logbook indices */
   if (el_index_logbooks(FALSE) != EL_SUCCESS)
-    return 1;
+    exit(EXIT_FAILURE);
 
-  /* get port from configuration file */
-  if (tcp_port_cl != 0)
-    tcp_port = tcp_port_cl;
-  else
-    {
-    if (getcfg("global", "Port", str))
-      tcp_port = atoi(str);
-    }
+  server_loop(tcp_port);
 
-  server_loop(tcp_port, daemon, pidfile);
-
-  return 0;
+  exit(EXIT_SUCCESS);
 }
