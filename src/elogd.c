@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.465  2004/09/08 14:41:23  midas
+   Fixed crash on deleting entries during synchronization
+
    Revision 1.464  2004/09/08 14:31:37  midas
    Fixed bug that synchronization was not working together with 'menu commands'
 
@@ -12901,7 +12904,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
          }
 
          if (n_delete > 1)
-            rsprintf(loc("Click here to delete %s entries"), n_delete);
+            rsprintf(loc("Click here to delete %d entries"), n_delete);
          else
             rsprintf(loc("Click here to delete this entry"));
 
