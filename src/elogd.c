@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.248  2004/02/16 15:05:56  midas
+   Changed indentation
+
    Revision 1.247  2004/02/16 15:04:32  midas
    Fixed compiler warnings
 
@@ -559,23 +562,40 @@ struct {
    char type[32];
 } filetype[] = {
 
-   {".CSS", "text/css"}, 
-   {".JPG", "image/jpeg"}, 
-   {".JPEG", "image/jpeg"}, 
-   {".GIF", "image/gif"}, 
-   {".PNG", "image/png"}, 
-   {".PS", "application/postscript"}, 
-   {".EPS", "application/postscript"}, 
-   {".HTML", "text/html"}, 
-   {".HTM", "text/html"}, 
-   {".XLS", "application/x-msexcel"}, 
-   {".DOC", "application/msword"}, 
-   {".PDF", "application/pdf"}, 
-   {".JS", "application/x-javascript"}, 
-   {".TXT", "text/plain"}, 
-   {".ASC", "text/plain"}, 
-   {".ZIP", "application/x-zip-compressed"}, 
-   {"",""},};
+   {
+   ".CSS", "text/css"}, 
+ {
+   ".JPG", "image/jpeg"}, 
+ {
+   ".JPEG", "image/jpeg"}, 
+ {
+   ".GIF", "image/gif"}, 
+ {
+   ".PNG", "image/png"}, 
+ {
+   ".PS", "application/postscript"}, 
+ {
+   ".EPS", "application/postscript"}, 
+ {
+   ".HTML", "text/html"}, 
+ {
+   ".HTM", "text/html"}, 
+ {
+   ".XLS", "application/x-msexcel"}, 
+ {
+   ".DOC", "application/msword"}, 
+ {
+   ".PDF", "application/pdf"}, 
+ {
+   ".JS", "application/x-javascript"}, 
+ {
+   ".TXT", "text/plain"}, 
+ {
+   ".ASC", "text/plain"}, 
+ {
+   ".ZIP", "application/x-zip-compressed"}, 
+ {
+"", ""},};
 
 typedef struct {
    int message_id;
@@ -3457,9 +3477,10 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
    time_t now, ltime;
    char *message, *p, *buffer;
    char attachment_all[64 * MAX_ATTACHMENTS];
-
-   tail_size = orig_size = 0;
-   buffer = NULL;
+   
+tail_size = orig_size = 0;
+   
+buffer = NULL;
    message = malloc(TEXT_SIZE + 100);
    assert(message);
 
@@ -3485,7 +3506,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       }
 
       lseek(fh, lbs->el_index[index].offset, SEEK_SET);
-      i = read(fh, message, TEXT_SIZE+100);
+      i = read(fh, message, TEXT_SIZE + 100);
       message[i] = 0;
 
       /* check for valid message */
@@ -3643,8 +3664,8 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       sprintf(message + strlen(message), "Locked by: %s\n", locked_by);
 
    sprintf(message + strlen(message), "========================================\n");
-   strlcat(message, text, TEXT_SIZE+100);
-   strlcat(message, "\n", TEXT_SIZE+100);
+   strlcat(message, text, TEXT_SIZE + 100);
+   strlcat(message, "\n", TEXT_SIZE + 100);
 
    write(fh, message, strlen(message));
 
@@ -3665,8 +3686,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 
          for (j = i + 1;
               j < *lbs->n_el_index
-              && strieq(lbs->el_index[i].file_name, lbs->el_index[j].file_name);
-              j++)
+              && strieq(lbs->el_index[i].file_name, lbs->el_index[j].file_name); j++)
             lbs->el_index[j].offset += delta;
       }
 
@@ -3688,7 +3708,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       reply_id = atoi(in_reply_to);
 
       /* retrieve original message */
-      size = TEXT_SIZE+100;
+      size = TEXT_SIZE + 100;
       el_retrieve(lbs, reply_id, date, attr_list, attr, n_attr, message, &size,
                   in_reply_to, reply_to, att, enc, lock);
 
@@ -3710,12 +3730,12 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 void remove_reference(LOGBOOK * lbs, int message_id, int remove_id, BOOL reply_to_flag)
 {
    char date[80], attr[MAX_N_ATTR][NAME_LENGTH], enc[80], in_reply_to[80],
-       reply_to[MAX_REPLY_TO * 10], att[MAX_ATTACHMENTS][256], lock[256], 
+       reply_to[MAX_REPLY_TO * 10], att[MAX_ATTACHMENTS][256], lock[256],
        *p, *ps, *message;
    int size, status;
 
    /* retrieve original message */
-   size = TEXT_SIZE+1000;
+   size = TEXT_SIZE + 1000;
    message = malloc(size);
    status =
        el_retrieve(lbs, message_id, date, attr_list, attr, lbs->n_attr, message, &size,
@@ -3876,8 +3896,8 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
    /* buffer tail of logfile */
    lseek(fh, 0, SEEK_END);
    tail_size = TELL(fh) - (lbs->el_index[index].offset + size);
-
-   buffer = NULL;
+   
+buffer = NULL;
    if (tail_size > 0) {
       buffer = malloc(tail_size);
       if (buffer == NULL) {
@@ -3922,8 +3942,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
 
    /* correct all offsets after deleted message */
    for (i = 0; i < *lbs->n_el_index; i++)
-      if (strieq(lbs->el_index[i].file_name, str) &&
-          lbs->el_index[i].offset > old_offset)
+      if (strieq(lbs->el_index[i].file_name, str) && lbs->el_index[i].offset > old_offset)
          lbs->el_index[i].offset -= size;
 
    /* if other logbook has same index, update pointers */
@@ -4324,7 +4343,7 @@ void rsputs2(const char *str)
                j += 4;
                break;
 
-            /* the translation for the search highliting */
+               /* the translation for the search highliting */
             case '\001':
                strcat(return_buffer, "<");
                j++;
@@ -4757,7 +4776,8 @@ int scan_attributes(char *logbook, char *condition)
 /* scan configuration file for attributes and fill attr_list, attr_options
 and attr_flags arrays */
 {
-   char list[10000], str[NAME_LENGTH], type[NAME_LENGTH], tmp_list[MAX_N_ATTR][NAME_LENGTH];
+   char list[10000], str[NAME_LENGTH], type[NAME_LENGTH],
+       tmp_list[MAX_N_ATTR][NAME_LENGTH];
    int i, j, n, m;
 
    if (getcfg_cond(logbook, condition, "Attributes", list)) {
@@ -4837,7 +4857,7 @@ and attr_flags arrays */
          for (j = 0; j < n; j++)
             if (strieq(attr_list[j], tmp_list[i]))
                attr_flags[j] |= AF_EXTENDABLE;
-      
+
       }
 
       for (i = 0; i < n; i++) {
@@ -5561,7 +5581,7 @@ void strencode(char *text)
          rsprintf("&nbsp;");
          break;
 
-      /* the translation for the search highliting */
+         /* the translation for the search highliting */
       case '\001':
          rsprintf("<");
          break;
@@ -5606,7 +5626,7 @@ void strencode2(char *b, char *text)
          strcat(b, "&quot;");
          break;
       default:
-         sprintf(b+strlen(b), "%c", text[i]);
+         sprintf(b + strlen(b), "%c", text[i]);
       }
    }
 }
@@ -5948,7 +5968,7 @@ void show_date_selector(int day, int month, int year, char *index)
 
    rsprintf("<option value=\"\">\n");
    for (i = 0; i < 12; i++)
-      if (i+1 == month)
+      if (i + 1 == month)
          rsprintf("<option selected value=\"%d\">%s\n", i + 1, month_name(i));
       else
          rsprintf("<option value=\"%d\">%s\n", i + 1, month_name(i));
@@ -5957,15 +5977,16 @@ void show_date_selector(int day, int month, int year, char *index)
    rsprintf("<select name=\"d%s\">", index);
    rsprintf("<option selected value=\"\">\n");
    for (i = 0; i < 31; i++)
-      if (i+1 == day)
+      if (i + 1 == day)
          rsprintf("<option selected value=%d>%d\n", i + 1, i + 1);
       else
          rsprintf("<option value=%d>%d\n", i + 1, i + 1);
    rsprintf("</select>\n");
 
    if (year)
-      rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y%s\" value=\"%d\">",
-               loc("Year"), index, year);
+      rsprintf
+          ("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y%s\" value=\"%d\">",
+           loc("Year"), index, year);
    else
       rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y%s\">",
                loc("Year"), index);
@@ -5988,7 +6009,7 @@ void show_date_selector(int day, int month, int year, char *index)
    rsprintf("} \n");
    rsprintf("//-->\n");
    rsprintf("</script>\n");
-}         
+}
 
 /*------------------------------------------------------------------*/
 
@@ -6064,7 +6085,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             ts.tm_hour = 12;
 
             ltime = mktime(&ts);
-            sprintf(attrib[i], "%d", (int)ltime);
+            sprintf(attrib[i], "%d", (int) ltime);
 
          } else {
             strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
@@ -6474,7 +6495,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\">\n", str,
                            attr_options[index][i]);
             }
-         } else  {
+         } else {
             strencode2(str, attrib[index]);
             rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\"></td></tr>\n",
                      ua, str);
@@ -6488,8 +6509,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                if (attrib[index][0]) {
                   ltime = atoi(attrib[index]);
                   pts = localtime(&ltime);
-                  year = pts->tm_year+1900;
-                  month = pts->tm_mon+1;
+                  year = pts->tm_year + 1900;
+                  month = pts->tm_mon + 1;
                   day = pts->tm_mday;
                }
 
@@ -6504,8 +6525,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf("<td class=\"attribvalue\">");
 
                strencode2(str, attrib[index]);
-               rsprintf("<input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\">\n",
-                         input_size, input_maxlen, ua, str);
+               rsprintf
+                   ("<input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\">\n",
+                    input_size, input_maxlen, ua, str);
 
                rsprintf("</td></tr>\n");
             }
@@ -7121,12 +7143,13 @@ void show_find_form(LOGBOOK * lbs)
    /* table for two-column items */
    rsprintf("<table width=\"100%%\" cellspacing=0>\n");
 
-   rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>", loc("Entry date"));
+   rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>",
+            loc("Entry date"));
    rsprintf("<td class=\"attribvalue\"><table width=\"100%%\" cellspacing=0 border=0>\n");
    rsprintf("<tr><td width=\"1%%\">%s:<td>", loc("Start"));
-    
+
    show_date_selector(0, 0, 0, "a");
-   
+
    rsprintf("&nbsp;&nbsp;/&nbsp;&nbsp;%s:&nbsp;", loc("Show last"));
 
    rsprintf("<select name=last>\n");
@@ -7153,7 +7176,7 @@ void show_find_form(LOGBOOK * lbs)
       if (attr_options[i][0][0] == 0) {
 
          if (attr_flags[i] & AF_DATE) {
-         
+
             rsprintf("<table width=\"100%%\" cellspacing=0 border=0>\n");
             rsprintf("<tr><td width=\"1%%\">%s:<td>", loc("Start"));
             sprintf(str, "%da", i);
@@ -7166,7 +7189,7 @@ void show_find_form(LOGBOOK * lbs)
             rsprintf("</td></tr></table>\n");
 
          } else {
-            
+
             rsprintf("<input type=\"text\" size=\"30\" maxlength=\"80\" name=\"%s\">\n",
                      attr_list[i]);
             rsprintf("<i>%s</i>\n", loc("(case insensitive substring)"));
@@ -7214,11 +7237,13 @@ void show_find_form(LOGBOOK * lbs)
    }
 
    rsprintf("<tr><td class=\"attribname\">%s:</td>", loc("Text"));
-   rsprintf("<td class=\"attribvalue\"><input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\">\n");
+   rsprintf
+       ("<td class=\"attribvalue\"><input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\">\n");
    rsprintf("<i>%s</i></td></tr>\n", loc("(case insensitive substring)"));
 
-   rsprintf("<tr><td><td class=\"attribvalue\"><input type=checkbox name=sall value=1>%s</td></tr>\n",
-            loc("Search text also in attributes"));
+   rsprintf
+       ("<tr><td><td class=\"attribvalue\"><input type=checkbox name=sall value=1>%s</td></tr>\n",
+        loc("Search text also in attributes"));
 
    rsprintf("</table></td></tr></table>\n");
    show_bottom_text(lbs);
@@ -7492,7 +7517,8 @@ int save_admin_config(char *section, char *buffer, char *error)
 
    /* save tail */
    buf2 = NULL;
-   if (p2) {
+   
+if (p2) {
       buf2 = malloc(strlen(p2) + 1);
       assert(buf2);
       strlcpy(buf2, p2, strlen(p2) + 1);
@@ -9698,8 +9724,8 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 
             if (_logging_level > 1)
                logf(lbs, "MIRROR send entry #%d", message_id);
-
-            remote_id = 0;
+            
+remote_id = 0;
             if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
                remote_id = submit_message(lbs, list[index], message_id, error_str);
             all_identical = FALSE;
@@ -10190,8 +10216,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      else
                         strftime(str, sizeof(str), format, pts);
 
-                     rsprintf("<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", sclass, ref, str);
-                  
+                     rsprintf("<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", sclass,
+                              ref, str);
+
                   }
 
                   else if (attr_flags[i] & AF_ICON) {
@@ -10220,7 +10247,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       rsprintf("<tr><td class=\"summary\">");
 
       if (expand == 2) {
-         for (i = i_line = 0; i < (int)sizeof(str) - 1; i++) {
+         for (i = i_line = 0; i < (int) sizeof(str) - 1; i++) {
             str[i] = text[i];
             if (str[i] == '\n')
                i_line++;
@@ -10249,7 +10276,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
    if ((strieq(mode, "Summary") && n_line > 0)) {
       rsprintf("<td class=\"summary\">");
-      for (i = i_line = 0; i < (int)sizeof(str) - 1; i++) {
+      for (i = i_line = 0; i < (int) sizeof(str) - 1; i++) {
          str[i] = text[i];
          if (str[i] == '\n')
             i_line++;
@@ -10710,8 +10737,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
    else if (command[0]) {
       n = strbreak(menu_str, menu_item, MAX_N_LIST);
       for (i = 0; i < n; i++)
-         if (strieq(command, menu_item[i]) ||
-             strieq(command, loc(menu_item[i])))
+         if (strieq(command, menu_item[i]) || strieq(command, loc(menu_item[i])))
             break;
 
       if (i == n) {
@@ -10753,11 +10779,12 @@ void build_ref(char *ref, int size, char *mode, char *expand)
 
 /*------------------------------------------------------------------*/
 
-void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands, BOOL threaded)
+void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
+                       BOOL threaded)
 {
    int cur_exp, n, i, j, index;
    char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH],
-    list[MAX_N_LIST][NAME_LENGTH], option[NAME_LENGTH];
+       list[MAX_N_LIST][NAME_LENGTH], option[NAME_LENGTH];
 
    rsprintf("<tr><td class=\"menuframe\">\n");
    rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
@@ -10841,9 +10868,12 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
             rsprintf("<option %s value=1>%s\n", i == 1 ? "selected" : "", loc("Day"));
             rsprintf("<option %s value=7>%s\n", i == 7 ? "selected" : "", loc("Week"));
             rsprintf("<option %s value=31>%s\n", i == 31 ? "selected" : "", loc("Month"));
-            rsprintf("<option %s value=92>3 %s\n", i == 92 ? "selected" : "", loc("Months"));
-            rsprintf("<option %s value=182>6 %s\n", i == 182 ? "selected" : "", loc("Months"));
-            rsprintf("<option %s value=364>%s\n", i == 364 ? "selected" : "", loc("Year"));
+            rsprintf("<option %s value=92>3 %s\n", i == 92 ? "selected" : "",
+                     loc("Months"));
+            rsprintf("<option %s value=182>6 %s\n", i == 182 ? "selected" : "",
+                     loc("Months"));
+            rsprintf("<option %s value=364>%s\n", i == 364 ? "selected" : "",
+                     loc("Year"));
 
             rsprintf("</select>\n");
          } else {
@@ -10854,7 +10884,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
                   break;
 
             if (attr_options[i][0][0] == 0) {
-            
+
                if (attr_flags[i] & AF_DATE) {
 
                   rsprintf("<select name=\"%s\" onChange=\"document.form1.submit()\">\n",
@@ -10863,26 +10893,38 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
                   rsprintf("<option value=\"_all_\">%s\n", loc("All entries"));
                   i = atoi(getparam(list[index]));
 
-                  rsprintf("<option %s value=364>%s %s\n", i == 364 ? "selected" : "", loc("Next"), loc("Year"));
-                  rsprintf("<option %s value=182>%s 6 %s\n", i == 182 ? "selected" : "", loc("Next"), loc("Months"));
-                  rsprintf("<option %s value=92>%s 3 %s\n", i == 92 ? "selected" : "", loc("Next"), loc("Months"));
-                  rsprintf("<option %s value=31>%s %s\n", i == 31 ? "selected" : "", loc("Next"), loc("Month"));
-                  rsprintf("<option %s value=7>%s %s\n", i == 7 ? "selected" : "", loc("Next"), loc("Week"));
-                  rsprintf("<option %s value=1>%s %s\n", i == 1 ? "selected" : "", loc("Next"), loc("Day"));
+                  rsprintf("<option %s value=364>%s %s\n", i == 364 ? "selected" : "",
+                           loc("Next"), loc("Year"));
+                  rsprintf("<option %s value=182>%s 6 %s\n", i == 182 ? "selected" : "",
+                           loc("Next"), loc("Months"));
+                  rsprintf("<option %s value=92>%s 3 %s\n", i == 92 ? "selected" : "",
+                           loc("Next"), loc("Months"));
+                  rsprintf("<option %s value=31>%s %s\n", i == 31 ? "selected" : "",
+                           loc("Next"), loc("Month"));
+                  rsprintf("<option %s value=7>%s %s\n", i == 7 ? "selected" : "",
+                           loc("Next"), loc("Week"));
+                  rsprintf("<option %s value=1>%s %s\n", i == 1 ? "selected" : "",
+                           loc("Next"), loc("Day"));
 
-                  rsprintf("<option %s value=-1>%s %s\n", i == -1 ? "selected" : "", loc("Last"), loc("Day"));
-                  rsprintf("<option %s value=-7>%s %s\n", i == -7 ? "selected" : "", loc("Last"), loc("Week"));
-                  rsprintf("<option %s value=-31>%s %s\n", i == -31 ? "selected" : "", loc("Last"), loc("Month"));
-                  rsprintf("<option %s value=-92>%s 3 %s\n", i == -92 ? "selected" : "", loc("Last"), loc("Months"));
-                  rsprintf("<option %s value=-182>%s 6 %s\n", i == -182 ? "selected" : "", loc("Last"), loc("Months"));
-                  rsprintf("<option %s value=-364>%s %s\n", i == -364 ? "selected" : "", loc("Last"), loc("Year"));
+                  rsprintf("<option %s value=-1>%s %s\n", i == -1 ? "selected" : "",
+                           loc("Last"), loc("Day"));
+                  rsprintf("<option %s value=-7>%s %s\n", i == -7 ? "selected" : "",
+                           loc("Last"), loc("Week"));
+                  rsprintf("<option %s value=-31>%s %s\n", i == -31 ? "selected" : "",
+                           loc("Last"), loc("Month"));
+                  rsprintf("<option %s value=-92>%s 3 %s\n", i == -92 ? "selected" : "",
+                           loc("Last"), loc("Months"));
+                  rsprintf("<option %s value=-182>%s 6 %s\n", i == -182 ? "selected" : "",
+                           loc("Last"), loc("Months"));
+                  rsprintf("<option %s value=-364>%s %s\n", i == -364 ? "selected" : "",
+                           loc("Last"), loc("Year"));
 
                   rsprintf("</select>\n");
                }
 
                else {
-                 rsprintf("<input type=text onChange=\"document.form1.submit()\"");
-                 rsprintf(" name=\"%s\" value=\"%s\">\n",
+                  rsprintf("<input type=text onChange=\"document.form1.submit()\"");
+                  rsprintf(" name=\"%s\" value=\"%s\">\n",
                            list[index], getparam(list[index]));
                }
             } else {
@@ -11114,9 +11156,9 @@ time_t retrieve_date(char *index, BOOL bstart)
    current_month = tms.tm_mon + 1;
    current_day = tms.tm_mday;
 
-   if (!*getparam(pm) && !*getparam(py) && !*getparam(pd)) 
-     return 0;
-   
+   if (!*getparam(pm) && !*getparam(py) && !*getparam(pd))
+      return 0;
+
    /* if year not given, use current year */
    if (!*getparam(py))
       year = current_year;
@@ -11137,7 +11179,7 @@ time_t retrieve_date(char *index, BOOL bstart)
    if (*getparam(pd))
       day = atoi(getparam(pd));
    else {
-      /* if day not given, use 1 if start date*/
+      /* if day not given, use 1 if start date */
       if (bstart)
          day = 1;
       else {
@@ -11224,7 +11266,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    }
 
    /* redirect "go" command */
-   if (isparam("lastcmd")) {     //## and not copy to / move to / delete ...
+   if (isparam("lastcmd")) {    //## and not copy to / move to / delete ...
 
       strlcpy(str, getparam("lastcmd"), sizeof(str));
       url_decode(str);
@@ -11268,7 +11310,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       }
 
    printable = atoi(getparam("Printable"));
-   
+
    /* in printable mode, display all pages */
    if (printable)
       page_n = -1;
@@ -11319,10 +11361,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    current_day = ptms->tm_mday;
 
    ltime_end = ltime_start = 0;
-
-   d1 = m1 = y1 = d2 = m2 = y2 = 0;
-
-   if (!past_n && !last_n) {
+   
+d1 = m1 = y1 = d2 = m2 = y2 = 0;
+   
+if (!past_n && !last_n) {
 
       ltime_start = retrieve_date("a", TRUE);
       if (ltime_start < 0)
@@ -11406,7 +11448,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       for (j = 0; j < *lbs_cur->n_el_index; j++) {
          msg_list[n].lbs = lbs_cur;
          msg_list[n].index = j;
-         sprintf(msg_list[n].string, "%010d", (int)lbs_cur->el_index[j].file_time);
+         sprintf(msg_list[n].string, "%010d", (int) lbs_cur->el_index[j].file_time);
          msg_list[n].in_reply_to = lbs_cur->el_index[j].in_reply_to;
          n++;
       }
@@ -11522,12 +11564,12 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
                /* negative i: last [i] days */
                if (ltime < 0)
-                  if (atoi(attrib[i]) < now + ltime*3600*24 || atoi(attrib[i]) > now)
+                  if (atoi(attrib[i]) < now + ltime * 3600 * 24 || atoi(attrib[i]) > now)
                      break;
 
                /* positive i: next [i] days */
                if (ltime > 0)
-                  if (atoi(attrib[i]) > now + ltime*3600*24 || atoi(attrib[i]) < now)
+                  if (atoi(attrib[i]) > now + ltime * 3600 * 24 || atoi(attrib[i]) < now)
                      break;
 
             } else {
@@ -11559,7 +11601,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
       /* apply filter for AF_DATE attributes */
       if (filtering)
-         for (i = 0; i < lbs->n_attr; i++) 
+         for (i = 0; i < lbs->n_attr; i++)
             if (attr_flags[i] & AF_DATE) {
 
                sprintf(str, "%da", i);
@@ -11568,7 +11610,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                   msg_list[index].lbs = NULL;
                   continue;
                }
-               
+
                sprintf(str, "%db", i);
                ltime = retrieve_date(str, FALSE);
                if (ltime > 0 && atoi(attrib[i]) > ltime) {
@@ -11576,7 +11618,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                   continue;
                }
             }
-               
+
       if (*getparam("subtext")) {
          strcpy(str, getparam("subtext"));
          for (i = 0; i < (int) strlen(str); i++)
@@ -11696,8 +11738,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    qsort(msg_list, n_msg, sizeof(MSG_LIST), reverse ? msg_compare_reverse : msg_compare);
 
    /*---- number of messages per page ----*/
-
-   n_attr_disp = n_line = 0;
+   
+n_attr_disp = n_line = 0;
    n_page = 1000000;
    i_start = 0;
    i_stop = n_msg - 1;
@@ -11908,7 +11950,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
           || *getparam("subtext");
 
       for (i = 0; i < lbs->n_attr; i++)
-         if (*getparam(attr_list[i]) && (attr_flags[i] & AF_DATE) == 0) 
+         if (*getparam(attr_list[i]) && (attr_flags[i] & AF_DATE) == 0)
             disp_filter = TRUE;
 
       for (i = 0; i < lbs->n_attr; i++)
@@ -12532,8 +12574,8 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue)
    if (*(p2 - 1) == '\r')
       p2--;
 
-   /* save tail */
-   buf2 = NULL;
+   /* save tail */ 
+       buf2 = NULL;
    if (p2) {
       buf2 = malloc(strlen(p2) + 1);
       assert(buf2);
@@ -13379,8 +13421,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
          /* check for locked attributes */
          for (i = 0; i < lbs->n_attr; i++) {
             sprintf(lattr, "l%s", attr_list[i]);
-            if (*getparam(lattr) == '1'
-                && !strieq(getparam(attr_list[i]), attrib[i]))
+            if (*getparam(lattr) == '1' && !strieq(getparam(attr_list[i]), attrib[i]))
                break;
          }
          if (i < lbs->n_attr)
@@ -13427,8 +13468,8 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
    if (message_id == 0)
       message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
-
-   status = 0;
+   
+status = 0;
    if (message_id) {
       size = sizeof(text);
       status =
@@ -13828,7 +13869,8 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
             else
                strftime(str, sizeof(str), format, pts);
 
-            rsprintf("%s:</td><td class=\"%s\">%s&nbsp</td>\n", attr_list[i], class_value, str);
+            rsprintf("%s:</td><td class=\"%s\">%s&nbsp</td>\n", attr_list[i], class_value,
+                     str);
 
          } else {
             rsprintf("%s:</td><td class=\"%s\">\n", attr_list[i], class_value);
@@ -14372,8 +14414,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
       expand = 0;
       if (isparam("gexp")) {
          if (strieq(plb->name, getparam("gexp")) ||
-             node_contains(plb, getparam("gexp")) ||
-             strieq(getparam("gexp"), "all"))
+             node_contains(plb, getparam("gexp")) || strieq(getparam("gexp"), "all"))
             expand = 1;
       }
 
@@ -14735,16 +14776,16 @@ void show_calendar(LOGBOOK * lbs)
    /* link to previous year */
    rsprintf("&nbsp;&nbsp;");
    rsprintf("<a href=\"?i=%s&m=%d&y=%d\">", index, cur_mon, cur_year - 1);
-   rsprintf("<img border=0 align=\"absmiddle\" src=\"cal_prev.gif\" alt=\"%s\"></a>", 
-             loc("Previous Year"));
+   rsprintf("<img border=0 align=\"absmiddle\" src=\"cal_prev.gif\" alt=\"%s\"></a>",
+            loc("Previous Year"));
 
    /* current year */
    rsprintf("&nbsp;%d&nbsp;", cur_year);
 
    /* link to next year */
    rsprintf("<a href=\"?i=%s&m=%d&y=%d\">", index, cur_mon, cur_year + 1);
-   rsprintf("<img border=0 align=\"absmiddle\" src=\"cal_next.gif\" alt=\"%s\"></a>", 
-             loc("Next Year"));
+   rsprintf("<img border=0 align=\"absmiddle\" src=\"cal_next.gif\" alt=\"%s\"></a>",
+            loc("Next Year"));
 
    /* go to first day of month */
    ts->tm_mday = 1;
@@ -15470,7 +15511,7 @@ void interprete(char *lbook, char *path)
          } else
             strlcpy(section, lbs->name, sizeof(section));
 
-         if (!save_admin_config(section, _mtext, str)) {   /* save cfg file */
+         if (!save_admin_config(section, _mtext, str)) {        /* save cfg file */
             show_error(str);
             return;
          }
@@ -15869,7 +15910,8 @@ void ctrlc_handler(int sig)
 
 void hup_handler(int sig)
 {
-   _hup = TRUE;
+   
+_hup = TRUE;
 }
 
 /*------------------------------------------------------------------*/
@@ -15895,8 +15937,8 @@ void server_loop(int tcp_port, int daemon)
    struct timeval timeout;
    char *net_buffer = NULL;
    int net_buffer_size;
-
-   i_conn = content_length = 0;
+   
+i_conn = content_length = 0;
    net_buffer_size = 100000;
    net_buffer = malloc(net_buffer_size);
    return_buffer_size = 100000;
@@ -16465,22 +16507,20 @@ void server_loop(int tcp_port, int daemon)
             n = strbreak(list, host_list, MAX_N_LIST);
             /* check if current connection matches anyone on the list */
             for (i = 0; i < n; i++) {
-               if (strieq(rem_host, host_list[i]) ||
-                   strieq(rem_host_ip, host_list[i])
+               if (strieq(rem_host, host_list[i]) || strieq(rem_host_ip, host_list[i])
                    || strieq(host_list[i], "all")) {
                   if (verbose)
                      printf
                          ("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n",
                           strieq(rem_host_ip,
-                                        host_list[i]) ? rem_host_ip : rem_host,
-                          host_list[i]);
+                                 host_list[i]) ? rem_host_ip : rem_host, host_list[i]);
                   authorized = 0;
                   break;
                }
                if (host_list[i][0] == '.') {
                   if (strlen(rem_host) > strlen(host_list[i]) &&
                       strieq(host_list[i],
-                                    rem_host + strlen(rem_host) - strlen(host_list[i]))) {
+                             rem_host + strlen(rem_host) - strlen(host_list[i]))) {
                      if (verbose)
                         printf
                             ("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n",
@@ -16512,22 +16552,20 @@ void server_loop(int tcp_port, int daemon)
             n = strbreak(list, host_list, MAX_N_LIST);
             /* check if current connection matches anyone on the list */
             for (i = 0; i < n; i++) {
-               if (strieq(rem_host, host_list[i]) ||
-                   strieq(rem_host_ip, host_list[i])
+               if (strieq(rem_host, host_list[i]) || strieq(rem_host_ip, host_list[i])
                    || strieq(host_list[i], "all")) {
                   if (verbose)
                      printf
                          ("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
                           strieq(rem_host_ip,
-                                        host_list[i]) ? rem_host_ip : rem_host,
-                          host_list[i]);
+                                 host_list[i]) ? rem_host_ip : rem_host, host_list[i]);
                   authorized = 1;
                   break;
                }
                if (host_list[i][0] == '.') {
                   if (strlen(rem_host) > strlen(host_list[i]) &&
                       strieq(host_list[i],
-                                    rem_host + strlen(rem_host) - strlen(host_list[i]))) {
+                             rem_host + strlen(rem_host) - strlen(host_list[i]))) {
                      if (verbose)
                         printf
                             ("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
@@ -16641,10 +16679,10 @@ void server_loop(int tcp_port, int daemon)
          if (return_length != -1) {
             if (return_length == 0)
                return_length = strlen_retbuf;
-            if ((keep_alive
-                && strstr(return_buffer, "Content-Length") == NULL)
+            if ((keep_alive && strstr(return_buffer, "Content-Length") == NULL)
                 || strstr(return_buffer, "Content-Length") > 
-                   strstr(return_buffer, "\r\n\r\n")) {
+strstr(return_buffer,
+                                                                     "\r\n\r\n")) {
                /*---- add content-length ----*/
 
                p = strstr(return_buffer, "\r\n\r\n");
