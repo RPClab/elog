@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.60  2003/03/31 08:52:13  midas
+  Added option 'Login user'
+
   Revision 1.59  2003/03/28 10:21:31  midas
   Use 'Icon comment' in filter display
 
@@ -10512,12 +10515,26 @@ int   i;
 
 BOOL check_user_password(LOGBOOK *lbs, char *user, char *password, char *redir)
 {
-char  status, str[256], upwd[256], full_name[256], email[256];
+char  status, str[1000], upwd[256], full_name[256], email[256];
+char  list[MAX_N_LIST][NAME_LENGTH];
+int   i, n;
 
   if (lbs == NULL)
     status = get_user_line("global", user, upwd, full_name, email, NULL);
   else
     status = get_user_line(lbs->name, user, upwd, full_name, email, NULL);
+
+  if (getcfg(lbs->name, "Login user", str) && user[0])
+    {
+    n = strbreak(str, list, MAX_N_LIST);
+    for (i=0 ; i<n ; i++)
+      if (strcmp(user, list[i]) == 0)
+        break;
+
+    /* invalid user if name not in list */
+    if (i == n)
+      status = 2;
+    }
 
   if (status == 1)
     {

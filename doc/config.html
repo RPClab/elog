@@ -828,6 +828,7 @@ only. When the browser is restarted, the password must be re-entered.<P>
 <LI><b><code>Password file = &lt;file&gt;</code></b>
 <LI><b><code>Login expiration = &lt;hours&gt;</code></b>
 <LI><b><code>Admin user = &lt;user list&gt;</code></b>
+<LI><b><code>Login user = &lt;user list&gt;</code></b>
 </ul>
 <p>
 An alternative to the read/write/admin passwords is the user level access with a
@@ -880,7 +881,20 @@ for example, makes the password expire after one day.<p>
 The <b><code>Admin user = &lt;user list&gt;</b></code> is a list of one or more user names,
 which have admin rights. The can execute the <b><code>Admin</code></b> command to directly
 edit elogd.cfg through the web and modify other users via the <b><code>Config</code></b>
-command.
+command.<p>
+
+The <b><code>Login user = &lt;user list&gt;</b></code> is a list of users who can
+log in to a specific logbook. This option can be used with a global password file. If a
+<b><code>Password file</code></b> is present under the <b><code>[global]</b></code>
+section, the registered users in that password file can log in to all logbooks. It might
+be required that only certain users can log in to certain logbooks. This can be achieved
+with the <b><code>Login user</code></b> option, places in each individual logbook
+section in the configuration file. Only those users listed in this statement can log in
+to the logbook where the statement is defined. This method has the advantage over the
+option of definining individual password files for individual logbooks that only one
+central password file exists. So if a user changes her/his password, this becomes then
+valid for all logbooks. If there would be individual logbook password files, one would 
+have to change the password in all logbooks individually.<p>
 
 <ul>
 <LI><b><code>Self register = 0|1|2|3</code></b>
