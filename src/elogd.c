@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.201  2004/01/19 21:34:14  midas
+   Implemented receive_message
+
    Revision 1.200  2004/01/19 16:22:28  midas
    Continued working on synchronization
 
@@ -294,6 +297,7 @@ typedef int INT;
 #define EL_EMPTY       7
 #define EL_MEM_ERROR   8
 #define EL_DUPLICATE   9
+#define EL_LOCKED     10
 
 #define EL_FIRST       1
 #define EL_LAST        2
@@ -7974,6 +7978,7 @@ int retrieve_remote_md5(char *url, MD5_INDEX ** md5_index)
          sscanf(p + 2 * i, "%02X", &((*md5_index)[n].md5_digest[i]));
    }
 
+   /* debugging only
    for (i = 0; i < n; i++) {
       int j;
 
@@ -7983,6 +7988,7 @@ int retrieve_remote_md5(char *url, MD5_INDEX ** md5_index)
 
       printf("\n");
    }
+   */
 
    free(text);
 
@@ -8257,6 +8263,86 @@ int submit_message(LOGBOOK * lbs, char *url, int message_id, char *error_str)
 
 int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str)
 {
+   int i;
+   char str[256], *p, *p2, *message, date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
+       in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
+       attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
+       attachment_all[64 * MAX_ATTACHMENTS];
+
+   strlcpy(str, url, sizeof(str));
+   if (str[strlen(str) - 1] != '/')
+      strlcat(str, "/", sizeof(str));
+   sprintf(str + strlen(str), "%d?cmd=Download", message_id);
+
+   retrieve_url(str, &message);
+   p = strstr(message, "\r\n\r\n");
+   if (p == NULL) {
+      free(message);
+      return EL_NO_MSG;
+   }
+   p+= 4;
+
+   /* check for correct ID */
+   if (atoi(p + 8) != message_id) {
+      free(message);
+      return EL_NO_MSG;
+   }
+
+   /* decode message */
+   el_decode(p, "Date: ", date);
+   el_decode(p, "Reply to: ", reply_to);
+   el_decode(p, "In reply to: ", in_reply_to);
+
+   for (i = 0; i < lbs->n_attr; i++) {
+      sprintf(str, "%s: ", attr_list[i]);
+      el_decode(p, str, attrib[i]);
+   }
+
+   el_decode(p, "Attachment: ", attachment_all);
+   el_decode(p, "Encoding: ", encoding);
+
+   /* break apart attachements */
+   for (i = 0; i < MAX_ATTACHMENTS; i++)
+      attachment[i][0] = 0;
+
+   for (i = 0; i < MAX_ATTACHMENTS; i++) {
+      if (i == 0)
+         p2 = strtok(attachment_all, ",");
+      else
+         p2 = strtok(NULL, ",");
+
+      if (p2 != NULL)
+         strcpy(attachment[i], p2);
+      else
+         break;
+   }
+
+   el_decode(p, "Locked by: ", locked_by);
+   if (locked_by[0]) {
+      free(message);
+      return EL_LOCKED;
+   }
+
+   p = strstr(message, "========================================\n");
+
+   /* check for \n -> \r conversion (e.g. zipping/unzipping) */
+   if (p == NULL)
+      p = strstr(message, "========================================\r");
+
+   if (p != NULL) {
+      p += 41;
+
+      /* el_submit(); */
+
+      for (i = 0; i < MAX_ATTACHMENTS; i++) {
+         if (attachment[i][0]) {
+         /* el_submit_attachment() */
+         }
+      }
+   } else
+      return -1;
+
+   free(message);
    return 1;
 }
 
@@ -8303,7 +8389,7 @@ int save_md5(char *server, MD5_INDEX * md5_index, int n)
 int load_md5(char *server, MD5_INDEX ** md5_index)
 {
    char str[256], file_name[256], *p;
-   int i, j;
+   int i, j, x;
    FILE *f;
 
    strlcpy(file_name, resource_dir, sizeof(file_name));
@@ -8334,7 +8420,7 @@ int load_md5(char *server, MD5_INDEX ** md5_index)
       if (i == 0)
          *md5_index = calloc(sizeof(MD5_INDEX), 1);
       else
-         *md5_index = realloc(md5_index, sizeof(MD5_INDEX) * (i + 1));
+         *md5_index = realloc(*md5_index, sizeof(MD5_INDEX) * (i + 1));
 
       p = str + 2;
 
@@ -8344,8 +8430,10 @@ int load_md5(char *server, MD5_INDEX ** md5_index)
       while (*p && *p == ' ')
          p++;
 
-      for (j = 0; j < 16; j++)
-         sscanf(p + j * 2, "%02X", (*md5_index)[i].md5_digest[j]);
+      for (j = 0; j < 16; j++) {
+         sscanf(p + j * 2, "%02X", &x);
+         (*md5_index)[i].md5_digest[j] = (unsigned char) x;
+      }
    }
 
    fclose(f);
@@ -8368,9 +8456,8 @@ BOOL equal_md5(unsigned char m1[16], unsigned char m2[16])
 
 void synchronize(LOGBOOK * lbs, char *path)
 {
-   int index, i, i_remote, i_cache, n_remote, n_cache, nserver,
+   int index, i, i_msg, i_remote, i_cache, n_remote, n_cache, nserver,
        remote_id, exist_remote, exist_cache, message_id;
-
    int priority_remote = 0;
    char str[2000];
    MD5_INDEX *md5_remote, *md5_cache;
@@ -8390,7 +8477,7 @@ void synchronize(LOGBOOK * lbs, char *path)
          show_error(str);
          return;
       }
-
+ 
    show_html_header(NULL, FALSE, loc("Synchronization"));
 
    rsprintf("<body>\n");
@@ -8418,9 +8505,9 @@ void synchronize(LOGBOOK * lbs, char *path)
       n_cache = load_md5(list[index], &md5_cache);
 
       /* loop through logbook entries */
-      for (i = 0; i < *lbs->n_el_index; i++) {
+      for (i_msg = 0; i_msg < *lbs->n_el_index; i_msg++) {
 
-         message_id = lbs->el_index[i].message_id;
+         message_id = lbs->el_index[i_msg].message_id;
          rsprintf("ID%d: ", message_id);
 
          /* look for message id in MD5s */
@@ -8438,7 +8525,7 @@ void synchronize(LOGBOOK * lbs, char *path)
          if (exist_remote && exist_cache) {
 
             /* if message has been changed on this server, but not remotely, send it */
-            if (!equal_md5(md5_cache[i_cache].md5_digest, lbs->el_index[index].md5_digest)
+            if (!equal_md5(md5_cache[i_cache].md5_digest, lbs->el_index[i_msg].md5_digest)
                 && equal_md5(md5_cache[i_cache].md5_digest,
                              md5_remote[i_remote].md5_digest)) {
 
@@ -8452,18 +8539,18 @@ void synchronize(LOGBOOK * lbs, char *path)
 
             } else
                /* if message has been changed remotely, but not on this server, receive it */
-            if (!equal_md5
+               if (!equal_md5
                    (md5_cache[i_cache].md5_digest, md5_remote[i_remote].md5_digest)
                    && equal_md5(md5_cache[i_cache].md5_digest,
-                                   lbs->el_index[index].md5_digest)) {
+                                lbs->el_index[i_msg].md5_digest)) {
 
                receive_message(lbs, list[index], message_id, error_str);
             } else
                /* if message has been changed remotely and on this server, show conflict */
-            if (!equal_md5
+               if (!equal_md5
                    (md5_cache[i_cache].md5_digest, md5_remote[i_remote].md5_digest)
                    && !equal_md5(md5_cache[i_cache].md5_digest,
-                                    lbs->el_index[index].md5_digest)) {
+                                 lbs->el_index[i_msg].md5_digest)) {
 
                rsprintf("%s\n",
                         loc
@@ -8485,7 +8572,7 @@ void synchronize(LOGBOOK * lbs, char *path)
             it must be new, so send it  */
          if (!exist_cache && !exist_remote) {
             remote_id =
-                submit_message(lbs, list[index], lbs->el_index[i].message_id, error_str);
+                submit_message(lbs, list[index], lbs->el_index[i_msg].message_id, error_str);
 
             if (error_str[0])
                rsprintf("%s: %s\n", loc("Error sending local message"), error_str);
