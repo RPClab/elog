@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.438  2004/08/05 08:04:58  midas
+   Added .cfg and .conf to class of text files
+
    Revision 1.437  2004/08/05 07:47:52  midas
    Set cookies always with path
 
@@ -695,6 +698,8 @@ struct {
    ".JS", "application/x-javascript"}, {
    ".TXT", "text/plain"}, {
    ".ASC", "text/plain"}, {
+   ".CFG", "text/plain"}, {
+   ".CONF", "text/plain"}, {
    ".ZIP", "application/x-zip-compressed"}, {
 "", ""},};
 
@@ -13244,7 +13249,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                        colspan, loc("Attachment"), index + 1, ref,
                        attachment[index] + 14);
 
-                  if ((strstr(str, ".TXT") || strstr(str, ".ASC")
+                  if ((strstr(str, ".TXT") || strstr(str, ".ASC") || strstr(str, ".CFG") || strstr(str, ".CONF")
                        || strchr(str, '.') == NULL) && show_attachments) {
                      /* display attachment */
                      rsprintf("</td></tr><tr><td colspan=%d class=\"messagelist\"><pre>",
@@ -17237,7 +17242,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
                      rsprintf("<img src=\"%s\"></td></tr>", ref);
                      rsprintf("</td></tr>\n\n");
                   } else {
-                     if (strstr(att, ".TXT") || strstr(att, ".ASC")
+                     if (strstr(str, ".TXT") || strstr(str, ".ASC") || strstr(str, ".CFG") || strstr(str, ".CONF")
                          || strchr(att, '.') == NULL) {
                         /* display attachment */
                         rsprintf("<tr><td class=\"messageframe\">\n");
