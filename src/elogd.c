@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.560  2005/02/14 20:00:06  ritt
+   Fixed HTML code to pass validator
+
    Revision 1.559  2005/02/14 19:52:10  ritt
    Broke apart long code line
 
@@ -16211,7 +16214,7 @@ void show_elog_thread(LOGBOOK * lbs, int message_id)
        el_retrieve(lbs, head_id, date, attr_list, attrib,
                    lbs->n_attr, text, &size, in_reply_to, reply_to, attachment, encoding, locked_by);
 
-   rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=0>\n");
+   rsprintf("<tr><td><table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
 
    display_line(lbs, head_id,
                 0, "Threaded", 1, 0, FALSE, 0,
