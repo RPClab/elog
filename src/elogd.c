@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.461  2004/09/08 09:36:16  midas
+   Made 'move to' menu command case insensitive
+
    Revision 1.460  2004/08/12 19:27:59  midas
    Added more debugging info
 
@@ -14120,11 +14123,11 @@ void show_select_navigation(LOGBOOK * lbs)
    rsprintf("<input type=button value=\"%s\" onClick=\"ToggleAll();\">\n",
             loc("Toggle all"));
 
-   if (!getcfg(lbs->name, "Menu commands", str, sizeof(str)) || strstr(str, "Delete")) {
+   if (!getcfg(lbs->name, "Menu commands", str, sizeof(str)) || stristr(str, "Delete")) {
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Delete"));
    }
 
-   if (getcfg(lbs->name, "Menu commands", str, sizeof(str)) && strstr(str, "Copy to")) {
+   if (getcfg(lbs->name, "Menu commands", str, sizeof(str)) && stristr(str, "Copy to")) {
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Copy to"));
       rsprintf("<select name=destc>\n");
 
@@ -14150,7 +14153,7 @@ void show_select_navigation(LOGBOOK * lbs)
       rsprintf("</select>\n");
    }
 
-   if (getcfg(lbs->name, "Menu commands", str, sizeof(str)) && strstr(str, "Move to")) {
+   if (getcfg(lbs->name, "Menu commands", str, sizeof(str)) && stristr(str, "Move to")) {
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Move to"));
       rsprintf("<select name=destm>\n");
 
