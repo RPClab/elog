@@ -1,4 +1,4 @@
-Version 2.2.5, released December 12th, 2002
+Version 2.2.5, released December xxth, 2002
 ===========================================
 
 - Improved speed for sending many email notifications
