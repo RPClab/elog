@@ -268,18 +268,14 @@ Please enter numeric value for '%s' = Veuillez saisir une valeur numérique pour 
 Error: Attribute <b>%s</b> must be numeric = Erreur: l'attribut <b>%s</b> doit être numérique
 3 Months = 3 mois
 6 Months = 6 mois
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Error sending local message = 
-Error receiving message = 
-Are you sure to delete this entry? = 
-Import = 
-CSV filename = 
-Field separator = 
-Edit entry = 
-Delete entry = 
-CSV Import = 
-ELOG CSV import = 
-Derive attributes from CSV file = 
+Error sending local message = Erreur lors de l'envoi du message local
+Error receiving message = Erreur à la réception du message
+Are you sure to delete this entry? = Confirmez-vous la suppression de cette entrée ?
+Import = Importation
+CSV filename = nom du fichier CSV
+Field separator = séparateur de champs
+Edit entry = Modifier l'entrée
+Delete entry = Supprimer l'entrée
+CSV Import = Importation CSV
+ELOG CSV import = Importation CSV ELOG
+Derive attributes from CSV file = Créer les attributs à partir du fichier CSV 
