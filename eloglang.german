@@ -114,7 +114,7 @@ No entries found = Keine Einträge gefunden
 #
 # Email, Copy/Move, Delete
 #
-A new entry has been submitted on %s = Ein neuer Eintrag wurde an %s geschickt
+A new entry has been submitted on %s = Ein neuer Eintrag wurde von %s abgeschickt
 Logbook = Logbuch
 Copy ELog entry = ELog Eintrag Kopieren
 Message moved successfully from "%s" to "%s" = Eintrag erfolgreich von "%s" nach "%s" verschoben
@@ -199,3 +199,8 @@ Display = Zeige
 entries per page = Einträge pro Seite
 Toggle all = Alle umschalten
 Automatic email notifications = Automatische Email Benachrichtigung
+
+#
+# New strings for V2.2.2
+A old entry has been updated on %s = Ein alter Eintrag wurde von %s geändert
+
