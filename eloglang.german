@@ -237,4 +237,4 @@ copied successfully from "%s" to "%s" = erfolgreich von "%s" nach "%s" kopiert
 # New strings for V2.3.4
 Last x = Letzte x
 Only user <i>%s</i> can delete this entry = Dieser Eintrag kann nur von <i>%s</i> gelöscht werden
-
+Search text also in attributes = Text auch in Attributen suchen

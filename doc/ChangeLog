@@ -10,6 +10,7 @@ Version 2.3.4, released March xxth, 2003
 - Only ownwer can delete entry if 'restrict edit = 1'
 - Fixed error that logbook URL was wrong if messages are submitted via elog
 - Added "Icon comment" option
+- Added text search in all attributes
 
 Version 2.3.3, released March 14th, 2003
 ========================================
