@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.447  2004/08/08 14:11:51  midas
+   Fixed disappearing &nbsp; in config file
+
    Revision 1.446  2004/08/06 13:39:49  midas
    Changed CONFIG_FILE to CONFIG_PATH
 
@@ -4936,7 +4939,7 @@ void rsputs(const char *str)
 
 /*------------------------------------------------------------------*/
 
-char *list[] = { "http://", "https://", "ftp://", "mailto:", "elog:", "file://", "" };
+char *key_list[] = { "http://", "https://", "ftp://", "mailto:", "elog:", "file://", "" };
 
 void rsputs2(const char *str)
 {
@@ -4951,10 +4954,10 @@ void rsputs2(const char *str)
 
    j = strlen_retbuf;
    for (i = 0; i < (int) strlen(str); i++) {
-      for (l = 0; list[l][0]; l++) {
-         if (strncmp(str + i, list[l], strlen(list[l])) == 0) {
-            p = (char *) (str + i + strlen(list[l]));
-            i += strlen(list[l]);
+      for (l = 0; key_list[l][0]; l++) {
+         if (strncmp(str + i, key_list[l], strlen(key_list[l])) == 0) {
+            p = (char *) (str + i + strlen(key_list[l]));
+            i += strlen(key_list[l]);
             for (k = 0; *p && strcspn(p, " ,;\t\n\r({[)}]") && k < (int) sizeof(link);
                  k++, i++)
                link[k] = *p++;
@@ -5013,7 +5016,7 @@ void rsputs2(const char *str)
             } else
                strlcpy(link_text, link, sizeof(link_text));
 
-            if (strcmp(list[l], "elog:") == 0) {
+            if (strcmp(key_list[l], "elog:") == 0) {
                strlcpy(tmp, link, sizeof(tmp));
                if (strchr(tmp, '/'))
                   *strchr(tmp, '/') = 0;
@@ -5033,7 +5036,7 @@ void rsputs2(const char *str)
                   sprintf(return_buffer + j, "<a href=\"%s\">elog:%s</a>", link,
                           link_text);
             } else {
-               sprintf(return_buffer + j, "<a href=\"%s%s\">%s", list[l], link, list[l]);
+               sprintf(return_buffer + j, "<a href=\"%s%s\">%s", key_list[l], link, key_list[l]);
                j += strlen(return_buffer + j);
                strlen_retbuf = j;
 
@@ -5048,13 +5051,17 @@ void rsputs2(const char *str)
          }
       }
 
-      if (!list[l][0]) {
+      if (!key_list[l][0]) {
          if (strncmp(str + i, "<br>", 4) == 0) {
             strcpy(return_buffer + j, "<br>");
             j += 4;
             i += 3;
          } else
             switch (str[i]) {
+            case '&':
+               strcat(return_buffer, "&amp;");
+               j += 5;
+               break;
             case '<':
                strcat(return_buffer, "&lt;");
                j += 4;
@@ -8677,7 +8684,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
 
    rsprintf("<textarea cols=%d rows=%d wrap=virtual name=Text>", cols, rows);
 
-   rsputs(buffer);
+   rsputs2(buffer);
    free(buffer);
 
    rsprintf("</textarea>\n");
@@ -16586,7 +16593,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
 /*------------------------------------------------------------------*/
 
-void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
+void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 {
    int size, i, j, n, n_log, status, fh, length, message_error, index;
    int message_id, orig_message_id, format_flags[MAX_N_ATTR];
@@ -19138,7 +19145,7 @@ void interprete(char *lbook, char *path)
    if (dec_path[0] == 0)
       show_elog_list(lbs, 0, 0, 1, NULL);
    else
-      show_elog_message(lbs, dec_path, command);
+      show_elog_entry(lbs, dec_path, command);
    return;
 }
 
