@@ -14,11 +14,11 @@ Find = Finden
 Last day = Letzter Tag
 Last 10 = Letzte 10
 Config = Konfigurieren
-Change password = Passwort ändern
+Change password = Kennwort ändern
 Logout = Abmelden
 Help = Hilfe
 Back = Zurück
-Submit = Abschicken
+Submit = Absenden
 First = Erster
 First entry = Erster Eintrag
 Last = Letzter
@@ -59,11 +59,11 @@ with = mit
 This is the last entry = Dies ist der letzte Eintrag
 This is the first entry = Dies ist der erste Eintrag
 Email sent to = Email gesendet an
-Email notification suppressed = Email Benachrichtigung untedrückt
+Email notification suppressed = Email-Benachrichtigung untedrückt
 please select = bitte auswählen
-Submit as HTML text = Als HTML Text abschicken
-Suppress Email notification = Email Benachrichtigung unterdrücken
-Resubmit as new entry = Als neuen Eintrag abschicken
+Submit as HTML text = Als HTML-Text absenden
+Suppress Email notification = Email-Benachrichtigung unterdrücken
+Resubmit as new entry = Als neuen Eintrag absenden
 Attachment = Anhang
 Attachments = Anhänge
 No message available = Kein Entrag vorhanden
@@ -110,7 +110,7 @@ No entries found = Keine Einträge gefunden
 #
 A new entry has been submitted on %s = Ein neuer Eintrag wurde von %s abgeschickt
 Logbook = Logbuch
-Copy ELog entry = ELog Eintrag Kopieren
+Copy ELog entry = ELog-Eintrag Kopieren
 Are you sure to delete this message? = Diesen Eintrag wirklich löschen?
 Yes = Ja
 No = Nein
@@ -126,7 +126,7 @@ Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = Fehler: Kommand
 Cannot open file <b>%s</b> = Datei <b>%s</b> kann nicht geöffnet werden
 Cannot write to <b>%s</b> = Datei <b>%s</b> kann nicht geschrieben werden
 No SMTP host defined in [global] section of configuration file = Kein SMTP Host im [global] Bereich der Konfigurationsdatei definiert
-Messags %s cannot be read from logook "%s" = Eintrag %s kann nicht aus dem Logbuch "%s" gelesen werden
+Messags %s cannot be read from logbook "%s" = Eintrag %s kann nicht aus dem Logbuch "%s" gelesen werden
 New message cannot be written to directory "%s" = Neuer Eintrag kann nicht ins Verzeichnis "%s" geschrieben werden
 Only user <i>%s</i> can edit this entry = Nur Benutzer <i>%s</i> kann diesen Eintrag ändern
 
@@ -139,7 +139,7 @@ Logbook is empty = Logbuch ist leer
 This message has been deleted = Dieser Eintrag wurde gelöscht
 Download = Herunterladen
 and all its replies = und alle Antworten
-Message ID = Nummer Eintrag
+Message ID = Eintrag-ID
 
 #
 # New strings for V2.1.0
@@ -151,7 +151,7 @@ all entries = alle Einträge
 Login name = Name zum Einloggen
 Full name = Benutzername
 ELOG user config = ELOG Benutzerkonfiguration
-ELOG new user = ELOG Neuer Benutzer
+ELOG new user = Neuer ELOG-Benutzer
 Admin = Verwaltung
 Select user = Benutzer auswählen
 Go = Auswählen 
@@ -193,7 +193,7 @@ Display = Zeige
 entries per page = Einträge pro Seite
 Toggle all = Alle umschalten
 Selected entries = Ausgewählte Einträge
-Enable email notifications = Email Benachrichtigung	ermöglichen
+Enable email notifications = Email-Benachrichtigung	ermöglichen
 
 #
 # New strings for V2.2.2
@@ -201,11 +201,11 @@ A old entry has been updated on %s = Ein alter Eintrag wurde von %s geändert
 
 #
 # New strings for V2.2.4
-Collapse = Zusammenfassen
-Expand = Erweitern
-Full = Ausfühlich
-Summary = Zusammenfassung
-Threaded = Antwortkette
+Collapse = eingeklappt
+Expand = erweitert
+Full = ausfühlich
+Summary = zusammengefasst
+Threaded = mit&nbsp;Antwortketten
 
 #
 # New strings for V2.2.6
@@ -229,7 +229,7 @@ A new ELOG user wants to register on "%s" = Ein neuer Benutzer möchte sich auf "
 One message = Ein Eintrag
 %d messages = %d Einträge
 and its replies = mit Antworten
-and their replies =	mit Antworten
+and their replies = mit Antworten
 moved successfully from "%s" to "%s" = erfolgreich von "%s" nach "%s" verschoben
 copied successfully from "%s" to "%s" = erfolgreich von "%s" nach "%s" kopiert
 
@@ -238,6 +238,6 @@ copied successfully from "%s" to "%s" = erfolgreich von "%s" nach "%s" kopiert
 Last x = Letzte x
 Only user <i>%s</i> can delete this entry = Dieser Eintrag kann nur von <i>%s</i> gelöscht werden
 Search text also in attributes = Text auch in Attributen suchen
-Goto logbook selection page = Zur Logbuch Auswahl Seite
+Goto logbook selection page = Zur Logbuch-Auswahlseite
 Login as different user = Als anderer Benutzer anmelden
 User <i>"%s"</i> has no access to logbook <i>"%s"</i> = Benutzer <i>"%s"</i> hat keinen Zugriff auf Logbuch <i>"%s"</i>
