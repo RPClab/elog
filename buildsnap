@@ -1,0 +1,11 @@
+#!/bin/csh
+cvs update
+make
+
+rm -f /home/midas/html/elog/download/tar/elogd-snapshot.gz
+cp elogd /home/midas/html/elog/download/tar/elogd-snapshot
+gzip /home/midas/html/elog/download/tar/elogd-snapshot
+
+
+
+
