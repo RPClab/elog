@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.555  2005/02/13 15:42:39  ritt
+   Solved bug with 'fixed' ROptions attributes
+
    Revision 1.554  2005/02/12 16:14:19  ritt
    Removed superflous </a>
 
@@ -8208,13 +8211,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("&nbsp;");
 
          if (attr_flags[index] & AF_MULTI) {
-            for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
-               sprintf(str, "%s_%d", ua, i);
-
-               if (strstr(attrib[index], attr_options[index][i]))
-                  rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\">\n", str, attr_options[index][i]);
-            }
-         } else if (attr_flags[index] & AF_RADIO) {
             for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                sprintf(str, "%s_%d", ua, i);
 
