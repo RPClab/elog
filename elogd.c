@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.31  2002/06/03 09:55:08  midas
+  Added 'start page=' option
+
   Revision 1.30  2002/06/03 09:37:47  midas
   Fixed bug with MOptions in Email notification
 
@@ -6129,6 +6132,14 @@ FILE   *f;
     strcpy(file_name, cfg_dir);
     strcat(file_name, str);
     send_file(file_name);
+    return;
+    }
+
+  /*---- check for start page --------------------------------------*/
+
+  if (!path[0] && getcfg(logbook, "Start page", str) && str[0])
+    {
+    redirect(str);
     return;
     }
 
