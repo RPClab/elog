@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.156  2003/11/20 16:05:03  midas
+  Implemented check_config
+
   Revision 1.155  2003/11/20 13:37:20  midas
   Added 'restrict edit time'
 
@@ -1683,12 +1686,12 @@ int  i;
 
 /*-------------------------------------------------------------------*/
 
-char *locbuffer = NULL;
-char **porig, **ptrans;
-time_t locfile_mtime = 0;
+char   *_locbuffer = NULL;
+char   **_porig, **_ptrans;
+time_t _locfile_mtime = 0;
 
-/* localization support */
-char *loc(char *orig)
+/* check if language file changed and if so reload it */
+int check_language()
 {
 char         language[256], file_name[256], *p;
 int          fh, length, n;
@@ -1703,14 +1706,14 @@ struct stat  cfg_stat;
 
   if (stat(file_name, &cfg_stat) == 0)
     {
-    if (locfile_mtime < cfg_stat.st_mtime)
+    if (_locfile_mtime < cfg_stat.st_mtime)
       {
-      locfile_mtime = cfg_stat.st_mtime;
+      _locfile_mtime = cfg_stat.st_mtime;
 
-      if (locbuffer)
+      if (_locbuffer)
         {
-        free(locbuffer);
-        locbuffer = NULL;
+        free(_locbuffer);
+        _locbuffer = NULL;
         }
       }
     }
@@ -1718,34 +1721,34 @@ struct stat  cfg_stat;
   if (equal_ustring(language, "english") ||
       language[0] == 0)
     {
-    if (locbuffer)
+    if (_locbuffer)
       {
-      free(locbuffer);
-      locbuffer = NULL;
+      free(_locbuffer);
+      _locbuffer = NULL;
       }
     }
   else
     {
-    if (locbuffer == NULL)
+    if (_locbuffer == NULL)
       {
       fh = open(file_name, O_RDONLY | O_BINARY);
       if (fh < 0)
-        return orig;
+        return -1;
 
       length = lseek(fh, 0, SEEK_END);
       lseek(fh, 0, SEEK_SET);
-      locbuffer = malloc(length+1);
-      if (locbuffer == NULL)
+      _locbuffer = malloc(length+1);
+      if (_locbuffer == NULL)
         {
         close(fh);
-        return orig;
+        return -1;
         }
-      read(fh, locbuffer, length);
-      locbuffer[length] = 0;
+      read(fh, _locbuffer, length);
+      _locbuffer[length] = 0;
       close(fh);
 
       /* scan lines, setup orig-translated pointers */
-      p = locbuffer;
+      p = _locbuffer;
       n = 0;
       do
         {
@@ -1761,31 +1764,31 @@ struct stat  cfg_stat;
 
         if (n == 0)
           {
-          porig = malloc(sizeof(char *) * 2);
-          ptrans = malloc(sizeof(char *) * 2);
+          _porig = malloc(sizeof(char *) * 2);
+          _ptrans = malloc(sizeof(char *) * 2);
           }
         else
           {
-          porig = realloc(porig, sizeof(char *) * (n + 2));
-          ptrans = realloc(ptrans, sizeof(char *) * (n + 2));
+          _porig = realloc(_porig, sizeof(char *) * (n + 2));
+          _ptrans = realloc(_ptrans, sizeof(char *) * (n + 2));
           }
 
-        porig[n] = p;
+        _porig[n] = p;
         while (*p && (*p != '=' && *p != '\r' && *p != '\n'))
           p++;
 
         if (*p && *p != '=')
           continue;
 
-        ptrans[n] = p + 1;
-        while (*ptrans[n] == ' ' || *ptrans[n] == '\t')
-          ptrans[n] ++;
+        _ptrans[n] = p + 1;
+        while (*_ptrans[n] == ' ' || *_ptrans[n] == '\t')
+          _ptrans[n] ++;
 
         /* remove '=' and surrounding blanks */
         while (*p == '=' || *p == ' ' || *p == '\t')
           *p-- = 0;
 
-        p = ptrans[n];
+        p = _ptrans[n];
         while (*p && *p != '\n' && *p != '\r')
           p++;
 
@@ -1795,23 +1798,35 @@ struct stat  cfg_stat;
         n++;
         } while (p && *p);
 
-      porig[n] = NULL;
-      ptrans[n] = NULL;
+      _porig[n] = NULL;
+      _ptrans[n] = NULL;
       }
     }
+  
+  return 0;
+}
 
-  if (!locbuffer)
+/*-------------------------------------------------------------------*/
+
+/* localization support */
+char *loc(char *orig)
+{
+int  n;
+char language[256];
+
+  if (!_locbuffer)
     return orig;
 
   /* search string and return translation */
-  for (n = 0; porig[n] ; n++)
-    if (strcmp(orig, porig[n]) == 0)
+  for (n = 0; _porig[n] ; n++)
+    if (strcmp(orig, _porig[n]) == 0)
       {
-      if (*ptrans[n])
-        return ptrans[n];
+      if (*_ptrans[n])
+        return _ptrans[n];
       return orig;
       }
 
+  getcfg("global", "Language", language);
   printf("Language error: string \"%s\" not found for language \"%s\"\n", orig, language);
 
   return orig;
@@ -1825,21 +1840,29 @@ char *unloc(char *orig)
 {
 int n;
 
-  if (!locbuffer)
+  if (!_locbuffer)
     return orig;
 
   /* search string and return translation */
-  for (n = 0; ptrans[n] ; n++)
-    if (strcmp(orig, ptrans[n]) == 0)
+  for (n = 0; _ptrans[n] ; n++)
+    if (strcmp(orig, _ptrans[n]) == 0)
       {
-      if (*porig[n])
-        return porig[n];
+      if (*_porig[n])
+        return _porig[n];
       return orig;
       }
 
   printf("Language error: string \"%s\" not found\n", orig);
 
   return orig;
+}
+
+/*-------------------------------------------------------------------*/
+
+void check_config()
+{
+  printf("Check config...\n");
+  check_language();
 }
 
 /*------------------------------------------------------------------*/
@@ -13203,6 +13226,13 @@ void ctrlc_handler(int sig)
   _abort = TRUE;
 }
 
+void hup_handler(int sig)
+{
+  /* reload configuration */
+
+  check_config();
+}
+
 /*------------------------------------------------------------------*/
 
 #define N_MAX_CONNECTION 10
@@ -13362,6 +13392,7 @@ int                  net_buffer_size;
   signal(SIGTERM, ctrlc_handler);
   signal(SIGINT, ctrlc_handler);
   signal(SIGPIPE, SIG_IGN);
+  signal(SIGHUP, hup_handler);
 
   /* give up root privilege */
 
@@ -13398,6 +13429,9 @@ int                  net_buffer_size;
       }
     }
 #endif
+
+  /* load initial configuration */
+  check_config();
 
   /* build logbook indices */
   if (el_index_logbooks(FALSE) != EL_SUCCESS)
@@ -13645,6 +13679,14 @@ int                  net_buffer_size;
         puts("\n");
         puts(net_buffer);
         }
+
+#ifdef OS_WINNT
+
+      /* under windows, check if configuration changed (via fstat()) once each access */
+      check_config();
+
+      /* under unix, rely on "kill -HUP elogd" */
+#endif
 
       /* initialize parametr array */
       initparam();
