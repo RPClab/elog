@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.227  2004/02/03 09:44:42  midas
+   Fixed bug that 'save config' gave strange redirection
+
    Revision 1.226  2004/02/03 08:49:15  midas
    Fixed bug with conditional attributes
 
@@ -6763,7 +6766,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /*---- menu buttons again ----*/
 
    rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n", loc("Submit"));
+   rsprintf
+       ("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n",
+        loc("Submit"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Back"));
    rsprintf("</span></td></tr>\n\n");
 
@@ -13889,9 +13894,9 @@ int node_contains(LBLIST pn, char *logbook)
 
 void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
 {
-   int i, j, expand;
-   char str[10000], format[256], date[256], ref[256];
-   char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
+   int i, index, j, expand;
+   char str[10000], format[256], date[256], ref[256], slist[MAX_N_ATTR + 10][NAME_LENGTH],
+       svalue[MAX_N_ATTR + 10][NAME_LENGTH];
    struct tm ts;
 
    if (plb->n_members > 0) {
@@ -13936,10 +13941,10 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
       if (!getcfg(plb->name, "Hidden", str) || atoi(str) == 0) {
 
          /* search logbook in list */
-         for (i = 0; lb_list[i].name[0]; i++)
-            if (equal_ustring(plb->name, lb_list[i].name))
+         for (index = 0; lb_list[index].name[0]; index++)
+            if (equal_ustring(plb->name, lb_list[index].name))
                break;
-         if (!lb_list[i].name[0])
+         if (!lb_list[index].name[0])
             return;
          rsprintf("<tr>");
          for (j = 0; j < level; j++)
@@ -13947,42 +13952,44 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
          rsprintf("<td colspan=%d class=\"sellogbook\">", 10 - level);
          /* add one ".." if we are under top group */
          if (btop)
-            rsprintf("<a href=\"../%s/\">%s</a>", lb_list[i].name_enc, lb_list[i].name);
+            rsprintf("<a href=\"../%s/\">%s</a>", lb_list[index].name_enc,
+                     lb_list[index].name);
          else
-            rsprintf("<a href=\"%s/\">%s</a>", lb_list[i].name_enc, lb_list[i].name);
-         if (getcfg(lb_list[i].name, "Read password", str) ||
-             (getcfg(lb_list[i].name, "Password file", str)
-              && !getcfg(lb_list[i].name, "Guest menu commands", str)))
+            rsprintf("<a href=\"%s/\">%s</a>", lb_list[index].name_enc,
+                     lb_list[index].name);
+         if (getcfg(lb_list[index].name, "Read password", str)
+             || (getcfg(lb_list[index].name, "Password file", str)
+                 && !getcfg(lb_list[index].name, "Guest menu commands", str)))
             rsprintf("&nbsp;&nbsp;<img src=\"lock.gif\">");
          rsprintf("<br>\n");
          str[0] = 0;
-         getcfg(lb_list[i].name, "Comment", str);
+         getcfg(lb_list[index].name, "Comment", str);
          rsprintf("<span class=\"selcomment\">%s</span></td>\n", str);
          rsprintf("<td nowrap class=\"selentries\">");
-         rsprintf("%d", *lb_list[i].n_el_index);
+         rsprintf("%d", *lb_list[index].n_el_index);
          rsprintf("</td>\n");
          rsprintf("<td nowrap class=\"selentries\">");
-         if (*lb_list[i].n_el_index == 0)
+         if (*lb_list[index].n_el_index == 0)
             rsprintf("-");
          else {
             char attrib[MAX_N_ATTR][NAME_LENGTH];
 
-            lb_list[i].n_attr = scan_attributes(lb_list[i].name, NULL);
-            j = el_search_message(&lb_list[i], EL_LAST, 0, FALSE);
-            el_retrieve(&lb_list[i],
-                        j, date, attr_list, attrib, lb_list[i].n_attr, NULL, 0, NULL,
+            lb_list[index].n_attr = scan_attributes(lb_list[index].name, NULL);
+            j = el_search_message(&lb_list[index], EL_LAST, 0, FALSE);
+            el_retrieve(&lb_list[index],
+                        j, date, attr_list, attrib, lb_list[index].n_attr, NULL, 0, NULL,
                         NULL, NULL, NULL, NULL);
-            if (!getcfg(lb_list[i].name, "Last submission", str)) {
+            if (!getcfg(lb_list[index].name, "Last submission", str)) {
                sprintf(str, "$entry date");
-               for (i = 0; i < lb_list[i].n_attr; i++)
+               for (i = 0; i < lb_list[index].n_attr; i++)
                   if (equal_ustring(attr_list[i], "Author"))
                      break;
-               if (i < lb_list[i].n_attr)
+               if (i < lb_list[index].n_attr)
                   sprintf(str + strlen(str), " %s $author", loc("by"));
             }
-            j = build_subst_list(&lb_list[i], slist, svalue, attrib);
+            j = build_subst_list(&lb_list[index], slist, svalue, attrib);
             strcpy(slist[j], "entry date");
-            if (!getcfg(lb_list[i].name, "Date format", format))
+            if (!getcfg(lb_list[index].name, "Date format", format))
                strcpy(format, DEFAULT_DATE_FORMAT);
 
             memset(&ts, 0, sizeof(ts));
@@ -14331,12 +14338,10 @@ void interprete(char *lbook, char *path)
 \********************************************************************/
 {
    int status, i, j, n, index, lb_index, message_id;
-   char exp[80], list[1000], section[256];
-   char str[NAME_LENGTH], str2[NAME_LENGTH], enc_pwd[80], file_name[256], command[80],
-       ref[256];
-   char enc_path[256], dec_path[256], logbook[256], logbook_enc[256];
-   char *experiment, *value, *group, css[256], *pfile;
-   char attachment[MAX_PATH_LENGTH];
+   char exp[80], list[1000], section[256], str[NAME_LENGTH], str2[NAME_LENGTH],
+       enc_pwd[80], file_name[256], command[80], ref[256], enc_path[256], dec_path[256],
+       logbook[256], logbook_enc[256], *experiment, *value, *group, css[256], *pfile,
+       attachment[MAX_PATH_LENGTH];
    BOOL global;
    LOGBOOK *lbs;
    FILE *f;
@@ -15003,7 +15008,7 @@ void interprete(char *lbook, char *path)
       else if (isparam("cfg_user"))
          sprintf(str + strlen(str), "?cmd=%s&cfg_user=%s", loc("Config"),
                  getparam("cfg_user"));
-      else if (getcfg(lbs->name, "password file", str))
+      else if (getcfg(lbs->name, "password file", str2))
          sprintf(str + strlen(str), "?cmd=%s", loc("Config"));
 
       redirect(lbs, str);
