@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.39  2002/07/09 07:22:12  midas
+  Fixed bug in error display on save config file
+
   Revision 2.38  2002/07/08 08:39:18  midas
   Fixed various small bugs
 
@@ -4545,14 +4548,18 @@ char str[80];
   fh = open(cfg_file, O_RDWR | O_BINARY | O_TRUNC, 644);
   if (fh < 0)
     {
-    sprintf(str, "%s: %s", loc("Cannot open file <b>%s</b>"), cfg_file, strerror(errno));
+    sprintf(str, loc("Cannot open file <b>%s</b>"), cfg_file);
+    strcat(str, ": ");
+    strcat(str, strerror(errno));
     show_error(str);
     return 0;
     }
   i = write(fh, _text, strlen(_text));
   if (i < (int)strlen(_text))
     {
-    sprintf(str, "%s: %s", loc("Cannot write to <b>%s</b>"), cfg_file, strerror(errno));
+    sprintf(str, loc("Cannot write to <b>%s</b>"), cfg_file);
+    strcat(str, ": ");
+    strcat(str, strerror(errno));
     show_error(str);
     close(fh);
     return 0;
