@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.16  2003/02/17 15:25:32  midas
+  Fixed bug with vanishing attributes on upload in new message
+
   Revision 1.15  2003/02/17 15:08:53  midas
   Incresed attribute value size to 1000 Bytes
 
@@ -4609,64 +4612,66 @@ time_t now;
   for (i=0 ; i<lbs->n_attr ; i++)
     attrib[i][0] = 0;
 
-  if (message_id)
+  text[0] = 0;
+
+  if (upload)
     {
-    if (upload)
-      {
-      /* get date */
-      time(&now);
-      if (getcfg(lbs->name, "Date format", format))
-        strftime(date, sizeof(str), format, localtime(&now));
-      else
-        strcpy(date, ctime(&now));
-
-      /* get attributes from parameters */
-      for (i=0 ; i<lbs->n_attr ; i++)
-        {
-        if (attr_flags[i] & AF_MULTI)
-          {
-          attrib[i][0] = 0;
-          first = 1;
-          for (j=0 ; j<MAX_N_LIST ; j++)
-            {
-            sprintf(str, "%s#%d", attr_list[i], j);
-            if (getparam(str))
-              {
-              if (*getparam(str))
-                {
-                if (first)
-                  first = 0;
-                else
-                  strlcat(attrib[i], " | ", NAME_LENGTH);
-                if (strlen(attrib[i]) + strlen(getparam(str)) < NAME_LENGTH-2)
-                  strlcat(attrib[i], getparam(str), NAME_LENGTH);
-                else
-                  break;
-                }
-              }
-            else
-              break;
-            }
-          }
-        else
-          {
-          strlcpy(attrib[i], getparam(attr_list[i]), NAME_LENGTH);
-          }
-        }
-
-      strlcpy(text, getparam("text"), TEXT_SIZE);
-
-      for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-        {
-        sprintf(str, "attachment%d", i);
-        if (isparam(str))
-          strlcpy(att[i], getparam(str), 256);
-        }
-
-      /* get encoding */
-      strcpy(encoding, atoi(getparam("html")) == 1 ? "HTML" : "plain");
-      }
+    /* get date */
+    time(&now);
+    if (getcfg(lbs->name, "Date format", format))
+      strftime(date, sizeof(str), format, localtime(&now));
     else
+      strcpy(date, ctime(&now));
+
+    /* get attributes from parameters */
+    for (i=0 ; i<lbs->n_attr ; i++)
+      {
+      if (attr_flags[i] & AF_MULTI)
+        {
+        attrib[i][0] = 0;
+        first = 1;
+        for (j=0 ; j<MAX_N_LIST ; j++)
+          {
+          sprintf(str, "%s#%d", attr_list[i], j);
+          if (getparam(str))
+            {
+            if (*getparam(str))
+              {
+              if (first)
+                first = 0;
+              else
+                strlcat(attrib[i], " | ", NAME_LENGTH);
+              if (strlen(attrib[i]) + strlen(getparam(str)) < NAME_LENGTH-2)
+                strlcat(attrib[i], getparam(str), NAME_LENGTH);
+              else
+                break;
+              }
+            }
+          else
+            break;
+          }
+        }
+      else
+        {
+        strlcpy(attrib[i], getparam(attr_list[i]), NAME_LENGTH);
+        }
+      }
+
+    strlcpy(text, getparam("text"), TEXT_SIZE);
+
+    for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+      {
+      sprintf(str, "attachment%d", i);
+      if (isparam(str))
+        strlcpy(att[i], getparam(str), 256);
+      }
+
+    /* get encoding */
+    strcpy(encoding, atoi(getparam("html")) == 1 ? "HTML" : "plain");
+    }
+  else
+    {
+    if (message_id)
       {
       /* get message for reply/edit */
 
@@ -4674,14 +4679,14 @@ time_t now;
       el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
                   text, &size, orig_tag, reply_tag, att, encoding);
       }
-    }
-  else
-    {
-    /* get preset attributes */
-    for (i=0 ; i<lbs->n_attr ; i++)
+    else
       {
-      sprintf(str, "p%s", attr_list[i]);
-      strcpy(attrib[i], getparam(str));
+      /* get preset attributes */
+      for (i=0 ; i<lbs->n_attr ; i++)
+        {
+        sprintf(str, "p%s", attr_list[i]);
+        strcpy(attrib[i], getparam(str));
+        }
       }
     }
 
@@ -5053,7 +5058,7 @@ time_t now;
     {
     rsprintf("<textarea rows=%d cols=%d wrap=hard name=Text>", height, width);
 
-    if (message_id)
+    if (text[0])
       {
       if (bedit)
         {
