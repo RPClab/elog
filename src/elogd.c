@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.270  2004/02/26 13:41:17  midas
+   Changed strupr() to toupper()
+
    Revision 1.269  2004/02/26 13:16:34  midas
    Show attribute values as HTML if the contain <a> or <img> in listing
 
@@ -4270,12 +4273,14 @@ void logf(LOGBOOK * lbs, const char *format, ...)
 int is_html(char *s)
 {
    char *str;
+   int i;
 
    str = malloc(strlen(s)+1);
    assert(str);
 
-   strcpy(str, s);
-   strupr(str);
+   for (i=0 ; i<(int)strlen(s) ; i++)
+      str[i] = toupper(s[i]);
+   str[i] = 0;
 
    if (strstr(str, "<A HREF") && strchr(str, '>')) {
       free(str);
