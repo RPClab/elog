@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.509  2004/11/15 09:57:33  midas
+   Changed charset for RSS feeds
+
    Revision 1.508  2004/11/06 16:45:14  midas
    Fixed wrong link if last entry in logbook has been moved
 
@@ -763,6 +766,8 @@ typedef int INT;
 
 #define DEFAULT_TIME_FORMAT "%c"
 #define DEFAULT_DATE_FORMAT "%x"
+    
+#define DEFAULT_CHARSET "ISO-8859-1"
 
 #define SUCCESS        1
 #define FAILURE        0
@@ -5999,7 +6004,7 @@ void show_http_header(BOOL expires)
    if (getcfg("global", "charset", str, sizeof(str)))
       rsprintf("Content-Type: text/html;charset=%s\r\n", str);
    else
-      rsprintf("Content-Type: text/html;charset=iso-8859-1\r\n");
+      rsprintf("Content-Type: text/html;charset=%S\r\n", DEFAULT_CHARSET);
 
    if (use_keepalive) {
       rsprintf("Connection: Keep-Alive\r\n");
@@ -6720,7 +6725,7 @@ void send_file_direct(char *file_name)
             break;
 
       if (!getcfg("global", "charset", charset, sizeof(charset)))
-         strcpy(charset, "iso-8859-1");
+         strcpy(charset, DEFAULT_CHARSET);
 
       if (filetype[i].ext[0]) {
          if (strncmp(filetype[i].type, "text", 4) == 0)
@@ -10990,7 +10995,7 @@ int show_md5_page(LOGBOOK * lbs)
    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
    rsprintf("Accept-Ranges: bytes\r\n");
    rsprintf("Connection: close\r\n");
-   rsprintf("Content-Type: text/plain;charset=iso-8859-1\r\n");
+   rsprintf("Content-Type: text/plain;charset=%S\r\n", DEFAULT_CHARSET);
    rsprintf("Pragma: no-cache\r\n");
    rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
 
@@ -14247,19 +14252,19 @@ time_t retrieve_date(char *index, BOOL bstart)
 void show_rss_feed(LOGBOOK * lbs)
 {
    int i, n, size, index, status, message_id;
-   char str[256], url[256], attrib[MAX_N_ATTR][NAME_LENGTH], date[80], *text, title[2000],
+   char str[256], charset[256], url[256], attrib[MAX_N_ATTR][NAME_LENGTH], date[80], *text, title[2000],
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
 
    rsprintf("HTTP/1.1 200 Document follows\r\n");
    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
 
-   if (getcfg("global", "charset", str, sizeof(str)))
-      rsprintf("Content-Type: text/xml;charset=%s\r\n", str);
-   else
-      rsprintf("Content-Type: text/xml;charset=UTF-8\r\n");
+   if (!getcfg("global", "charset", charset, sizeof(charset)))
+      strcpy(charset, DEFAULT_CHARSET);
+
+   rsprintf("Content-Type: text/xml;charset=%s\r\n", charset);
    rsprintf("\r\n");
 
-   rsprintf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+   rsprintf("<?xml version=\"1.0\" encoding=\"%s\"?>\n", charset);
    rsprintf("<rss version=\"2.0\">\n");
    rsprintf("<channel>\n");
 
@@ -15053,7 +15058,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
       /* no menus and tables */
       show_plain_header(0, "export.xml");
-      rsputs("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
+      rsPRINRF("<?xml version=\"1.0\" encoding=\"%S\"?>\n", DEFAULT_CHARSET);
       rsprintf("<!-- ELOGD Version %s export.xml -->\n", VERSION);
       rsprintf("<ELOG_LIST>\n");
 
