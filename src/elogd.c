@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.345  2004/06/16 12:15:58  midas
+   Mark re-edited entries as modified in jscript
+
    Revision 1.344  2004/06/15 20:58:15  midas
    Fixed bug with extendable attributes and onunload() checking
 
@@ -6424,7 +6427,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("<script type=\"text/javascript\">\n");
    rsprintf("<!--\n\n");
    rsprintf("var submitted = false;\n");
-   rsprintf("var modified = false;\n");
+
+   if (breedit) {
+      rsprintf("var modified = true;\n");
+      rsprintf("window.status = '%s';\n", loc("Entry has been modified"));
+   } else
+      rsprintf("var modified = false;\n");
+
    rsprintf("\n");
    rsprintf("function chkform()\n");
    rsprintf("{\n");
@@ -6531,6 +6540,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("  }\n");
    rsprintf("  submitted = true;\n");
    rsprintf("  return true;\n");
+   rsprintf("}\n\n");
+
+   /* cond_submit() gets called via selection of new conditional attribute */
+   rsprintf("function cond_submit()\n");
+   rsprintf("{\n");
+   rsprintf("  submitted = true;\n");
+   rsprintf("  document.form1.submit();\n");
    rsprintf("}\n\n");
 
    /* abandon() gets called "onUnload" */
@@ -6892,7 +6908,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   rsprintf("<select name=\"%s\"", ua);
 
                   if (is_cond_attr(index))
-                     rsprintf(" onChange=\"document.form1.submit()\">\n");
+                     rsprintf(" onChange=\"cond_submit()\">\n");
                   else
                      rsprintf(" onChange=\"mod();\">\n");
 
