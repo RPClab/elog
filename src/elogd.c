@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.593  2005/03/24 09:22:38  ritt
+   XPath starts now with index 1
+
    Revision 1.592  2005/03/21 16:22:31  ritt
    Fixed typo
 
@@ -18769,7 +18772,7 @@ BOOL enum_user_line(LOGBOOK * lbs, int n, char *user, int size)
    if (lbs->pwd_xml_tree == NULL)
       return FALSE;
 
-   sprintf(str, "/list/user[%d]/name", n);
+   sprintf(str, "/list/user[%d]/name", n+1);
    if ((node = mxml_find_node(lbs->pwd_xml_tree, str)) == NULL)
       return FALSE;
 
