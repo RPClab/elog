@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.59  2003/03/28 10:21:31  midas
+  Use 'Icon comment' in filter display
+
   Revision 1.58  2003/03/28 10:04:06  midas
   Use 'Icon comment' in quick filter
 
@@ -7855,7 +7858,7 @@ int    current_year, current_month, current_day, printable, n_logbook, n_display
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR+4][NAME_LENGTH],
        list[10000], text[TEXT_SIZE], text1[TEXT_SIZE], text2[TEXT_SIZE],
        in_reply_to[80], reply_to[256], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80];
-char   str[NAME_LENGTH], ref[256], img[80];
+char   str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH];
 char   mode[80];
 char   menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH];
 char   *p , *pt, *pt1, *pt2;
@@ -8644,9 +8647,19 @@ LOGBOOK *lbs_cur;
       {
       if (*getparam(attr_list[i]))
         {
+        comment[0] = 0;
+        if (attr_flags[i] & AF_ICON)
+          {
+          sprintf(str, "Icon comment %s", getparam(attr_list[i]));
+          getcfg(lbs->name, str, comment);
+          }
+
+        if (comment[0] == 0)
+          strcpy(comment, getparam(attr_list[i]));
+
         rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", 
                   attr_list[i]);
-        rsprintf("<td class=\"attribvalue\">%s</td></tr>", getparam(attr_list[i]));
+        rsprintf("<td class=\"attribvalue\">%s</td></tr>", comment);
         }
       }
 
