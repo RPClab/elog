@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.243  2004/02/13 20:45:09  midas
+   Fixed another problem with quotation marks
+
    Revision 1.242  2004/02/13 20:32:34  midas
    Attributes can now contain quotation marks
 
@@ -6383,81 +6386,84 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\">\n", str,
                            attr_options[index][i]);
             }
-         } else
+         } else  {
+            strencode2(str, attrib[index]);
             rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\"></td></tr>\n",
-                     ua, attrib[index]);
+                     ua, str);
+         }
       } else {
          if (attr_options[index][0][0] == 0) {
 
-         if (attr_flags[index] & AF_DATE) {
+            if (attr_flags[index] & AF_DATE) {
 
-            year = month = day = 0;
-            if (attrib[index][0]) {
-               ltime = atoi(attrib[index]);
-               pts = localtime(&ltime);
-               year = pts->tm_year+1900;
-               month = pts->tm_mon+1;
-               day = pts->tm_mday;
+               year = month = day = 0;
+               if (attrib[index][0]) {
+                  ltime = atoi(attrib[index]);
+                  pts = localtime(&ltime);
+                  year = pts->tm_year+1900;
+                  month = pts->tm_mon+1;
+                  day = pts->tm_mday;
+               }
+
+               /* display date selector */
+               rsprintf("<td class=\"attribvalue\"><select name=\"m%d\">\n", index);
+
+               rsprintf("<option value=\"\">\n");
+               for (i = 0; i < 12; i++)
+                  if (i+1 == month)
+                     rsprintf("<option selected value=\"%d\">%s\n", i + 1, month_name(i));
+                  else
+                     rsprintf("<option value=\"%d\">%s\n", i + 1, month_name(i));
+               rsprintf("</select>\n");
+
+               rsprintf("<select name=\"d%d\">", index);
+               rsprintf("<option selected value=\"\">\n");
+               for (i = 0; i < 31; i++)
+                  if (i+1 == day)
+                     rsprintf("<option selected value=%d>%d\n", i + 1, i + 1);
+                  else
+                     rsprintf("<option value=%d>%d\n", i + 1, i + 1);
+               rsprintf("</select>\n");
+
+               if (year)
+                  rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y%d\" value=\"%d\">",
+                           loc("Year"), index, year);
+               else
+                  rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y%d\">",
+                           loc("Year"), index);
+
+               rsprintf("\n<script language=\"javascript\" type=\"text/javascript\">\n");
+               rsprintf("<!--\n");
+               rsprintf("function opencal(i)\n");
+               rsprintf("{\n");
+               rsprintf("  window.open(\"cal.html?i=\"+i, \"\",\n");
+               rsprintf
+                   ("  \"width=300,height=195,dependent=yes,menubar=no,scrollbars=no,location=no\");\n");
+               rsprintf("}\n\n");
+
+               rsprintf("if (navigator.javaEnabled()) {\n");
+               rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
+               rsprintf("  document.write(\"<a href=\\\"javascript:opencal(%d)\\\">\");\n", index);
+               rsprintf
+                   ("  document.writeln(\"<img src=\\\"cal.gif\\\" border=\\\"0\\\" alt=\\\"%s\\\"></a>\");\n",
+                    loc("Pick a date"));
+               rsprintf("} \n");
+               rsprintf("//-->\n");
+               rsprintf("</script>\n");
+
+               rsprintf("</td></tr>\n");
+         
+            } else {
+
+               /* show normal edit field */
+               rsprintf("<td class=\"attribvalue\">");
+
+               strencode2(str, attrib[index]);
+               rsprintf("<input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\">\n",
+                         input_size, input_maxlen, ua, str);
+
+               rsprintf("</td></tr>\n");
             }
-
-            /* display date selector */
-            rsprintf("<td class=\"attribvalue\"><select name=\"m%d\">\n", index);
-
-            rsprintf("<option value=\"\">\n");
-            for (i = 0; i < 12; i++)
-               if (i+1 == month)
-                  rsprintf("<option selected value=\"%d\">%s\n", i + 1, month_name(i));
-               else
-                  rsprintf("<option value=\"%d\">%s\n", i + 1, month_name(i));
-            rsprintf("</select>\n");
-
-            rsprintf("<select name=\"d%d\">", index);
-            rsprintf("<option selected value=\"\">\n");
-            for (i = 0; i < 31; i++)
-               if (i+1 == day)
-                  rsprintf("<option selected value=%d>%d\n", i + 1, i + 1);
-               else
-                  rsprintf("<option value=%d>%d\n", i + 1, i + 1);
-            rsprintf("</select>\n");
-
-            if (year)
-               rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y%d\" value=\"%d\">",
-                        loc("Year"), index, year);
-            else
-               rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y%d\">",
-                        loc("Year"), index);
-
-            rsprintf("\n<script language=\"javascript\" type=\"text/javascript\">\n");
-            rsprintf("<!--\n");
-            rsprintf("function opencal(i)\n");
-            rsprintf("{\n");
-            rsprintf("  window.open(\"cal.html?i=\"+i, \"\",\n");
-            rsprintf
-                ("  \"width=300,height=195,dependent=yes,menubar=no,scrollbars=no,location=no\");\n");
-            rsprintf("}\n\n");
-
-            rsprintf("if (navigator.javaEnabled()) {\n");
-            rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
-            rsprintf("  document.write(\"<a href=\\\"javascript:opencal(%d)\\\">\");\n", index);
-            rsprintf
-                ("  document.writeln(\"<img src=\\\"cal.gif\\\" border=\\\"0\\\" alt=\\\"%s\\\"></a>\");\n",
-                 loc("Pick a date"));
-            rsprintf("} \n");
-            rsprintf("//-->\n");
-            rsprintf("</script>\n");
-
-            rsprintf("</td></tr>\n");
-         } else {
-
-            /* show normal edit field */
-            rsprintf("<td class=\"attribvalue\">");
-
-            strencode2(str, attrib[index]);
-            rsprintf("<input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\">\n",
-                      input_size, input_maxlen, ua, str);
-
-            rsprintf("</td></tr>\n");
-         }
 
          } else {
             if (strieq(attr_options[index][0], "boolean")) {
@@ -13522,9 +13528,10 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
       rsprintf("<tr><td class=\"attribhead\">\n");
 
-      for (i = 0; i < lbs->n_attr; i++)
-         rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", attr_list[i],
-                  attrib[i]);
+      for (i = 0; i < lbs->n_attr; i++) {
+         strencode2(str, attrib[i]);
+         rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", attr_list[i], str);
+      }
 
       /* browsing flag to distinguish "/../<attr>=<value>" from browsing */
       rsprintf("<input type=hidden name=browsing value=1>\n");
