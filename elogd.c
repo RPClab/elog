@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.97  2002/11/19 08:32:29  midas
+  Fixed bug with 10 attachments
+
   Revision 2.96  2002/11/06 13:39:29  midas
   Added charset= option
 
@@ -392,7 +395,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.2.2"
+#define VERSION "2.2.3"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -10257,7 +10260,7 @@ int  i, n;
 
       if (strncmp(item, "attfile", 7) == 0)
         {
-        n = item[7] - '1';
+        n = atoi(item+7)-1;
 
         /* evaluate file attachment */
         if (strstr(string, "filename="))
