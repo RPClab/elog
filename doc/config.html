@@ -821,8 +821,8 @@ added to the configuration file to fill in the <i>Author</i> and the <i>Email</i
 with the current user name and email:
 <p>
 <ul><code>Attributes = Author, Email, ...</code></ul>
-<ul><code>Options Author = $long_name from $remote_host<br>
-Options Email = $user_email</code></ul>
+<ul><code>Subst Author = $long_name from $remote_host<br>
+Subst Email = $user_email</code></ul>
 <p>
 Thus the author name is not user-input anymore, ensuring the entry always contains the
 actual user name. For a full listing of substitutions, see the "<I>Subst &lt;attrib></I>" option.<p>
