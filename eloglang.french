@@ -187,8 +187,8 @@ ELOG registration = Enregistrement ELOG
 Your ELOG account has been activated on host = Votre compte ELOG a été activé sur
 You can access it at = Vous pouvez y accéder par
 Are you sure to delete these messages? = Confirmez-vous la suppression de ces messages ?
-%d messages moved successfully from "%s" to "%s" = Message déplacé de "%s" vers "%s"
-%d messages copied successfully from "%s" to "%s" = Message copié de "%s" vers "%s"
+%d messages moved successfully from "%s" to "%s" = Messages déplacé de "%s" vers "%s"
+%d messages copied successfully from "%s" to "%s" = Messages copié de "%s" vers "%s"
 Select = Sélectionner
 
 #
