@@ -5,6 +5,9 @@ Version 2.0.6, released August xx, 2002
 - Added "Guest menu commands" option for anonymous login
 - Added user email to password file
 - Added $user_email to substitution list
+- Date sorting now works over all logbooks 
+- Added sorting by columns
+- Added page wise display with navigation bar
 
 Version 2.0.5, released July 23rd, 2002
 =======================================
