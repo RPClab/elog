@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.559  2005/02/14 19:52:10  ritt
+   Broke apart long code line
+
    Revision 1.558  2005/02/14 10:57:11  ritt
    Fixed compiler warning
 
@@ -13742,10 +13745,13 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   rsprintf
                       ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
                        colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
-                  if (show_attachments)
-                     rsprintf
-                         ("</td></tr><tr><td colspan=%d class=\"messagelist\"><img src=\"%s\" alt=\"%s\"></td></tr>",
-                          colspan, ref, attachment[index] + 14);
+                  if (show_attachments) {
+                     rsprintf("</td></tr><tr>");
+                     rsprintf("<td colspan=%d class=\"messagelist\">", colspan);
+                     rsprintf("<img src=\"%s\" alt=\"%s\" style=\"width:100%%\"></td>",
+                          ref, attachment[index] + 14);
+                     rsprintf("</tr>\n");
+                  }
                } else {
                   rsprintf
                       ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
@@ -18147,7 +18153,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                   if (is_image(att)) {
                      rsprintf("<tr><td class=\"messageframe\">\n");
                      rsprintf("<a name=\"att%d\"></a>\n", index + 1);
-                     rsprintf("<img src=\"%s\" alt=\"%s\"></td></tr>", ref, attachment[index] + 14);
+                     rsprintf("<img src=\"%s\" alt=\"%s\">\n", ref, attachment[index]+14);
                      rsprintf("</td></tr>\n\n");
                   } else {
                      if (is_ascii(file_name)) {
