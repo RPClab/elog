@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.4  2002/02/25 15:28:01  midas
+  Require -l flag, output better error messages
+
   Revision 1.3  2001/12/21 15:28:51  midas
   Initial version as separate package, corresponds to V1.3.2
 
@@ -244,7 +247,10 @@ char                 host_name[256], boundary[80], str[80], *p;
       }
   
   /* compose request */
-  sprintf(request, "POST /%s/ HTTP/1.0\r\n", experiment);
+  if (experiment[0])
+    sprintf(request, "POST /%s/ HTTP/1.0\r\n", experiment);
+  else
+    sprintf(request, "POST / HTTP/1.0\r\n");
   sprintf(request+strlen(request), "Content-Type: multipart/form-data; boundary=%s\r\n", boundary);
   sprintf(request+strlen(request), "Host: %s\r\n", host_name);
   sprintf(request+strlen(request), "User-Agent: ELOG\r\n");
@@ -388,8 +394,9 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
         else
           {
   usage:
-          printf("\nusage: elog -h <hostname> [-p port]\n");
-          printf("           [-l logbook/experiment]\n");
+          printf("\nusage: elog\n");
+          printf("           -h <hostname> [-p port]  Name of host where elogd is running\n");
+          printf("           -l logbook/experiment    Name of logbook or experiment\n");
           printf("           [-v]                     for verbose output\n");
           printf("           [-w password]            write password defined on server\n");
           printf("           [-u username password]   user name and password\n");
@@ -408,10 +415,28 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
       }
     }
 
-  if (host_name[0] == 0 ||
-      n_attr == 0 ||
-      (text[0] == 0 && textfile[0] == 0))
-    goto usage;
+  if (host_name[0] == 0)
+    {
+    printf("Please specify hostname.\n");
+    return 0;
+    }
+
+  if (logbook[0] == 0)
+    {
+    printf("Please specify logbook with the \"-l\" flag.\n");
+    return 0;
+    }
+
+  if (n_attr == 0)
+    {
+    printf("Please specify attribute(s) with the \"-a\" flag.\n");
+    return 0;
+    }
+
+  if (text[0] == 0 && textfile[0] == 0)
+    {
+    printf("Please specify message text either with the \"-m\" flag or directly.\n");
+    }
 
   /*---- open text file ----*/
 
