@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.151  2003/10/28 13:21:26  midas
+  Fixed empty 'Location:' for konqueror
+
   Revision 1.150  2003/10/26 15:55:46  midas
   Fixed bug in el_delete_message
 
@@ -3900,7 +3903,11 @@ char str[NAME_LENGTH];
       {
       /* relative path */
       rsputs("Location: ");
-      rsputs(rel_path);
+
+      if (rel_path[0] == 0)
+        rsputs("."); /* empty location forbidden for konqueror */
+      else
+        rsputs(rel_path);
       }
     }
 
@@ -5277,8 +5284,8 @@ char   fl[8][NAME_LENGTH];
 
   rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
 
-  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Submit"));
-  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
+  rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Submit"));
+  rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Back"));
   rsprintf("</span></td></tr>\n\n");
 
   /*---- entry form ----*/
@@ -5844,7 +5851,7 @@ char   fl[8][NAME_LENGTH];
           rsprintf("<td class=\"attribvalue\">\n");
           rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", str, att[i]);
           rsprintf("%s\n", att[i]+14);
-          rsprintf("&nbsp;&nbsp;<input type=submit name=delatt%d value=\"%s\"></td></tr>\n",
+          rsprintf("&nbsp;&nbsp;<input type=\"submit\" name=\"delatt%d\" value=\"%s\"></td></tr>\n",
                     i, loc("Delete"));
           }
         else
@@ -5869,7 +5876,7 @@ char   fl[8][NAME_LENGTH];
       {
       rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), i+1);
       rsprintf("<td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile\" accept=\"filetype/*\">\n");
-      rsprintf("&nbsp;&nbsp;<input type=submit name=cmd value=\"%s\">\n", loc("Upload"));
+      rsprintf("&nbsp;&nbsp;<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Upload"));
       rsprintf("</td></tr>\n");
       }
     }
@@ -5879,8 +5886,8 @@ char   fl[8][NAME_LENGTH];
   /*---- menu buttons again ----*/
 
   rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
-  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Submit"));
-  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
+  rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Submit"));
+  rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Back"));
   rsprintf("</span></td></tr>\n\n");
 
   rsprintf("</table><!-- show_standard_title -->\n");
