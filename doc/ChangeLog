@@ -1,3 +1,11 @@
+Version 2.5.1, released February xxth, 2004
+===========================================
+
+- Avoid last '\0' in flush_return_buffer()
+- Added CSV output
+- During synchronization, display link to received entries
+- Implemented calendar
+
 Version 2.5.0, released January 28th, 2004
 ==========================================
 

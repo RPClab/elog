@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.220  2004/01/30 09:25:17  midas
+   Finished calendar in find form
+
    Revision 1.219  2004/01/29 21:20:02  midas
    Started working on calendar
 
@@ -2129,7 +2132,10 @@ int check_language()
    getcfg("global", "Language", language);
 
    /* set locale for strftime */
-   setlocale(LC_ALL, language);
+   if (language[0])
+      setlocale(LC_ALL, language);
+   else
+      setlocale(LC_ALL, "english");
 
    /* force re-read configuration file if changed */
    strlcpy(file_name, resource_dir, sizeof(file_name));
@@ -6683,7 +6689,7 @@ void show_find_form(LOGBOOK * lbs)
 
    /*---- header ----*/
 
-   show_standard_header(lbs, TRUE, loc("ELOG find"), NULL);
+   show_standard_header(lbs, FALSE, loc("ELOG find"), NULL);
 
    /*---- title ----*/
 
@@ -6799,7 +6805,7 @@ void show_find_form(LOGBOOK * lbs)
 
    rsprintf("<option value=\"\">\n");
    for (i = 0; i < 12; i++)
-      rsprintf("<option value=\"%s\">%s\n", mname[i], month_name(i));
+      rsprintf("<option value=\"%d\">%s\n", i+1, month_name(i));
    rsprintf("</select>\n");
 
    rsprintf("<select name=\"d1\">");
@@ -6815,7 +6821,7 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf("if (navigator.javaEnabled()) {\n");
    rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
    rsprintf
-       ("  document.write(\"<input type=button value=\\\"%s\\\" onClick=window.open(\\\"cal.html\\\",\\\"\\\",\\\"width=300,height=220,dependent=yes,menubar=no,scrollbars=no,location=no\\\");>\");\n",
+       ("  document.write(\"<input type=button value=\\\"%s\\\" onClick=window.open(\\\"cal.html?i=1\\\",\\\"\\\",\\\"width=300,height=220,dependent=yes,menubar=no,scrollbars=no,location=no\\\");>\");\n",
         loc("Calendar"));
    rsprintf("} \n");
    rsprintf("</script>\n");
@@ -6839,7 +6845,7 @@ void show_find_form(LOGBOOK * lbs)
 
    rsprintf("<option value=\"\">\n");
    for (i = 0; i < 12; i++)
-      rsprintf("<option value=\"%s\">%s\n", mname[i], month_name(i));
+      rsprintf("<option value=\"%d\">%s\n", i+1, month_name(i));
    rsprintf("</select>\n");
 
    rsprintf("<select name=\"d2\">");
@@ -6855,7 +6861,7 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf("if (navigator.javaEnabled()) {\n");
    rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
    rsprintf
-       ("  document.write(\"<input type=button value=\\\"%s\\\" onClick=window.open(\\\"cal.html\\\",\\\"\\\",\\\"width=300,height=220,dependent=yes,menubar=no,scrollbars=no,location=no\\\");>\");\n",
+       ("  document.write(\"<input type=button value=\\\"%s\\\" onClick=window.open(\\\"cal.html?i=2\\\",\\\"\\\",\\\"width=300,height=220,dependent=yes,menubar=no,scrollbars=no,location=no\\\");>\");\n",
         loc("Calendar"));
    rsprintf("} \n");
    rsprintf("</script>\n");
@@ -10845,7 +10851,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
             y1 = current_year;
          else
             y1 = atoi(getparam("y1"));
-         if (y1 < 1990 || y1 > current_year) {
+         if (y1 < 1970 || y1 > current_year) {
             sprintf(str, "Error: Year %s out of range", getparam("y1"));
             show_error(str);
             return;
@@ -10853,13 +10859,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
          /* if month not given, use current month */
          if (*getparam("m1")) {
-            strcpy(str, getparam("m1"));
-            for (m1 = 0; m1 < 12; m1++)
-               if (equal_ustring(str, mname[m1]))
-                  break;
-            if (m1 == 12)
-               m1 = 0;
-            m1++;
+            m1 = atoi(getparam("m1"));
          } else
             m1 = current_month;
 
@@ -10870,7 +10870,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
             d1 = 1;
 
          memset(&tms, 0, sizeof(struct tm));
-         tms.tm_year = y1 % 100;
+         tms.tm_year = y1 - 1900;
          tms.tm_mon = m1 - 1;
          tms.tm_mday = d1;
          tms.tm_hour = 0;
@@ -10887,7 +10887,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          else
             y2 = current_year;
 
-         if (y2 < 1990 || y2 > current_year) {
+         if (y2 < 1970 || y2 > current_year) {
             sprintf(date, "%d", y2);
             sprintf(str, "Error: Year %s out of range", date);
             show_error(str);
@@ -10896,13 +10896,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
          /* if month not given, use current month */
          if (*getparam("m2")) {
-            strcpy(str, getparam("m2"));
-            for (m2 = 0; m2 < 12; m2++)
-               if (equal_ustring(str, mname[m2]))
-                  break;
-            if (m2 == 12)
-               m2 = 0;
-            m2++;
+            m2 = atoi(getparam("m2"));
          } else
             m2 = current_month;
 
@@ -10911,7 +10905,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
             d2 = atoi(getparam("d2"));
          else {
             memset(&tms, 0, sizeof(struct tm));
-            tms.tm_year = y2 % 100;
+            tms.tm_year = y2 - 1900;
             tms.tm_mon = m2 - 1 + 1;
             tms.tm_mday = 1;
             tms.tm_hour = 12;
@@ -10925,7 +10919,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          }
 
          memset(&tms, 0, sizeof(struct tm));
-         tms.tm_year = y2 % 100;
+         tms.tm_year = y2 - 1900;
          tms.tm_mon = m2 - 1;
          tms.tm_mday = d2;
          tms.tm_hour = 0;
@@ -11452,7 +11446,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
 
             memset(&tms, 0, sizeof(struct tm));
-            tms.tm_year = y1 % 100;
+            tms.tm_year = y1 - 1900;
             tms.tm_mon = m1 - 1;
             tms.tm_mday = d1;
             tms.tm_hour = 12;
@@ -11469,7 +11463,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          if (*getparam("m2") || *getparam("y2") || *getparam("d2")) {
             /* calculate previous day */
             memset(&tms, 0, sizeof(struct tm));
-            tms.tm_year = y2 % 100;
+            tms.tm_year = y2 - 1900;
             tms.tm_mon = m2 - 1;
             tms.tm_mday = d2;
             tms.tm_hour = 12;
@@ -14065,9 +14059,23 @@ int do_self_register(LOGBOOK * lbs, char *command)
 
 /*------------------------------------------------------------------*/
 
+void show_day(char *css_class, char *day)
+{
+   if (day[0]) {
+      rsprintf("<td class=\"%s\" ", css_class);
+      rsprintf("onClick='submit_day(\"%s\")' ", day);
+      rsprintf("onMouseOver=\"this.className='calsel';\" ");
+      rsprintf("onMouseOut=\"this.className='%s';\" ", css_class);
+      rsprintf(">%s</td>\n", day);
+   } else {
+      /* empty cell */
+      rsprintf("<td class=\"%s\">&nbsp;</td>\n", css_class);
+   }
+}
+
 void show_calendar(LOGBOOK * lbs)
 {
-   int i, j, cur_mon, cur_day, cur_year, today_day, today_mon, today_year;
+   int i, j, index, cur_mon, cur_day, cur_year, today_day, today_mon, today_year;
    time_t now, stime;
    struct tm *ts;
    char str[256];
@@ -14091,37 +14099,45 @@ void show_calendar(LOGBOOK * lbs)
       cur_day = ts->tm_mday;
       cur_year = ts->tm_year + 1900;
    }
-
-   show_html_header(lbs, TRUE, loc("Calendar"));
-   rsprintf("<body>\n");
-   rsprintf
-       ("<table border=1 width=294 height=214><tr><td colspan=7 class=\"caltitle\">\n");
-
-   /* link to previous month */
-   if (cur_mon > 1)
-      rsprintf("<a href=\"?m=%d&y=%d\">&lt;</a>", cur_mon - 1, cur_year);
+   if (isparam("i"))
+      index = atoi(getparam("i"));
    else
-      rsprintf("<a href=\"?m=%d&y=%d\">&lt;</a>", 12, cur_year - 1);
+      index = 1;
 
-   /* current month */
-   strftime(str, sizeof(str), "%B", ts);
-   rsprintf("&nbsp;%s&nbsp;", str);
+   show_html_header(lbs, FALSE, loc("Calendar"));
+   rsprintf("<body><form name=form1 method=\"GET\" action=\"\">\n");
+   rsprintf("<input type=hidden name=\"y\" value=\"%d\">\n", cur_year);
 
-   /* link to next month */
-   if (cur_mon == 12)
-      rsprintf("<a href=\"?m=%d&y=%d\">&gt;</a>", 1, cur_year + 1);
-   else
-      rsprintf("<a href=\"?m=%d&y=%d\">&gt;</a>", cur_mon + 1, cur_year);
+   rsprintf("<script language=\"JavaScript\">\n\n");
+   rsprintf("function submit_day(day)\n");
+   rsprintf("{\n");
+   rsprintf("  opener.document.form1.d%d.value = day;\n", index, cur_year);
+   rsprintf("  opener.document.form1.m%d.value = \"%d\";\n", index, cur_mon);
+   rsprintf("  opener.document.form1.y%d.value = \"%d\";\n", index, cur_year);
+   rsprintf("  window.close();\n");
+   rsprintf("}\n");
+   rsprintf("</script>\n\n");
+
+   rsprintf("<table border=1 width=294 height=214><tr>");
+   rsprintf("<td colspan=7 class=\"caltitle\">\n");
+
+   rsprintf("<select name=\"m\" onChange=\"document.form1.submit()\">\n");
+   for (i = 0; i < 12; i++)
+      if (i+1 == cur_mon)
+        rsprintf("<option selected value=\"%d\">%s\n", i+1, month_name(i));
+      else
+        rsprintf("<option value=\"%d\">%s\n", i+1, month_name(i));
+   rsprintf("</select>\n");
 
    /* link to previous year */
    rsprintf("&nbsp;&nbsp;");
-   rsprintf("<a href=\"?m=%d&y=%d\">&lt;</a>", cur_mon, cur_year - 1);
+   rsprintf("<a href=\"?i=%d&m=%d&y=%d\">&lt;</a>", index, cur_mon, cur_year - 1);
 
    /* current year */
    rsprintf("&nbsp;%d&nbsp;", cur_year);
 
    /* link to next year */
-   rsprintf("<a href=\"?m=%d&y=%d\">&gt;</a>", cur_mon, cur_year + 1);
+   rsprintf("<a href=\"?i=%d&m=%d&y=%d\">&gt;</a>", index, cur_mon, cur_year + 1);
 
    /* go to first day of month */
    ts->tm_mday = 1;
@@ -14141,8 +14157,6 @@ void show_calendar(LOGBOOK * lbs)
    stime -= 3600 * 24 * 7;
    ts = localtime(&stime);
 
-   /* onClick='window.close(); opener.document.form1.y1 = 2004;'; */
-
    for (i = 0; i < 6; i++) {
       rsprintf("<tr>\n");
 
@@ -14150,16 +14164,18 @@ void show_calendar(LOGBOOK * lbs)
          if (ts->tm_mon + 1 == cur_mon)
             sprintf(str, "%d", ts->tm_mday);
          else
-            strcpy(str, "&nbsp;");
+            strcpy(str, "");
 
          if (ts->tm_mday == today_day && ts->tm_mon + 1 == today_mon
              && ts->tm_year + 1900 == today_year)
-            rsprintf("<td class=\"calcurday\">%s</td>\n", str);
+            show_day("calcurday", str);
          else {
             if (j == 0)
-               rsprintf("<td class=\"calhday\">%s</td>\n", str);
+               show_day("calsun", str);
+            else if (j == 6)
+               show_day("calsat", str);
             else
-               rsprintf("<td class=\"calday\">%s</td>\n", str);
+               show_day("calday", str);
          }
          stime += 3600 * 24;
          ts = localtime(&stime);
@@ -14170,7 +14186,7 @@ void show_calendar(LOGBOOK * lbs)
          break;
    }
 
-   rsprintf("</body></html>\n");
+   rsprintf("</form></body></html>\n");
 }
 
 /*------------------------------------------------------------------*/

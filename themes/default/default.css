@@ -440,6 +440,70 @@ td {
   padding:5px;
 }
 
+.caltitle {
+  background-color:#DDDDFF;
+  padding:3px;
+  font-size:medium;
+  text-align:center;
+  font-weight:bold;
+}
+
+.calhead {
+  background-color:#AAAAFF;
+  padding:0px;
+  font-size:12px;
+  text-align:center;
+  font-weight:bold;
+}
+
+.calday {
+  background-color:#CCFFCC;
+  padding:0px;
+  font-size:16px;
+  font-weight:bold;
+  text-align:center;
+  cursor:pointer;
+}
+
+.calcurday {
+  background-color:#4040A0;
+  padding:0px;
+  font-size:16px;
+  text-align:center;
+  font-weight:bold;
+  color:white;
+  cursor:pointer;
+}
+
+.calsel {
+  background-color:#40A040;
+  padding:0px;
+  font-size:16px;
+  text-align:center;
+  font-weight:bold;
+  color:white;
+  cursor:pointer;
+}
+
+.calsat {
+  background-color:#90C090;
+  padding:0px;
+  font-size:16px;
+  font-weight:bold;
+  text-align:center;
+  cursor:pointer;
+}
+
+.calsun {
+  background-color:#90C090;
+  padding:0px;
+  font-size:16px;
+  font-weight:bold;
+  text-align:center;
+  color:red;
+  cursor:pointer;
+}
+
 /* ELOG home page link at bottom of page */
 .bottomlink {
   font-family:sans-serif; 
