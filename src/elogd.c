@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.343  2004/06/15 20:52:14  midas
+   Implemented first version of onunload() checking for abandoned edits
+
    Revision 1.342  2004/06/14 11:59:28  midas
    Added support for read password during cloning
 
@@ -6414,9 +6417,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* header */
    show_html_header(lbs, FALSE, "ELOG", FALSE);
 
-   /* java script for checking required attributes */
+   /* java script for checking required attributes and to check for cancelled edits */
    rsprintf("<script type=\"text/javascript\">\n");
-   rsprintf("<!--\n");
+   rsprintf("<!--\n\n");
+   rsprintf("var submitted = false;\n");
+   rsprintf("var modified = false;\n");
+   rsprintf("\n");
    rsprintf("function chkform()\n");
    rsprintf("{\n");
 
@@ -6502,12 +6508,48 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
    }
 
+   rsprintf("  submitted = true;\n");
    rsprintf("  return true;\n");
    rsprintf("}\n\n");
 
-   rsprintf("function abandon()\n");
+   /* mark_submit() gets called via "Back" button */
+   rsprintf("function mark_submit()\n");
    rsprintf("{\n");
-   //rsprintf("alert('abandon');\n");
+   rsprintf("  submitted = true;\n");
+   rsprintf("  return true;\n");
+   rsprintf("}\n\n");
+
+   /* chkupload() gets called via "Upload" button */
+   rsprintf("function chkupload()\n");
+   rsprintf("{\n");
+   rsprintf("  if (document.form1.attfile.value == \"\") {\n");
+   rsprintf("    alert(\"%s\");\n", loc("No attachment file specified"));
+   rsprintf("    return false;\n");
+   rsprintf("  }\n");
+   rsprintf("  submitted = true;\n");
+   rsprintf("  return true;\n");
+   rsprintf("}\n\n");
+
+   /* abandon() gets called "onUnload" */
+   rsprintf("function unload()\n");
+   rsprintf("{\n");
+   rsprintf("  if (!submitted && modified) {\n");
+   rsprintf("    var subm = confirm('%s');\n", loc("Submit modified ELOG entry?"));
+   rsprintf("    if (subm) {\n");
+   rsprintf("       document.form1.jcmd.value = '%s';\n", loc("Submit"));
+   rsprintf("       document.form1.submit();\n");
+   rsprintf("    } else {\n");
+   rsprintf("       document.form1.jcmd.value = '%s';\n", loc("Back"));
+   rsprintf("       document.form1.submit();\n");
+   rsprintf("    }\n");
+   rsprintf("  }\n");
+   rsprintf("}\n\n");
+
+   /* mod() gets called via throuch "onchange" event */
+   rsprintf("function mod()\n");
+   rsprintf("{\n");
+   rsprintf("  modified = true;\n");
+   rsprintf("  window.status = '%s';\n", loc("Entry has been modified"));
    rsprintf("}\n\n");
 
    rsprintf("//-->\n");
@@ -6521,7 +6563,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    rsprintf("</head>\n");
 
-   rsprintf("<body onUnload=\"abandon();\">\n");
+   rsprintf("<body onUnload=\"unload();\">\n");
    rsprintf("<form name=form1 method=\"POST\" action=\"./\" ");
    rsprintf("enctype=\"multipart/form-data\">\n");
 
@@ -6535,6 +6577,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<input type=hidden name=\"upwd\" value=\"%s\">\n", getparam("upwd"));
    }
 
+
+   rsprintf("<input type=hidden name=\"jcmd\">\n");
+   
    /*---- title row ----*/
 
    show_standard_title(lbs->name, "", 0);
@@ -6549,7 +6594,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf
        ("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n",
         loc("Submit"));
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Back"));
+   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submit();\">\n", loc("Back"));
    rsprintf("</span></td></tr>\n\n");
 
    /*---- entry form ----*/
@@ -6715,7 +6760,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                strencode2(str, attrib[index]);
                rsprintf
-                   ("<input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\">\n",
+                   ("<input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
                     input_size, input_maxlen, ua, str);
 
                rsprintf("</td></tr>\n");
@@ -6726,11 +6771,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                /* display checkbox */
                if (atoi(attrib[index]) == 1)
                   rsprintf
-                      ("<td class=\"attribvalue\"><input type=checkbox checked name=\"%s\" value=1>\n",
+                      ("<td class=\"attribvalue\"><input type=checkbox checked name=\"%s\" value=1 onChange=\"mod();\">\n",
                        ua);
                else
                   rsprintf
-                      ("<td class=\"attribvalue\"><input type=checkbox name=\"%s\" value=1>\n",
+                      ("<td class=\"attribvalue\"><input type=checkbox name=\"%s\" value=1 onChange=\"mod();\">\n",
                        ua);
             } else {
 
@@ -6743,7 +6788,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   rsprintf("&nbsp;:&nbsp;</i>\n");
 
                   rsprintf
-                      ("<input type=\"text\" size=20 maxlength=%d name=\"%s\" value=\"%s\">\n",
+                      ("<input type=\"text\" size=20 maxlength=%d name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
                        input_maxlen, ua, attrib[index]);
 
                   rsprintf("</td></tr>\n");
@@ -6758,11 +6803,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                      if (strstr(attrib[index], attr_options[index][i]))
                         rsprintf
-                            ("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" checked>\n",
+                            ("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
                              str, str, attr_options[index][i]);
                      else
                         rsprintf
-                            ("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\">\n",
+                            ("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
                              str, str, attr_options[index][i]);
 
                      rsprintf("<label for=\"%s\">%s</label></nobr>\n",
@@ -6774,7 +6819,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                   if (attr_flags[index] & AF_EXTENDABLE) {
                      sprintf(str, loc("Add %s"), attr_list[index]);
-                     rsprintf("<input type=submit name=extend value=\"%s\">\n", str);
+                     rsprintf("<input type=submit name=extend value=\"%s\" onChange=\"mod();\">\n", str);
                   }
 
                   rsprintf("</td></tr>\n");
@@ -6786,11 +6831,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      if (strstr(attrib[index], attr_options[index][i]))
                         rsprintf
-                            ("<nobr><input type=radio id=\"%s\" name=\"%s\" value=\"%s\" checked>\n",
+                            ("<nobr><input type=radio id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
                              attr_options[index][i], ua, attr_options[index][i]);
                      else
                         rsprintf
-                            ("<nobr><input type=radio id=\"%s\" name=\"%s\" value=\"%s\">\n",
+                            ("<nobr><input type=radio id=\"%s\" name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
                              attr_options[index][i], ua, attr_options[index][i]);
 
                      rsprintf("<label for=\"%s\">%s</label></nobr>\n",
@@ -6802,7 +6847,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                   if (attr_flags[index] & AF_EXTENDABLE) {
                      sprintf(str, loc("Add %s"), attr_list[index]);
-                     rsprintf("<input type=submit name=extend value=\"%s\">\n", str);
+                     rsprintf("<input type=submit name=extend value=\"%s\" onChange=\"mod();\">\n", str);
                   }
 
                   rsprintf("</td></tr>\n");
@@ -6814,10 +6859,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      if (strstr(attrib[index], attr_options[index][i]))
                         rsprintf
-                            ("<nobr><input type=radio checked name=\"%s\" value=\"%s\">",
+                            ("<nobr><input type=radio checked name=\"%s\" value=\"%s\" onChange=\"mod();\">",
                              ua, attr_options[index][i]);
                      else
-                        rsprintf("<nobr><input type=radio name=\"%s\" value=\"%s\">",
+                        rsprintf("<nobr><input type=radio name=\"%s\" value=\"%s\" onChange=\"mod();\">",
                                  ua, attr_options[index][i]);
 
                      sprintf(str, "Icon comment %s", attr_options[index][i]);
@@ -6846,7 +6891,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   if (is_cond_attr(index))
                      rsprintf(" onChange=\"document.form1.submit()\">\n");
                   else
-                     rsprintf(">\n");
+                     rsprintf(" onChange=\"mod();\">\n");
 
                   /* display emtpy option */
                   rsprintf("<option value=\"\">- %s -\n", loc("please select"));
@@ -6874,7 +6919,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                   if (attr_flags[index] & AF_EXTENDABLE) {
                      sprintf(str, loc("Add %s"), attr_list[index]);
-                     rsprintf("<input type=submit name=extend value=\"%s\">\n", str);
+                     rsprintf("<input type=submit name=extend value=\"%s\" onChange=\"mod();\">\n", str);
                   }
 
                   rsprintf("</td></tr>\n");
@@ -6941,7 +6986,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    if (!getcfg(lbs->name, "Show text", str)
        || atoi(str) == 1) {
-      rsprintf("<textarea rows=%d cols=%d wrap=hard name=Text>", height, width);
+      rsprintf("<textarea rows=%d cols=%d wrap=hard name=\"Text\" onChange=\"mod();\">", height, width);
 
       if (bedit) {
          if (bupload || (!bupload && !breedit)
@@ -7200,7 +7245,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", str, att[i]);
                rsprintf("%s\n", att[i] + 14);
                rsprintf
-                   ("&nbsp;&nbsp;<input type=\"submit\" name=\"delatt%d\" value=\"%s\"></td></tr>\n",
+                   ("&nbsp;&nbsp;<input type=\"submit\" name=\"delatt%d\" value=\"%s\" onClick=\"return mark_submit();\"></td></tr>\n",
                     i, loc("Delete"));
             } else
                break;
@@ -7224,7 +7269,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   i + 1);
          rsprintf
              ("<td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile\" accept=\"filetype/*\">\n");
-         rsprintf("&nbsp;&nbsp;<input type=\"submit\" name=\"cmd\" value=\"%s\">\n",
+         rsprintf("&nbsp;&nbsp;<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkupload();\">\n",
                   loc("Upload"));
          rsprintf("</td></tr>\n");
       }
@@ -7238,7 +7283,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf
        ("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n",
         loc("Submit"));
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Back"));
+   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submit();\">\n", loc("Back"));
    rsprintf("</span></td></tr>\n\n");
 
    rsprintf("</table><!-- show_standard_title -->\n");
@@ -16139,6 +16184,10 @@ void interprete(char *lbook, char *path)
       _logging_level = 2;
    set_condition("");
 
+   /* evaluate "jcmd" */
+   if (isparam("jcmd") && *getparam("jcmd"))
+      strcpy(command, getparam("jcmd"));
+
    /* if experiment given, use it as logbook (for elog!) */
    if (experiment && experiment[0]) {
       strcpy(logbook_enc, experiment);
@@ -17695,6 +17744,7 @@ void server_loop(int tcp_port, int daemon)
          if (strncmp(net_buffer, "GET", 3) != 0 && strncmp(net_buffer, "POST", 4) != 0)
             goto finished;
          return_length = 0;
+
          /* extract logbook */
          if (strchr(net_buffer, '/') == NULL || strchr(net_buffer, '\r') == NULL
              || strstr(net_buffer, "HTTP") == NULL) {
@@ -17990,7 +18040,7 @@ void server_loop(int tcp_port, int daemon)
             keep_alive = FALSE;
          } else {
 
-            if (global_cmd[0]) {
+            if (!logbook[0] && global_cmd[0]) {
                if (stricmp(global_cmd, "GetConfig") == 0) {
                  download_config();
                  goto redir;
