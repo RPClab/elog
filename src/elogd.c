@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.120  2003/06/30 15:04:48  midas
+  Don't send email notificatin to users which are not in the 'Login user' list
+
   Revision 1.119  2003/06/27 16:14:42  midas
   Added 'file://' to automatic link display
 
@@ -9742,7 +9745,7 @@ char   str[1000], str2[1000], file_name[256], error[1000], date[80],
        mail_list[MAX_N_LIST][NAME_LENGTH], list[10000],
        attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[MAX_PATH_LENGTH], in_reply_to[80],
        reply_to[256], user[256], user_email[256], email_notify[256];
-char   mail_param[1000], *mail_to;
+char   mail_param[1000], *mail_to, user_list[MAX_N_LIST][NAME_LENGTH];
 char   att_file[MAX_ATTACHMENTS][256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
 int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_orig, mail_to_size;
@@ -9991,6 +9994,19 @@ int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_or
 
           if (email_notify[0])
             {
+            /* check if user has access to this logbook */
+            if (getcfg(lbs->name, "Login user", str))
+              {
+              n = strbreak(str, user_list, MAX_N_LIST);
+              for (i=0 ; i<n ; i++)
+                if (strcmp(user, user_list[i]) == 0)
+                  break;
+
+              /* invalid user if name not in list */
+              if (i == n)
+                continue;
+              }
+
             if ((int)strlen(mail_to) + (int)strlen(user_email) >= mail_to_size)
               {
               mail_to_size += 256;
