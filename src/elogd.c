@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.32  2003/02/27 20:48:15  midas
+  Added '-f <pidfile>' option
+
   Revision 1.31  2003/02/27 16:40:13  midas
   Avoid cleartext password on URL if wrong username was supplied
 
@@ -621,53 +624,58 @@
 #include <stdlib.h>
 
 #ifdef _MSC_VER
-#define OS_WINNT
 
-#define DIR_SEPARATOR '\\'
-#define DIR_SEPARATOR_STR "\\"
+  #define OS_WINNT
 
-#define snprintf _snprintf
+  #define DIR_SEPARATOR '\\'
+  #define DIR_SEPARATOR_STR "\\"
 
-#include <windows.h>
-#include <io.h>
-#include <time.h>
-#include <direct.h>
+  #define snprintf _snprintf
+
+  #include <windows.h>
+  #include <io.h>
+  #include <time.h>
+  #include <direct.h>
+
 #else
 
-#define OS_UNIX
+  #define OS_UNIX
 
-#define TRUE 1
-#define FALSE 0
+  #define TRUE 1
+  #define FALSE 0
 
-#define DIR_SEPARATOR '/'
-#define DIR_SEPARATOR_STR "/"
+  #define DIR_SEPARATOR '/'
+  #define DIR_SEPARATOR_STR "/"
 
-#define PIDPATH "/var/run/elogd.pid"
+  #ifndef PIDFILE
+    #define PIDFILE "/var/run/elogd.pid"
+  #endif
 
-#define __USE_XOPEN /* needed for crypt() */
+  #define __USE_XOPEN /* needed for crypt() */
 
-typedef int BOOL;
+  typedef int BOOL;
 
-#include <netdb.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <signal.h>
-#include <time.h>
-#include <dirent.h>
-#include <errno.h>
-#include <ctype.h>
-#include <pwd.h>
-#include <grp.h>
+  #include <netdb.h>
+  #include <netinet/in.h>
+  #include <arpa/inet.h>
+  #include <sys/socket.h>
+  #include <sys/time.h>
+  #include <sys/types.h>
+  #include <sys/stat.h>
+  #include <unistd.h>
+  #include <signal.h>
+  #include <time.h>
+  #include <dirent.h>
+  #include <errno.h>
+  #include <ctype.h>
+  #include <pwd.h>
+  #include <grp.h>
 
-#define closesocket(s) close(s)
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
+  #define closesocket(s) close(s)
+  #ifndef O_BINARY
+  #define O_BINARY 0
+  #endif
+
 #endif
 
 typedef int INT;
@@ -11249,7 +11257,7 @@ int ka_time[N_MAX_CONNECTION];
 struct in_addr remote_addr[N_MAX_CONNECTION];
 char remote_host[N_MAX_CONNECTION][256];
 
-void server_loop(int tcp_port, int daemon)
+void server_loop(int tcp_port, int daemon, char *pidfile)
 {
 int                  status, i, n, n_error, authorized, min, i_min, i_conn, length;
 struct sockaddr_in   serv_addr, acc_addr;
@@ -11340,29 +11348,35 @@ struct timeval       timeout;
     }
 
 #ifdef OS_UNIX
-  /* create /var/run/elogd.pid file */
-  {
-  int fd;
-  char buf[20];
+  /* create PID file if given as command line parameter or if running under root */
 
-  fd = open(PIDPATH, O_CREAT | O_RDWR, 0644);
-  if (fd < 0)
+  if (geteuid() == 0 || pidfile[0])
     {
-    perror("server_loop");
-    printf("Error creating pid file \"%s\".\n", PIDPATH);
-    // exit(1);
-    }
+    int fd;
+    char buf[20];
 
-  memset(buf, 0, sizeof(buf));
-  sprintf(buf, "%d\n", (int)getpid());
-  if (write(fd, buf, strlen(buf)) == -1)
-    {
-    perror("server_loop");
-    printf("Error writing to pid file \"%s\".\n", PIDPATH);
-    // exit(1);
+    if (pidfile[0] == 0)
+      strcpy(pidfile, PIDFILE);
+
+    printf("Root: %d, pidfile: %s\n", geteuid() == 0, pidfile);
+
+    fd = open(pidfile, O_CREAT | O_RDWR, 0644);
+    if (fd < 0)
+      {
+      perror("server_loop");
+      printf("Error created pid file \"%s\".\n", pidfile);
+      exit(1);
+      }
+
+    sprintf(buf, "%d\n", (int)getpid());
+    if (write(fd, buf, strlen(buf)) == -1)
+      {
+      perror("server_loop");
+      printf("Error writing to pid file \"%s\".\n", pidfile);
+      exit(1);
+      }
+    close(fd);
     }
-  close(fd);
-  }
 
   /* install signal handler */
   signal(SIGTERM, ctrlc_handler);
@@ -12176,6 +12190,12 @@ finished:
     } while (!_abort);
 
   printf("Server aborted.\n");
+
+#ifdef OS_UNIX
+  if (pidfile[0])
+    unlink(pidfile);
+#endif
+
 }
 
 /*------------------------------------------------------------------*/
@@ -12300,14 +12320,15 @@ int main(int argc, char *argv[])
 {
 int    i, fh, tcp_port_cl;
 int    daemon = FALSE;
-char   read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256];
+char   read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256],
+       pidfile[256];
 time_t now;
 struct tm *tms;
 
   tzset();
 
   read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = 0;
-  logbook_dir [0] = resource_dir[0] = logbook_dir[0] = 0;
+  logbook_dir [0] = resource_dir[0] = logbook_dir[0] = pidfile[0] = 0;
   tcp_port_cl = 0;
 
   /* default config file */
@@ -12392,10 +12413,12 @@ struct tm *tms;
         strcpy(logbook, argv[++i]);
       else if (argv[i][1] == 'h')
         strlcpy(tcp_hostname, argv[++i], sizeof(tcp_hostname));
+      else if (argv[i][1] == 'f')
+        strlcpy(pidfile, argv[++i], sizeof(pidfile));
       else
         {
 usage:
-        printf("usage: %s [-p port] [-h hostname] [-D] [-c file] [-r pwd] [-w pwd] [-a pwd] [-l logbook]\n\n", argv[0]);
+        printf("usage: %s [-p port] [-h hostname] [-D] [-c file] [-r pwd] [-w pwd] [-a pwd] [-l logbook] [-k] [-f file]\n\n", argv[0]);
         printf("       -p <port> TCP/IP port\n");
         printf("       -h <hostname> TCP/IP hostname\n");
         printf("       -D become a daemon\n");
@@ -12407,7 +12430,8 @@ usage:
         printf("       -w create/overwrite write password in config file\n");
         printf("       -a create/overwrite admin password in config file\n");
         printf("       -l <logbook> specify logbook for -r and -w commands\n\n");
-        printf("       -k do not use keep-alive\n\n");
+        printf("       -k do not use keep-alive\n");
+        printf("       -f path/filename for PID file\n\n");
         return 0;
         }
       }
@@ -12504,11 +12528,7 @@ usage:
       tcp_port = atoi(str);
     }
 
-  server_loop(tcp_port, daemon);
-
-#ifdef OS_UNIX
-  unlink(PIDPATH);
-#endif
+  server_loop(tcp_port, daemon, pidfile);
 
   return 0;
 }
