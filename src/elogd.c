@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.470  2004/09/15 02:05:28  midas
+   Only show first 1000 lines of inline ASCII attachments
+
    Revision 1.469  2004/09/14 22:12:47  midas
    'Use email from' has priority over user email address
 
@@ -5124,7 +5127,7 @@ void rsputs2(const char *str)
    int i, j, k, l, m, n;
    char *p, *pd, link[1000], link_text[1000], tmp[1000];
 
-   if (strlen_retbuf + (int) strlen(str) > return_buffer_size) {
+   if (strlen_retbuf + (int) (2*strlen(str)+1000) >= return_buffer_size) {
       return_buffer = xrealloc(return_buffer, return_buffer_size + 100000);
       memset(return_buffer + return_buffer_size, 0, 100000);
       return_buffer_size += 100000;
@@ -16736,7 +16739,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 {
    int size, i, j, n, n_log, status, fh, length, message_error, index, n_hidden, 
        message_id, orig_message_id, format_flags[MAX_N_ATTR], att_hide[MAX_ATTACHMENTS],
-       n_attachments;
+       n_attachments, n_lines;
    char str[1000], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
    char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], cmd_enc[256],
        orig_tag[80], reply_tag[MAX_REPLY_TO * 10], display[256],
@@ -17508,15 +17511,19 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                            rsprintf("<pre class=\"messagepre\">");
 
                         f = fopen(file_name, "rt");
+                        n_lines = 0;
                         if (f != NULL) {
                            while (!feof(f)) {
                               str[0] = 0;
                               fgets(str, sizeof(str), f);
 
-                              if (!strstr(att, ".HTML"))
-                                 rsputs2(str);
-                              else
-                                 rsputs(str);
+                              if (n_lines < 1000) {
+                                 if (!strstr(att, ".HTML"))
+                                    rsputs2(str);
+                                 else
+                                    rsputs(str);
+                              }
+                              n_lines++;
                            }
                            fclose(f);
                         }
@@ -17524,6 +17531,9 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                         if (!strstr(att, ".HTML"))
                            rsprintf("</pre>");
                         rsprintf("\n");
+                        if (n_lines > 1000)
+                           rsprintf("<i><b>... %d more lines ...</b></i>\n", n_lines - 1000);
+
                         rsprintf("</td></tr>\n");
                      }
                   }
