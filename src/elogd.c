@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.26  2003/02/24 13:53:39  midas
+  Improved display of links in messages
+
   Revision 1.25  2003/02/24 13:39:33  midas
   Fixed problem with emails depending on MOptions attribute
 
@@ -3296,9 +3299,11 @@ void rsputs(const char *str)
 
 /*------------------------------------------------------------------*/
 
+char *list[] = { "http://", "https://", "ftp://", "mailto:", "elog:", "" };
+
 void rsputs2(const char *str)
 {
-int i, j, k;
+int i, j, k, l;
 char *p, link[256];
 
   if (strlen_retbuf + strlen(str) > sizeof(return_buffer))
@@ -3308,90 +3313,56 @@ char *p, link[256];
     j = strlen_retbuf;
     for (i=0 ; i<(int)strlen(str) ; i++)
       {
-      if (strncmp(str+i, "http://", 7) == 0)
+      for (l=0 ; list[l][0] ; l++)
         {
-        p = (char *) (str+i+7);
-        i += 7;
-        for (k=0 ; *p && *p != ' ' && *p != ',' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
-          link[k] = *p++;
-        link[k] = 0;
-        i--;
-
-        sprintf(return_buffer+j, "<a href=\"http://%s\">http://%s</a>", link, link);
-        j += strlen(return_buffer+j);
-        }
-      else if (strncmp(str+i, "https://", 8) == 0)
-        {
-        p = (char *) (str+i+8);
-        i += 8;
-        for (k=0 ; *p && *p != ' ' && *p != ',' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
-          link[k] = *p++;
-        link[k] = 0;
-        i--;
-
-        sprintf(return_buffer+j, "<a href=\"https://%s\">https://%s</a>", link, link);
-        j += strlen(return_buffer+j);
-        }
-      else if (strncmp(str+i, "ftp://", 6) == 0)
-        {
-        p = (char *) (str+i+6);
-        i += 6;
-        for (k=0 ; *p && *p != ' ' && *p != ',' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
-          link[k] = *p++;
-        link[k] = 0;
-        i--;
-
-        sprintf(return_buffer+j, "<a href=\"ftp://%s\">ftp://%s</a>", link, link);
-        j += strlen(return_buffer+j);
-        }
-      else if (strncmp(str+i, "mailto:", 7) == 0)
-        {
-        p = (char *) (str+i+7);
-        i += 7;
-        for (k=0 ; *p && *p != '>' && *p != ' ' && *p != ',' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
-          link[k] = *p++;
-        link[k] = 0;
-        i--;
-
-        sprintf(return_buffer+j, "<a href=\"mailto:%s\">%s</a>", link, link);
-        j += strlen(return_buffer+j);
-        }
-      else if (strncmp(str+i, "elog:", 5) == 0)
-        {
-        p = (char *) (str+i+5);
-        i += 5;
-        for (k=0 ; *p && *p != '>' && *p != ' ' && *p != ',' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
-          link[k] = *p++;
-        link[k] = 0;
-        i--;
-
-        /* if link contains '/' (reference to other logbook), add ".." in front */
-        if (strchr(link, '/'))
-          sprintf(return_buffer+j, "<a href=\"../%s\">elog:%s</a>", link, link);
-        else
-          sprintf(return_buffer+j, "<a href=\"%s\">elog:%s</a>", link, link);
-        j += strlen(return_buffer+j);
-        }
-      else if (strncmp(str+i, "<br>", 4) == 0)
-        {
-        strcpy(return_buffer+j, "<br>");
-        j+=4;
-        i+=3;
-        }
-      else
-        switch (str[i])
+        if (strncmp(str+i, list[l], strlen(list[l])) == 0)
           {
-          case '<': strcat(return_buffer, "&lt;"); j+=4; break;
-          case '>': strcat(return_buffer, "&gt;"); j+=4; break;
+          p = (char *) (str+i+strlen(list[l]));
+          i += strlen(list[l]);
+          for (k=0 ; *p && strcspn(p, "> ,\t\n\r({[)}]") ; k++,i++)
+            link[k] = *p++;
+          link[k] = 0;
+          i--;
 
-          /* the translation for the search highliting */
-          case '\001' : strcat(return_buffer, "<");    j++;  break;
-          case '\002' : strcat(return_buffer, ">");    j++;  break;
-          case '\003' : strcat(return_buffer, "\"");   j++;  break;
-          case '\004' : strcat(return_buffer, " ");    j++;  break;
+          if (strcmp(list[l], "elog:") == 0)
+            {
+            /* if link contains '/' (reference to other logbook), add ".." in front */
+            if (strchr(link, '/'))
+              sprintf(return_buffer+j, "<a href=\"../%s\">elog:%s</a>", link, link);
+            else
+              sprintf(return_buffer+j, "<a href=\"%s\">elog:%s</a>", link, link);
+            }
+          else
+            sprintf(return_buffer+j, "<a href=\"%s%s\">%s%s</a>", list[l], link, list[l], link);
 
-          default: return_buffer[j++] = str[i];
+          j += strlen(return_buffer+j);
+          break;
           }
+        }
+
+      if (!list[l][0])
+        {
+        if (strncmp(str+i, "<br>", 4) == 0)
+          {
+          strcpy(return_buffer+j, "<br>");
+          j+=4;
+          i+=3;
+          }
+        else
+          switch (str[i])
+            {
+            case '<': strcat(return_buffer, "&lt;"); j+=4; break;
+            case '>': strcat(return_buffer, "&gt;"); j+=4; break;
+
+            /* the translation for the search highliting */
+            case '\001' : strcat(return_buffer, "<");    j++;  break;
+            case '\002' : strcat(return_buffer, ">");    j++;  break;
+            case '\003' : strcat(return_buffer, "\"");   j++;  break;
+            case '\004' : strcat(return_buffer, " ");    j++;  break;
+
+            default: return_buffer[j++] = str[i];
+            }
+        }
       }
 
     return_buffer[j] = 0;
