@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.321  2004/05/05 15:26:04  midas
+   Fixed compiler warning
+
    Revision 1.320  2004/05/05 15:24:45  midas
    Changed redirection to absolute location
 
@@ -12188,7 +12191,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          /* remove param from lastcmd if present */
          if ((pt1 = strstr(_cmdline, "lastcmd=")) != NULL) {
             sprintf(str, "%s%%3D", param);
-            if (pt1 = strstr(_cmdline, str)) {
+            if ((pt1 = strstr(_cmdline, str)) != NULL) {
                pt2 = pt1 + strlen(str);
                while (*pt2 && *pt2 != '%')
                   pt2++;
@@ -12211,7 +12214,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          /* remove param from lastcmd if present */
          if ((pt1 = strstr(_cmdline, "lastcmd=")) != NULL) {
             sprintf(str, "%s%%3D", param);
-            if (pt1 = strstr(_cmdline, str)) {
+            if ((pt1 = strstr(_cmdline, str)) != NULL) {
                pt2 = pt1 + strlen(str);
                while (*pt2 && *pt2 != '%' && *pt2 != '&')
                   pt2++;
