@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.179  2004/01/09 14:57:58  midas
+  Use '$entry date' instead of '$date' for 'Last submission'
+
   Revision 1.178  2004/01/09 14:34:58  midas
   Fixed bug in free_logbook_hierarchy()
 
@@ -11798,7 +11801,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
 void show_selection_page()
 {
    int i, j;
-   char str[10000];
+   char str[10000], format[256], date[256];
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
 
    if (getcfg("global", "Page Title", str))
@@ -11856,15 +11859,40 @@ void show_selection_page()
 
             lb_list[i].n_attr = scan_attributes(lb_list[i].name, NULL);
 
+            j = el_search_message(&lb_list[i], EL_LAST, 0, FALSE);
+
             el_retrieve(&lb_list[i],
-                        lb_list[i].el_index[*lb_list[i].n_el_index - 1].message_id, NULL,
-                        attr_list, attrib, lb_list[i].n_attr, NULL, 0, NULL, NULL, NULL,
+                        j, date, attr_list, attrib, lb_list[i].n_attr, NULL, 0, NULL, NULL, NULL,
                         NULL, NULL);
 
             if (!getcfg(lb_list[i].name, "Last submission", str))
-               sprintf(str, "$date %s $author", loc("by"));
+               sprintf(str, "$entry date %s $author", loc("by"));
 
             j = build_subst_list(&lb_list[i], slist, svalue, attrib);
+            strcpy(slist[j], "entry date");
+
+            if (getcfg(lb_list[i].name, "Date format", format)) {
+               struct tm ts;
+
+               memset(&ts, 0, sizeof(ts));
+
+               for (i = 0; i < 12; i++)
+                  if (strncmp(date + 4, mname[i], 3) == 0)
+                     break;
+               ts.tm_mon = i;
+
+               ts.tm_mday = atoi(date + 8);
+               ts.tm_hour = atoi(date + 11);
+               ts.tm_min = atoi(date + 14);
+               ts.tm_sec = atoi(date + 17);
+               ts.tm_year = atoi(date + 20) - 1900;
+               ts.tm_isdst = -1;      /* let mktime compute DST */
+
+               mktime(&ts);
+               strftime(svalue[j++], sizeof(str), format, &ts);
+            } else
+               strcpy(svalue[j++], date);
+
             strsubst(str, slist, svalue, j);
 
             rsputs(str);
