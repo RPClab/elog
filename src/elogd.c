@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.517  2004/12/05 11:52:53  midas
+   Added date check
+
    Revision 1.516  2004/12/05 11:40:52  midas
    Implemented 'sort attribute'
 
@@ -16329,6 +16332,11 @@ void submit_elog(LOGBOOK * lbs)
                tms.tm_hour = 12;
 
                ltime = mktime(&tms);
+
+               if (ltime == -1) {
+                  show_error(loc("Date must be between 1970 and 2037"));
+                  return;
+               }
                sprintf(attrib[i], "%d", ltime);
             }
          }
