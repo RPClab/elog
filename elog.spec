@@ -3,7 +3,7 @@
 Name:       elog
 Summary:    elog is a standalone electronic web logbook
 Version:    2.5.5
-Release:    3
+Release:    4
 Copyright:  GPL
 Group:      Applications/Networking
 Source:     http://midas.psi.ch/elog/download/elog-%{version}.tar.gz
@@ -61,7 +61,7 @@ each weblog can be totally different from the rest.
 
 %pre
 %{_sbindir}/groupadd -r elog 2>/dev/null || :
-%{_sbindir}/useradd -d /no/such/path -s /bin/false \
+%{_sbindir}/useradd -d %{prefix}/elog -s /bin/false \
    -g elog -M -r elog 2>/dev/null || :
 
 %build
@@ -91,7 +91,7 @@ install -m 644 man/elconv.1 $RPM_BUILD_ROOT%{_mandir}/man1
 install -m 644 man/elogd.8 $RPM_BUILD_ROOT%{_mandir}/man8
 
 %post
-chown -R %{elog_uid}:%{elog_gid} $RPM_BUILD_ROOT%{prefix}/elog
+chown -R elog:elog $RPM_BUILD_ROOT%{prefix}/elog
 
 %clean
 rm -rf $RPM_BUILD_ROOT
