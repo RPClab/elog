@@ -31,6 +31,7 @@ cvs update
 
 # copy files to archive
 cp src/*.c $dir/src
+cp src/*.h $dir/src
 cp Makefile $dir
 cp elogd.cfg $dir/elogd.cfg
 cp COPYING $dir
