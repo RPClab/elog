@@ -2,6 +2,7 @@ Version 1.3.3, released Februar xxrd, 2002
 =========================================
 
 - Fixed various bugs with fixed attributes
+- Added flag "Restrict edit"
 
 Version 1.3.2, released Januar 23rd, 2002
 =========================================
