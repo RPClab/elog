@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.489  2004/09/28 23:21:47  midas
+   Version 2.5.4-5
+
    Revision 1.488  2004/09/28 23:18:59  midas
    Changed 'first','next' etc. to '|<', '>' etc.
 
@@ -576,7 +579,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.4-4"
+#define VERSION "2.5.4-5"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
