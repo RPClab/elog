@@ -1,3 +1,12 @@
+Version 2.2.3, released Nobember 20th, 2002
+===========================================
+
+- Added "charset = ..." option
+- Fixed bug with 10 attachments
+- Added "Table align = ..." option
+- Create data directory automatically
+- Allow substitutions in attributes for searches, like "Author=$full_name"
+
 Version 2.2.2, released Nobember 6th, 2002
 ==========================================
 

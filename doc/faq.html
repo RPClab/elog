@@ -25,7 +25,7 @@
 <div class=Sub><i>Frequently Asked Questions about usage and administration</i></div>
 <hr>
 
-<UL>
+<OL>
 
 <LI><b>How does one configure elog to display a listing of all messages by default instead the last message</b>
 <p>
@@ -140,6 +140,24 @@ This causes the welcome page being redirected to <b>/logbook/last10</b>, where <
 /logbook?cmd=Search&amp;&lt;attrib&gt;=&lt;value&gt;    for a search with &lt;attrib&gt;=&lt;value&gt;
 </pre>
 
+<LI><b>I want to switch from full/summary/threaded display with a single button</b>
+<p>
+This can be achieved with the <b><code>Bottom text = bottom.html</b></code> option. Put
+following HTML code in your bottom.html:
+
+<pre>
+&lt;center&gt;
+&lt;a href="?mode=summary"&gt;Summary&lt;/a&gt; |
+&lt;a href="?mode=full"&gt;Full&lt;/a&gt; |
+&lt;a href="?mode=threaded"&gt;Threaded&lt;/a&gt;
+&lt;/center>
+</pre>
+<p>
+This gives you three links with different display mode. You can also add filters there
+like<br>
+
+<b><code>&lt;a href="?mode=summary&Type=Routine"&gt;Routine entries&lt;/a&gt;</b></code>.<p>
+
 <LI><b>What new features are planned for future releases ?</b>
 <p>
 Here are some "<I>wishlist</I>" items requested by users. I will work down the list as time permits. If you find
@@ -164,13 +182,11 @@ a feature you find useful on the list, there is a good chance that it will appea
 <tr><td>Collapse/Expand threads<td>1</tr>
 <tr><td>Search substring in <i>all</i> attributes (not only text body)<td>1</tr>
 <tr><td>Have a hierarchy of logbooks<td>2</tr>
-<tr><td>Search substring in <i>all</i> attributes (not only text body)<td>1</tr>
 <tr><td>Expand/Collabse threads in threaded display, possible with text<td>1</tr>
-<tr><td>Switch threaded/summary/full display with single button<td>1</tr>
 
 </table></center><p>
 
-</UL>
+</OL>
 
 <HR>
 <div class=footer>&nbsp;
