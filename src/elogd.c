@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.511  2004/11/16 15:32:03  midas
+   Increased NAME_LENGTH to 1500, requires a stack size of 4MB
+
    Revision 1.510  2004/11/15 11:42:17  midas
    Fixed typo
 
@@ -765,7 +768,7 @@ typedef int INT;
 #define TRUNCATE(fh) ftruncate(fh, TELL(fh))
 #endif
 
-#define NAME_LENGTH  500
+#define NAME_LENGTH  1500
 
 #define DEFAULT_TIME_FORMAT "%c"
 #define DEFAULT_DATE_FORMAT "%x"
