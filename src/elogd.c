@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.522  2004/12/17 22:18:29  midas
+   Use hostname from -n parameter for redirection if given
+
    Revision 1.521  2004/12/17 21:50:28  midas
    Fixed attribute substitutions in 'use email from'
 
@@ -19936,7 +19939,11 @@ void server_loop(void)
    }
 
    /* get host name for mail notification */
-   gethostname(host_name, sizeof(host_name));
+   if (tcp_hostname[0])
+      strlcpy(host_name, tcp_hostname, sizeof(host_name));
+   else
+      gethostname(host_name, sizeof(host_name));
+
    phe = gethostbyname(host_name);
    if (phe != NULL)
       phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
