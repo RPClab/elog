@@ -521,6 +521,7 @@ commands are possible:
   <li><b>Edit</b> - Edit current logbook entry
   <li><b>Delete</b> - Delete current logbook entry
   <li><b>Reply</b> - Submit a reply to current entry
+  <li><b>Duplicate</b> - Duplicate the current entry with the possibility to change some values
   <li><b>Download</b> - Download a message in ASCII format
   <li><b>Find</b> - Search entries in logbooks
   <li><b>Last day</b> - Display entries from last day
@@ -541,7 +542,7 @@ setting, and are automatically translated into the specified language.<br><br>
 
 If this option is not present, following default is used:
 <br>
-<pre>Menu commands = List, New, Edit, Delete, Reply, Find, Config, Help</pre>
+<pre>Menu commands = List, New, Edit, Delete, Reply, Duplicate, Find, Config, Help</pre>
 <br>
 
 <li><b><code>Copy to = &lt;logbook list&gt;</code></b>
@@ -580,7 +581,7 @@ menu, with which one can login as a real user (username and password have to mat
 from the password file), which then allowes full access via the <b>"Menu commands"</b> list.
 A typical example for the menu settings for this scenario are:<p>
 <pre>
-Menu commands = List, New, Edit, Reply, Find, Config, Logout, Help
+Menu commands = List, New, Edit, Reply, Duplicate, Find, Config, Logout, Help
 Guest menu commands = List, Find, Login, Help
 </pre>
 <p>

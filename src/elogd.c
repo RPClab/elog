@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.613  2005/03/31 20:37:05  ritt
+   Implemented 'Duplicate' command
+
    Revision 1.612  2005/03/31 18:15:32  ritt
    Implemented seconds for datetime
 
@@ -7831,7 +7834,7 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
 
 /*------------------------------------------------------------------*/
 
-void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload, BOOL breedit)
+void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload, BOOL breedit, BOOL bduplicate)
 {
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
        format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr, attr_index[MAX_N_ATTR];
@@ -8845,7 +8848,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
 
       /* leave space for '> ' */
-      if (!bedit)
+      if (!bedit && !bduplicate)
          width += 2;
    }
 
@@ -8877,7 +8880,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (preset_text) {
 
       /* don't use preset text if editing */
-      if (bedit)
+      if (bedit || bduplicate)
          preset_text = FALSE;
 
       /* user preset on reedit only if preset is under condition */
@@ -8904,12 +8907,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             add_subst_list(slist, svalue, "message id", mid, &j);
             add_subst_time(lbs, slist, svalue, "entry time", date, &j);
 
-            if (getcfg(lbs->name, "Prepend on edit", str, sizeof(str))) {
-               strsubst(str, slist, svalue, j);
-               while (strstr(str, "\\n"))
-                  memcpy(strstr(str, "\\n"), "\r\n", 2);
-               rsprintf(str);
-            }
+            if (!bupload)
+               if (getcfg(lbs->name, "Prepend on edit", str, sizeof(str))) {
+                  strsubst(str, slist, svalue, j);
+                  while (strstr(str, "\\n"))
+                     memcpy(strstr(str, "\\n"), "\r\n", 2);
+                  rsputs3(str);
+               }
 
             /* use rsputs3 which just converts "<", ">", "&", "\"" to &gt; etc. */
             /* otherwise some HTML statments would break the page syntax        */
@@ -8923,6 +8927,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   rsputs3(str);
                }
          }
+      } else if (bduplicate) {
+         
+         rsputs3(text);
+
       } else if (breply) {
          if (!getcfg(lbs->name, "Quote on reply", str, sizeof(str))
              || atoi(str) > 0) {
@@ -9129,7 +9137,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (!getcfg(lbs->name, "Enable attachments", str, sizeof(str))
        || atoi(str) > 0) {
       i = 0;
-      if (bedit) {
+      if (bedit || bduplicate) {
          /* show existing attachments */
          for (i = 0; i < MAX_ATTACHMENTS; i++)
             if (att[i][0]) {
@@ -14414,7 +14422,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 
    /* default menu commands */
    if (menu_str[0] == 0) {
-      strcpy(menu_str, "List, New, Edit, Delete, Reply, Find, ");
+      strcpy(menu_str, "List, New, Edit, Delete, Reply, Duplicate, Find, ");
 
       if (getcfg(lbs->name, "Password file", str, sizeof(str))) {
 
@@ -18867,6 +18875,8 @@ BOOL convert_password_file(char *file_name)
    char *buf, *p;
    PMXML_NODE root, list, node;
 
+   printf("Converting password file \"%s\" to new XML format ... ", file_name);
+
    fh = open(file_name, O_RDONLY | O_BINARY);
    if (fh < 0)
       return FALSE;
@@ -18957,6 +18967,8 @@ BOOL convert_password_file(char *file_name)
 
    mxml_write_tree(file_name, root);
    mxml_free_tree(root);
+
+   printf("Ok\n");
 
    free(buf);
    return TRUE;
@@ -20229,18 +20241,16 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (strieq(command, loc("New")) ||
-       strieq(command, loc("Edit")) || strieq(command, loc("Reply")) || strieq(command, loc("Delete"))
-       || strieq(command, loc("Upload"))
-       || strieq(command, loc("Submit"))) {
+   if (strieq(command, loc("New"))       || strieq(command, loc("Edit"))   || strieq(command, loc("Reply"))  || 
+       strieq(command, loc("Duplicate")) || strieq(command, loc("Delete")) || strieq(command, loc("Upload")) ||
+       strieq(command, loc("Submit"))) {
       sprintf(str, "%s?cmd=%s", path, command);
       if (!check_password(lbs, "Write password", getparam("wpwd"), str))
          return;
    }
 
-   if (strieq(command, loc("Delete")) || strieq(command, loc("Config"))
-       || strieq(command, loc("Copy to"))
-       || strieq(command, loc("Move to"))) {
+   if (strieq(command, loc("Delete"))  || strieq(command, loc("Config")) ||
+       strieq(command, loc("Copy to")) || strieq(command, loc("Move to"))) {
       sprintf(str, "%s?cmd=%s", path, command);
       if (!check_password(lbs, "Admin password", getparam("apwd"), str))
          return;
@@ -20456,7 +20466,7 @@ void interprete(char *lbook, char *path)
    }
 
    if (strieq(command, loc("New"))) {
-      show_edit_form(lbs, 0, FALSE, FALSE, FALSE, FALSE);
+      show_edit_form(lbs, 0, FALSE, FALSE, FALSE, FALSE, FALSE);
       return;
    }
 
@@ -20481,32 +20491,39 @@ void interprete(char *lbook, char *path)
                unsetparam(str);
          }
 
-         show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE, FALSE);
+         show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE, FALSE, FALSE);
          return;
       }
    }
 
    message_id = atoi(dec_path);
    if (strieq(command, loc("Upload"))) {
-      show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE, FALSE);
+      show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE, FALSE, FALSE);
       return;
    }
 
    if (strieq(command, loc("Edit"))) {
       if (message_id) {
-         show_edit_form(lbs, message_id, FALSE, TRUE, FALSE, FALSE);
+         show_edit_form(lbs, message_id, FALSE, TRUE, FALSE, FALSE, FALSE);
          return;
       }
    }
 
    if (strieq(command, loc("Reply"))) {
-      show_edit_form(lbs, message_id, TRUE, FALSE, FALSE, FALSE);
+      show_edit_form(lbs, message_id, TRUE, FALSE, FALSE, FALSE, FALSE);
       return;
    }
 
    if (strieq(command, loc("Update"))) {
-      show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, FALSE, TRUE);
+      show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, FALSE, TRUE, FALSE);
       return;
+   }
+
+   if (strieq(command, loc("Duplicate"))) {
+      if (message_id) {
+         show_edit_form(lbs, message_id, FALSE, FALSE, FALSE, FALSE, TRUE);
+         return;
+      }
    }
 
    if (strieq(command, loc("Submit"))
