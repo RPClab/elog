@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.584  2005/03/08 08:51:25  ritt
+   Fixed bug with resubmit box and conditional attributes
+
    Revision 1.583  2005/03/08 08:42:17  ritt
    Show logbook list for subscription for new user
 
@@ -8867,7 +8870,7 @@ void show_edit_form(LOGBOOK *lbs, int message_id, BOOL breply, BOOL bedit, BOOL 
    }
 
    /* Resubmit check box */
-   if (bedit) {
+   if (bedit && message_id) {
       if (getcfg(lbs->name, "Resubmit default", str, sizeof(str))) {
          if (atoi(str) == 0) {
             rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
