@@ -338,11 +338,10 @@ Show all = Alles laten zien
 This logbook requires authentication = Dit logboek vereist authenticatie
 Attachment file <b>"%s"</b> empty or not found = Bijlage bestand <b>"%s"</b> leeg of niet gevonden
 Please increase <b>"Max content length"</b> in config file = Verhoog astublieft de <b>"Max content length" (maximale lengte van inhoud)</b> in het configuratie bestand
+Text fields may contain regular expressions = Tekstvelden kunnen reguliere uitdrukkingen bevatten
+Case sensitive = Hoofdlettergevoelig
+>From = Van
+List = Lijst
+Date must be between 1970 and 2037 = Datum moet tussen 1970 en 2037 liggen
+GetPwdFile = Paswoordbestand ophalen
 
-#
-#---- please translate following items and then remove this comment ----#
-#
-Text fields may contain regular expressions = 
-Case sensitive = 
-From = 
-List = 
