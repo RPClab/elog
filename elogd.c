@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.64  2002/08/06 12:26:20  midas
+  Fixed crash for logbooks without a password file
+
   Revision 2.63  2002/08/06 12:01:19  midas
   Fixed another problem with file truncate
 
@@ -7476,7 +7479,10 @@ BOOL   first;
 
   if (equal_ustring(command, loc("Config")))
     {
-    show_config_page(lbs);
+    if (!getcfg(lbs->name, "Password file", str))
+      show_admin_page(lbs);
+    else
+      show_config_page(lbs);
     return;
     }
 
@@ -8269,6 +8275,9 @@ int   i;
 
   getcfg(lbs->name, "Password file", str);
 
+  if (!str[0])
+    return TRUE;
+
   if (str[0] == DIR_SEPARATOR || str[1] == ':')
     strcpy(file_name, str);
   else
@@ -8352,6 +8361,9 @@ FILE  *f;
 int   i;
 
   getcfg(lbs->name, "Password file", str);
+
+  if (!str[0])
+    return FALSE;
 
   if (str[0] == DIR_SEPARATOR || str[1] == ':')
     strcpy(file_name, str);
