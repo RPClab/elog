@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.152  2003/11/11 12:11:19  midas
+  Fixed stack overflow on long reply-chains
+
   Revision 1.151  2003/10/28 13:21:26  midas
   Fixed empty 'Location:' for konqueror
 
@@ -1840,7 +1843,7 @@ char *pc, *ph;
 
   *result = 0;
 
-  ph = strstr(message, "========================================\n");
+  ph = strstr(message, "========================================\r");
 
   if ((pc = strstr(message, key)) != NULL &&
        pc < ph && (*(pc-1) == '\n' || *(pc-1) == '\r'))
@@ -8109,28 +8112,43 @@ FILE *f;
 void display_reply(LOGBOOK *lbs, int message_id, int printable, int expand, int n_line,
                    int n_attr_disp, char disp_attr[MAX_N_ATTR+4][NAME_LENGTH], int level)
 {
-char   date[80], *text, in_reply_to[80], reply_to[256], encoding[80], locked_by[256],
-       attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
+char   *date, *text, *in_reply_to, *reply_to, *encoding, *locked_by, *attachment, *attrib, *p;
 int    status, size;
-char   *p;
 
   text = malloc(TEXT_SIZE);
+  attachment = malloc(MAX_ATTACHMENTS*MAX_PATH_LENGTH);
+  attrib = malloc(MAX_N_ATTR*NAME_LENGTH);
+  date = malloc(80);
+  in_reply_to = malloc(80);
+  reply_to = malloc(256);
+  encoding = malloc(80);
+  locked_by = malloc(256);
+
+  if (locked_by == NULL)
+    return;
 
   reply_to[0] = 0;
   size = TEXT_SIZE;
-  status = el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
+  status = el_retrieve(lbs, message_id, date, attr_list, (void *)attrib, lbs->n_attr,
                        text, &size, in_reply_to, reply_to,
-                       attachment, encoding, locked_by);
+                       (void *)attachment, encoding, locked_by);
 
   if (status != EL_SUCCESS)
     {
     free(text);
+    free(attachment);
+    free(attrib);
+    free(date);
+    free(in_reply_to);
+    free(reply_to);
+    free(encoding);
+    free(locked_by);
     return;
     }
 
   display_line(lbs, message_id, 0, "threaded", expand, level, printable, n_line,
                FALSE, date, in_reply_to, reply_to, n_attr_disp, disp_attr,
-               attrib, lbs->n_attr, text, NULL, encoding, 0, NULL, locked_by);
+               (void *)attrib, lbs->n_attr, text, NULL, encoding, 0, NULL, locked_by);
 
   if (reply_to[0])
     {
@@ -8147,6 +8165,13 @@ char   *p;
     }
 
   free(text);
+  free(attachment);
+  free(attrib);
+  free(date);
+  free(in_reply_to);
+  free(reply_to);
+  free(encoding);
+  free(locked_by);
 }
 
 /*------------------------------------------------------------------*/
