@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.119  2003/01/07 15:17:28  midas
+  Improved performance, introduced resource and logbook dirs
+
   Revision 2.118  2003/01/07 08:29:44  midas
   Fixed bug with hierarchical logbooks
 
@@ -546,8 +549,9 @@ int  return_length;
 char host_name[256];
 char referer[256];
 char browser[256];
-char cfg_file[256];
-char cfg_dir[256];
+char config_file[256];
+char resource_dir[256];
+char logbook_dir[256];
 char tcp_hostname[256];
 int  tcp_port = 80;
 
@@ -666,7 +670,7 @@ typedef struct {
   char   file_name[32];
   time_t file_time;
   int    offset;
-  BOOL   thread_head;
+  int    in_reply_to;
 } EL_INDEX;
 
 typedef struct {
@@ -691,6 +695,7 @@ typedef struct {
   LOGBOOK   *lbs;
   int       index;
   char      string[256];
+  int       in_reply_to;
 } MSG_LIST;
 
 LOGBOOK *lb_list = NULL;
@@ -1112,17 +1117,18 @@ char                 list[1024][NAME_LENGTH];
   if (verbose) puts(str);
 
   if (email_to)
-    {
     snprintf(str, sizeof(str) - 1, "To: %s\r\n", to);
-    send(s, str, strlen(str), 0);
-    if (verbose) puts(str);
-    }
+  else
+    snprintf(str, sizeof(str) - 1, "To: ELOG user\r\n");
+
+  send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
 
   snprintf(str, sizeof(str) - 1, "From: %s\r\nSubject: %s\r\n", from, subject);
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
 
-  snprintf(str, sizeof(str) - 1, "From: %s\r\nSubject: %s\r\n", from, subject);
+  snprintf(str, sizeof(str) - 1, "Content-Type: text/plain\r\n");
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
 
@@ -1216,7 +1222,7 @@ int  fh;
   /* read configuration file on init */
   if (!cfgbuffer)
     {
-    fh = open(cfg_file, O_RDONLY | O_BINARY);
+    fh = open(config_file, O_RDONLY | O_BINARY);
     if (fh < 0)
       return 0;
     length = lseek(fh, 0, SEEK_END);
@@ -1451,7 +1457,7 @@ static char old_language[256];
       }
     else
       {
-      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcpy(file_name, resource_dir, sizeof(file_name));
       strlcat(file_name, "eloglang.", sizeof(file_name));
       strlcat(file_name, language, sizeof(file_name));
 
@@ -1648,7 +1654,7 @@ int  i;
 
   memset(file_name, 0, sizeof(file_name));
 
-  strlcpy(file_name, cfg_dir, sizeof(file_name));
+  strlcpy(file_name, resource_dir, sizeof(file_name));
   strlcat(file_name, "themes", sizeof(file_name));
   strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
   strlcat(file_name, tn, sizeof(file_name));
@@ -1909,7 +1915,7 @@ struct tm tms;
   if (equal_ustring(lb_list[i].data_dir, lbs->data_dir) && &lb_list[i] != lbs)
     {
     if (verbose)
-      printf("  Same index as logbook %s\n", lb_list[i].name);
+      printf("\n  Same index as logbook %s\n", lb_list[i].name);
 
     lbs->el_index = lb_list[i].el_index;
     lbs->n_el_index = lb_list[i].n_el_index;
@@ -2010,15 +2016,20 @@ struct tm tms;
 
           lbs->el_index[*lbs->n_el_index].message_id = atoi(p+8);
           lbs->el_index[*lbs->n_el_index].offset = (int) p - (int) buffer;
-          lbs->el_index[*lbs->n_el_index].thread_head = (in_reply_to[0] == 0);
+          lbs->el_index[*lbs->n_el_index].in_reply_to = atoi(in_reply_to);
 
           if (lbs->el_index[*lbs->n_el_index].message_id > 0)
             {
             if (verbose)
+              {
+              if (*lbs->n_el_index == 0)
+                printf("\n");
+
               printf("  ID %3d in %s, offset %5d, %s\n",
                 lbs->el_index[*lbs->n_el_index].message_id, str,
                 lbs->el_index[*lbs->n_el_index].offset,
-                lbs->el_index[*lbs->n_el_index].thread_head ? "thread head" : "reply");
+                lbs->el_index[*lbs->n_el_index].in_reply_to ? "reply" : "thread head");
+              }
 
             /* valid ID */
             (*lbs->n_el_index)++;
@@ -2104,14 +2115,28 @@ int  i, j, n, status;
     strcpy(lb_list[n].name_enc, logbook);
     url_encode(lb_list[n].name_enc, sizeof(lb_list[n].name_enc));
 
-    /* get data dir from configuration file */
-    getcfg(logbook, "Data dir", str);
-    if (str[0] == DIR_SEPARATOR || str[1] == ':')
-      strlcpy(data_dir, str, sizeof(data_dir));
+    /* get data dir from configuration file (old method) */
+    if (getcfg(logbook, "Data dir", str))
+      {
+      if (str[0] == DIR_SEPARATOR || str[1] == ':')
+        strlcpy(data_dir, str, sizeof(data_dir));
+      else
+        {
+        strlcpy(data_dir, resource_dir, sizeof(data_dir));
+        strlcat(data_dir, str, sizeof(data_dir));
+        }
+      }
     else
       {
-      strlcpy(data_dir, cfg_dir, sizeof(data_dir));
-      strlcat(data_dir, str, sizeof(data_dir));
+      /* use logbook_dir + "Subdir" (new method) */
+      strlcpy(data_dir, logbook_dir, sizeof(data_dir));
+      if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
+        strlcat(data_dir, DIR_SEPARATOR_STR, sizeof(data_dir));
+
+      if (getcfg(logbook, "Subdir", str))
+        strlcat(data_dir, str, sizeof(data_dir));
+      else
+        strlcat(data_dir, logbook, sizeof(data_dir)); /* use logbook name as default */
       }
 
     if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
@@ -2140,8 +2165,10 @@ int  i, j, n, status;
     strcpy(lb_list[n].data_dir, data_dir);
     lb_list[n].el_index = NULL;
 
-    printf("Indexing logbook \"%s\"...\n", logbook);
+    printf("Indexing logbook \"%s\" ... ", logbook);
+    fflush(stdout);
     status = el_build_index(&lb_list[n], FALSE);
+    printf("ok\n");
 
     if (status == EL_EMPTY)
       printf("Found empty logbook \"%s\"\n", logbook);
@@ -2190,7 +2217,7 @@ int i;
     if (head_only)
       {
       for (i=0 ; i<*lbs->n_el_index ; i++)
-        if (lbs->el_index[i].thread_head)
+        if (lbs->el_index[i].in_reply_to == 0)
           return lbs->el_index[i].message_id;
 
       return 0;
@@ -2205,7 +2232,7 @@ int i;
     if (head_only)
       {
       for (i=*lbs->n_el_index-1 ; i>=0 ; i--)
-        if (lbs->el_index[i].thread_head)
+        if (lbs->el_index[i].in_reply_to == 0)
           return lbs->el_index[i].message_id;
 
       return 0;
@@ -2230,7 +2257,7 @@ int i;
     if (head_only)
       {
       for (i++ ; i<*lbs->n_el_index ; i++)
-        if (lbs->el_index[i].thread_head)
+        if (lbs->el_index[i].in_reply_to == 0)
           return lbs->el_index[i].message_id;
 
       return 0;
@@ -2254,7 +2281,7 @@ int i;
     if (head_only)
       {
       for (i-- ; i>=0 ; i--)
-        if (lbs->el_index[i].thread_head)
+        if (lbs->el_index[i].in_reply_to == 0)
           return lbs->el_index[i].message_id;
 
       return 0;
@@ -2698,7 +2725,7 @@ BOOL    bedit;
     strcpy(lbs->el_index[*lbs->n_el_index-1].file_name, file_name);
     lbs->el_index[*lbs->n_el_index-1].file_time = ltime;
     lbs->el_index[*lbs->n_el_index-1].offset = TELL(fh);
-    lbs->el_index[*lbs->n_el_index-1].thread_head = (in_reply_to[0] == 0);
+    lbs->el_index[*lbs->n_el_index-1].in_reply_to = atoi(in_reply_to);
 
     /* if index not ordered, sort it */
     i = *lbs->n_el_index;
@@ -4345,7 +4372,7 @@ int    i, fh, wrong_pwd, size;
     strcpy(file_name, str);
   else
     {
-    strlcpy(file_name, cfg_dir, sizeof(file_name));
+    strlcpy(file_name, resource_dir, sizeof(file_name));
     strlcat(file_name, str, sizeof(file_name));
     }
 
@@ -5011,7 +5038,7 @@ time_t now;
         strcpy(file_name, str);
       else
         {
-        strlcpy(file_name, cfg_dir, sizeof(file_name));
+        strlcpy(file_name, resource_dir, sizeof(file_name));
         strlcat(file_name, str, sizeof(file_name));
         }
        
@@ -5410,10 +5437,10 @@ char *buffer;
 
   rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
 
-  fh = open(cfg_file, O_RDONLY | O_BINARY);
+  fh = open(config_file, O_RDONLY | O_BINARY);
   if (fh < 0)
     {
-    rsprintf("Cannot read configuration file <b>\"%s\"</b>", cfg_file);
+    rsprintf("Cannot read configuration file <b>\"%s\"</b>", config_file);
     rsprintf("</table></td></tr></table>\n");
     rsprintf("</body></html>\r\n");
     return;
@@ -5467,10 +5494,10 @@ int save_admin_config()
 int  fh, i;
 char str[80];
 
-  fh = open(cfg_file, O_RDWR | O_BINARY | O_TRUNC, 644);
+  fh = open(config_file, O_RDWR | O_BINARY | O_TRUNC, 644);
   if (fh < 0)
     {
-    sprintf(str, loc("Cannot open file <b>%s</b>"), cfg_file);
+    sprintf(str, loc("Cannot open file <b>%s</b>"), config_file);
     strcat(str, ": ");
     strcat(str, strerror(errno));
     show_error(str);
@@ -5479,7 +5506,7 @@ char str[80];
   i = write(fh, _mtext, strlen(_mtext));
   if (i < (int)strlen(_mtext))
     {
-    sprintf(str, loc("Cannot write to <b>%s</b>"), cfg_file);
+    sprintf(str, loc("Cannot write to <b>%s</b>"), config_file);
     strcat(str, ": ");
     strcat(str, strerror(errno));
     show_error(str);
@@ -5534,7 +5561,7 @@ int    i, fh, size, self_register;
       strcpy(file_name, str);
     else
       {
-      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcpy(file_name, resource_dir, sizeof(file_name));
       strlcat(file_name, str, sizeof(file_name));
       }
 
@@ -5772,7 +5799,7 @@ int    i, fh, size;
     strcpy(file_name, str);
   else
     {
-    strlcpy(file_name, cfg_dir, sizeof(file_name));
+    strlcpy(file_name, resource_dir, sizeof(file_name));
     strlcat(file_name, str, sizeof(file_name));
     }
 
@@ -7146,7 +7173,7 @@ char list[MAX_N_LIST][NAME_LENGTH];
 void show_page_navigation(LOGBOOK *lbs, int n_msg, int page_n, int n_page, BOOL top, BOOL mode_commands,
                           BOOL threaded)
 {
-int  i;
+int  i, num_pages, skip;
 char ref[256];
 
   if (!page_n || n_msg <= n_page)
@@ -7175,26 +7202,47 @@ char ref[256];
 
   if (page_n && n_msg > n_page)
     {
-    for (i=0 ; i<(n_msg-1)/n_page+1 ; i++)
+    /* number of pages */
+    num_pages = (n_msg-1)/n_page+1;
+    skip = FALSE;
+
+    for (i=1 ; i<=num_pages ; i++)
       {
-      sprintf(ref, "page%d", i+1);
+      sprintf(ref, "page%d", i);
       build_ref(ref, sizeof(ref), "", "");
 
-      if (i == (n_msg-1)/n_page)
+      if (i <= 3 || (i >= page_n - 1 && i <= page_n + 1) || i >= num_pages-2)
         {
-        if (page_n == i+1)
-          rsprintf("%d&nbsp;&nbsp", i+1);
-        else
-          rsprintf("<a href=\"%s\">%d</a>&nbsp;&nbsp\n", ref, i+1);
+        if (i > 1 && !skip)
+          rsprintf(", \n");
+
+        skip = FALSE;
         }
       else
         {
-        if (page_n == i+1)
-          rsprintf("%d, ", i+1);
-        else
-          rsprintf("<a href=\"%s\">%d</a>, \n", ref, i+1);
+        if (!skip)
+          rsprintf("&nbsp;...&nbsp;");
+
+        skip = TRUE;
         }
+      
+      if (skip)
+        continue;
+
+      if (page_n == i)
+        rsprintf("%d", i);
+      else
+        rsprintf("<a href=\"%s\">%d</a>", ref, i);
+
+      /*
+      if (i == num_pages )
+        rsprintf("&nbsp;&nbsp;\n");
+      else
+        rsprintf(", ");
+      */
       }
+
+    rsprintf("&nbsp;&nbsp;\n");
     }
 
   if (page_n != -1 && n_page < n_msg && page_n * n_page < n_msg)
@@ -7328,7 +7376,8 @@ void show_elog_submit_find(LOGBOOK *lbs, INT past_n, INT last_n, INT page_n)
 {
 int    i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line;
 int    current_year, current_month, current_day, printable, n_logbook, n_display,
-       reverse, n_attr_disp, n_msg, search_all, message_id, n_page, i_start, i_stop;
+       reverse, n_attr_disp, n_msg, search_all, message_id, n_page, i_start, i_stop,
+       in_reply_to_id;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR+4][NAME_LENGTH],
        list[10000], text[TEXT_SIZE], text1[TEXT_SIZE], text2[TEXT_SIZE],
        in_reply_to[80], reply_to[256], attachment[MAX_ATTACHMENTS][256], encoding[80];
@@ -7336,7 +7385,7 @@ char   str[256], col[80], ref[256], img[80];
 char   mode[80];
 char   menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH];
 char   *p , *pt, *pt1, *pt2;
-BOOL   show_attachments, threaded, mode_commands, expand;
+BOOL   show_attachments, threaded, mode_commands, expand, filtering;
 time_t ltime, ltime_start, ltime_end, now;
 struct tm tms, *ptms;
 MSG_LIST *msg_list;
@@ -7677,9 +7726,26 @@ LOGBOOK *lbs_cur;
   
   /*---- filter message list ----*/
 
+  filtering = FALSE;
+
   for (i=0 ; i<lbs->n_attr ; i++)
+    {
+    /* check if attribute filter */
     if (*getparam(attr_list[i]))
       break;
+
+    /* check if sort by attribute */
+    if (equal_ustring(getparam("sort"), attr_list[i]) ||
+        equal_ustring(getparam("rsort"), attr_list[i]))
+      break;
+    }
+
+  /* turn on filtering if found */
+  if (i<lbs->n_attr)
+    filtering = TRUE;
+
+  if (*getparam("subtext"))
+    filtering = TRUE;
 
   /* do filtering */
   for (index=0 ; index<n_msg ; index++)
@@ -7690,14 +7756,18 @@ LOGBOOK *lbs_cur;
     /* retrieve message */
     size = sizeof(text);
     message_id = msg_list[index].lbs->el_index[msg_list[index].index].message_id;
+    in_reply_to_id = msg_list[index].lbs->el_index[msg_list[index].index].in_reply_to;
 
-    status = el_retrieve(msg_list[index].lbs, message_id, 
-                         date, attr_list, attrib, lbs->n_attr,
-                         text, &size, in_reply_to, reply_to,
-                         attachment,
-                         encoding);
-    if (status != EL_SUCCESS)
-      break;
+    if (filtering)
+      {
+      status = el_retrieve(msg_list[index].lbs, message_id, 
+                           date, attr_list, attrib, lbs->n_attr,
+                           text, &size, in_reply_to, reply_to,
+                           attachment,
+                           encoding);
+      if (status != EL_SUCCESS)
+        break;
+      }
 
     for (i=0 ; i<lbs->n_attr ; i++)
       {
@@ -7748,27 +7818,21 @@ LOGBOOK *lbs_cur;
       }
 
     /* in threaded mode, find message head */
-    if (threaded && in_reply_to[0])
+    if (threaded && in_reply_to_id)
       {
       do
         {
-        message_id = atoi(in_reply_to);
-        size = sizeof(text);
-        status = el_retrieve(msg_list[index].lbs, message_id, 
-                             date, attr_list, attrib, lbs->n_attr,
-                             text, &size, in_reply_to, reply_to,
-                             attachment,
-                             encoding);
-        if (status != EL_SUCCESS)
-          break;
+        message_id = in_reply_to_id;
 
-        } while (in_reply_to[0]);
+        /* search index of message */
+        for (i=0 ; i < *msg_list[index].lbs->n_el_index ; i++)
+          if (msg_list[index].lbs->el_index[i].message_id == message_id)
+            break;
+
+        in_reply_to_id = msg_list[index].lbs->el_index[i].in_reply_to;
+
+        } while (in_reply_to_id);
         
-      /* search index of message head */
-      for (i=0 ; i < *msg_list[index].lbs->n_el_index ; i++)
-        if (msg_list[index].lbs->el_index[i].message_id == message_id)
-          break;
-
       /* check if message head already in list */
       for (j=0 ; j<index ; j++)
         if (msg_list[j].lbs == msg_list[index].lbs &&
@@ -8032,7 +8096,7 @@ LOGBOOK *lbs_cur;
       strcpy(file_name, str);
     else
       {
-      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcpy(file_name, resource_dir, sizeof(file_name));
       strlcat(file_name, str, sizeof(file_name));
       }
 
@@ -8374,7 +8438,7 @@ LOGBOOK *lbs_cur;
       strcpy(file_name, str);
     else
       {
-      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcpy(file_name, resource_dir, sizeof(file_name));
       strlcat(file_name, str, sizeof(file_name));
       }
 
@@ -8798,7 +8862,7 @@ int    i, j, n, missing, first, index, suppress, message_id, resubmit_orig, mail
       strcpy(file_name, str);
     else
       {
-      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcpy(file_name, resource_dir, sizeof(file_name));
       strlcat(file_name, str, sizeof(file_name));
       }
     send_file_direct(file_name);
@@ -9447,7 +9511,7 @@ BOOL   first;
       strcpy(file_name, str);
     else
       {
-      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcpy(file_name, resource_dir, sizeof(file_name));
       strlcat(file_name, str, sizeof(file_name));
       }
 
@@ -9792,7 +9856,7 @@ BOOL   first;
       strcpy(file_name, str);
     else
       {
-      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcpy(file_name, resource_dir, sizeof(file_name));
       strlcat(file_name, str, sizeof(file_name));
       }
 
@@ -9904,7 +9968,7 @@ int   i;
     strlcpy(file_name, str, sizeof(file_name));
   else
     {
-    strlcpy(file_name, cfg_dir, sizeof(file_name));
+    strlcpy(file_name, resource_dir, sizeof(file_name));
     strlcat(file_name, str, sizeof(file_name));
     }
 
@@ -9994,7 +10058,7 @@ int   i;
     strcpy(file_name, str);
   else
     {
-    strlcpy(file_name, cfg_dir, sizeof(file_name));
+    strlcpy(file_name, resource_dir, sizeof(file_name));
     strlcat(file_name, str, sizeof(file_name));
     }
 
@@ -10305,7 +10369,7 @@ FILE    *f;
       strlcpy(file_name, str, sizeof(file_name));
     else
       {
-      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcpy(file_name, resource_dir, sizeof(file_name));
       strlcat(file_name, str, sizeof(file_name));
       }
     send_file_direct(file_name);
@@ -10649,7 +10713,7 @@ FILE    *f;
     else
       {
       /* file from theme directory requested */
-      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcpy(file_name, resource_dir, sizeof(file_name));
       if (file_name[0])
         strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
       strlcat(file_name, "themes", sizeof(file_name));
@@ -10709,7 +10773,7 @@ FILE    *f;
       }
 
     /* send local help file */
-    strlcpy(file_name, cfg_dir, sizeof(file_name));
+    strlcpy(file_name, resource_dir, sizeof(file_name));
     strlcat(file_name, "eloghelp_", sizeof(file_name));
 
     if (getcfg("global", "Language", str))
@@ -10925,7 +10989,7 @@ FILE    *f;
       strcpy(file_name, str);
     else
       {
-      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcpy(file_name, resource_dir, sizeof(file_name));
       strlcat(file_name, str, sizeof(file_name));
       }
     send_file_direct(file_name);
@@ -11695,7 +11759,7 @@ struct timeval       timeout;
           strstr(logbook, ".htm"))
         {
         /* serve file directly */
-        strlcpy(str, cfg_dir, sizeof(str));
+        strlcpy(str, resource_dir, sizeof(str));
         strlcat(str, logbook, sizeof(str));
         send_file_direct(str);
         send(_sock, return_buffer, return_length, 0);
@@ -12042,20 +12106,20 @@ void create_password(char *logbook, char *name, char *pwd)
 int  fh, length, i;
 char *cfgbuffer, str[256], *p;
 
-  fh = open(cfg_file, O_RDONLY);
+  fh = open(config_file, O_RDONLY);
   if (fh < 0)
     {
     /* create new file */
-    fh = open(cfg_file, O_CREAT | O_WRONLY, 0640);
+    fh = open(config_file, O_CREAT | O_WRONLY, 0640);
     if (fh < 0)
       {
-      printf("Cannot create \"%s\".\n", cfg_file);
+      printf("Cannot create \"%s\".\n", config_file);
       return;
       }
     sprintf(str, "[%s]\n%s=%s\n", logbook, name, pwd);
     write(fh, str, strlen(str));
     close(fh);
-    printf("File \"%s\" created with password in logbook \"%s\".\n", cfg_file, logbook);
+    printf("File \"%s\" created with password in logbook \"%s\".\n", config_file, logbook);
     return;
     }
 
@@ -12072,7 +12136,7 @@ char *cfgbuffer, str[256], *p;
   cfgbuffer[length] = 0;
   close(fh);
 
-  fh = open(cfg_file, O_TRUNC | O_WRONLY, 0640);
+  fh = open(config_file, O_TRUNC | O_WRONLY, 0640);
 
   sprintf(str, "[%s]", logbook);
 
@@ -12157,16 +12221,47 @@ int main(int argc, char *argv[])
 {
 int    i, fh, tcp_port_cl;
 int    daemon = FALSE;
-char   read_pwd[80], write_pwd[80], admin_pwd[80], str[80], logbook[256];
+char   read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256];
 time_t now;
 struct tm *tms;
 
   tzset();
 
-  read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = 0;
+  read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = resource_dir[0] = logbook_dir[0] = 0;
   tcp_port_cl = 0;
 
-  strcpy(cfg_file, "elogd.cfg");
+  strcpy(config_file, "elogd.cfg");
+  strcpy(logbook_dir, "logbooks");
+
+  /* evaluate predefined files and directories */
+
+#ifdef CONFIG_FILE
+  strlcpy(config_file, CONFIG_FILE, sizeof(config_file));
+#endif
+
+#ifdef RESOURCE_DIR
+  strlcpy(resource_dir, RESOURCE_DIR, sizeof(resource_dir));
+#endif
+
+#ifdef LOGBOOK_DIR
+  strlcpy(logbook_dir, LOGBOOK_DIR, sizeof(logbook_dir));
+#endif
+
+  /* check for configuration file */
+  fh = open(config_file, O_RDONLY | O_BINARY);
+  if (fh < 0)
+    {
+    printf("Configuration file \"%s\" not found.\n", config_file);
+    return 1;
+    }
+  close(fh);
+
+  /* evaluate directories fron config file */
+  if (getcfg("global", "Resource Dir", str))
+    strlcpy(resource_dir, str, sizeof(resource_dir));
+  
+  if (getcfg("global", "Logbook Dir", str))
+    strlcpy(logbook_dir, str, sizeof(logbook_dir));
 
   use_keepalive = TRUE;
 
@@ -12195,7 +12290,11 @@ struct tm *tms;
       if (argv[i][1] == 'p')
         tcp_port_cl = atoi(argv[++i]);
       else if (argv[i][1] == 'c')
-        strcpy(cfg_file, argv[++i]);
+        strcpy(config_file, argv[++i]);
+      else if (argv[i][1] == 's')
+        strcpy(resource_dir, argv[++i]);
+      else if (argv[i][1] == 'd')
+        strcpy(logbook_dir, argv[++i]);
       else if (argv[i][1] == 'r')
         strcpy(read_pwd, argv[++i]);
       else if (argv[i][1] == 'w')
@@ -12214,6 +12313,8 @@ usage:
         printf("       -h <hostname> TCP/IP hostname\n");
         printf("       -D become a daemon\n");
         printf("       -c <file> specify configuration file\n");
+        printf("       -s <dir> specify resource directory (themes, icons, ...)\n");
+        printf("       -d <dir> specify logbook root directory\n");
         printf("       -v debugging output\n");
         printf("       -r create/overwrite read password in config file\n");
         printf("       -w create/overwrite write password in config file\n");
@@ -12261,26 +12362,36 @@ usage:
     return 0;
     }
 
-  /* extract directory from configuration file */
-  if (cfg_file[0] && strchr(cfg_file, DIR_SEPARATOR))
+  /* extract resource directory from configuration file if not given */
+  if (config_file[0] && strchr(config_file, DIR_SEPARATOR) && !resource_dir[0])
     {
-    strcpy(cfg_dir, cfg_file);
-    for (i=strlen(cfg_dir)-1 ; i>0 ; i--)
+    strcpy(resource_dir, config_file);
+    for (i=strlen(resource_dir)-1 ; i>0 ; i--)
       {
-      if (cfg_dir[i] == DIR_SEPARATOR)
+      if (resource_dir[i] == DIR_SEPARATOR)
         break;
-      cfg_dir[i] = 0;
+      resource_dir[i] = 0;
       }
     }
 
-  /* check for configuration file */
-  fh = open(cfg_file, O_RDONLY | O_BINARY);
-  if (fh < 0)
+  /* do the same for the logbook dir */
+  if (config_file[0] && strchr(config_file, DIR_SEPARATOR) && !logbook_dir[0])
     {
-    printf("Configuration file \"%s\" not found.\n", cfg_file);
-    return 1;
+    strcpy(logbook_dir, config_file);
+    for (i=strlen(logbook_dir)-1 ; i>0 ; i--)
+      {
+      if (logbook_dir[i] == DIR_SEPARATOR)
+        break;
+      logbook_dir[i] = 0;
+      }
     }
-  close(fh);
+
+  if (verbose)
+    {
+    printf("Config file  : %s\n", config_file);
+    printf("Resource dir : %s\n", resource_dir[0] ? resource_dir : "current dir");
+    printf("Logbook dir  : %s\n", logbook_dir[0] ? logbook_dir : "current dir");
+    }
 
   /* build logbook indices */
   if (el_index_logbooks(FALSE) != EL_SUCCESS)
