@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.104  2002/11/28 07:47:34  midas
+  Do not expire entry form
+
   Revision 2.103  2002/11/22 07:56:53  midas
   Fixed bug with self register in German
 
@@ -642,7 +645,7 @@ typedef struct {
 LOGBOOK *lb_list = NULL;
 
 void show_error(char *error);
-void show_http_header();
+void show_http_header(BOOL expires);
 BOOL enum_user_line(LOGBOOK *lbs, int n, char *user);
 int  get_user_line(char *logbook_name, char *user, char *password, char *full_name, char *email, char *email_notify);
 int strbreak(char *str, char list[][NAME_LENGTH], int size);
@@ -3548,7 +3551,7 @@ void show_upgrade_page(LOGBOOK *lbs)
 {
 char str[1000];
 
-  show_http_header();
+  show_http_header(FALSE);
 
   rsprintf("<html><head>\n");
   rsprintf("<title>ELOG Electronic Logbook Upgrade Information</title>\n");
@@ -3599,7 +3602,7 @@ char str[1000];
 
 /*------------------------------------------------------------------*/
 
-void show_http_header()
+void show_http_header(BOOL expires)
 {
 char str[256];
 
@@ -3611,18 +3614,24 @@ char str[256];
   else
     rsprintf("Content-Type: text/html\r\n");
 
-  rsprintf("Pragma: no-cache\r\n");
   if (use_keepalive)
     {
     rsprintf("Connection: Keep-Alive\r\n");
     rsprintf("Keep-Alive: timeout=60, max=10\r\n");
     }
-  rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
+
+  if (expires)
+    {
+    rsprintf("Pragma: no-cache\r\n");
+    rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+    }
+
+  rsprintf("\r\n");
 }
 
 void show_standard_header(char *title, char *path)
 {
-  show_http_header();
+  show_http_header(TRUE);
 
   rsprintf("<html><head><title>%s</title></head>\n", title);
 
@@ -4398,7 +4407,7 @@ time_t now;
     }
 
   /* header */
-  show_http_header();
+  show_http_header(FALSE);
 
   rsprintf("<html><head><title>ELOG</title></head>\n");
   rsprintf("<body><form method=\"POST\" action=\".\" enctype=\"multipart/form-data\">\n");
@@ -5109,7 +5118,7 @@ char *buffer;
 
   /*---- header ----*/
 
-  show_http_header();
+  show_http_header(FALSE);
 
   rsprintf("<html><head><title>ELOG config</title></head>\n");
   rsprintf("<body><form method=\"POST\" action=\".\" enctype=\"multipart/form-data\">\n");
@@ -9472,7 +9481,7 @@ void show_selection_page()
 int  i;
 char str[10000];
 
-  show_http_header();
+  show_http_header(TRUE);
 
   rsprintf("<html>\n");
   rsprintf("<head>\n");
