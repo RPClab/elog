@@ -132,8 +132,8 @@ Section "Start Menu Shortcuts" SecStart
   CreateShortCut "$SMPROGRAMS\ELOG\ELOG Server\Start ELOG server manually.lnk" "$INSTDIR\elogd.exe" "$INSTDIR\elogd.exe" "$INSTDIR\themes\default\favicon.ico"
   CreateShortCut "$SMPROGRAMS\ELOG\ELOG Server\Register ELOG server service.lnk" "$INSTDIR\elogd.exe" "$INSTDIR\elogd.exe -install" "$INSTDIR\themes\default\favicon.ico"
   CreateShortCut "$SMPROGRAMS\ELOG\ELOG Server\Unregister ELOG server service.lnk" "$INSTDIR\elogd.exe" "$INSTDIR\elogd.exe -remove" "$INSTDIR\themes\default\favicon.ico"
-  Delete "$SMPROGRAMS\ELOG\Demo Logbook (start server first!).lnk"
-  WriteINIStr "$SMPROGRAMS\ELOG\Demo Logbook (start server first!).url" \
+  Delete "$SMPROGRAMS\ELOG\Demo Logbook (requires running server).lnk"
+  WriteINIStr "$SMPROGRAMS\ELOG\Demo Logbook (requires running server).url" \
               "InternetShortcut" "URL" "http://localhost:8080/demo/"
   CreateShortCut "$SMPROGRAMS\ELOG\ELOG Documentation.lnk" "$INSTDIR\doc\index.html"
   CreateShortCut "$SMPROGRAMS\ELOG\Uninstall ELOG.lnk" "$INSTDIR\uninst_elog.exe" "" "$INSTDIR\uninst_elog.exe" 0
@@ -160,7 +160,9 @@ UninstallText "This will uninstall ELOG."
 
 ; special uninstall section.
 Section "Uninstall"
-  
+  ; remove service
+  ExecWait "$INSTDIR\elogd.exe -remove"
+
   ; remove registry keys
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\ELOG"
   DeleteRegKey HKLM SOFTWARE\ELOG
@@ -196,10 +198,12 @@ Section "Uninstall"
   Delete $INSTDIR\uninst_elog.exe
 
   ; remove shortcuts, if any.
+  Delete "$SMPROGRAMS\ELOG\ELOG Server\*.*"
+  RMDir "$SMPROGRAMS\ELOG\ELOG Server"
   Delete "$SMPROGRAMS\ELOG\*.*"
+  RMDir "$SMPROGRAMS\ELOG"
 
   ; remove directories used.
-  RMDir "$SMPROGRAMS\ELOG"
   RMDir "$INSTDIR"
 
   ; if $INSTDIR was removed, skip these next ones
