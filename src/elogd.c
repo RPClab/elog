@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.487  2004/09/28 23:02:23  midas
+   Fixed problem with attachment submits on edit
+
    Revision 1.486  2004/09/24 20:49:16  midas
    Show revision on startup
 
@@ -19294,7 +19297,7 @@ void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
                } while (TRUE);
 
                /* check attachment size */
-               if ((int) (p - string) == 0) {
+               if (file_name[0] && (int) (p - string) == 0) {
                   sprintf(str, loc("Attachment file <b>\"%s\"</b> empty or not found"), file_name);
                   show_error(str);
                   return;
