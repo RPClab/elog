@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.253  2004/02/17 08:38:56  midas
+   Fixed bug with AF_NUMERIC
+
    Revision 1.252  2004/02/17 08:14:43  midas
    Redesigned date quick filter
 
@@ -12707,7 +12710,7 @@ void submit_elog(LOGBOOK * lbs)
 
    /* check for numeric attributes */
    for (index = 0; index < lbs->n_attr; index++)
-      if (attr_flags[index] & AF_REQUIRED) {
+      if (attr_flags[index] & AF_NUMERIC) {
          strcpy(ua, attr_list[index]);
          btou(ua);
          strlcpy(str, getparam(ua), sizeof(str));
