@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.34  2002/07/01 08:13:46  midas
+  Fixed problem with wrong color in command '?cmd=Search'
+
   Revision 2.33  2002/06/26 11:53:43  midas
   Use ts->tm_isdst instead daylight
 
@@ -5231,6 +5234,9 @@ struct tm tms, *ptms;
   else
     {
     strcpy(mode, getparam("mode"));
+    if (mode[0] == 0)
+      strcpy(mode, "Full");
+
     show_attachments = (*getparam("attach") > 0);
     }
 
