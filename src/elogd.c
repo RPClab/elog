@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.418  2004/07/30 20:47:57  midas
+   Fixed wrong link for deleting entries during synchronization
+
    Revision 1.417  2004/07/30 19:51:10  midas
    Improved error reporting by Recai Oktas
 
@@ -11368,7 +11371,7 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
 void receive_config(LOGBOOK * lbs, char *server, char *error_str)
 {
    char str[256], pwd[256], *buffer, *p;
-   int status;
+   int status, version;
 
    error_str[0] = pwd[0] = 0;
 
@@ -11386,6 +11389,24 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
          return;
       }
 
+      /* check version */
+      p = strstr(buffer, "ELOG HTTP ");
+      if (!p) {
+         sprintf(error_str, "Remote server is not an ELOG server");
+         free(buffer);
+         return;
+      }
+      version = atoi(p + 10) * 100 + atoi(p + 12) * 10 + atoi(p + 14);
+      if (version < 254) {
+         strlcpy(str, p+10, 10);
+         if (strchr(str, '\r'))
+            *strchr(str, '\r') = 0;
+
+         sprintf(error_str, "Incorrect remote ELOG server version %s, must be 2.5.4 or later", str);
+         free(buffer);
+         return;
+      }
+
       /* evaluate status */
       p = strchr(buffer, ' ');
       if (p == NULL) {
@@ -11393,6 +11414,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
          *strchr(str, '?') = 0;
          sprintf(error_str, "Received invalid response from elogd server at http://%s",
                  str);
+         free(buffer);
          return;
       }
       p++;
@@ -11672,7 +11694,7 @@ void mprint(LOGBOOK * lbs, int mode, char *str)
       eputs(str);
 }
 
-void synchronize_logbook(LOGBOOK * lbs, int mode)
+void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 {
    int index, i, j, i_msg, i_remote, i_cache, n_remote, n_cache, nserver,
        remote_id, exist_remote, exist_cache, message_id, max_id;
@@ -12384,8 +12406,12 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
 
          if (getcfg_topgroup())
             rsprintf("<br><b><a href=\"../%s/?cmd=Synchronize&confirm=1\">", lbs->name_enc);
-         else
-            rsprintf("<br><b><a href=\"%s/?cmd=Synchronize&confirm=1\">", lbs->name_enc);
+         else {
+            if (sync_all)
+               rsprintf("<br><b><a href=\"%s/?cmd=Synchronize&confirm=1\">", lbs->name_enc);
+            else
+               rsprintf("<br><b><a href=\"../%s/?cmd=Synchronize&confirm=1\">", lbs->name_enc);
+         }
 
          if (n_delete > 1)
             rsprintf(loc("Click here to delete %s entries"), n_delete);
@@ -12440,10 +12466,10 @@ void synchronize(LOGBOOK * lbs, int mode)
                }
             }
 
-            synchronize_logbook(&lb_list[i], mode);
+            synchronize_logbook(&lb_list[i], mode, TRUE);
          }
    } else
-      synchronize_logbook(lbs, mode);
+      synchronize_logbook(lbs, mode, FALSE);
 
    if (mode == SYNC_HTML) {
       rsprintf("<table width=\"100%%\" cellpadding=1 cellspacing=0");
@@ -19906,16 +19932,9 @@ void server_loop(int tcp_port)
             keep_alive = FALSE;
          } else {
 
-            if (!logbook[0] && global_cmd[0]) {
-               if (stricmp(global_cmd, "GetConfig") == 0) {
-                  download_config();
-                  goto redir;
-               }
-
-               if (stricmp(global_cmd, loc("Create new logbook"))) {
-                  show_error("This functionality is not yet implemented");
-                  goto redir;
-               }
+            if (!logbook[0] && global_cmd[0] && stricmp(global_cmd, "GetConfig") == 0) {
+               download_config();
+               goto redir;
             } else if (strncmp(net_buffer, "GET", 3) == 0) {
                /* extract path and commands */
                *strchr(net_buffer, '\r') = 0;
@@ -20702,10 +20721,6 @@ int main(int argc, char *argv[])
 
    /* clone remote elogd configuration */
    if (clone_url[0]) {
-      if (clone_url[0] == 1) {
-         printf("Please enter URL of remote elogd server: ");
-         fgets(clone_url, sizeof(clone_url), stdin);
-      }
 
       /* check if local elogd.cfg exists */
       fh = open(config_file, O_RDONLY | O_BINARY);
@@ -20801,8 +20816,11 @@ int main(int argc, char *argv[])
       check_config_file(TRUE);
       el_index_logbooks();
 
-      /* synchronize all logbooks */
-      synchronize(NULL, SYNC_CLONE);
+      eprintf("Retrieve remote logbook entries? [y]/n:  ");
+      fgets(str, sizeof(str), stdin);
+      if (str[0] != 'n' && str[0] != 'N')
+         /* synchronize all logbooks */
+         synchronize(NULL, SYNC_CLONE);
 
       puts("\nCloning finished. Check elogd.cfg and start the server normally.");
       exit(EXIT_SUCCESS);
