@@ -273,8 +273,10 @@ autmatically by the <code><b>elogd</b></code> program. The subdirectory is relat
 to the logbook root directory specified with the <b><code>Logbook dir = ...</code></b>
 option. So if <b><code>Logbook dir = /usr/local/elog/logbooks</b></code> and
 <b><code>Subdir = Demo</b></code> then the logbook data is stored in <b><code>
-/user/local/elog/logbooks/Demo</b></code>. If the subdirectory starts with a "/"
-("\" under Windows), then it is used as an absolute path independent of the logbook dir.
+/user/local/elog/logbooks/Demo</b></code>. If the <b><code>Logbook dir = ...</code></b>
+option is not specified, then <b><code>logbooks</code></b> is used. If the subdirectory
+starts with a "/" ("\" under Windows), then it is used as an absolute path independent
+of the logbook dir. To see which directories are used, start <b><code>elogd</b></code> with the "-v" flag.
 <p>
 
 <LI><b><code>Comment = &lt;comment&gt;</code></b>
@@ -446,7 +448,7 @@ Guest menu commands = Back, Find, Login, Help
 <p>
 Note that the presence of this option opens user access also to the find result or elog
 listing page, which usually contains some config command. So it is useful to combine
-the <b><code>Guest menu commands</b></code> option with the following 
+the <b><code>Guest menu commands</b></code> option with the following
 <b><code>Guest Find Menu commands</b></code> option to restrict the access to the
 find result page as well.
 <p>
@@ -732,7 +734,7 @@ subject with a "Re: &lt;old subject&gt;":<br>
 
 <LI><b><code>Subst on edit &lt;attribute &gt; = &lt;string&gt;</code></b>
 <br>
-Substitution of attributes for edited messages. This option can be used to replace the 
+Substitution of attributes for edited messages. This option can be used to replace the
 author by the current author for example:<br>
 <pre>Subst on edit author = $full_name</pre>
 <p>
@@ -794,9 +796,9 @@ only. When the browser is restarted, the password must be re-entered.<P>
 An alternative to the read/write/admin passwords is the user level access with a
 password file. This file contains user names and passwords in following format:
 <p>
-<ul><code><pre>&lt;login name1&gt;:&lt;password1&gt;:&lt;full name1&gt;:&lt;email1&gt;&lt;notify1&gt;
-&lt;login name2&gt;:&lt;password2&gt;:&lt;full name2&gt;:&lt;email2&gt;&lt;notify2&gt;
-&lt;login name3&gt;:&lt;password3&gt;:&lt;full name3&gt;:&lt;email3&gt;&lt;notify3&gt;
+<ul><code><pre>&lt;login name1&gt;:&lt;password1&gt;:&lt;full name1&gt;:&lt;email1&gt;:&lt;notify1&gt;
+&lt;login name2&gt;:&lt;password2&gt;:&lt;full name2&gt;:&lt;email2&gt;:&lt;notify2&gt;
+&lt;login name3&gt;:&lt;password3&gt;:&lt;full name3&gt;:&lt;email3&gt;:&lt;notify3&gt;
 ...</pre></code></ul>
 <p>
 
