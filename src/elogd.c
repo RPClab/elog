@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.282  2004/03/08 08:59:06  midas
+   Evaluage 'pre/append on edit/reply' even for empty entries
+
    Revision 1.281  2004/03/08 08:13:09  midas
    Replaces __TIMESTAMP__ with __DATE__ and __TIME__
 
@@ -6907,92 +6910,90 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        || atoi(str) == 1) {
       rsprintf("<textarea rows=%d cols=%d wrap=hard name=Text>", height, width);
 
-      if (text[0]) {
-         if (bedit) {
-            if (bupload || (!bupload && !breedit)
-               || (breedit && !getcfg_cond(lbs->name, condition, "Preset text", str))) {
+      if (bedit) {
+         if (bupload || (!bupload && !breedit)
+            || (breedit && !getcfg_cond(lbs->name, condition, "Preset text", str))) {
 
+            j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+            sprintf(mid, "%d", message_id);                    
+            add_subst_list(slist, svalue, "message id", mid, &j);
+            add_subst_time(lbs, slist, svalue, "entry time", date, &j);
+
+            if (getcfg_cond(lbs->name, condition, "Prepend on edit", str)) {
+               strsubst(str, slist, svalue, j);
+               while (strstr(str, "\\n"))
+                  memcpy(strstr(str, "\\n"), "\r\n", 2);
+               rsprintf(str);
+            }
+
+            rsputs(text);
+
+            if (getcfg_cond(lbs->name, condition, "Append on edit", str)) {
+               strsubst(str, slist, svalue, j);
+               while (strstr(str, "\\n"))
+                  memcpy(strstr(str, "\\n"), "\r\n", 2);
+               rsprintf(str);
+            }
+         }
+      } else {
+         if (!getcfg_cond(lbs->name, condition, "Quote on reply", str)
+             || atoi(str) > 0) {
+            if (getcfg_cond(lbs->name, condition, "Prepend on reply", str)) {
                j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
                sprintf(mid, "%d", message_id);                    
                add_subst_list(slist, svalue, "message id", mid, &j);
                add_subst_time(lbs, slist, svalue, "entry time", date, &j);
 
-               if (getcfg_cond(lbs->name, condition, "Prepend on edit", str)) {
-                  strsubst(str, slist, svalue, j);
-                  while (strstr(str, "\\n"))
-                     memcpy(strstr(str, "\\n"), "\r\n", 2);
-                  rsprintf(str);
-               }
-
-               rsputs(text);
-
-               if (getcfg_cond(lbs->name, condition, "Append on edit", str)) {
-                  strsubst(str, slist, svalue, j);
-                  while (strstr(str, "\\n"))
-                     memcpy(strstr(str, "\\n"), "\r\n", 2);
-                  rsprintf(str);
-               }
+               strsubst(str, slist, svalue, j);
+               while (strstr(str, "\\n"))
+                  memcpy(strstr(str, "\\n"), "\r\n", 2);
+               rsprintf(str);
             }
-         } else {
-            if (!getcfg_cond(lbs->name, condition, "Quote on reply", str)
-                || atoi(str) > 0) {
-               if (getcfg_cond(lbs->name, condition, "Prepend on reply", str)) {
-                  j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-                  sprintf(mid, "%d", message_id);                    
-                  add_subst_list(slist, svalue, "message id", mid, &j);
-                  add_subst_time(lbs, slist, svalue, "entry time", date, &j);
 
-                  strsubst(str, slist, svalue, j);
-                  while (strstr(str, "\\n"))
-                     memcpy(strstr(str, "\\n"), "\r\n", 2);
-                  rsprintf(str);
-               }
+            p = text;
 
-               p = text;
+            if (!getcfg_cond(lbs->name, condition, "Reply string", reply_string))
+               strcpy(reply_string, "> ");
 
-               if (!getcfg_cond(lbs->name, condition, "Reply string", reply_string))
-                  strcpy(reply_string, "> ");
+            do {
+               if (strchr(p, '\n')) {
+                  *strchr(p, '\n') = 0;
 
-               do {
-                  if (strchr(p, '\n')) {
-                     *strchr(p, '\n') = 0;
-
-                     if (encoding[0] == 'H') {
-                        rsputs2(reply_string);
-                        rsprintf("%s<br>\n", p);
-                     } else {
-                        rsputs(reply_string);
-                        rsprintf("%s\n", p);
-                     }
-
-                     p += strlen(p) + 1;
-                     if (*p == '\n')
-                        p++;
+                  if (encoding[0] == 'H') {
+                     rsputs2(reply_string);
+                     rsprintf("%s<br>\n", p);
                   } else {
-                     if (encoding[0] == 'H') {
-                        rsputs2(reply_string);
-                        rsprintf("%s<p>\n", p);
-                     } else {
-                        rsputs(reply_string);
-                        rsprintf("%s\n\n", p);
-                     }
-
-                     break;
+                     rsputs(reply_string);
+                     rsprintf("%s\n", p);
                   }
 
-               } while (TRUE);
+                  p += strlen(p) + 1;
+                  if (*p == '\n')
+                     p++;
+               } else {
+                  if (encoding[0] == 'H') {
+                     rsputs2(reply_string);
+                     rsprintf("%s<p>\n", p);
+                  } else {
+                     rsputs(reply_string);
+                     rsprintf("%s\n\n", p);
+                  }
 
-               if (getcfg_cond(lbs->name, condition, "Append on reply", str)) {
-
-                  j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-                  sprintf(mid, "%d", message_id);                    
-                  add_subst_list(slist, svalue, "message id", mid, &j);
-                  add_subst_time(lbs, slist, svalue, "entry time", date, &j);
-                  strsubst(str, slist, svalue, j);
-                  while (strstr(str, "\\n"))
-                     memcpy(strstr(str, "\\n"), "\r\n", 2);
-                  rsprintf(str);
+                  break;
                }
+
+            } while (TRUE);
+
+            if (getcfg_cond(lbs->name, condition, "Append on reply", str)) {
+
+               j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+               sprintf(mid, "%d", message_id);                    
+               add_subst_list(slist, svalue, "message id", mid, &j);
+               add_subst_time(lbs, slist, svalue, "entry time", date, &j);
+               strsubst(str, slist, svalue, j);
+               while (strstr(str, "\\n"))
+                  memcpy(strstr(str, "\\n"), "\r\n", 2);
+               rsprintf(str);
             }
          }
       }
