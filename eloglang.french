@@ -3,8 +3,8 @@
 # $Revision$
 #
 
-# ElogLang.French - French interface file for ELOG 2.3.5+
-# version 1.8 - 10/04/03 by Fred Pacquier <fredp@dial.oleane.com>
+# ElogLang.French - French interface file for ELOG 2.3.6+
+# version 1.9 - 23/04/03 by Fred Pacquier <fredp@dial.oleane.com>
 #
 
 #
@@ -263,7 +263,6 @@ ID = ID
 Change elogd.cfg = Modifier elogd.cfg
 Remember me on this computer = Mémoriser mon identité sur cet ordinateur
 Forgot password? = Mot de passe oublié ?
-Enter your login name or email address = Indiquez votre nom d'utilisateur ou votre adresse mél.
 Email address <i>"%s"</i> not registered = L'adresse mél. <i>"%s"</i> n'est pas enregistrée sur ce serveur
 User name <i>\%s\</i> not registered = Le nom d'utilisateur <i>"%s"</i> n'est pas enregistré sur ce serveur
 ELOG password recovery = Récupération de mot de passe ELOG
@@ -277,3 +276,11 @@ Please log on by clicking on following link and change your password = Merci de 
 A new password has been created for you on host %s = Un nouveau mot d epasse a été créé pour vous sur l'ordinateur %s
 Enter your user name or email address = Indiquez votre nom d'utilisateur ou votre adresse mél.
 Password recovery for ELOG %s = Récupération de mot de passe sur ELOG %s
+
+#
+# New strings for V2.3.6
+Host = Ordinateur
+Your ELOG account has been activated = Votre compte ELOG a été activé
+Activate = Activer
+Maximum number of attachments reached = Le nombre maximal d'attachements a été atteint
+Invalid user name <i>"%s"</i> = Le nom d'utilisateur <i>"%s"</i> est incorrect

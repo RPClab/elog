@@ -251,3 +251,31 @@ Goto logbook selection page = Ga naar logboek selectie pagina
 Login as different user = Als een andere gebruiker aanmelden
 User <i>"%s"</i> has no access to logbook <i>"%s"</i> = Gebruiker <i>"%s"</i> heeft geen toegang tot logboek <i>"%s"</i>
 
+# New strings for V2.3.5
+Date = Datum
+ID = ID
+Change elogd.cfg = elogd.cfg aanpassen
+Remember me on this computer = Onthou mij op deze computer
+Forgot password? = Wachwoord vergeten?
+Email address <i>"%s"</i> not registered = E-mailadres <i>"%s"</i> is niet geregistreerd
+User name <i>\%s\</i> not registered = Gebruikersnaam <i>"%s"</i> is niet geregistreerd
+ELOG password recovery = ELOG Wachtwoord Herstel
+No Email address registered with user name <i>"%s"</i> = Voor gebruiker <i>"%s"</i> is geen e-mail adres geregistreerd
+Error sending Email via <i>"%s"</i> = Fout bij het versturen van e-mail via <i>"%s"</i>
+A new password for user <i>"%s"</i> has been sent to %s = Een nieuw wachtwoord voor gebruiker <i>"%s"</i> is verstuurd naar %s
+Forgot = vergeten
+User "%s" registered on host "%s" = Gebruiker "%s" is op computer "%s" geregistreerd
+Registration request on host "%s" = Registratieverzoek op computer "%s"
+Please log on by clicking on following link and change your password = Meld je aan door te klikken op de volgende link en wijzig het wachtwoord
+A new password has been created for you on host %s = Een nieuw wachtwoord is aangemaakt op %s
+Enter your user name or email address = Geef je gebruikersnaam of je email adres op
+Password recovery for ELOG %s = Wachtwoord Herstel voor ELOG %s
+
+#
+# New string for V2.3.6
+Host = Computer
+Your ELOG account has been activated = Het Elog account is geactiveerd
+Activate = Activeren
+Maximum number of attachments reached = Maximaal aantal bijlagen bereikt
+Invalid user name <i>"%s"</i> = Ongeldige gebruikersnaam <i>"%s"</i>
+

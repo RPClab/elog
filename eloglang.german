@@ -249,7 +249,6 @@ ID = ID
 Change elogd.cfg = elogd.cfg ändern
 Remember me on this computer = Auf diesem Computer eingeloggt bleiben
 Forgot password? = Kennwort vergessen?
-Enter your login name or email address = Bitte Benutzernamen oder Email-Adresse eingeben
 Email address <i>"%s"</i> not registered = Email-Adresse <i>"%s"</i> nicht registriert
 User name <i>\%s\</i> not registered = Benutzername <i>"%s"</i> nicht registriert
 ELOG password recovery = ELOG Kennwort-Wiederherstellung
