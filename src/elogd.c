@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.408  2004/07/28 12:00:38  midas
+   Fixed bug with invalid sizeof(list)
+
    Revision 1.407  2004/07/28 10:05:07  midas
    Fixed open anchor
 
@@ -14610,7 +14613,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       show_text = TRUE;
 
       list[0] = 0;
-      getcfg(lbs->name, "List display", list, sizeof(list));
+      getcfg(lbs->name, "List display", list, 10000);
 
       /* evaluate Guest display list */
       if (getcfg(lbs->name, "Password file", str, sizeof(str)) &&
