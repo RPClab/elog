@@ -1,5 +1,5 @@
 #
-# Spanish messages by Julio Calvo <jcalvo@mec-tuc.com.ar>
+# Spanish messages by Julio Calvo <jhcalvo@arnet.com.ar>
 # $Revision$
 #
 
@@ -139,9 +139,9 @@ New message cannot be written to directory "%s" = No puede escribirse el nuevo m
 #
 # New strings for V2.0
 #
-Display full message =
-Display threads =
-Logbook is empty =
-This message has been deleted =
-Download =
-and all its replies =
+Display full message = Mostrar mensaje completo
+Display threads = Mostrar hilos
+Logbook is empty = El logbook esta vacio
+This message has been deleted = Este mensaje ha sido borrado
+Download = Bajar
+and all its replies = y todas sus respuestas
