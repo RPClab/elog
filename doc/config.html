@@ -66,7 +66,7 @@ Options Location = Building1, Building2
 Options OS = Linux, Windows ME, Windows 2000
 Required Attributes = Location, Owner
 Email All = name@address, othername@otheraddress
-Mail Subject = Location
+Use Mail Subject = Location
 </pre></ul>
 <p>
 
@@ -115,10 +115,10 @@ contents of the tab.
 This optional HTML code gets displayed in the title of the logbook selection
 page. It can contain images via <b><code>&lt;img src="welcome.gif"&gt;</code></b>.
 These images must be in the same directory as the elodg.cfg file.
-The following line is an example Welcome Title:
-<p>
+The following line is an example Welcome Title:<br>
+<br>
 <pre>Welcome title = &lt;img src="welcome.jpg"&gt;&lt;p&gt;&lt;font size=5 color=white&gt;Welcome to our Elog&lt;/font&gt;</pre>
-<p>
+<br>
 This displays an image and a text below.
 <p>
 
@@ -141,6 +141,27 @@ the standard selection page produced by <code><b>elogd</b></code> can be used.
 This defines the SMTP host needed to send automatic email notifications. The host
 name you can get from your email program or your local system administrator.
 <p>
+
+<LI><b><code>Logfile</code></b>
+<br>
+This option specifies a filename which logs all login/logout activities and
+successful user connections for logbooks with user level access.<p>
+
+<LI><b><code>URL</code></b>
+<br>
+This URL is used in automatic email notifications to point back to the new message.
+Usually, the elog daemon tries to obtain the URL from the "Referer" statement in the
+HTTP header. If this is not correct (like if the domain name is missing), the URL used
+to point back to the logbook can be overwritten by this statement. The URL has to
+contain the port number if not the standard port 80 is used like<br>
+<br>
+<code>URL = http://host.domain:8080/</code>
+<p>
+
+<LI><b><code>User</code></b>
+<LI><b><code>Group</code></b>
+<br>
+The user and group to run the elogd daemon under when started by root.<p>
 
 </UL>
 
@@ -218,6 +239,16 @@ messages of for logbook queries. Here is a simple example of such a file:
 The file must be present in the same directory as the <code><b>elogd</b></code> file.
 <p>
 
+<LI><b><code>Start page = &lt;command&gt;</code></b>
+<br>
+This option can be used to display a different start page. <b><code>command</code></b>
+can be either <i>"last10"</i> for the last ten messages, or an ELog menu command in the
+form <b><code>?cmd=xxx</code></b>. To start with the search page, one uses<p>
+
+<pre>
+Start page = ?cmd=Find
+</pre>
+
 <LI><b><code>Submit Page = &lt;file&gt;</code></b>
 <br>
 This optional page can be displayed when a new message was submitted in a logbook.
@@ -271,10 +302,12 @@ If this option is not present, following default is used:
 </br>
 This option specifies the menu commands displayed on top of the listing page
 resulting from a "<I>find</I>" command. Although all commands from a above are possible,
-only the commands <code><b>New, Find, Back, Last, Last day, Last 10, config, Change
+only the commands <code><b>New, Find, Back, Last day, Last 10, Last x, Config, Change
 password, Logout</b></code> and <code><b>Help</b></code> make sense. There is one
 special command in addition to the above commands: The command <b><code>Last x</b>
-</code> gets expanded to "<I>Last 2 days</I>", "<I>Last 4 days</I>" or "<I>Last 20 entries</I>", "<I>Last 40 entries</I>" and so on, similar to the standard behaviour without the "<I>Find Menu commands</I>" option.
+</code> gets expanded to "<I>Last 2 days</I>", "<I>Last 4 days</I>" or
+"<I>Last 20 entries</I>", "<I>Last 40 entries</I>" and so on, similar to the standard
+behaviour without the "<I>Find Menu commands</I>" option.
 <p>
 
 <li><b><code>Bottom text = &lt;file&gt;</code></b>
@@ -299,6 +332,20 @@ It can point to a site-specific help page via <b><code>http://...</code></b> or 
 <b><code>file://c:/tmp/config.html</code></b>, or to the name of an HTML file which must be present in the same directory as the <code><b>elogd</b></code> file.
 <p>
 
+<li><b><code>Message Width</code></b>
+<br>
+This value sets the number of characters per line of the main message entry field.
+The default value is 76 (78 for replies), and can be increased for installations
+which need a larger window size (like pasting log files etc.).
+<p>
+
+<li><b><code>Display mode</code></b>
+<br>
+Default mode for search display can be <b>"full"</b>, <b>"summary"</b>
+and <b>"threaded"</b>. On the find entry form, the checkboxes
+are set accordingly. The "Last xxx" page used this setting directly.
+<p>
+
 </UL>
 
 <a name="attrib"><hr>
@@ -313,7 +360,7 @@ defined. Typical values are "<I>Author</I>", "<I>Subject</I>" or "<I>Type</I>".
 
 <LI><b><code>Options &lt;attribute&gt; = &lt;list&gt;</code></b>
 <br>
-Usually, a text field is used for an attribute, where the user can fill in
+Usually, an text field is used for an attribute, where the user can fill in
 text of up to 100 characters. If instead a drop-down box with preset items is
 better for a given attribute, these items can be defined with this statement.
 Up to 100 items can be defined, separated by commas.
@@ -331,21 +378,6 @@ checkboxes can be checked for an entry. The attribue value then becomes
 </pre>
 In the "<I>find</I>" page only one of these values can be specified, which is then
 treated as a substring in the search filter.
-<p>
-
-<LI><b><code>IOptions &lt;attribute&gt; = &lt;list&gt;</code></b>
-<br>
-As an alternative, icons can be used as values of attributes. The name of the icon
-image files (ususlly GIF files) are specified with this option. The icons have to
-be present in the <code><b>icons</b></code> subdirectory of the themes directory.
-A configuration line like <p>
-<pre>
-IOptions Type = icon1.gif, icon2.gif, icon3.gif, icon4.gif
-</pre>
-
-results in following browser display:<p>
-
-<img src="icons.gif">
 <p>
 
 <LI><b><code>Options &lt;attribute&gt; = boolean</code></b>
@@ -405,9 +437,32 @@ as described unter the "<I>Subst &lt;attribute&gt;</I>" option.
 
 <LI><b><code>Display search = &lt;list&gt;</code></b>
 <br>
-The display of attributes in a search result table can be restricted only to
-certain attributes listed here. This can be helpful is many attributes are defined
-in a logbook, which usually makes the table too big to fit in the browser.
+Specified the display and order of items in a search result page. In addition
+to all attributes, one can specify here <b>"#"</b> for the message ID, <b>"Logbook"</b>
+and <b>"Date"</b>. The restriction to certain attributes can be helpful if many
+attributes are defined in a logbook, which usually makes the table too big to
+fit in the browser. The default
+is<br>
+<pre>
+Display search = #, Date, &lt;all attributs&gt;
+</pre>
+Which displays the message number, date, and all attributes. The display of the
+message body is controlled by the <b><code>Display mode</code></b> and
+<b><code>Summary lines</code></b> options.
+<p>
+
+<LI><b><code>Thread display = &lt;string&gt;</code></b>
+<br>
+Optional way to specify the line contents in the threaded search result. All
+standard substitutions like as described in the <b>Subst</b> command can be
+used here, like<br>
+<pre>Thread display = $author, $subject</pre>
+<p>
+
+<LI><b><code>Thread icon = &lt;attribute&gt;</code></b>
+<br>
+If a logbook uses some icons for an attribute, these icons can be displayed
+in the search result page instead of the default icons defined in the themes.cfg file.
 <p>
 
 <LI><b><code>Subst &lt;attribute&gt; = &lt;string&gt;</code></b>
@@ -424,10 +479,10 @@ text. This text can contain arbitrary fixed text and following values:
 <LI><b>$logbook</b>: The name of the current logbook
 <LI><b>$date</b>: The current date, formatted via "<I>Date format</I>"
 </UL>
-<p>
+<br>
 Following example use this feature to add the remote host name to the author:
-<p>
-Subst Author = $author from $remote_host
+<br>
+<pre>Subst Author = $author from $remote_host</pre>
 <p>
 
 <LI><b><code>Remove on reply = &lt;list&gt;</code></b>
@@ -457,24 +512,23 @@ on in your browser</b>. Please consult your browser documentation about how to d
 </ul>
 <p>
 These optional password statements define passwords for reading and writing to the
-logbook, to delete entries in the logbook and to configure a logbook via the <I>Config</I>
-menu. The passwords are stored in an encoded form. To change them, use <code><b>elogd</b></code>
-directly with the <b><code>-r </code></b>, <b><code>-w</code></b> and <b><code>-a
-</code></b> flags. To set the write password of logbook "<I>linux</I>" to "<I>test</I>", enter:
-<p>
+logbook, to delete entries in the logbook and to configure a logbook via the <I>Config</I
+> menu. The passwords are stored in an encoded form. To change them, use <code><b>elogd
+</b></code> directly with the <b><code>-r </code></b>, <b><code>-w</code></b> and <b>
+<code>-a </code></b> flags. To set the write password of logbook "<I>linux</I>" to "<I>
+test</I>", enter: <p>
 <ul><code>elogd -w test -l linux</code></ul>
 <p>
-The read password is queried by the browser with a pop-up window and usually stays
-active for the entire browser session. The write and admin passwords are stored in
-cookies on the browser side and have an expiration time of 24h. After that time, the
-passwords have to be re-submitted. This time can be changed with the statement <b>
-<code>Write Password Expiration = x</code></b> or <b><code>Admin Password Expiration
-= x</code></b>, where <i>x</i> is the expiration time in hours. It should be noted
-that on some systems the daylight savings time is calculated incorrectly, which can
-cause time offsets of one hour between a server PC and a client PC. In this case one
-hour must be added to the expiration time. If the expiration is set to "0", the
-passwords are kept for the current browser session only. When the browser is restarted,
-the password must be re-entered.
+The read password is queried by the browser with a pop-up window and usually stays active
+for the entire browser session. The write and admin passwords are stored in cookies on
+the browser side and expire after the browser session. This time can be changed with the
+statement <b> <code>Write Password Expiration = x</code></b> or <b><code>Admin Password
+Expiration = x</code></b>, where <i>x</i> is the expiration time in hours. It should be
+noted that on some systems the daylight savings time is calculated incorrectly, which can
+cause time offsets of one hour between a server PC and a client PC. In this case one hour
+must be added to the expiration time. If the expiration is set to "0", the passwords are
+kept for the current browser session only. When the browser is restarted, the password
+must be re-entered.
 <P>
 <ul>
 <LI><b><code>Password file = &lt;file&gt;</code></b>
@@ -538,6 +592,14 @@ start <code><b>elogd</b></code> with the "-v" flag, in which case the rule check
 on the screen.
 <p>
 
+The global option <code><b>Logfile = &lt;filename&gt;</b></code> can be specified
+to log all user login/logout activities plus all successful user connections.<p>
+
+If any of the password statements are in the <b><code>[global]</code></b> area of the
+configuration files, they are used for all logbooks. If one logs in at one logbook,
+access is automaticlly granted to all logbooks. If the password statements are in the
+individual logbook sections, one has to log in to each logbook separately.<p>
+
 <a name="email"><hr>
 <div class=section>&nbsp; EMail notification &nbsp;</div>
 
@@ -589,13 +651,6 @@ so that attachments are only displayed when they are clicked on. Default
 is <b>1</b>.
 <p>
 
-<li><b><code>Summary on default = 0/1</code></b>
-</br>
-If this flag is <b>1</b>, the buttons <i>"Last day"</i> and <i>"Last 10"</i>
-produce summary listings instead of displaying full messages. In the <i>"Find"</i>
-page, the <i>"Summary only"</i> check box is checked by default.
-<p>
-
 <li><b><code>Summary lines = x</code></b>
 </br>
 This specifies the number of text lines displayed in a summary page. Zero displays
@@ -628,13 +683,13 @@ filtered by individual attributes. If the checkbox next to an attribute is check
 only messages with the same attribute value are displayed. Default is <b>1</b>.
 <p>
 
-<li><b><code>HTML default = 0/1/2</code></b>
+<li><b><code>HTML default = 0/1/2/3</code></b>
 </br>
 This specifies the default state of the "<I>Submit as HTML text</I>" button on the
 new message entry from. For installations where entries are normally submitted
 as HTML, the default can be set to <b>1</b>. If this value is set to <b>2
-</b>, the check box is not displayed at all, so that only text submissions
-are possible. The default is <b>0</b>.
+</b> or <b>3</b>, the check box is not displayed and only text submissions
+ore HTML submissions are possible, respectively. The default is <b>0</b>.
 <p>
 
 <li><b><code>Suppress default = 0/1/2</code></b>
@@ -680,8 +735,9 @@ The default is <b>0</b>.
 
 <li><b><code>Restrict edit = 0/1</code></b>
 </br>
-If this flag is <b>1</b>, the "<I>Edit</I>" button only works for the author who
-submitted the current entry, so each author can only edit her/his own entries.
+If this flag is <b>1</b>, users can only edit their own messages. The system
+checks automatically if the currently logged in user matches the user
+supplied in an author attribute via the <i>"Preset xxxx"</i> option.
 The default is <b>0</b>.
 <p>
 
@@ -694,9 +750,7 @@ Themes are layout and color schemes which determine the look and feel of a logbo
 Each theme resides in a separate subdirectory and is specified with the
 <b><code>theme = &lt;dir&gt;</code></b> option in the configuration file. The directory
 contains the file <b><code>theme.cfg</code></b> and a few images, which are used
-for the title banner and the browse buttons. In addition, an <code><b>icons</b></code>
-subdirectory contains icon files which can be used with the <code><b>IOptions</code></b>
-specification. A default theme is contained in the
+for the title banner and the browse buttons. A default theme is contained in the
 distribution. If new themes are developed by users, they can be sent back to the author,
 to be included in future releases.
 <p>

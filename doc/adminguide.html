@@ -18,7 +18,7 @@
 &nbsp;[<a class=nav href="userguide.html">User's Guide</a>]&nbsp;
 &nbsp;[Administrator's Guide]&nbsp;
 &nbsp;[<a class=nav href="faq.html">FAQ</a>]&nbsp;
-&nbsp;[<a class=nav href="http://midas.psi.ch:8000">DEMO</a>]&nbsp;
+&nbsp;[<a class=nav href="http://midas.psi.ch/elogdemo/">DEMO</a>]&nbsp;
 &nbsp;[<a class=nav href="download.html">Download</a>]&nbsp;
 </div>
 <p>
@@ -46,7 +46,9 @@ This creates a subdirectory <code><b>elog-x.x.x</b></code> where x.x.x is the
 version number. In that directory execute <code><b>make</b></code>, which
 creates the executables <code><b>elogd</b></code> and <code><b>elog</b>
 </code>. These executables can then be copied to a convenient place like
-<code><b>/usr/local/bin</b></code> or <code><b>~/bin</b></code>.
+<code><b>/usr/local/bin</b></code> or <code><b>~/bin</b></code>. Alternatively,
+a <code><b>make install</b></code> will copy these files to <b><code>DESTDIR</code></b>
+which is defined in the Makefile.
 
 The <code><b>elogd</b></code> executable can be started manually for testing with :
 <p>
@@ -96,9 +98,27 @@ described <a href="#config">below</a>.
 To start the daemon automatically, it can be run from the <code><b>/etc/rc.d/init.d</code></b>
 system. Please consult your distribution to find out how to do that.
 <br>
-Under RedHat 6.x. I use a <a href="elogd">script</a> which I put under <code><b>/etc/rc.d/init.d</code></b>. Then I call :
+Under RedHat 6.x. I use a <a href="elogd.sh">script</a> which I put under <code><b>/etc/rc.d/init.d</code></b>. Then I call :
 <ul><code>chkconfig --add elogd</code></ul>
 <p>
+
+<div class=section>&nbsp; Running elogd under Apache &nbsp;</div>
+<p>
+For cases where <code><b>elogd</b></code> should run under port 80 in parallel to an Apache server,
+Apache can be configured to run Elog in a subdirectory of Apache. Start <code><b>elogd</b></code> normally
+under port 8080 (or similarly) as noted above and make sure it's working there. Then put following redirection
+into the Apache configuration file:
+
+<ul><pre>
+Redirect permanent /elog http://your.host.domain/elog/
+ProxyRequests On
+ProxyPass /elog/ http://your.host.domain:8080/
+</pre></ul>
+<p>
+Make sure that the Apache modules mod_proxy.c and mod_alias.c are activated. The <i>Redirect</i> statement
+is necessary to automatically append a "/" to a request like
+<code><b>http://your.host.domain/elog</code></b>. Apache then works as a proxy and forwards all requests
+starint with <code><b>/elog</b></code> to the elogd daemon.<p>
 
 <h3><hr><i>Notes for the Solaris platform</i>:</h3>
 
