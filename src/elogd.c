@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.110  2003/05/17 16:00:31  midas
+  Remove message lock on 'Back' button; on config user page, don't go back after 'Save'
+
   Revision 1.109  2003/05/15 11:34:42  midas
   Fixed stricmp under linux
 
@@ -3613,7 +3616,7 @@ char   att_file[MAX_ATTACHMENTS][256];
 
 /*------------------------------------------------------------------*/
 
-int el_lock_message(LOGBOOK *lbs, int message_id, int lock, char *user)
+int el_lock_message(LOGBOOK *lbs, int message_id, char *user)
 /* lock message for editing */
 {
 int    size;
@@ -3626,12 +3629,9 @@ char   att_file[MAX_ATTACHMENTS][256];
   el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
               text, &size, in_reply_to, reply_to, att_file, encoding, locked_by);
 
-  if (lock)
-    {
-    /* lock message */
-    el_submit(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text,
-              in_reply_to, reply_to, encoding, att_file, FALSE, user);
-    }
+  /* submit message, unlocked if user==NULL */
+  el_submit(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text,
+            in_reply_to, reply_to, encoding, att_file, FALSE, user);
 
   return EL_SUCCESS;
 }
@@ -5017,7 +5017,9 @@ int    wrong_pwd;
 
     if (!wrong_pwd)
       {
-      redirect(lbs, ".");
+      /* redirect back to configuration page */
+      sprintf(str, "?cmd=%s&cfg_user=%s", loc("Config"), getparam("config"));
+      redirect(lbs, str);
       return;
       }
     }
@@ -5239,7 +5241,7 @@ time_t now;
         strcat(str, " ");
         strcat(str, rem_host);
 
-        el_lock_message(lbs, message_id, TRUE, str);
+        el_lock_message(lbs, message_id, str);
         }
       }
     else
@@ -6589,7 +6591,7 @@ int  i;
 
   rsprintf("<input type=hidden name=cmd value=\"%s\">\n", loc("Config")); // for select javascript
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
-  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
   rsprintf("<input type=hidden name=config value=\"%s\">\n", user);
 
   rsprintf("</span></td></tr>\n\n");
@@ -7837,7 +7839,9 @@ int  i, n;
       if (!getcfg(lbs->name, "Admin user", str) ||
           (getcfg(lbs->name, "Admin user", str) && strstr(str, getparam("unm")) != 0))
         {
-        strcat(menu_str, "Admin, Change elogd.cfg, ");
+        strcat(menu_str, "Admin, ");
+        strcat(menu_str, loc("Change elogd.cfg"));
+        strcat(menu_str, ", ");
         }
       strcat(menu_str, "Config, Logout, ");
       }
@@ -11643,7 +11647,13 @@ FILE    *f;
   if (equal_ustring(command, loc("Back")))
     {
     if (isparam("edit_id"))
+      {
+      /* unlock message */
+      el_lock_message(lbs, atoi(getparam("edit_id")), NULL);
+
+      /* redirect to message */
       sprintf(str, "../%s/%s", logbook_enc, getparam("edit_id"));
+      }
     else
       sprintf(str, "../%s/", logbook_enc);
 
@@ -11971,6 +11981,13 @@ FILE    *f;
       sprintf(str, "../%s/", lbs->name_enc);
     else
       sprintf(str, ".");
+
+    if (isparam("new_user_name"))
+      sprintf(str+strlen(str), "?cmd=%s&cfg_user=%s", loc("Config"), getparam("new_user_name"));
+    else if (isparam("cfg_user"))
+      sprintf(str+strlen(str), "?cmd=%s&cfg_user=%s", loc("Config"), getparam("cfg_user"));
+    else
+      sprintf(str+strlen(str), "?cmd=%s", loc("Config"));
 
     redirect(lbs, str);
     return;
