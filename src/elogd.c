@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.618  2005/04/06 19:45:13  ritt
+   Reread password file(s) after HUP signal
+
    Revision 1.617  2005/04/06 19:20:57  ritt
    Version 2.5.8-3
 
@@ -4309,8 +4312,7 @@ int el_index_logbooks()
 
       free_logbook_hierarchy(phier);
    }
-
-
+ 
    return EL_SUCCESS;
 }
 
@@ -22045,6 +22047,7 @@ void server_loop(void)
          /* reload configuration */
          check_config();
          el_index_logbooks();
+         load_password_files();
          _hup = FALSE;
       }
 #endif
