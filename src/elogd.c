@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.83  2003/04/14 08:43:11  midas
+  Fixed bug that attachments got deleted if one replies to a message
+
   Revision 1.82  2003/04/11 07:25:52  midas
   Eliminated WEB_BUFFER_SIZE and made memory allocation dynamically
 
@@ -2912,6 +2915,7 @@ char    file_name[256], dir[256], str[NAME_LENGTH];
 time_t  now, ltime;
 char    message[TEXT_SIZE+100], *p, *buffer;
 BOOL    bedit;
+char    attachment_all[64*MAX_ATTACHMENTS];
 
   /* generate new file name YYMMDD.log in data directory */
   strcpy(dir, lbs->data_dir);
@@ -2970,6 +2974,7 @@ BOOL    bedit;
       el_decode(message, "Reply to: ", reply_to);
     if (equal_ustring(in_reply_to, "<keep>"))
       el_decode(message, "In reply to: ", in_reply_to);
+    el_decode(message, "Attachment: ", attachment_all);
 
     /* buffer tail of logfile */
     lseek(fh, 0, SEEK_END);
@@ -3069,33 +3074,12 @@ BOOL    bedit;
   for (i=0 ; i<n_attr ; i++)
     sprintf(message+strlen(message), "%s: %s\n", attr_name[i], attr_value[i]);
 
-  /* keep original attachment if edit and no new attachment */
-
   sprintf(message+strlen(message), "Attachment: ");
 
-  if (bedit)
-    {
-    for (i=n=0 ; i<MAX_ATTACHMENTS ; i++)
-      {
-      if (afilename[i][0])
-        {
-        if (n == 0)
-          {
-          sprintf(message+strlen(message), "%s", afilename[i]);
-          n++;
-          }
-        else
-          sprintf(message+strlen(message), ",%s", afilename[i]);
-        }
-      }
-    }
-  else
-    {
-    sprintf(message+strlen(message), afilename[0]);
-    for (i=1 ; i<MAX_ATTACHMENTS ; i++)
-      if (afilename[i][0])
-        sprintf(message+strlen(message), ",%s", afilename[i]);
-    }
+  sprintf(message+strlen(message), afilename[0]);
+  for (i=1 ; i<MAX_ATTACHMENTS ; i++)
+    if (afilename[i][0])
+      sprintf(message+strlen(message), ",%s", afilename[i]);
   sprintf(message+strlen(message), "\n");
 
   sprintf(message+strlen(message), "Encoding: %s\n", encoding);
@@ -3151,9 +3135,6 @@ BOOL    bedit;
       strcat(reply_to, ", ");
     sprintf(reply_to + strlen(reply_to), "%d", message_id);
 
-    /* don't resubmit attachments */
-    memset(att, 0, sizeof(att));
-
     /* write modified message */
     el_submit(lbs, reply_id, date, attr_list, attr, n_attr,
               message, in_reply_to, reply_to, enc, att, TRUE);
@@ -3201,9 +3182,6 @@ int  size, status;
       while (isdigit(*p))
         p++;
     }
-
-  /* don't resubmit attachments */
-  memset(att, 0, sizeof(att));
 
   /* write modified message */
   el_submit(lbs, message_id, date, attr_list, attr, lbs->n_attr,
