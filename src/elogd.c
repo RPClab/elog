@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.87  2003/04/22 07:50:05  midas
+  Fixed crashes with user registration and password file in [global] section
+
   Revision 1.86  2003/04/22 07:02:12  midas
   Added javascript code to put focus on name field on login page
 
@@ -6208,8 +6211,11 @@ int    i, fh, size, self_register;
       {
       if (url[strlen(url)-1] != '/')
         strlcat(url, "/", sizeof(url));
-      strlcat(url, lbs->name, sizeof(url));
-      strlcat(url, "/", sizeof(url));
+      if (lbs)
+        {
+        strlcat(url, lbs->name, sizeof(url));
+        strlcat(url, "/", sizeof(url));
+        }
       }
 
     if (!getcfg(lbs->name, "Use Email from", mail_from))
@@ -6581,8 +6587,11 @@ char str[1000], login_name[256], full_name[256], user_email[256], name[256], pwd
           {
           if (url[strlen(url)-1] != '/')
             strlcat(url, "/", sizeof(url));
-          strlcat(url, lbs->name, sizeof(url));
-          strlcat(url, "/", sizeof(url));
+          if (lbs)
+            {
+            strlcat(url, lbs->name, sizeof(url));
+            strlcat(url, "/", sizeof(url));
+            }
           }
 
         sprintf(redir, "?cmd=%s&old_pwd=%s", loc("Change password"), pwd);
@@ -11229,7 +11238,7 @@ FILE    *f;
         /* check for password recovery */
         if (isparam("cmd") || isparam("newpwd"))
           {
-          if (equal_ustring(getparam("cmd"), "Change password") || isparam("newpwd"))
+          if (equal_ustring(getparam("cmd"), loc("Change password")) || isparam("newpwd"))
             {
             show_change_pwd_page(NULL);
             return;
