@@ -251,7 +251,7 @@ The file must be present in the same directory as the <code><b>elogd</b></code> 
 <LI><b><code>Start page = &lt;command&gt;</code></b>
 <br>
 This option can be used to display a different start page. <b><code>command</code></b>
-can be either <i>"last10"</i> for the last ten messages, or an ELog menu command in the
+can be either <i>0?cmd=Last</i> to display the last message, or any other ELog menu command in the
 form <b><code>?cmd=xxx</code></b>. To start with the search page, one uses<p>
 
 <pre>
@@ -280,7 +280,7 @@ a new message. It can contain a sentence like "<I>Please enter your message here
 
 <li><b><code>Menu commands = &lt;list&gt;</code></b>
 </br>
-This option specifies the menu commands displayed on top of the logbook page. For
+This option specifies the menu commands displayed on top of a single logbook page. For
 certain installations, it can be useful to disable some commands. Following
 commands are possible:
 <p>
@@ -306,7 +306,7 @@ commands are possible:
 <p>
 If this option is not present, following default is used:
 <p>
-<pre>Menu commands = New, Edit, Delete, Reply, Find, Last day, Last 10, Config, Help</pre>
+<pre>Menu commands = Back, New, Edit, Delete, Reply, Find, Config, Help</pre>
 <p>
 
 <li><b><code>Copy to = &lt;logbook list&gt;</code></b>
@@ -321,14 +321,10 @@ make sense if only certain logbooks make sense as destinations.<p>
 
 <li><b><code>Find Menu commands = &lt;list&gt;</code></b>
 <br>
-This option specifies the menu commands displayed on top of the listing page
-resulting from a "<I>find</I>" command. Although all commands from a above are possible,
-only the commands <code><b>New, Find, Back, Last day, Last 10, Last x, Config, Change
-password, Logout</b></code> and <code><b>Help</b></code> make sense. There is one
-special command in addition to the above commands: The command <b><code>Last x</b>
-</code> gets expanded to "<I>Last 2 days</I>", "<I>Last 4 days</I>" or
-"<I>Last 20 entries</I>", "<I>Last 40 entries</I>" and so on, similar to the standard
-behaviour without the "<I>Find Menu commands</I>" option.
+This option specifies the menu commands displayed on top of the listing page.
+Although all commands from a above are possible,
+only the commands <code><b>New, Find, Select, Config, Admin, Change
+password, Logout</b></code> and <code><b>Help</b></code> make sense.
 <p>
 
 <li><b><code>Guest Menu commands = &lt;list&gt;</code></b>
@@ -343,8 +339,8 @@ menu, with which one can login as a real user (username and password have to mat
 from the password file), which then allowes full access via the <b>"Menu commands"</b> list.
 A typical example for the menu settings for this scenario are:<p>
 <pre>
-Menu commands = New, Edit, Reply, Find, Last 10, Config, Logout, Help
-Guest menu commands = Find, Last 10, Login, Help
+Menu commands = Back, New, Edit, Reply, Find, Config, Logout, Help
+Guest menu commands = Back, Find, Login, Help
 </pre>
 <p>
 
