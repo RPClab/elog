@@ -309,6 +309,12 @@ details.
 <P>
 <LI>Put the URL under which <code><b>elogd</b></code> runs into elogd.cfg:<p>
     <pre>URL = https://your.host.name/</pre>
+
+    Note the <b><code>https</code></b> at the beginning of the URL, which is
+    mandatory. Once you use the <b><code>https</code></b> URL, elog won't work correctly when
+    accessed not through stunnel via <b><code>http://..</code></b>, since any
+    redirection would always bring you back to https://...).<p>
+
 <LI>Connect to your logbook with a browser which supports SSL via:
 <P>
     <pre>https://your.host.name/</pre>
