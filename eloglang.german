@@ -198,7 +198,7 @@ Display = Zeige
 entries per page = Einträge pro Seite
 Toggle all = Alle umschalten
 Selected entries = Ausgewählte Einträge
-Automatic email notifications = Automatische Email Benachrichtigung
+Enable email notifications = Email Benachrichtigung	ermöglichen
 
 #
 # New strings for V2.2.2

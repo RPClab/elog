@@ -6,6 +6,10 @@ Version 2.3.1, released Februar xxx, 2003
 - Added option 'subst on edit <attrib> = <value>"
 - Removed "number attachments", added "enable attachments"
 - Redesigned attachment uploading
+- Use absolute "Location:" statements for redirection if "URL"
+  option is present in elogd.cfg
+- Added proper handling of "<br>" in attributes
+- Added "Reply string" option
 
 Version 2.3.0, released Februar 7th, 2003
 =========================================

@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.14  2003/02/16 13:29:02  midas
+  Added option 'Reply string'
+
   Revision 1.13  2003/02/15 10:12:33  midas
   Special treatement of <br> in attributes
 
@@ -1376,7 +1379,14 @@ int  fh;
               while (*pstr == ' ' || *pstr == '\t')
                 *pstr-- = 0;
 
-              strcpy(value, str);
+              if (str[0] == '"' && str[strlen(str)-1] == '"')
+                {
+                strcpy(value, str+1);
+                value[strlen(value)-1] = 0;
+                }
+              else
+                strcpy(value, str);
+
               free(str);
               return 1;
               }
@@ -4580,7 +4590,7 @@ char   str[80], date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
 void show_edit_form(LOGBOOK *lbs, int message_id, BOOL bedit, BOOL upload)
 {
 int    i, j, n, index, size, width, height, fh, length, first;
-char   str[1000], preset[1000], *p, star[80], comment[10000];
+char   str[1000], preset[1000], *p, star[80], comment[10000], reply_string[256];
 char   list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256];
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
        orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80],
@@ -5050,6 +5060,10 @@ time_t now;
       else
         {
         p = text;
+
+        if (!getcfg(lbs->name, "Reply string", reply_string))
+          strcpy(reply_string, "> ");
+
         do
           {
           if (strchr(p, '\n'))
@@ -5057,9 +5071,15 @@ time_t now;
             *strchr(p, '\n') = 0;
 
             if (encoding[0] == 'H')
-              rsprintf("&gt; %s<br>\n", p);
+              {
+              rsputs2(reply_string);
+              rsprintf("%s<br>\n", p);
+              }
             else
-              rsprintf("> %s\n", p);
+              {
+              rsputs(reply_string);
+              rsprintf("%s\n", p);
+              }
 
             p += strlen(p)+1;
             if (*p == '\n')
@@ -5068,9 +5088,15 @@ time_t now;
           else
             {
             if (encoding[0] == 'H')
-              rsprintf("&gt; %s<p>\n", p);
+              {
+              rsputs2(reply_string);
+              rsprintf("%s<p>\n", p);
+              }
             else
-              rsprintf("> %s\n\n", p);
+              {
+              rsputs(reply_string);
+              rsprintf("%s\n\n", p);
+              }
 
             break;
             }

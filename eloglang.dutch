@@ -197,7 +197,7 @@ All = Alle
 Display = Toon
 entries per page = berichten per pagina
 Toggle all = Toon alles
-Automatic email notifications=Automatisch e-mail aankondiging
+Enable email notifications=Automatisch e-mail aankondiging
 
 # New strings for V2.2.2
 A old entry has been updated on %s = Een ouder bericht is op %s gewijzigd
@@ -208,3 +208,13 @@ Expand = Uitbreiden
 Full = Volledig
 Summary = Samenvatting
 Threaded = Berichtdraad
+
+#
+# New strings for V2.2.6
+ELOG Entries = ELOG Invoer
+Filters = Filter
+Mode = Modus
+Options = Opties
+Error: start date after end date = Fout: Begindatum begint na de einddatum
+and all their replies = en alle antwoorden
+Your request has been forwarded to the administrator. You will be notified by email upon activation of your new account. = Je verzoek is doorgestuurd naar de administraotr. Je krijgt per e-mail bericht als het account geactiveerd is.
