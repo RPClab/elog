@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.209  2004/01/23 16:35:18  midas
+   Mirroring now works with top groups
+
    Revision 1.208  2004/01/22 21:19:09  midas
    Fixed mirror errors for replies
 
@@ -218,7 +221,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.4.1"
+#define VERSION "2.5.0"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -2304,6 +2307,55 @@ void el_decode(char *message, char *key, char *result)
 
 /*------------------------------------------------------------------*/
 
+void el_enum_attr(char *message, int n, char *attr_name, char *attr_value)
+{
+   char *p, str[256], tmp[256];
+   int i;
+
+   p = message;
+   for (i=0 ; i<=n ; i++) {
+      strlcpy(str, p, sizeof(str));
+      if (strchr(str, '\n'))
+         *strchr(str, '\n') = 0;
+      if (strchr(str, '\r'))
+         *strchr(str, '\r') = 0;
+
+      if (strcmp(str, "========================================") == 0)
+         break;
+
+      p = strchr(p, '\n');
+      if (!p)
+         break;
+      while (*p == '\n' || *p == '\r')
+         p++;
+
+      if (strchr(str, ':')) {
+         strcpy(tmp, str);
+      *strchr(tmp, ':') = 0;
+
+      if (equal_ustring(tmp, "$@MID@$") ||
+          equal_ustring(tmp, "Date") ||
+          equal_ustring(tmp, "Attachment") ||
+          equal_ustring(tmp, "Reply To") ||
+          equal_ustring(tmp, "In Reply To") ||
+          equal_ustring(tmp, "Encoding") ||
+          equal_ustring(tmp, "Locked by"))
+          i--;
+      }
+   }
+
+   attr_name[0] = 0;
+   attr_value[0] = 0;
+   if (strchr(str, ':')) {
+      strcpy(attr_name, str);
+      *strchr(attr_name, ':') = 0;
+      strcpy(attr_value, strchr(str, ':')+2);
+   }
+
+}
+
+/*------------------------------------------------------------------*/
+
 /* Simplified copy of fnmatch() for Cygwin where fnmatch is not defined */
 
 #define EOS '\0'
@@ -2996,10 +3048,21 @@ INT el_retrieve(LOGBOOK * lbs,
    if (in_reply_to)
       el_decode(message, "In reply to: ", in_reply_to);
 
-   if (attrib)
-      for (i = 0; i < n_attr; i++) {
-         sprintf(str, "%s: ", attr_list[i]);
-         el_decode(message, str, attrib[i]);
+   if (n_attr == -1) {
+      /* derive attribute names from message */
+      for (i = 0 ; ; i++) {
+         el_enum_attr(message, i, attr_list[i], attrib[i]);
+         if (!attr_list[i][0])
+            break;
+      }
+      n_attr = i;
+
+   } else {
+      if (attrib)
+         for (i = 0; i < n_attr; i++) {
+            sprintf(str, "%s: ", attr_list[i]);
+            el_decode(message, str, attrib[i]);
+         }
       }
 
    el_decode(message, "Attachment: ", attachment_all);
@@ -3070,7 +3133,8 @@ INT el_retrieve(LOGBOOK * lbs,
 int el_submit_attachment(LOGBOOK * lbs, char *afilename, char *buffer, int buffer_size,
                          char *full_name)
 {
-   char file_name[MAX_PATH_LENGTH], ext_file_name[MAX_PATH_LENGTH], str[MAX_PATH_LENGTH], *p;
+   char file_name[MAX_PATH_LENGTH], ext_file_name[MAX_PATH_LENGTH], str[MAX_PATH_LENGTH],
+       *p;
    int fh;
    time_t now;
    struct tm tms;
@@ -3089,7 +3153,8 @@ int el_submit_attachment(LOGBOOK * lbs, char *afilename, char *buffer, int buffe
    /* assemble ELog filename */
    if (file_name[0]) {
 
-      if (file_name[6] == '_' && file_name[13] == '_' && isdigit(file_name[0]) && isdigit(file_name[1]))
+      if (file_name[6] == '_' && file_name[13] == '_' && isdigit(file_name[0])
+          && isdigit(file_name[1]))
          strcpy(ext_file_name, file_name);
       else {
          time(&now);
@@ -3284,8 +3349,8 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
          /* file might have been edited, rebuild index */
          el_build_index(lbs, TRUE);
          return el_submit(lbs, message_id, bedit, date, attr_name, attr_value,
-                          n_attr, text, in_reply_to, reply_to, encoding, afilename, mark_original,
-                          locked_by);
+                          n_attr, text, in_reply_to, reply_to, encoding, afilename,
+                          mark_original, locked_by);
       }
 
       /* check for correct ID */
@@ -6756,10 +6821,62 @@ const char *find_next_section(const char *buf)
 
 /*------------------------------------------------------------------*/
 
+void load_config_section(char *section, char **buffer, char *error)
+{
+   int fh, length;
+   char *p;
+
+   error[0] = 0;
+   *buffer = NULL;
+   fh = open(config_file, O_RDONLY | O_BINARY);
+   if (fh < 0) {
+      sprintf(error, "Cannot read configuration file <b>\"%s\"</b>", config_file);
+      return;
+   }
+   length = lseek(fh, 0, SEEK_END);
+   lseek(fh, 0, SEEK_SET);
+   *buffer = malloc(length + 1);
+   if (*buffer == NULL) {
+      close(fh);
+      strcpy(error, "Error: out of memory");
+      return;
+   }
+   read(fh, *buffer, length);
+   (*buffer)[length] = 0;
+   close(fh);
+
+   if ((p = (char *) find_section(*buffer, section)) != NULL) {
+      if (strchr(p, ']')) {
+         p = strchr(p, ']') + 1;
+         while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r')
+            p++;
+      }
+      strlcpy(*buffer, p, length);
+      if ((p = (char *) find_next_section(*buffer + 1)) != NULL) {
+         *p = 0;
+
+         /* strip trailing newlines */
+         if (p) {
+            p--;
+
+            while (p > *buffer && (*p == '\n' || *p == '\r' || *p == ' ' || *p == '\t'))
+               *p-- = 0;
+         }
+      } else {
+         p = *buffer + strlen(*buffer) - 1;
+
+         while (p > *buffer && (*p == '\n' || *p == '\r' || *p == ' ' || *p == '\t'))
+            *p-- = 0;
+      }
+   }
+}
+
+/*------------------------------------------------------------------*/
+
 void show_admin_page(LOGBOOK * lbs, char *top_group)
 {
-   int fh, length, rows, cols;
-   char *buffer, *p;
+   int rows, cols;
+   char *buffer, error_str[256];
    char section[NAME_LENGTH], str[NAME_LENGTH], grp[NAME_LENGTH];
 
    /*---- header ----*/
@@ -6820,27 +6937,6 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
 
    rsprintf("<tr><td class=\"form1\">\n");
 
-   fh = open(config_file, O_RDONLY | O_BINARY);
-   if (fh < 0) {
-      rsprintf("Cannot read configuration file <b>\"%s\"</b>", config_file);
-      rsprintf("</table></td></tr></table>\n");
-      rsprintf("</body></html>\r\n");
-      return;
-   }
-   length = lseek(fh, 0, SEEK_END);
-   lseek(fh, 0, SEEK_SET);
-   buffer = malloc(length + 1);
-   if (buffer == NULL) {
-      close(fh);
-      rsprintf("Error: out of memory<p>");
-      rsprintf("</table></td></tr></table>\n");
-      rsprintf("</body></html>\r\n");
-      return;
-   }
-   read(fh, buffer, length);
-   buffer[length] = 0;
-   close(fh);
-
    /* extract section of current logbook */
    if (top_group) {
       if (equal_ustring(top_group, "global"))
@@ -6850,24 +6946,12 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
    } else
       strcpy(section, lbs->name);
 
-   if ((p = (char *) find_section(buffer, section)) != NULL) {
-      if (strchr(p, ']')) {
-         p = strchr(p, ']') + 1;
-         while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r')
-            p++;
-      }
-      strlcpy(buffer, p, length);
-      if ((p = (char *) find_next_section(buffer + 1)) != NULL) {
-         *p = 0;
+   load_config_section(section, &buffer, error_str);
 
-         /* strip trailing newlines */
-         if (p) {
-            p--;
-
-            while (p > buffer && (*p == '\n' || *p == '\r' || *p == ' ' || *p == '\t'))
-               *p-- = 0;
-         }
-      }
+   if (error_str[0]) {
+      rsprintf("</table></td></tr></table>\n");
+      rsprintf("</body></html>\r\n");
+      return;
    }
 
    if (getcfg(section, "Admin textarea", str)
@@ -6907,35 +6991,28 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
 
 /*------------------------------------------------------------------*/
 
-int save_admin_config(LOGBOOK * lbs)
+int save_admin_config(LOGBOOK * lbs, char *section, char *buffer, char *error)
 {
    int fh, i, length;
-   char section[NAME_LENGTH], str[NAME_LENGTH], *buf, *buf2, *p1, *p2;
+   char *buf, *buf2, *p1, *p2;
+
+   error[0] = 0;
 
    fh = open(config_file, O_RDWR | O_BINARY, 644);
    if (fh < 0) {
-      sprintf(str, loc("Cannot open file <b>%s</b>"), config_file);
-      strcat(str, ": ");
-      strcat(str, strerror(errno));
-      show_error(str);
+      sprintf(error, loc("Cannot open file <b>%s</b>"), config_file);
+      strcat(error, ": ");
+      strcat(error, strerror(errno));
       return 0;
    }
 
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   buf = malloc(length + strlen(_mtext) + 1);
+   buf = malloc(length + strlen(buffer) + 1);
    assert(buf);
    read(fh, buf, length);
    buf[length] = 0;
-
-   if (isparam("global")) {
-      if (equal_ustring(getparam("global"), "global"))
-         strcpy(section, "global");
-      else
-         sprintf(section, "global %s", getparam("global"));
-   } else
-      strlcpy(section, lbs->name, sizeof(section));
 
    /* find previous logbook config */
    p1 = (char *) find_section(buf, section);
@@ -6950,20 +7027,19 @@ int save_admin_config(LOGBOOK * lbs)
 
    /* combine old and new config */
    sprintf(p1, "[%s]\n", section);
-   strcat(p1, _mtext);
+   strcat(p1, buffer);
    strcat(p1, "\n\n");
    if (p2) {
-      strlcat(p1, buf2, length + strlen(_mtext) + 1);
+      strlcat(p1, buf2, length + strlen(buffer) + 1);
       free(buf2);
    }
 
    lseek(fh, 0, SEEK_SET);
    i = write(fh, buf, strlen(buf));
    if (i < (int) strlen(buf)) {
-      sprintf(str, loc("Cannot write to <b>%s</b>"), config_file);
-      strcat(str, ": ");
-      strcat(str, strerror(errno));
-      show_error(str);
+      sprintf(error, loc("Cannot write to <b>%s</b>"), config_file);
+      strcat(error, ": ");
+      strcat(error, strerror(errno));
       close(fh);
       free(buf);
       return 0;
@@ -7864,42 +7940,60 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
 
 int show_download_page(LOGBOOK * lbs, char *path)
 {
-   char file_name[256];
+   char file_name[256], error_str[256];
    int index, message_id, fh, i, size, delta;
-   char message[TEXT_SIZE + 1000], *p;
+   char message[TEXT_SIZE + 1000], *p, *buffer;
 
    message_id = atoi(path);
 
-   for (index = 0; index < *lbs->n_el_index; index++)
-      if (lbs->el_index[index].message_id == message_id)
-         break;
+   if (message_id == 0) {
 
-   if (index == *lbs->n_el_index)
-      return EL_NO_MSG;
+      /* return config */
+      load_config_section(lbs->name, &buffer, error_str);
+      if (error_str[0]) {
+         rsprintf("Error loading configuration file: %s", error_str);
+         return EL_FILE_ERROR;
+      }
 
-   sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
-   fh = open(file_name, O_RDWR | O_BINARY, 0644);
-   if (fh < 0)
-      return EL_FILE_ERROR;
+      size = strlen(buffer);
+      strlcpy(message, buffer, sizeof(message));
+      free(buffer);
 
-   lseek(fh, lbs->el_index[index].offset, SEEK_SET);
-   i = read(fh, message, sizeof(message) - 1);
-   if (i <= 0) {
+   } else {
+
+      /* return entry */
+
+      for (index = 0; index < *lbs->n_el_index; index++)
+         if (lbs->el_index[index].message_id == message_id)
+            break;
+
+      if (index == *lbs->n_el_index)
+         return EL_NO_MSG;
+
+      sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
+      fh = open(file_name, O_RDWR | O_BINARY, 0644);
+      if (fh < 0)
+         return EL_FILE_ERROR;
+
+      lseek(fh, lbs->el_index[index].offset, SEEK_SET);
+      i = read(fh, message, sizeof(message) - 1);
+      if (i <= 0) {
+         close(fh);
+         return EL_FILE_ERROR;
+      }
+
+      message[i] = 0;
       close(fh);
-      return EL_FILE_ERROR;
+
+      /* decode message size */
+      p = strstr(message + 8, "$@MID@$:");
+      if (p == NULL)
+         size = strlen(message);
+      else
+         size = (int) p - (int) message;
+
+      message[size] = 0;
    }
-
-   message[i] = 0;
-   close(fh);
-
-   /* decode message size */
-   p = strstr(message + 8, "$@MID@$:");
-   if (p == NULL)
-      size = strlen(message);
-   else
-      size = (int) p - (int) message;
-
-   message[size] = 0;
 
    /* header */
    rsprintf("HTTP/1.1 200 Document follows\r\n");
@@ -7939,9 +8033,11 @@ int show_download_page(LOGBOOK * lbs, char *path)
 
 /*------------------------------------------------------------------*/
 
-int show_md5_page(LOGBOOK * lbs, char *path)
+int show_md5_page(LOGBOOK * lbs)
 {
    int i, j;
+   char *buffer, error_str[256];
+   unsigned char digest[16];
 
    /* header */
    rsprintf("HTTP/1.1 200 Document follows\r\n");
@@ -7952,6 +8048,22 @@ int show_md5_page(LOGBOOK * lbs, char *path)
    rsprintf("Pragma: no-cache\r\n");
    rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
 
+   /* calculate MD5 for logbook section in config file */
+   load_config_section(lbs->name, &buffer, error_str);
+   if (error_str[0])
+      rsprintf("Error loading configuration file: %s", error_str);
+   else {
+      rsprintf("ID: %6d MD5:", 0);
+
+      MD5_checksum(buffer, strlen(buffer), digest);
+
+      for (i = 0; i < 16; i++)
+         rsprintf("%02X", digest[i]);
+      rsprintf("\n");
+   }
+   free(buffer);
+
+   /* show MD5's of logbook entries */
    for (i = 0; i < *lbs->n_el_index; i++) {
       rsprintf("ID: %6d MD5:", lbs->el_index[i].message_id);
       for (j = 0; j < 16; j++)
@@ -7968,7 +8080,12 @@ int show_md5_page(LOGBOOK * lbs, char *path)
 
 void combine_url(LOGBOOK * lbs, char *url, char *param, char *result, int size)
 {
-   strlcpy(result, url, size);
+
+   if (strstr(url, "http://"))
+      strlcpy(result, url + 7, size);
+   else
+      strlcpy(result, url, size);
+
    url_encode(result, size);
 
    if (result[strlen(result) - 1] != '/')
@@ -7985,18 +8102,51 @@ void combine_url(LOGBOOK * lbs, char *url, char *param, char *result, int size)
 
 /*------------------------------------------------------------------*/
 
-int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index)
+int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
+                        char *error_str)
 {
-   int i, n, id, x;
-   char *text, *p, url[256];
+   int i, n, id, x, version;
+   char *text, *p, url[256], str[256];
 
    combine_url(lbs, host, "?cmd=GetMD5", url, sizeof(url));
 
    text = NULL;
-   retrieve_url(url, &text);
+   error_str[0] = 0;
+   if (retrieve_url(url, &text) < 0) {
+      sprintf(error_str, loc("Cannot connect to remote server \"%s\""), host);
+      return -1;
+   }
    *md5_index = NULL;
+   p = strstr(text, "ELOG HTTP ");
+   if (!p) {
+      sprintf(error_str, loc("Remote server is not an ELOG server"));
+      free(text);
+      return -1;
+   }
+   version = atoi(p + 10) * 100 + atoi(p + 12) * 10 + atoi(p + 14);
+   if (version < 250) {
+      memset(str, 0, sizeof(str));
+      strncpy(str, p + 10, 5);
+      sprintf(error_str, loc("Incorrect remote ELOG server version %s"), str);
+      free(text);
+      return -1;
+   }
+
+   p = strstr(text, "Location: ");
+   if (p) {
+      if (strstr(text, "?wusr="))
+         sprintf(error_str, loc("User \"%s\" has no access to remote logbook"), getparam("unm"));
+      else if (strstr(text, "?wpwd="))
+         sprintf(error_str, loc("Passwords for user \"%s\" do not match locally and remotely"), getparam("unm"));
+      else
+         sprintf(error_str, loc("Error accessing remote logbook"));
+
+      return -1;
+   }
+
    p = strstr(text, "\r\n\r\n");
    if (!p) {
+      sprintf(error_str, loc("Invalid HTTP header"));
       free(text);
       return -1;
    }
@@ -8048,7 +8198,7 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index)
 
 int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 {
-   int size, i, n, status, fh, port, sock, content_length, header_length, remote_id;
+   int size, i, n, status, fh, port, sock, content_length, header_length, remote_id, n_attr;
    char str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
    char host_name[256], subdir[256], param[256], local_host_name[256], url[256];
    char date[80], *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
@@ -8061,10 +8211,10 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    text = malloc(TEXT_SIZE);
    error_str[0] = 0;
 
-   /* get message */
+   /* get message with attribute list devied from database */
    size = TEXT_SIZE;
    status =
-       el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
+       el_retrieve(lbs, message_id, date, attr_list, attrib, -1,
                    text, &size, in_reply_to, reply_to, attachment, encoding, locked_by);
 
    if (status != EL_SUCCESS) {
@@ -8072,6 +8222,9 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
       strcpy(error_str, loc("Cannot read entry from local logbook"));
       return -1;
    }
+
+   /* count attributes */
+   for (n_attr=0 ; attr_list[n_attr][0] ; n_attr++);
 
    combine_url(lbs, host, "", url, sizeof(url));
    split_url(url, host_name, &port, subdir, param);
@@ -8170,7 +8323,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
               "%s\r\nContent-Disposition: form-data; name=\"reply_to\"\r\n\r\n%s\r\n",
               boundary, reply_to);
 
-   for (i = 0; i < lbs->n_attr; i++)
+   for (i = 0; i < n_attr; i++)
       sprintf(content + strlen(content),
               "%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n", boundary,
               attr_list[i], attrib[i]);
@@ -8290,7 +8443,16 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
          else if (strstr(response, "wusr"))
             sprintf(error_str, "Invalid user name\n");
 
-         remote_id = atoi(strstr(response, "Location:") + 9);
+         strlcpy(str, strstr(response, "Location:") + 9, sizeof(str));
+         if (strchr(str, '\n'))
+            *strchr(str, '\n') = 0;
+         if (strchr(str, '?'))
+            *strchr(str, '?') = 0;
+
+         if (strrchr(str, '/'))
+            remote_id = atoi(strrchr(str, '/') + 1);
+         else
+            remote_id = atoi(str);
       }
    } else if (strstr(response, "Logbook Selection"))
       sprintf(error_str, "No logbook specified\n");
@@ -8315,7 +8477,6 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 }
 
 /*------------------------------------------------------------------*/
-
 
 int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, BOOL bnew)
 {
@@ -8429,20 +8590,196 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
 
 /*------------------------------------------------------------------*/
 
-int save_md5(LOGBOOK *lbs, char *server, MD5_INDEX * md5_index, int n)
+void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
+{
+   int i, n, status, port, sock, content_length, header_length;
+   char str[256];
+   char host_name[256], subdir[256], param[256], local_host_name[256];
+   char *content, *p, boundary[80], request[10000], response[10000];
+   struct hostent *phe;
+   struct sockaddr_in bind_addr;
+
+   error_str[0] = 0;
+
+   combine_url(lbs, server, "", str, sizeof(str));
+   split_url(str, host_name, &port, subdir, param);
+
+   /* create socket */
+   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+      strcpy(error_str, loc("Cannot create socket"));
+      return;
+   }
+
+   /* get local host name */
+   gethostname(local_host_name, sizeof(local_host_name));
+
+   /* compose remote address */
+   memset(&bind_addr, 0, sizeof(bind_addr));
+   bind_addr.sin_family = AF_INET;
+   bind_addr.sin_addr.s_addr = 0;
+   bind_addr.sin_port = htons((unsigned short) port);
+
+   phe = gethostbyname(host_name);
+   if (phe == NULL) {
+      closesocket(sock);
+      sprintf(error_str, loc("Cannot resolve host name \"%s\""), host_name);
+      return;
+   }
+   memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
+
+   /* connect to server */
+   status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
+   if (status != 0) {
+      closesocket(sock);
+      sprintf(error_str, loc("Cannot connect to host %s, port %d"), host_name, port);
+      return;
+   }
+
+   content_length = 100000;
+   content = malloc(content_length);
+   if (content == NULL) {
+      closesocket(sock);
+      strcpy(error_str, loc("Not enough memory"));
+      return;
+   }
+
+   /* compose content */
+   srand((unsigned) time(NULL));
+   sprintf(boundary, "---------------------------%04X%04X%04X", rand(), rand(), rand());
+   strcpy(content, boundary);
+   strcat(content, "\r\nContent-Disposition: form-data; name=\"cmd\"\r\n\r\nSave\r\n");
+
+   if (isparam("unm"))
+      sprintf(content + strlen(content),
+              "%s\r\nContent-Disposition: form-data; name=\"unm\"\r\n\r\n%s\r\n",
+              boundary, getparam("unm"));
+
+   if (isparam("upwd"))
+      sprintf(content + strlen(content),
+              "%s\r\nContent-Disposition: form-data; name=\"upwd\"\r\n\r\n%s\r\n",
+              boundary, getparam("upwd"));
+
+   sprintf(content + strlen(content),
+           "%s\r\nContent-Disposition: form-data; name=\"Text\"\r\n\r\n%s\r\n%s\r\n",
+           boundary, buffer, boundary);
+
+   content_length = strlen(content);
+   p = content + content_length;
+
+   /* compose request */
+   strcpy(request, "POST ");
+   if (subdir[0]) {
+      if (subdir[0] != '/')
+         strcat(request, "/");
+      strcat(request, subdir);
+      if (request[strlen(request) - 1] != '/')
+         strcat(request, "/");
+   }
+   strcat(request, " HTTP/1.0\r\n");
+
+   sprintf(request + strlen(request),
+           "Content-Type: multipart/form-data; boundary=%s\r\n", boundary);
+   sprintf(request + strlen(request), "Host: %s\r\n", local_host_name);
+   sprintf(request + strlen(request), "User-Agent: ELOGD\r\n");
+   sprintf(request + strlen(request), "Content-Length: %d\r\n", content_length);
+
+   if (isparam("wpwd"))
+      sprintf(request + strlen(request), "Cookie: wpwd=%s\r\n", getparam("wpwd"));
+
+   strcat(request, "\r\n");
+
+   header_length = strlen(request);
+
+   /* send request */
+   send(sock, request, header_length, 0);
+
+   /* send content */
+   send(sock, content, content_length, 0);
+
+   /* receive response */
+   i = recv(sock, response, 10000, 0);
+   if (i < 0) {
+      closesocket(sock);
+      strcpy(error_str, "Cannot receive response");
+      return;
+   }
+
+   /* discard remainder of response */
+   n = i;
+   while (i > 0) {
+      i = recv(sock, response + n, 10000, 0);
+      if (i > 0)
+         n += i;
+   }
+   response[n] = 0;
+
+   closesocket(sock);
+
+   /* check response status */
+   if (strstr(response, "302 Found")) {
+      if (strstr(response, "Location:")) {
+         if (strstr(response, "wpwd"))
+            sprintf(error_str, "Invalid password\n");
+         else if (strstr(response, "wusr"))
+            sprintf(error_str, "Invalid user name\n");
+      }
+   } else if (strstr(response, "Logbook Selection"))
+      sprintf(error_str, "No logbook specified\n");
+   else if (strstr(response, "enter password"))
+      sprintf(error_str, "Missing or invalid password\n");
+   else if (strstr(response, "form name=form1"))
+      sprintf(error_str, "Missing or invalid user name/password\n");
+   else if (strstr(response, "Error: Attribute")) {
+      strncpy(str, strstr(response, "Error: Attribute") + 20, sizeof(str));
+      if (strchr(str, '<'))
+         *strchr(str, '<') = 0;
+      sprintf(error_str, "Missing required attribute \"%s\"\n", str);
+   } else
+      sprintf(error_str, "Error transmitting message\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void receive_config(LOGBOOK * lbs, char *server, char *error_str)
+{
+   char str[256], *buffer, *p;
+
+   error_str[0] = 0;
+
+   combine_url(lbs, server, "", str, sizeof(str));
+   sprintf(str + strlen(str), "?cmd=Download");
+   retrieve_url(str, &buffer);
+   p = strstr(buffer, "\r\n\r\n");
+   if (p == NULL) {
+      free(buffer);
+      sprintf(error_str, loc("Cannot receive \"%s\""), str);
+      return;
+   }
+   p += 4;
+
+   if (!save_admin_config(lbs, lbs->name, p, str))
+      rsprintf(str);
+
+   free(buffer);
+}
+
+/*------------------------------------------------------------------*/
+
+int save_md5(LOGBOOK * lbs, char *server, MD5_INDEX * md5_index, int n)
 {
    char str[256], url[256], file_name[256];
    int i, j;
    FILE *f;
 
    combine_url(lbs, server, "", url, sizeof(url));
+   url_decode(url);
    if (strstr(url, "http://"))
       strcpy(str, url + 7);
    else
       strcpy(str, url);
 
    for (i = 0; i < (int) strlen(str); i++)
-      if (strchr(":/\\", str[i]))
+      if (strchr(":/\\ ", str[i]))
          str[i] = '_';
 
    while (str[strlen(str) - 1] == '_')
@@ -8469,7 +8806,7 @@ int save_md5(LOGBOOK *lbs, char *server, MD5_INDEX * md5_index, int n)
 
 /*------------------------------------------------------------------*/
 
-int load_md5(LOGBOOK *lbs, char *server, MD5_INDEX ** md5_index)
+int load_md5(LOGBOOK * lbs, char *server, MD5_INDEX ** md5_index)
 {
    char str[256], url[256], file_name[256], *p;
    int i, j, x;
@@ -8478,13 +8815,14 @@ int load_md5(LOGBOOK *lbs, char *server, MD5_INDEX ** md5_index)
    *md5_index = NULL;
 
    combine_url(lbs, server, "", url, sizeof(url));
+   url_decode(url);
    if (strstr(url, "http://"))
       strcpy(str, url + 7);
    else
       strcpy(str, url);
 
    for (i = 0; i < (int) strlen(str); i++)
-      if (strchr(":/\\", str[i]))
+      if (strchr(":/\\ ", str[i]))
          str[i] = '_';
 
    while (str[strlen(str) - 1] == '_')
@@ -8541,7 +8879,7 @@ BOOL equal_md5(unsigned char m1[16], unsigned char m2[16])
 
 /*------------------------------------------------------------------*/
 
-void synchronize(LOGBOOK * lbs, char *path)
+void synchronize_logbook(LOGBOOK * lbs)
 {
    int index, i, j, i_msg, i_remote, i_cache, n_remote, n_cache, nserver,
        remote_id, exist_remote, exist_cache, message_id;
@@ -8549,6 +8887,7 @@ void synchronize(LOGBOOK * lbs, char *path)
    char str[2000], url[256], loc_ref[256], rem_ref[256];
    MD5_INDEX *md5_remote, *md5_cache;
    char list[MAX_N_LIST][NAME_LENGTH], error_str[256], *buffer;
+   unsigned char digest[16];
 
    if (!getcfg(lbs->name, "Mirror server", str)) {
       show_error(loc("No mirror server defined in configuration file"));
@@ -8557,16 +8896,11 @@ void synchronize(LOGBOOK * lbs, char *path)
 
    nserver = strbreak(str, list, MAX_N_LIST);
 
-   show_html_header(NULL, FALSE, loc("Synchronization"));
-
-   rsprintf("<body>\n");
-
-   rsprintf("</td></tr>\n</table>\n");
-
    for (index = 0; index < nserver; index++) {
       rsprintf("<table width=\"100%%\" cellpadding=1 cellspacing=0");
-      rsprintf("<tr><td class=\"title1\">%s <b>%s</b></td></tr>\n",
-               loc("Synchronizing with"), list[index]);
+      sprintf(str, loc("Synchronizing logbook \"%s\" with server \"%s\""), lbs->name,
+              list[index]);
+      rsprintf("<tr><td class=\"title1\">%s</td></tr>\n", str);
       rsprintf("</table><p>\n");
 
       rsprintf("<pre>");
@@ -8574,25 +8908,105 @@ void synchronize(LOGBOOK * lbs, char *path)
       /* send partial return buffer */
       flush_return_buffer();
 
-      n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote);
+      n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote, error_str);
       if (n_remote < 0) {
-         rsprintf("Error receiving remote entry list from \"%s\"\n", list[index]);
+         rsprintf(error_str);
          free(md5_remote);
          continue;
       }
 
       /* load local copy of remote MD5s from file */
       n_cache = load_md5(lbs, list[index], &md5_cache);
-      
+
       /* if this is the first time (no cache exists yet), use remote list instead */
       if (md5_cache == NULL && n_remote) {
          md5_cache = calloc(sizeof(MD5_INDEX), n_remote);
          assert(md5_cache);
-         memcpy(md5_cache, md5_remote, sizeof(MD5_INDEX)*n_remote);
+         memcpy(md5_cache, md5_remote, sizeof(MD5_INDEX) * n_remote);
          n_cache = n_remote;
       }
 
-      /* loop through logbook entries */
+      /*---- check for configuration file ----*/
+
+      load_config_section(lbs->name, &buffer, error_str);
+      if (error_str[0])
+         rsprintf("Error loading configuration file: %s", error_str);
+      else
+         MD5_checksum(buffer, strlen(buffer), digest);
+
+      /* compare MD5s */
+      /*
+         printf("ID0:    ");
+         for (j = 0; j < 16; j++)
+         printf("%02X", digest[j]);
+         printf("\nCache : ");
+         for (j = 0; j < 16; j++)
+         printf("%02X", md5_cache[0].md5_digest[j]);
+         printf("\nRemote: ");
+         for (j = 0; j < 16; j++)
+         printf("%02X", md5_remote[0].md5_digest[j]);
+         printf("\n\n");
+       */
+
+      if (n_remote > 0) {
+         /* if message has been changed on this server, but not remotely, send it */
+         if (!equal_md5(md5_cache[0].md5_digest, digest)
+             && equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)) {
+
+            /* submit configuration section */
+            submit_config(lbs, list[index], buffer, error_str);
+
+            if (error_str[0])
+               rsprintf("Error sending config file: %s\n", error_str);
+            else
+               rsprintf("Local config submitted\n");
+
+            md5_cache[0].message_id = -1;
+
+         } else
+            /* if message has been changed remotely, but not on this server, receive it */
+            if (!equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)
+                && equal_md5(md5_cache[0].md5_digest, digest)) {
+
+            receive_config(lbs, list[index], error_str);
+
+            if (error_str[0])
+               rsprintf("Error receiving config file: %s\n", error_str);
+            else
+               rsprintf("Remote config received\n");
+
+            md5_cache[0].message_id = -1;
+
+         } else
+            /* if message has been changed remotely and on this server, show conflict */
+            if (!equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)
+                && !equal_md5(md5_cache[0].md5_digest, digest)
+                && !equal_md5(md5_remote[0].md5_digest, digest)) {
+
+            rsprintf("%s.\n", loc("Configuration has been changed locally and remotely"));
+            rsprintf(loc("Please merge manually to resolve conflict"));
+            rsprintf(".\n");
+         } else {
+
+            /* messages are identical */
+            rsprintf("%s\n", loc("Config identical"));
+            md5_cache[0].message_id = -1;
+         }
+      } else {                  /* n_remote == 0 */
+
+         rsprintf(loc("Logbook \"%s\" does not exist on remote server"), lbs->name);
+         rsprintf("\n");
+         continue;
+
+      }
+
+      flush_return_buffer();
+
+      if (buffer)
+         free(buffer);
+
+      /*---- loop through logbook entries ----*/
+
       for (i_msg = 0; i_msg < *lbs->n_el_index; i_msg++) {
 
          message_id = lbs->el_index[i_msg].message_id;
@@ -8637,7 +9051,7 @@ void synchronize(LOGBOOK * lbs, char *path)
                else
                   rsprintf("Local entry submitted\n");
 
-               md5_cache[i_cache].message_id = 0;
+               md5_cache[i_cache].message_id = -1;
 
             } else
                /* if message has been changed remotely, but not on this server, receive it */
@@ -8653,7 +9067,7 @@ void synchronize(LOGBOOK * lbs, char *path)
                else
                   rsprintf("Remote entry received\n");
 
-               md5_cache[i_cache].message_id = 0;
+               md5_cache[i_cache].message_id = -1;
 
             } else
                /* if message has been changed remotely and on this server, show conflict */
@@ -8676,7 +9090,7 @@ void synchronize(LOGBOOK * lbs, char *path)
 
                /* messages are identical */
                rsprintf("%s\n", loc("Entry identical"));
-               md5_cache[i_cache].message_id = 0;
+               md5_cache[i_cache].message_id = -1;
             }
          }
 
@@ -8685,7 +9099,7 @@ void synchronize(LOGBOOK * lbs, char *path)
          if (exist_cache && !exist_remote) {
             el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
             rsprintf("%s\n", loc("Entry deleted locally"));
-            md5_cache[i_cache].message_id = 0;
+            md5_cache[i_cache].message_id = -1;
 
             /* message got deleted from local message list, so redo current index */
             i_msg--;
@@ -8697,7 +9111,7 @@ void synchronize(LOGBOOK * lbs, char *path)
             remote_id = submit_message(lbs, list[index], message_id, error_str);
 
             if (remote_id != message_id)
-               rsprintf("Error: Submitting entry #%d resulted in remote entry #%d",
+               rsprintf("Error: Submitting entry #%d resulted in remote entry #%d\n",
                         message_id, remote_id);
             else if (error_str[0])
                rsprintf("%s: %s\n", loc("Error sending local entry"), error_str);
@@ -8728,7 +9142,7 @@ void synchronize(LOGBOOK * lbs, char *path)
                exist_cache = i_cache < n_cache;
 
                if (!exist_cache) {
-   
+
                   /* if message does not exist locally and in cache, it is new, so retrieve it */
                   receive_message(lbs, list[index], message_id, error_str, TRUE);
 
@@ -8756,11 +9170,13 @@ void synchronize(LOGBOOK * lbs, char *path)
       free(md5_remote);
 
       /* save remote MD5s in file */
-      n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote);
+      n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote, error_str);
+      if (n_remote < 0)
+         rsprintf(error_str);
 
       /* keep conflicting messages in cache */
       for (i = 0; i < n_cache; i++)
-         if (md5_cache[i].message_id) {
+         if (md5_cache[i].message_id == -1) {
             for (j = 0; j < n_remote; j++)
                if (md5_remote[j].message_id == md5_cache[i].message_id) {
                   memcpy(md5_remote[j].md5_digest, md5_cache[j].md5_digest, 16);
@@ -8772,10 +9188,38 @@ void synchronize(LOGBOOK * lbs, char *path)
 
       free(md5_remote);
       if (md5_cache)
-        free(md5_cache);
+         free(md5_cache);
    }
 
    rsprintf("</pre>\n");
+
+   flush_return_buffer();
+   keep_alive = 0;
+}
+
+/*------------------------------------------------------------------*/
+
+void synchronize(LOGBOOK * lbs)
+{
+   int i;
+   char str[256];
+
+   show_html_header(NULL, FALSE, loc("Synchronization"));
+   rsprintf("<body>\n");
+
+   if (lbs == NULL) {
+      for (i = 0; lb_list[i].name[0]; i++)
+         if (getcfg(lb_list[i].name, "mirror server", str)) {
+
+            if (exist_top_group() && getcfg_topgroup())
+               if (lb_list[i].top_group[0]
+                   && !equal_ustring(lb_list[i].top_group, getcfg_topgroup()))
+                  continue;
+
+            synchronize_logbook(&lb_list[i]);
+         }
+   } else
+      synchronize_logbook(lbs);
 
    rsprintf("<table width=\"100%%\" cellpadding=1 cellspacing=0");
    rsprintf("<tr><td class=\"seltitle\"><a href=\".\">%s</a></td></tr>\n", loc("Back"));
@@ -10057,7 +10501,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
    threaded = equal_ustring(mode, "threaded");
 
-      /*---- convert dates to ltime ----*/
+   /*---- convert dates to ltime ----*/
 
    time(&now);
    ptms = localtime(&now);
@@ -10196,7 +10640,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          if (!lb_list[n_logbook].name[0])
             break;
 
-         if (lbs->top_group[0] && !equal_ustring(lbs->top_group, lb_list[n_logbook].top_group))
+         if (lbs->top_group[0]
+             && !equal_ustring(lbs->top_group, lb_list[n_logbook].top_group))
             continue;
 
          if (isparam("unm")
@@ -11257,7 +11702,7 @@ void submit_elog(LOGBOOK * lbs)
    char att_file[MAX_ATTACHMENTS][256];
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
    int i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_orig,
-       mail_to_size;
+       mail_to_size, n_attr;
    BOOL bedit;
 
    /* check for required attributs */
@@ -11314,6 +11759,17 @@ void submit_elog(LOGBOOK * lbs)
             for (j = 0; attr_options[i][j][0]; j++)
                if (equal_ustring(attr_options[i][j], getparam(attr_list[i])))
                   break;
+
+            /* check if option without {n} exists */
+            if (!attr_options[i][j][0]) {
+               for (j = 0; attr_options[i][j][0]; j++) {
+                  strcpy(str, attr_options[i][j]);
+                  if (strchr(str, '{'))
+                     *strchr(str, '{') = 0;
+                  if (equal_ustring(str, getparam(attr_list[i])))
+                     break;
+               }
+            }
 
             if (!attr_options[i][j][0] && *getparam(attr_list[i])) {
                if (attr_flags[i] & AF_EXTENDABLE) {
@@ -11382,6 +11838,7 @@ void submit_elog(LOGBOOK * lbs)
    date[0] = 0;
    resubmit_orig = 0;
    bedit = FALSE;
+   n_attr = lbs->n_attr;
 
    /* evaluate parameters from mirror submission */
    if (isparam("mirror_id")) {
@@ -11407,14 +11864,22 @@ void submit_elog(LOGBOOK * lbs)
       if (_logging_level > 1)
          logf(lbs, "MIRROR entry #%d", message_id);
 
+      /* retrieve attribute names from submission */
+      
+      /*
+         ...enum...
+      n_attr = 
+      */
+
    } else {
 
-      if (*getparam("edit_id") && *getparam("resubmit") && atoi(getparam("resubmit")) == 1) {
+      if (*getparam("edit_id") && *getparam("resubmit")
+          && atoi(getparam("resubmit")) == 1) {
          resubmit_orig = atoi(getparam("edit_id"));
 
          /* get old links */
-         el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0, NULL, 0, in_reply_to, reply_to,
-                     NULL, NULL, NULL);
+         el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0, NULL, 0, in_reply_to,
+                     reply_to, NULL, NULL, NULL);
 
          /* if not message head, move all preceeding messages */
          /* outcommented, users want only resubmitted message occur at end (see what's new)
@@ -11446,21 +11911,20 @@ void submit_elog(LOGBOOK * lbs)
 
       if (_logging_level > 1) {
          if (isparam("edit_id"))
-           logf(lbs, "EDIT entry #%d", message_id);
+            logf(lbs, "EDIT entry #%d", message_id);
          else
-           logf(lbs, "NEW entry #%d", message_id);
+            logf(lbs, "NEW entry #%d", message_id);
       }
    }
 
    message_id =
        el_submit(lbs, message_id, bedit, date, attr_list, attrib, lbs->n_attr,
                  getparam("text"), in_reply_to, reply_to,
-                 *getparam("html") ? "HTML" : "plain", att_file, 
+                 *getparam("html") ? "HTML" : "plain", att_file,
                  !isparam("mirror_id"), NULL);
 
    if (message_id <= 0) {
-      sprintf(str, loc("New entry cannot be written to directory \"%s\""),
-              lbs->data_dir);
+      sprintf(str, loc("New entry cannot be written to directory \"%s\""), lbs->data_dir);
       strcat(str, "\n<p>");
       strcat(str, loc("Please check that it exists and elogd has write access"));
       show_error(str);
@@ -12978,11 +13442,11 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
                         NULL, NULL, NULL, NULL);
             if (!getcfg(lb_list[i].name, "Last submission", str)) {
                sprintf(str, "$entry date");
-               for (i=0 ; i<lb_list[i].n_attr ; i++)
+               for (i = 0; i < lb_list[i].n_attr; i++)
                   if (equal_ustring(attr_list[i], "Author"))
                      break;
-               if (i<lb_list[i].n_attr)
-                 sprintf(str+strlen(str), " %s $author", loc("by"));
+               if (i < lb_list[i].n_attr)
+                  sprintf(str + strlen(str), " %s $author", loc("by"));
             }
             j = build_subst_list(&lb_list[i], slist, svalue, attrib);
             strcpy(slist[j], "entry date");
@@ -13063,6 +13527,15 @@ void show_selection_page()
    }
 
    rsprintf("</td></tr>\n");
+
+   if (getcfg("global", "mirror server", str)) {
+      rsprintf("<tr>\n");
+      rsprintf("<td colspan=13 class=\"seltitle\">\n");
+      rsprintf("<a href=\"?cmd=Synchronize\">%s</a></td>\n",
+               loc("Synchronize all logbooks"));
+      rsprintf("</tr>\n");
+   }
+
 
    phier = get_logbook_hierarchy();
    show_title = 0;
@@ -13194,7 +13667,7 @@ void interprete(char *lbook, char *path)
 \********************************************************************/
 {
    int status, i, j, n, index, lb_index, message_id;
-   char exp[80], list[1000];
+   char exp[80], list[1000], section[256];
    char str[NAME_LENGTH], str2[NAME_LENGTH], enc_pwd[80], file_name[256], command[80],
        ref[256];
    char enc_path[256], dec_path[256], logbook[256], logbook_enc[256];
@@ -13348,6 +13821,13 @@ void interprete(char *lbook, char *path)
          send_file_direct(file_name);
          return;
       }
+
+      /* check for global synchronization */
+      if (equal_ustring(command, "Synchronize")) {
+         synchronize(NULL);
+         return;
+      }
+
    }
 
    /* count logbooks */
@@ -13830,8 +14310,21 @@ void interprete(char *lbook, char *path)
          /* new user */
          if (!save_user_config(lbs, getparam("new_user_name"), TRUE, FALSE))
             return;
-      } else if (!save_admin_config(lbs))       /* save cfg file */
-         return;
+      } else {
+
+         if (isparam("global")) {
+            if (equal_ustring(getparam("global"), "global"))
+               strcpy(section, "global");
+            else
+               sprintf(section, "global %s", getparam("global"));
+         } else
+            strlcpy(section, lbs->name, sizeof(section));
+
+         if (!save_admin_config(lbs, section, _mtext, str)) {   /* save cfg file */
+            show_error(str);
+            return;
+         }
+      }
       if (lbs)
          sprintf(str, "../%s/", lbs->name_enc);
       else
@@ -13898,12 +14391,12 @@ void interprete(char *lbook, char *path)
    }
 
    if (equal_ustring(command, "getmd5")) {
-      show_md5_page(lbs, dec_path);
+      show_md5_page(lbs);
       return;
    }
 
    if (equal_ustring(command, loc("Synchronize"))) {
-      synchronize(lbs, dec_path);
+      synchronize(lbs);
       return;
    }
 
