@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.428  2004/08/04 10:30:36  midas
+   Fixed password file mirror problems
+
    Revision 1.427  2004/08/04 09:24:17  midas
    Removed user[0] in is_admin_user()
 
@@ -8611,10 +8614,56 @@ void remove_crlf(char *buffer)
 {
    char *p;
 
+   /* convert \r\n -> \n */
    p = buffer;
    while ((p = strstr(p, "\r\n")) != NULL) {
       strcpy(p, p + 1);
    }
+}
+
+/*------------------------------------------------------------------*/
+
+void adjust_crlf(char *buffer, int bufsize)
+{
+   char *p;
+
+#ifdef OS_UNIX
+
+   /* convert \r\n -> \n */
+   p = buffer;
+   while ((p = strstr(p, "\r\n")) != NULL) {
+      strcpy(p, p + 1);
+   }
+#else
+
+   char *tmpbuf;
+
+   assert(bufsize);
+   tmpbuf = malloc(bufsize);
+   assert(tmpbuf);
+
+   /* convert \n -> \r\n */
+   p = buffer;
+   while ((p = strstr(p, "\n")) != NULL) {
+      
+      if (p > buffer && *(p-1) == '\r') {
+         p++;
+         continue;
+      }
+
+      if ((int)strlen(buffer)+2 >= bufsize) {
+         free (tmpbuf);
+         return;
+      }
+
+      strlcpy(tmpbuf, p, bufsize);
+      *(p++) = '\r';
+      strlcpy(p, tmpbuf, bufsize - ((int) p - (int) buffer));
+      p++;
+   }
+
+   free(tmpbuf);
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -8664,12 +8713,8 @@ int save_admin_config(char *section, char *buffer, char *error)
       strlcat(p1, buf2, length + strlen(buffer) + 1);
       free(buf2);
    }
-#ifdef OS_UNIX
 
-   /* under unix, convert CRLF to CR */
-   remove_crlf(buf);
-
-#endif
+   adjust_crlf(buf, length + strlen(buffer) + 10);
 
    lseek(fh, 0, SEEK_SET);
    i = write(fh, buf, strlen(buf));
@@ -8697,7 +8742,7 @@ int save_admin_config(char *section, char *buffer, char *error)
 
 int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_value)
 {
-   int fh, i, j, n, length;
+   int fh, i, j, n, length, bufsize;
    char str[NAME_LENGTH], *buf, *buf2, *p1, *p2, *p3;
    char list[MAX_N_LIST][NAME_LENGTH], line[NAME_LENGTH];
 
@@ -8713,7 +8758,8 @@ int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_v
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   buf = malloc(length + strlen(new_value) + 10);
+   bufsize = 2*(length + strlen(new_value) + 10);
+   buf = malloc(bufsize);
    assert(buf);
    read(fh, buf, length);
    buf[length] = 0;
@@ -8783,12 +8829,8 @@ int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_v
       strlcat(p2, buf2, length + strlen(new_value) + 10);
       free(buf2);
    }
-#ifdef OS_UNIX
 
-   /* under unix, convert CRLF to CR */
-   remove_crlf(buf);
-
-#endif
+   adjust_crlf(buf, bufsize);
 
    lseek(fh, 0, SEEK_SET);
    i = write(fh, buf, strlen(buf));
@@ -8877,7 +8919,7 @@ int delete_logbook(LOGBOOK * lbs, char *error)
 
 int rename_logbook(LOGBOOK * lbs, char *new_name)
 {
-   int fh, i, length;
+   int fh, i, length, bufsize;
    char *buf, *buf2, *p1, *p2;
    char str[256], lb_dir[256], old_dir[256], new_dir[256];
 
@@ -8907,7 +8949,8 @@ int rename_logbook(LOGBOOK * lbs, char *new_name)
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   buf = malloc(length + strlen(new_name) + 10);
+   bufsize = 2*(length + strlen(new_name) + 10);
+   buf = malloc(bufsize);
    assert(buf);
    read(fh, buf, length);
    buf[length] = 0;
@@ -8934,12 +8977,7 @@ int rename_logbook(LOGBOOK * lbs, char *new_name)
    strlcat(p1, buf2, length + strlen(new_name) + 1);
    free(buf2);
 
-#ifdef OS_UNIX
-
-   /* under unix, convert CRLF to CR */
-   remove_crlf(buf);
-
-#endif
+   adjust_crlf(buf, bufsize);
 
    lseek(fh, 0, SEEK_SET);
    i = write(fh, buf, strlen(buf));
@@ -8969,7 +9007,7 @@ int rename_logbook(LOGBOOK * lbs, char *new_name)
 
 int create_logbook(LOGBOOK * oldlbs, char *logbook, char *templ)
 {
-   int fh, i, length, templ_length;
+   int fh, i, length, bufsize, templ_length;
    char *buf, *p1, *p2, str[256];
 
    fh = open(config_file, O_RDWR | O_BINARY, 644);
@@ -8987,7 +9025,8 @@ int create_logbook(LOGBOOK * oldlbs, char *logbook, char *templ)
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   buf = malloc(2 * length + 1);
+   bufsize = 2*(2 * length + 1);
+   buf = malloc(bufsize);
    assert(buf);
    read(fh, buf, length);
    buf[length] = 0;
@@ -9031,12 +9070,8 @@ int create_logbook(LOGBOOK * oldlbs, char *logbook, char *templ)
       strncpy(p2, p1, templ_length);
       p2[templ_length] = 0;
    }
-#ifdef OS_UNIX
 
-   /* under unix, convert CRLF to CR */
-   remove_crlf(buf);
-
-#endif
+   adjust_crlf(buf, bufsize);
 
    lseek(fh, 0, SEEK_SET);
    i = write(fh, buf, strlen(buf));
@@ -9067,6 +9102,7 @@ int create_logbook(LOGBOOK * oldlbs, char *logbook, char *templ)
 int save_config(char *buffer, char *error)
 {
    int fh, i;
+   char *buf;
 
    error[0] = 0;
 
@@ -9077,15 +9113,13 @@ int save_config(char *buffer, char *error)
       strcat(error, strerror(errno));
       return 0;
    }
-#ifdef OS_UNIX
 
-   /* under unix, convert CRLF to CR */
-   remove_crlf(buffer);
+   buf = malloc(strlen(buffer)*2);
+   strlcpy(buf, buffer, strlen(buffer)*2);
+   adjust_crlf(buf, strlen(buffer)*2);
 
-#endif
-
-   i = write(fh, buffer, strlen(buffer));
-   if (i < (int) strlen(buffer)) {
+   i = write(fh, buf, strlen(buf));
+   if (i < (int) strlen(buf)) {
       sprintf(error, loc("Cannot write to <b>%s</b>"), config_file);
       strcat(error, ": ");
       strcat(error, strerror(errno));
@@ -11523,7 +11557,7 @@ int adjust_config(char *url)
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   buf = malloc(length + 1000);
+   buf = malloc(2*length + 1000);
    assert(buf);
    read(fh, buf, length);
    buf[length] = 0;
@@ -11577,12 +11611,8 @@ int adjust_config(char *url)
 
       eputs("Option \"URL = xxx\" has been outcommented from config file.");
    }
-#ifdef OS_UNIX
 
-   /* under unix, convert CRLF to CR */
-   remove_crlf(buf);
-
-#endif
+   adjust_crlf(buf, 2*length + 1000);
 
    lseek(fh, 0, SEEK_SET);
    i = write(fh, buf, strlen(buf));
@@ -11608,7 +11638,7 @@ int adjust_config(char *url)
 
 void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
 {
-   char str[256], pwd[256], url[256], *buffer, *p;
+   char str[256], pwd[256], url[256], *buffer, *buf, *p;
    int i, status, version, fh;
 
    error_str[0] = pwd[0] = 0;
@@ -11684,7 +11714,7 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
          if (strstr(buffer, "?wusr=") || strstr(buffer, "?wpwd="))
             eprintf("\nInvalid username or password.");
 
-         if (strstr(p, loc("Please login")) == NULL && strstr(p, "GetPwdFile"))
+         if (strstr(p, loc("Please login")) == NULL && strstr(p, "GetPwdFile") && isparam("unm"))
             eprintf("\nUser \"%s\" has no admin rights on remote server.",
                     getparam("unm"));
 
@@ -11709,24 +11739,27 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
 
 
    getcfg(lbs->name, "Password file", str, sizeof(str));
-   fh = open(str, O_CREAT | O_RDWR, 0644);
+   fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
    if (fh < 0) {
       sprintf(error_str, loc("Cannot open file <b>%s</b>"), str);
       strcat(error_str, ": ");
       strcat(error_str, strerror(errno));
       return;
    }
-#ifdef OS_UNIX
-   /* under unix, convert CRLF to CR */
-   remove_crlf(buffer);
-#endif
 
-   i = write(fh, p, strlen(p));
-   if (i < (int) strlen(p)) {
+   buf = malloc(2*strlen(p));
+   assert(buf);
+   strlcpy(buf, p, 2*strlen(p));
+   adjust_crlf(buf, 2*strlen(p));
+
+   i = write(fh, buf, strlen(buf));
+   if (i < (int) strlen(buf)) {
       sprintf(error_str, loc("Cannot write to <b>%s</b>"), str);
       strcat(error_str, ": ");
       strcat(error_str, strerror(errno));
       close(fh);
+      free(buf);
+      free(buffer);
       return;
    }
 
@@ -11734,6 +11767,7 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
 
    close(fh);
 
+   free(buf);
    free(buffer);
 }
 
@@ -21063,15 +21097,32 @@ int main(int argc, char *argv[])
       if (n > 0) {
          eprintf("\nRetrieve remote password files? [y]/n:  ");
          fgets(str, sizeof(str), stdin);
-         if (str[0] != 'n' && str[0] != 'N') {
-            for (i = n = 0; lb_list[i].name[0]; i++)
+         if (str[0] != 'n' && str[0] != 'N')
+            for (i = n = 0; lb_list[i].name[0]; i++) {
+
+               if (lb_list[i].top_group[0])
+                  setcfg_topgroup(lb_list[i].top_group);
+               else
+                  setcfg_topgroup("");
+               
                if (getcfg(lb_list[i].name, "Password file", file_name, sizeof(file_name))) {
 
                   /* check if this file has not already been retrieved */
-                  for (j = 0; j < i; j++)
+                  for (j = 0; j < i; j++) {
+                     if (lb_list[j].top_group[0])
+                        setcfg_topgroup(lb_list[j].top_group);
+                     else
+                        setcfg_topgroup("");
+
                      if (getcfg(lb_list[j].name, "Password file", str, sizeof(str)) &&
                          stricmp(file_name, str) == 0)
                         break;
+                  }
+
+                  if (lb_list[i].top_group[0])
+                     setcfg_topgroup(lb_list[i].top_group);
+                  else
+                     setcfg_topgroup("");
 
                   if (j == i) {
                      receive_pwdfile(&lb_list[i], clone_url, error_str);
