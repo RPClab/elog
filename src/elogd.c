@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.222  2004/02/02 16:00:01  midas
+   Fixed bug that '<' was not correctly displayed in links
+
    Revision 1.221  2004/01/30 09:50:51  midas
    Added entry counter
 
@@ -4110,7 +4113,7 @@ void rsputs2(const char *str)
          if (strncmp(str + i, list[l], strlen(list[l])) == 0) {
             p = (char *) (str + i + strlen(list[l]));
             i += strlen(list[l]);
-            for (k = 0; *p && strcspn(p, "> ,\t\n\r({[)}]"); k++, i++)
+            for (k = 0; *p && strcspn(p, " ,\t\n\r({[)}]"); k++, i++)
                link[k] = *p++;
             link[k] = 0;
             i--;
@@ -4179,9 +4182,16 @@ void rsputs2(const char *str)
                else
                   sprintf(return_buffer + j, "<a href=\"%s\">elog:%s</a>", link,
                           link_text);
-            } else
-               sprintf(return_buffer + j, "<a href=\"%s%s\">%s%s</a>", list[l], link,
-                       list[l], link_text);
+            } else {
+               sprintf(return_buffer + j, "<a href=\"%s%s\">%s", list[l], link, list[l]);
+               j += strlen(return_buffer + j);
+               strlen_retbuf = j;
+               
+               /* link_text can contain special characters */
+               rsputs2(link_text);
+               j = strlen_retbuf;
+               sprintf(return_buffer + j, "</a>");
+            }
 
             j += strlen(return_buffer + j);
             break;
