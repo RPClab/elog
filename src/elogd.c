@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.530  2005/01/05 09:05:49  midas
+   Fixed non-functioning Cancel button in 'create new logbook'
+
    Revision 1.529  2005/01/04 19:42:52  midas
    Version 2.5.5-4
 
@@ -19396,6 +19399,11 @@ void interprete(char *lbook, char *path)
    }
 
    if (strieq(command, loc("Create new logbook"))) {
+      if (*getparam("tmp") && strieq(getparam("tmp"), "Cancel")) {
+         sprintf(str, "?cmd=%s", loc("Change config file"));
+         redirect(lbs, str);
+         return;
+      }
       show_logbook_new(lbs);
       return;
    }
