@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.124  2003/01/08 10:07:18  midas
+  Issue warning for wrong group syntax in elogd.cfg
+
   Revision 2.123  2003/01/08 09:13:18  midas
   Added colors for group tabs in theme file
 
@@ -3862,7 +3865,10 @@ char   grplist[MAX_N_LIST][NAME_LENGTH];
         lbl = realloc(lbl, (n+1) * sizeof(LBNODE));
       memset(lbl+n, 0, sizeof(LBNODE));
 
-      strlcpy(lbl[n].name, grpname+6, 256);
+      if (strlen(grpname) < 7)
+        strlcpy(lbl[n].name, "Invalid group definition!", 256);
+      else    
+        strlcpy(lbl[n].name, grpname+6, 256);
       m = strbreak(grpmembers, grplist, MAX_N_LIST);
       lbl[n].n_members = m;
 
@@ -3965,7 +3971,7 @@ LBLIST clb, flb, nlb, lbl;
       {
       rsprintf("<tr><td bgcolor=#FFFFFF>\n");
 
-      if (getcfg("global", "main tab", str))
+      if (level == 0 && getcfg("global", "main tab", str))
         rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"background-color:#E0E0E0\">&nbsp;<a href=\"../\">%s</a>&nbsp;</font>&nbsp\n", str);
 
       for (i=0 ; i<n_lb ; i++)
