@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.473  2004/09/18 02:54:06  midas
+   Removed status bar from calendar
+
    Revision 1.472  2004/09/18 02:43:03  midas
    Use single attribute table in edit form
 
@@ -7190,7 +7193,7 @@ void show_date_selector(int day, int month, int year, char *index)
    rsprintf("function opencal(i)\n");
    rsprintf("{\n");
    rsprintf("  window.open(\"cal.html?i=\"+i, \"\",\n");
-   rsprintf("  \"top=280,left=350,width=300,height=195,dependent=yes,menubar=no,");
+   rsprintf("  \"top=280,left=350,width=300,height=195,dependent=yes,menubar=no,status=no,");
    rsprintf("scrollbars=no,location=no,resizable=yes\");\n");
    rsprintf("}\n\n");
 
