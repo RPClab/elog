@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.26  2002/06/19 10:58:57  midas
+  Fixed bug that 'date format = %A...' always produced 'Sunday'
+
   Revision 2.25  2002/06/18 13:15:29  midas
   Version 2.0.1
 
@@ -3707,7 +3710,9 @@ time_t now;
       ts.tm_min  = atoi(date+14);
       ts.tm_sec  = atoi(date+17);
       ts.tm_year = atoi(date+20)-1900;
+      ts.tm_isdst = -1; /* let mktime compute DST */
 
+      mktime(&ts);
       strftime(str, sizeof(str), format, &ts);
       }
     else
@@ -4742,7 +4747,9 @@ FILE *f;
           ts.tm_min  = atoi(date+14);
           ts.tm_sec  = atoi(date+17);
           ts.tm_year = atoi(date+20)-1900;
+          ts.tm_isdst = -1; /* let mktime compute DST */
 
+          mktime(&ts);
           strftime(str, sizeof(str), format, &ts);
           }
         else
@@ -6960,7 +6967,9 @@ BOOL   first;
       ts.tm_min  = atoi(date+14);
       ts.tm_sec  = atoi(date+17);
       ts.tm_year = atoi(date+20)-1900;
+      ts.tm_isdst = -1; /* let mktime compute DST */
 
+      mktime(&ts);
       strftime(str, sizeof(str), format, &ts);
 
       rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>%s:</b></td><td bgcolor=%s>%s\n\n",
