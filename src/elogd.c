@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.468  2004/09/10 14:06:42  midas
+   Fixed bug with select return status
+
    Revision 1.467  2004/09/10 11:21:34  midas
    Version 2.5.4-3
 
@@ -19896,7 +19899,7 @@ void server_loop(void)
       if (_abort)
          break;
 
-      if (status == 0) { // if no HUP signal is received
+      if (status != -1) { // if no HUP signal is received
          if (FD_ISSET(lsock, &readfds)) {
             len = sizeof(acc_addr);
             _sock = accept(lsock, (struct sockaddr *) &acc_addr, &len);
