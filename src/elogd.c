@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.261  2004/02/19 20:27:17  midas
+   Improved synchronization algorithm. Conflicting entries are properly copied if one of them got deleted
+
    Revision 1.260  2004/02/18 18:13:22  midas
    Made 'main tab' work with top level groups
 
@@ -9765,25 +9768,53 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
             }
          }
 
-         /* if message exists only in cache, but not remotely, 
-            it must have been deleted remotely, so remove it locally */
          if (exist_cache && !exist_remote) {
 
-            if (_logging_level > 1)
-               logf(lbs, "MIRROR delete local entry #%d", message_id);
+            /* if message has been changed locally, send it */
+            if (!equal_md5(md5_cache[i_cache].md5_digest,
+                           lbs->el_index[i_msg].md5_digest)) {
 
-            if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
-               el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
-            all_identical = FALSE;
+               if (_logging_level > 1)
+                  logf(lbs, "MIRROR send entry #%d", message_id);
 
-            if (!bcron)
-               rsprintf("ID%d:\t%s\n", message_id, loc("Entry deleted locally"));
+               /* submit local message */
+               if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+                  submit_message(lbs, list[index], message_id, error_str);
+               all_identical = FALSE;
 
-            /* message got deleted from local message list, so redo current index */
-            i_msg--;
+               /* not that submit_message() may have changed attr_list !!! */
 
-            /* mark message non-conflicting */
-            md5_cache[i_cache].message_id = -1;
+               if (error_str[0]) {
+                  if (bcron)
+                     logf(lbs, "Error sending local message: %s", error_str);
+                  else
+                     rsprintf("%s: %s\n", loc("Error sending local message"), error_str);
+               } else if (!bcron)
+                  rsprintf("ID%d:\t%s\n", message_id, loc("Local entry submitted"));
+
+               md5_cache[i_cache].message_id = -1;
+
+            } else {
+            
+               /* if message exists only in cache, but not remotely, 
+                  it must have been deleted remotely, so remove it locally */
+            
+               if (_logging_level > 1)
+                  logf(lbs, "MIRROR delete local entry #%d", message_id);
+
+               if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+                  el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
+               all_identical = FALSE;
+
+               if (!bcron)
+                  rsprintf("ID%d:\t%s\n", message_id, loc("Entry deleted locally"));
+
+               /* message got deleted from local message list, so redo current index */
+               i_msg--;
+
+               /* mark message non-conflicting */
+               md5_cache[i_cache].message_id = -1;
+            }
          }
 
          /* if message does not exist in cache and remotely, 
@@ -9897,36 +9928,64 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 
                } else {
 
-                  /* if message does not exist locally but in cache, delete remote message */
-                  if (_logging_level > 1)
-                     logf(lbs, "MIRROR delete remote entry #%d", message_id);
+                  if (!equal_md5(md5_cache[i_cache].md5_digest, 
+                                 md5_remote[i_remote].md5_digest)) {
+                  
+                     /* if message has changed remotely, receive it */
+                     if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+                        receive_message(lbs, list[index], message_id, error_str, TRUE);
+                     all_identical = FALSE;
 
-                  sprintf(str, "%d?cmd=%s&confirm=%s", message_id, loc("Delete"), loc("Yes"));
-                  combine_url(lbs, list[index], str, url, sizeof(url));
-
-                  all_identical = FALSE;
-                  if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0) {
-                     retrieve_url(url, &buffer);
-
-                     if (strstr(buffer, "Location: ")) {
-                        if (!bcron)
-                           rsprintf("ID%d:\t%s\n", message_id,
-                                    loc("Entry deleted remotely"));
-                     } else {
+                     if (error_str[0]) {
                         if (bcron)
-                           logf(lbs, "%s", loc("Error deleting remote entry"));
-                        else {
-                           if (isparam("debug"))
-                              rsputs(buffer);
-                           rsprintf("%s\n", loc("Error deleting remote entry"));
-                        }
+                           logf(lbs, "Error receiving message: %s", error_str);
+                        else
+                           rsprintf("Error receiving message: %s\n", error_str);
+                     } else if (!bcron) {
+
+                        if (getcfg_topgroup())
+                           rsprintf("<a href=\"../%s/%d\">ID%d:</a>\t", lbs->name_enc,
+                                    message_id, message_id);
+                        else
+                           rsprintf("<a href=\"%s/%d\">ID%d:</a>\t", lbs->name_enc,
+                                    message_id, message_id);
+
+                        rsprintf("%s\n", loc("Remote entry received"));
                      }
 
-                     free(buffer);
-                  } else
-                     rsprintf("ID%d:\t%s\n", message_id, loc("Entry deleted remotely"));
+                  } else {
 
-                  md5_cache[i_cache].message_id = -1;
+                     /* if message does not exist locally but in cache, delete remote message */
+                     if (_logging_level > 1)
+                        logf(lbs, "MIRROR delete remote entry #%d", message_id);
+
+                     sprintf(str, "%d?cmd=%s&confirm=%s", message_id, loc("Delete"), loc("Yes"));
+                     combine_url(lbs, list[index], str, url, sizeof(url));
+
+                     all_identical = FALSE;
+                     if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0) {
+                        retrieve_url(url, &buffer);
+
+                        if (strstr(buffer, "Location: ")) {
+                           if (!bcron)
+                              rsprintf("ID%d:\t%s\n", message_id,
+                                       loc("Entry deleted remotely"));
+                        } else {
+                           if (bcron)
+                              logf(lbs, "%s", loc("Error deleting remote entry"));
+                           else {
+                              if (isparam("debug"))
+                                 rsputs(buffer);
+                              rsprintf("%s\n", loc("Error deleting remote entry"));
+                           }
+                        }
+
+                        free(buffer);
+                     } else
+                        rsprintf("ID%d:\t%s\n", message_id, loc("Entry deleted remotely"));
+
+                     md5_cache[i_cache].message_id = -1;
+                  }
                }
             }
 
