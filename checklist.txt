@@ -1,0 +1,20 @@
+Checklist for new ELOG release
+==============================
+
+On PC810:
+
+- Put all new options in doc/config.html
+- Increse version in elogd.c
+- Do the same in doc/index.html
+- Modify ChangeLog
+- Add release date to ChangeLog
+- c:\elog> cvs commit -m "Version x.x.x" 
+- build xxx
+
+On PC2075:
+
+- cvs update
+- Increse version in elog.spec
+- build x.x.x
+
+Declare new release at freshmeat.
