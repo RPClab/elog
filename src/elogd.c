@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.281  2004/03/08 08:13:09  midas
+   Replaces __TIMESTAMP__ with __DATE__ and __TIME__
+
    Revision 1.280  2004/03/06 11:41:58  midas
    Made preset $date for date attributes working
 
@@ -17207,7 +17210,7 @@ int main(int argc, char *argv[])
    time_t now;
    struct tm *tms;
 
-   printf("elogd %s built %s\n", VERSION, __TIMESTAMP__);
+   printf("elogd %s built %s, %s\n", VERSION, __DATE__, __TIME__);
 
 #ifdef OS_UNIX
    /* save gid/uid to regain later */
