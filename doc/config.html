@@ -206,12 +206,14 @@ name you can get from your email program or your local system administrator.
 <LI><b><code>Logfile = &lt;file&gt;</code></b>
 <br>
 This option specifies a filename which logs all login/logout activities and
-successful user connections for logbooks with user level access.<p>
+successful user connections for logbooks with user level access. The the
+<code><b>logging level</b></code> (see below) is larger than 1, also read and write accesses
+can be logged.<p>
 
 <LI><b><code>Logging level = 1 | 2 | 3</code></b>
 <br>
 Specifies the logging level. The higher this value, the more information
-is logged:<p>
+is logged. Default is <b>2</b>:<p>
 <ul>
 <li><b>1:</b> Log only logins and logouts
 <li><b>2:</b> Log also write accesses
