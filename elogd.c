@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.45  2002/07/23 11:31:33  midas
+  Store encoded user name in 'new' page for expired cookies
+
   Revision 2.44  2002/07/11 08:49:49  midas
   Fixed caching problem in Konqueror
 
@@ -3819,6 +3822,17 @@ time_t now;
   rsprintf("<html><head><title>ELOG</title></head>\n");
   rsprintf("<body><form method=\"POST\" action=\".\" enctype=\"multipart/form-data\">\n");
 
+  /*---- add password in case cookie expires during edit ----*/
+
+  if (getcfg(lbs->name, "Write password", str))
+    rsprintf("<input type=hidden name=\"wpwd\" value=\"%s\">\n", str);
+
+  if (getcfg(lbs->name, "Password file", str))
+    {
+    rsprintf("<input type=hidden name=\"unm\" value=\"%s\">\n", getparam("unm"));
+    rsprintf("<input type=hidden name=\"upwd\" value=\"%s\">\n", getparam("upwd"));
+    }
+
   /*---- title row ----*/
 
   show_standard_title(lbs->name, "", 0);
@@ -7459,11 +7473,12 @@ char  str[256];
 
 /*------------------------------------------------------------------*/
 
-BOOL check_user_password(LOGBOOK *lbs, char *user, char *password, char *redir)
+BOOL get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name)
 {
 char  str[256], line[256], file_name[256], *p;
 FILE  *f;
 
+  password[0] = full_name[0] = 0;
   getcfg(lbs->name, "Password file", str);
 
   if (str[0] == DIR_SEPARATOR || str[1] == ':')
@@ -7477,6 +7492,12 @@ FILE  *f;
   f = fopen(file_name, "r");
   if (f != NULL)
     {
+    if (!user[0])
+      {
+      fclose(f);
+      return TRUE;
+      }
+
     while (!feof(f))
       {
       line[0] = 0;
@@ -7494,32 +7515,45 @@ FILE  *f;
     fclose(f);
 
     /* if user found, check password */
-    if (user[0] && (strcmp(str, user) == 0))
-      {
-      p = line+strlen(str);
-      if (*p)
-        p++;
+    p = line+strlen(user);
+    if (*p)
+      p++;
 
-      strcpy(str, p);
-      if (strchr(str, ':'))
-        *strchr(str, ':') = 0;
+    strcpy(str, p);
+    if (strchr(str, ':'))
+      *strchr(str, ':') = 0;
 
-      if (strcmp(password, str) == 0)
-        {
-        p += strlen(str);
-        if (*p)
-          p++;
-        strcpy(str, p);
-        if (strchr(str, ':'))
-          *strchr(str, ':') = 0;
-        if (strchr(str, '\r'))
-          *strchr(str, '\r') = 0;
-        if (strchr(str, '\n'))
-          *strchr(str, '\n') = 0;
-        setparam("full_name", str);
-        return TRUE;
-        }
-      }
+    strcpy(password, str);
+
+    p += strlen(str);
+    if (*p)
+      p++;
+    strcpy(str, p);
+    if (strchr(str, ':'))
+      *strchr(str, ':') = 0;
+    if (strchr(str, '\r'))
+      *strchr(str, '\r') = 0;
+    if (strchr(str, '\n'))
+      *strchr(str, '\n') = 0;
+
+    strcpy(full_name, str);
+
+    return TRUE;
+    }
+  else
+    return FALSE;
+}
+
+/*------------------------------------------------------------------*/
+
+BOOL check_user_password(LOGBOOK *lbs, char *user, char *password, char *redir)
+{
+char  str[256], upwd[256], full_name[256];
+
+  if (get_user_line(lbs, user, upwd, full_name))
+    {
+    if (user[0] && strcmp(password, upwd) == 0)
+      return TRUE;
 
     /* show login password page */
     show_standard_header("ELOG login", NULL);
@@ -7554,8 +7588,9 @@ FILE  *f;
     }
   else
     {
-    sprintf(line, "Error: Password file \"%s\" not found", file_name);
-    show_error(line);
+    getcfg(lbs->name, "Password file", str);
+    sprintf(full_name, "Error: Password file \"%s\" not found", str);
+    show_error(full_name);
     return FALSE;
     }
 }
@@ -7654,7 +7689,7 @@ void interprete(char *lbook, char *path)
 {
 int     i, n, index, lb_index;
 double  exp;
-char    str[256], enc_pwd[80], file_name[256], data_dir[256];
+char    str[256], str2[256], enc_pwd[80], file_name[256], data_dir[256];
 char    enc_path[256], dec_path[256], logbook[256], logbook_enc[256];
 char    *experiment, *command, *value, *group;
 time_t  now;
@@ -7902,7 +7937,7 @@ LOGBOOK *cur_lb;
       gmt = gmtime(&now);
       strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
 
-      if (getcfg("global", "Password file", str))
+      if (getcfg("global", "Password file", str2))
         {
         rsprintf("Set-Cookie: upwd=%s; path=/; expires=%s\r\n", enc_pwd, str);
         rsprintf("Set-Cookie: unm=%s; path=/; expires=%s\r\n", getparam("uname"), str);
@@ -7928,17 +7963,15 @@ LOGBOOK *cur_lb;
   if (getcfg(logbook, "Password file", str))
     {
     logf("Connection of user \"%s\"",getparam("unm"));
-
-    /* don't check password for submit, since cookie might have been expired during editing */
-    if (!equal_ustring(command, loc("Submit")))
-      if (!check_user_password(cur_lb, getparam("unm"), getparam("upwd"), path))
-        return;
+    if (!check_user_password(cur_lb, getparam("unm"), getparam("upwd"), path))
+      return;
     }
 
   if (equal_ustring(command, loc("New")) ||
       equal_ustring(command, loc("Edit")) ||
       equal_ustring(command, loc("Reply")) ||
-      equal_ustring(command, loc("Delete")))
+      equal_ustring(command, loc("Delete")) ||
+      equal_ustring(command, loc("Submit")))
     {
     sprintf(str, "%s?cmd=%s", path, command);
     if (!check_password(cur_lb, "Write password", getparam("wpwd"), str))
@@ -9255,7 +9288,7 @@ char *cfgbuffer, str[256], *p;
 
 int main(int argc, char *argv[])
 {
-int    i, n, status, fh;
+int    i, n, status, fh, tcp_port_cl;
 int    daemon = FALSE;
 char   read_pwd[80], write_pwd[80], admin_pwd[80], str[80], logbook[256],
        data_dir[256];
@@ -9265,6 +9298,7 @@ struct tm *tms;
   tzset();
 
   read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = 0;
+  tcp_port_cl = 0;
 
   strcpy(cfg_file, "elogd.cfg");
 
@@ -9293,7 +9327,7 @@ struct tm *tms;
       if (i+1 >= argc || argv[i+1][0] == '-')
         goto usage;
       if (argv[i][1] == 'p')
-        tcp_port = atoi(argv[++i]);
+        tcp_port_cl = atoi(argv[++i]);
       else if (argv[i][1] == 'c')
         strcpy(cfg_file, argv[++i]);
       else if (argv[i][1] == 'r')
@@ -9444,8 +9478,13 @@ usage:
     }
 
   /* get port from configuration file */
-  if (getcfg("global", "Port", str))
-    tcp_port = atoi(str);
+  if (tcp_port_cl != 0)
+    tcp_port = tcp_port_cl;
+  else
+    {
+    if (getcfg("global", "Port", str))
+      tcp_port = atoi(str);
+    }
 
   server_loop(tcp_port, daemon);
 
