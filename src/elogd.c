@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.225  2004/02/03 08:38:23  midas
+   Validation now works with attributes containing blanks
+
    Revision 1.224  2004/02/02 21:13:06  midas
    Form validatin now also works for radio buttons
 
@@ -757,6 +760,18 @@ Encode the given string in-place by adding %XX escapes
    }
    *pd = '\0';
    strlcpy(ps, str, size);
+}
+
+/*-------------------------------------------------------------------*/
+
+void btou(char *str)
+/* convert all blanks to underscores in a string */
+{
+   int i;
+
+   for (i = 0; i < (int) strlen(str); i++)
+      if (str[i] == ' ')
+         str[i] = '_';
 }
 
 /*-------------------------------------------------------------------*/
@@ -5833,14 +5848,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 {
    int i, j, n, index, size, width, height, fh, length, first, input_size, input_maxlen,
        format_flags;
-   char str[1000], preset[1000], *p, *pend, star[80], comment[10000], reply_string[256];
-   char list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256];
-   char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
-       orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
-       att[MAX_ATTACHMENTS][256], encoding[80],
-       slist[MAX_N_ATTR + 10][NAME_LENGTH],
-       svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80],
-       class_name[80], condition[256];
+   char str[1000], preset[1000], *p, *pend, star[80], comment[10000], reply_string[256],
+       list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80],
+       attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE], orig_tag[80],
+       reply_tag[MAX_REPLY_TO * 10], att[MAX_ATTACHMENTS][256], encoding[80],
+       slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH],
+       owner[256], locked_by[256], class_value[80], class_name[80], condition[256],
+       ua[NAME_LENGTH];
    time_t now;
    char fl[8][NAME_LENGTH];
    struct tm *pts, ts;
@@ -6037,10 +6051,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    for (i = 0; i < lbs->n_attr; i++)
       if (attr_flags[i] & AF_REQUIRED) {
 
+         /* convert blanks to underscores */
+         strcpy(ua, attr_list[i]);
+         btou(ua);
+
          if (attr_flags[i] & AF_MULTI) {
             rsprintf("  if (\n");
             for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
-               sprintf(str, "%s_%d", attr_list[i], j);
+               sprintf(str, "%s_%d", ua, j);
                rsprintf("    !document.form1.%s.checked", str);
                if (attr_options[i][j + 1][0])
                   rsprintf(" &&\n");
@@ -6048,24 +6066,25 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             rsprintf(") {\n");
             sprintf(str, loc("Please select at least one '%s'"), attr_list[i]);
             rsprintf("    alert(\"%s\");\n", str);
-            rsprintf("    document.form1.%s_0.focus();\n", attr_list[i]);
+            rsprintf("    document.form1.%s_0.focus();\n", ua);
             rsprintf("    return false;\n");
             rsprintf("  }\n");
+
          } else if (attr_flags[i] & AF_RADIO) {
-            rsprintf("  for (var i=0 ; i<document.form1.%s.length ; i++)\n",
-                     attr_list[i]);
-            rsprintf("    if (document.form1.%s[i].checked) { break }\n", attr_list[i]);
-            rsprintf("  if (i == document.form1.%s.length) {\n", attr_list[i]);
+            rsprintf("  for (var i=0 ; i<document.form1.%s.length ; i++)\n", ua);
+            rsprintf("    if (document.form1.%s[i].checked) { break }\n", ua);
+            rsprintf("  if (i == document.form1.%s.length) {\n", ua);
             sprintf(str, loc("Please select a '%s'"), attr_list[i]);
             rsprintf("    alert(\"%s\");\n", str);
-            rsprintf("    document.form1.%s[0].focus();\n", attr_list[i]);
+            rsprintf("    document.form1.%s[0].focus();\n", ua);
             rsprintf("    return false;\n");
             rsprintf("  }\n");
+
          } else {
-            rsprintf("  if (document.form1.%s.value == \"\") {\n", attr_list[i]);
+            rsprintf("  if (document.form1.%s.value == \"\") {\n", ua);
             sprintf(str, loc("Please enter attribute '%s'"), attr_list[i]);
             rsprintf("    alert(\"%s\");\n", str);
-            rsprintf("    document.form1.%s.focus();\n", attr_list[i]);
+            rsprintf("    document.form1.%s.focus();\n", ua);
             rsprintf("    return false;\n");
             rsprintf("  }\n");
          }
@@ -6169,6 +6188,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       input_size = 80;
       input_maxlen = NAME_LENGTH;
       format_flags = 0;
+      strcpy(ua, attr_list[index]);
+      btou(ua);
 
       sprintf(str, "Format %s", attr_list[index]);
       if (getcfg_cond(lbs->name, condition, str, format)) {
@@ -6231,7 +6252,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
          if (attr_flags[index] & AF_MULTI) {
             for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
-               sprintf(str, "%s_%d", attr_list[index], i);
+               sprintf(str, "%s_%d", ua, i);
 
                if (strstr(attrib[index], attr_options[index][i]))
                   rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\">\n", str,
@@ -6239,7 +6260,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             }
          } else if (attr_flags[index] & AF_RADIO) {
             for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
-               sprintf(str, "%s_%d", attr_list[index], i);
+               sprintf(str, "%s_%d", ua, i);
 
                if (strstr(attrib[index], attr_options[index][i]))
                   rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\">\n", str,
@@ -6247,7 +6268,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             }
          } else if (attr_flags[index] & AF_ICON) {
             for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
-               sprintf(str, "%s_%d", attr_list[index], i);
+               sprintf(str, "%s_%d", ua, i);
 
                if (strstr(attrib[index], attr_options[index][i]))
                   rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\">\n", str,
@@ -6255,30 +6276,30 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             }
          } else
             rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\"></td></tr>\n",
-                     attr_list[index], attrib[index]);
+                     ua, attrib[index]);
       } else {
          if (attr_options[index][0][0] == 0) {
             rsprintf
                 ("<td class=\"attribvalue\"><input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n",
-                 input_size, input_maxlen, attr_list[index], attrib[index]);
+                 input_size, input_maxlen, ua, attrib[index]);
          } else {
             if (equal_ustring(attr_options[index][0], "boolean")) {
                /* display checkbox */
                if (atoi(attrib[index]) == 1)
                   rsprintf
                       ("<td class=\"attribvalue\"><input type=checkbox checked name=\"%s\" value=1>\n",
-                       attr_list[index]);
+                       ua);
                else
                   rsprintf
                       ("<td class=\"attribvalue\"><input type=checkbox name=\"%s\" value=1>\n",
-                       attr_list[index]);
+                       ua);
             } else {
                if (attr_flags[index] & AF_MULTI) {
                   /* display multiple check boxes */
                   rsprintf("<td class=\"attribvalue\">\n");
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
-                     sprintf(str, "%s_%d", attr_list[index], i);
+                     sprintf(str, "%s_%d", ua, i);
 
                      if (strstr(attrib[index], attr_options[index][i]))
                         rsprintf
@@ -6302,13 +6323,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      if (strstr(attrib[index], attr_options[index][i]))
                         rsprintf
                             ("<nobr><input type=radio checked name=\"%s\" value=\"%s\">%s</nobr>\n",
-                             attr_list[index], attr_options[index][i],
-                             attr_options[index][i]);
+                             ua, attr_options[index][i], attr_options[index][i]);
                      else
                         rsprintf
                             ("<nobr><input type=radio name=\"%s\" value=\"%s\">%s</nobr>\n",
-                             attr_list[index], attr_options[index][i],
-                             attr_options[index][i]);
+                             ua, attr_options[index][i], attr_options[index][i]);
 
                      if (format_flags & AFF_MULTI_LINE)
                         rsprintf("<br>");
@@ -6323,10 +6342,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      if (strstr(attrib[index], attr_options[index][i]))
                         rsprintf
                             ("<nobr><input type=radio checked name=\"%s\" value=\"%s\">",
-                             attr_list[index], attr_options[index][i]);
+                             ua, attr_options[index][i]);
                      else
                         rsprintf("<nobr><input type=radio name=\"%s\" value=\"%s\">",
-                                 attr_list[index], attr_options[index][i]);
+                                 ua, attr_options[index][i]);
 
                      sprintf(str, "Icon comment %s", attr_options[index][i]);
                      getcfg_cond(lbs->name, condition, str, comment);
@@ -6356,13 +6375,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                      rsprintf
                          ("<input type=\"text\" size=20 maxlength=%d name=\"%s\" value=\"%s\">\n",
-                          input_maxlen, attr_list[index], attrib[index]);
+                          input_maxlen, ua, attrib[index]);
 
 
                   } else {
 
                      /* display drop-down box */
-                     rsprintf("<select name=\"%s\"", attr_list[index]);
+                     rsprintf("<select name=\"%s\"", ua);
 
                      if (is_cond_attr(index))
                         rsprintf(" onChange=\"document.form1.submit()\">\n");
@@ -12145,25 +12164,27 @@ void submit_elog(LOGBOOK * lbs)
        mail_list[MAX_N_LIST][NAME_LENGTH], list[10000],
        attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[MAX_PATH_LENGTH],
        in_reply_to[80], reply_to[MAX_REPLY_TO * 10], user[256], user_email[256],
-       email_notify[256];
-   char mail_param[1000], *mail_to;
-   char att_file[MAX_ATTACHMENTS][256];
-   char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
+       email_notify[256], mail_param[1000], *mail_to, att_file[MAX_ATTACHMENTS][256],
+       slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH],
+       ua[NAME_LENGTH];
    int i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_orig,
        mail_to_size;
    BOOL bedit;
 
    /* check for required attributs */
    missing = 0;
-   for (i = 0; i < lbs->n_attr; i++)
+   for (i = 0; i < lbs->n_attr; i++) {
+      strcpy(ua, attr_list[i]);
+      btou(ua);
+
       if (attr_flags[i] & AF_REQUIRED) {
-         if ((attr_flags[i] & AF_MULTI) == 0 && *getparam(attr_list[i]) == 0) {
+         if ((attr_flags[i] & AF_MULTI) == 0 && *getparam(ua) == 0) {
             missing = 1;
             break;
          }
          if ((attr_flags[i] & AF_MULTI)) {
             for (j = 0; j < MAX_N_LIST; j++) {
-               sprintf(str, "%s_%d", attr_list[i], j);
+               sprintf(str, "%s_%d", ua, j);
                if (getparam(str) && *getparam(str))
                   break;
             }
@@ -12174,6 +12195,7 @@ void submit_elog(LOGBOOK * lbs)
             }
          }
       }
+   }
 
    if (missing) {
       sprintf(error, "<i>");
@@ -12189,14 +12211,16 @@ void submit_elog(LOGBOOK * lbs)
    }
 
    /* check for extended attributs */
-   for (i = 0; i < lbs->n_attr; i++)
-      if (isparam(attr_list[i]) && attr_options[i][0][0]) {
+   for (i = 0; i < lbs->n_attr; i++) {
+      strcpy(ua, attr_list[i]);
+      btou(ua);
+      if (isparam(ua) && attr_options[i][0][0]) {
 
          if (equal_ustring(attr_options[i][0], "boolean")) {
-            if (atoi(attr_list[i]) != 0 && atoi(attr_list[i]) != 1) {
+            if (atoi(getparam(ua)) != 0 && atoi(getparam(ua)) != 1) {
                sprintf(error,
                        loc("Error: Value <b>%s</b> not allowed for boolean attributes"),
-                       getparam(attr_list[i]));
+                       getparam(ua));
                show_error(error);
                return;
             }
@@ -12205,7 +12229,7 @@ void submit_elog(LOGBOOK * lbs)
 
             /* check if option exists */
             for (j = 0; attr_options[i][j][0]; j++)
-               if (equal_ustring(attr_options[i][j], getparam(attr_list[i])))
+               if (equal_ustring(attr_options[i][j], getparam(ua)))
                   break;
 
             /* check if option without {n} exists */
@@ -12214,24 +12238,25 @@ void submit_elog(LOGBOOK * lbs)
                   strcpy(str, attr_options[i][j]);
                   if (strchr(str, '{'))
                      *strchr(str, '{') = 0;
-                  if (equal_ustring(str, getparam(attr_list[i])))
+                  if (equal_ustring(str, getparam(ua)))
                      break;
                }
             }
 
-            if (!attr_options[i][j][0] && *getparam(attr_list[i])) {
+            if (!attr_options[i][j][0] && *getparam(ua)) {
                if (attr_flags[i] & AF_EXTENDABLE) {
-                  if (!add_attribute_option(lbs, attr_list[i], getparam(attr_list[i])))
+                  if (!add_attribute_option(lbs, attr_list[i], getparam(ua)))
                      return;
                } else {
                   sprintf(error, loc("Error: Attribute option <b>%s</b> not existing"),
-                          getparam(attr_list[i]));
+                          getparam(ua));
                   show_error(error);
                   return;
                }
             }
          }
       }
+   }
 
    /* get attachments */
    for (i = 0; i < MAX_ATTACHMENTS; i++) {
@@ -12244,11 +12269,15 @@ void submit_elog(LOGBOOK * lbs)
 
    /* retrieve attributes */
    for (i = 0; i < lbs->n_attr; i++) {
+
+      strcpy(ua, attr_list[i]);
+      btou(ua);
+
       if (attr_flags[i] & AF_MULTI) {
          attrib[i][0] = 0;
          first = 1;
          for (j = 0; j < MAX_N_LIST; j++) {
-            sprintf(str, "%s_%d", attr_list[i], j);
+            sprintf(str, "%s_%d", ua, j);
             if (getparam(str)) {
                if (*getparam(str)) {
                   if (first)
@@ -12264,7 +12293,7 @@ void submit_elog(LOGBOOK * lbs)
                break;
          }
       } else {
-         strlcpy(attrib[i], getparam(attr_list[i]), NAME_LENGTH);
+         strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
 
          /* strip trailing "{...}" */
          if (strchr(attrib[i], '{') && strchr(attrib[i], '}'))
@@ -12366,6 +12395,10 @@ void submit_elog(LOGBOOK * lbs)
             && atoi(str) == 1)) {
          /* go throuch "Email xxx" in configuration file */
          for (index = mindex = 0; index <= lbs->n_attr; index++) {
+
+            strcpy(ua, attr_list[index]);
+            btou(ua);
+
             if (index < lbs->n_attr) {
                strcpy(str, "Email ");
                if (strchr(attr_list[index], ' '))
@@ -12375,7 +12408,7 @@ void submit_elog(LOGBOOK * lbs)
                strcat(str, " ");
 
                if (attr_flags[index] & AF_MULTI) {
-                  sprintf(str2, "%s_%d", attr_list[index], mindex);
+                  sprintf(str2, "%s_%d", ua, mindex);
 
                   mindex++;
                   if (mindex == MAX_N_LIST)
@@ -12383,7 +12416,7 @@ void submit_elog(LOGBOOK * lbs)
                   else
                      index--;   /* repeat this loop */
                } else
-                  strcpy(str2, attr_list[index]);
+                  strcpy(str2, ua);
 
                if (strchr(getparam(str2), ' '))
                   sprintf(str + strlen(str), "\"%s\"", getparam(str2));
