@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.245  2004/02/15 14:06:09  midas
+   Implemented search functionality for AF_DATE
+
    Revision 1.244  2004/02/13 23:27:20  midas
    Restructured code
 
@@ -810,9 +813,12 @@ Encode the given string in-place by adding %XX escapes
    pd = str;
    p = ps;
    while (*p && (int) pd < (int) str + 250) {
-      if (strchr(" %&=#?+", *p) || *p > 127) {
+      if (strchr("%&=#?+", *p) || *p > 127) {
          sprintf(pd, "%%%02X", *p);
          pd += 3;
+         p++;
+      } else if (*p == ' ') {
+         *pd++ = '+';
          p++;
       } else {
          *pd++ = *p++;
@@ -5926,11 +5932,11 @@ BOOL is_cond_attr(index)
 
 /*------------------------------------------------------------------*/
 
-void show_date_selector(int day, int month, int year, int index)
+void show_date_selector(int day, int month, int year, char *index)
 {
    int i;
 
-   rsprintf("<select name=\"m%d\">\n", index);
+   rsprintf("<select name=\"m%s\">\n", index);
 
    rsprintf("<option value=\"\">\n");
    for (i = 0; i < 12; i++)
@@ -5940,7 +5946,7 @@ void show_date_selector(int day, int month, int year, int index)
          rsprintf("<option value=\"%d\">%s\n", i + 1, month_name(i));
    rsprintf("</select>\n");
 
-   rsprintf("<select name=\"d%d\">", index);
+   rsprintf("<select name=\"d%s\">", index);
    rsprintf("<option selected value=\"\">\n");
    for (i = 0; i < 31; i++)
       if (i+1 == day)
@@ -5950,10 +5956,10 @@ void show_date_selector(int day, int month, int year, int index)
    rsprintf("</select>\n");
 
    if (year)
-      rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y%d\" value=\"%d\">",
+      rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y%s\" value=\"%d\">",
                loc("Year"), index, year);
    else
-      rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y%d\">",
+      rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y%s\">",
                loc("Year"), index);
 
    rsprintf("\n<script language=\"javascript\" type=\"text/javascript\">\n");
@@ -5962,12 +5968,12 @@ void show_date_selector(int day, int month, int year, int index)
    rsprintf("{\n");
    rsprintf("  window.open(\"cal.html?i=\"+i, \"\",\n");
    rsprintf
-       ("  \"width=300,height=195,dependent=yes,menubar=no,scrollbars=no,location=no\");\n");
+       ("  \"width=300,height=195,dependent=yes,menubar=no,scrollbars=no,location=no,resizable=yes\");\n");
    rsprintf("}\n\n");
 
    rsprintf("if (navigator.javaEnabled()) {\n");
    rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
-   rsprintf("  document.write(\"<a href=\\\"javascript:opencal(%d)\\\">\");\n", index);
+   rsprintf("  document.write(\"<a href=\\\"javascript:opencal('%s')\\\">\");\n", index);
    rsprintf
        ("  document.writeln(\"<img src=\\\"cal.gif\\\" border=\\\"0\\\" alt=\\\"%s\\\"></a>\");\n",
         loc("Pick a date"));
@@ -6239,6 +6245,26 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             rsprintf("    return false;\n");
             rsprintf("  }\n");
 
+         } else if (attr_flags[i] & AF_DATE) {
+            rsprintf("  if (document.form1.m%d.value == \"\") {\n", i);
+            sprintf(str, loc("Please enter month for attribute '%s'"), attr_list[i]);
+            rsprintf("    alert(\"%s\");\n", str);
+            rsprintf("    document.form1.m%d.focus();\n", i);
+            rsprintf("    return false;\n");
+            rsprintf("  }\n");
+            rsprintf("  if (document.form1.d%d.value == \"\") {\n", i);
+            sprintf(str, loc("Please enter day for attribute '%s'"), attr_list[i]);
+            rsprintf("    alert(\"%s\");\n", str);
+            rsprintf("    document.form1.d%d.focus();\n", i);
+            rsprintf("    return false;\n");
+            rsprintf("  }\n");
+            rsprintf("  if (document.form1.y%d.value == \"\") {\n", i);
+            sprintf(str, loc("Please enter year for attribute '%s'"), attr_list[i]);
+            rsprintf("    alert(\"%s\");\n", str);
+            rsprintf("    document.form1.y%d.focus();\n", i);
+            rsprintf("    return false;\n");
+            rsprintf("  }\n");
+
          } else {
             rsprintf("  if (document.form1.%s.value == \"\") {\n", ua);
             sprintf(str, loc("Please enter attribute '%s'"), attr_list[i]);
@@ -6460,7 +6486,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                }
 
                rsprintf("<td class=\"attribvalue\">");
-               show_date_selector(day, month, year, index);
+               sprintf(str, "%d", index);
+               show_date_selector(day, month, year, str);
                rsprintf("</td></tr>\n");
 
             } else {
@@ -7081,17 +7108,16 @@ void show_find_form(LOGBOOK * lbs)
 
    rsprintf("</td></tr>\n");
 
-
    rsprintf("<tr><td class=\"form2\"><b>%s:</b><br>", loc("Filters"));
 
    /* table for two-column items */
    rsprintf("<table width=\"100%%\" cellspacing=0>\n");
 
-   rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>", loc("Entry date"));
-   rsprintf("<td><table width=\"100%%\" cellspacing=0 border=1>\n");
-   rsprintf("<tr><td>%s:<td>", loc("Start"));
+   rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>", loc("Entry date"));
+   rsprintf("<td class=\"attribvalue\"><table width=\"100%%\" cellspacing=0 border=0>\n");
+   rsprintf("<tr><td width=\"1%%\">%s:<td>", loc("Start"));
     
-   show_date_selector(0, 0, 0, 1);
+   show_date_selector(0, 0, 0, "a");
    
    rsprintf("&nbsp;&nbsp;/&nbsp;&nbsp;%s:&nbsp;", loc("Show last"));
 
@@ -7107,19 +7133,37 @@ void show_find_form(LOGBOOK * lbs)
 
    rsprintf("</td></tr>\n");
 
-   rsprintf("<tr><td>%s:<td>", loc("End"));
+   rsprintf("<tr><td width=\"1%%\">%s:<td>", loc("End"));
 
-   show_date_selector(0, 0, 0, 2);
+   show_date_selector(0, 0, 0, "b");
 
    rsprintf("</td></tr></table></td></tr>\n");
 
    for (i = 0; i < lbs->n_attr; i++) {
-      rsprintf("<tr><td nowrap>%s:</td>", attr_list[i]);
-      rsprintf("<td>");
+      rsprintf("<tr><td class=\"attribname\" nowrap>%s:</td>", attr_list[i]);
+      rsprintf("<td class=\"attribvalue\">");
       if (attr_options[i][0][0] == 0) {
-         rsprintf("<input type=\"text\" size=\"30\" maxlength=\"80\" name=\"%s\">\n",
-                  attr_list[i]);
-         rsprintf("<i>%s</i>\n", loc("(case insensitive substring)"));
+
+         if (attr_flags[i] & AF_DATE) {
+         
+            rsprintf("<table width=\"100%%\" cellspacing=0 border=0>\n");
+            rsprintf("<tr><td width=\"1%%\">%s:<td>", loc("Start"));
+            sprintf(str, "%da", i);
+            show_date_selector(0, 0, 0, str);
+
+            rsprintf("</td></tr>\n");
+            rsprintf("<tr><td width=\"1%%\">%s:<td>", loc("End"));
+            sprintf(str, "%db", i);
+            show_date_selector(0, 0, 0, str);
+            rsprintf("</td></tr></table>\n");
+
+         } else {
+            
+            rsprintf("<input type=\"text\" size=\"30\" maxlength=\"80\" name=\"%s\">\n",
+                     attr_list[i]);
+            rsprintf("<i>%s</i>\n", loc("(case insensitive substring)"));
+         }
+
       } else {
          if (strieq(attr_options[i][0], "boolean"))
             rsprintf("<input type=checkbox name=\"%s\" value=1>\n", attr_list[i]);
@@ -7161,11 +7205,11 @@ void show_find_form(LOGBOOK * lbs)
       rsprintf("</td></tr>\n");
    }
 
-   rsprintf("<tr><td>%s:</td>", loc("Text"));
-   rsprintf("<td><input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\">\n");
+   rsprintf("<tr><td class=\"attribname\">%s:</td>", loc("Text"));
+   rsprintf("<td class=\"attribvalue\"><input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\">\n");
    rsprintf("<i>%s</i></td></tr>\n", loc("(case insensitive substring)"));
 
-   rsprintf("<tr><td><td><input type=checkbox name=sall value=1>%s</td></tr>\n",
+   rsprintf("<tr><td><td class=\"attribvalue\"><input type=checkbox name=sall value=1>%s</td></tr>\n",
             loc("Search text also in attributes"));
 
    rsprintf("</table></td></tr></table>\n");
@@ -10703,8 +10747,8 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, int n_page, BOOL to
                        BOOL mode_commands, BOOL threaded)
 {
    int cur_exp, n, i, j, index;
-   char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH];
-   char list[MAX_N_LIST][NAME_LENGTH], option[NAME_LENGTH];
+   char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH],
+    list[MAX_N_LIST][NAME_LENGTH], option[NAME_LENGTH];
 
    rsprintf("<tr><td class=\"menuframe\">\n");
    rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
@@ -10785,32 +10829,14 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, int n_page, BOOL to
 
             rsprintf("<option value=\"_all_\">%s\n", loc("All entries"));
 
-            if (i == 1)
-               rsprintf("<option selected value=1>%s\n", loc("Day"));
-            else
-               rsprintf("<option value=1>%s\n", loc("Day"));
-            if (i == 7)
-               rsprintf("<option selected value=7>%s\n", loc("Week"));
-            else
-               rsprintf("<option value=7>%s\n", loc("Week"));
-            if (i == 31)
-               rsprintf("<option selected value=31>%s\n", loc("Month"));
-            else
-               rsprintf("<option value=31>%s\n", loc("Month"));
-            if (i == 92)
-               rsprintf("<option selected value=92>3 %s\n", loc("Months"));
-            else
-               rsprintf("<option value=92>3 %s\n", loc("Months"));
-            if (i == 182)
-               rsprintf("<option selected value=182>6 %s\n", loc("Months"));
-            else
-               rsprintf("<option value=182>6 %s\n", loc("Months"));
-            if (i == 364)
-               rsprintf("<option selected value=364>%s\n", loc("Year"));
-            else
-               rsprintf("<option value=364>%s\n", loc("Year"));
+            rsprintf("<option %s value=1>%s\n", i == 1 ? "selected" : "", loc("Day"));
+            rsprintf("<option %s value=7>%s\n", i == 7 ? "selected" : "", loc("Week"));
+            rsprintf("<option %s value=31>%s\n", i == 31 ? "selected" : "", loc("Month"));
+            rsprintf("<option %s value=92>3 %s\n", i == 92 ? "selected" : "", loc("Months"));
+            rsprintf("<option %s value=182>6 %s\n", i == 182 ? "selected" : "", loc("Months"));
+            rsprintf("<option %s value=364>%s\n", i == 364 ? "selected" : "", loc("Year"));
 
-            rsprintf("</select> \n");
+            rsprintf("</select>\n");
          } else {
             rsprintf("<input type=submit value=\"%s:\">&nbsp;\n", list[index]);
 
@@ -10819,9 +10845,37 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, int n_page, BOOL to
                   break;
 
             if (attr_options[i][0][0] == 0) {
-               rsprintf
-                   ("<input type=text onChange=\"document.form1.submit()\" name=\"%s\" value=\"%s\">\n",
-                    list[index], getparam(list[index]));
+            
+               if (attr_flags[i] & AF_DATE) {
+
+                  rsprintf("<select name=\"%s\" onChange=\"document.form1.submit()\">\n",
+                           list[index]);
+
+                  rsprintf("<option value=\"_all_\">%s\n", loc("All entries"));
+                  i = atoi(getparam(list[index]));
+
+                  rsprintf("<option %s value=364>%s %s\n", i == 364 ? "selected" : "", loc("Next"), loc("Year"));
+                  rsprintf("<option %s value=182>%s 6 %s\n", i == 182 ? "selected" : "", loc("Next"), loc("Months"));
+                  rsprintf("<option %s value=92>%s 3 %s\n", i == 92 ? "selected" : "", loc("Next"), loc("Months"));
+                  rsprintf("<option %s value=31>%s %s\n", i == 31 ? "selected" : "", loc("Next"), loc("Month"));
+                  rsprintf("<option %s value=7>%s %s\n", i == 7 ? "selected" : "", loc("Next"), loc("Week"));
+                  rsprintf("<option %s value=1>%s %s\n", i == 1 ? "selected" : "", loc("Next"), loc("Day"));
+
+                  rsprintf("<option %s value=-1>%s %s\n", i == -1 ? "selected" : "", loc("Last"), loc("Day"));
+                  rsprintf("<option %s value=-7>%s %s\n", i == -7 ? "selected" : "", loc("Last"), loc("Week"));
+                  rsprintf("<option %s value=-31>%s %s\n", i == -31 ? "selected" : "", loc("Last"), loc("Month"));
+                  rsprintf("<option %s value=-92>%s 3 %s\n", i == -92 ? "selected" : "", loc("Last"), loc("Months"));
+                  rsprintf("<option %s value=-182>%s 6 %s\n", i == -182 ? "selected" : "", loc("Last"), loc("Months"));
+                  rsprintf("<option %s value=-364>%s %s\n", i == -364 ? "selected" : "", loc("Last"), loc("Year"));
+
+                  rsprintf("</select>\n");
+               }
+
+               else {
+                 rsprintf("<input type=text onChange=\"document.form1.submit()\"");
+                 rsprintf(" name=\"%s\" value=\"%s\">\n",
+                           list[index], getparam(list[index]));
+               }
             } else {
                rsprintf("<select name=\"%s\" onChange=\"document.form1.submit()\">\n",
                         list[index]);
@@ -11035,6 +11089,87 @@ void show_select_navigation(LOGBOOK * lbs)
 
 /*------------------------------------------------------------------*/
 
+time_t retrieve_date(char *index, BOOL bstart)
+{
+   int year, month, day, current_year, current_month, current_day;
+   char pm[10], py[10], pd[10], str[NAME_LENGTH];
+   struct tm tms;
+   time_t ltime;
+
+   sprintf(pm, "m%s", index);
+   sprintf(py, "y%s", index);
+   sprintf(pd, "d%s", index);
+
+   time(&ltime);
+   memcpy(&tms, localtime(&ltime), sizeof(tms));
+   current_year = tms.tm_year + 1900;
+   current_month = tms.tm_mon + 1;
+   current_day = tms.tm_mday;
+
+   if (!*getparam(pm) && !*getparam(py) && !*getparam(pd)) 
+     return 0;
+   
+   /* if year not given, use current year */
+   if (!*getparam(py))
+      year = current_year;
+   else
+      year = atoi(getparam(py));
+   if (year < 1970) {
+      sprintf(str, "Error: Year %s out of range", getparam(py));
+      show_error(str);
+      return -1;
+   }
+
+   /* if month not given, use current month */
+   if (*getparam(pm)) {
+      month = atoi(getparam(pm));
+   } else
+      month = current_month;
+
+   if (*getparam(pd))
+      day = atoi(getparam(pd));
+   else {
+      /* if day not given, use 1 if start date*/
+      if (bstart)
+         day = 1;
+      else {
+         /* use last day of month */
+         memset(&tms, 0, sizeof(struct tm));
+         tms.tm_year = year - 1900;
+         tms.tm_mon = month - 1 + 1;
+         tms.tm_mday = 1;
+         tms.tm_hour = 12;
+
+         if (tms.tm_year < 90)
+            tms.tm_year += 100;
+         ltime = mktime(&tms);
+         ltime -= 3600 * 24;
+         memcpy(&tms, localtime(&ltime), sizeof(struct tm));
+         day = tms.tm_mday;
+      }
+
+   }
+
+   memset(&tms, 0, sizeof(struct tm));
+   tms.tm_year = year - 1900;
+   tms.tm_mon = month - 1;
+   tms.tm_mday = day;
+   tms.tm_hour = 0;
+
+   if (tms.tm_year < 90)
+      tms.tm_year += 100;
+
+   ltime = mktime(&tms);
+
+   if (!bstart)
+      /* end time is first second of next day */
+      ltime += 3600 * 24;
+
+   return ltime;
+}
+
+/*------------------------------------------------------------------*/
+
 void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 {
    int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line;
@@ -11043,13 +11178,12 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
        n_page, i_start, i_stop, in_reply_to_id;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH],
        list[10000], *text, *text1, *text2, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
-       attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256];
-   char str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH];
-   char mode[80];
-   char menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH];
+       attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
+       str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH], mode[80],
+       menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH];
    char *p, *pt, *pt1, *pt2;
    BOOL show_attachments, threaded, csv, mode_commands, expand, filtering, disp_filter;
-   time_t ltime, ltime_start, ltime_end, now;
+   time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2;
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
@@ -11082,8 +11216,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    }
 
    /* redirect "go" command */
-   if (isparam("lastcmd"))      //## and not copy to / move to / delete ...
-   {
+   if (isparam("lastcmd")) {     //## and not copy to / move to / delete ...
+
       strlcpy(str, getparam("lastcmd"), sizeof(str));
       url_decode(str);
 
@@ -11118,7 +11252,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    for (i = 0; i < MAX_N_ATTR; i++)
       if (strieq(getparam(attr_list[i]), "_all_")) {
          strlcpy(str, _cmdline, sizeof(str));
-         subst_param(str, sizeof(str), attr_list[i], "");
+         strcpy(param, attr_list[i]);
+         url_encode(param, sizeof(param));
+         subst_param(str, sizeof(str), param, "");
          redirect(lbs, str);
          return;
       }
@@ -11177,93 +11313,29 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    ltime_end = ltime_start = 0;
 
    if (!past_n && !last_n) {
-      if (*getparam("m1") || *getparam("y1") || *getparam("d1")) {
-         /* if year not given, use current year */
-         if (!*getparam("y1"))
-            y1 = current_year;
-         else
-            y1 = atoi(getparam("y1"));
-         if (y1 < 1970 || y1 > current_year) {
-            sprintf(str, "Error: Year %s out of range", getparam("y1"));
-            show_error(str);
-            return;
-         }
 
-         /* if month not given, use current month */
-         if (*getparam("m1")) {
-            m1 = atoi(getparam("m1"));
-         } else
-            m1 = current_month;
+      ltime_start = retrieve_date("a", TRUE);
+      if (ltime_start < 0)
+         return;
 
-         /* if day not given, use 1 */
-         if (*getparam("d1"))
-            d1 = atoi(getparam("d1"));
-         else
-            d1 = 1;
-
-         memset(&tms, 0, sizeof(struct tm));
-         tms.tm_year = y1 - 1900;
-         tms.tm_mon = m1 - 1;
-         tms.tm_mday = d1;
-         tms.tm_hour = 0;
-
-         if (tms.tm_year < 90)
-            tms.tm_year += 100;
-         ltime_start = mktime(&tms);
+      if (ltime_start) {
+         memcpy(&tms, localtime(&ltime_start), sizeof(struct tm));
+         y1 = tms.tm_year + 1900;
+         m1 = tms.tm_mon + 1;
+         d1 = tms.tm_mday;
       }
 
-      if (*getparam("m2") || *getparam("y2") || *getparam("d2")) {
-         /* if year not give, use current year */
-         if (*getparam("y2"))
-            y2 = atoi(getparam("y2"));
-         else
-            y2 = current_year;
+      ltime_end = retrieve_date("b", FALSE);
+      if (ltime_end < 0)
+         return;
 
-         if (y2 < 1970 || y2 > current_year) {
-            sprintf(date, "%d", y2);
-            sprintf(str, "Error: Year %s out of range", date);
+      if (ltime_end) {
+
+         if (ltime_end <= ltime_start) {
+            sprintf(str, "Error: Start date after end date");
             show_error(str);
             return;
          }
-
-         /* if month not given, use current month */
-         if (*getparam("m2")) {
-            m2 = atoi(getparam("m2"));
-         } else
-            m2 = current_month;
-
-         /* if day not given, use last day of month */
-         if (*getparam("d2"))
-            d2 = atoi(getparam("d2"));
-         else {
-            memset(&tms, 0, sizeof(struct tm));
-            tms.tm_year = y2 - 1900;
-            tms.tm_mon = m2 - 1 + 1;
-            tms.tm_mday = 1;
-            tms.tm_hour = 12;
-
-            if (tms.tm_year < 90)
-               tms.tm_year += 100;
-            ltime = mktime(&tms);
-            ltime -= 3600 * 24;
-            memcpy(&tms, localtime(&ltime), sizeof(struct tm));
-            d2 = tms.tm_mday;
-         }
-
-         memset(&tms, 0, sizeof(struct tm));
-         tms.tm_year = y2 - 1900;
-         tms.tm_mon = m2 - 1;
-         tms.tm_mday = d2;
-         tms.tm_hour = 0;
-         tms.tm_min = 0;
-         tms.tm_sec = 0;
-
-         if (tms.tm_year < 90)
-            tms.tm_year += 100;
-         ltime_end = mktime(&tms);
-
-         /* end time is first second of next day */
-         ltime_end += 3600 * 24;
 
          memcpy(&tms, localtime(&ltime_end), sizeof(struct tm));
          y2 = tms.tm_year + 1900;
@@ -11375,6 +11447,15 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       if (*getparam(attr_list[i]))
          break;
 
+      if (attr_flags[i] & AF_DATE) {
+         sprintf(str, "%da", i);
+         if (retrieve_date(str, TRUE))
+            break;
+         sprintf(str, "%db", i);
+         if (retrieve_date(str, TRUE))
+            break;
+      }
+
       /* check if sort by attribute */
       if (strieq(getparam("sort"), attr_list[i])
           || strieq(getparam("rsort"), attr_list[i]))
@@ -11417,24 +11498,48 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
       for (i = 0; i < lbs->n_attr; i++) {
          if (*getparam(attr_list[i])) {
-            strcpy(str, getparam(attr_list[i]));
 
-            /* if value starts with '$', substitute it */
-            if (str[0] == '$') {
-               j = build_subst_list(lbs, slist, svalue, attrib);
-               strsubst(str, slist, svalue, j);
-               setparam(attr_list[i], str);
+            if (attr_flags[i] & AF_DATE) {
+               ltime = atoi(getparam(attr_list[i]));
+
+               /* today 12h noon */
+               time(&now);
+               memcpy(&tms, localtime(&now), sizeof(struct tm));
+               tms.tm_hour = 12;
+               tms.tm_min = 0;
+               tms.tm_sec = 0;
+               now = mktime(&tms);
+
+               /* negative i: last [i] days */
+               if (ltime < 0)
+                  if (atoi(attrib[i]) < now + ltime*3600*24 || atoi(attrib[i]) > now)
+                     break;
+
+               /* positive i: next [i] days */
+               if (ltime > 0)
+                  if (atoi(attrib[i]) > now + ltime*3600*24 || atoi(attrib[i]) < now)
+                     break;
+
+            } else {
+               strcpy(str, getparam(attr_list[i]));
+
+               /* if value starts with '$', substitute it */
+               if (str[0] == '$') {
+                  j = build_subst_list(lbs, slist, svalue, attrib);
+                  strsubst(str, slist, svalue, j);
+                  setparam(attr_list[i], str);
+               }
+
+               for (j = 0; j < (int) strlen(str); j++)
+                  str[j] = toupper(str[j]);
+               str[j] = 0;
+               for (j = 0; j < (int) strlen(attrib[i]); j++)
+                  text1[j] = toupper(attrib[i][j]);
+               text1[j] = 0;
+
+               if (strstr(text1, str) == NULL)
+                  break;
             }
-
-            for (j = 0; j < (int) strlen(str); j++)
-               str[j] = toupper(str[j]);
-            str[j] = 0;
-            for (j = 0; j < (int) strlen(attrib[i]); j++)
-               text1[j] = toupper(attrib[i][j]);
-            text1[j] = 0;
-
-            if (strstr(text1, str) == NULL)
-               break;
          }
       }
       if (i < lbs->n_attr) {
@@ -11442,6 +11547,26 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          continue;
       }
 
+      /* apply filter for AF_DATE attributes */
+      if (filtering)
+         for (i = 0; i < lbs->n_attr; i++) 
+            if (attr_flags[i] & AF_DATE) {
+
+               sprintf(str, "%da", i);
+               ltime = retrieve_date(str, TRUE);
+               if (ltime > 0 && atoi(attrib[i]) > 0 && atoi(attrib[i]) < ltime) {
+                  msg_list[index].lbs = NULL;
+                  continue;
+               }
+               
+               sprintf(str, "%db", i);
+               ltime = retrieve_date(str, FALSE);
+               if (ltime > 0 && atoi(attrib[i]) > ltime) {
+                  msg_list[index].lbs = NULL;
+                  continue;
+               }
+            }
+               
       if (*getparam("subtext")) {
          strcpy(str, getparam("subtext"));
          for (i = 0; i < (int) strlen(str); i++)
@@ -11767,20 +11892,31 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
       /*---- display filters ----*/
 
-      disp_filter = *getparam("m1") || *getparam("y1") || *getparam("d1")
-          || *getparam("m2")
-          || *getparam("y2") || *getparam("d2")
+      disp_filter = *getparam("ma") || *getparam("ya") || *getparam("da")
+          || *getparam("mb") || *getparam("yb") || *getparam("db")
           || *getparam("subtext");
 
       for (i = 0; i < lbs->n_attr; i++)
-         if (*getparam(attr_list[i]))
+         if (*getparam(attr_list[i]) && (attr_flags[i] & AF_DATE) == 0) 
             disp_filter = TRUE;
+
+      for (i = 0; i < lbs->n_attr; i++)
+         if (attr_flags[i] & AF_DATE) {
+            sprintf(str, "%da", i);
+            ltime = retrieve_date(str, TRUE);
+            if (ltime > 0)
+               disp_filter = TRUE;
+            sprintf(str, "%db", i);
+            ltime = retrieve_date(str, FALSE);
+            if (ltime > 0)
+               disp_filter = TRUE;
+         }
 
       if (disp_filter) {
          rsprintf("<tr><td class=\"listframe\">\n");
          rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
 
-         if (*getparam("m1") || *getparam("y1") || *getparam("d1")) {
+         if (*getparam("ma") || *getparam("ya") || *getparam("da")) {
 
 
             memset(&tms, 0, sizeof(struct tm));
@@ -11798,7 +11934,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
             rsprintf("<td class=\"attribvalue\">%s</td></tr>", str);
          }
 
-         if (*getparam("m2") || *getparam("y2") || *getparam("d2")) {
+         if (*getparam("mb") || *getparam("yb") || *getparam("db")) {
             /* calculate previous day */
             memset(&tms, 0, sizeof(struct tm));
             tms.tm_year = y2 - 1900;
@@ -11819,7 +11955,37 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          }
 
          for (i = 0; i < lbs->n_attr; i++) {
-            if (*getparam(attr_list[i])) {
+            if (attr_flags[i] & AF_DATE) {
+
+               sprintf(str, "%da", i);
+               ltime1 = retrieve_date(str, TRUE);
+               sprintf(str, "%db", i);
+               ltime2 = retrieve_date(str, TRUE);
+
+               if (ltime1 > 0 || ltime2 > 0) {
+                  rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>",
+                           attr_list[i]);
+                  rsprintf("<td class=\"attribvalue\">");
+                  if (ltime1) {
+                     memcpy(&tms, localtime(&ltime1), sizeof(struct tm));
+                     strftime(str, sizeof(str), "%#x", &tms);
+                     if (ltime2 > 0)
+                        rsprintf("%s %s", loc("From"), str);
+                     else
+                        rsprintf("%s %s", loc("After"), str);
+                  }
+                  if (ltime2) {
+                     memcpy(&tms, localtime(&ltime2), sizeof(struct tm));
+                     strftime(str, sizeof(str), "%#x", &tms);
+                     if (ltime1 > 0)
+                        rsprintf(" %s %s", loc("to"), str);
+                     else
+                        rsprintf("%s %s", loc("Before"), str);
+                  }
+                  rsprintf("</td></tr>", comment);
+               }
+
+            } else if (*getparam(attr_list[i])) {
                comment[0] = 0;
                if (attr_flags[i] & AF_ICON) {
                   sprintf(str, "Icon comment %s", getparam(attr_list[i]));
@@ -12562,14 +12728,18 @@ void submit_elog(LOGBOOK * lbs)
          sprintf(str, "d%d", i);
          day = atoi(getparam(str));
 
-         memset(&tms, 0, sizeof(struct tm));
-         tms.tm_year = year - 1900;
-         tms.tm_mon = month - 1;
-         tms.tm_mday = day;
-         tms.tm_hour = 12;
+         if (month == 0 || day == 0)
+            strcpy(attrib[i], "");
+         else {
+            memset(&tms, 0, sizeof(struct tm));
+            tms.tm_year = year - 1900;
+            tms.tm_mon = month - 1;
+            tms.tm_mday = day;
+            tms.tm_hour = 12;
 
-         ltime = mktime(&tms);
-         sprintf(attrib[i], "%d", ltime);
+            ltime = mktime(&tms);
+            sprintf(attrib[i], "%d", ltime);
+         }
 
       } else {
          strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
@@ -14494,10 +14664,10 @@ void show_day(char *css_class, char *day)
 
 void show_calendar(LOGBOOK * lbs)
 {
-   int i, j, index, cur_mon, cur_day, cur_year, today_day, today_mon, today_year;
+   int i, j, cur_mon, cur_day, cur_year, today_day, today_mon, today_year;
    time_t now, stime;
    struct tm *ts;
-   char str[256];
+   char str[256], index[10];
 
    time(&now);
    ts = localtime(&now);
@@ -14519,20 +14689,21 @@ void show_calendar(LOGBOOK * lbs)
       cur_year = ts->tm_year + 1900;
    }
    if (isparam("i"))
-      index = atoi(getparam("i"));
+      strcpy(index, getparam("i"));
    else
-      index = 1;
+      strcpy(index, "1");
 
    show_html_header(lbs, FALSE, loc("Calendar"), TRUE);
    rsprintf("<body class=\"calwindow\"><form name=form1 method=\"GET\" action=\"\">\n");
+   rsprintf("<input type=hidden name=\"i\" value=\"%s\">\n", index);
    rsprintf("<input type=hidden name=\"y\" value=\"%d\">\n", cur_year);
 
    rsprintf("<script language=\"JavaScript\">\n\n");
    rsprintf("function submit_day(day)\n");
    rsprintf("{\n");
-   rsprintf("  opener.document.form1.d%d.value = day;\n", index, cur_year);
-   rsprintf("  opener.document.form1.m%d.value = \"%d\";\n", index, cur_mon);
-   rsprintf("  opener.document.form1.y%d.value = \"%d\";\n", index, cur_year);
+   rsprintf("  opener.document.form1.d%s.value = day;\n", index, cur_year);
+   rsprintf("  opener.document.form1.m%s.value = \"%d\";\n", index, cur_mon);
+   rsprintf("  opener.document.form1.y%s.value = \"%d\";\n", index, cur_year);
    rsprintf("  window.close();\n");
    rsprintf("}\n");
    rsprintf("</script>\n\n");
@@ -14550,13 +14721,13 @@ void show_calendar(LOGBOOK * lbs)
 
    /* link to previous year */
    rsprintf("&nbsp;&nbsp;");
-   rsprintf("<a href=\"?i=%d&m=%d&y=%d\">&lt;</a>", index, cur_mon, cur_year - 1);
+   rsprintf("<a href=\"?i=%s&m=%d&y=%d\">&lt;</a>", index, cur_mon, cur_year - 1);
 
    /* current year */
    rsprintf("&nbsp;%d&nbsp;", cur_year);
 
    /* link to next year */
-   rsprintf("<a href=\"?i=%d&m=%d&y=%d\">&gt;</a>", index, cur_mon, cur_year + 1);
+   rsprintf("<a href=\"?i=%s&m=%d&y=%d\">&gt;</a>", index, cur_mon, cur_year + 1);
 
    /* go to first day of month */
    ts->tm_mday = 1;
