@@ -77,7 +77,6 @@ Start date = Anfangsdatum
 End date = Enddatum
 Year = Jahr
 Text = Text
-(case insensitive substring) = (Teilzeichenkette Großschreibung ignorieren)
 Search all logbooks = Alle Logbücher durchsuchen
 Last %d days = Letzte %d Tage
 Last %d entries = Letzte %d Einträge
@@ -325,19 +324,17 @@ You can "steal" the lock by editing this entry = Diese Sperre kann "gestohlen" w
 Several logbooks groups are defined on this host = Mehrere Logbuch-Gruppen sind auf diesem Computer eingerichtet
 Please select one to list the logbooks in that group = Bitte eine auswählen, um die Logbücher in dieser Gruppe anzuzeigen
 No logbook defined on this server = Auf diesem Computer ist kein Logbuch eingerichtet
-
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Goto ELOG home page = 
-Please enter "%s" = 
-Change config file = 
-Please check that it exists and elogd has write access and disk is not full = 
-Show = 
-Hide = 
-Hide all = 
-Show all = 
-This logbook requires authentication = 
-Attachment file <b>"%s"</b> empty or not found = 
-Please increase <b>"Max content length"</b> in config file = 
+Goto ELOG home page = Zur ELOG Home Page
+Please enter "%s" = Bitte "%s" eingeben
+Change config file = Konfigurationsdatei ändern
+Please check that it exists and elogd has write access and disk is not full = Bitte überprüfen ob es existiert, ob elog Schreibzugriff hat und ob Festplatte nicht voll ist
+Show = Anzeigen
+Hide = Verstecken
+Hide all = Alle verstecken
+Show all = Alle anzeigen
+This logbook requires authentication = Dieses Logbuch erfordert Authentifizierung
+Attachment file <b>"%s"</b> empty or not found = Datei <b>"%s"</b> ist leer oder nicht vorhanden
+Please increase <b>"Max content length"</b> in config file = Bitte <b>"Max content length"</b> in Konfigurationsdatei erhöhen
+Text fields may contain regular expressions = Texteingabefelder können Reguläre Ausdrücke enthalten
+Case sensitive = Großschrteibung beachten
+List = Liste

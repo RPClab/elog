@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.507  2004/11/03 10:01:48  midas
+   Version 2.5.5
+
    Revision 1.506  2004/11/01 12:26:33  midas
    Replaced 'Back' by 'List' on single entry display page
 
@@ -71,7 +74,6 @@
 
    Revision 1.485  2004/09/24 20:40:25  midas
    Added cvs_revision
-
 
    Revision 1.483  2004/09/24 16:07:07  midas
    Display first/previous/next/last directly as link if first.gif is missing
@@ -146,7 +148,7 @@
    Added more debugging info
 
    Revision 1.459  2004/08/11 14:03:35  midas
-   Implemented possibility to server .html files through elog
+   Implemented possibility to serve .html files through elog
 
    Revision 1.458  2004/08/11 06:41:35  midas
    Release 2.5.4-2
@@ -630,7 +632,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.4-6"
+#define VERSION "2.5.5"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -4520,7 +4522,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
    strlcat(message, "\n", TEXT_SIZE + 100);
 
    n = write(fh, message, strlen(message));
-   if (n != (int)strlen(message)) {
+   if (n != (int) strlen(message)) {
       if (tail_size > 0)
          xfree(buffer);
       close(fh);
@@ -5158,10 +5160,8 @@ int is_ascii(char *file_name)
 
 int is_image(char *att)
 {
-   return (stristr(att, ".GIF")  != NULL) ||
-          (stristr(att, ".JPG")  != NULL) || 
-          (stristr(att, ".JPEG") != NULL) || 
-          (stristr(att, ".PNG")  != NULL) ;
+   return (stristr(att, ".GIF") != NULL) ||
+       (stristr(att, ".JPG") != NULL) || (stristr(att, ".JPEG") != NULL) || (stristr(att, ".PNG") != NULL);
 }
 
 /*------------------------------------------------------------------*/
@@ -6724,7 +6724,7 @@ void send_file_direct(char *file_name)
             rsprintf("Content-Type: %s;charset=%s\r\n", filetype[i].type, charset);
          else
             rsprintf("Content-Type: %s\r\n", filetype[i].type);
-      }  else if (is_ascii(file_name))
+      } else if (is_ascii(file_name))
          rsprintf("Content-Type: text/plain;charset=%s\r\n", charset);
       else
          rsprintf("Content-Type: application/octet-stream;charset=%s\r\n", charset);
@@ -8657,7 +8657,8 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf("</td></tr>\n");
 
    rsprintf("<tr><td class=\"form2\"><b>%s:</b>", loc("Filters"));
-   rsprintf("&nbsp;&nbsp;<span class=\"selcomment\">(%s)</span><br>", loc("Text fields may contain regular expressions"));
+   rsprintf("&nbsp;&nbsp;<span class=\"selcomment\">(%s)</span><br>",
+            loc("Text fields may contain regular expressions"));
 
    /* table for two-column items */
    rsprintf("<table width=\"100%%\" cellspacing=0>\n");
@@ -12345,7 +12346,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                      mprint(lbs, mode, error_str);
                   else
                      mprint(lbs, mode, "Remote config received");
-   
+
                   md5_cache[0].message_id = -1;
                } else
                   mprint(lbs, mode, loc("Remote config should be received"));
@@ -12418,7 +12419,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                /* submit local message */
                if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                     || atoi(str) == 0) {
+                   || atoi(str) == 0) {
                   submit_message(lbs, list[index], message_id, error_str);
 
                   /* not that submit_message() may have changed attr_list !!! */
@@ -12435,7 +12436,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                   mprint(lbs, mode, str);
                }
 
- 
+
             } else
                /* if message has been changed remotely, but not on this server, receive it */
                if (!equal_md5(md5_cache[i_cache].md5_digest, md5_remote[i_remote].md5_digest)
@@ -12536,7 +12537,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                /* submit local message */
                if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                     || atoi(str) == 0) {
+                   || atoi(str) == 0) {
                   submit_message(lbs, list[index], message_id, error_str);
 
                   /* not that submit_message() may have changed attr_list !!! */
@@ -12572,13 +12573,14 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                   rsprintf("ID%d:\t%s\n", message_id, str);
                   n_delete++;
 
-               } if (!isparam("confirm") && mode == SYNC_CLONE) {
+               }
+               if (!isparam("confirm") && mode == SYNC_CLONE) {
 
                   sprintf(str, "ID%d:\t%s", message_id, loc("Entry should be deleted locally"));
                   mprint(lbs, mode, str);
 
                } else {
-               
+
                   all_identical = FALSE;
 
                   if (mode == SYNC_CLONE) {
@@ -12597,7 +12599,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                         write_logfile(lbs, "MIRROR delete local entry #%d", message_id);
 
                      if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                        || atoi(str) == 0) {
+                         || atoi(str) == 0) {
                         el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
 
                         sprintf(str, "ID%d:\t%s", message_id, loc("Entry deleted locally"));
@@ -12628,15 +12630,15 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
             remote_id = 0;
             if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                  || atoi(str) == 0) {
+                || atoi(str) == 0) {
                remote_id = submit_message(lbs, list[index], message_id, error_str);
 
                if (error_str[0])
                   sprintf(str, "%s: %s", loc("Error sending local entry"), error_str);
                else if (remote_id != message_id)
                   sprintf(str,
-                           "Error: Submitting entry #%d resulted in remote entry #%d\n",
-                           message_id, remote_id);
+                          "Error: Submitting entry #%d resulted in remote entry #%d\n",
+                          message_id, remote_id);
                else
                   sprintf(str, "ID%d:\t%s", message_id, loc("Local entry submitted"));
                mprint(lbs, mode, str);
@@ -12669,7 +12671,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
             /* rearrange local message not to conflict with remote message */
             if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                  || atoi(str) == 0) {
+                || atoi(str) == 0) {
                el_move_message(lbs, message_id, max_id + 1);
 
                sprintf(str, "ID%d:\t", message_id);
@@ -12780,7 +12782,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                         combine_url(lbs, list[index], "", str, sizeof(str));
                         sprintf(rem_ref, "<a href=\"http://%s%d\">%s</a>", str,
-                                 message_id, loc("Remote entry"));
+                                message_id, loc("Remote entry"));
 
                         sprintf(str, loc("%s should be deleted"), rem_ref);
                         rsprintf("ID%d:\t%s\n", message_id, str);
@@ -12800,7 +12802,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                         combine_url(lbs, list[index], str, url, sizeof(url));
 
                         if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                              || atoi(str) == 0) {
+                            || atoi(str) == 0) {
                            retrieve_url(url, &buffer, NULL);
 
                            if (strstr(buffer, "Location: ")) {
@@ -14310,15 +14312,16 @@ void show_rss_feed(LOGBOOK * lbs)
 
    text = xmalloc(TEXT_SIZE);
    message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
-   for (index = 0 ; index < n ; index++) {
+   for (index = 0; index < n; index++) {
       rsprintf("<item>\n");
 
       size = TEXT_SIZE;
       status = el_retrieve(lbs, message_id, date, attr_list, attrib,
-                        lbs->n_attr, text, &size, NULL, NULL, NULL, NULL, NULL);
+                           lbs->n_attr, text, &size, NULL, NULL, NULL, NULL, NULL);
 
       if (getcfg(lbs->name, "RSS Title", title, sizeof(title))) {
-         i = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
+         i = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, attrib,
+                              TRUE);
          sprintf(str, "%d", message_id);
          add_subst_list((char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "message id", str, &i);
          add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
@@ -14330,7 +14333,7 @@ void show_rss_feed(LOGBOOK * lbs)
          title[0] = 0;
          for (i = 0; i < lbs->n_attr; i++) {
             strlcat(title, attrib[i], sizeof(title));
-            if (i < lbs->n_attr-1)
+            if (i < lbs->n_attr - 1)
                strlcat(title, ", ", sizeof(title));
          }
 
@@ -14342,7 +14345,7 @@ void show_rss_feed(LOGBOOK * lbs)
 
       rsprintf("<link>");
       strcpy(str, url);
-      sprintf(str+strlen(str), "/%d", message_id);
+      sprintf(str + strlen(str), "/%d", message_id);
       xmlencode(str);
       rsprintf("</link>\n");
 
@@ -14384,7 +14387,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
    LOGBOOK *lbs_cur;
-   regex_t re_buf[MAX_N_ATTR+1];
+   regex_t re_buf[MAX_N_ATTR + 1];
    regmatch_t pmatch[10];
 
    /* redirect if enpty parameters */
@@ -14753,8 +14756,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          /* if value starts with '$', substitute it */
          if (str[0] == '$') {
             j = build_subst_list(lbs,
-                                 (char (*)[NAME_LENGTH]) slist,
-                                 (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
+                                 (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
             add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
                            (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
 
@@ -14762,12 +14764,12 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             setparam(attr_list[i], str);
          }
 
-      flags = REG_EXTENDED;
+         flags = REG_EXTENDED;
 
-      if (!isparam("casesensitive"))
-         flags |= REG_ICASE;
+         if (!isparam("casesensitive"))
+            flags |= REG_ICASE;
 
-      regcomp(re_buf+i+1, str, flags);
+         regcomp(re_buf + i + 1, str, flags);
       }
    }
 
@@ -14838,7 +14840,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                   text1[j] = toupper(attrib[i][j]);
                text1[j] = 0;
 
-               status = regexec(re_buf+1+i, attrib[i], 10, pmatch, 0);
+               status = regexec(re_buf + 1 + i, attrib[i], 10, pmatch, 0);
                if (status == REG_NOMATCH)
                   break;
             }
@@ -14873,7 +14875,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
          status = regexec(re_buf, text, 10, pmatch, 0);
          if (atoi(getparam("sall")) && status == REG_NOMATCH) {
-            
+
             // search text in attributes
             for (i = 0; i < lbs->n_attr; i++) {
                status = regexec(re_buf, attrib[i], 10, pmatch, 0);
@@ -15043,7 +15045,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          } else
             rsprintf("\r\n");
       }
-   
+
    } else if (xml) {
 
       /* no menus and tables */
@@ -15525,14 +15527,14 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
          if (*getparam("subtext")) {
             /*
-            strcpy(str, getparam("subtext"));
-            for (i = 0; i < (int) strlen(str); i++)
+               strcpy(str, getparam("subtext"));
+               for (i = 0; i < (int) strlen(str); i++)
                str[i] = toupper(str[i]);
 
-            for (i = 0; i < (int) strlen(text); i++)
+               for (i = 0; i < (int) strlen(text); i++)
                text1[i] = toupper(text[i]);
-            text1[i] = 0;
-            */
+               text1[i] = 0;
+             */
 
             text1[0] = 0;
             pt = text;          /* original text */
@@ -15561,7 +15563,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                   pt1 += strlen(pt1);
 
                   /* copy origial search text */
-                  size = pmatch[0].rm_eo-pmatch[0].rm_so;
+                  size = pmatch[0].rm_eo - pmatch[0].rm_so;
                   memcpy(pt1, pt, size);
                   pt1 += size;
                   pt += size;
@@ -15640,8 +15642,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    }
 
    regfree(re_buf);
-   for (i = 0; i < lbs->n_attr; i++) 
-      regfree(re_buf+1+i);
+   for (i = 0; i < lbs->n_attr; i++)
+      regfree(re_buf + 1 + i);
 
 
    xfree(slist);
@@ -17026,7 +17028,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
       /* check if first.gif exists, just put link there if not */
       strlcpy(file_name, resource_dir, sizeof(file_name));
-      if (file_name[0] && file_name[strlen(file_name)- 1] != DIR_SEPARATOR)
+      if (file_name[0] && file_name[strlen(file_name) - 1] != DIR_SEPARATOR)
          strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
       strlcat(file_name, "themes", sizeof(file_name));
       strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
@@ -17035,7 +17037,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
       }
       strlcat(file_name, "first.gif", sizeof(file_name));
-      if (stat(file_name, &st) >=0) {
+      if (stat(file_name, &st) >= 0) {
          rsprintf("<input type=image name=cmd_first alt=\"%s\" src=\"first.gif\">\n", loc("First entry"));
          rsprintf("<input type=image name=cmd_previous alt=\"%s\" src=\"previous.gif\">\n",
                   loc("Previous entry"));
@@ -17451,7 +17453,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                strcpy(str, attachment[index]);
                str[13] = 0;
                strcpy(file_enc, attachment[index] + 14);
-               url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
+               url_encode(file_enc, sizeof(file_enc));  /* for file names with special characters like "+" */
                sprintf(ref, "%s/%s", str, file_enc);
 
                /* overall table */
@@ -18115,8 +18117,9 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
          if (getcfg(lb_list[index].name, "Read password", str, sizeof(str))
              || (getcfg(lb_list[index].name, "Password file", str, sizeof(str))
                  && !getcfg(lb_list[index].name, "Guest menu commands", str, sizeof(str))))
-            rsprintf("&nbsp;&nbsp;<img src=\"lock.gif\" alt=\"%s\" title=\"%s\">", 
-              loc("This logbook requires authentication"), loc("This logbook requires authentication"));
+            rsprintf("&nbsp;&nbsp;<img src=\"lock.gif\" alt=\"%s\" title=\"%s\">",
+                     loc("This logbook requires authentication"),
+                     loc("This logbook requires authentication"));
          rsprintf("<br>\n");
          str[0] = 0;
          getcfg(lb_list[index].name, "Comment", str, sizeof(str));
@@ -18820,7 +18823,7 @@ void interprete(char *lbook, char *path)
          strlcpy(css, str, sizeof(css));
       else if (lbs == NULL && getcfg("global", "CSS", str, sizeof(str)))
          strlcpy(css, str, sizeof(css));
-      
+
       /* check if guest access */
       if (!(getcfg(lbs->name, "Guest menu commands", str, sizeof(str))
             && *getparam("unm") == 0 && !isparam("wpwd")
@@ -19811,7 +19814,7 @@ void server_loop(void)
 
    /* about to entering the server loop, welcome user with a brief info */
    eprintf("%s ", ELOGID);
-   strcpy(str, cvs_revision+15);
+   strcpy(str, cvs_revision + 15);
    if (strchr(str, ' '))
       *strchr(str, ' ') = 0;
    eprintf("revision %s\n", str);
@@ -21475,7 +21478,7 @@ int main(int argc, char *argv[])
          setparam("confirm", "yes");
 
       if (logbook[0]) {
-         for (i=0 ; lb_list[i].name[0] ; i++)
+         for (i = 0; lb_list[i].name[0]; i++)
             if (stricmp(lb_list[i].name, logbook))
                break;
          if (!lb_list[i].name[0]) {

@@ -78,7 +78,6 @@ Start date = Startdatum
 End date = Einddatum
 Year = Jaar
 Text = Tekst
-(case insensitive substring) = (ongevoelig voor HOOFD -en kleineletters)
 Search all logbooks = Alle Logboeken doorzoeken
 Last %d days = Laatste %d dagen
 Last %d entries = Laatste %d berichten
@@ -255,7 +254,6 @@ Entry time = Geef de tijd op
 Start = Start
 End = Eind
 Remote entry received = Bericht van andere server ontvangen
->From = Van
 After = Na
 to = aan
 Before = Voor
@@ -340,3 +338,11 @@ Show all = Alles laten zien
 This logbook requires authentication = Dit logboek vereist authenticatie
 Attachment file <b>"%s"</b> empty or not found = Bijlage bestand <b>"%s"</b> leeg of niet gevonden
 Please increase <b>"Max content length"</b> in config file = Verhoog astublieft de <b>"Max content length" (maximale lengte van inhoud)</b> in het configuratie bestand
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Text fields may contain regular expressions = 
+Case sensitive = 
+From = 
+List = 

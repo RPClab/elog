@@ -72,7 +72,6 @@ Start date = Fecha comienzo
 End date = Fecha termino
 Year = Anio
 Text = Texto
-(case insensitive substring) = (subcadena no sensible a mayusculas)
 Search all logbooks = Buscar en todos los logbooks
 Last %d days = Ultimos %d dias
 Last %d entries = Ultimas %d Entradas
@@ -279,7 +278,6 @@ Error sending local message = Error al enviar mensaje local
 Error receiving message = Error al recibir mensaje
 Edit entry = Editar entrada
 Delete entry = Borrar entrada
->From = Desde
 No 'Attributes' option present in %s = No se encuentra presente la opcion 'Attributes' en %s
 CSV ("," separated) = Control de Version (separado por ",")
 CSV (";" separated) = Control de Version (separado por ";")
@@ -334,3 +332,11 @@ Show all = Mostrar todo
 This logbook requires authentication = Este libro de anotaciones requiere autenticación 
 Attachment file <b>"%s"</b> empty or not found = Archivo adjunto <b>"%s"</b> está vacio o no se encontró
 Please increase <b>"Max content length"</b> in config file = Por favor aumente <b>"Max content length"</b> en el archivo de configuración
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Text fields may contain regular expressions = 
+Case sensitive = 
+From = 
+List = 

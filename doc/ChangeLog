@@ -1,3 +1,12 @@
+Version 2.5.5, released November 3rd, 2004
+==========================================
+
+- Display ASCII attachments inline, with possibility to hide them
+- Implemented regular expressions in search
+- Implemented RSS feeds
+- Added synchronization from command line of elogd
+- Fixed ~20 bugs
+
 Version 2.5.4, released August 4th, 2004
 ================================--======
 
