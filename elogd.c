@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.17  2002/06/14 06:55:33  midas
+  Rebuild index if data file got deleted
+
   Revision 2.16  2002/06/14 06:46:41  midas
   Introduced wrapping logbook tabs
 
@@ -1626,7 +1629,13 @@ char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
   sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
   fh = open(file_name, O_RDWR | O_BINARY, 0644);
   if (fh < 0)
-    return EL_FILE_ERROR;
+    {
+    /* file might have been deleted, rebuild index */
+    free(lbs->el_index);
+    el_build_index(lbs);
+    return el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr, text, 
+                       textsize, in_reply_to, reply_to, attachment, encoding);
+    }
 
   lseek(fh, lbs->el_index[index].offset, SEEK_SET);
   i = read(fh, message, sizeof(message)-1);
