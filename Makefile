@@ -55,6 +55,7 @@ indent:
 
 loc:
 	locext src\elogd.c eloglang.brazilian
+	locext src\elogd.c eloglang.bulgarian
 	locext src\elogd.c eloglang.dutch
 	locext src\elogd.c eloglang.french
 	locext src\elogd.c eloglang.german
