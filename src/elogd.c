@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.344  2004/06/15 20:58:15  midas
+   Fixed bug with extendable attributes and onunload() checking
+
    Revision 1.343  2004/06/15 20:52:14  midas
    Implemented first version of onunload() checking for abandoned edits
 
@@ -6819,7 +6822,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                   if (attr_flags[index] & AF_EXTENDABLE) {
                      sprintf(str, loc("Add %s"), attr_list[index]);
-                     rsprintf("<input type=submit name=extend value=\"%s\" onChange=\"mod();\">\n", str);
+                     rsprintf("<input type=submit name=extend value=\"%s\" onClick=\"return mark_submit();\">\n", str);
                   }
 
                   rsprintf("</td></tr>\n");
@@ -6847,7 +6850,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                   if (attr_flags[index] & AF_EXTENDABLE) {
                      sprintf(str, loc("Add %s"), attr_list[index]);
-                     rsprintf("<input type=submit name=extend value=\"%s\" onChange=\"mod();\">\n", str);
+                     rsprintf("<input type=submit name=extend value=\"%s\" onClick=\"return mark_submit();\">\n", str);
                   }
 
                   rsprintf("</td></tr>\n");
@@ -6919,7 +6922,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                   if (attr_flags[index] & AF_EXTENDABLE) {
                      sprintf(str, loc("Add %s"), attr_list[index]);
-                     rsprintf("<input type=submit name=extend value=\"%s\" onChange=\"mod();\">\n", str);
+                     rsprintf("<input type=submit name=extend value=\"%s\" onClick=\"return mark_submit();\">\n", str);
                   }
 
                   rsprintf("</td></tr>\n");
