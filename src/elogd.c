@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.494  2004/10/13 20:15:06  midas
+   Use rsputs3 for proper display of HTML logbook entries
+
    Revision 1.493  2004/10/13 18:21:49  midas
    Fixed compiler warning
 
@@ -2192,6 +2195,10 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    offset = (-(int) timezone);
    if (ts->tm_isdst)
       offset += 3600;
+   if (verbose) {
+      snprintf(str, strsize - 1, "timezone: %d, offset: %d", (int) timezone, (int) offset);
+      efputs(str);
+   }
    snprintf(str, strsize - 1, "Date: %s %+03d%02d\r\n", buf, (int) (offset / 3600),
             (int) ((abs((int) offset) / 60) % 60));
    send(s, str, strlen(str), 0);
@@ -5200,7 +5207,7 @@ void rsputs2(const char *str)
          if (strncmp(str + i, key_list[l], strlen(key_list[l])) == 0) {
             p = (char *) (str + i + strlen(key_list[l]));
             i += strlen(key_list[l]);
-            for (k = 0; *p && strcspn(p, " \t\n\r({[)}]") && k < (int) sizeof(link); k++, i++)
+            for (k = 0; *p && strcspn(p, " \t\n\r({[)}]\"") && k < (int) sizeof(link); k++, i++)
                link[k] = *p++;
             link[k] = 0;
             i--;
@@ -8200,13 +8207,15 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf(str);
             }
 
-            rsputs(text);
+            /* use rsputs3 which just converts "<", ">", "&", "\"" to &gt; etc. */
+            /* otherwise some HTML statments would break the page syntax        */
+            rsputs3(text);
 
             if (getcfg(lbs->name, "Append on edit", str, sizeof(str))) {
                strsubst(str, slist, svalue, j);
                while (strstr(str, "\\n"))
                   memcpy(strstr(str, "\\n"), "\r\n", 2);
-               rsprintf(str);
+               rsputs3(str);
             }
          }
       } else if (breply) {
@@ -8221,7 +8230,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                strsubst(str, slist, svalue, j);
                while (strstr(str, "\\n"))
                   memcpy(strstr(str, "\\n"), "\r\n", 2);
-               rsprintf(str);
+               rsputs3(str);
             }
 
             p = text;
@@ -8235,11 +8244,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      *strchr(p, '\n') = 0;
 
                      if (encoding[0] == 'H') {
-                        rsputs2(reply_string);
+                        rsputs3(reply_string);
                         rsprintf("%s<br>\n", p);
                      } else {
                         rsputs(reply_string);
-                        rsputs2(p);
+                        rsputs3(p);
                         rsprintf("\n");
                      }
 
@@ -8248,11 +8257,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         p++;
                   } else {
                      if (encoding[0] == 'H') {
-                        rsputs2(reply_string);
+                        rsputs3(reply_string);
                         rsprintf("%s<p>\n", p);
                      } else {
                         rsputs(reply_string);
-                        rsputs2(p);
+                        rsputs3(p);
                         rsprintf("\n\n");
                      }
 
@@ -8271,7 +8280,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                strsubst(str, slist, svalue, j);
                while (strstr(str, "\\n"))
                   memcpy(strstr(str, "\\n"), "\r\n", 2);
-               rsprintf(str);
+               rsputs3(str);
             }
          }
       }
@@ -8297,14 +8306,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             read(fh, buffer, length);
             buffer[length] = 0;
             close(fh);
-            rsputs(buffer);
+            rsputs3(buffer);
             xfree(buffer);
          } else {
             j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
             strsubst(str, slist, svalue, j);
             while (strstr(str, "\\n"))
                memcpy(strstr(str, "\\n"), "\r\n", 2);
-            rsputs(str);
+            rsputs3(str);
          }
       }
 
@@ -18602,6 +18611,7 @@ void interprete(char *lbook, char *path)
          strlcpy(css, str, sizeof(css));
       else if (lbs == NULL && getcfg("global", "CSS", str, sizeof(str)))
          strlcpy(css, str, sizeof(css));
+      
       /* check if guest access */
       if (!(getcfg(lbs->name, "Guest menu commands", str, sizeof(str))
             && *getparam("unm") == 0 && !isparam("wpwd")
