@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.12  2003/02/14 22:48:17  midas
+  Fixed bug from previous modification
+
   Revision 1.11  2003/02/14 22:22:12  midas
   GET without '/' does not crash any more elogd
 
@@ -4124,7 +4127,7 @@ void show_error(char *error)
   show_html_header(NULL, FALSE, "ELOG error");
 
   rsprintf("<body><center>\n");
-  rsprintf("<table width=50%% cellpadding=1 cellspacing=0");
+  rsprintf("<table class=\"dlgframe\" width=50%% cellpadding=1 cellspacing=0");
   rsprintf("<tr><td class=\"errormsg\">%s</td></tr>\n", error);
 
   rsprintf("<tr><td class=\"errormsg\">");
@@ -11540,7 +11543,7 @@ struct timeval       timeout;
         strcpy(net_buffer, "GET / HTTP/1.0\r\n\r\n");
         }
 
-      p = strchr(net_buffer, '/');
+      p = strchr(net_buffer, '/')+1;
       logbook[0] = 0;
       for (i=0 ; *p && *p != '/' && *p != '?' && *p != ' '; i++)
         logbook[i] = *p++;
