@@ -1,3 +1,45 @@
+Version 2.5.4, released August 4th, 2004
+================================--======
+
+- Implemented cloning to set-up a mirror server
+- Fixed problem with 'preset text' under conditional attributes
+- Added JavaScript code onunload() if locking is used, to avoid
+  stale locks
+- Made substituions work correctly with date attributes
+- Implemented deletion of logbooks through web interface
+- Implemented renaming of logbooks through web interface
+- Fixed email notification problem if URL does not contain a trailing '/'
+- Redirect login screen if URL does not match the one in the config file
+- Extract and use 'X-Forwarded-Host:'
+- Do a el_index_logbooks on HUP signal under Unix
+- Added $utcdate
+- Fixed problem of password change when using crypt()
+- Admin user has to supply own old password on password change
+- Omit 'preset text' on edit of entries
+- Added error display if max. number of attribute options gets exceeded
+- Implemented 'show top groups' flag
+- Fixed problem that admin user of top group could change global section
+- Added 'fix text' flag
+- Fixed problem with options list containing several quotation marks
+- Implemented synchronizing during cloning
+- Don't evaluate 'preset xxx' on replies
+- Implemented 'preset on reply'
+- Implemented 'tooltip <attribute>'
+- Use 'format <attrib> = 1' also in entry form
+- Implemented 'max content length'
+- Advanced message handling implemnted by Recai Oktas, usage of syslog
+  under Unix and Event Log under Windows
+- Added size parameter to getcfg() to avoid buffer overflows
+- Fixed bugs with https:// in URL
+- Supply full path to elogd.cfg when running elogd as windows service
+- entry deletion during synchronization now uses confirmation
+- Fixed problem that attachments could not be deleted
+- Fixed wrong date on date attributes on edit/reply if attribute is fixed
+- Increased possible size of 'welcome title' to 10000 chars
+- Made p<attribute>=value work again
+- Fixed problem with {..} in attributes
+
+
 Version 2.5.3, released June 7th, 2004
 ======================================
 

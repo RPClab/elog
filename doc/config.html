@@ -693,6 +693,14 @@ after its creation. This can be useful if one wants to ensure that old entries
 cannot be modified. Hours can also be fractional, like 0.5 for 30 min.
 <p>
 
+<li><b><code>Max content length = &lt;bytes&gt;</code></b>
+<br>
+This option restricts the size of attachments. When very large (>100MB) attachments
+are uploaded, the elogd server can be busy with this upload for a longer time and
+not respond to other requests during that time. To avoid this, the maximum size
+of attachments can be restricted. The server will then refuse to accept larger
+attachments. The default is 10485760 (= 10 MB).<p>
+
 </UL>
 
 <a name="attrib"><hr>
@@ -1747,9 +1755,34 @@ ELOG server calculates a MD5 checksum for each message, which gets exchanged dur
 Only when the MD5 checksum differs, entries are transferred.
 <p>
 
-To set-up mirroring, start with two elogd servers on two machines (for testing purpose that also
-works on one machine with two elogd servers running on different ports). First, make sure that
-the elogd.cfg files are identical (except the port setting if you run two servers on the same
+To set-up mirroring, install two elogd servers on two machines (for testing purpose that also
+works on one machine with two elogd servers running on different ports). This can be done in
+two ways:
+
+<OL>
+<LI><b>Automatic configuration</b><p>
+
+A complete elog server can be transferred to a secondary server using the <code><b>clone</b></code>
+command. Assume the existing server resides at <code><b>http://master.your.domain/</b></code>,
+and you want to mirror this server to a new location at <code><b>http://slave.your.domain/</b></code>.
+You do that by installing the elog package at the slave machine, and then executing on the slave:<p>
+
+<pre>elogd -C http://master.your.domain</pre><p>
+
+This command tells elogd to retrieve the configuration file, and optionally all logbook entries
+and password files from the master machine. Note that both servers must be version 2.5.4 or later.
+In case of trouble, you can turn on verbose messaging:<p>
+
+<pre>elogd -v -C http://master.your.domain</pre><p>
+
+which could give some hints. If a logbook on the master server uses restricted access, you have
+to specify the admin user name and password. After everything has been transferred, you can start
+elogd in the normal way.
+
+<LI><b>Manual configuration</b><p>
+
+First, copy the elogd.cfg file from the master to the slave server. Make sure that
+the files are identical (except the port setting if you run two servers on the same
 machine). Then, add the following configuration options. They should be put
 into the [global] section of the cofiguration file:<p>
 
@@ -1765,56 +1798,13 @@ A typical statement looks like:<br><br>
 
 The URL should not contain any logbook name, this gets added automatically. The second
 example contains a subdirectory, which is typically used if the elogd daemon runs
-under an Apache proxy. If this statement is present in the configuration file, a new
-menu option <b><code>"Synchronize"</code></b> appears on the elog page. Clicking on
-this menu options starts the synchronization:<br><br>
-
-<img src="sync.gif"><br><br>
-
-On the left side one sees the entry ID's. Entries which are equal locally and remotely
-are not displayed. Here are the rules for synchronization:<br><br>
-
-<UL>
-<LI> If an entry has been modified locally but not remotely, it is submitted to the remote
-server.
-
-<LI> If an entry has been modified remotely but not locally, it is retrieved from the
-remote server and saved locally.
-
-<LI> If an entry has been modified remotely and locally since the last synchronization,
-an error is shown that the entries are conflicting. In that case one has to merge
-the entries manually and delete it on one side.
-
-<LI> If an entry has been deleted locally, it is deleted remotely.
-
-<LI> If an entry has been deleted remotely, it is deleted locally.
-
-<LI> If a new entry exists locally, it is submitted.
-
-<LI> If a new entry exists remotely, it is retrieved from the remote server and
-saved locally.
-
-<LI> If new entries exist locally and remotely having the same entry ID, the local
-entries are changed to have higher entry IDs, then the remote ones are retrieved. Care
-should be taken if external links (such as <b><code>elog:123</code></b>) to the
-local entries are used, since they will point afterwards to the wrong entry.
-
-</UL><br><br>
-
-By starting the synchronization on one elogd server, this server becomes the client
-and the other one becomes the server. This means that the local server actively compares
-the local and the remote messages, and updates one or the other if necessary.
-The other (remote) server does not need to have any mirror option in its configuration
-file, since the local server simulates a web browser to send and retrieve messages to
-the remote server. It is however allowed that the remote server also contains some
-mirror settings in the configuration file, this way the synchronization can be
-started from both servers.<p>
+under an Apache proxy.<p>
 
 <li><b><code>Mirror config = 0 | 1</code></b><br><br>
 
 Normally, only the logbook entries are mirrored. One can also mirror the contents
 of the elogd.cfg configuration file for individual logbooks. This can be turned on
-by setting this option to <b><code>1</code></b>. Default is <b><code>1</code></b>.
+by setting this option to <b><code>1</code></b>. Default is <b><code>0</code></b>.
 Only the individual logbook section is mirrored, not the [global] section. Settings
 which are specific to one server, for example the <b><code>URL = </code></b> statement,
 should then be kept in the [global] section, so that they are not mirrored between
@@ -1866,7 +1856,52 @@ During synchronization, entries are compared and necessary transfers are display
 but not executed. Default is <b><code>0</code></b>.
 
 </UL>
+</OL><p>
 
+If the statement <b><code>Mirror server</b></code> is present in the configuration file, a new
+menu option <b><code>"Synchronize"</code></b> appears on the elog page. Clicking on
+this menu options starts the synchronization:<br><br>
+
+<img src="sync.gif"><br><br>
+
+On the left side one sees the entry ID's. Entries which are equal locally and remotely
+are not displayed. Here are the rules for synchronization:<br><br>
+
+<UL>
+<LI> If an entry has been modified locally but not remotely, it is submitted to the remote
+server.
+
+<LI> If an entry has been modified remotely but not locally, it is retrieved from the
+remote server and saved locally.
+
+<LI> If an entry has been modified remotely and locally since the last synchronization,
+an error is shown that the entries are conflicting. In that case one has to merge
+the entries manually and delete it on one side.
+
+<LI> If an entry has been deleted locally, it is deleted remotely.
+
+<LI> If an entry has been deleted remotely, it is deleted locally.
+
+<LI> If a new entry exists locally, it is submitted.
+
+<LI> If a new entry exists remotely, it is retrieved from the remote server and
+saved locally.
+
+<LI> If new entries exist locally and remotely having the same entry ID, the local
+entries are changed to have higher entry IDs, then the remote ones are retrieved. Care
+should be taken if external links (such as <b><code>elog:123</code></b>) to the
+local entries are used, since they will point afterwards to the wrong entry.
+
+</UL><p>
+
+By starting the synchronization on one elogd server, this server becomes the client
+and the other one becomes the server. This means that the local server actively compares
+the local and the remote messages, and updates one or the other if necessary.
+The other (remote) server does not need to have any mirror option in its configuration
+file, since the local server simulates a web browser to send and retrieve messages to
+the remote server. It is however allowed that the remote server also contains some
+mirror settings in the configuration file, this way the synchronization can be
+started from both servers.<p>
 
 
 <HR>
