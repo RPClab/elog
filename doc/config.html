@@ -200,7 +200,7 @@ this options can be used, to show a list of logbooks with guest access.
 <LI><b><code>Protect Selection page = 0 | 1</code></b>
 <br>
 Normally, one can see the logbook selection page without having to log in. If one
-wants to require a login for the selection page, this switch can be set to 
+wants to require a login for the selection page, this switch can be set to
 <b><code>1</code></b>. Default is <b><code>0</code></b>.<p>
 
 <LI><b><code>SMTP host = &lt;host.domain&gt;</code></b>
@@ -1040,7 +1040,7 @@ Display Telephone = &lt;a href="http://any.company.com/telbook.cgi?search=$Name"
 </pre>
 
 The attribute <b><code>Telephone</code></b> is now automatically constructed from
-the attribute <b><code>Name</code></b> and consists of a link to the company's 
+the attribute <b><code>Name</code></b> and consists of a link to the company's
 telephonebook. The advantage of this system is if the URL of the telephonebook
 changes one day, only one statement in the config file has to be changed, while
 otherways (like with the <b><code>Subst Telephone = ...</code></b> option) all
@@ -1425,9 +1425,15 @@ Default is <i>"A new entry has been submitted on [host]"</i>. The option
 way for updated (edited) entries.<p>
 
 The option <b><code>Use Email From = &lt;string&gt;
-</code></b> is used for the "<I>From:</I>" field in the email. Please note that more and
-more email servers do not accept invalid <I>"From:"</I> addresses, in order to reduce spam mail.
-So it might be necessary to use this option to supply a "real" email address.<p>
+</code></b> is used for the "<I>From:</I>" field in the email.
+Since more and more email servers do not accept invalid <I>"From:"</I> addresses in
+order to reduce spam mail, it might be important that a "real" email address is used in
+the <I>"From:"</I> field. By default, the email address of the currently logged in
+user is used for the <I>"From:"</I> field. If no user is logged in, or the current
+user has not specified a email address in the password database, the setting
+of the option <b><code>Use Email From</code></b> is used for the "<I>From:</I>" field.
+Only if this option is not specified, a generic address <I>ELOG@&lt;hostname&gt;</I>
+is used, which might be rejected by the SMTP server however.<p>
 
 If the flag <b><code>
 Omit Email To</b></code> is set to <b>1</b>, the <i>To:</i> field in the email is
