@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.18  2002/06/14 07:15:22  midas
+  Fixed <keep> on resubmits
+
   Revision 2.17  2002/06/14 06:55:33  midas
   Rebuild index if data file got deleted
 
@@ -2109,7 +2112,7 @@ BOOL    bedit;
   close(fh);
 
   /* if reply, mark original message */
-  if (in_reply_to[0] && !bedit)
+  if (in_reply_to[0] && !bedit && atoi(in_reply_to) > 0)
     {
     char date[80], attr[MAX_N_ATTR][NAME_LENGTH], enc[80], 
          att[MAX_ATTACHMENTS][256], reply_to[256];
@@ -4548,7 +4551,7 @@ FILE *f;
 
   if (equal_ustring(mode, "Summary"))
     {
-    if (number % 2 == 0)
+    if (number % 2 == 1)
       strcpy(col, gt("List bgcolor1"));
     else
       strcpy(col, gt("List bgcolor2"));
@@ -5899,8 +5902,8 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, message_id;
     /* delete old message */
     el_delete_message(lbs, atoi(getparam("orig")), FALSE, att_file, TRUE);
     unsetparam("orig");
-    strcpy(reply_to, "<keep>");
-    strcpy(in_reply_to, "<keep>");
+    strcpy(reply_to, "");
+    strcpy(in_reply_to, "");
     date[0] = 0;
     }
   else
