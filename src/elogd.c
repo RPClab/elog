@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.571  2005/02/22 09:34:04  ritt
+   Fixed bug with logbook names containing blanks and 'List' link
+
    Revision 1.570  2005/02/22 08:55:20  ritt
    Fixed bug with $attachments substitution on shell command
 
@@ -19610,8 +19613,7 @@ void interprete(char *lbook, char *path)
 
    /* check for "List" button */
    if (strieq(command, loc("List"))) {
-      sprintf(str, "../%s/", logbook_enc);
-      redirect(lbs, str);
+      redirect(lbs, "");
       return;
    }
 
