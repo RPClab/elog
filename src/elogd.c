@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.493  2004/10/13 18:21:49  midas
+   Fixed compiler warning
+
    Revision 1.492  2004/10/13 18:18:05  midas
    Hot link can contain ';'
 
@@ -4471,7 +4474,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
    strlcat(message, "\n", TEXT_SIZE + 100);
 
    n = write(fh, message, strlen(message));
-   if (n != strlen(message)) {
+   if (n != (int)strlen(message)) {
       if (tail_size > 0)
          xfree(buffer);
       close(fh);
