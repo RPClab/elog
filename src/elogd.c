@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.430  2004/08/04 10:34:16  midas
+   Fixed compiler warning
+
    Revision 1.429  2004/08/04 10:32:29  midas
    Fixed compiler warning
 
@@ -8633,7 +8636,7 @@ void adjust_crlf(char *buffer, int bufsize)
 #ifdef OS_UNIX
 
    /* convert \r\n -> \n */
-   if (bufsize);
+   bufsize = 0; // avoid compiler warning about unused bufsize
    p = buffer;
    while ((p = strstr(p, "\r\n")) != NULL) {
       strcpy(p, p + 1);
