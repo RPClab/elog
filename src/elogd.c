@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.390  2004/07/15 19:56:00  midas
+   Implemented 'max content length'
+
    Revision 1.389  2004/07/15 19:15:47  midas
    Implemented 'preset on reply'
 
@@ -422,12 +425,15 @@ char http_host[256];
 #define TEXT_SIZE    250000
 #define MAX_PATH_LENGTH 256
 
+#define MAX_CONTENT_LENGTH 10000000
+
 char _param[MAX_PARAM][NAME_LENGTH];
 char _value[MAX_PARAM][NAME_LENGTH];
 char _mtext[TEXT_SIZE];
 char _cmdline[CMD_SIZE];
 char *_attachment_buffer;
 INT _attachment_size;
+INT _max_content_length = MAX_CONTENT_LENGTH;
 struct in_addr rem_addr;
 char rem_host[256];
 INT _sock;
@@ -18408,7 +18414,7 @@ void server_loop(int tcp_port, int daemon)
 {
    int status, i, n, n_error, authorized, min, i_min, i_conn, length;
    struct sockaddr_in serv_addr, acc_addr;
-   char pwd[256], str[256], url[256], cl_pwd[256], *p, *pd;
+   char pwd[256], str[1000], url[256], cl_pwd[256], *p, *pd;
    char cookie[256], boundary[256], list[1000], theme[256],
        host_list[MAX_N_LIST][NAME_LENGTH], rem_host_ip[256], logbook[256],
        logbook_enc[256], global_cmd[256];
@@ -18733,6 +18739,31 @@ void server_loop(int tcp_port, int daemon)
                          (INT) strstr(net_buffer, "\r\r\n\r\r\n") - (INT) net_buffer + 6;
                   if (header_length)
                      net_buffer[header_length - 1] = 0;
+
+                  if (content_length > _max_content_length) {
+                     
+                     /* drain socket connection */
+                     do {
+                        FD_ZERO(&readfds);
+                        FD_SET(_sock, &readfds);
+                        timeout.tv_sec = 6;
+                        timeout.tv_usec = 0;
+                        status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+                        if (FD_ISSET(_sock, &readfds))
+                           i = recv(_sock, net_buffer, net_buffer_size, 0);
+                        else
+                           break;
+                     } while (i>0);
+
+                     /* return error */
+                     sprintf(str, loc("Error: Content length (%d) larger than maximum content length (%d)"), 
+                        content_length, _max_content_length);
+                     strcat(str, "<br>");
+                     strcat(str, loc("Please increase <b>\"Max content length\"</b> in config file"));
+                     keep_alive = FALSE;
+                     show_error(str);
+                     goto redir;
+                  }
                }
 
                if (header_length > 0 && len >= header_length + content_length)
@@ -19880,6 +19911,10 @@ int main(int argc, char *argv[])
       if (getcfg("global", "Port", str))
          tcp_port = atoi(str);
    }
+
+   /* get optional content length from configuration file */
+   if (getcfg("global", "Max content length", str))
+      _max_content_length = atoi(str);
 
 #ifdef OS_WINNT
    if (daemon)
