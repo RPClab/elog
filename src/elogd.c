@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.257  2004/02/17 19:49:33  midas
+   Fixed problem with date attributes in conjunction with conditional attributes
+
    Revision 1.256  2004/02/17 11:13:37  midas
    Added charset for sending files
 
@@ -6098,8 +6101,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             ts.tm_mday = day;
             ts.tm_hour = 12;
 
-            ltime = mktime(&ts);
-            sprintf(attrib[i], "%d", (int) ltime);
+            if (month && day) {
+               ltime = mktime(&ts);
+               sprintf(attrib[i], "%d", (int) ltime);
+            } else
+               strcpy(attrib[i], "");
 
          } else {
             strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
