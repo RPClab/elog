@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.469  2004/09/14 22:12:47  midas
+   'Use email from' has priority over user email address
+
    Revision 1.468  2004/09/10 14:06:42  midas
    Fixed bug with select return status
 
@@ -3176,10 +3179,12 @@ void retrieve_email_from(LOGBOOK * lbs, char *ret)
 {
    char str[256];
 
-   if (isparam("user_email") && *getparam("user_email"))
-      strcpy(str, getparam("user_email"));
-   else if (!getcfg(lbs->name, "Use Email from", str, sizeof(str)))
-      sprintf(str, "ELog@%s", host_name);
+   if (!getcfg(lbs->name, "Use Email from", str, sizeof(str))) {
+      if (isparam("user_email") && *getparam("user_email"))
+         strcpy(str, getparam("user_email"));
+      else
+         sprintf(str, "ELog@%s", host_name);
+   }
 
    strcpy(ret, str);
 }
