@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.29  2002/06/03 08:30:44  midas
+  Add <br> for replies in HTML format
+
   Revision 1.28  2002/06/03 08:12:24  midas
   Reversed setuid() and creation of elogd.pid
 
@@ -3743,14 +3746,23 @@ time_t now;
           if (strchr(p, '\r'))
             {
             *strchr(p, '\r') = 0;
-            rsprintf("> %s\n", p);
+
+            if (encoding[0] == 'H')
+              rsprintf("&gt; %s<br>\n", p);
+            else
+              rsprintf("> %s\n", p);
+
             p += strlen(p)+1;
             if (*p == '\n')
               p++;
             }
           else
             {
-            rsprintf("> %s\n\n", p);
+            if (encoding[0] == 'H')
+              rsprintf("&gt; %s<p>\n", p);
+            else
+              rsprintf("> %s\n\n", p);
+
             break;
             }
 
@@ -3783,7 +3795,7 @@ time_t now;
     rsprintf("</textarea><br>\n");
 
     /* HTML check box */
-    if (bedit)
+    if (path)
       {
       if (encoding[0] == 'H')
         rsprintf("<input type=checkbox checked name=html value=1>%s\n", loc("Submit as HTML text"));
@@ -6506,9 +6518,9 @@ FILE   *f;
       rsprintf("<tr><td><table width=100%% border=0 cellpadding=1 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
       
       if (*gt("BGTimage"))
-        rsprintf("<tr><td background=\"%s\" bgcolor=%s><br>\n", gt("BGTimage"), gt("Text BGColor"));
+        rsprintf("<tr><td background=\"%s\" bgcolor=%s>\n", gt("BGTimage"), gt("Text BGColor"));
       else
-        rsprintf("<tr><td bgcolor=%s><br>\n", gt("Text BGColor"));
+        rsprintf("<tr><td bgcolor=%s>\n", gt("Text BGColor"));
 
       if (equal_ustring(encoding, "plain"))
         {
