@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.300  2004/03/17 21:11:04  midas
+   Removed debug print
+
    Revision 1.299  2004/03/17 20:57:07  midas
    Fixed config sync problem due to CRLF-LF
 
@@ -9895,6 +9898,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
          }
 
          /* compare MD5s */
+         /*
          printf("ID0:    ");
          for (j = 0; j < 16; j++)
          printf("%02X", digest[j]);
@@ -9905,6 +9909,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
          for (j = 0; j < 16; j++)
          printf("%02X", md5_remote[0].md5_digest[j]);
          printf("\n\n");
+         */
 
          if (n_remote > 0) {
             /* if config has been changed on this server, but not remotely, send it */
