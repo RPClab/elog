@@ -6,6 +6,9 @@
    Contents:     Midas XML Library
 
    $Log$
+   Revision 1.2  2005/03/01 23:55:43  ritt
+   Fixed compiler warnings
+
    Revision 1.1  2005/03/01 23:48:18  ritt
    Implemented MXML for password file
 
@@ -32,6 +35,11 @@ typedef int BOOL;
 #define O_TEXT 0
 #define O_BINARY 0
 
+#include <stdlib.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <stdarg.h>
+#include <errno.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -194,7 +202,7 @@ BOOL mxml_start_element(MXML_WRITER *writer, const char *name)
    writer->element_is_open = TRUE;
    writer->data_was_written = FALSE;
 
-   return write(writer->fh, line, strlen(line)) == strlen(line);
+   return write(writer->fh, line, strlen(line)) == (int)strlen(line);
 }
 
 /*------------------------------------------------------------------*/
@@ -234,7 +242,7 @@ BOOL mxml_end_element(MXML_WRITER *writer)
    strlcat(line, ">\n", sizeof(line));
    writer->data_was_written = FALSE;
 
-   return write(writer->fh, line, strlen(line)) == strlen(line);
+   return write(writer->fh, line, strlen(line)) == (int)strlen(line);
 }
 
 /*------------------------------------------------------------------*/
