@@ -680,6 +680,18 @@ Options town = San Francisco, "Paris, Texas", "Paris, France"
 </pre>
 <p>
 
+<LI><b><code>Extendable options = &lt;list&gt;</code></b>
+<br>
+When using the <code><b>Options &lt;attribute&gt;</b></code> to specify a list
+of possible options, this list is fixed. Sometimes it is desirable to extend
+the list when a new entry in a logbook is made and a certain option is missing
+on the list. By adding the attribute name to the <code><b>Extandable options</b></code>
+list, a button appears next to the attribute in the message entry form which 
+lets you add new options to the list. The elogd.cfg configuration file is
+then automatically updated. When a new logbook entry gets made, the new option
+automatically appears in the drop-down box for that attribute.
+<p>
+
 <LI><b><code>ROptions &lt;attribute&gt; = &lt;list&gt;</code></b>
 <br>
 Same as <code><b>Options</b></code> above, but using radio buttons instead
