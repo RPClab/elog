@@ -14,19 +14,6 @@ a:hover { color:#0000FF; text-decoration:underline }
 a:active { color:#0000FF; text-decoration:underline }
 a:focus { color:#0000FF; text-decoration:underline }
 
-/* colors for logbook tabs */
-a.sltab:link { color:white };
-a.sltab:visited { color:white };
-a.sltab:hover { color:white };
-a.sltab:active { color:white };
-a.sltab:focus { color:white };
-
-a.sgtab:link { color:white };
-a.sgtab:visited { color:white };
-a.sgtab:hover { color:white };
-a.sgtab:active { color:white };
-a.sgtab:focus { color:white };
-
 td {
   color:black;
   font-family:sans-serif; 
@@ -46,24 +33,29 @@ td {
 
 /* unselected and selected group tabs */
 
-.gtab {
+.gtab, .gtab a {
   background-color:#B0E0B0;
 }
 
-.sgtab {
+.sgtab, .sgtab a {
   background-color:#486090;
-  font-color:white;
+  color:white;
 }
+
+.sgtab a:visited { color:white; } /* buf for IE */
 
 /* unselected and selected logbook tabs */
 
-.ltab {
+.ltab, .ltab a {
   background-color:#E0E0E0;
 }
 
-.sltab {
+.sltab, .sltab a {
   background-color:#486090;
+  color:white;
 }
+
+.sltab a:visited { color:white; } /* bug for IE */
 
 /* logbook title, left, middle and right cell */
 
@@ -153,6 +145,13 @@ td {
   text-align:center;
 }
 
+/* attachment line */
+
+.attachment {
+  background-color:#FFFFB0;
+  text-align:left;
+}
+
 /* threaded listing */
 .thread {
   background-color:#DDEEBB;
@@ -178,7 +177,7 @@ td {
 /* message cell in listing */
 .messagelist {
   background-color:white;
-  font-family:'lucida console',courier;
+  font-family:'lucida console',courier,monospace;
   font-size:10pt;
   padding:5px;
 }
@@ -192,13 +191,13 @@ td {
 }
 
 .messagepre {
-  font-family:'lucida console',courier;
+  font-family:'lucida console',courier,monospace;
   font-size:10pt;
 }
 
 /* attachment size */
 .bytes {
-  font-family:'lucida console',courier;
+  font-family:'lucida console',courier,monospace;
   font-size:10pt;
   font-weight:bold;
 }
@@ -206,8 +205,22 @@ td {
 /* summary display (threaded mode expand) */
 .summary {
   background-color:white;
-  font-family:'lucida console',courier;
+  font-family:'lucida console',courier,monospace;
   font-size:small;
+}
+
+/* input forms */
+.form1 {
+  border:1px solid #486090;
+  background-color:#DDEEBB;
+  padding:3px;
+}
+
+.form2 {
+  border:1px solid #486090;
+  border-top:0px;
+  background-color:#DDEEBB;
+  padding:3px;
 }
 
 /* error message */
