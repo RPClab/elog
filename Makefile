@@ -9,7 +9,7 @@
 
 CC = gcc
 LIBS = 
-CFLAGS = -g -O
+CFLAGS = -g -O -Wall
 IFLAGS = -kr -nut -i3 -l90
 EXECS = elog elogd elconv
 DESTDIR = /usr/local/bin
