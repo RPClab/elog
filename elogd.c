@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.13  2002/06/13 08:59:53  midas
+  Made '../last10?mode=summary' work
+
   Revision 2.12  2002/06/12 10:18:16  midas
   Added redirection if '/' is missing after logbook
 
@@ -2898,7 +2901,7 @@ int  i;
 
   /*---- logbook selection row ----*/
 
-  if (!printable && getcfg("global", "logbook tabs", str) && atoi(str) == 1)
+  if (!printable && getcfg(logbook, "logbook tabs", str) && atoi(str) == 1)
     {
     if (!getcfg("global", "tab cellpadding", str))
       strcpy(str, "5");
@@ -4982,6 +4985,8 @@ struct tm tms, *ptms;
     {
     if (getcfg(lbs->name, "Display Mode", str))
       strcpy(mode, str);
+    if (*getparam("mode"))
+      strcpy(mode, getparam("mode"));
     show_attachments = FALSE;
     }
   else
@@ -8408,7 +8413,7 @@ struct timeval       timeout;
       /* check for trailing '/' after logbook */
       if (logbook[0] && *p == ' ')
         {
-        sprintf(str, "../%s/", logbook_enc);
+        sprintf(str, "%s/", logbook_enc);
         redirect(str);
         goto redir;
         }
@@ -8696,7 +8701,7 @@ struct timeval       timeout;
             goto error;
           *(strstr(net_buffer, "HTTP")-1)=0;
 
-          /* skip logbook from path */
+          /* strip logbook from path */
           p = net_buffer+5;
           for (i=0 ; *p && *p != '/' && *p != '?'; p++);
           while (*p && *p == '/')
