@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.184  2004/01/13 11:40:40  midas
+   Fixed probelem with redirection
+
    Revision 1.183  2004/01/13 10:09:05  midas
    Fixed bug in get_logbook_hierarchy()
 
@@ -4085,6 +4088,12 @@ void set_location(LOGBOOK * lbs, char *rel_path)
          rsputs("Location: ");
          rsputs(str);
 
+         /* add top group if existing and not logbook */
+         if (!lbs && getcfg_topgroup()) {
+            rsputs(getcfg_topgroup());
+            rsputs("/");
+         }
+
          if (strncmp(rel_path, "../", 3) == 0)
             rsputs(rel_path + 3);
          else if (strcmp(rel_path, ".") == 0) {
@@ -4126,7 +4135,7 @@ void set_redir(LOGBOOK * lbs, char *redir)
    else {
       if (lbs)
          sprintf(str, "../%s/", lbs->name_enc);
-      else
+      else  if (getcfg_topgroup())
          sprintf(str, ".");
    }
 
@@ -12000,8 +12009,8 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
       return FALSE;
    } else {
       if (status == 2) {
-         sprintf(str, "?wusr=%s", user);
 
+         sprintf(str, "?wusr=%s", user);
          setparam("redir", str);
 
          /* remove remaining cookies */
@@ -13011,8 +13020,10 @@ void interprete(char *lbook, char *path)
    if (equal_ustring(command, loc("Logout"))) {
       /* log activity */
       logf(lbs, "LOGOUT");
-      if (getcfg(lbs->name, "Logout to main", str) && atoi(str) == 1)
-         setparam("redir", "../");
+      if (getcfg(lbs->name, "Logout to main", str) && atoi(str) == 1) {
+         sprintf(str, "../");
+         setparam("redir", str);
+      }
       set_login_cookies(lbs, "", "");
       return;
    }
