@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.550  2005/01/31 19:51:49  ritt
+   Removed superfloous 'mailto:' in substitution
+
    Revision 1.549  2005/01/30 16:43:21  ritt
    Added highlighting for search results in attributes
 
@@ -3466,7 +3469,7 @@ void check_config()
 
 void retrieve_email_from(LOGBOOK * lbs, char *ret, char attrib[MAX_N_ATTR][NAME_LENGTH])
 {
-   char str[256];
+   char str[256], *p;
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
    int i;
 
@@ -3480,6 +3483,10 @@ void retrieve_email_from(LOGBOOK * lbs, char *ret, char attrib[MAX_N_ATTR][NAME_
    if (attrib) {
       i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
       strsubst(str, slist, svalue, i);
+
+      /* remove possible 'mailto:' */
+      if ((p = strstr(str, "mailto:")) != NULL)
+         strcpy(p, p+7);
    }
 
    strcpy(ret, str);
@@ -16554,7 +16561,7 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
 void submit_elog(LOGBOOK * lbs)
 {
    char str[1000], str2[1000], file_name[256], error[1000], date[80],
-       mail_list[MAX_N_LIST][NAME_LENGTH], list[10000],
+       mail_list[MAX_N_LIST][NAME_LENGTH], list[10000], *p,
        attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[MAX_PATH_LENGTH],
        in_reply_to[80], reply_to[MAX_REPLY_TO * 10], user[256], user_email[256],
        email_notify[256], mail_param[1000], *mail_to, att_file[MAX_ATTACHMENTS][256],
@@ -16922,6 +16929,10 @@ void submit_elog(LOGBOOK * lbs)
                   add_subst_list(slist, svalue, "message id", str, &j);
                   add_subst_time(lbs, slist, svalue, "entry time", date, &j);
                   strsubst(mail_list[i], slist, svalue, j);
+
+                  /* remove possible 'mailto:' */
+                  if ((p = strstr(mail_list[i], "mailto:")) != NULL)
+                     strcpy(p, p+7);
 
                   if ((int) strlen(mail_to) + (int) strlen(mail_list[i]) >= mail_to_size) {
                      mail_to_size += 256;
