@@ -4,13 +4,17 @@
 # S. Ritt, May 12th 2000
 # install/clean section by Th. Bullinger, Apr. 26th, 2002
 #
-# add "-DHAVE_CRYPT" and "-lcrypt" to use crypt() function
-#
+
+ifndef DEBUG
+# Default compilation flags unless stated otherwise.
+# Add "-DHAVE_CRYPT" and "-lcrypt" to use crypt() function.
+CFLAGS += -O3 -funroll-loops -fomit-frame-pointer -W -Wall
+else
+# Build with e.g. 'make DEBUG=1' to turn on debugging.
+CFLAGS += -g -O -W -Wall -DDEBUG=1
+endif
 
 CC = gcc
-LIBS = 
-CFLAGS = -O3 -funroll-loops -fomit-frame-pointer -W -Wall
-DFLAGS = -g -O -W -Wall
 IFLAGS = -kr -nut -i3 -l110
 EXECS = elog elogd elconv
 DESTDIR = /usr/local/bin
@@ -22,7 +26,7 @@ RM = /bin/rm
 
 ifeq ($(OSTYPE),solaris)
 CC = gcc
-LIBS = -lsocket -lnsl
+LIBS += -lsocket -lnsl
 CFLAGS =
 INSTALL = /usr/ucb/install
 RM = /usr/bin/rm
@@ -34,14 +38,11 @@ endif
 
 all: $(EXECS)
 
-debug: src/elogd.c
-	$(CC) $(DFLAGS) -o elogd src/elogd.c src/regex.c $(LIBS)
-
 regex.o: src/regex.c src/regex.h
-	$(CC) -O3 -c -o regex.o src/regex.c
+	$(CC) $(CFLAGS) -c -o regex.o src/regex.c
 
 elogd: src/elogd.c regex.o
-	$(CC) $(DFLAGS) -o elogd src/elogd.c regex.o $(LIBS)
+	$(CC) $(CFLAGS) -o elogd src/elogd.c regex.o $(LIBS)
 
 %: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
