@@ -38,7 +38,9 @@ ALL : "$(OUTDIR)\elogd.exe" "$(OUTDIR)\elogd.bsc"
 
 CLEAN :
 	-@erase "$(INTDIR)\elogd.obj"
+	-@erase "$(INTDIR)\regex.obj"
 	-@erase "$(INTDIR)\elogd.sbr"
+	-@erase "$(INTDIR)\regex.sbr"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(OUTDIR)\elogd.bsc"
 	-@erase "$(OUTDIR)\elogd.exe"
@@ -83,7 +85,7 @@ RSC=rc.exe
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\elogd.bsc" 
 BSC32_SBRS= \
-	"$(INTDIR)\elogd.sbr"
+	"$(INTDIR)\elogd.sbr" "$(INTDIR)\regex.sbr"
 
 "$(OUTDIR)\elogd.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
     $(BSC32) @<<
@@ -93,7 +95,7 @@ BSC32_SBRS= \
 LINK32=link.exe
 LINK32_FLAGS=wsock32.lib advapi32.lib /nologo /subsystem:console /incremental:no /pdb:"$(OUTDIR)\elogd.pdb" /machine:I386 /out:"$(OUTDIR)\elogd.exe" 
 LINK32_OBJS= \
-	"$(INTDIR)\elogd.obj"
+	"$(INTDIR)\elogd.obj" "$(INTDIR)\regex.obj"
 
 "$(OUTDIR)\elogd.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -114,6 +116,8 @@ ALL : "$(OUTDIR)\elogd.exe" "$(OUTDIR)\elogd.bsc"
 CLEAN :
 	-@erase "$(INTDIR)\elogd.obj"
 	-@erase "$(INTDIR)\elogd.sbr"
+	-@erase "$(INTDIR)\regex.obj"
+	-@erase "$(INTDIR)\regex.sbr"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(INTDIR)\vc60.pdb"
 	-@erase "$(OUTDIR)\elogd.bsc"
@@ -161,7 +165,7 @@ RSC=rc.exe
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\elogd.bsc" 
 BSC32_SBRS= \
-	"$(INTDIR)\elogd.sbr"
+	"$(INTDIR)\elogd.sbr" "$(INTDIR)\regex.sbr" 
 
 "$(OUTDIR)\elogd.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
     $(BSC32) @<<
@@ -171,7 +175,7 @@ BSC32_SBRS= \
 LINK32=link.exe
 LINK32_FLAGS=wsock32.lib advapi32.lib /nologo /subsystem:console /incremental:yes /pdb:"$(OUTDIR)\elogd.pdb" /debug /machine:I386 /out:"$(OUTDIR)\elogd.exe" /pdbtype:sept 
 LINK32_OBJS= \
-	"$(INTDIR)\elogd.obj"
+	"$(INTDIR)\elogd.obj" "$(INTDIR)\regex.obj"
 
 "$(OUTDIR)\elogd.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -196,6 +200,9 @@ SOURCE=..\src\elogd.c
 "$(INTDIR)\elogd.obj"	"$(INTDIR)\elogd.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
+SOURCE=..\src\regex.c
+"$(INTDIR)\regex.obj"	"$(INTDIR)\regex.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
 !ENDIF 
