@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.516  2004/12/05 11:40:52  midas
+   Implemented 'sort attribute'
+
    Revision 1.515  2004/12/04 16:18:50  midas
    Look for parameters first under conditions, then unconditional if not found
 
@@ -14460,7 +14463,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
        *list, *text, *text1, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH], mode[80], mid[80],
-       menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH], format[80];
+       menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH], format[80],
+       sort_attr[MAX_N_ATTR + 4][NAME_LENGTH];
    char *p, *pt, *pt1, *pt2, *slist, *svalue, *gattr;
    BOOL show_attachments, threaded, csv, xml, mode_commands, expand, filtering, disp_filter, show_text;
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2;
@@ -14813,6 +14817,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    if (*getparam("subtext"))
       filtering = TRUE;
 
+   if (getcfg(lbs->name, "Sort Attributes", list, 10000))
+      filtering = TRUE;
+
    text = xmalloc(TEXT_SIZE);
    text1 = xmalloc(TEXT_SIZE);
 
@@ -15011,6 +15018,20 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             continue;
          } else {
             msg_list[index].index = i;  // replace current message with message head
+         }
+      }
+
+      /* evaluate "sort attributes" */
+      if (getcfg(lbs->name, "Sort Attributes", list, 10000)) {
+         msg_list[index].string[0] = 0;
+         n = strbreak(list, sort_attr, MAX_N_ATTR, ",");
+         for (i = 0; i < n; i++) {
+            for (j = 0; j < lbs->n_attr; j++) {
+               if (strieq(sort_attr[i], attr_list[j])) {
+                  strlcat(msg_list[index].string, " ", sizeof(msg_list[index].string));
+                  strlcat(msg_list[index].string, attrib[j], sizeof(msg_list[index].string));
+               }
+            }
          }
       }
 

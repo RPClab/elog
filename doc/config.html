@@ -714,8 +714,9 @@ attachments. The default is 10485760 (= 10 MB).<p>
 <UL>
 <LI><b><code>Attributes = &lt;list&gt;</code></b>
 <br>
-Define a number of attributes for the logbook. A maximum of 50 attributes can be
-defined. Typical values are "<I>Author</I>", "<I>Subject</I>" or "<I>Type</I>".
+Define a number of attributes for the logbook, separated by commata. A maximum of 
+100 attributes can be defined. Typical values are "<I>Author</I>", "<I>Subject</I>" 
+or "<I>Type</I>".
 <p>
 
 <LI><b><code>Options &lt;attribute&gt; = &lt;list&gt;</code></b>
@@ -1156,7 +1157,7 @@ this can be useful for adding the author and the date of a reply, like<br>
 where "\n" causes a line break.
 <p>
 
-<li><b><code>Apend on reply = &lt;string&gt;</code></b>
+<li><b><code>Append on reply = &lt;string&gt;</code></b>
 <br>
 Same as before, but gets added after the previous entry.
 <p>
@@ -1165,6 +1166,15 @@ Same as before, but gets added after the previous entry.
 <li><b><code>Apend on edit = &lt;string&gt;</code></b>
 </br>
 Same as before, but for editing entries.
+<p>
+
+<li><b><code>Sort Attributes = &lt;list&gt;</code></b>
+<br>
+For the list display, the entries are normally sorted by their ID. Alternatively,
+one can specify one or more (separated by commata) attributes, which are used 
+for sorting. The first attribute in the list has the highest priority. Only if two 
+entries have the same value in the first sort attribute, they are sorted according to
+the second sort attribute and so on.
 <p>
 
 </UL>
