@@ -43,12 +43,14 @@ where one can enter messages but not change them afterwards.
 <LI><a href=#11>How can I track various revisions of a message using the "edit" command?
 <LI><a href=#12>How can I enter a date which is different from current one?
 <LI><a href=#13>I cannot pass the login page, it's always redisplayed even if I put in the right password?
+<LI><a href=#14>How can I change an attribute for an entire thread? We have an attribute "open problem/fixed"
+which should be changed for the whole thread if that problem has been fixed.
 </OL>
 
 <hr>
 <OL>
 
-<LI><a name=#1><b>How does one configure elog to display the last message by default</b>
+<LI><a name=1><b>How does one configure elog to display the last message by default</b>
 <p>
 One can use the <b><code>Start page</code></b> option for that. The entry:<p>
 <code>
@@ -59,7 +61,7 @@ all logbooks, the above statements can be placed in the <b><code>[global]</code>
 <p>
 
 
-<LI><a name=#2><b>Are there any plans to implement a MySQL back end?</b>
+<LI><a name=2><b>Are there any plans to implement a MySQL back end?</b>
 <p>
 No. The idea behind <b>ELOG</b> is that it is a <I>simple to use, simple to install</I> application.
 Many people use <b>ELOG</b> under Windows, and they even don't know what MySQL means. Other people like
@@ -73,7 +75,7 @@ into a MySQL database. One is available at
 <a href="http://midas.psi.ch/elogs/Forum/387">http://midas.psi.ch/elogdemo/Forum/387</a>.
 <p>
 
-<LI><a name=#3><b>Can I run the ELOG daemon from inside Apache or any other Web server?</b>
+<LI><a name=3><b>Can I run the ELOG daemon from inside Apache or any other Web server?</b>
 <p>
 No. The <b>ELOG</b> daemon was designed as a standalone server and it will stay like that in the future.
 The reason for that is that <code><b>elogd</b></code> should not rely on any other software. This is for
@@ -83,7 +85,7 @@ therefore becomes much simpler. To run <code><b>elogd</b></code> in parallel to 
 port 80, use Apache as a proxy, following the instruction on the installation page
 ("Running elogd under Apache").<p>
 
-<LI><a name=#4><b>I can access my logbook without any password, isn't that a security problem?</b>
+<LI><a name=4><b>I can access my logbook without any password, isn't that a security problem?</b>
 
 <p> By default, no password is used in <b>ELOG</b>. This can be useful for public directories etc. that
 anybody should be able to read. To add password security, read the documentation under <a href=
@@ -93,7 +95,7 @@ guest access.
 <p> Note that passwords are transferred over the network in plain text and therefore not secure. If this
 is a problem, a <a href="adminguide.html#secure">secure</a> network connection should be used. <p>
 
-<LI><a name=#5><b>I want a bookmark pointing to the last page where an attribute has a certain value</b>
+<LI><a name=5><b>I want a bookmark pointing to the last page where an attribute has a certain value</b>
 <p>
 Use the URL:
 <p>
@@ -106,7 +108,7 @@ This executes the "<I>Last</I>" command using a filter with &lt;attribute&gt;=&l
 Note the "l" before the second attribute, as in "<I>lAuthor=1</I>".
 <p>
 
-<LI><a name=#6><b>I want a logbook with public read access (no password), but restricted write access</b>
+<LI><a name=6><b>I want a logbook with public read access (no password), but restricted write access</b>
 <p>
 In an old version of the FAQ it has been stated here that one has to use two logbooks pointing to
 the same data directory. From Version 2.0.6 on, this can be accomplished much easier by the usage
@@ -131,14 +133,14 @@ Self register = 1
 
 in the configuration file. New users can then create their own accounts.<p>
 
-<LI><a name=#7><b>I have many loogbooks with password files, so if I add a user or want to change
+<LI><a name=7><b>I have many loogbooks with password files, so if I add a user or want to change
 a password I have to do this for all logbooks which is painful.</b>
 <p>
 You can have several logbooks point to the same password file. So if you change a user or
 password in that file, it becomes automatically available in all logbooks which use that file.
 <p>
 
-<LI><a name=#8><b>How can I configure ELOG such that it displays something else than the message list by default?</b>
+<LI><a name=8><b>How can I configure ELOG such that it displays something else than the message list by default?</b>
 <p>
 There is a simple trick. You use the <b>"<I>Start page</I>"</b> option in the <code><b>elogd</b></code> file
 to redirect the start page to something else. Here are some examples:
@@ -154,7 +156,7 @@ to redirect the start page to something else. Here are some examples:
 The various URLs can be copied from the browser's address bar when doint various things there.
 <p>
 
-<LI><a name=#9><b>I want to have additional commands specific to my lookbook</b>
+<LI><a name=9><b>I want to have additional commands specific to my lookbook</b>
 <p>
 New commands can be added for example with the <b><code>"Bottom text = bottom.html"</b></code> option.
 To display all messages from last week and month of with "category = info", one can put
@@ -171,7 +173,7 @@ Note that the parameters <b><code>"last=7&Category=Info"</b></code> applies a fi
 how to make these filters by looking at the URL in your browser when you submit a find
 command with certain options.<p>
 
-<LI><a name=#10><b>How does one configure elog to disable editing of existing messages? I want a logbook where one
+<LI><a name=10><b>How does one configure elog to disable editing of existing messages? I want a logbook where one
 can enter messages but not change them afterwards.</b>
 <p>
 This works with the option <b><code>Menu commands</code></b>. By default, the menu commands <b><code>
@@ -184,7 +186,7 @@ statement into <b><code>elogd.cfg</b></code>:
 This prohibits the execution of the commands "Edit" and "Delete".
 <p>
 
-<LI><a name=#11><b>How can I track various revisions of a message using the "edit" command?</b>
+<LI><a name=11><b>How can I track various revisions of a message using the "edit" command?</b>
 <p>
 There are two ways:
 <p>
@@ -215,7 +217,7 @@ each line. One can then edit the message and submit it. In the threaded message 
 one sees then the different revisions as a message thread.<p>
 </UL>
 
-<LI><a name=#12><b>How can I enter a date which is different from current one?</b>
+<LI><a name=12><b>How can I enter a date which is different from current one?</b>
 <p>
 Usually, the current date/time is recorded when you add a new entry. It might be, however,
 that one wants to enter "old" entries, or some entries with a date in the future (like a
@@ -238,13 +240,35 @@ and day. This is necessary since sorting is done only lexically. Please note tha
 <i>List Display</i> was renamed recently. Prior to version 2.3.10, it was called
 <i>Display Search</i>.
 
-<LI><a name=#13><b>I cannot pass the login page, it's always redisplayed even if I put in the right password?</b>
+<LI><a name=13><b>I cannot pass the login page, it's always redisplayed even if I put in the right password?</b>
 <p>
 This can happen if you change the login policy, for example move the <code><b>Password file =</b></code> entry
 in the configuration file from a logbook section to the [global] section or back. In that case some old cookies
 could be stored in your browser, which confuse the system. Please delete your cookies in the browser to resolve
 this problem. Read your browser documentation on how to do that.<p>
 
+<LI><a name=14><b>How can I change an attribute for an entire thread? We have an attribute "open problem/fixed"
+which should be changed for the whole thread if that problem has been fixed.</b>
+<p>
+This is a typical request of a bug-tracking set-up. Someone enters a request, opening a new
+thread. The expert(s) reply to the the request, and after a while, the request gets satisfied
+or the problem gets fixed. If an attribute like "status", having the options "open" and "fixed"
+could get changed for the whole thread, on could very easily search for all "open" problems.<p>
+
+Since this functionality is not implemented, an alternative strategy is recommended: Implement
+two (or more) logbooks. The first logbook has open issues, the second one has fixed ones. When
+an entry changes state, it simply has to be copied to the second logbook. This can be done
+by defining the menu command "move" in the config file, like:<p>
+
+<code>
+Menu commands = Back, New, Edit, Delete, Reply, Find, Move to, Config, Help<br>
+</code><p>
+
+Note the additional <i><b>Move to</b></i>. This solution is even more elegant than having
+attributes changed in whole threads, since one has two separate logbooks, and can treat
+the second one more like an archive, make separate back-ups, or deleting some entries
+after some time, while keeping the open issues untouched.
+<p>
 </UL>
 
 </OL>
