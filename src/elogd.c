@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.524  2004/12/20 12:41:53  midas
+   Fixed endless loop with handcrafted POST header
+
    Revision 1.523  2004/12/18 16:18:58  midas
    Changed locale to 'C' for email header date
 
@@ -19747,10 +19750,10 @@ void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
 
          while (*string == '-' || *string == '\n' || *string == '\r')
             string++;
-      }
+      } else
+         return; /* invalid request */
 
-   }
-   while ((int) (string - pinit) < length);
+   } while ((int) (string - pinit) < length);
    interprete(lbs->name, "");
 }
 
