@@ -79,7 +79,6 @@ No entries found = No se encontro ninguna entrada
 A new entry has been submitted on %s = Nueva entrada enviada en %s 
 Logbook = Logbook
 Copy ELog entry = Copiar entrada de ELog 
-Are you sure to delete this message? = Esta seguro de borrar este mensaje?
 Yes = Si
 No = No
 Error deleting message: status = Error al borrar mensaje: Status
@@ -91,9 +90,6 @@ Display threads = Mostrar hilos
 Logbook is empty = El logbook esta vacio
 Download = Bajar
 and all its replies = y todas sus respuestas
-#
-#---------- please translate following items ----------#
-#
 Message ID = ID de Mensaje 
 Not logged in = No ha iniciado sesion
 New passwords do not match, please retype = Las claves no coinciden, por favor reescriba 
@@ -259,7 +255,6 @@ Please enter attribute '%s' = Por favor ingrese atributo '%s'
 Entry time = Ingrese hora
 Start = Comienzo
 End = Fin
->From = De
 After = Despues
 to = para
 Before = Antes
@@ -269,3 +264,27 @@ Please enter numeric value for '%s' = Por favor ingrese valor numerico para '%s'
 Error: Attribute <b>%s</b> must be numeric = Error: El atributo <b>%s</b> debe ser numerico
 3 Months = 3 meses
 6 Months = 6 meses
+
+#
+#---------- please translate following items ----------#
+#
+Are you sure to delete this entry? = 
+ELOG CSV import = 
+Import = 
+Field separator = 
+Comma = 
+Semicolon = 
+Derive attributes from CSV file = 
+Ignore first line = 
+Preview import = 
+CSV filename = 
+CVS import preview of %s = 
+CSV Import = 
+Too many attributes in CSV file = 
+%d entries successfully imported = 
+Error sending local message = 
+Error receiving message = 
+Edit entry = 
+Delete entry = 
+From = 
+No 'Attributes' option present in %s = 

@@ -279,3 +279,15 @@ Delete entry = Supprimer l'entrée
 CSV Import = Importation CSV
 ELOG CSV import = Importation CSV ELOG
 Derive attributes from CSV file = Créer les attributs à partir du fichier CSV 
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Comma = 
+Semicolon = 
+Ignore first line = 
+Preview import = 
+CVS import preview of %s = 
+Too many attributes in CSV file = 
+%d entries successfully imported = 
+No 'Attributes' option present in %s = 

@@ -279,3 +279,12 @@ Edit entry = Eintrag ändern
 Delete entry = Eintrag löschen
 CSV Import = CSV Import
 Derive attributes from CSV file = Attribute aus CSV Datei übernehmen
+Comma = Komma
+Semicolon = Semikolon 
+Ignore first line = Erste Zeile ignorieren
+Preview import = Import überprüfen
+CSV import preview of %s = CSV Import Überprüfung von %s
+Too many attributes in CSV file = Zu viele Attribute in CSV Datei
+%d entries successfully imported = %d Einträge erfolgreich importiert
+No 'Attributes' option present in %s = Keine 'Attributes'-Options in %s vorhanden
+
