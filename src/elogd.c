@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.329  2004/06/04 14:03:15  midas
+   Fixed stack overflow under Windows on resubmit of entry
+
    Revision 1.328  2004/05/21 13:02:51  midas
    Fixed bug with date attributes and 'subst on edit'
 
@@ -4248,20 +4251,23 @@ int el_correct_links(LOGBOOK * lbs, int old_id, int new_id)
 This routine corrects that. */
 {
    int i, i1, n, n1, size;
-   char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
-       in_reply_to[80], reply_to[MAX_REPLY_TO * 10], encoding[80], locked_by[256];
+   char date[80], *attrib, *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10], encoding[80], locked_by[256];
    char list[MAX_N_ATTR][NAME_LENGTH], list1[MAX_N_ATTR][NAME_LENGTH];
-   char att_file[MAX_ATTACHMENTS][256];
+   char *att_file;
 
-   el_retrieve(lbs, new_id, date, attr_list, attrib, lbs->n_attr, NULL, 0, in_reply_to,
-               reply_to, att_file, encoding, locked_by);
+   attrib = malloc(MAX_N_ATTR * NAME_LENGTH);
+   text = malloc(TEXT_SIZE);
+   att_file = malloc(MAX_ATTACHMENTS * 256);
+   
+   el_retrieve(lbs, new_id, date, attr_list, (void *) attrib, lbs->n_attr, NULL, 0, in_reply_to,
+               reply_to, (void *)att_file, encoding, locked_by);
 
    /* go through in_reply_to list */
    n = strbreak(in_reply_to, list, MAX_N_ATTR, ",");
    for (i = 0; i < n; i++) {
-      size = sizeof(text);
-      el_retrieve(lbs, atoi(list[i]), date, attr_list, attrib, lbs->n_attr,
-                  text, &size, in_reply_to, reply_to, att_file, encoding, locked_by);
+      size = TEXT_SIZE;
+      el_retrieve(lbs, atoi(list[i]), date, attr_list, (void *)attrib, lbs->n_attr,
+                  text, &size, in_reply_to, reply_to, (void *)att_file, encoding, locked_by);
 
       n1 = strbreak(reply_to, list1, MAX_N_ATTR, ",");
       reply_to[0] = 0;
@@ -4276,19 +4282,19 @@ This routine corrects that. */
             strcat(reply_to, ", ");
       }
 
-      el_submit(lbs, atoi(list[i]), TRUE, date, attr_list, attrib, lbs->n_attr,
-                text, in_reply_to, reply_to, encoding, att_file, TRUE, locked_by);
+      el_submit(lbs, atoi(list[i]), TRUE, date, attr_list, (void *)attrib, lbs->n_attr,
+                text, in_reply_to, reply_to, encoding, (void *)att_file, TRUE, locked_by);
    }
 
-   el_retrieve(lbs, new_id, date, attr_list, attrib, lbs->n_attr, NULL, 0, in_reply_to,
-               reply_to, att_file, encoding, locked_by);
+   el_retrieve(lbs, new_id, date, attr_list, (void *)attrib, lbs->n_attr, NULL, 0, in_reply_to,
+               reply_to, (void *)att_file, encoding, locked_by);
 
    /* go through reply_to list */
    n = strbreak(reply_to, list, MAX_N_ATTR, ",");
    for (i = 0; i < n; i++) {
       size = sizeof(text);
-      el_retrieve(lbs, atoi(list[i]), date, attr_list, attrib, lbs->n_attr,
-                  text, &size, in_reply_to, reply_to, att_file, encoding, locked_by);
+      el_retrieve(lbs, atoi(list[i]), date, attr_list, (void *)attrib, lbs->n_attr,
+                  text, &size, in_reply_to, reply_to, (void *)att_file, encoding, locked_by);
 
       n1 = strbreak(in_reply_to, list1, MAX_N_ATTR, ",");
       in_reply_to[0] = 0;
@@ -4303,9 +4309,13 @@ This routine corrects that. */
             strcat(in_reply_to, ", ");
       }
 
-      el_submit(lbs, atoi(list[i]), TRUE, date, attr_list, attrib, lbs->n_attr,
-                text, in_reply_to, reply_to, encoding, att_file, TRUE, locked_by);
+      el_submit(lbs, atoi(list[i]), TRUE, date, attr_list, (void *)attrib, lbs->n_attr,
+                text, in_reply_to, reply_to, encoding, (void *)att_file, TRUE, locked_by);
    }
+
+   free(text);
+   free(attrib);
+   free(att_file);
 
    return EL_SUCCESS;
 }
@@ -11913,34 +11923,35 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
 
                   i = atoi(getparam(list[index]));
 
-                  rsprintf("<option %s value=364>%s %s\n", i == 364 ? "selected" : "",
-                           loc("Next"), loc("Year"));
-                  rsprintf("<option %s value=182>%s %s\n", i == 182 ? "selected" : "",
-                           loc("Next"), loc("6 Months"));
-                  rsprintf("<option %s value=92>%s %s\n", i == 92 ? "selected" : "",
-                           loc("Next"), loc("3 Months"));
-                  rsprintf("<option %s value=31>%s %s\n", i == 31 ? "selected" : "",
-                           loc("Next"), loc("Month"));
-                  rsprintf("<option %s value=7>%s %s\n", i == 7 ? "selected" : "",
-                           loc("Next"), loc("Week"));
-                  rsprintf("<option %s value=1>%s %s\n", i == 1 ? "selected" : "",
-                           loc("Next"), loc("Day"));
+                  rsprintf("<option %s value=-364>%s %s\n", i == -364 ? "selected" : "",
+                           loc("Last"), loc("Year"));
+                  rsprintf("<option %s value=-182>%s %s\n", i == -182 ? "selected" : "",
+                           loc("Last"), loc("6 Months"));
+                  rsprintf("<option %s value=-92>%s %s\n", i == -92 ? "selected" : "",
+                           loc("Last"), loc("3 Months"));
+                  rsprintf("<option %s value=-31>%s %s\n", i == -31 ? "selected" : "",
+                           loc("Last"), loc("Month"));
+                  rsprintf("<option %s value=-7>%s %s\n", i == -7 ? "selected" : "",
+                           loc("Last"), loc("Week"));
+                  rsprintf("<option %s value=-1>%s %s\n", i == -1 ? "selected" : "",
+                           loc("Last"), loc("Day"));
 
                   rsprintf("<option %s value=\"_all_\">%s\n", i == 0 ? "selected" : "",
                            loc("All entries"));
 
-                  rsprintf("<option %s value=-1>%s %s\n", i == -1 ? "selected" : "",
-                           loc("Last"), loc("Day"));
-                  rsprintf("<option %s value=-7>%s %s\n", i == -7 ? "selected" : "",
-                           loc("Last"), loc("Week"));
-                  rsprintf("<option %s value=-31>%s %s\n", i == -31 ? "selected" : "",
-                           loc("Last"), loc("Month"));
-                  rsprintf("<option %s value=-92>%s %s\n", i == -92 ? "selected" : "",
-                           loc("Last"), loc("3 Months"));
-                  rsprintf("<option %s value=-182>%s %s\n", i == -182 ? "selected" : "",
-                           loc("Last"), loc("6 Months"));
-                  rsprintf("<option %s value=-364>%s %s\n", i == -364 ? "selected" : "",
-                           loc("Last"), loc("Year"));
+                  rsprintf("<option %s value=1>%s %s\n", i == 1 ? "selected" : "",
+                           loc("Next"), loc("Day"));
+                  rsprintf("<option %s value=7>%s %s\n", i == 7 ? "selected" : "",
+                           loc("Next"), loc("Week"));
+                  rsprintf("<option %s value=31>%s %s\n", i == 31 ? "selected" : "",
+                           loc("Next"), loc("Month"));
+                  rsprintf("<option %s value=92>%s %s\n", i == 92 ? "selected" : "",
+                           loc("Next"), loc("3 Months"));
+                  rsprintf("<option %s value=182>%s %s\n", i == 182 ? "selected" : "",
+                           loc("Next"), loc("6 Months"));
+                  rsprintf("<option %s value=364>%s %s\n", i == 364 ? "selected" : "",
+                           loc("Next"), loc("Year"));
+
 
                   rsprintf("</select>\n");
                }
