@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.512  2004/11/16 15:35:17  midas
+   Version 2.5.5-2
+
    Revision 1.511  2004/11/16 15:32:03  midas
    Increased NAME_LENGTH to 1500, requires a stack size of 4MB
 
@@ -644,7 +647,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.5"
+#define VERSION "2.5.5-2"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
