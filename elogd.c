@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.57  2002/08/06 09:03:41  midas
+  Removed itoa()
+
   Revision 2.56  2002/08/06 08:57:39  midas
   Added email notify flag to password file
 
@@ -6046,7 +6049,7 @@ MSG_LIST *msg_list;
       {
       msg_list[n].lbs = lbs;
       msg_list[n].index = j;
-      itoa(lbs->el_index[j].file_time, msg_list[n].string, 10);
+      sprintf(msg_list[n].string, "%d", lbs->el_index[j].file_time);
       n++;
       }
     }
