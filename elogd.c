@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.77  2002/09/16 06:45:22  midas
+  Fixed problem with saving other user as admin
+
   Revision 2.76  2002/09/16 06:22:45  midas
   Various fixed and enhancement
 
@@ -1316,6 +1319,8 @@ static char old_language[256];
         return ptrans[n];
       return orig;
       }
+
+  printf("Language error: string \"%s\" not found in \"%s\'\n", orig, file_name);
 
   return orig;
 }
@@ -9529,7 +9534,7 @@ LOGBOOK *cur_lb;
           show_new_user_page(cur_lb);
           return;
           }
-        if (equal_ustring(command, loc("Save")) && isparam("new_user_name"))
+        if (equal_ustring(command, loc("Save")) && isparam("new_user_name") && !isparam("config"))
           {
           if (!save_user_config(cur_lb, getparam("new_user_name"), TRUE, FALSE))
             return;
