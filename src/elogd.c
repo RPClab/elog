@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.538  2005/01/17 20:01:33  midas
+   Added note about changing 'max content length'
+
    Revision 1.537  2005/01/17 16:14:51  midas
    Implemented 'show attributes' and removed 'hidden attributes'
 
@@ -20413,7 +20416,7 @@ void server_loop(void)
                                 ("Error: Content length (%d) larger than maximum content length (%d)"),
                                 content_length, _max_content_length);
                         strcat(str, "<br>");
-                        strcat(str, loc("Please increase <b>\"Max content length\"</b> in config file and restart elogd"));
+                        strcat(str, loc("Please increase <b>\"Max content length\"</b> in [global] part of config file and restart elogd"));
                         keep_alive = FALSE;
                         show_error(str);
                         goto redir;

@@ -704,7 +704,8 @@ This option restricts the size of attachments. When very large (>100MB) attachme
 are uploaded, the elogd server can be busy with this upload for a longer time and
 not respond to other requests during that time. To avoid this, the maximum size
 of attachments can be restricted. The server will then refuse to accept larger
-attachments. The default is 10485760 (= 10 MB).<p>
+attachments. The default is 10485760 (= 10 MB). This option has to be placed
+into the [global] section and the elogd server has to be restarted after a change.<p>
 
 </UL>
 
