@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.436  2004/08/04 13:45:15  midas
+   Do not print 'indexing logbooks..' when running as daemon
+
    Revision 1.435  2004/08/04 13:43:07  midas
    eputs() makes only one call to fputs_handler
 
@@ -19613,11 +19616,11 @@ void server_loop(int tcp_port)
    check_config();
 
    /* build logbook indices */
-   if (!verbose)
+   if (!verbose && !running_as_daemon)
       eprintf("Indexing logbooks ... ");
    if (el_index_logbooks() != EL_SUCCESS)
       exit(EXIT_FAILURE);
-   if (!verbose)
+   if (!verbose && !running_as_daemon)
       eputs("done");
 
    /* listen for connection */
