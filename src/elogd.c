@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.44  2003/03/10 08:08:11  midas
+  Fallback to elog/elog added
+
   Revision 1.43  2003/03/09 19:57:53  midas
   V2.3.2(beta)
 
@@ -12642,25 +12645,33 @@ usage:
 
   if (geteuid() == 0)
     {
-    if (! getcfg("global", "Grp", str) || ! setgroup(str) < 0)
+    if (!getcfg("global", "Grp", str) || setgroup(str) < 0)
       {
-      printf("Falling back to default group \"%s\"\n", DEFAULT_GROUP);
-      if (setgroup(DEFAULT_GROUP) < 0)
+      printf("Falling back to default group \"elog\"\n");
+      if (setgroup("elog") < 0)
         {
-        printf("Refuse to run as setgid root.\n");
-        printf("Please consider to define a Grp statement in configuration file\n");
-        exit(EXIT_FAILURE);
+        printf("Falling back to default group \"%s\"\n", DEFAULT_GROUP);
+        if (setgroup(DEFAULT_GROUP) < 0)
+          {
+          printf("Refuse to run as setgid root.\n");
+          printf("Please consider to define a Grp statement in configuration file\n");
+          exit(EXIT_FAILURE);
+          }
         }
       }
 
-    if (! getcfg("global", "Usr", str) || ! setuser(str) < 0)
+    if (!getcfg("global", "Usr", str) || setuser(str) < 0)
       {
-      printf("Falling back to default user \"%s\"\n", DEFAULT_USER);
-      if (setuser(DEFAULT_USER) < 0)
+      printf("Falling back to default user \"elog\"\n");
+      if (setuser("elog") < 0)
         {
-        printf("Refuse to run as setuid root.\n");
-        printf("Please consider to define a Usr statement in configuration file\n");
-        exit(EXIT_FAILURE);
+        printf("Falling back to default user \"%s\"\n", DEFAULT_USER);
+        if (setuser(DEFAULT_USER) < 0)
+          {
+          printf("Refuse to run as setuid root.\n");
+          printf("Please consider to define a Usr statement in configuration file\n");
+          exit(EXIT_FAILURE);
+          }
         }
       }
     }
