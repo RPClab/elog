@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.595  2005/03/24 10:37:43  ritt
+   Fixed problem with 'protect selection page' ans invalid authentication
+
    Revision 1.594  2005/03/24 09:38:15  ritt
    Fixed bug with crashing elog on 'protect selection page'
 
@@ -6986,6 +6989,7 @@ void set_login_cookies(LOGBOOK * lbs, char *user, char *enc_pwd)
 {
    char str[256], lb_name[256], exp[80];
    BOOL global;
+   int i;
 
    rsprintf("HTTP/1.1 302 Found\r\n");
    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
@@ -7016,8 +7020,10 @@ void set_login_cookies(LOGBOOK * lbs, char *user, char *enc_pwd)
 
    if (global &&user[0] == 0 && enc_pwd[0] == 0) {
       /* if logging out global, also delete possible non-global cookies */
-      set_cookie(lbs, "unm", user, 0, exp);
-      set_cookie(lbs, "upwd", enc_pwd, 0, exp);
+      for (i = 0; lb_list[i].name[0]; i++) {
+         set_cookie(&lb_list[i], "unm", user, 0, exp);
+         set_cookie(&lb_list[i], "upwd", enc_pwd, 0, exp);
+      }
    }
 
    if (user[0]) {
