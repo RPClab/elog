@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.82  2002/09/24 15:16:05  midas
+  Version 2.2.0
+
   Revision 2.81  2002/09/24 14:28:11  midas
   'Show last xxx' finished
 
@@ -347,7 +350,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.1.3"
+#define VERSION "2.2.0"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -7023,7 +7026,7 @@ MSG_LIST *msg_list;
       }
 
     /* store current command line as hidden parameter for page navigation */
-    if (str[0])
+    if (str[0] && !equal_ustring(str, "?"))
       {
       url_encode(str);
       rsprintf("<input type=hidden name=lastcmd value=\"%s\">\n", str);
