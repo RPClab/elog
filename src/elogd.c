@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.360  2004/06/28 19:35:07  midas
+   Rename logbook directory on logbook rename
+
    Revision 1.359  2004/06/27 12:16:37  midas
    Implemented renaming of logbooks
 
@@ -8030,6 +8033,7 @@ int rename_logbook(char *logbook, char *newname, char *error)
 {
    int fh, i, length;
    char *buf, *buf2, *p1, *p2;
+   char str[256], lb_dir[256], old_dir[256], new_dir[256];
 
    error[0] = 0;
 
@@ -8040,6 +8044,18 @@ int rename_logbook(char *logbook, char *newname, char *error)
       strcat(error, strerror(errno));
       return 0;
    }
+
+   /* rename logbook file */
+   if (!getcfg(logbook, "Subdir", str)) {
+      strlcpy(lb_dir, logbook_dir, sizeof(lb_dir));
+      if (lb_dir[strlen(lb_dir) - 1] != DIR_SEPARATOR)
+         strlcat(lb_dir, DIR_SEPARATOR_STR, sizeof(lb_dir));
+
+      sprintf(old_dir, "%s%s", lb_dir, logbook);
+      sprintf(new_dir, "%s%s", lb_dir, newname);
+      rename(old_dir, new_dir);
+   }
+
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
@@ -8095,6 +8111,7 @@ int rename_logbook(char *logbook, char *newname, char *error)
 
    close(fh);
    free(buf);
+
 
    /* force re-read of config file */
    check_config();
