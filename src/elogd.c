@@ -1,11 +1,14 @@
 /********************************************************************\
 
- Name:         elogd.c
- Created by:   Stefan Ritt
+   Name:         elogd.c
+   Created by:   Stefan Ritt
  
-  Contents:     Web server program for Electronic Logbook ELOG
+   Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.182  2004/01/13 09:37:01  midas
+   Admin users can edit [global <top>] section
+
    Revision 1.181  2004/01/12 08:37:17  midas
    Fixed bug that text disappeared upon upload
 
@@ -14,130 +17,130 @@
 
    Revision 1.179  2004/01/09 14:57:58  midas
    Use '$entry date' instead of '$date' for 'Last submission'
-   
-    Revision 1.178  2004/01/09 14:34:58  midas
-    Fixed bug in free_logbook_hierarchy()
-    
-     Revision 1.177  2004/01/09 14:21:56  midas
-     Evaluate 'preset xxx' on re-edit
-     
-      Revision 1.176  2004/01/09 14:09:41  midas
-      Added 'last submission' option
-      
-       Revision 1.175  2004/01/07 15:04:03  midas
-       Check for duplicate logbooks
-       
-        Revision 1.174  2004/01/07 14:28:58  midas
-        Added logging for SMTP communication
-        
-         Revision 1.173  2004/01/07 14:05:14  midas
-         Fixed bug with permissions
-         
-          Revision 1.172  2004/01/07 11:14:36  midas
-          Only section of current logbook can be edited in elogd.cfg
-          
-           Revision 1.171  2004/01/06 13:21:34  midas
-           Changed indent style
-           
-            Revision 1.170  2004/01/05 15:02:14  midas
-            Version 2.4.0
-            
-             Revision 1.169  2004/01/05 15:01:22  midas
-             Display message comment on reedit
-             
-              Revision 1.168  2003/12/31 19:47:06  midas
-              Implemented conditional attributes
-              
-               Revision 1.167  2003/12/15 09:36:23  midas
-               Added 'date on reply = 2' option
-               
-                Revision 1.166  2003/12/05 12:16:23  midas
-                Added .selframe style class
-                
-                 Revision 1.165  2003/12/04 20:56:51  midas
-                 Added 'date on reply' flag
-                 
-                  Revision 1.164  2003/12/04 11:34:36  midas
-                  Made 'preset xxx' work with boolean attributes
-                  
-                   Revision 1.163  2003/12/03 14:36:01  midas
-                   Added 'comment <attribute>'
-                   
-                    Revision 1.162  2003/12/03 12:49:14  midas
-                    Changed email notification format
-                    
-                     Revision 1.161  2003/12/03 12:10:24  midas
-                     Change email notification format
-                     
-                      Revision 1.160  2003/12/03 11:55:27  midas
-                      Added 'use email heading'
-                      
-                       Revision 1.159  2003/11/27 10:15:39  midas
-                       Fixed bug with deny/allow commands in other languages
-                       
-                        Revision 1.158  2003/11/20 16:36:05  midas
-                        Added check_config_file()
-                        
-                         Revision 1.157  2003/11/20 16:22:54  midas
-                         Removed printf()
-                         
-                          Revision 1.156  2003/11/20 16:05:03  midas
-                          Implemented check_config
-                          
-                           Revision 1.155  2003/11/20 13:37:20  midas
-                           Added 'restrict edit time'
-                           
-                            Revision 1.154  2003/11/19 14:11:38  midas
-                            Added MAX_REPLY_TO
-                            
-                             Revision 1.153  2003/11/11 12:21:33  midas
-                             Fixed bug with \r and \n in header
-                             
-                              Revision 1.152  2003/11/11 12:11:19  midas
-                              Fixed stack overflow on long reply-chains
-                              
-                               Revision 1.151  2003/10/28 13:21:26  midas
-                               Fixed empty 'Location:' for konqueror
-                               
-                                Revision 1.150  2003/10/26 15:55:46  midas
-                                Fixed bug in el_delete_message
-                                
-                                 Revision 1.149  2003/10/24 20:14:45  midas
-                                 - user cannot change login name if already existing
-                                 - user cannot search in logbooks of which he has no access
-                                 - added date of last entry in logbook selection page
-                                 
-                                  Revision 1.148  2003/10/01 06:52:01  midas
-                                  Started to implement synchronize
-                                  
-                                   Revision 1.147  2003/09/29 13:14:33  midas
-                                   Create password file if not present
-                                   
-                                    Revision 1.146  2003/09/08 10:57:46  midas
-                                    Fixed even more HTML errors
-                                    
-                                     Revision 1.145  2003/09/08 09:29:27  midas
-                                     Fixed HTML errors with nested tables etc.
-                                     
-                                      Revision 1.144  2003/09/08 07:34:18  midas
-                                      Increased timeout in SMTP conversation
-                                      
-                                       Revision 1.143  2003/09/05 15:16:21  midas
-                                       Changed search for '\r' to '\n' in determination of reply line length
-                                       
-                                        Revision 1.142  2003/07/29 20:25:47  midas
-                                        Fixed display of text attachments
-                                        
-                                         Revision 1.141  2003/07/28 15:24:27  midas
-                                         Fixed bug with elog:/n reference
-                                         
-                                          Revision 1.140  2003/07/25 08:34:52  midas
-                                          Fixed bugs in HTML code
+
+   Revision 1.178  2004/01/09 14:34:58  midas
+   Fixed bug in free_logbook_hierarchy()
+
+   Revision 1.177  2004/01/09 14:21:56  midas
+   Evaluate 'preset xxx' on re-edit
+
+   Revision 1.176  2004/01/09 14:09:41  midas
+   Added 'last submission' option
+
+   Revision 1.175  2004/01/07 15:04:03  midas
+   Check for duplicate logbooks
+
+   Revision 1.174  2004/01/07 14:28:58  midas
+   Added logging for SMTP communication
+
+   Revision 1.173  2004/01/07 14:05:14  midas
+   Fixed bug with permissions
+
+   Revision 1.172  2004/01/07 11:14:36  midas
+   Only section of current logbook can be edited in elogd.cfg
+
+   Revision 1.171  2004/01/06 13:21:34  midas
+   Changed indent style
+
+   Revision 1.170  2004/01/05 15:02:14  midas
+   Version 2.4.0
+
+   Revision 1.169  2004/01/05 15:01:22  midas
+   Display message comment on reedit
+
+   Revision 1.168  2003/12/31 19:47:06  midas
+   Implemented conditional attributes
+
+   Revision 1.167  2003/12/15 09:36:23  midas
+   Added 'date on reply = 2' option
+
+   Revision 1.166  2003/12/05 12:16:23  midas
+   Added .selframe style class
+
+   Revision 1.165  2003/12/04 20:56:51  midas
+   Added 'date on reply' flag
+
+   Revision 1.164  2003/12/04 11:34:36  midas
+   Made 'preset xxx' work with boolean attributes
+
+   Revision 1.163  2003/12/03 14:36:01  midas
+   Added 'comment <attribute>'
+
+   Revision 1.162  2003/12/03 12:49:14  midas
+   Changed email notification format
+
+   Revision 1.161  2003/12/03 12:10:24  midas
+   Change email notification format
+
+   Revision 1.160  2003/12/03 11:55:27  midas
+   Added 'use email heading'
+
+   Revision 1.159  2003/11/27 10:15:39  midas
+   Fixed bug with deny/allow commands in other languages
+
+   Revision 1.158  2003/11/20 16:36:05  midas
+   Added check_config_file()
+
+   Revision 1.157  2003/11/20 16:22:54  midas
+   Removed printf()
+
+   Revision 1.156  2003/11/20 16:05:03  midas
+   Implemented check_config
+
+   Revision 1.155  2003/11/20 13:37:20  midas
+   Added 'restrict edit time'
+
+   Revision 1.154  2003/11/19 14:11:38  midas
+   Added MAX_REPLY_TO
+
+   Revision 1.153  2003/11/11 12:21:33  midas
+   Fixed bug with \r and \n in header
+
+   Revision 1.152  2003/11/11 12:11:19  midas
+   Fixed stack overflow on long reply-chains
+
+   Revision 1.151  2003/10/28 13:21:26  midas
+   Fixed empty 'Location:' for konqueror
+
+   Revision 1.150  2003/10/26 15:55:46  midas
+   Fixed bug in el_delete_message
+
+   Revision 1.149  2003/10/24 20:14:45  midas
+   - user cannot change login name if already existing
+   - user cannot search in logbooks of which he has no access
+   - added date of last entry in logbook selection page
+
+   Revision 1.148  2003/10/01 06:52:01  midas
+   Started to implement synchronize
+
+   Revision 1.147  2003/09/29 13:14:33  midas
+   Create password file if not present
+
+   Revision 1.146  2003/09/08 10:57:46  midas
+   Fixed even more HTML errors
+
+   Revision 1.145  2003/09/08 09:29:27  midas
+   Fixed HTML errors with nested tables etc.
+
+   Revision 1.144  2003/09/08 07:34:18  midas
+   Increased timeout in SMTP conversation
+
+   Revision 1.143  2003/09/05 15:16:21  midas
+   Changed search for '\r' to '\n' in determination of reply line length
+
+   Revision 1.142  2003/07/29 20:25:47  midas
+   Fixed display of text attachments
+
+   Revision 1.141  2003/07/28 15:24:27  midas
+   Fixed bug with elog:/n reference
+
+   Revision 1.140  2003/07/25 08:34:52  midas
+   Fixed bugs in HTML code
                                           
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.4.0"
+#define VERSION "2.4.1"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -386,6 +389,7 @@ typedef struct {
    char name[256];
    char name_enc[256];
    char data_dir[256];
+   char top_group[256];
    EL_INDEX *el_index;
    int *n_el_index;
    int n_attr;
@@ -425,8 +429,12 @@ BOOL isparam(char *param);
 char *getparam(char *param);
 void logf(LOGBOOK * lbs, const char *format, ...);
 BOOL check_login_user(LOGBOOK * lbs, char *user);
+LBLIST get_logbook_hierarchy(void);
+int is_logbook_in_group(LBLIST pgrp, char *logbook);
+void free_logbook_hierarchy(LBLIST root);
+void show_top_text(LOGBOOK *lbs);
 
-                                                   /*---- Funcions from the MIDAS library -----------------------------*/
+/*---- Funcions from the MIDAS library -----------------------------*/
 
 BOOL equal_ustring(const char *str1, const char *str2)
 {
@@ -447,13 +455,13 @@ BOOL equal_ustring(const char *str1, const char *str2)
    return TRUE;
 }
 
-                                                   /*---- strlcpy and strlcat to avoid buffer overflow ----------------*/
+/*---- strlcpy and strlcat to avoid buffer overflow ----------------*/
 
-                                                   /*
-                                                    * Copy src to string dst of size siz.  At most siz-1 characters
-                                                    * will be copied.  Always NUL terminates (unless size == 0).
-                                                    * Returns strlen(src); if retval >= siz, truncation occurred.
-                                                    */
+/*
+* Copy src to string dst of size siz.  At most siz-1 characters
+* will be copied.  Always NUL terminates (unless size == 0).
+* Returns strlen(src); if retval >= siz, truncation occurred.
+*/
 size_t strlcpy(char *dst, const char *src, size_t size)
 {
    char *d = dst;
@@ -478,13 +486,13 @@ size_t strlcpy(char *dst, const char *src, size_t size)
    return (s - src - 1);        /* count does not include NUL */
 }
 
-                                                   /*
-                                                    * Appends src to string dst of size siz (unlike strncat, siz is the
-                                                    * full size of dst, not space left).  At most siz-1 characters
-                                                    * will be copied.  Always NUL terminates (unless size <= strlen(dst)).
-                                                    * Returns strlen(src) + MIN(size, strlen(initial dst)).
-                                                    * If retval >= size, truncation occurred.
-                                                    */
+/*
+* Appends src to string dst of size siz (unlike strncat, siz is the
+* full size of dst, not space left).  At most siz-1 characters
+* will be copied.  Always NUL terminates (unless size <= strlen(dst)).
+* Returns strlen(src) + MIN(size, strlen(initial dst)).
+* If retval >= size, truncation occurred.
+*/
 size_t strlcat(char *dst, const char *src, size_t size)
 {
    char *d = dst;
@@ -512,7 +520,7 @@ size_t strlcat(char *dst, const char *src, size_t size)
    return (dlen + (s - src));   /* count does not include NUL */
 }
 
-                                                   /*-------------------------------------------------------------------*/
+/*-------------------------------------------------------------------*/
 
 void strsubst(char *string, char name[][NAME_LENGTH], char value[][NAME_LENGTH], int n)
                                                       /* subsitute "$name" with value corresponding to name */
@@ -562,12 +570,12 @@ void strsubst(char *string, char name[][NAME_LENGTH], char value[][NAME_LENGTH],
    strcpy(string, tmp);
 }
 
-                                                   /*------------------------------------------------------------------*/
+/*------------------------------------------------------------------*/
 
 void url_decode(char *p)
-                                                   /********************************************************************\
-                                                   Decode the given string in-place by expanding %XX escapes
-                                                   \********************************************************************/
+/********************************************************************\
+Decode the given string in-place by expanding %XX escapes
+\********************************************************************/
 {
    char *pD, str[3];
    int i;
@@ -599,9 +607,9 @@ void url_decode(char *p)
 }
 
 void url_encode(char *ps, int size)
-                                                   /********************************************************************\
-                                                   Encode the given string in-place by adding %XX escapes
-                                                   \********************************************************************/
+/********************************************************************\
+Encode the given string in-place by adding %XX escapes
+\********************************************************************/
 {
    unsigned char *pd, *p, str[NAME_LENGTH];
 
@@ -620,7 +628,7 @@ void url_encode(char *ps, int size)
    strlcpy(ps, str, size);
 }
 
-                                                   /*-------------------------------------------------------------------*/
+/*-------------------------------------------------------------------*/
 
 char *map = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -724,11 +732,11 @@ void do_crypt(char *s, char *d)
 #endif
 }
 
-                                                   /*------------------------------------------------------------------*\
+/*------------------------------------------------------------------*\
                                                    
-                                                    MD5 Checksum Routines
+   MD5 Checksum Routines
                                                     
-                                                   \*------------------------------------------------------------------*/
+\*------------------------------------------------------------------*/
 
 typedef struct {
    unsigned int state[4];       // state (ABCD)
@@ -736,25 +744,25 @@ typedef struct {
    unsigned char buffer[64];    // input buffer
 } MD5_CONTEXT;
 
-                                                   /*------------------------------------------------------------------*/
+/*------------------------------------------------------------------*/
 
-                                                   /* prototypes of the support routines */
+/* prototypes of the support routines */
 void _MD5_update(MD5_CONTEXT *, const void *, unsigned int);
 void _MD5_transform(unsigned int[4], unsigned char[64]);
 void _MD5_encode(unsigned char *, unsigned int *, unsigned int);
 void _MD5_decode(unsigned int *, unsigned char *, unsigned int);
 
-                                                   /* F, G, H and I are basic MD5 functions */
+/* F, G, H and I are basic MD5 functions */
 #define F(x, y, z) (((x) & (y)) | ((~x) & (z)))
 #define G(x, y, z) (((x) & (z)) | ((y) & (~z)))
 #define H(x, y, z) ((x) ^ (y) ^ (z))
 #define I(x, y, z) ((y) ^ ((x) | (~z)))
 
-                                                   /* ROTATE_LEFT rotates x left n bits */
+/* ROTATE_LEFT rotates x left n bits */
 #define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32-(n))))
 
-                                                   /* FF, GG, HH, and II transformations for rounds 1, 2, 3, and 4 */
-                                                   /* Rotation is separate from addition to prevent recomputation */
+/* FF, GG, HH, and II transformations for rounds 1, 2, 3, and 4 */
+/* Rotation is separate from addition to prevent recomputation */
 #define FF(a, b, c, d, x, s, ac) {                  \
    (a) += F ((b), (c), (d)) + (x) + (unsigned int)(ac);  \
    (a) = ROTATE_LEFT ((a), (s));                   \
@@ -776,9 +784,9 @@ void _MD5_decode(unsigned int *, unsigned char *, unsigned int);
    (a) += (b);                                     \
                                                    }
 
-                                                   /*------------------------------------------------------------------*/
+/*------------------------------------------------------------------*/
 
-                                                   /* main MD5 checksum routine, returns digest from pdata buffer */
+/* main MD5 checksum routine, returns digest from pdata buffer */
 
 void MD5_checksum(const void *pdata, unsigned int len, unsigned char digest[16])
 {
@@ -819,7 +827,7 @@ void MD5_checksum(const void *pdata, unsigned int len, unsigned char digest[16])
    _MD5_encode(digest, ctx.state, 16);
 }
 
-                                                   /*------------------------------------------------------------------*/
+/*------------------------------------------------------------------*/
 
 void _MD5_update(MD5_CONTEXT * pctx, const void *pdata, unsigned int len)
 {
@@ -854,9 +862,9 @@ void _MD5_update(MD5_CONTEXT * pctx, const void *pdata, unsigned int len)
    memcpy(&pctx->buffer[index], &pin[i], len - i);
 }
 
-                                                   /*------------------------------------------------------------------*/
+/*------------------------------------------------------------------*/
 
-                                                   /* basic transformation, transforms state based on block */
+/* basic transformation, transforms state based on block */
 void _MD5_transform(unsigned int state[4], unsigned char block[64])
 {
    unsigned int lA = state[0], lB = state[1], lC = state[2], lD = state[3];
@@ -945,10 +953,10 @@ void _MD5_transform(unsigned int state[4], unsigned char block[64])
    memset(x, 0, sizeof(x));
 }
 
-                                                   /*------------------------------------------------------------------*/
+/*------------------------------------------------------------------*/
 
-                                                   /* encodes input (unsigned int) into output (unsigned char), 
-                                                      assumes that lLen is a multiple of 4 */
+/* encodes input (unsigned int) into output (unsigned char), 
+   assumes that lLen is a multiple of 4 */
 void _MD5_encode(unsigned char *pout, unsigned int *pin, unsigned int len)
 {
    unsigned int i, j;
@@ -961,10 +969,10 @@ void _MD5_encode(unsigned char *pout, unsigned int *pin, unsigned int len)
    }
 }
 
-                                                   /*------------------------------------------------------------------*/
+/*------------------------------------------------------------------*/
 
-                                                   /* encodes input (unsigned char) into output (unsigned int),
-                                                      assumes that lLen is a multiple of 4 */
+/* encodes input (unsigned char) into output (unsigned int),
+   assumes that lLen is a multiple of 4 */
 void _MD5_decode(unsigned int *pout, unsigned char *pin, unsigned int len)
 {
    unsigned int i, j;
@@ -975,9 +983,9 @@ void _MD5_decode(unsigned int *pout, unsigned char *pin, unsigned int len)
           (((unsigned int) pin[j + 3]) << 24);
 }
 
-                                                   /*------------------------------------------------------------------*/
+/*------------------------------------------------------------------*/
 
-                                                   /* Wrapper for setegid. */
+/* Wrapper for setegid. */
 int setgroup(char *str)
 {
 #ifdef OS_UNIX
@@ -1023,7 +1031,7 @@ int setuser(char *str)
 #endif
 }
 
-                                                   /*-------------------------------------------------------------------*/
+/*-------------------------------------------------------------------*/
 
 INT recv_string(int sock, char *buffer, INT buffer_size, INT millisec)
 {
@@ -1063,7 +1071,7 @@ INT recv_string(int sock, char *buffer, INT buffer_size, INT millisec)
    return n - 1;
 }
 
-                                                   /*-------------------------------------------------------------------*/
+/*-------------------------------------------------------------------*/
 
 INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
              char *subject, char *text, BOOL email_to, char *url,
@@ -1577,7 +1585,36 @@ void check_config_file()
 
 /*-------------------------------------------------------------------*/
 
-int getcfg(char *group, char *param, char *value)
+char _topgroup[256];
+
+void setcfg_topgroup(char *topgroup)
+{
+   strcpy(_topgroup, topgroup);
+}
+
+char *getcfg_topgroup()
+{
+   if (_topgroup[0])
+      return _topgroup;
+
+   return NULL;
+}
+
+/*------------------------------------------------------------------*/
+
+int is_logbook(char *logbook)
+{
+   char str[256];
+
+   strlcpy(str, logbook, sizeof(str));
+   str[6] = 0;
+   return !equal_ustring(str, "global");
+}
+
+/*-------------------------------------------------------------------*/
+
+int getcfg_simple(char *group, char *param, char *value)
+/* read value for certain parameter in configuration file using [<group>] */
 {
    char *str, *p, *pstr;
    int length;
@@ -1664,8 +1701,42 @@ int getcfg(char *group, char *param, char *value)
 
    free(str);
 
+   return 0;
+}
+
+/*-------------------------------------------------------------------*/
+
+int getcfg(char *group, char *param, char *value)
+/* 
+   Read parameter from configuration file.
+   
+   - if group == [global] and top group exists, read
+     from [global <top group>]
+
+   - if parameter not in [global <top group>], read from [global]
+
+   - if group is logbook, read from logbook section
+
+   - if parameter not in [<logbook>], read from [global <top group>]
+     or [global]
+*/
+{
+   char str[256];
+   int status;
+
+   /* if group is [global] and top group exists, read from there */
+   if (equal_ustring(group, "global") && getcfg_topgroup()) {
+      sprintf(str, "global %s", getcfg_topgroup());
+      if (getcfg(str, param, value))
+         return 1;
+   }
+
+   status = getcfg_simple(group, param, value);
+   if (status)
+      return status;
+
    /* if parameter not found in logbook, look in [global] section */
-   if (!equal_ustring(group, "global"))
+   if (!group || is_logbook(group))
       return getcfg("global", param, value);
 
    return 0;
@@ -1832,6 +1903,24 @@ int enumgrp(int index, char *group)
       while (*p && (*p == '\r' || *p == '\n'))
          p++;
    } while (*p);
+
+   return 0;
+}
+
+/*-------------------------------------------------------------------*/
+
+int exist_top_group()
+{
+   int i;
+   char str[256];
+
+   for (i = 0;; i++) {
+      if (!enumcfg("global", str, NULL, i))
+         break;
+      str[9] = 0;
+      if (equal_ustring(str, "top group"))
+         return 1;
+   }
 
    return 0;
 }
@@ -2376,7 +2465,7 @@ int el_index_logbooks(BOOL reinit)
       if (!enumgrp(i, str))
          break;
 
-      if (equal_ustring(str, "global"))
+      if (!is_logbook(str))
          continue;
 
       n++;
@@ -2387,7 +2476,7 @@ int el_index_logbooks(BOOL reinit)
       if (!enumgrp(i, logbook))
          break;
 
-      if (equal_ustring(logbook, "global"))
+      if (!is_logbook(logbook))
          continue;
 
       /* check for duplicate name */
@@ -2504,6 +2593,22 @@ int el_index_logbooks(BOOL reinit)
       n++;
    }
 
+   /* if top groups defined, set top group in logbook */
+   if (exist_top_group()) {
+      LBLIST phier;
+
+      phier = get_logbook_hierarchy();
+      for (i = 0; i < phier->n_members; i++)
+         if (phier->member[i]->is_top)
+            for (j = 0; lb_list[j].name[0]; j++)
+               if (is_logbook_in_group(phier->member[i], lb_list[j].name))
+                  strcpy(lb_list[j].top_group, phier->member[i]->name);
+
+
+      free_logbook_hierarchy(phier);
+   }
+
+
    return EL_SUCCESS;
 }
 
@@ -2520,10 +2625,10 @@ int el_search_message(LOGBOOK * lbs, int mode, int message_id, BOOL head_only)
    int   mode              Search mode, EL_FIRST, EL_LAST, EL_NEXT, EL_PREV
    int   message_id        Message id for EL_NEXT and EL_PREV
    
-    Function value:
-    int                     New message id
+   Function value:
+   int                     New message id
     
-     \********************************************************************/
+\********************************************************************/
 {
    int i;
 
@@ -2612,38 +2717,38 @@ INT el_retrieve(LOGBOOK * lbs,
                 char *text, int *textsize, char *in_reply_to,
                 char *reply_to, char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
                 char *encoding, char *locked_by)
-                /********************************************************************\
-                
-                 Routine: el_retrieve
-                 
-                  Purpose: Retrieve an ELog entry by its message tab
-                  
-                   Input:
-                   LOGBOOK lbs             Logbook structure
-                   int    message_id       Message ID to retrieve
-                   int    *size            Size of text buffer
-                   
-                    Output:
-                    char   *tag             tag of retrieved message
-                    char   *date            Date/time of message recording
-                    char   attr_list        Names of attributes
-                    char   attrib           Values of attributes
-                    int    n_attr           Number of attributes
-                    char   *text            Message text
-                    char   *in_reply_to     Original message if this one is a reply
-                    char   *reply_to        Replies for current message
-                    char   *attachment[]    File attachments
-                    char   *encoding        Encoding of message
-                    char   *locked_by       User/Host if locked for editing
-                    int    *size            Actual message text size
-                    
-                     Function value:
-                     EL_SUCCESS              Successful completion
-                     EL_EMPTY                Logbook is empty
-                     EL_NO_MSG               Message doesn't exist
-                     EL_FILE_ERROR           Internal error
-                     
-                      \********************************************************************/
+/********************************************************************\
+
+   Routine: el_retrieve
+
+   Purpose: Retrieve an ELog entry by its message tab
+
+   Input:
+   LOGBOOK lbs             Logbook structure
+   int    message_id       Message ID to retrieve
+   int    *size            Size of text buffer
+
+   Output:
+   char   *tag             tag of retrieved message
+   char   *date            Date/time of message recording
+   char   attr_list        Names of attributes
+   char   attrib           Values of attributes
+   int    n_attr           Number of attributes
+   char   *text            Message text
+   char   *in_reply_to     Original message if this one is a reply
+   char   *reply_to        Replies for current message
+   char   *attachment[]    File attachments
+   char   *encoding        Encoding of message
+   char   *locked_by       User/Host if locked for editing
+   int    *size            Actual message text size
+
+   Function value:
+   EL_SUCCESS              Successful completion
+   EL_EMPTY                Logbook is empty
+   EL_NO_MSG               Message doesn't exist
+   EL_FILE_ERROR           Internal error
+
+\********************************************************************/
 {
    int i, index, size, fh;
    char str[NAME_LENGTH], file_name[256], *p;
@@ -2930,36 +3035,36 @@ int el_submit(LOGBOOK * lbs, int message_id,
               char *in_reply_to, char *reply_to,
               char *encoding, char afilename[MAX_ATTACHMENTS][256], BOOL mark_original,
               char *locked_by)
-              /********************************************************************\
-              
-               Routine: el_submit
-               
-                Purpose: Submit an ELog entry
-                
-                 Input:
-                 LOGBOOK lbs             Logbook structure
-                 int    message_id       Message id for existing message, 0 for
-                 new message
-                 char   *date            Message date
-                 char   attr_name[][]    Name of attributes
-                 char   attr_value[][]   Value of attributes
-                 int    n_attr           Number of attributes
-                 
-                  char   *text            Message text
-                  char   *in_reply_to     In reply to this message
-                  char   *reply_to        Replie(s) to this message
-                  char   *encoding        Text encoding, either HTML or plain
-                  
-                   char   *afilename[]     File name of attachments
-                   char   *tag             If given, edit existing message
-                   INT    *tag_size        Maximum size of tag
-                   BOOL   mark_original    Tag original message for replies
-                   char   *locked_by       User/Host which locked message for edit
-                   
-                    Function value:
-                    int                     New message ID
-                    
-                     \********************************************************************/
+/********************************************************************\
+
+   Routine: el_submit
+
+   Purpose: Submit an ELog entry
+
+   Input:
+   LOGBOOK lbs             Logbook structure
+   int    message_id       Message id for existing message, 0 for
+   new message
+   char   *date            Message date
+   char   attr_name[][]    Name of attributes
+   char   attr_value[][]   Value of attributes
+   int    n_attr           Number of attributes
+
+   char   *text            Message text
+   char   *in_reply_to     In reply to this message
+   char   *reply_to        Replie(s) to this message
+   char   *encoding        Text encoding, either HTML or plain
+
+   char   *afilename[]     File name of attachments
+   char   *tag             If given, edit existing message
+   INT    *tag_size        Maximum size of tag
+   BOOL   mark_original    Tag original message for replies
+   char   *locked_by       User/Host which locked message for edit
+
+   Function value:
+   int                     New message ID
+
+\********************************************************************/
 {
    INT n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id;
    struct tm tms;
@@ -3241,27 +3346,27 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
                       BOOL delete_attachments,
                       char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
                       BOOL delete_bw_ref, BOOL delete_reply_to)
-                      /********************************************************************\
-                      
-                       Routine: el_delete_message
-                       
-                        Purpose: Delete an ELog entry including attachments
-                        
-                         Input:
-                         LOGBOOK *lbs          Pointer to logbook structure
-                         int     message_id    Message ID
-                         BOOL    delete_attachments   Delete attachments if TRUE
-                         char    attachment    Used to return attachments (on move)
-                         BOOL    delete_bw_ref If true, delete backward references
-                         BOOL    delete_reply_to If true, delete replies to this message
-                         
-                          Output:
-                          <none>
-                          
-                           Function value:
-                           EL_SUCCESS              Successful completion
-                           
-                            \********************************************************************/
+/********************************************************************\
+
+   Routine: el_delete_message
+
+   Purpose: Delete an ELog entry including attachments
+
+   Input:
+   LOGBOOK *lbs          Pointer to logbook structure
+   int     message_id    Message ID
+   BOOL    delete_attachments   Delete attachments if TRUE
+   char    attachment    Used to return attachments (on move)
+   BOOL    delete_bw_ref If true, delete backward references
+   BOOL    delete_reply_to If true, delete replies to this message
+
+   Output:
+   <none>
+
+   Function value:
+   EL_SUCCESS              Successful completion
+
+\********************************************************************/
 {
    INT i, index, n, size, fh, tail_size;
    char str[MAX_PATH_LENGTH], file_name[MAX_PATH_LENGTH], reply_to[MAX_REPLY_TO * 10],
@@ -4299,6 +4404,8 @@ void show_standard_header(LOGBOOK * lbs, BOOL expires, char *title, char *path)
 
    rsprintf("<body>\n");
 
+   show_top_text(lbs);
+
    if (path)
       rsprintf("<form name=form1 method=\"GET\" action=\"%s\">\n\n", path);
    else
@@ -4354,7 +4461,7 @@ void show_upgrade_page(LOGBOOK * lbs)
    rsprintf("<address>\n");
    rsprintf("<a href=\"http://midas.psi.ch/~stefan\">S. Ritt</a>, 18 October 2001");
    rsprintf("</address>");
-
+   show_bottom_text(lbs);
    rsprintf("</body></html>\r\n");
 }
 
@@ -4654,6 +4761,82 @@ void show_standard_title(char *logbook, char *text, int printable)
    rsprintf("</td>\n");
 
    rsprintf("</tr></table></td></tr>\n\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void show_top_text(LOGBOOK *lbs)
+{
+   char str[NAME_LENGTH];
+   int size;
+
+   if (getcfg(lbs->name, "top text", str)) {
+      FILE *f;
+      char file_name[256], *buf;
+
+      /* check if file starts with an absolute directory */
+      if (str[0] == DIR_SEPARATOR || str[1] == ':')
+         strcpy(file_name, str);
+      else {
+         strlcpy(file_name, resource_dir, sizeof(file_name));
+         strlcat(file_name, str, sizeof(file_name));
+      }
+
+      f = fopen(file_name, "rb");
+      if (f != NULL) {
+         fseek(f, 0, SEEK_END);
+         size = TELL(fileno(f));
+         fseek(f, 0, SEEK_SET);
+
+         buf = malloc(size + 1);
+         fread(buf, 1, size, f);
+         buf[size] = 0;
+         fclose(f);
+
+         rsputs(buf);
+      } else
+         rsputs(file_name);
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+void show_bottom_text(LOGBOOK *lbs)
+{
+   char str[NAME_LENGTH];
+   int size;
+
+   if (getcfg(lbs->name, "bottom text", str)) {
+      FILE *f;
+      char file_name[256], *buf;
+
+      /* check if file starts with an absolute directory */
+      if (str[0] == DIR_SEPARATOR || str[1] == ':')
+         strcpy(file_name, str);
+      else {
+         strlcpy(file_name, resource_dir, sizeof(file_name));
+         strlcat(file_name, str, sizeof(file_name));
+      }
+
+      f = fopen(file_name, "rb");
+      if (f != NULL) {
+         fseek(f, 0, SEEK_END);
+         size = TELL(fileno(f));
+         fseek(f, 0, SEEK_SET);
+
+         buf = malloc(size + 1);
+         fread(buf, 1, size, f);
+         buf[size] = 0;
+         fclose(f);
+
+         rsputs(buf);
+      } else
+         rsputs(file_name);
+   } else
+      /* add little logo */
+      rsprintf
+          ("<center><a class=\"bottomlink\" href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></center>",
+           VERSION);
 }
 
 /*------------------------------------------------------------------*/
@@ -5134,8 +5317,8 @@ void show_change_pwd_page(LOGBOOK * lbs)
         loc("Submit"));
 
    rsprintf("</table>\n");
-
-   rsprintf("</body></html>\r\n");
+   show_bottom_text(lbs);
+   rsprintf("</form></body></html>\r\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -5222,7 +5405,8 @@ BOOL is_cond_attr(index)
 
 /*------------------------------------------------------------------*/
 
-void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload, BOOL breedit)
+void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload,
+                    BOOL breedit)
 {
    int i, j, n, index, size, width, height, fh, length, first, input_size, input_maxlen,
        format_flags;
@@ -5796,7 +5980,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       if (text[0]) {
          if (bedit) {
-            if (bupload || (breedit && !getcfg_cond(lbs->name, condition, "Preset text", str)))
+            if (bupload
+                || (breedit && !getcfg_cond(lbs->name, condition, "Preset text", str)))
                rsputs(text);
          } else {
             if (!getcfg_cond(lbs->name, condition, "Quote on reply", str)
@@ -6061,12 +6246,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("</span></td></tr>\n\n");
 
    rsprintf("</table><!-- show_standard_title -->\n");
+   show_bottom_text(lbs);
    rsprintf("</form></body></html>\r\n");
 
    /* rescan unconditional attributes */
    if (condition[0])
       scan_attributes(lbs->name, NULL);
-
 }
 
 /*------------------------------------------------------------------*/
@@ -6158,7 +6343,7 @@ void show_find_form(LOGBOOK * lbs)
       if (!enumgrp(i, str))
          break;
 
-      if (equal_ustring(str, "global"))
+      if (is_logbook(str))
          continue;
    }
 
@@ -6279,6 +6464,7 @@ void show_find_form(LOGBOOK * lbs)
             loc("Search text also in attributes"));
 
    rsprintf("</table></td></tr></table>\n");
+   show_bottom_text(lbs);   
    rsprintf("</form></body></html>\r\n");
 }
 
@@ -6332,11 +6518,11 @@ const char *find_next_section(const char *buf)
 
 /*------------------------------------------------------------------*/
 
-void show_admin_page(LOGBOOK * lbs, BOOL bglobal)
+void show_admin_page(LOGBOOK * lbs, char *top_group)
 {
    int fh, length, rows, cols;
    char *buffer, *p;
-   char section[NAME_LENGTH], str[NAME_LENGTH];
+   char section[NAME_LENGTH], str[NAME_LENGTH], str2[NAME_LENGTH], grp[NAME_LENGTH];
 
    /*---- header ----*/
 
@@ -6356,14 +6542,35 @@ void show_admin_page(LOGBOOK * lbs, BOOL bglobal)
    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
 
-   if (isgroup("global") && !bglobal) {
+   if (lbs->top_group[0] && (!top_group || equal_ustring(top_group, "global"))) {
       if (!getcfg("global", "Admin user", str) || strstr(str, getparam("unm")) != 0) {
-         rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change [global]"));
+         if (lbs->top_group[0]) {
+            sprintf(grp, "[global %s]", lbs->top_group);
+            sprintf(str, loc("Change %s"), grp);
+            rsprintf("<input type=submit name=cmd value=\"%s\">\n", str);
+         }
       }
    }
 
-   if (bglobal)
-      rsprintf("<input type=hidden name=global value=1>\n");
+   if (isgroup("global") && !equal_ustring(top_group, "global")) {
+      if (!getcfg_simple("global", "Admin user", str)
+          || strstr(str, getparam("unm")) != 0) {
+         sprintf(str, loc("Change %s"), "[global]");
+         rsprintf("<input type=submit name=cmd value=\"%s\">\n", str);
+      }
+   }
+
+   if (top_group) {
+      if (equal_ustring(top_group, "global")) {
+         rsprintf("<input type=hidden name=global value=\"global\">\n");
+         sprintf(str, loc("Editing %s"), "[global]");
+      } else {
+         rsprintf("<input type=hidden name=global value=\"%s\">\n", top_group);
+         sprintf(str2, "[global %s]", top_group);
+         sprintf(str, loc("Editing %s"), str2);
+      }
+      rsprintf("<br><center>%s</center>", str);
+   }
 
    rsprintf("</span></td></tr>\n\n");
 
@@ -6393,7 +6600,13 @@ void show_admin_page(LOGBOOK * lbs, BOOL bglobal)
    close(fh);
 
    /* extract section of current logbook */
-   strcpy(section, bglobal ? "global" : lbs->name);
+   if (top_group) {
+      if (equal_ustring(top_group, "global"))
+         strcpy(section, "global");
+      else
+         sprintf(section, "global %s", top_group);
+   } else
+      strcpy(section, lbs->name);
 
    if ((p = (char *) find_section(buffer, section)) != NULL) {
       if (strchr(p, ']')) {
@@ -6446,7 +6659,8 @@ void show_admin_page(LOGBOOK * lbs, BOOL bglobal)
    rsprintf("</span></td></tr>\n\n");
 
    rsprintf("</table>\n\n");
-   rsprintf("</body></html>\r\n");
+   show_bottom_text(lbs);
+   rsprintf("</form></body></html>\r\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -6473,7 +6687,13 @@ int save_admin_config(LOGBOOK * lbs)
    read(fh, buf, length);
    buf[length] = 0;
 
-   strlcpy(section, isparam("global") ? "global" : lbs->name, sizeof(section));
+   if (isparam("global")) {
+      if (equal_ustring(getparam("global"), "global"))
+         strcpy(section, "global");
+      else
+         sprintf(section, "global %s", getparam("global"));
+   } else
+      strlcpy(section, lbs->name, sizeof(section));
 
    /* find previous logbook config */
    p1 = (char *) find_section(buf, section);
@@ -6999,7 +7219,8 @@ void show_config_page(LOGBOOK * lbs)
    rsprintf("<input type=hidden name=hpwd value=\"%s\">\n", password);
 
    rsprintf("</span></td></tr></table>\n\n");
-   rsprintf("</body></html>\r\n");
+   show_bottom_text(lbs);
+   rsprintf("</form></body></html>\r\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -7108,6 +7329,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
                         full_name, user_email);
 
                rsprintf("</td></tr></table>\n");
+               show_bottom_text(lbs);
                rsprintf("</body></html>\n");
                return;
             } else {
@@ -7148,6 +7370,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
            loc("Submit"));
 
       rsprintf("</td></tr></table>\n\n");
+      show_bottom_text(lbs);
       rsprintf("</body></html>\r\n");
    }
 }
@@ -7205,6 +7428,7 @@ void show_new_user_page(LOGBOOK * lbs)
    rsprintf("</td></tr></table></td></tr>\n");
 
    rsprintf("</td></tr></table>\n\n");
+   show_bottom_text(lbs);
    rsprintf("</body></html>\r\n");
 }
 
@@ -7364,6 +7588,7 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
    }
 
    rsprintf("</table>\n");
+   show_bottom_text(lbs);
    rsprintf("</body></html>\r\n");
 }
 
@@ -8504,7 +8729,7 @@ BOOL is_user_allowed(LOGBOOK * lbs, char *command)
 
 BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 {
-   char str[1000], menu_str[1000], other_str[1000];
+   char str[1000], menu_str[1000], other_str[1000], grp[NAME_LENGTH];
    char menu_item[MAX_N_LIST][NAME_LENGTH], admin_user[80];
    int i, n;
 
@@ -8520,13 +8745,31 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
       strcpy(menu_str, "Back, New, Edit, Delete, Reply, Find, ");
 
       if (getcfg(lbs->name, "Password file", str)) {
+
          if (!getcfg(lbs->name, "Admin user", str)
              || strstr(str, getparam("unm")) != 0) {
+
             strcat(menu_str, "Admin, ");
             strcat(menu_str, "Change elogd.cfg, ");
+
             if (!getcfg("global", "Admin user", str)
-                || strstr(str, getparam("unm")) != 0)
-               strcat(menu_str, "Change [global], ");
+                || strstr(str, getparam("unm")) != 0) {
+
+               if (lbs->top_group[0]) {
+                  sprintf(grp, "[global %s]", lbs->top_group);
+                  sprintf(str, loc("Change %s"), grp);
+                  strcat(menu_str, str);
+                  strcat(menu_str, ", ");
+               }
+
+               if (!lbs->top_group[0] || (!getcfg_simple("global", "Admin user", str)
+                                          || strstr(str, getparam("unm")) != 0)) {
+
+                  sprintf(str, loc("Change %s"), "[global]");
+                  strcat(menu_str, str);
+                  strcat(menu_str, ", ");
+               }
+            }
          }
          strcat(menu_str, "Config, Logout, ");
       } else {
@@ -8550,10 +8793,27 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
       }
 
       if (strstr(admin_user, getparam("unm")) != NULL) {
+
          strcat(menu_str, "Change elogd.cfg, ");
+
          if (!getcfg("global", "Admin user", str)
-             || strstr(str, getparam("unm")) != 0)
-            strcat(menu_str, "Change [global], ");
+             || strstr(str, getparam("unm")) != 0) {
+
+            if (lbs->top_group[0]) {
+               sprintf(grp, "[global %s]", lbs->top_group);
+               sprintf(str, loc("Change %s"), grp);
+               strcat(menu_str, str);
+               strcat(menu_str, ", ");
+            }
+
+            if (!lbs->top_group[0] || (!getcfg_simple("global", "Admin user", str)
+                                       || strstr(str, getparam("unm")) != 0)) {
+
+               sprintf(str, loc("Change %s"), "[global]");
+               strcat(menu_str, str);
+               strcat(menu_str, ", ");
+            }
+         }
       }
    }
 
@@ -8930,7 +9190,7 @@ void show_select_navigation(LOGBOOK * lbs)
             if (!enumgrp(i, str))
                break;
 
-            if (equal_ustring(str, "global"))
+            if (!is_logbook(str))
                continue;
 
             if (equal_ustring(str, lbs->name))
@@ -8956,7 +9216,7 @@ void show_select_navigation(LOGBOOK * lbs)
             if (!enumgrp(i, str))
                break;
 
-            if (equal_ustring(str, "global"))
+            if (!is_logbook(str))
                continue;
 
             if (equal_ustring(str, lbs->name))
@@ -9480,18 +9740,18 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
             break;
          }
 
-         /*---- compact messasges ----*/
+   /*---- compact messasges ----*/
 
    for (i = j = 0; i < n_msg; i++)
       if (msg_list[i].lbs)
          memcpy(&msg_list[j++], &msg_list[i], sizeof(MSG_LIST));
    n_msg = j;
 
-            /*---- sort messasges ----*/
+   /*---- sort messasges ----*/
 
    qsort(msg_list, n_msg, sizeof(MSG_LIST), reverse ? msg_compare_reverse : msg_compare);
 
-            /*---- number of messages per page ----*/
+   /*---- number of messages per page ----*/
 
    n_page = 1000000;
    i_start = 0;
@@ -9518,7 +9778,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       }
    }
 
-            /*---- header ----*/
+   /*---- header ----*/
 
    if (getcfg(lbs->name, "Summary Page Title", str)) {
       i = build_subst_list(lbs, slist, svalue, NULL);
@@ -9528,7 +9788,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
    show_standard_header(lbs, TRUE, str, NULL);
 
-            /*---- title ----*/
+   /*---- title ----*/
 
    strcpy(str, ", ");
    if (past_n == 1)
@@ -9549,7 +9809,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    else
       show_standard_title(lbs->name, str, 0);
 
-            /*---- menu buttons ----*/
+   /*---- menu buttons ----*/
 
    if (!printable) {
       rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
@@ -9637,7 +9897,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       rsprintf("</span></td></tr>\n\n");
    }
 
-            /*---- find menu text ----*/
+   /*---- find menu text ----*/
 
    if (getcfg(lbs->name, "find menu text", str) && !printable) {
       FILE *f;
@@ -9674,7 +9934,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       rsprintf("</span></td></tr>");
    }
 
-            /*---- display filters ----*/
+   /*---- display filters ----*/
 
    disp_filter = *getparam("m1") || *getparam("y1") || *getparam("d1") || *getparam("m2")
        || *getparam("y2") || *getparam("d2")
@@ -9752,19 +10012,19 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    if (getcfg(lbs->name, "Mode commands", str) && atoi(str) == 0)
       mode_commands = FALSE;
 
-               /*---- page navigation ----*/
+   /*---- page navigation ----*/
 
    if (!printable) {
       show_page_filters(lbs, n_msg, page_n, n_page, TRUE, mode_commands, threaded);
       show_page_navigation(lbs, n_msg, page_n, n_page, TRUE, mode_commands, threaded);
    }
 
-               /*---- select navigation ----*/
+   /*---- select navigation ----*/
 
    if (atoi(getparam("select")) == 1)
       show_select_navigation(lbs);
 
-               /*---- table titles ----*/
+   /*---- table titles ----*/
 
    /* overall listing table */
    rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>\n");
@@ -9973,42 +10233,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       show_page_navigation(lbs, n_msg, page_n, n_page, FALSE, FALSE, threaded);
 
    rsprintf("</table>\n");
-
-   /*---- bottom text ----*/
-
-   if (getcfg(lbs->name, "bottom text", str)) {
-      FILE *f;
-      char file_name[256], *buf;
-
-      /* check if file starts with an absolute directory */
-      if (str[0] == DIR_SEPARATOR || str[1] == ':')
-         strcpy(file_name, str);
-      else {
-         strlcpy(file_name, resource_dir, sizeof(file_name));
-         strlcat(file_name, str, sizeof(file_name));
-      }
-
-      f = fopen(file_name, "rb");
-      if (f != NULL) {
-         fseek(f, 0, SEEK_END);
-         size = TELL(fileno(f));
-         fseek(f, 0, SEEK_SET);
-
-         buf = malloc(size + 1);
-         fread(buf, 1, size, f);
-         buf[size] = 0;
-         fclose(f);
-
-         rsputs(buf);
-      } else
-         rsprintf("<center><b>Error: file <i>\"%s\"</i> not found</b></center>",
-                  file_name);
-   } else
-      /* add little logo */
-      rsprintf
-          ("<center><a class=\"bottomlink\" href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></center>",
-           VERSION);
-
+   show_bottom_text(lbs);
    rsprintf("</form></body></html>\r\n");
 
    free(msg_list);
@@ -10725,6 +10950,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
         loc("Go to"), lbs_dest->name, lbs_dest->name);
 
    rsprintf("</table>\n");
+   show_bottom_text(lbs);
    rsprintf("</body></html>\r\n");
 
    return;
@@ -10969,7 +11195,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
                if (!enumgrp(j, str))
                   break;
 
-               if (equal_ustring(str, "global"))
+               if (!is_logbook(str))
                   continue;
 
                if (equal_ustring(str, lbs->name))
@@ -11399,39 +11625,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
    /* overall table (class "frame" from show_standard_header) */
    rsprintf("\r\n</table><!-- show_standard_title -->\r\n");
 
-   if (getcfg(lbs->name, "bottom text", str)) {
-      FILE *f;
-      char file_name[256], *buf;
-
-      /* check if file starts with an absolute directory */
-      if (str[0] == DIR_SEPARATOR || str[1] == ':')
-         strcpy(file_name, str);
-      else {
-         strlcpy(file_name, resource_dir, sizeof(file_name));
-         strlcat(file_name, str, sizeof(file_name));
-      }
-
-      f = fopen(file_name, "rb");
-      if (f != NULL) {
-         fseek(f, 0, SEEK_END);
-         size = TELL(fileno(f));
-         fseek(f, 0, SEEK_SET);
-
-         buf = malloc(size + 1);
-         fread(buf, 1, size, f);
-         buf[size] = 0;
-         fclose(f);
-
-         rsputs(buf);
-      } else
-         rsprintf("<center><b>Error: file <i>\"%s\"</i> not found</b></center>",
-                  file_name);
-   } else
-      /* add little logo */
-      rsprintf
-          ("<center><a class=\"bottomlink\" href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></center>",
-           VERSION);
-
+   show_bottom_text(lbs);
    rsprintf("</form></body></html>\r\n");
 }
 
@@ -11486,7 +11680,7 @@ BOOL check_password(LOGBOOK * lbs, char *name, char *password, char *redir)
            loc("Submit"));
 
       rsprintf("</table>\n");
-
+      show_bottom_text(lbs);
       rsprintf("</body></html>\r\n");
 
       return FALSE;
@@ -11915,6 +12109,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
             rsprintf("-");
          else {
             char attrib[MAX_N_ATTR][NAME_LENGTH];
+
             lb_list[i].n_attr = scan_attributes(lb_list[i].name, NULL);
             j = el_search_message(&lb_list[i], EL_LAST, 0, FALSE);
             el_retrieve(&lb_list[i],
@@ -11926,6 +12121,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
             strcpy(slist[j], "entry date");
             if (getcfg(lb_list[i].name, "Date format", format)) {
                struct tm ts;
+
                memset(&ts, 0, sizeof(ts));
                for (i = 0; i < 12; i++)
                   if (strncmp(date + 4, mname[i], 3) == 0)
@@ -11951,11 +12147,41 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
 
 /*------------------------------------------------------------------*/
 
-void show_selection_page(char *top_group)
+void show_selection_page()
 {
    int i;
-   char str[10000], str2[256];
+   char str[NAME_LENGTH], file_name[256];
    LBLIST phier;
+
+   /* check for Guest Selection Page */
+   if (getcfg("global", "Guest Selection Page", str)
+       && !(isparam("unm") && isparam("upwd"))) {
+      /* check for URL */
+      if (strstr(str, "http://")) {
+         redirect(NULL, str);
+         return;
+      }
+
+      /* check if file starts with an absolute directory */
+      if (str[0] == DIR_SEPARATOR || str[1] == ':')
+         strlcpy(file_name, str, sizeof(file_name));
+      else {
+         strlcpy(file_name, resource_dir, sizeof(file_name));
+         strlcat(file_name, str, sizeof(file_name));
+      }
+      send_file_direct(file_name);
+      return;
+   }
+
+   /* if selection page protected, check password */
+   if (getcfg("global", "password file", str))
+      if (!check_user_password(NULL, getparam("unm"), getparam("upwd"), ""))
+         return;
+
+   /* top group present and no top group in URL -> abort connection */
+   if (exist_top_group() && getcfg_topgroup() == NULL)
+      return;
+
    if (getcfg("global", "Page Title", str))
       show_html_header(NULL, TRUE, str);
    else
@@ -11963,10 +12189,8 @@ void show_selection_page(char *top_group)
    rsprintf("<body>\n\n");
    rsprintf("<table class=\"selframe\" cellspacing=0 align=center>\n");
    rsprintf("<tr><td colspan=13 class=\"dlgtitle\">\n");
-   sprintf(str2, "Welcome title %s", top_group);
-   if (getcfg("global", str2, str)) {
-      rsputs(str);
-   } else if (getcfg("global", "Welcome title", str)) {
+
+   if (getcfg("global", "Welcome title", str)) {
       rsputs(str);
    } else {
       rsprintf("%s.<BR>\n", loc("Several logbooks are defined on this host"));
@@ -11983,9 +12207,9 @@ void show_selection_page(char *top_group)
    }
 
    phier = get_logbook_hierarchy();
-   if (top_group) {
+   if (getcfg_topgroup()) {
       for (i = 0; i < phier->n_members; i++)
-         if (equal_ustring(top_group, phier->member[i]->name)) {
+         if (equal_ustring(getcfg_topgroup(), phier->member[i]->name)) {
             show_logbook_node(phier->member[i], NULL, -1, 1);
             break;
          }
@@ -12002,6 +12226,7 @@ void show_selection_page(char *top_group)
 void get_password(char *password)
 {
    static char last_password[32];
+
    if (strncmp(password, "set=", 4) == 0)
       strcpy(last_password, password + 4);
    else
@@ -12014,6 +12239,7 @@ int do_self_register(LOGBOOK * lbs, char *command)
 /* evaluate self-registration commands */
 {
    char str[256];
+
    /* display new user page if "self register" is clicked */
    if (equal_ustring(command, loc("New user"))) {
       show_new_user_page(lbs);
@@ -12041,6 +12267,7 @@ int do_self_register(LOGBOOK * lbs, char *command)
       rsprintf(loc
                ("Your request has been forwarded to the administrator. You will be notified by email upon activation of your new account."));
       rsprintf("</td></tr></table>\n");
+      show_bottom_text(lbs);
       rsprintf("</body></html>\n");
       return 0;
    }
@@ -12061,20 +12288,22 @@ void interprete(char *lbook, char *path)
    Input:
    char *path              Message path
    
-    <implicit>
-    _param/_value array accessible via getparam()
+   <implicit>
+   _param/_value array accessible via getparam()
     
-     \********************************************************************/
+\********************************************************************/
 {
    int status, i, j, n, index, lb_index, message_id;
    char exp[80], list[1000];
-   char str[NAME_LENGTH], enc_pwd[80], file_name[256], command[80], ref[256];
+   char str[NAME_LENGTH], str2[NAME_LENGTH], enc_pwd[80], file_name[256], command[80],
+       ref[256];
    char enc_path[256], dec_path[256], logbook[256], logbook_enc[256];
-   char *experiment, *value, *group, css[256], grpname[256];
+   char *experiment, *value, *group, css[256];
    char attachment[MAX_PATH_LENGTH];
    BOOL global;
    LOGBOOK *lbs;
    FILE *f;
+
    /* encode path for further usage */
    strcpy(dec_path, path);
    url_decode(dec_path);
@@ -12089,6 +12318,7 @@ void interprete(char *lbook, char *path)
       _logging_level = atoi(str);
    else
       _logging_level = 1;
+
    /* if experiment given, use it as logbook (for elog!) */
    if (experiment && experiment[0]) {
       strcpy(logbook_enc, experiment);
@@ -12115,21 +12345,20 @@ void interprete(char *lbook, char *path)
    }
 
    /* check for top group */
+   setcfg_topgroup("");
+
    sprintf(str, "Top group %s", logbook);
    if (getcfg("global", str, list)) {
-
-      if (path[0] == 0) {
-         show_selection_page(logbook);
-         return;
-      } else
-         strcpy(logbook, "global");
+      setcfg_topgroup(logbook);
+      logbook[0] = 0;
    }
 
    /* check if new logbook */
    for (i = j = 0;; i++) {
       if (!enumgrp(i, str))
          break;
-      if (!equal_ustring(str, "global")) {
+
+      if (is_logbook(str)) {
          /* redo index if logbooks in cfg file do not match lb_list */
          if (!equal_ustring(str, lb_list[j++].name)) {
             el_index_logbooks(TRUE);
@@ -12141,125 +12370,93 @@ void interprete(char *lbook, char *path)
    /* check for deleted logbook */
    if (lb_list[j].name[0] != 0)
       el_index_logbooks(TRUE);
-   /* check for global selection page if no logbook given */
-   if (!logbook[0] && getcfg("global", "Selection page", str)) {
-      /* check for URL */
-      if (strstr(str, "http://")) {
-         redirect(NULL, str);
+
+   /*---- direct commands (registration etc) ----*/
+
+   if (!logbook[0]) {
+
+      /* check for self register */
+      if (getcfg(group, "Self register", str) && atoi(str) > 0) {
+         if (!do_self_register(NULL, getparam("cmd")))
+            return;
+      }
+
+      /* check for activate */
+      if (equal_ustring(getparam("cmd"), "Activate")) {
+         if (!save_user_config(NULL, getparam("new_user_name"), TRUE, TRUE))
+            return;
+         setparam("cfg_user", getparam("new_user_name"));
+         show_config_page(NULL);
          return;
       }
 
-      /* check if file starts with an absolute directory */
-      if (str[0] == DIR_SEPARATOR || str[1] == ':')
-         strlcpy(file_name, str, sizeof(file_name));
-      else {
-         strlcpy(file_name, resource_dir, sizeof(file_name));
-         strlcat(file_name, str, sizeof(file_name));
+      /* check for save after activate */
+      if (equal_ustring(getparam("cmd"), loc("Save"))) {
+         if (isparam("config")) {
+            /* change existing user */
+            if (!save_user_config(NULL, getparam("config"), FALSE, FALSE))
+               return;
+         }
+
+         redirect(NULL, ".");
+         return;
       }
-      send_file_direct(file_name);
-      return;
+
+      /* check for password recovery */
+      if (isparam("cmd") || isparam("newpwd")) {
+         if (equal_ustring(getparam("cmd"), loc("Change password"))
+             || isparam("newpwd")) {
+            show_change_pwd_page(NULL);
+            return;
+         }
+      }
+
+      /* if data from login screen, evaluate it and set cookies */
+      if (*getparam("uname") && getparam("upassword")) {
+         /* check if password correct */
+         do_crypt(getparam("upassword"), enc_pwd);
+         /* log logins */
+         logf(NULL, "LOGIN user \"%s\" (attempt) for logbook selection page",
+              getparam("uname"));
+         if (isparam("redir"))
+            strcpy(str, getparam("redir"));
+         else
+            strcpy(str, getparam("cmdline"));
+         if (!check_user_password(NULL, getparam("uname"), enc_pwd, str))
+            return;
+         logf(NULL, "LOGIN user \"%s\" (success)", getparam("uname"));
+         /* set cookies */
+         set_login_cookies(NULL, getparam("uname"), enc_pwd);
+         return;
+      }
+
+      /* check for global selection page if no logbook given */
+      if (!logbook[0] && getcfg("global", "Selection page", str)) {
+         /* check for URL */
+         if (strstr(str, "http://")) {
+            redirect(NULL, str);
+            return;
+         }
+
+         /* check if file starts with an absolute directory */
+         if (str[0] == DIR_SEPARATOR || str[1] == ':')
+            strlcpy(file_name, str, sizeof(file_name));
+         else {
+            strlcpy(file_name, resource_dir, sizeof(file_name));
+            strlcat(file_name, str, sizeof(file_name));
+         }
+         send_file_direct(file_name);
+         return;
+      }
    }
 
    /* count logbooks */
    for (n = 0; lb_list[n].name[0]; n++);
+
    /* if no logbook given, display logbook selection page */
-   if (!logbook[0]) {
+   if (!logbook[0] && !path[0]) {
       if (n > 1) {
-         /* if password file is given in global section, protect also logbook selection page */
-         if (getcfg("global", "password file", str)) {
-            /* check for self register */
-            if (getcfg("global", "Self register", str) && atoi(str) > 0) {
-               if (!do_self_register(NULL, command))
-                  return;
-            }
-
-            /* check for activate */
-            if (equal_ustring(command, "Activate")) {
-               if (!save_user_config(NULL, getparam("new_user_name"), TRUE, TRUE))
-                  return;
-               setparam("cfg_user", getparam("new_user_name"));
-               show_config_page(NULL);
-               return;
-            }
-
-            /* check for save after activate */
-            if (equal_ustring(command, loc("Save"))) {
-               if (isparam("config")) {
-                  /* change existing user */
-                  if (!save_user_config(NULL, getparam("config"), FALSE, FALSE))
-                     return;
-               }
-
-               redirect(NULL, ".");
-               return;
-            }
-
-            /* check for password recovery */
-            if (isparam("cmd") || isparam("newpwd")) {
-               if (equal_ustring(getparam("cmd"), loc("Change password"))
-                   || isparam("newpwd")) {
-                  show_change_pwd_page(NULL);
-                  return;
-               }
-            }
-
-            /* if data from login screen, evaluate it and set cookies */
-            if (*getparam("uname") && getparam("upassword")) {
-               /* check if password correct */
-               do_crypt(getparam("upassword"), enc_pwd);
-               /* log logins */
-               logf(NULL, "LOGIN user \"%s\" (attempt) for logbook selection page",
-                    getparam("uname"));
-               if (isparam("redir"))
-                  strcpy(str, getparam("redir"));
-               else
-                  strcpy(str, getparam("cmdline"));
-               if (!check_user_password(NULL, getparam("uname"), enc_pwd, str))
-                  return;
-               logf(NULL, "LOGIN user \"%s\" (success)", getparam("uname"));
-               /* set cookies */
-               set_login_cookies(NULL, getparam("uname"), enc_pwd);
-               return;
-            }
-
-            /* check for Guest Selection Page */
-            if (getcfg("global", "Guest Selection Page", str)
-                && !(isparam("unm") && isparam("upwd"))) {
-               /* check for URL */
-               if (strstr(str, "http://")) {
-                  redirect(NULL, str);
-                  return;
-               }
-
-               /* check if file starts with an absolute directory */
-               if (str[0] == DIR_SEPARATOR || str[1] == ':')
-                  strlcpy(file_name, str, sizeof(file_name));
-               else {
-                  strlcpy(file_name, resource_dir, sizeof(file_name));
-                  strlcat(file_name, str, sizeof(file_name));
-               }
-               send_file_direct(file_name);
-               return;
-            }
-
-            if (!check_user_password(NULL, getparam("unm"), getparam("upwd"), ""))
-               return;
-         }
-
-         /* only show selection page if no top group present */
-         for (i = 0;; i++) {
-            if (!enumcfg("global", grpname, NULL, i))
-               break;
-            strlcpy(str, grpname, sizeof(str));
-            str[9] = 0;
-            if (equal_ustring(str, "top group"))
-               break;
-         }
-
-         if (!equal_ustring(str, "top group"))
-            show_selection_page(NULL);
-
-         /* top group present and no top group in URL -> abort connection */
+         show_selection_page(NULL);
          return;
       }
 
@@ -12272,6 +12469,11 @@ void interprete(char *lbook, char *path)
       if (equal_ustring(logbook, lb_list[i].name))
          break;
    lbs = &lb_list[i];
+
+   /* set top level group for logbook */
+   if (lbs->top_group[0])
+      setcfg_topgroup(lbs->top_group);
+
    /* get theme for logbook */
    if (getcfg(logbook, "Theme", str))
       strlcpy(theme_name, str, sizeof(theme_name));
@@ -12293,10 +12495,12 @@ void interprete(char *lbook, char *path)
       }
 
       global = getcfg("global", "Write password", str);
+
       /* get optional expriation from configuration file */
       getcfg(logbook, "Write password expiration", exp);
       /* set "wpwd" cookie */
       set_cookie(lbs, "wpwd", enc_pwd, global, exp);
+
       /* redirect according to "redir" parameter */
       set_redir(lbs, getparam("redir"));
       return;
@@ -12315,10 +12519,12 @@ void interprete(char *lbook, char *path)
       }
 
       global = getcfg("global", "Admin password", str);
+
       /* get optional expriation from configuration file */
       getcfg(logbook, "Admin password expiration", exp);
       /* set "apwd" cookie */
       set_cookie(lbs, "apwd", enc_pwd, global, exp);
+
       /* redirect according to "redir" parameter */
       set_redir(lbs, getparam("redir"));
       return;
@@ -12677,12 +12883,20 @@ void interprete(char *lbook, char *path)
 
    if (equal_ustring(command, loc("Admin"))
        || equal_ustring(command, loc("Change elogd.cfg"))) {
-      show_admin_page(lbs, FALSE);
+      show_admin_page(lbs, NULL);
       return;
    }
 
-   if (equal_ustring(command, loc("Change [global]"))) {
-      show_admin_page(lbs, TRUE);
+   sprintf(str, loc("Change %s"), "[global]");
+   if (equal_ustring(command, str)) {
+      show_admin_page(lbs, "global");
+      return;
+   }
+
+   sprintf(str2, "[global %s]", lbs->top_group);
+   sprintf(str, loc("Change %s"), str2);
+   if (equal_ustring(command, str)) {
+      show_admin_page(lbs, lbs->top_group);
       return;
    }
 
@@ -12766,7 +12980,7 @@ void interprete(char *lbook, char *path)
 
    if (equal_ustring(command, loc("Config"))) {
       if (!getcfg(lbs->name, "Password file", str))
-         show_admin_page(lbs, FALSE);
+         show_admin_page(lbs, NULL);
       else
          show_config_page(lbs);
       return;
@@ -12835,6 +13049,7 @@ void decode_get(char *logbook, char *string)
 {
    char path[256];
    char *p, *pitem;
+
    setparam("cmdline", string);
    strlcpy(path, string, sizeof(path));
    path[255] = 0;
@@ -13018,6 +13233,7 @@ void server_loop(int tcp_port, int daemon)
    struct timeval timeout;
    char *net_buffer = NULL;
    int net_buffer_size;
+
    net_buffer_size = 100000;
    net_buffer = malloc(net_buffer_size);
    return_buffer_size = 100000;
@@ -13025,6 +13241,7 @@ void server_loop(int tcp_port, int daemon)
 #ifdef OS_WINNT
    {
       WSADATA WSAData;
+
       /* Start windows sockets */
       if (WSAStartup(MAKEWORD(1, 1), &WSAData) != 0)
          return;
@@ -13093,6 +13310,7 @@ void server_loop(int tcp_port, int daemon)
       int fd;
       char buf[20];
       struct stat finfo;
+
       if (pidfile[0] == 0)
          strcpy(pidfile, PIDFILE);
       /* check if file exists */
@@ -13557,7 +13775,7 @@ void server_loop(int tcp_port, int daemon)
             for (i = n = 0;; i++) {
                if (!enumgrp(i, str))
                   break;
-               if (!equal_ustring(str, "global"))
+               if (is_logbook(str))
                   n++;
             }
 
@@ -13816,6 +14034,7 @@ void create_password(char *logbook, char *name, char *pwd)
 {
    int fh, length, i;
    char *cfgbuffer, str[256], *p;
+
    fh = open(config_file, O_RDONLY);
    if (fh < 0) {
       /* create new file */
@@ -13907,6 +14126,7 @@ void cleanup(void)
 {
 #ifdef OS_UNIX
    char str[256];
+
    /* regain original uid */
    if (setegid(orig_gid) < 0 || seteuid(orig_uid) < 0)
       printf("Cannot restore original GID/UID.\n");
@@ -13928,6 +14148,7 @@ int main(int argc, char *argv[])
    char read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256];
    time_t now;
    struct tm *tms;
+
 #ifdef OS_UNIX
    /* save gid/uid to regain later */
    orig_gid = getegid();
