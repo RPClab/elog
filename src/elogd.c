@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.335  2004/06/05 21:45:55  midas
+   Added NT service functionality
+
    Revision 1.334  2004/06/04 22:20:20  midas
    Added missing translations
 
@@ -4520,6 +4523,39 @@ void logf(LOGBOOK * lbs, const char *format, ...)
 
    fclose(f);
 }
+
+/*------------------------------------------------------------------*/
+
+/*
+void logd(const char *format, ...)
+{
+   va_list argptr;
+   char str[10000];
+   FILE *f;
+   time_t now;
+   char buf[1000];
+
+   va_start(argptr, format);
+   vsprintf(str, (char *) format, argptr);
+   va_end(argptr);
+
+   f = fopen("c:\\tmp\\elogd.log", "a");
+   if (!f)
+      return;
+
+   now = time(0);
+   strftime(buf, sizeof(buf), "%d-%b-%Y %H:%M:%S", localtime(&now));
+   strcat(buf, " ");
+
+   strlcat(buf, str, sizeof(buf));
+   if (buf[strlen(buf) - 1] != '\n')
+      strlcat(buf, "\n", sizeof(buf));
+
+   fprintf(f, buf);
+
+   fclose(f);
+}
+*/
 
 /*------------------------------------------------------------------*/
 
@@ -18395,6 +18431,214 @@ void cleanup(void)
 
 /*------------------------------------------------------------------*/
 
+#ifdef OS_WINNT
+
+/* Routines for Windows service management */
+
+// Executable name
+#define ELOGDAPPNAME            "elogd"
+
+// Internal service name
+#define ELOGDSERVICENAME        "elgod"
+
+// Displayed service name
+#define ELOGDSERVICEDISPLAYNAME "ELOG Server"
+
+SERVICE_STATUS serviceStatus;
+SERVICE_STATUS_HANDLE serviceStatusHandle = 0;
+
+int install_service(void)
+{
+   OSVERSIONINFO vi;
+   char path[2048], cmd[2080];
+   SC_HANDLE hservice;
+   SC_HANDLE hsrvmanager;
+
+   /* check for Windows NT+ */
+
+   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+   GetVersionEx(&vi);
+   if (vi.dwPlatformId != VER_PLATFORM_WIN32_NT) {
+      printf("Can install service only under Windows NT/2k/XP\n");
+      return -1;
+   }
+
+   if (GetModuleFileName(NULL, path, sizeof(path)) == 0) {
+      return -1;
+   }
+     
+   sprintf(cmd, "\"%s\" -D", path);
+
+   /* Open the default, local Service Control Manager database */
+   hsrvmanager = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+   if (hsrvmanager == NULL)
+      return -1;
+
+   /* Create an entry for the elogd service */
+   hservice = CreateService(hsrvmanager,        // SCManager database
+                            ELOGDSERVICENAME,   // name of service
+                            ELOGDSERVICEDISPLAYNAME,    // name to display
+                            SERVICE_ALL_ACCESS, // desired access
+                            SERVICE_WIN32_OWN_PROCESS | SERVICE_INTERACTIVE_PROCESS,
+                            // service type
+                            SERVICE_AUTO_START, // start type
+                            SERVICE_ERROR_NORMAL,       // error control type
+                            cmd,        // service's binary
+                            NULL,       // no load ordering group
+                            NULL,       // no tag identifier
+                            "", // dependencies
+                            NULL,       // LocalSystem account
+                            NULL);      // no password
+
+   if (hservice == NULL) {
+      if (GetLastError() == ERROR_SERVICE_EXISTS)
+         printf("The elogd service is already registered");
+      else
+         printf("The elogd service could not be registered");
+   } else {
+
+      /* Try to start the elogd service */
+      if (!StartService(hservice, 0, NULL))
+         printf("The elogd service could not be started");
+ 
+      CloseServiceHandle(hservice);
+   }
+
+   CloseServiceHandle(hsrvmanager);
+   return 1;
+}
+
+int remove_service(void)
+{
+   SC_HANDLE hservice;
+   SC_HANDLE hsrvmanager;
+   SERVICE_STATUS status;
+
+   /* Open the SCM */
+   hsrvmanager = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+   if (hsrvmanager == NULL)
+      return -1;
+
+   hservice = OpenService(hsrvmanager, ELOGDSERVICENAME, SERVICE_ALL_ACCESS);
+   if (hservice == NULL) {
+      printf("The elogd service could not be found");
+      return -1;
+   }
+
+   /* Try to stop the elogd service */
+   if (ControlService(hservice, SERVICE_CONTROL_STOP, &status)) {
+      while (QueryServiceStatus(hservice, &status)) {
+         if (status.dwCurrentState == SERVICE_STOP_PENDING)
+            Sleep(1000);
+         else
+            break;
+      }
+
+      if (status.dwCurrentState != SERVICE_STOPPED) {
+         printf("The elogd service could not be stopped");
+      }
+   }
+
+   /* Now remove the service from the SCM */
+   if (!DeleteService(hservice)) {
+      if (GetLastError() == ERROR_SERVICE_MARKED_FOR_DELETE)
+         printf("The elogd service is already marked to be unregistered");
+      else
+         printf("The elogd service could not be unregistered");
+   }
+
+   CloseServiceHandle(hservice);
+   CloseServiceHandle(hsrvmanager);
+   return 1;
+}
+
+void WINAPI ServiceControlHandler(DWORD controlCode)
+{
+	switch (controlCode)
+	{
+		case SERVICE_CONTROL_INTERROGATE:
+			break;
+
+		case SERVICE_CONTROL_SHUTDOWN:
+		case SERVICE_CONTROL_STOP:
+			serviceStatus.dwCurrentState = SERVICE_STOP_PENDING;
+			SetServiceStatus( serviceStatusHandle, &serviceStatus );
+
+			_abort = TRUE;
+
+			return;
+
+		case SERVICE_CONTROL_PAUSE:
+			break;
+
+		case SERVICE_CONTROL_CONTINUE:
+			break;
+
+		default:
+			if (controlCode >= 128 && controlCode <= 255)
+				// user defined control code
+				break;
+			else
+				// unrecognised control code
+				break;
+	}
+
+	SetServiceStatus(serviceStatusHandle, &serviceStatus);
+}
+
+void WINAPI ServiceMain(DWORD argc, LPSTR *argv)
+{
+	// initialise service status
+	serviceStatus.dwServiceType = SERVICE_WIN32;
+	serviceStatus.dwCurrentState = SERVICE_STOPPED;
+	serviceStatus.dwControlsAccepted = 0;
+	serviceStatus.dwWin32ExitCode = NO_ERROR;
+	serviceStatus.dwServiceSpecificExitCode = NO_ERROR;
+	serviceStatus.dwCheckPoint = 0;
+	serviceStatus.dwWaitHint = 0;
+
+	serviceStatusHandle = RegisterServiceCtrlHandler(ELOGDSERVICENAME, ServiceControlHandler);
+
+   if (serviceStatusHandle) {
+		// service is starting
+		serviceStatus.dwCurrentState = SERVICE_START_PENDING;
+		SetServiceStatus(serviceStatusHandle, &serviceStatus);
+
+		// running
+		serviceStatus.dwControlsAccepted |= (SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN);
+		serviceStatus.dwCurrentState = SERVICE_RUNNING;
+		SetServiceStatus(serviceStatusHandle, &serviceStatus);
+
+      /* start main server, exit with "_abort = TRUE" */
+      server_loop(tcp_port, FALSE);
+
+		// service was stopped
+		serviceStatus.dwCurrentState = SERVICE_STOP_PENDING;
+		SetServiceStatus(serviceStatusHandle, &serviceStatus);
+
+		// service is now stopped
+		serviceStatus.dwControlsAccepted &= ~(SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN);
+		serviceStatus.dwCurrentState = SERVICE_STOPPED;
+		SetServiceStatus(serviceStatusHandle, &serviceStatus);
+	}
+}
+
+void run_service(void)
+{
+   SERVICE_TABLE_ENTRY serviceTable[] =
+	{
+		{ ELOGDSERVICENAME, ServiceMain },
+		{ 0, 0 }
+	};
+
+	StartServiceCtrlDispatcher(serviceTable);
+
+}
+
+#endif
+
+/*------------------------------------------------------------------*/
+
 int main(int argc, char *argv[])
 {
    int i, fh, tcp_port_cl;
@@ -18410,14 +18654,21 @@ int main(int argc, char *argv[])
    orig_gid = getegid();
    orig_uid = geteuid();
 #endif
+   
    /* register cleanup function */
    atexit(cleanup);
+   
    tzset();
+   
+   /* initialize variables */
    read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = 0;
    logbook_dir[0] = resource_dir[0] = logbook_dir[0] = pidfile[0] = 0;
    tcp_port_cl = 0;
+   use_keepalive = TRUE;
+   
    /* default config file */
    strcpy(config_file, "elogd.cfg");
+
    /* evaluate predefined files and directories */
 #ifdef CONFIG_FILE
    strlcpy(config_file, CONFIG_FILE, sizeof(config_file));
@@ -18428,25 +18679,7 @@ int main(int argc, char *argv[])
 #ifdef LOGBOOK_DIR
    strlcpy(logbook_dir, LOGBOOK_DIR, sizeof(logbook_dir));
 #endif
-   /* look for config file in command line parameters */
-   for (i = 1; i < argc; i++) {
-      if (argv[i][0] == '-' && argv[i][1] == 'c')
-         strcpy(config_file, argv[i + 1]);
-   }
 
-   /* check for configuration file */
-   fh = open(config_file, O_RDONLY | O_BINARY);
-   if (fh < 0) {
-      printf("Configuration file \"%s\" not found.\n", config_file);
-      exit(EXIT_FAILURE);
-   }
-   close(fh);
-   /* evaluate directories fron config file */
-   if (getcfg("global", "Resource Dir", str))
-      strlcpy(resource_dir, str, sizeof(resource_dir));
-   if (getcfg("global", "Logbook Dir", str))
-      strlcpy(logbook_dir, str, sizeof(logbook_dir));
-   use_keepalive = TRUE;
    /* parse command line parameters */
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-' && argv[i][1] == 'D')
@@ -18464,7 +18697,19 @@ int main(int argc, char *argv[])
                 tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday, tms->tm_hour,
                 tms->tm_min, tms->tm_sec);
          exit(EXIT_SUCCESS);
-      } else if (argv[i][0] == '-') {
+      } 
+      
+#ifdef OS_WINNT
+      else if (stricmp(argv[i], "-install") == 0) {
+         install_service();
+         exit(EXIT_SUCCESS);
+      } else if (stricmp(argv[i], "-remove") == 0) {
+         remove_service();
+         exit(EXIT_SUCCESS);
+      }
+#endif
+      
+      else if (argv[i][0] == '-') {
          if (i + 1 >= argc || argv[i + 1][0] == '-')
             goto usage;
          if (argv[i][1] == 'p')
@@ -18483,17 +18728,16 @@ int main(int argc, char *argv[])
             strcpy(admin_pwd, argv[++i]);
          else if (argv[i][1] == 'l')
             strcpy(logbook, argv[++i]);
-         else if (argv[i][1] == 'h')
+         else if (argv[i][1] == 'n')
             strlcpy(tcp_hostname, argv[++i], sizeof(tcp_hostname));
          else if (argv[i][1] == 'f')
             strlcpy(pidfile, argv[++i], sizeof(pidfile));
          else {
           usage:
-            printf
-                ("usage: %s [-p port] [-h hostname] [-D] [-c file] [-r pwd] [-w pwd] [-a pwd] [-l logbook] [-k] [-f file]\n\n",
-                 argv[0]);
+            printf("\nusage: elogd [-p port] [-n hostname] [-D] [-c file] [-r pwd] ");
+            printf("[-w pwd] [-a pwd] [-l logbook] [-k] [-f file] [-x]\n\n");
             printf("       -p <port> TCP/IP port\n");
-            printf("       -h <hostname> TCP/IP hostname\n");
+            printf("       -n <hostname> TCP/IP hostname\n");
             printf("       -D become a daemon\n");
             printf("       -c <file> specify configuration file\n");
             printf("       -s <dir> specify resource directory (themes, icons, ...)\n");
@@ -18506,11 +18750,44 @@ int main(int argc, char *argv[])
             printf("       -k do not use keep-alive\n");
             printf("       -f path/filename for PID file\n");
             printf("       -x enable execution of shell commands\n\n");
+            printf("       -h this help\n\n");
+#ifdef OS_WINNT
+            printf("Windows service funtions:\n");
+            printf("       -install     install elogd as service and start it\n");
+            printf("       -remove      stop and remove elogd service\n");
+#endif
             exit(EXIT_SUCCESS);
          }
       }
    }
 
+#ifdef OS_WINNT
+   if (daemon) {
+      /* change to directory of executable */
+      strcpy(str, argv[0]);
+      for (i=strlen(str)-1 ; i>0 ; i--)
+         if (str[i] != '\\')
+            str[i] = 0;
+         else
+            break;
+      chdir(str);
+   }
+#endif
+
+   /* check for configuration file */
+   fh = open(config_file, O_RDONLY | O_BINARY);
+   if (fh < 0) {
+      printf("Configuration file \"%s\" not found.\n", config_file);
+      exit(EXIT_FAILURE);
+   }
+   close(fh);
+
+   /* evaluate directories fron config file */
+   if (getcfg("global", "Resource Dir", str))
+      strlcpy(resource_dir, str, sizeof(resource_dir));
+   if (getcfg("global", "Logbook Dir", str))
+      strlcpy(logbook_dir, str, sizeof(logbook_dir));
+   
    if ((read_pwd[0] || write_pwd[0] || admin_pwd[0]) && !logbook[0]) {
       printf("Must specify a lookbook via the -l parameter.\n");
       exit(EXIT_SUCCESS);
@@ -18579,6 +18856,12 @@ int main(int argc, char *argv[])
       if (getcfg("global", "Port", str))
          tcp_port = atoi(str);
    }
+
+#ifdef OS_WINNT
+   if (daemon)
+      run_service();
+   else
+#endif
 
    server_loop(tcp_port, daemon);
    exit(EXIT_SUCCESS);
