@@ -35,7 +35,13 @@ endif
 all: $(EXECS)
 
 debug: src/elogd.c
-	$(CC) $(DFLAGS) -o elogd src/elogd.c $(LIBS)
+	$(CC) $(DFLAGS) -o elogd src/elogd.c src/regex.c $(LIBS)
+
+regex.o: src/regex.c src/regex.h
+	$(CC) -O3 -c -o regex.o src/regex.c
+
+elogd: src/elogd.c regex.o
+	$(CC) $(DFLAGS) -o elogd src/elogd.c regex.o $(LIBS)
 
 %: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
@@ -66,4 +72,4 @@ install: $(EXECS)
 restart:
 	/etc/rc.d/init.d/elogd restart
 clean:
-	-$(RM) *~ $(EXECS)
+	-$(RM) *~ $(EXECS) regex.o
