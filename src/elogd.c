@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.24  2003/02/24 13:04:50  midas
+  Fixed problem with creation of nested logbook directories
+
   Revision 1.23  2003/02/24 12:22:00  midas
   Fixed bug with 'theme =' option in [global] section
 
@@ -2054,7 +2057,7 @@ struct tm tms;
 
 int el_index_logbooks(BOOL reinit)
 {
-char str[256], data_dir[256], logbook[256];
+char str[256], data_dir[256], logbook[256], cwd[256], *p;
 int  i, j, n, status;
 
   if (reinit)
@@ -2136,25 +2139,68 @@ int  i, j, n, status;
       strlcat(data_dir, DIR_SEPARATOR_STR, sizeof(data_dir));
 
     /* create data directory if not existing */
-    getcwd(str, sizeof(str));
+    getcwd(cwd, sizeof(cwd));
+
     j = chdir(data_dir);
     if (j < 0)
       {
-#ifdef OS_WINNT
-      j = mkdir(data_dir);
-#else
-      j = mkdir(data_dir, 0755);
-#endif
-      if (j == 0)
-        printf("Created directory \"%s\"\n", data_dir);
-      else
+      p = data_dir;
+      if (*p == DIR_SEPARATOR)
         {
-        perror("el_index_logbooks");
-        printf("Cannot create directory \"%s\"\n", data_dir);
+        chdir(DIR_SEPARATOR_STR);
+        p++;
         }
-      }
-    chdir(str);
+      if (p[1] == ':')
+        {
+        strcpy(str, p);
+        if (str[2] == DIR_SEPARATOR)
+          str[3] = 0;
+        else
+          str[2] = 0;
 
+        chdir(str);
+        p += strlen(str);
+        }
+
+      do
+        {
+        if (strchr(p, DIR_SEPARATOR))
+          {
+          strlcpy(str, p, sizeof(str));
+          *strchr(str, DIR_SEPARATOR) = 0;
+          p = strchr(p, DIR_SEPARATOR)+1;
+          }
+        else
+          {
+          strlcpy(str, p, sizeof(str));
+          p = NULL;
+          }
+
+        j = chdir(str);
+        if (j < 0)
+          {
+
+#ifdef OS_WINNT
+          j = mkdir(str);
+#else
+          j = mkdir(str, 0755);
+#endif
+
+          if (j == 0)
+            printf("Created directory \"%s\"\n", str);
+          else
+            {
+            perror("el_index_logbooks");
+            printf("Cannot create directory \"%s\"\n", str);
+            }
+
+          chdir(str);
+          }
+
+        } while (p && *p);
+      }
+
+    chdir(cwd);
     strcpy(lb_list[n].data_dir, data_dir);
     lb_list[n].el_index = NULL;
 
