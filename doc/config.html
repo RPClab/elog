@@ -1259,24 +1259,26 @@ message comment can be displayed to tell the user what to enter exactly in the
 message body for that attribute value.
 <p>
 
-<li><b><code>Hidden Attributes = &lt;list&gt;</code></b>
+<li><b><code>Show Attributes = &lt;list&gt;</code></b>
 <br>
 When using conditional attributes, it might be necessary to omit certain attributes
-under certain conditions, to make the input mask shorter. With this option, a list
-of attributes can be specified which are not displayed on the new entry input page.
-This option only makes sense when used with condisions, such as:<p>
+under certain conditions, to make the input mask shorter and maybe change the order
+of the attributes. With this option, a subset of all attributes can be specified
+which get displayed on the new entry input page in the same order as they are
+specified here. This option only makes sense when used with conditions, such as:<p>
 
 <ul><pre>
 Attributes = PC Name, Operating System, Version, Distribution
 Options Operating System = Linux{1}, Windows{2}
-{1} Hidden Attributes = Version
-{2} Hidden Attributes = Distribution
+{1} Show Attributes = Operating System, Distribution, PC Name
+{2} Show Attributes = Operating System, PC Name, Version
 </pre></ul>
 <p>
 
 The above statements caus the atrribute <b><code>Version</code></b> to be only
-visible when "Windows" is selected, and <b><code>Version</code></b> to be only
-visible when "Linux" is selected.<p>
+visible when "Windows" is selected, and <b><code>Distribution</code></b> to be only
+visible when "Linux" is selected. If "Windows" is selected, the PC name is shown
+before the version.<p>
 
 <h2>Multiple conditions</h2>
 
