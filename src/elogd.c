@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.383  2004/07/14 14:25:48  midas
+   Don't evaluate 'preset xxx' on replies
+
    Revision 1.382  2004/07/14 10:10:59  midas
    Fixed compiler warning
 
@@ -6950,7 +6953,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       sprintf(str, "Preset %s", attr_list[index]);
       if ((i = getcfg(lbs->name, str, preset)) > 0) {
 
-         if (!bedit || (breedit && i == 2)) {   /* subst on reedit only if preset is under condition */
+         if ((!bedit && !breply) ||   /* don't subst on edit or reply */
+             (breedit && i == 2)) {   /* subst on reedit only if preset is under condition */
 
             /* do not format date for date attributes */
             i = build_subst_list(lbs, slist, svalue, attrib,
