@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.33  2003/02/27 21:30:26  midas
+  Changed path for cookies, special case for Lynx
+
   Revision 1.32  2003/02/27 20:48:15  midas
   Added '-f <pidfile>' option
 
@@ -3675,18 +3678,22 @@ struct tm *gmt;
     }
   else
     {
-    /* path for individual logbook */
-    if (getcfg(lb_name, "URL", str))
+    /* bug in lynx: path has to be absolute */
+    if (strstr(browser, "Lynx/") != NULL)
       {
-      extract_path(str);
-      url_encode(str, sizeof(str));
-      if (str[0])
-        rsprintf(" path=/%s/%s/;", str, lbs->name_enc);
+      /* path for individual logbook */
+      if (getcfg(lb_name, "URL", str))
+        {
+        extract_path(str);
+        url_encode(str, sizeof(str));
+        if (str[0])
+          rsprintf(" path=/%s/%s;", str, lbs->name_enc);
+        else
+          rsprintf(" path=/%s;", lbs->name_enc);
+        }
       else
-        rsprintf(" path=/%s/;", lbs->name_enc);
+        rsprintf(" path=/%s;", lbs->name_enc);
       }
-    else
-      rsprintf(" path=/%s/;", lbs->name_enc);
     }
 
   exp = atof(expiration);
@@ -11357,8 +11364,6 @@ struct timeval       timeout;
 
     if (pidfile[0] == 0)
       strcpy(pidfile, PIDFILE);
-
-    printf("Root: %d, pidfile: %s\n", geteuid() == 0, pidfile);
 
     fd = open(pidfile, O_CREAT | O_RDWR, 0644);
     if (fd < 0)
