@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.602  2005/03/29 07:50:15  ritt
+   Implemented 'expand selection', defaulting to one
+
    Revision 1.601  2005/03/29 07:30:30  ritt
    Applied patch from Recai to give precedence to directories from the command line
 
@@ -19079,7 +19082,7 @@ int node_contains(LBLIST pn, char *logbook)
 
 void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
 {
-   int i, index, j, expand, message_id;
+   int i, index, j, expand, expand_all, message_id;
    char str[10000], date[256], ref[256], slist[MAX_N_ATTR + 10][NAME_LENGTH],
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], mid[80];
 
@@ -19091,6 +19094,11 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
              node_contains(plb, getparam("gexp")) || strieq(getparam("gexp"), "all"))
             expand = 1;
       }
+
+      if (!getcfg(plb->name, "Expand selection", str, sizeof(str)) || atoi(str) == 1)
+         expand_all = 1;
+      else
+         expand_all = 0;
 
       /* do not display top groups */
       if (!plb->is_top) {
@@ -19107,16 +19115,23 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
             else
                sprintf(ref, "?gexp=%s", pparent->name);
 
-            rsprintf("<a href=\"%s\">- %s</a> ", ref, plb->name);
+            if (expand_all)
+               rsprintf("%s", plb->name);
+            else
+               rsprintf("<a href=\"%s\">- %s</a> ", ref, plb->name);
          } else {
             sprintf(ref, "?gexp=%s", plb->name);
-            rsprintf("<a href=\"%s\">+ %s</a> ", ref, plb->name);
+
+            if (expand_all)
+               rsprintf("%s", plb->name);
+            else
+               rsprintf("<a href=\"%s\">+ %s</a> ", ref, plb->name);
          }
 
          rsprintf("</td></tr>\n");
       }
 
-      if (plb->is_top || expand)
+      if (plb->is_top || expand || expand_all)
          for (i = 0; i < plb->n_members; i++)
             show_logbook_node(plb->member[i], plb->is_top ? NULL : plb, level + 1, btop);
    } else {
@@ -19234,7 +19249,7 @@ void show_top_selection_page()
 
 void show_selection_page()
 {
-   int i, j, show_title;
+   int i, j, expand_all, show_title;
    char str[10000], file_name[256];
    LBLIST phier;
 
@@ -19339,7 +19354,12 @@ void show_selection_page()
          if (phier->member[i]->n_members == 0)
             show_title = 1;
 
-   if (isparam("gexp"))
+   if (!getcfg("global", "Expand selection", str, sizeof(str)) || atoi(str) == 1)
+      expand_all = 1;
+   else
+      expand_all = 0;
+
+   if (isparam("gexp") || expand_all)
       show_title = 1;
 
    if (show_title) {
