@@ -295,8 +295,10 @@ commands are possible:
   <li><b>Last 10</b> - Display last 10 entries
   <li><b>Move to</b> - Move entry to other logbook
   <li><b>Copy to</b> - Copy entry to other logbook
-  <li><b>Config</b> - Edit elogd.cfg
-  <li><b>Change password</b> - Change password for current user (if "<I>Password file</I>" is given)
+  <li><b>Config</b> - Edit elogd.cfg (if <b>no</b> "<I>Password file</I>" is given)
+  <li><b>Config</b> - Modify/Add user accounts (if "<I>Password file</I>" is given)
+  <li><b>Admin</b> - Edit elogd.cfg (if "<I>Password file</I>" is given)
+  <li><b>Login</b> - Login with user name and password (if "<I>Password file</I>" is given)
   <li><b>Logout</b> - Logout current user (if "<I>Password file</I>" is given)
 
   <li><b>Help</b> - General help
@@ -331,7 +333,7 @@ menu, with which one can login as a real user (username and password have to mat
 from the password file), which then allowes full access via the <b>"Menu commands"</b> list.
 A typical example for the menu settings for this scenario are:<p>
 <pre>
-Menu commands = New, Edit, Reply, Find, Last 10, Change password, Logout, Help
+Menu commands = New, Edit, Reply, Find, Last 10, Config, Logout, Help
 Guest menu commands = Find, Last 10, Login, Help
 </pre>
 <p>
@@ -606,17 +608,19 @@ must be re-entered.
 An alternative to the read/write/admin passwords is the user level access with a
 password file. This file contains user names and passwords in following format:
 <p>
-<ul><code><pre>&lt;login name1&gt;:&lt;password1&gt;:&lt;full name1&gt;:&lt;email1&gt;
-&lt;login name2&gt;:&lt;password2&gt;:&lt;full name2&gt;:&lt;email1&gt;
-&lt;login name3&gt;:&lt;password3&gt;:&lt;full name3&gt;:&lt;email1&gt;
+<ul><code><pre>&lt;login name1&gt;:&lt;password1&gt;:&lt;full name1&gt;:&lt;email1&gt;&lt;notify1&gt;
+&lt;login name2&gt;:&lt;password2&gt;:&lt;full name2&gt;:&lt;email2&gt;&lt;notify2&gt;
+&lt;login name3&gt;:&lt;password3&gt;:&lt;full name3&gt;:&lt;email3&gt;&lt;notify3&gt;
 ...</pre></code></ul>
 <p>
-The passwords are encoded. To create or change them, use the "<I>Change
-Password</I>" menu point. To create a new user, edit the password file
-manually and use an empty password (like "<code>&lt;login name&gt;::&lt;full name&gt;:&lt;email&gt;</code>"), which can then be changed via the "<I>Change password</I>" menu point.
-<p>
+The passwords are encoded. New users can either be created by hitting <b>Register as new user</b>
+on the login page if <b><code>Self register = 1</code></b> in the configuration file, or
+by the admin user in the <b>Config</b> page by pressing <b>New user</b>. When a user is
+logged it, the entry for this user can be modified via the <b>Config</b> command. The admin user
+can also change entries for other users.<p>
+
 The presence of a password file requires all users to "<I>log in</I>" using their name and
-password, excep when a guest login is allowed via the <b>"Guest menu commands"</b> option.
+password, except when a guest login is allowed via the <b>"Guest menu commands"</b> option.
 An additional advantage of this method is that the user name can be used as
 an attribute value for creating logbook entries. For example, the following line could be
 added to the configuration file to fill in the <i>Author</i> and the <i>Email</i> attributes
@@ -633,6 +637,15 @@ The user name and password are stored as cookies on the user side. They expire a
 hours by default, which can be changed with the <code><b>Login expiration</b></code >
 options. If the expiration is set to "0", the passwords are kept for the current browser
 session only. When the browser is restarted, the password must be re-entered.
+<p>
+<ul>
+<LI><b><code>Self register = 0|1</code></b>
+</ul>
+With this option it is possible for new users to self-register an user account. At the
+login page, a link is displayed <b>"Register as a new user"</b> which leads the user to
+a configuration page where one can enter the account name, full name and email address. A flag
+allows for automatic email notification on new entries on the logbook. These settings can
+later be changed with the <b>Config</b> menu command.
 <p>
 <ul>
 <LI><b><code>Allow &lt;command&gt; = &lt;user list&gt;</code></b>
