@@ -1,42 +1,235 @@
+/* default formatting */
 body {
+  margin:5px;
   color:black;
   background-color:white;
-  font-family: sans-serif; 
+  font-family:sans-serif;
   /* background-image:url(elog.gif); */
 }
 
-/* link colors and decorations */
-a:link { font-weight:bold; color:#0000FF; text-decoration:none }
-a:visited { font-weight:bold; color:#800080; text-decoration:none }
-a:hover { font-weight:bold; color:#0000FF; text-decoration:underline }
-a:active { font-weight:bold; color:#0000FF; text-decoration:underline }
-a:focus { font-weight:bold; color:#0000FF; text-decoration:underline }
+/* standard link colors and decorations */
+a:link { color:#0000FF; text-decoration:none }
+a:visited { color:#800080; text-decoration:none }
+a:hover { color:#0000FF; text-decoration:underline }
+a:active { color:#0000FF; text-decoration:underline }
+a:focus { color:#0000FF; text-decoration:underline }
+
+/* colors for logbook tabs */
+a.sltab:link { color:white };
+a.sltab:visited { color:white };
+a.sltab:hover { color:white };
+a.sltab:active { color:white };
+a.sltab:focus { color:white };
+
+a.sgtab:link { color:white };
+a.sgtab:visited { color:white };
+a.sgtab:hover { color:white };
+a.sgtab:active { color:white };
+a.sgtab:focus { color:white };
 
 td {
   color:black;
   font-family:sans-serif; 
 }
 
-pre {
-  font-family:'lucida console',courier;
-  font-size:small;
+/* frame table */
+.frame {
+  width:100%;
 }
 
-/* ELOG home page link at bottom of page */
-
-.bottomlink {
-  font-family: sans-serif; 
-  font-size: xx-small;
+/* standard formatting for logbook tabs */
+.tabs {
+  font-family:sans-serif;
+  font-size:medium;
+  background-color:white;
 }
 
-/* logbook title */
+/* unselected and selected group tabs */
 
-.title {
-  /* background-color:#486090; */
-  background-color:orange;
+.gtab {
+  background-color:#B0E0B0;
+}
+
+.sgtab {
+  background-color:#486090;
+  font-color:white;
+}
+
+/* unselected and selected logbook tabs */
+
+.ltab {
+  background-color:#E0E0E0;
+}
+
+.sltab {
+  background-color:#486090;
+}
+
+/* logbook title, left, middle and right cell */
+
+.title1 {
+  background-color:#486090;
   color:white;
   font-weight:bold;
   font-size:medium;
   font-family:sans-serif;
+  text-align:left;
+}
+
+.title2 {
+  background-color:#486090;
+  color:white;
+  font-weight:bold;
+  font-size:medium;
+  font-family:sans-serif;
+  text-align:center;
+}
+
+.title3 {
+  background-color:#486090;
+  text-align:right;
+}
+
+/* main menu row */
+
+.menuframe {
+  border:1px solid #486090;
+  border-top:0px;
+  padding:3px;
+  background-color:#E0E0E0;
+}
+
+.menu1 {
+  text-align:left;
+  font-size:10pt;
+}
+
+.menu2a {
+  text-align:left;
+  font-size:10pt;
+}
+
+.menu2b {
+  text-align:right;
+  font-size:10pt;
+}
+
+.menu3 {
+  text-align:left;
+  font-size:8pt;
+  font-weight:bold;
+}
+
+.menu4 {
+  text-align:right;
+  font-size:10pt;
+  font-weight:bold;
+  vertical-align:middle;
+}
+
+/* frame table in listings */
+.listframe {
+  background-color:#486090;
+  border:0px;
+}
+
+/* title row in listing */
+.listtitle {
+  background-color:#CCCCFF;
+  text-align:center;
+  font-weight:bold;
+  padding:5px;
+}
+
+/* odd and even lines in message listing */
+
+.list1 {
+  background-color:#DDEEBB;
+  text-align:center;
+}
+
+.list2 {
+  background-color:#FFFFB0;
+  text-align:center;
+}
+
+/* threaded listing */
+.thread {
+  background-color:#DDEEBB;
+  text-align:left;
+}
+
+.threadreply {
+  background-color:#FFFFB0;
+  text-align:left;
+}
+
+/* attribute names and values on single message page */
+.attribname {
+  background-color:#CCCCFF;
+  padding:3px;
+}
+
+.attribvalue {
+  background-color:#DDEEBB;
+  padding:3px;
+}
+
+/* message cell in listing */
+.messagelist {
+  background-color:white;
+  font-family:'lucida console',courier;
+  font-size:10pt;
+  padding:5px;
+}
+
+/* message display in single message page */
+.messageframe {
+  background-color:white;
+  border:1px solid #486090;
+  border-top:0px;
+  padding:5px;
+}
+
+.messagepre {
+  font-family:'lucida console',courier;
+  font-size:10pt;
+}
+
+/* attachment size */
+.bytes {
+  font-family:'lucida console',courier;
+  font-size:10pt;
+  font-weight:bold;
+}
+
+/* summary display (threaded mode expand) */
+.summary {
+  background-color:white;
+  font-family:'lucida console',courier;
+  font-size:small;
+}
+
+/* error message */
+.errormsg {
+  border:1px solid #486090;
+  padding:5px;
+  background-color:#FFB0B0;
+  text-align:center;
+  font-size:medium;
+}
+
+/* notification (warning) */
+.notifymsg {
+  padding:5px;
+  background-color:#FFD070;
+  text-align:center;
+  font-size:small;
+}
+
+/* ELOG home page link at bottom of page */
+.bottomlink {
+  font-family:sans-serif; 
+  font-size:xx-small;
 }
 
