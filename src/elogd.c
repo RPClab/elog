@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.452  2004/08/08 20:30:10  midas
+   Started adding attachment hiding
+
    Revision 1.451  2004/08/08 16:00:34  midas
    Renamed logf() to write_logfile()
 
@@ -16638,8 +16641,8 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
 void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 {
-   int size, i, j, n, n_log, status, fh, length, message_error, index;
-   int message_id, orig_message_id, format_flags[MAX_N_ATTR];
+   int size, i, j, n, n_log, status, fh, length, message_error, index,
+       message_id, orig_message_id, format_flags[MAX_N_ATTR], att_hide[MAX_ATTACHMENTS];
    char str[1000], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
    char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], cmd_enc[256],
        orig_tag[80], reply_tag[MAX_REPLY_TO * 10], display[256],
@@ -17276,6 +17279,19 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
          rsputs("</td></tr>\n");
 
+         for (i=0 ; i<MAX_ATTACHMENTS; i++)
+            att_hide[i] = 0;
+
+         if (isparam("hide")) {
+            strlcpy(str, getparam("hide"), sizeof(str));
+            p = strtok(str, ",");
+            while (p != NULL) {
+               if (atoi(p) < MAX_ATTACHMENTS)
+                  att_hide[atoi(p)] = 1;
+               p = strtok(NULL, ",");
+            }
+         }
+
          for (index = 0; index < MAX_ATTACHMENTS; index++) {
             if (attachment[index][0] && strlen(attachment[index]) > 14) {
                for (i = 0; i < (int) strlen(attachment[index]); i++)
@@ -17318,8 +17334,18 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                   rsprintf("%d kB", length / 1024);
                else
                   rsprintf("%1.3lf MB", length / 1024.0 / 1024.0);
+               rsprintf("</span>\n");
 
-               rsprintf("</span></td></tr></table></td></tr>\n");
+               /*
+               rsprintf("&nbsp;|&nbsp;<span class=\"bytes\">");
+               rsprintf("<a href=\"%d?hide=%s\">%s</a>", message_id, "##", loc("Hide"));
+               rsprintf("<a href=\"%d?hide=%s\">%s</a>", message_id, loc("Hide all"));
+               rsprintf("</span>\n");
+               */
+
+               rsprintf("</td></tr></table></td></tr>\n");
+               strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+               strlcat(file_name, attachment[index], sizeof(file_name));
 
                if (!getcfg(lbs->name, "Show attachments", str, sizeof(str))
                    || atoi(str) == 1) {
@@ -17330,8 +17356,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                      rsprintf("<img src=\"%s\"></td></tr>", ref);
                      rsprintf("</td></tr>\n\n");
                   } else {
-                     if (strstr(att, ".TXT") || strstr(att, ".ASC") || strstr(att, ".CFG") || strstr(att, ".CONF")
-                         || strchr(att, '.') == NULL) {
+                     if (is_ascii(file_name)) {
                         /* display attachment */
                         rsprintf("<tr><td class=\"messageframe\">\n");
 
@@ -17340,9 +17365,6 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
                         if (!strstr(att, ".HTML"))
                            rsprintf("<pre class=\"messagepre\">");
-
-                        strlcpy(file_name, lbs->data_dir, sizeof(file_name));
-                        strlcat(file_name, attachment[index], sizeof(file_name));
 
                         f = fopen(file_name, "rt");
                         if (f != NULL) {
