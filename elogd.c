@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.129  2003/01/11 11:26:40  midas
+  Fixed problem with attachment names containing a '+'
+
   Revision 2.128  2003/01/09 09:07:13  midas
   Fixed bug with missing thread head
 
@@ -932,7 +935,7 @@ char *pd, *p, str[256];
   p  = ps;
   while (*p && (int)pd < (int)str + 250)
     {
-    if (strchr(" %&=#?", *p))
+    if (strchr(" %&=#?+", *p))
       {
       sprintf(pd, "%%%02X", *p);
       pd += 3;
@@ -9863,6 +9866,7 @@ BOOL   first;
         strcpy(str, attachment[index]);
         str[13] = 0;
         sprintf(ref, "%s/%s", str, attachment[index]+14);
+        url_encode(ref, sizeof(ref)); /* for file names with special characters like "+" */
 
         rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
 
