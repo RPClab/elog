@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.576  2005/03/02 16:29:20  ritt
+   Encode '&' correctly if present in 'Start page' option
+
    Revision 1.575  2005/03/02 14:20:16  ritt
    Fixed wrong comma display together with 'List display'
 
@@ -14145,6 +14148,8 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 
 void build_ref(char *ref, int size, char *mode, char *expand)
 {
+   char str[1000];
+
    if (strchr(getparam("cmdline"), '?'))
       strlcat(ref, strchr(getparam("cmdline"), '?'), size);
 
@@ -14162,6 +14167,10 @@ void build_ref(char *ref, int size, char *mode, char *expand)
 
    /* eliminate old last= */
    subst_param(ref, size, "last", getparam("last"));
+
+   /* replace any '&' by '&amp;' */
+   strlcpy(str, ref, sizeof(str));
+   strencode2(ref, str);
 }
 
 /*------------------------------------------------------------------*/
