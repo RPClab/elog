@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.25  2002/05/31 14:20:50  midas
+  Added 'user' and 'group' statements in configuration file
+
   Revision 1.24  2002/05/31 13:24:18  midas
   Use Referer for mail notification URL
 
@@ -127,6 +130,8 @@ typedef int BOOL;
 #include <dirent.h>
 #include <errno.h>
 #include <ctype.h>
+#include <pwd.h>
+#include <grp.h>
 
 #define closesocket(s) close(s)
 #ifndef O_BINARY
@@ -7462,8 +7467,33 @@ struct timeval       timeout;
 
 #ifdef OS_UNIX
   /* give up root privilege */
-  setuid(getuid());
-  setgid(getgid());
+
+  if (geteuid() == 0)
+    {
+    struct group  *gr;
+    struct passwd *pw;
+
+    if (getcfg("global", "Group", str))
+      {
+      gr = getgrnam(str);
+
+      if (setgid(gr->gr_gid) < 0 || initgroups(gr->gr_name, gr->gr_gid) < 0)
+        printf("Cannot set GID to group \"%s\"\n", gr->gr_name);
+      }
+    else
+      setgid(getgid()); /* used for setuid programs */
+
+    if (getcfg("global", "User", str))
+      {
+      pw = getpwnam(str);
+
+      if (setuid(pw->pw_uid) < 0)
+        printf("Cannot set UID to user \"%s\\n", str);
+      }
+    else
+      setuid(getuid()); /* used for setuid programs */
+  
+    }
 #endif
 
   if (daemon)
