@@ -162,10 +162,14 @@ Redirect permanent /elog http://your.host.domain/elog/
 ProxyPass /elog/ http://your.host.domain:8080/
 </pre></ul>
 <p>
-Make sure that the Apache modules mod_proxy.c and mod_alias.c are activated. The <i>Redirect</i>
+Make sure that the Apache modules mod_proxy.c and mod_alias.c are activated. Justin Dieters &lt;enderak&#64yahoo.com&gt;
+reports that mod_proxy_http.c is also required. The <i>Redirect</i>
 statement is necessary to automatically append a "/" to a request like <code><b>
 http://your.host.domain/elog</code></b>. Apache then works as a proxy and forwards all requests
 staring with <code><b>/elog</b></code> to the elogd daemon.<p>
+
+<b>Note: Do not put <code>"ProxyRequests On"</code> into your configuration file. This option is not necessary
+and can be misused for spamming and proxy forwarding of otherwise blocked sites.</b><p>
 
 Because <code><b>elogd</b></code> uses links to itself (for example in the email notification and
 the redirection after a submit), it has to know under which URL it is running. If you run it
@@ -297,7 +301,8 @@ determined by the single <b><code>elogd.cfg</code></b> file in the <b>ELOG</b> i
 
 This file may be edited directly from the file system, or from a form in the <b>ELOG</b> Web interface
 (when the <i>Config</i> menu item is available). In this case, changes are applied dynamically without
-having to restart the server. <p>
+having to restart the server. Instead of restarting the server, under Unix one can send a HUP signal
+like <b><code>"killall -HUP elogd"</code></b> to tell the server to re-read its configuration.<p>
 
 The many options of this unique but very important file are documented on the separate <b><a href=
 "config.html">elogd.cfg syntax page</a></b>.<p>
