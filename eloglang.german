@@ -225,4 +225,8 @@ Your request has been forwarded to the administrator. You will be notified by em
 #
 # New strings for V2.3.1
 Upload = Hochladen
+Requested = Erfordert
+Registration request on logbook "%s" = Registrierungsanforderung für Logbuch "%s"
+A new ELOG user wants to register on "%s" = Ein neuer Benutzer möchte sich auf "%s" registrieren
+
 
