@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.578  2005/03/02 21:03:16  ritt
+   Implemented email subscriptions for individual logbooks
+
    Revision 1.577  2005/03/02 17:13:24  ritt
    Implemented central load_password_file()
 
@@ -1218,7 +1221,7 @@ int run_service(void);
 void show_error(char *error);
 BOOL enum_user_line(LOGBOOK * lbs, int n, char *user, int size);
 int get_user_line(char *logbook_name, char *user, char *password, char *full_name,
-                  char *email, char *email_notify);
+                  char *email, BOOL email_notify[1000]);
 int strbreak(char *str, char list[][NAME_LENGTH], int size, char *brk);
 int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], 
                   char att_file[MAX_ATTACHMENTS][256], char *sh_cmd);
@@ -9899,8 +9902,8 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
    char file_name[256], str[256], *pl, new_pwd[80], new_pwd2[80];
    char smtp_host[256], email_addr[256], mail_from[256], subject[256], mail_text[2000];
    char admin_user[80], enc_pwd[80], url[256];
-   int self_register;
-   PMXML_NODE xml_tree, node;
+   int  i, self_register;
+   PMXML_NODE xml_tree, node, subnode;
 
    /* check for full name */
    if (!isparam("new_full_name") || *getparam("new_full_name") == 0) {
@@ -9961,27 +9964,31 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
       if (new_user) {
          node = mxml_add_node(xml_tree, "user", NULL);
 
-         if (activate) {
-            mxml_add_node(node, "name", getparam("new_user_name"));
-            mxml_add_node(node, "password", getparam("encpwd"));
-            mxml_add_node(node, "full_name", getparam("new_full_name"));
-            mxml_add_node(node, "email", getparam("new_user_email"));
-            mxml_add_node(node, "email_notify", getparam("email_notify"));
-         } else {
-            mxml_add_node(node, "name", getparam("new_user_name"));
-            mxml_add_node(node, "password", new_pwd);
-            mxml_add_node(node, "full_name", getparam("new_full_name"));
-            mxml_add_node(node, "email", getparam("new_user_email"));
-            mxml_add_node(node, "email_notify", getparam("email_notify"));
-         }
+         mxml_add_node(node, "full_name", getparam("new_full_name"));
+         mxml_add_node(node, "name", getparam("new_user_name"));
+         mxml_add_node(node, "email", getparam("new_user_email"));
 
+         if (activate)
+            mxml_add_node(node, "password", getparam("encpwd"));
+         else
+            mxml_add_node(node, "password", new_pwd);
+         
       } else {
          /* replace record */
          mxml_replace_subvalue(node, "name", getparam("new_user_name"));
          mxml_replace_subvalue(node, "password", new_pwd);
          mxml_replace_subvalue(node, "full_name", getparam("new_full_name"));
          mxml_replace_subvalue(node, "email", getparam("new_user_email"));
-         mxml_replace_subvalue(node, "email_notify", getparam("email_notify"));
+      }
+
+      subnode = mxml_find_node(node, "email_notify");
+      if (subnode)
+         mxml_delete_node(subnode);
+      mxml_add_node(node, "email_notify", NULL);
+      for (i=0 ; lb_list[i].name[0] ; i++) {
+         sprintf(str, "sub_lb%d", i);
+         if (getparam(str) && atoi(getparam(str)))
+            mxml_add_node(subnode, "logbook", lb_list[i].name);
       }
 
       getcfg(lbs->name, "Password file", str, sizeof(str));
@@ -10164,9 +10171,10 @@ int ascii_compare(const void *s1, const void *s2)
 
 void show_config_page(LOGBOOK * lbs)
 {
-   char str[256], user[80], password[80], full_name[80], user_email[80], email_notify[256], logbook[256];
+   char str[256], user[80], password[80], full_name[80], user_email[80], logbook[256];
    char **user_list;
    int i, n;
+   BOOL email_notify[1000];
 
    if (lbs)
       strcpy(logbook, lbs->name);
@@ -10246,7 +10254,7 @@ void show_config_page(LOGBOOK * lbs)
 
    /*---- entry form ----*/
 
-   rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Login name"));
+   rsprintf("<tr><td nowrap width=\"15%%\">%s:</td>\n", loc("Login name"));
 
    if (get_user_line(logbook, user, password, full_name, user_email, email_notify) != 1)
       sprintf(str, loc("User [%s] has been deleted"), user);
@@ -10255,20 +10263,34 @@ void show_config_page(LOGBOOK * lbs)
 
    rsprintf("<td><input type=text size=40 name=new_user_name value=\"%s\"></td></tr>\n", str);
 
-   rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Full name"));
+   rsprintf("<tr><td nowrap width=\"15%%\">%s:</td>\n", loc("Full name"));
    rsprintf("<td><input type=text size=40 name=new_full_name value=\"%s\"></tr>\n", full_name);
 
-   rsprintf("<tr><td nowrap width=\"10%%\">Email:</td>\n");
+   rsprintf("<tr><td nowrap width=\"15%%\">Email:</td>\n");
    rsprintf
-       ("<td><input type=text size=40 name=new_user_email value=\"%s\">&nbsp;&nbsp;&nbsp;&nbsp;\n",
+       ("<td><input type=text size=40 name=new_user_email value=\"%s\"></td></tr>\n",
         user_email);
 
-   rsprintf("%s:\n", loc("Enable email notifications"));
+   rsprintf("<tr><td width=\"15%%\">%s:\n", loc("Subscribe to logbooks"));
 
-   if (email_notify[0])
-      rsprintf("<input type=checkbox checked name=email_notify value=all></td></tr>\n");
-   else
-      rsprintf("<input type=checkbox name=email_notify value=all></td></tr>\n");
+   rsprintf("<br><span class=\"selcomment\"><b>(%s)</b></span>\n",  
+      loc("enable automatic email notifications"));
+
+   rsprintf("<td>\n");
+
+   for (i = 0; lb_list[i].name[0]; i++) {
+
+      if (!getcfg_topgroup() || strieq(getcfg_topgroup(), lb_list[i].name)) {
+
+         if (email_notify[i])
+            rsprintf("<input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
+         else
+            rsprintf("<input type=checkbox id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
+         rsprintf("<label for=\"lb%d\">%s</label><br>\n", i, lb_list[i].name);
+      }
+   }
+
+   rsprintf("</td></tr>\n");
 
    rsprintf("</table></td></tr>\n");
 
@@ -16626,10 +16648,10 @@ void submit_elog(LOGBOOK * lbs)
        mail_list[MAX_N_LIST][NAME_LENGTH], list[10000], *p,
        attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[MAX_PATH_LENGTH],
        in_reply_to[80], reply_to[MAX_REPLY_TO * 10], user[256], user_email[256],
-       email_notify[256], mail_param[1000], *mail_to, att_file[MAX_ATTACHMENTS][256],
+       mail_param[1000], *mail_to, att_file[MAX_ATTACHMENTS][256],
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], ua[NAME_LENGTH];
    int i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_orig,
-       mail_to_size, ltime, year, month, day, n_attr;
+       mail_to_size, ltime, year, month, day, n_attr, email_notify[1000];
    BOOL bedit;
    struct tm tms;
 
@@ -17015,7 +17037,11 @@ void submit_elog(LOGBOOK * lbs)
 
                get_user_line(lbs->name, user, NULL, NULL, user_email, email_notify);
 
-               if (email_notify[0]) {
+               for (i=0 ; lb_list[i].name[0] && i<1000 ; i++)
+                  if (strieq(lb_list[i].name, lbs->name))
+                     break;
+
+               if (email_notify[i]) {
                   /* check if user has access to this logbook */
                   if (!check_login_user(lbs, user))
                      continue;
@@ -18424,10 +18450,11 @@ PMXML_NODE load_password_file(char *logbook_name)
 /*------------------------------------------------------------------*/
 
 int get_user_line(char *logbook_name, char *user, char *password, char *full_name,
-                  char *email, char *email_notify)
+                  char *email, BOOL email_notify[1000])
 {
+   int i, j;
    char str[256];
-   PMXML_NODE xml_tree, user_node, node;
+   PMXML_NODE xml_tree, user_node, node, subnode;
 
    if (password)
       password[0] = 0;
@@ -18459,8 +18486,29 @@ int get_user_line(char *logbook_name, char *user, char *password, char *full_nam
          strlcpy(full_name, mxml_get_value(node), 256);
       if ((node = mxml_find_node(user_node, "email")) != NULL && email && mxml_get_value(node))
          strlcpy(email, mxml_get_value(node), 256);
-      if ((node = mxml_find_node(user_node, "email_notify")) != NULL && email_notify && mxml_get_value(node))
-         strlcpy(email_notify, mxml_get_value(node), 256);
+
+      if ((node = mxml_find_node(user_node, "email_notify")) != NULL && email_notify) {
+         if (mxml_get_number_of_children(node)) {
+            for (i=0 ; i<1000 ; i++)
+               email_notify[i] = FALSE;
+
+            for (i=0 ; i<mxml_get_number_of_children(node) ; i++) {
+               subnode = mxml_subnode(node, i);
+               for (j = 0; lb_list[j].name[0]; j++) 
+                  if (strieq(lb_list[j].name, mxml_get_value(subnode))) {
+                     email_notify[j] = TRUE;
+                     break;
+                  }
+            }
+
+         } else {
+            for (i=0 ; i<1000 ; i++)
+               if (strieq(mxml_get_value(node), "all"))
+                  email_notify[i] = TRUE;
+               else
+                  email_notify[i] = FALSE;
+         }
+      }
 
       mxml_free_tree(xml_tree);
       return 1;
