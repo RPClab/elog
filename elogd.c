@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.112  2002/12/10 08:20:09  midas
+  Hide wrong password from URL
+
   Revision 2.111  2002/12/10 07:53:21  midas
   Implemented expand/collapse
 
@@ -9502,18 +9505,29 @@ char  str[256];
     if (strcmp(password, str) == 0)
       return TRUE;
 
+    if (!isparam("wpwd") && password[0])
+      {
+      strlcpy(str, redir, sizeof(str));
+      if (strchr(str, '?'))
+        strlcat(str, "&wpwd=1", sizeof(str));
+      else
+        strlcat(str, "?wpwd=1", sizeof(str));
+      redirect(str);
+      return FALSE;
+      }
+
     /* show web password page */
     show_standard_header(loc("ELOG password"), NULL);
 
     /* define hidden fields for current destination */
-    if (redir[0] && !password[0])
+    if (redir[0])
       rsprintf("<input type=hidden name=redir value=\"%s\">\n", redir);
 
     rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
               gt("Border width"), gt("Frame color"));
     rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
 
-    if (password[0])
+    if (isparam("wpwd"))
       rsprintf("<tr><th bgcolor=#FF0000>%s!</th></tr>\n", loc("Wrong password"));
 
     rsprintf("<tr><td align=center bgcolor=%s>\n", gt("Title bgcolor"));
@@ -9709,6 +9723,12 @@ char  status, str[256], upwd[256], full_name[256], email[256];
       return TRUE;
       }
 
+    if (!isparam("wpwd") && password[0])
+      {
+      redirect("?wpwd=1");
+      return FALSE;
+      }
+
     /* show login password page */
     show_standard_header("ELOG login", NULL);
 
@@ -9719,7 +9739,7 @@ char  status, str[256], upwd[256], full_name[256], email[256];
               gt("Border width"), gt("Frame color"));
     rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
 
-    if (password[0])
+    if (isparam("wpwd"))
       rsprintf("<tr><th bgcolor=#FF0000>%s!</th></tr>\n", loc("Wrong password"));
 
     rsprintf("<tr><td align=center bgcolor=%s>\n", gt("Title bgcolor"));

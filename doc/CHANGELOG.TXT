@@ -2,6 +2,14 @@ Version 2.2.4, released Nobember xxth, 2002
 ===========================================
 
 - Added option "Menu text = xxxx" and "Find Menu text = xxxx"
+- Fixed bug with "hosts allow = .."
+- Fixed problem that when hitting "Back" after a wrong message submission
+  old text was gone
+- Fixed bug with displaying attributes in search all logbooks
+- Added strlcpy and strlcat to avoid buffer overflows
+- Implemented "Line as link" option
+- Implemented collapse/expand of threaded display
+- Do not display password in URL if wrong password
 
 Version 2.2.3, released Nobember 20th, 2002
 ===========================================
