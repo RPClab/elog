@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.505  2004/11/01 09:49:40  midas
+   Made quick filter case insensitive
+
    Revision 1.504  2004/10/29 19:32:56  midas
    Added -m and -M command line switches
 
@@ -8752,8 +8755,8 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf("<tr><td><td class=\"attribvalue\">\n");
    rsprintf("<input type=checkbox id=\"sall\" name=\"sall\" value=1>\n");
    rsprintf("<label for=\"sall\">%s</label>\n", loc("Search text also in attributes"));
-   rsprintf("<input type=checkbox checked id=\"sall\" name=\"icase\" value=1>\n");
-   rsprintf("<label for=\"icase\">%s</label>\n", loc("Ignore case"));
+   rsprintf("<input type=checkbox id=\"sall\" name=\"casesensitive\" value=1>\n");
+   rsprintf("<label for=\"casesensitive\">%s</label>\n", loc("Case sensitive"));
 
    rsprintf("</td></tr></table></td></tr></table>\n");
    show_bottom_text(lbs);
@@ -14734,7 +14737,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    if (*getparam("subtext")) {
       strcpy(str, getparam("subtext"));
       flags = REG_EXTENDED;
-      if (isparam("icase"))
+      if (!isparam("casesensitive"))
          flags |= REG_ICASE;
       regcomp(re_buf, str, flags);
    }
@@ -14756,7 +14759,11 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             setparam(attr_list[i], str);
          }
 
-      flags = isparam("icase") ? REG_ICASE : REG_EXTENDED;
+      flags = REG_EXTENDED;
+
+      if (!isparam("casesensitive"))
+         flags |= REG_ICASE;
+
       regcomp(re_buf+i+1, str, flags);
       }
    }
