@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.124  2003/07/01 14:32:52  midas
+  Do not display logbook tabs during self-registration
+
   Revision 1.123  2003/07/01 14:08:43  midas
   Dont display more than 10 email recipients
 
@@ -7136,7 +7139,6 @@ char str[1000], login_name[256], full_name[256], user_email[256], name[256], pwd
 
 void show_new_user_page(LOGBOOK *lbs)
 {
-
   /*---- header ----*/
 
   show_standard_header(lbs, TRUE, loc("ELOG new user"), "");
@@ -7144,9 +7146,9 @@ void show_new_user_page(LOGBOOK *lbs)
   /*---- title ----*/
 
   if (lbs)
-    show_standard_title(lbs->name, "", 0);
+    show_standard_title(lbs->name, "", 1);
   else
-    show_standard_title("ELOG", "", 0);
+    show_standard_title("ELOG", "", 1);
 
   /*---- menu buttons ----*/
 
