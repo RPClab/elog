@@ -188,7 +188,7 @@ the standard selection page produced by <code><b>elogd</b></code> can be used.
 
 <LI><b><code>Guest Selection page = &lt;file&gt;</code></b>
 <br>
-The same for installations which have a global password file. This means that the 
+The same for installations which have a global password file. This means that the
 logbook selection page is also password protected. It might be however that some
 logbooks have guest access, in which case guest access to the selection page should
 be allowed as well (maybe with only a subset of the available logbooks). In that case
@@ -908,7 +908,7 @@ actual user name. For a full listing of substitutions, see the "<I>Subst &lt;att
 The user name and password are stored as cookies on the user side. The expiration is
 controlled by the <b><code>Remember me</code></b> checkbox during the login. If unchecked,
 the cookies expire after the
-current browser session. If checked, they expire after 31 days by default, which 
+current browser session. If checked, they expire after 31 days by default, which
 can be changed with the <code><b>Login
 expiration</b></code > option, giving the expiration time in hours. Setting this to 24
 for example, makes the password expire after one day. If presistent cookies are not
@@ -1033,8 +1033,14 @@ Email Subject = &lt;string&gt;</b></code> statement specifies which text is
 used as the email subject. The text can contain <b><code>$&lt;attribute&gt;
 </code></b>statements which are substituted with the current value of that
 attribute. For a full list of possible substitutions, see the
-"<I>Subst &lt;attribute&gt;</I>" option. The option <b><code>Use Email From = &lt;string&gt;
-</code></b> is used for the "<I>from</I>" field in the email. If the flag <b><code>
+"<I>Subst &lt;attribute&gt;</I>" option.<p>
+
+The option <b><code>Use Email From = &lt;string&gt;
+</code></b> is used for the "<I>From:</I>" field in the email. Please note that more and
+more email servers do not accept invalid <I>"From:"</I> addresses, in order to reduce spam mail.
+So it might be necessary to use this option to supply a "real" email address.<p>
+
+If the flag <b><code>
 Omit Email To</b></code> is set to <b>1</b>, the <i>To:</i> field in the email is
 left empty instead set to the real email address of the recipients. This can
 be useful if one recipient should not see the email addresses of the other recipients.
@@ -1143,10 +1149,21 @@ suppresses this display, in case users need not see that email is being sent and
 The default is <b>1</b>.
 <p>
 
-<li><b><code>Email message body = 0|1</code></b>
+<li><b><code>Email Format = &lt;n&gt;</code></b>
 </br>
-If this flag is <b>1</b>, the email notification send by elog contains the
-full message body in addition to the attributes. The default is <b>0</b>.
+Specifies what is sent in an email notification. &lt;n&gt; is the sum of following
+flags:<br>
+
+<ul>
+<li>1 : Send heading line "A new entry has been submitted..."
+<li>2 : Send attributes
+<li>4 : Send URL of logbook entry
+<li>8 : Send message body
+<li>16: Send optional attachments as email attachments
+</ul>
+
+So to send for example only the attributes and the URL, set &lt;n&gt;
+to <b>6</b>. Default is <b>31</b> (send everything).
 <p>
 
 <li><b><code>Suppress Email on edit = 0|1</code></b>
@@ -1195,7 +1212,7 @@ The default is <b>1</b>.
 <li><b><code>Hidden = 0|1</code></b>
 </br>
 If this flag is <b>1</b>, the logbook is not displayed in the initial logbook selection
-page and in the logbook tabs. This can be useful for logbooks which are only accessed 
+page and in the logbook tabs. This can be useful for logbooks which are only accessed
 for backup or archiving and would clutter up the logbook list for the normal user. To
 access hidden logbooks, one has to enter the logbook URL directly, or from a bookmark list.
 Default is <b>0</b>.
@@ -1207,7 +1224,7 @@ If this flag is <b>1</b>, a logbook entry is <i>locked</i> when someone edits it
 the <i>Edit</i> command). A locked message gets displayed with a little red sign indicating
 that the message is currently edited by someone and should not be touched. This can be
 helpful in installations where several people can edit messages. Without locking, the second
-submission of an edited message overwrites the first submission without notice. Although 
+submission of an edited message overwrites the first submission without notice. Although
 the sign gets displayed, the message can still be edited, but it's the user's response to
 avoid any conflict.<br><br>
 

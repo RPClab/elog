@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.122  2003/07/01 06:21:19  midas
+  Added emailing of attachments
+
   Revision 1.121  2003/06/30 18:38:21  midas
   Increase textarea width for old messages according to longest line
 
@@ -886,7 +889,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.3.8"
+#define VERSION "2.3.9"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -1131,7 +1134,7 @@ typedef struct {
 } LOGBOOK;
 
 typedef struct LBNODE *LBLIST;
-  
+
 struct LBNODE  {
   char    name[256];
   LBLIST  member;
@@ -1437,6 +1440,37 @@ unsigned int t, pad;
     *(--d) = '=';
 }
 
+void base64_bufenc(unsigned char *s, int len, char *d)
+{
+unsigned int t, pad;
+int i;
+
+  pad = 3 - len % 3;
+  if (pad == 3)
+    pad = 0;
+  for (i=0 ; i<len ; )
+    {
+    t = s[i++] << 16;
+    if (i<len)
+      t |=  s[i++] << 8;
+    if (i<len)
+      t |=  s[i++] << 0;
+
+    *(d+3) = map[t & 63];
+    t >>= 6;
+    *(d+2) = map[t & 63];
+    t >>= 6;
+    *(d+1) = map[t & 63];
+    t >>= 6;
+    *(d+0) = map[t & 63];
+
+    d += 4;
+    }
+  *d = 0;
+  while (pad--)
+    *(--d) = '=';
+}
+
 void do_crypt(char *s, char *d)
 {
 #ifdef HAVE_CRYPT
@@ -1539,19 +1573,25 @@ struct timeval timeout;
 }
 
 
-INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text, BOOL email_to, char *url)
+INT sendmail(LOGBOOK *lbs, char *smtp_host, char *from, char *to, char *subject, char *text,
+             BOOL email_to, char *url, char att_file[MAX_ATTACHMENTS][256])
 {
 struct sockaddr_in   bind_addr;
 struct hostent       *phe;
-int                  i, n, s, offset, strsize;
+int                  i, n, s, offset, strsize, n_att, index, fh;
 char                 buf[80];
-char                 *str, *p;
+char                 *str, *p, boundary[256], file_name[MAX_PATH_LENGTH];
 time_t               now;
 struct tm            *ts;
-char                 list[1024][NAME_LENGTH];
+char                 list[1024][NAME_LENGTH], buffer[256];
 
   if (verbose)
     printf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
+
+  /* count attachments */
+  n_att = 0;
+  if (att_file)
+    for (n_att = 0 ; att_file[n_att][0] && n_att < MAX_ATTACHMENTS ; n_att++);
 
   /* create a new socket for connecting to remote server */
   s = socket(AF_INET, SOCK_STREAM, 0);
@@ -1578,27 +1618,27 @@ char                 list[1024][NAME_LENGTH];
   str = malloc(strsize);
 
   recv_string(s, str, strsize, 10000);
-  if (verbose) puts(str);
+  if (verbose) fputs(str, stdout);
 
   /* drain server messages */
   do
     {
     str[0] = 0;
     recv_string(s, str, strsize, 300);
-    if (verbose) puts(str);
+    if (verbose) fputs(str, stdout);
     } while (str[0]);
 
   snprintf(str, strsize - 1, "HELO %s\r\n", host_name);
   send(s, str, strlen(str), 0);
-  if (verbose) puts(str);
+  if (verbose) fputs(str, stdout);
   recv_string(s, str, strsize, 3000);
-  if (verbose) puts(str);
+  if (verbose) fputs(str, stdout);
 
   snprintf(str, strsize - 1, "MAIL FROM: <%s>\r\n", from);
   send(s, str, strlen(str), 0);
-  if (verbose) puts(str);
+  if (verbose) fputs(str, stdout);
   recv_string(s, str, strsize, 3000);
-  if (verbose) puts(str);
+  if (verbose) fputs(str, stdout);
 
   /* break recipients into list */
   n = strbreak(to, list, 1024);
@@ -1607,16 +1647,16 @@ char                 list[1024][NAME_LENGTH];
     {
     snprintf(str, strsize - 1, "RCPT TO: <%s>\r\n", list[i]);
     send(s, str, strlen(str), 0);
-    if (verbose) puts(str);
+    if (verbose) fputs(str, stdout);
     recv_string(s, str, strsize, 3000);
-    if (verbose) puts(str);
+    if (verbose) fputs(str, stdout);
     }
 
   snprintf(str, strsize - 1, "DATA\r\n");
   send(s, str, strlen(str), 0);
-  if (verbose) puts(str);
+  if (verbose) fputs(str, stdout);
   recv_string(s, str, strsize, 3000);
-  if (verbose) puts(str);
+  if (verbose) fputs(str, stdout);
 
   if (email_to)
     snprintf(str, strsize - 1, "To: %s\r\n", to);
@@ -1624,30 +1664,26 @@ char                 list[1024][NAME_LENGTH];
     snprintf(str, strsize - 1, "To: ELOG user\r\n");
 
   send(s, str, strlen(str), 0);
-  if (verbose) puts(str);
+  if (verbose) fputs(str, stdout);
 
   snprintf(str, strsize - 1, "From: %s\r\nSubject: %s\r\n", from, subject);
   send(s, str, strlen(str), 0);
-  if (verbose) puts(str);
+  if (verbose) fputs(str, stdout);
 
   snprintf(str, strsize - 1, "X-Mailer: Elog, Version %s\r\n", VERSION);
   send(s, str, strlen(str), 0);
-  if (verbose) puts(str);
+  if (verbose) fputs(str, stdout);
 
   if (url)
     {
     snprintf(str, strsize - 1, "X-Elog-URL: %s\r\n", url);
     send(s, str, strlen(str), 0);
-    if (verbose) puts(str);
+    if (verbose) fputs(str, stdout);
     }
 
   snprintf(str, strsize - 1, "X-Elog-submit-type: web|elog\r\n");
   send(s, str, strlen(str), 0);
-  if (verbose) puts(str);
-
-  snprintf(str, strsize - 1, "Content-Type: text/plain\r\n");
-  send(s, str, strlen(str), 0);
-  if (verbose) puts(str);
+  if (verbose) fputs(str, stdout);
 
   time(&now);
   ts = localtime(&now);
@@ -1655,10 +1691,40 @@ char                 list[1024][NAME_LENGTH];
   offset = (-(int)timezone);
   if (ts->tm_isdst)
     offset += 3600;
-  snprintf(str, strsize - 1, "Date: %s %+03d%02d\r\n\r\n", buf,
+  snprintf(str, strsize - 1, "Date: %s %+03d%02d\r\n", buf,
           (int) (offset/3600), (int) ((abs((int)offset)/60) % 60));
   send(s, str, strlen(str), 0);
-  if (verbose) puts(str);
+  if (verbose) fputs(str, stdout);
+
+  if (n_att > 0)
+    {
+    snprintf(str, strsize - 1, "MIME-Version: 1.0\r\n");
+    send(s, str, strlen(str), 0);
+    if (verbose) fputs(str, stdout);
+
+    sprintf(boundary, "%04X-%04X=:%04X", rand(), rand(), rand());
+    snprintf(str, strsize - 1, "Content-Type: MULTIPART/MIXED; BOUNDARY=\"%s\"\r\n\r\n", boundary);
+    send(s, str, strlen(str), 0);
+    if (verbose) fputs(str, stdout);
+
+    snprintf(str, strsize - 1, "  This message is in MIME format.  The first part should be readable text,\r\n");
+    send(s, str, strlen(str), 0);
+    if (verbose) fputs(str, stdout);
+
+    snprintf(str, strsize - 1, "  while the remaining parts are likely unreadable without MIME-aware tools.\r\n\r\n");
+    send(s, str, strlen(str), 0);
+    if (verbose) fputs(str, stdout);
+
+    snprintf(str, strsize - 1, "--%s\r\nContent-Type: TEXT/PLAIN; charset=US-ASCII\r\n\r\n", boundary);
+    send(s, str, strlen(str), 0);
+    if (verbose) fputs(str, stdout);
+    }
+  else
+    {
+    snprintf(str, strsize - 1, "Content-Type: TEXT/PLAIN; charset=US-ASCII\r\n\r\n");
+    send(s, str, strlen(str), 0);
+    if (verbose) fputs(str, stdout);
+    }
 
   /* analyze text for "." at beginning of line */
   p = text;
@@ -1671,18 +1737,91 @@ char                 list[1024][NAME_LENGTH];
     strlcat(str, "\r\n..\r\n", strsize);
     }
   strlcat(str, p, strsize);
-  strlcat(str, "\r\n.\r\n", strsize);
-
+  strlcat(str, "\r\n\r\n", strsize);
   send(s, str, strlen(str), 0);
-  if (verbose) puts(str);
+  if (verbose) fputs(str, stdout);
+
+  if (n_att > 0)
+    {
+    snprintf(str, strsize - 1, "--%s\r\n", boundary);
+    send(s, str, strlen(str), 0);
+    if (verbose) fputs(str, stdout);
+
+    for (index=0 ; index<n_att ; index++)
+      {
+      /* return proper Content-Type for file type */
+      for (i=0 ; i<(int)strlen(att_file[index]) ; i++)
+        str[i] = toupper(att_file[index][i]);
+      str[i] = 0;
+
+      for (i=0 ; filetype[i].ext[0] ; i++)
+        if (strstr(str, filetype[i].ext))
+          break;
+
+      if (filetype[i].ext[0])
+        snprintf(str, strsize - 1, "Content-Type: %s; name=\"%s\"\r\n", filetype[i].type, att_file[index]+14);
+      else if (strchr(str, '.') == NULL)
+        snprintf(str, strsize - 1, "Content-Type: text/plain; name=\"%s\"\r\n", att_file[index]+14);
+      else
+        snprintf(str, strsize - 1, "Content-Type: application/octet-stream; name=\"%s\"\r\n", att_file[index]+14);
+
+      send(s, str, strlen(str), 0);
+      if (verbose) fputs(str, stdout);
+
+      snprintf(str, strsize - 1, "Content-Transfer-Encoding: BASE64\r\n");
+      send(s, str, strlen(str), 0);
+      if (verbose) fputs(str, stdout);
+
+      snprintf(str, strsize - 1, "Content-Disposition: attachment; filename=\"%s\"\r\n\r\n", att_file[index]+14);
+      send(s, str, strlen(str), 0);
+      if (verbose) fputs(str, stdout);
+
+      /* encode file */
+      strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+      strlcat(file_name, att_file[index], sizeof(file_name));
+
+      fh = open(file_name, O_RDONLY | O_BINARY);
+      if (fh > 0)
+        {
+        do
+          {
+          n = read(fh, buffer, 45);
+          if (n<=0)
+            break;
+
+          base64_bufenc(buffer, n, str);
+          strcat(str, "\r\n");
+          send(s, str, strlen(str), 0);
+          if (verbose) fputs(str, stdout);
+          } while(1);
+
+        close(fh);
+        }
+
+      /* send boundary */
+      if (index < n_att-1)
+        snprintf(str, strsize - 1, "\r\n--%s\r\n", boundary);
+      else
+        snprintf(str, strsize - 1, "\r\n--%s--\r\n", boundary);
+
+      send(s, str, strlen(str), 0);
+      if (verbose) fputs(str, stdout);
+      }
+    }
+
+  /* send ".<CR>" to signal end of message */
+  snprintf(str, strsize - 1, ".\r\n");
+  send(s, str, strlen(str), 0);
+  if (verbose) fputs(str, stdout);
+
   recv_string(s, str, strsize, 3000);
-  if (verbose) puts(str);
+  if (verbose) fputs(str, stdout);
 
   snprintf(str, strsize - 1, "QUIT\r\n");
   send(s, str, strlen(str), 0);
-  if (verbose) puts(str);
+  if (verbose) fputs(str, stdout);
   recv_string(s, str, strsize, 3000);
-  if (verbose) puts(str);
+  if (verbose) fputs(str, stdout);
 
   closesocket(s);
   free(str);
@@ -2938,7 +3077,7 @@ char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
 
 /*------------------------------------------------------------------*/
 
-int el_submit_attachment(LOGBOOK *lbs, char *afilename, char *buffer, 
+int el_submit_attachment(LOGBOOK *lbs, char *afilename, char *buffer,
                          int buffer_size, char *full_name)
 {
 char       file_name[MAX_PATH_LENGTH], dir[MAX_PATH_LENGTH], str[MAX_PATH_LENGTH], *p;
@@ -3064,7 +3203,7 @@ char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
   el_decode(message, "Attachment: ", attachment_all);
 
   name[0] = 0;
-  
+
   for (i=0 ; i<=n; i++)
     {
     if (i == 0)
@@ -3706,10 +3845,10 @@ char   att_file[MAX_ATTACHMENTS][256];
   date[0] = 0;
   new_id = el_submit(lbs, 0, date, attr_list, attrib, lbs->n_attr, text,
                      in_reply_to, reply_to, encoding, att_file, FALSE, locked_by);
-  
+
   /* correct links */
   el_correct_links(lbs, message_id, new_id);
-  
+
   /* delete original message */
   el_delete_message(lbs, message_id, FALSE, NULL, FALSE, FALSE);
 
@@ -3748,7 +3887,7 @@ char   att_file[MAX_ATTACHMENTS][256];
 
   return EL_SUCCESS;
 }
-  
+
 /*------------------------------------------------------------------*/
 
 void logf(const char *format, ...)
@@ -4190,7 +4329,7 @@ struct tm *gmt;
   /* to clear a cookie, set expiration date to yesterday */
   if (value[0] == 0)
     exp = -24;
-  
+
   /* add expriation date */
   if (exp != 0)
     {
@@ -4413,7 +4552,7 @@ char css[256], str[256];
   show_http_header(expires);
 
   /* DOCTYPE */
-  rsprintf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n"); 
+  rsprintf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n");
 
   /* page title */
   rsprintf("<html><head><title>%s</title>\n", title);
@@ -4426,7 +4565,7 @@ char css[256], str[256];
 
   else if (lbs == NULL && getcfg("global", "CSS", str))
     strlcpy(css, str, sizeof(css));
-    
+
   rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">", css);
 
   rsprintf("</head>\n");
@@ -4518,7 +4657,7 @@ char   grplist[MAX_N_LIST][NAME_LENGTH];
 
       if (strlen(grpname) < 7)
         strlcpy(lbl[n].name, "Invalid group definition!", 256);
-      else    
+      else
         strlcpy(lbl[n].name, grpname+6, 256);
       m = strbreak(grpmembers, grplist, MAX_N_LIST);
       lbl[n].n_members = m;
@@ -4548,7 +4687,7 @@ char   grplist[MAX_N_LIST][NAME_LENGTH];
             {
             lbl[i].member[j].member = lbl[k].member;
             lbl[i].member[j].n_members = lbl[k].n_members;
-            
+
             /* mark group as subgroup */
             lbl[k].subgroup = 1;
             break;
@@ -4815,7 +4954,7 @@ BOOL   global;
 int exist_file(char *file_name)
 {
 int fh;
-  
+
   fh = open(file_name, O_RDONLY | O_BINARY);
   if (fh > 0)
     {
@@ -5114,7 +5253,7 @@ int    i, fh, size;
 
 void show_change_pwd_page(LOGBOOK *lbs)
 {
-char   str[256], old_pwd[32], 
+char   str[256], old_pwd[32],
        new_pwd[32], new_pwd2[32], act_pwd[32], user[80];
 int    wrong_pwd;
 
@@ -5211,7 +5350,7 @@ int    wrong_pwd;
 /*------------------------------------------------------------------*/
 
 int get_last_index(LOGBOOK *lbs, int index)
-/* return value of specific attribute of last entry, can be used to 
+/* return value of specific attribute of last entry, can be used to
    auto-increment tags */
 {
 int    i, message_id;
@@ -5483,7 +5622,7 @@ time_t now;
   /*---- menu buttons ----*/
 
   rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
- 
+
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Submit"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
   rsprintf("</span></td></tr>\n\n");
@@ -5578,7 +5717,7 @@ time_t now;
     rsprintf("<tr><td nowrap class=\"attribname\">%s%s:</td>", attr_list[index], star);
 
     /* if attribute cannot be changed, just display text */
-    if ((attr_flags[index] & AF_LOCKED) || 
+    if ((attr_flags[index] & AF_LOCKED) ||
         (bedit && (attr_flags[index] & AF_FIXED_EDIT)) ||
         (message_id && !bedit && (attr_flags[index] & AF_FIXED_REPLY)))
       {
@@ -5849,7 +5988,7 @@ time_t now;
         strlcpy(file_name, resource_dir, sizeof(file_name));
         strlcat(file_name, str, sizeof(file_name));
         }
-       
+
       /* check if file exists */
       fh = open(file_name, O_RDONLY | O_BINARY);
       if (fh > 0)
@@ -5978,7 +6117,7 @@ time_t now;
           rsprintf("<td class=\"attribvalue\">\n");
           rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", str, att[i]);
           rsprintf("%s\n", att[i]+14);
-          rsprintf("&nbsp;&nbsp;<input type=submit name=delatt%d value=\"%s\"></td></tr>\n", 
+          rsprintf("&nbsp;&nbsp;<input type=submit name=delatt%d value=\"%s\"></td></tr>\n",
                     i, loc("Delete"));
           }
         else
@@ -6048,7 +6187,7 @@ char   str[NAME_LENGTH], mode[256], comment[256];
   /*---- entry form ----*/
 
   rsprintf("<tr><td class=\"form1\">\n");
-  
+
   rsprintf("<b>%s:</b>&nbsp;&nbsp;", loc("Mode"));
 
   if (!getcfg(lbs->name, "Display mode", mode))
@@ -6465,10 +6604,10 @@ int    i, fh, size, self_register;
         write(fh, "\n", 1);
 
       if (activate)
-        sprintf(str, "%s:%s:%s:%s:%s\n", getparam("new_user_name"), getparam("encpwd"), 
+        sprintf(str, "%s:%s:%s:%s:%s\n", getparam("new_user_name"), getparam("encpwd"),
                 getparam("new_full_name"), getparam("new_user_email"), getparam("email_notify"));
       else
-        sprintf(str, "%s:%s:%s:%s:%s\n", getparam("new_user_name"), new_pwd, 
+        sprintf(str, "%s:%s:%s:%s:%s\n", getparam("new_user_name"), new_pwd,
                 getparam("new_full_name"), getparam("new_user_email"), getparam("email_notify"));
       write(fh, str, strlen(str));
       }
@@ -6478,7 +6617,7 @@ int    i, fh, size, self_register;
       lseek(fh, 0, SEEK_SET);
       write(fh, buf, pl-buf);
 
-      sprintf(str, "%s:%s:%s:%s:%s\n", getparam("new_user_name"), new_pwd, 
+      sprintf(str, "%s:%s:%s:%s:%s\n", getparam("new_user_name"), new_pwd,
               getparam("new_full_name"), getparam("new_user_email"), getparam("email_notify"));
       write(fh, str, strlen(str));
 
@@ -6544,7 +6683,7 @@ int    i, fh, size, self_register;
       sprintf(url+strlen(url), "?cmd=Login&unm=%s", getparam("new_user_name"));
       sprintf(mail_text+strlen(mail_text), "%s %s\r\n", loc("You can access it at"), url);
 
-      sendmail(smtp_host, mail_from, getparam("new_user_email"), subject, mail_text, TRUE, url);
+      sendmail(lbs, smtp_host, mail_from, getparam("new_user_email"), subject, mail_text, TRUE, url, NULL);
       }
     else
       {
@@ -6597,10 +6736,10 @@ int    i, fh, size, self_register;
               do_crypt(getparam("newpwd"), enc_pwd);
               url_encode(enc_pwd, sizeof(enc_pwd));
               sprintf(mail_text+strlen(mail_text), "?cmd=Activate&new_user_name=%s&new_full_name=%s&new_user_email=%s&email_notify=%s&encpwd=%s&unm=%s\r\n",
-                      getparam("new_user_name"), 
-                      str, 
-                      getparam("new_user_email"), 
-                      getparam("email_notify"), 
+                      getparam("new_user_name"),
+                      str,
+                      getparam("new_user_email"),
+                      getparam("email_notify"),
                       enc_pwd,
                       pl);
               }
@@ -6610,7 +6749,7 @@ int    i, fh, size, self_register;
                       loc("Logbook"), url, getparam("new_user_name"), pl);
               }
 
-            sendmail(smtp_host, mail_from, email_addr, subject, mail_text, TRUE, url);
+            sendmail(lbs, smtp_host, mail_from, email_addr, subject, mail_text, TRUE, url, NULL);
             }
 
           pl = strtok(NULL, " ,");
@@ -6632,7 +6771,7 @@ int    i, fh, size, self_register;
     {
     set_login_cookies(lbs, getparam("new_user_name"), new_pwd);
     return 0;
-    }  
+    }
 
   /* if new user, login as this user */
   if (new_user && !*getparam("unm"))
@@ -6723,7 +6862,7 @@ int    i, fh, size;
 
   free(buf);
   close(fh);
-  
+
   return 1;
 }
 
@@ -6769,7 +6908,7 @@ int  i;
 
   /*---- if admin user, show user list ----*/
 
-  if (getcfg(logbook, "Admin user", str) && 
+  if (getcfg(logbook, "Admin user", str) &&
       strstr(str, getparam("unm")) != 0)
     {
     rsprintf("<input type=hidden name=admin value=1>\n");
@@ -6806,15 +6945,15 @@ int  i;
   rsprintf("<td><input type=text size=40 name=new_user_name value=\"%s\"></td></tr>\n", str);
 
   rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Full name"));
-  rsprintf("<td><input type=text size=40 name=new_full_name value=\"%s\"></tr>\n", 
+  rsprintf("<td><input type=text size=40 name=new_full_name value=\"%s\"></tr>\n",
             full_name);
 
   rsprintf("<tr><td nowrap width=\"10%%\">Email:</td>\n");
-  rsprintf("<td><input type=text size=40 name=new_user_email value=\"%s\">&nbsp;&nbsp;&nbsp;&nbsp;\n", 
+  rsprintf("<td><input type=text size=40 name=new_user_email value=\"%s\">&nbsp;&nbsp;&nbsp;&nbsp;\n",
             user_email);
 
   rsprintf("%s:\n", loc("Enable email notifications"));
-  
+
   if (email_notify[0])
     rsprintf("<input type=checkbox checked name=email_notify value=all></td></tr>\n");
   else
@@ -6826,7 +6965,7 @@ int  i;
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change password"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Remove user"));
 
-  if (!getcfg(logbook, "Admin user", str) || 
+  if (!getcfg(logbook, "Admin user", str) ||
       (getcfg(logbook, "Admin user", str) && strstr(str, getparam("unm")) != 0))
     {
     rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("New user"));
@@ -6835,7 +6974,7 @@ int  i;
 
   /* hidden field for password */
   rsprintf("<input type=hidden name=hpwd value=\"%s\">\n", password);
-  
+
   rsprintf("</span></td></tr></table>\n\n");
   rsprintf("</body></html>\r\n");
 }
@@ -6930,7 +7069,7 @@ char str[1000], login_name[256], full_name[256], user_email[256], name[256], pwd
         strlcat(mail_text, "\r\n\r\n", sizeof(mail_text));
         sprintf(mail_text+strlen(mail_text), "ELOG Version %s\r\n", VERSION);
 
-        if (sendmail(smtp_host, mail_from, user_email, subject, mail_text, TRUE, url) != -1)
+        if (sendmail(lbs, smtp_host, mail_from, user_email, subject, mail_text, TRUE, url, NULL) != -1)
           {
           /* save new password */
           change_pwd(lbs, login_name, pwd_encrypted);
@@ -7021,7 +7160,7 @@ void show_new_user_page(LOGBOOK *lbs)
   /*---- entry form ----*/
 
   rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Login name"));
-  rsprintf("<td><input type=text size=40 name=new_user_name> <i>(%s)</i></td></tr>\n", 
+  rsprintf("<td><input type=text size=40 name=new_user_name> <i>(%s)</i></td></tr>\n",
             loc("name may not contain blanks"));
 
   rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Full name"));
@@ -7359,7 +7498,7 @@ FILE *f;
     /* show select box */
     if (select && level == 0)
       rsprintf("<input type=checkbox name=\"s%d\" value=%d>\n", (*n_display)++, message_id);
-    
+
     for (i=0 ; i<level ; i++)
       rsprintf("&nbsp;&nbsp;&nbsp;");
 
@@ -7434,9 +7573,9 @@ FILE *f;
       }
     else
       strcpy(svalue[j++], date);
-    
+
     strsubst(display, slist, svalue, j);
-    
+
     rsprintf("<a href=\"%s\">", ref);
     rsputs(display);
     rsprintf("</a>\n");
@@ -7786,7 +7925,7 @@ FILE *f;
 
 /*------------------------------------------------------------------*/
 
-void display_reply(LOGBOOK *lbs, int message_id, int printable, int expand, int n_line, 
+void display_reply(LOGBOOK *lbs, int message_id, int printable, int expand, int n_line,
                    int n_attr_disp, char disp_attr[MAX_N_ATTR+4][NAME_LENGTH], int level)
 {
 char   date[80], *text, in_reply_to[80], reply_to[256], encoding[80], locked_by[256],
@@ -7854,7 +7993,7 @@ char *p;
       return NULL;
 
     p = strstr(p, param);
-  
+
     /* if parameter is value of another parameter, skip it */
     if (p > str+1 && *(p-1) == '=')
       p += strlen(param);
@@ -7878,7 +8017,7 @@ char *p1, *p2, *s;
     {
     /* remove parameter */
     s = param_in_str(str, param);
-    
+
     if (s == NULL)
       return;
 
@@ -8007,7 +8146,7 @@ int  i, n;
           (getcfg(lbs->name, "Admin user", str) && strstr(str, getparam("unm")) != 0))
         {
         strcat(menu_str, "Admin, ");
-        strcat(menu_str, loc("Change elogd.cfg"));
+        strcat(menu_str, "Change elogd.cfg");
         strcat(menu_str, ", ");
         }
       strcat(menu_str, "Config, Logout, ");
@@ -8039,7 +8178,7 @@ int  i, n;
 
     if (strstr(admin_user, getparam("unm")) != NULL)
       {
-      strcat(menu_str, loc("Change elogd.cfg"));
+      strcat(menu_str, "Change elogd.cfg");
       strcat(menu_str, ", ");
       }
     }
@@ -8065,7 +8204,7 @@ int  i, n;
   strcpy(other_str, "Upload, Submit, Back, Search, Save, Download, Cancel, First, Last, Previous, Next, Requested, Forgot, ");
 
   /* admin commands */
-  if (getcfg(lbs->name, "Admin user", str) && 
+  if (getcfg(lbs->name, "Admin user", str) &&
       *getparam("unm") &&
       strstr(str, getparam("unm")) != 0)
     {
@@ -8098,7 +8237,7 @@ int  i, n;
       for (i=0 ; i<n ; i++)
         if (equal_ustring(command, loc(menu_item[i])))
           break;
-    
+
       if (i==n)
         return FALSE;
       }
@@ -8252,7 +8391,7 @@ char list[MAX_N_LIST][NAME_LENGTH];
           rsprintf("<option selected value=364>%s\n", loc("Year"));
         else
           rsprintf("<option value=364>%s\n", loc("Year"));
-  
+
         rsprintf("</select> \n");
         }
       else
@@ -8287,7 +8426,7 @@ char list[MAX_N_LIST][NAME_LENGTH];
 
               if (comment[0] == 0)
                 strcpy(comment, attr_options[i][j]);
-              
+
               if (isparam(attr_list[i]) && equal_ustring(attr_options[i][j], getparam(attr_list[i])))
                 rsprintf("<option selected value=\"%s\">%s\n", attr_options[i][j], comment);
               else
@@ -8354,7 +8493,7 @@ char ref[256];
 
         skip = TRUE;
         }
-      
+
       if (skip)
         continue;
 
@@ -8504,7 +8643,7 @@ int    current_year, current_month, current_day, printable, n_logbook, n_display
        in_reply_to_id;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR+4][NAME_LENGTH],
        list[10000], *text, *text1, *text2,
-       in_reply_to[80], reply_to[256], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], 
+       in_reply_to[80], reply_to[256], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
        encoding[80], locked_by[256];
 char   str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH];
 char   mode[80];
@@ -8823,7 +8962,7 @@ LOGBOOK *lbs_cur;
     for (i=n_msg-last_n-1 ; i>=0 ; i--)
       msg_list[i].lbs = NULL;
     }
-  
+
   if (ltime_start)
     {
     for (i=0 ; i<n_msg ; i++)
@@ -8852,7 +8991,7 @@ LOGBOOK *lbs_cur;
           msg_list[i].lbs = NULL;
       }
     }
-  
+
   /*---- filter message list ----*/
 
   filtering = FALSE;
@@ -8898,7 +9037,7 @@ LOGBOOK *lbs_cur;
 
     if (filtering)
       {
-      status = el_retrieve(msg_list[index].lbs, message_id, 
+      status = el_retrieve(msg_list[index].lbs, message_id,
                            date, attr_list, attrib, lbs->n_attr,
                            text, &size, in_reply_to, reply_to,
                            attachment,
@@ -8993,7 +9132,7 @@ LOGBOOK *lbs_cur;
         in_reply_to_id = msg_list[index].lbs->el_index[i].in_reply_to;
 
         } while (in_reply_to_id);
-      
+
       /* if head not found, skip message */
       if (i == *msg_list[index].lbs->n_el_index)
         {
@@ -9016,7 +9155,7 @@ LOGBOOK *lbs_cur;
         msg_list[index].lbs = NULL; // delete current message
         continue;
         }
-      else 
+      else
         {
         msg_list[index].index = i;  // replace current message with message head
         }
@@ -9046,7 +9185,7 @@ LOGBOOK *lbs_cur;
     }
 
   /*---- remove duplicate messages ----*/
-  
+
   for (i=0 ; i<n_msg ; i++)
     for (j=i+1 ; j<n_msg ; j++)
       if (msg_list[i].lbs == msg_list[j].lbs &&
@@ -9096,7 +9235,7 @@ LOGBOOK *lbs_cur;
         i_stop = n_msg-1;
       }
     }
-  
+
   /*---- header ----*/
 
   if (getcfg(lbs->name, "Summary Page Title", str))
@@ -9143,7 +9282,7 @@ LOGBOOK *lbs_cur;
     if (strstr(str, "select=1"))
       {
       *strstr(str, "select=1") = 0;
-      if (strlen(str) > 1 && 
+      if (strlen(str) > 1 &&
          (str[strlen(str)-1] == '&' || str[strlen(str)-1] == '?'))
         str[strlen(str)-1] = 0;
       }
@@ -9167,7 +9306,7 @@ LOGBOOK *lbs_cur;
         strcat(menu_str, "Config, Logout, ");
       else
         strcat(menu_str, "Config, ");
-      
+
       strcat(menu_str, "Last x, Help");
       }
 
@@ -9200,7 +9339,7 @@ LOGBOOK *lbs_cur;
             if (strstr(str, "select=1"))
               {
               *strstr(str, "select=1") = 0;
-              if (strlen(str) > 1 && 
+              if (strlen(str) > 1 &&
                  (str[strlen(str)-1] == '&' || str[strlen(str)-1] == '?'))
                 str[strlen(str)-1] = 0;
               }
@@ -9232,7 +9371,7 @@ LOGBOOK *lbs_cur;
     }
 
   /*---- find menu text ----*/
-  
+
   if (getcfg(lbs->name, "find menu text", str) && !printable)
     {
     FILE *f;
@@ -9325,7 +9464,7 @@ LOGBOOK *lbs_cur;
         if (comment[0] == 0)
           strcpy(comment, getparam(attr_list[i]));
 
-        rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", 
+        rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>",
                   attr_list[i]);
         rsprintf("<td class=\"attribvalue\">%s</td></tr>", comment);
         }
@@ -9404,7 +9543,7 @@ LOGBOOK *lbs_cur;
     /* empty title for selection box */
     if (atoi(getparam("select")) == 1)
       rsprintf("<th class=\"listtitle\"></th>&nbsp;\n");
-    
+
     for (i=0 ; i<n_attr_disp ; i++)
       {
       /* assemble current command line, replace sort statements */
@@ -9444,14 +9583,14 @@ LOGBOOK *lbs_cur;
         else
           sprintf(ref+strlen(ref), "?sort=%s", str);
         }
-      
+
       img[0] = 0;
       if (strcmp(getparam("sort"), disp_attr[i]) == 0)
         strcpy(img, "<img align=top src=\"up.gif\">");
       else if (strcmp(getparam("rsort"), disp_attr[i]) == 0)
         strcpy(img, "<img align=top src=\"down.gif\">");
 
-      rsprintf("<th class=\"listtitle\"><a href=\"%s\">%s</a>%s</th>\n", 
+      rsprintf("<th class=\"listtitle\"><a href=\"%s\">%s</a>%s</th>\n",
                 ref, disp_attr[i], img);
       }
 
@@ -9547,7 +9686,7 @@ LOGBOOK *lbs_cur;
         expand = atoi(getparam("expand"));
       }
 
-    display_line(msg_list[index].lbs, message_id, 
+    display_line(msg_list[index].lbs, message_id,
                  index, mode, expand, 0, printable, n_line,
                  show_attachments, date, in_reply_to, reply_to, n_attr_disp, disp_attr,
                  attrib, lbs->n_attr, text, attachment, encoding, atoi(getparam("select")),
@@ -9560,7 +9699,7 @@ LOGBOOK *lbs_cur;
         p = reply_to;
         do
           {
-          display_reply(msg_list[index].lbs, atoi(p), printable, expand, n_line, 
+          display_reply(msg_list[index].lbs, atoi(p), printable, expand, n_line,
                         n_attr_disp, disp_attr, 1);
 
           while (*p && isdigit(*p))
@@ -9584,11 +9723,11 @@ LOGBOOK *lbs_cur;
 
   if (!printable)
     show_page_navigation(lbs, n_msg, page_n, n_page, FALSE, FALSE, threaded);
-  
+
   rsprintf("</table>\n");
 
   /*---- bottom text ----*/
-  
+
   if (getcfg(lbs->name, "bottom text", str))
     {
     FILE *f;
@@ -9634,10 +9773,10 @@ LOGBOOK *lbs_cur;
 
 /*------------------------------------------------------------------*/
 
-int compose_email(LOGBOOK *lbs, char *mail_to, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], 
-                  char *mail_param, int old_mail)
+int compose_email(LOGBOOK *lbs, char *mail_to, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH],
+                  char *mail_param, int old_mail, char att_file[MAX_ATTACHMENTS][256])
 {
-int    i, j, n;
+int    i, j, n, flags;
 char   str[NAME_LENGTH+100], str2[256], mail_from[256], *mail_text, smtp_host[256], subject[256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
 char   list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
@@ -9647,6 +9786,10 @@ char   list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
     show_error(loc("No SMTP host defined in [global] section of configuration file"));
     return 0;
     }
+
+  flags = 31;
+  if (getcfg(lbs->name, "Email format", str))
+    flags = atoi(str);
 
   if (getcfg(lbs->name, "Use Email from", mail_from))
     {
@@ -9659,34 +9802,41 @@ char   list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
     sprintf(mail_from, "ELog@%s", host_name);
 
   mail_text = malloc(TEXT_SIZE+1000);
+  mail_text[0] = 0;
 
-  if (old_mail)
-    sprintf(mail_text, loc("A old entry has been updated on %s"), host_name);
-  else
-    sprintf(mail_text, loc("A new entry has been submitted on %s"), host_name);
-
-  sprintf(mail_text+strlen(mail_text), "\r\n\r\n");
-
-  sprintf(mail_text+strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), lbs->name);
-
-  for (j=0 ; j<lbs->n_attr ; j++)
+  if (flags & 1)
     {
-    strcpy(str, "                                    ");
-    memcpy(str, attr_list[j], strlen(attr_list[j]));
-
-    comment[0] = 0;
-    if (attr_flags[j] & AF_ICON)
-      {
-      sprintf(str2, "Icon comment %s", attrib[j]);
-      getcfg(lbs->name, str2, comment);
-      }
-
-    if (comment[0])
-      sprintf(str+20, ": %s\r\n", comment);
+    if (old_mail)
+      sprintf(mail_text+strlen(mail_text), loc("A old entry has been updated on %s"), host_name);
     else
-      sprintf(str+20, ": %s\r\n", attrib[j]);
+      sprintf(mail_text+strlen(mail_text), loc("A new entry has been submitted on %s"), host_name);
 
-    strcpy(mail_text+strlen(mail_text), str);
+    sprintf(mail_text+strlen(mail_text), "\r\n\r\n");
+    }
+
+  if (flags & 2)
+    {
+    sprintf(mail_text+strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), lbs->name);
+
+    for (j=0 ; j<lbs->n_attr ; j++)
+      {
+      strcpy(str, "                                    ");
+      memcpy(str, attr_list[j], strlen(attr_list[j]));
+
+      comment[0] = 0;
+      if (attr_flags[j] & AF_ICON)
+        {
+        sprintf(str2, "Icon comment %s", attrib[j]);
+        getcfg(lbs->name, str2, comment);
+        }
+
+      if (comment[0])
+        sprintf(str+20, ": %s\r\n", comment);
+      else
+        sprintf(str+20, ": %s\r\n", attrib[j]);
+
+      strcpy(mail_text+strlen(mail_text), str);
+      }
     }
 
   /* compose subject from attributes */
@@ -9726,20 +9876,33 @@ char   list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
     }
 
   sprintf(url, "%s%d", str, message_id);
-  sprintf(mail_text+strlen(mail_text), "\r\n%s URL         : %s\r\n",
-          loc("Logbook"), url);
 
-  if (getcfg(lbs->name, "Email message body", str) &&
-      atoi(str) == 1)
+  if (flags & 4)
+    {
+    sprintf(mail_text+strlen(mail_text), "\r\n%s URL         : %s\r\n",
+            loc("Logbook"), url);
+    }
+
+  if (flags & 8)
     {
     sprintf(mail_text+strlen(mail_text), "\r\n=================================\r\n\r\n%s",
       getparam("text"));
     }
 
-  if (getcfg(lbs->name, "Omit Email to", str) && atoi(str) == 1)
-    sendmail(smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url);
+  if (flags & 16)
+    {
+    if (getcfg(lbs->name, "Omit Email to", str) && atoi(str) == 1)
+      sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url, att_file);
+    else
+      sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url, att_file);
+    }
   else
-    sendmail(smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url);
+    {
+    if (getcfg(lbs->name, "Omit Email to", str) && atoi(str) == 1)
+      sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url, NULL);
+    else
+      sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url, NULL);
+    }
 
   if (!getcfg(lbs->name, "Display email recipients", str) ||
        atoi(str) == 1)
@@ -9886,7 +10049,7 @@ int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_or
                 NULL, 0, in_reply_to, reply_to, NULL, NULL, NULL);
 
     /* if not message head, move all preceeding messages */
-    /* outcommented, users want only resubmitted message occur at end (see what's new) 
+    /* outcommented, users want only resubmitted message occur at end (see what's new)
     if (in_reply_to[0])
       {
       do
@@ -10049,7 +10212,7 @@ int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_or
   if (strlen(mail_to) > 0)
     {
     mail_to[strlen(mail_to)-1] = 0; /* strip last ',' */
-    if (compose_email(lbs, mail_to, message_id, attrib, mail_param, *getparam("edit_id")) == 0)
+    if (compose_email(lbs, mail_to, message_id, attrib, mail_param, *getparam("edit_id"), att_file) == 0)
       return;
     }
 
@@ -10246,7 +10409,7 @@ LOGBOOK *lbs_dest;
 
   if (n_done == 0)
     rsprintf(loc("No message selected"));
-  else 
+  else
     {
     if (n_done == 1)
       rsprintf(loc("One message"));
@@ -10301,7 +10464,7 @@ int    size, i, j, n, n_log, status, fh, length, message_error, index;
 int    message_id, orig_message_id;
 char   str[1000], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char   date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], cmd_enc[256],
-       orig_tag[80], reply_tag[256], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], 
+       orig_tag[80], reply_tag[256], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
        encoding[80], locked_by[256], att[256], lattr[256];
 char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80], admin_user[80],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH], *p;
@@ -10612,7 +10775,7 @@ BOOL   first;
   rsprintf("</table></td></tr>\n\n");
 
   /*---- menu text ----*/
-  
+
   if (getcfg(lbs->name, "menu text", str))
     {
     FILE *f;
@@ -10889,9 +11052,9 @@ BOOL   first;
         /* overall table */
         rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>\n");
 
-        rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s %d:</td>\n", 
+        rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s %d:</td>\n",
                  loc("Attachment"), index+1);
-        
+
         rsprintf("<td class=\"attribvalue\"><a href=\"%s\">%s</a>\n",
                  ref, attachment[index]+14);
 
@@ -11125,7 +11288,7 @@ int   i;
       if (strchr(p, ':') == NULL)
         break;
       p = strchr(p, ':')+1;
-      
+
       while (*p && *p == ' ')
         p++;
       strlcpy(str, p, sizeof(str));
@@ -11304,7 +11467,7 @@ int   i, n;
     rsprintf("<body OnLoad=\"document.form1.uname.focus();\">\n");
 
     rsprintf("<form name=form1 method=\"GET\" action=\"\">\n\n");
-  
+
     /* define hidden fields for current destination */
     rsprintf("<input type=hidden name=redir value=\"%s\">\n", redir);
 
@@ -11334,18 +11497,18 @@ int   i, n;
       rsprintf("%s</td></tr>\n", loc("Remember me on this computer"));
       }
 
-    rsprintf("<tr><td align=center colspan=2 class=\"dlgform\"><a href=\"?cmd=%s\">%s</a>", 
+    rsprintf("<tr><td align=center colspan=2 class=\"dlgform\"><a href=\"?cmd=%s\">%s</a>",
               loc("Forgot"), loc("Forgot password?"));
 
     if (getcfg(lbs->name, "Self register", str) && atoi(str) > 0)
       {
       strcpy(str, loc("New user"));
       url_encode(str, sizeof(str));
-      rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"?cmd=%s\">%s</td></tr>", 
+      rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"?cmd=%s\">%s</td></tr>",
                 str, loc("Register as new user"));
       }
 
-    rsprintf("<tr><td align=center colspan=2 class=\"dlgform\"><input type=submit value=\"%s\"></td></tr>", 
+    rsprintf("<tr><td align=center colspan=2 class=\"dlgform\"><input type=submit value=\"%s\"></td></tr>",
               loc("Submit"));
 
     rsprintf("</table>\n");
@@ -11415,7 +11578,7 @@ char str[10000];
       rsprintf("<tr><td class=\"attribname\"><a href=\"%s/\">%s</a>", lb_list[i].name_enc, lb_list[i].name);
 
       if (getcfg(lb_list[i].name, "Read password", str) ||
-         (getcfg(lb_list[i].name, "Password file", str) && 
+         (getcfg(lb_list[i].name, "Password file", str) &&
           !getcfg(lb_list[i].name, "Guest menu commands", str)))
         rsprintf("&nbsp;&nbsp;<img src=\"lock.gif\">");
 
@@ -11475,7 +11638,7 @@ char str[256];
     redirect(lbs, str);
     return 0;
     }
-        
+
   /* display account request notification */
   if (equal_ustring(command, loc("Requested")))
     {
@@ -11667,7 +11830,7 @@ FILE    *f;
 
           return;
           }
-        
+
         /* check for Guest Selection Page */
         if (getcfg("global", "Guest Selection Page", str) &&
             !(isparam("unm") && isparam("upwd")))
@@ -11690,11 +11853,11 @@ FILE    *f;
           send_file_direct(file_name);
           return;
           }
-        
+
         if (!check_user_password(NULL, getparam("unm"), getparam("upwd"), ""))
           return;
         }
-      
+
       show_selection_page();
       return;
       }
@@ -11709,7 +11872,7 @@ FILE    *f;
       break;
 
   lbs = &lb_list[i];
-  
+
   /* get theme for logbook */
   if (getcfg(logbook, "Theme", str))
     strlcpy(theme_name, str, sizeof(theme_name));
@@ -11813,10 +11976,10 @@ FILE    *f;
       strlcpy(css, str, sizeof(css));
 
     /* check if guest access */
-    if (getcfg(lbs->name, "Guest menu commands", str) && *getparam("unm") == 0 && 
+    if (getcfg(lbs->name, "Guest menu commands", str) && *getparam("unm") == 0 &&
         !isparam("wpwd") && !isparam("wusr"))
       logf("Guest access");
-    else 
+    else
       if (strcmp(path, css) != 0)
         {
         /* if no guest menu commands but self register, evaluate new user commands */
@@ -12342,7 +12505,7 @@ FILE    *f;
   /* show page listing or display single entry */
   if (dec_path[0] == 0)
     show_elog_list(lbs, 0, 0, 1);
-  else  
+  else
     show_elog_message(lbs, dec_path, command);
 
   return;
@@ -12397,7 +12560,7 @@ char *p, *pitem;
 void decode_post(LOGBOOK *lbs, char *string, char *boundary, int length)
 {
 int  n_att;
-char *pinit, *p, *ptmp, file_name[256], full_name[256], 
+char *pinit, *p, *ptmp, file_name[256], full_name[256],
      str[NAME_LENGTH], line[NAME_LENGTH], item[NAME_LENGTH];
 
   n_att = 0;
@@ -12506,7 +12669,7 @@ char *pinit, *p, *ptmp, file_name[256], full_name[256],
             sprintf(str, "attachment%d", n_att++);
             setparam(str, full_name);
             }
-          
+
           string = strstr(p, boundary) + strlen(boundary);
           }
         else
@@ -12656,7 +12819,7 @@ int                  net_buffer_size;
 
   /* open configuration file */
   getcfg("dummy", "dummy", str);
-  
+
   /* initiate daemon */
   if (daemon)
     {
@@ -13202,7 +13365,7 @@ int                  net_buffer_size;
           strlcpy(str, resource_dir, sizeof(str));
           strlcat(str, "themes", sizeof(str));
           strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
-        
+
           if (getcfg("global", "theme", theme))
             strlcat(str, theme, sizeof(str));
           else
@@ -13678,7 +13841,7 @@ void cleanup(void)
   /* regain original uid */
   if (setegid(orig_gid) < 0 || seteuid(orig_uid) < 0)
     printf("Cannot restore original GID/UID.\n");
-    
+
   if (pidfile[0])
     {
     if (remove(pidfile) < 0)
@@ -13708,7 +13871,7 @@ struct tm *tms;
 
   /* register cleanup function */
   atexit(cleanup);
-  
+
   tzset();
 
   read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = 0;
@@ -13751,7 +13914,7 @@ struct tm *tms;
   /* evaluate directories fron config file */
   if (getcfg("global", "Resource Dir", str))
     strlcpy(resource_dir, str, sizeof(resource_dir));
-  
+
   if (getcfg("global", "Logbook Dir", str))
     strlcpy(logbook_dir, str, sizeof(logbook_dir));
 
@@ -13889,7 +14052,7 @@ usage:
     printf("Resource dir : %s\n", resource_dir[0] ? resource_dir : "current dir");
     printf("Logbook dir  : %s\n", logbook_dir[0] ? logbook_dir : "current dir");
     }
-  
+
   /* get port from configuration file */
   if (tcp_port_cl != 0)
     tcp_port = tcp_port_cl;
