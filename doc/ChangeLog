@@ -2,7 +2,14 @@ Version 2.3.4, released March xxth, 2003
 ========================================
 
 - Added option "Quote on reply"
-
+- Added option "Admin textarea"
+- Fixed problem that replies with attachment upload erased original
+  messages
+- Fixed enless loop if user gets renamed in password file but browser
+  keeps old cookie
+- Only ownwer can delete entry if 'restrict edit = 1'
+- Fixed error that logbook URL was wrong if messages are submitted via elog
+- Added "Icon comment" option
 
 Version 2.3.3, released March 14th, 2003
 ========================================

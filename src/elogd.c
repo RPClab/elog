@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.55  2003/03/26 11:21:37  midas
+  Added 'Icon comment' option
+
   Revision 1.54  2003/03/26 10:38:49  midas
   Fixed error that logbook URL was wrong if messages are submitted via elog
 
@@ -5272,7 +5275,13 @@ time_t now;
               else
                 rsprintf("<nobr><input type=radio name=\"%s\" value=\"%s\">", attr_list[index], attr_options[index][i]);
 
-              rsprintf("<img src=\"icons/%s\"></nobr>\n", attr_options[index][i]);
+              sprintf(str, "Icon comment %s", attr_options[index][i]);
+              getcfg(lbs->name, str, comment);
+
+              if (comment[0])
+                rsprintf("<img src=\"icons/%s\" alt=\"%s\"></nobr>\n", attr_options[index][i], comment);
+              else
+                rsprintf("<img src=\"icons/%s\"></nobr>\n", attr_options[index][i]);
               }
 
             rsprintf("</td></tr>\n");
@@ -5572,7 +5581,7 @@ time_t now;
 void show_find_form(LOGBOOK *lbs)
 {
 int    i, j;
-char   str[NAME_LENGTH], mode[256];
+char   str[NAME_LENGTH], mode[256], comment[256];
 
   /*---- header ----*/
 
@@ -5736,8 +5745,15 @@ char   str[NAME_LENGTH], mode[256];
         {
         for (j=0 ; j<MAX_N_LIST && attr_options[i][j][0] ; j++)
           {
+          sprintf(str, "Icon comment %s", attr_options[i][j]);
+          getcfg(lbs->name, str, comment);
+
           rsprintf("<nobr><input type=radio name=\"%s\" value=\"%s\">", attr_list[i], attr_options[i][j]);
-          rsprintf("<img src=\"icons/%s\"></nobr>\n", attr_options[i][j]);
+
+          if (comment[0])
+            rsprintf("<img src=\"icons/%s\" alt=\"%s\"></nobr>\n", attr_options[i][j], comment);
+          else
+            rsprintf("<img src=\"icons/%s\"></nobr>\n", attr_options[i][j]);
           }
         }
 
@@ -6742,9 +6758,9 @@ FILE *f;
         {
         /* display standard icons */
         if (level == 0)
-          rsprintf("<a href=\"%s\"><img border=0 src=\"icons/icon1.gif\"></a>&nbsp;");
+          rsprintf("<a href=\"%s\"><img border=0 src=\"entry.gif\"></a>&nbsp;");
         else
-          rsprintf("<a href=\"%s\"><img border=0 src=\"icons/icon2.gif\"></a>&nbsp;", ref);
+          rsprintf("<a href=\"%s\"><img border=0 src=\"reply.gif\"></a>&nbsp;", ref);
         }
       }
 
@@ -6806,9 +6822,9 @@ FILE *f;
         if (equal_ustring(mode, "Threaded"))
           {
           if (level == 0)
-            rsprintf("<img border=0 src=\"icons/icon1.gif\">&nbsp;");
+            rsprintf("<img border=0 src=\"entry.gif\">&nbsp;");
           else
-            rsprintf("<img border=0 src=\"icons/icon2.gif\">&nbsp;");
+            rsprintf("<img border=0 src=\"reply.gif\">&nbsp;");
 
           skip_comma = TRUE;
           }
@@ -8900,9 +8916,9 @@ int compose_email(LOGBOOK *lbs, char *mail_to, int message_id, char attrib[MAX_N
                   char *mail_param, int old_mail)
 {
 int    i, j, n;
-char   str[NAME_LENGTH+100], mail_from[256], *mail_text, smtp_host[256], subject[256];
+char   str[NAME_LENGTH+100], str2[256], mail_from[256], *mail_text, smtp_host[256], subject[256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
-char   list[MAX_PARAM][NAME_LENGTH], url[256];
+char   list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
 
   if (!getcfg("global", "SMTP host", smtp_host))
     {
@@ -8933,7 +8949,18 @@ char   list[MAX_PARAM][NAME_LENGTH], url[256];
     {
     strcpy(str, "                                    ");
     memcpy(str, attr_list[j], strlen(attr_list[j]));
-    sprintf(str+20, ": %s\r\n", attrib[j]);
+
+    comment[0] = 0;
+    if (attr_flags[j] & AF_ICON)
+      {
+      sprintf(str2, "Icon comment %s", attrib[j]);
+      getcfg(lbs->name, str2, comment);
+      }
+
+    if (comment[0])
+      sprintf(str+20, ": %s\r\n", comment);
+    else
+      sprintf(str+20, ": %s\r\n", attrib[j]);
 
     strcpy(mail_text+strlen(mail_text), str);
     }
@@ -9534,7 +9561,7 @@ char   date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], cmd_enc[256],
        orig_tag[80], reply_tag[256], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], att[256], lattr[256];
 char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80], admin_user[80],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH], *p;
-char   lbk_list[MAX_N_LIST][NAME_LENGTH];
+char   lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256];
 FILE   *f;
 BOOL   first;
 
@@ -10043,7 +10070,15 @@ BOOL   first;
         {
         rsprintf("%s:</td><td class=\"attribvalue\">\n", attr_list[i]);
         if (attrib[i][0])
-          rsprintf("<img src=\"icons/%s\">", attrib[i]);
+          {
+          sprintf(str, "Icon comment %s", attrib[i]);
+          getcfg(lbs->name, str, comment);
+
+          if (comment[0])
+            rsprintf("<img src=\"icons/%s\" alt=\"%s\">", attrib[i], comment);
+          else
+            rsprintf("<img src=\"icons/%s\">", attrib[i]);
+          }
         rsprintf("&nbsp</td></tr>\n");
         }
       else
