@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.440  2004/08/05 08:15:24  midas
+   Changed way of reusing port
+
    Revision 1.439  2004/08/05 08:08:42  midas
    Fixed bug with displaying attachments
 
@@ -19495,8 +19498,6 @@ void server_loop(int tcp_port)
    serv_addr.sin_port = htons((short) tcp_port);
 
    /* first try without reusing address */
-   flag = 0;
-   setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR, (char *) &flag, sizeof(INT));
    status = bind(lsock, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
    if (status < 0) {
       eprintf("Warning: another server might already run on port %d.\n\n",tcp_port);
