@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.539  2005/01/19 21:08:32  midas
+   Display thread in single entry page if present
+
    Revision 1.538  2005/01/17 20:01:33  midas
    Added note about changing 'max content length'
 
@@ -13166,7 +13169,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   char attrib[MAX_N_ATTR][NAME_LENGTH], int n_attr,
                   char *text, BOOL show_text,
                   char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], char *encoding,
-                  BOOL select, int *n_display, char *locked_by)
+                  BOOL select, int *n_display, char *locked_by, int highlight)
 {
    char str[NAME_LENGTH], ref[256], *nowrap, sclass[80], format[256],
        file_name[MAX_PATH_LENGTH], *slist, *svalue;
@@ -13190,10 +13193,17 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    } else if (strieq(mode, "Full"))
       strcpy(sclass, "list1");
    else if (strieq(mode, "Threaded")) {
-      if (level == 0)
-         strcpy(sclass, "thread");
-      else
-         strcpy(sclass, "threadreply");
+      if (highlight) {
+         if (highlight == message_id)
+            strcpy(sclass, "thread");
+         else
+            strcpy(sclass, "threadreply");
+      } else {
+         if (level == 0)
+            strcpy(sclass, "thread");
+         else
+            strcpy(sclass, "threadreply");
+      }
    }
 
    rsprintf("<tr>");
@@ -13635,7 +13645,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
 void display_reply(LOGBOOK * lbs, int message_id, int printable,
                    int expand, int n_line, int n_attr_disp,
-                   char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], BOOL show_text, int level)
+                   char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], 
+                   BOOL show_text, int level, int highlight)
 {
    char *date, *text, *in_reply_to, *reply_to, *encoding, *locked_by, *attachment, *attrib, *p;
    int status, size;
@@ -13672,12 +13683,14 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable,
 
    display_line(lbs, message_id, 0, "threaded", expand, level, printable,
                 n_line, FALSE, date, in_reply_to, reply_to, n_attr_disp,
-                disp_attr, (void *) attrib, lbs->n_attr, text, show_text, NULL, encoding, 0, NULL, locked_by);
+                disp_attr, (void *) attrib, lbs->n_attr, text, show_text, 
+                NULL, encoding, 0, NULL, locked_by, highlight);
 
    if (reply_to[0]) {
       p = reply_to;
       do {
-         display_reply(lbs, atoi(p), printable, expand, n_line, n_attr_disp, disp_attr, show_text, level + 1);
+         display_reply(lbs, atoi(p), printable, expand, n_line, n_attr_disp, 
+                       disp_attr, show_text, level + 1, highlight);
 
          while (*p && isdigit(*p))
             p++;
@@ -15869,14 +15882,14 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                       index, mode, expand, 0, printable, n_line,
                       show_attachments, date, in_reply_to, reply_to,
                       n_attr_disp, disp_attr, attrib, lbs->n_attr, text, show_text,
-                      attachment, encoding, atoi(getparam("select")), &n_display, locked_by);
+                      attachment, encoding, atoi(getparam("select")), &n_display, locked_by, 0);
 
          if (threaded) {
             if (reply_to[0] && expand > 0) {
                p = reply_to;
                do {
                   display_reply(msg_list[index].lbs, atoi(p), printable, expand, n_line,
-                                n_attr_disp, disp_attr, show_text, 1);
+                                n_attr_disp, disp_attr, show_text, 1, 0);
 
                   while (*p && isdigit(*p))
                      p++;
@@ -15925,6 +15938,82 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    xfree(msg_list);
    xfree(text);
    xfree(text1);
+}
+
+/*------------------------------------------------------------------*/
+
+void show_elog_thread(LOGBOOK * lbs, int message_id)
+{
+   int i, size, status, in_reply_to_id, head_id, n_display, n_attr_disp;
+   char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], *text, in_reply_to[80], 
+      reply_to[MAX_REPLY_TO * 10], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], 
+      encoding[80], locked_by[256], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH];
+   char *p;
+
+   text = xmalloc(TEXT_SIZE);
+
+   /* retrieve message */
+   size = TEXT_SIZE;
+   status =
+         el_retrieve(lbs, message_id, date, attr_list, attrib,
+                     lbs->n_attr, text, &size, in_reply_to, reply_to, attachment, encoding, locked_by);
+
+   in_reply_to_id = atoi(in_reply_to);
+   
+   /* find message head */
+   head_id = message_id;
+   if (in_reply_to_id) {
+      do {
+         head_id = in_reply_to_id;
+
+         /* search index of message */
+         for (i = 0; i < *lbs->n_el_index; i++)
+            if (lbs->el_index[i].message_id == head_id)
+               break;
+
+         /* stop if not found */
+         if (i == *lbs->n_el_index)
+            break;
+
+         in_reply_to_id = lbs->el_index[i].in_reply_to;
+
+      } while (in_reply_to_id);
+   }
+
+   n_attr_disp = lbs->n_attr + 2;
+   strcpy(disp_attr[0], loc("ID"));
+   strcpy(disp_attr[1], loc("Date"));
+   memcpy(disp_attr + 2, attr_list, sizeof(attr_list));
+
+   size = TEXT_SIZE;
+   status =
+         el_retrieve(lbs, head_id, date, attr_list, attrib,
+                     lbs->n_attr, text, &size, in_reply_to, reply_to, attachment, encoding, locked_by);
+
+   rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=0>\n");
+
+   display_line(lbs, head_id,
+                0, "Threaded", 1, 0, FALSE, 0,
+                FALSE, date, in_reply_to, reply_to,
+                n_attr_disp, disp_attr, attrib, lbs->n_attr, text, FALSE,
+                attachment, encoding, 0, &n_display, locked_by, message_id);
+
+   if (reply_to[0]) {
+      p = reply_to;
+      do {
+         display_reply(lbs, atoi(p), FALSE, 1, 0, n_attr_disp, disp_attr, FALSE, 1, message_id);
+
+         while (*p && isdigit(*p))
+            p++;
+         while (*p && (*p == ',' || *p == ' '))
+            p++;
+      } while (*p);
+   }
+
+   rsprintf("</table>\n");
+   rsprintf("</td></tr>\n");
+
+   xfree(text);
 }
 
 /*------------------------------------------------------------------*/
@@ -17388,6 +17477,9 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    }
 
    /*---- message ----*/
+
+   if (reply_tag[0] || orig_tag[0])
+      show_elog_thread(lbs, message_id);
 
    if (message_error == EL_EMPTY)
       rsprintf("<tr><td class=\"errormsg\" colspan=2>%s</td></tr>\n", loc("Logbook is empty"));
