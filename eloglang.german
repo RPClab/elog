@@ -149,7 +149,7 @@ and all its replies = und alle Antworten
 Message ID = Nummer Eintrag
 
 #
-# New stgring for V2.xx
+# New strings for V2.1.0
 Not logged in = Nicht eingeloggt
 Login = Einloggen
 Page %d of %d = Seite %d von %d
@@ -167,3 +167,14 @@ New passwords do not match, please retype = Kennwörter verschieden, bitte nochma
 Retype password = Kennwort erneut eingeben
 exists already = existiert bereits
 Register as new user = Als neuer Benutzer anmelden
+
+#
+# New strings for V2.1.1
+A new ELOG user has been registered on %s = Ein neuer Benutzer hat sich auf %s angemeldet
+Email = Email
+User "%s" registered on logbook "%s" = Benutzer "%s" im Logbuch "%s" registriert
+User [%s] has been deleted = Benutzer [%s] wurde gelöscht
+Hit following URL to activate that account = Auf folgende URL klicken um Benutzerkonto zu aktivieren
+ELOG registration = ELOG Registrierung
+Your ELOG account has been activated on host = Ihr ELOG Konto wurde aktiviert auf
+You can access it at = Der Zugriff erfolgt über

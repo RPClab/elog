@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.69  2002/08/13 12:24:37  midas
+  Version 2.1.1
+
   Revision 2.68  2002/08/13 12:23:01  midas
   Implemented 'self register = 3'
 
@@ -308,7 +311,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.1.0"
+#define VERSION "2.1.1"
 
 #include <stdio.h>
 #include <sys/types.h>
