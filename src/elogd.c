@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.515  2004/12/04 16:18:50  midas
+   Look for parameters first under conditions, then unconditional if not found
+
    Revision 1.514  2004/11/23 11:33:59  midas
    Fixed bug in XML export
 
@@ -2713,10 +2716,13 @@ void set_condition(char *c)
 
 /*-------------------------------------------------------------------*/
 
-BOOL match_param(char *str, char *param)
+BOOL match_param(char *str, char *param, int conditional_only)
 {
    int ncl, npl, nand, i, j, k;
    char *p, pcond[256], clist[10][NAME_LENGTH], plist[10][NAME_LENGTH], alist[10][NAME_LENGTH];
+
+   if (conditional_only && str[0] != '{')
+      return FALSE;
 
    if (!_condition[0] || str[0] != '{')
       return strieq(str, param);
@@ -2765,7 +2771,7 @@ BOOL match_param(char *str, char *param)
 
 /*-------------------------------------------------------------------*/
 
-int getcfg_simple(char *group, char *param, char *value, int vsize)
+int getcfg_simple(char *group, char *param, char *value, int vsize, int conditional)
 /* read value for certain parameter in configuration file using [<group>] */
 {
    char *str, *p, *pstr;
@@ -2810,7 +2816,7 @@ int getcfg_simple(char *group, char *param, char *value, int vsize)
                while (pstr > str && (*pstr == ' ' || *pstr == '=' || *pstr == '\t'))
                   *pstr-- = 0;
 
-               if (match_param(str, param)) {
+               if (match_param(str, param, conditional)) {
                   status = strchr(str, '{') ? 2 : 1;
                   if (*p == '=') {
                      p++;
@@ -2881,7 +2887,14 @@ int getcfg(char *group, char *param, char *value, int vsize)
          return 1;
    }
 
-   status = getcfg_simple(group, param, value, vsize);
+   /* first check if parameter is under condition */
+   if (_condition[0]) {
+      status = getcfg_simple(group, param, value, vsize, TRUE);
+      if (status)
+         return status;
+   }
+
+   status = getcfg_simple(group, param, value, vsize, FALSE);
    if (status)
       return status;
 
@@ -7317,10 +7330,72 @@ void show_date_selector(int day, int month, int year, char *index)
 
 /*------------------------------------------------------------------*/
 
+void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
+{
+   int i, j, first, year, month, day;
+   char str[1000], ua[NAME_LENGTH];
+   time_t ltime;
+   struct tm ts;
+
+   for (i = 0; i < n_attr; i++) {
+      strcpy(ua, attr_list[i]);
+      btou(ua);
+      if (attr_flags[i] & AF_MULTI) {
+         attrib[i][0] = 0;
+         first = 1;
+         for (j = 0; j < MAX_N_LIST; j++) {
+            sprintf(str, "%s_%d", ua, j);
+            if (getparam(str)) {
+               if (*getparam(str)) {
+                  if (first)
+                     first = 0;
+                  else
+                     strlcat(attrib[i], " | ", NAME_LENGTH);
+                  if (strlen(attrib[i]) + strlen(getparam(str)) < NAME_LENGTH - 2)
+                     strlcat(attrib[i], getparam(str), NAME_LENGTH);
+                  else
+                     break;
+               }
+            } else
+               break;
+         }
+      } else if (attr_flags[i] & AF_DATE) {
+
+         sprintf(str, "y%d", i);
+         year = atoi(getparam(str));
+         if (year < 100)
+            year += 2000;
+
+         sprintf(str, "m%d", i);
+         month = atoi(getparam(str));
+
+         sprintf(str, "d%d", i);
+         day = atoi(getparam(str));
+
+         memset(&ts, 0, sizeof(struct tm));
+         ts.tm_year = year - 1900;
+         ts.tm_mon = month - 1;
+         ts.tm_mday = day;
+         ts.tm_hour = 12;
+
+         if (month && day) {
+            ltime = mktime(&ts);
+            sprintf(attrib[i], "%d", (int) ltime);
+         } else
+            strcpy(attrib[i], "");
+
+      } else {
+         strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
+      }
+   }
+}
+
+/*------------------------------------------------------------------*/
+
 void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload, BOOL breedit)
 {
-   int i, j, n, index, size, width, height, fh, length, first, input_size, input_maxlen,
-       format_flags[MAX_N_ATTR], year, month, day;
+   int i, j, n, index, size, width, height, fh, length, input_size, input_maxlen,
+       format_flags[MAX_N_ATTR], year, month, day, n_attr;
    char str[1000], preset[1000], *p, *pend, star[80], comment[10000], reply_string[256],
        list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80],
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80],
@@ -7330,7 +7405,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        ua[NAME_LENGTH], mid[80], title[256], login_name[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
-   struct tm *pts, ts;
+   struct tm *pts;
    BOOL preset_text, subtable;
 
    for (i = 0; i < MAX_ATTACHMENTS; i++)
@@ -7348,57 +7423,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          strcpy(date, getparam("entry_date"));
 
       /* get attributes from parameters */
-      for (i = 0; i < lbs->n_attr; i++) {
-         strcpy(ua, attr_list[i]);
-         btou(ua);
-         if (attr_flags[i] & AF_MULTI) {
-            attrib[i][0] = 0;
-            first = 1;
-            for (j = 0; j < MAX_N_LIST; j++) {
-               sprintf(str, "%s_%d", ua, j);
-               if (getparam(str)) {
-                  if (*getparam(str)) {
-                     if (first)
-                        first = 0;
-                     else
-                        strlcat(attrib[i], " | ", NAME_LENGTH);
-                     if (strlen(attrib[i]) + strlen(getparam(str)) < NAME_LENGTH - 2)
-                        strlcat(attrib[i], getparam(str), NAME_LENGTH);
-                     else
-                        break;
-                  }
-               } else
-                  break;
-            }
-         } else if (attr_flags[i] & AF_DATE) {
-
-            sprintf(str, "y%d", i);
-            year = atoi(getparam(str));
-            if (year < 100)
-               year += 2000;
-
-            sprintf(str, "m%d", i);
-            month = atoi(getparam(str));
-
-            sprintf(str, "d%d", i);
-            day = atoi(getparam(str));
-
-            memset(&ts, 0, sizeof(struct tm));
-            ts.tm_year = year - 1900;
-            ts.tm_mon = month - 1;
-            ts.tm_mday = day;
-            ts.tm_hour = 12;
-
-            if (month && day) {
-               ltime = mktime(&ts);
-               sprintf(attrib[i], "%d", (int) ltime);
-            } else
-               strcpy(attrib[i], "");
-
-         } else {
-            strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
-         }
-      }
+      attrib_from_param(lbs->n_attr, attrib);
 
       strlcpy(text, getparam("text"), TEXT_SIZE);
 
@@ -7465,8 +7490,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    set_condition(condition);
 
    /* rescan attributes if condition set */
-   if (condition[0])
-      scan_attributes(lbs->name);
+   if (condition[0]) {
+      n_attr = scan_attributes(lbs->name);
+      attrib_from_param(n_attr, attrib);
+   } else
+      n_attr = lbs->n_attr;
 
    /* check for maximum number of replies */
    if (breply) {
@@ -7515,7 +7543,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       getcfg(lbs->name, "Remove on reply", str, sizeof(str));
       n = strbreak(str, list, MAX_N_ATTR, ",");
       for (i = 0; i < n; i++)
-         for (j = 0; j < lbs->n_attr; j++) {
+         for (j = 0; j < n_attr; j++) {
             if (strieq(attr_list[j], list[i]))
                attrib[j][0] = 0;
          }
@@ -7523,7 +7551,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    /* subst attributes for replies */
    if (breply) {
-      for (index = 0; index < lbs->n_attr; index++) {
+      for (index = 0; index < n_attr; index++) {
          sprintf(str, "Subst on reply %s", attr_list[index]);
          if (getcfg(lbs->name, str, preset, sizeof(preset))) {
             /* check if already second reply */
@@ -7543,7 +7571,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    /* subst attributes for edits */
    if (message_id && bedit && !breedit && !bupload) {
-      for (index = 0; index < lbs->n_attr; index++) {
+      for (index = 0; index < n_attr; index++) {
          sprintf(str, "Subst on edit %s", attr_list[index]);
          if (getcfg(lbs->name, str, preset, sizeof(preset))) {
 
@@ -7581,7 +7609,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("function chkform()\n");
    rsprintf("{\n");
 
-   for (i = 0; i < lbs->n_attr; i++) {
+   for (i = 0; i < n_attr; i++) {
       if (attr_flags[i] & AF_REQUIRED) {
 
          /* convert blanks to underscores */
@@ -7773,7 +7801,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0 cellpadding=0>");
 
    /* print required message if one of the attributes has it set */
-   for (i = 0; i < lbs->n_attr; i++) {
+   for (i = 0; i < n_attr; i++) {
       if (attr_flags[i] & AF_REQUIRED) {
          rsprintf
              ("<tr><td colspan=2 class=\"attribvalue\">%s <font color=red>*</font> %s</td></tr>\n",
@@ -7804,7 +7832,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("<input type=hidden name=entry_date value=\"%s\"></td></tr>\n", date);
 
    /* retrieve attribute flags */
-   for (i = 0; i < lbs->n_attr; i++) {
+   for (i = 0; i < n_attr; i++) {
       format_flags[i] = 0;
       sprintf(str, "Format %s", attr_list[i]);
       if (getcfg(lbs->name, str, format, sizeof(format))) {
@@ -7817,7 +7845,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    subtable = 0;
 
    /* display attributes */
-   for (index = 0; index < lbs->n_attr; index++) {
+   for (index = 0; index < n_attr; index++) {
       strcpy(class_name, "attribname");
       strcpy(class_value, "attribvalue");
       input_size = 80;
@@ -7841,7 +7869,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       if (format_flags[index] & AFF_SAME_LINE)
          /* if attribute on same line, do nothing */
          rsprintf("");
-      else if (index < lbs->n_attr - 1 && (format_flags[index + 1] & AFF_SAME_LINE)) {
+      else if (index < n_attr - 1 && (format_flags[index + 1] & AFF_SAME_LINE)) {
          /* if next attribute on same line, start a new subtable */
          rsprintf("<tr><td colspan=2><table width=\"100%%\" cellpadding=0 cellspacing=0><tr>");
          subtable = 1;
@@ -8195,7 +8223,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          }
       }
 
-      if (index < lbs->n_attr - 1 && (format_flags[index + 1] & AFF_SAME_LINE) == 0) {
+      if (index < n_attr - 1 && (format_flags[index + 1] & AFF_SAME_LINE) == 0) {
          /* if next attribute not on same line, close row or subtable */
          if (subtable) {
             rsprintf("</table></td></tr>\n");
@@ -8205,7 +8233,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
 
       /* if last attribute, close row or subtable */
-      if (index == lbs->n_attr - 1) {
+      if (index == n_attr - 1) {
          if (subtable) {
             rsprintf("</table></td></tr>\n");
             subtable = 0;
@@ -17908,7 +17936,7 @@ BOOL is_admin_user_global(char *user)
    char str[1000];
    char list[MAX_N_LIST][NAME_LENGTH];
 
-   if (getcfg_simple("global", "Admin user", str, sizeof(str))) {
+   if (getcfg_simple("global", "Admin user", str, sizeof(str), FALSE)) {
       n = strbreak(str, list, MAX_N_LIST, ",");
       for (i = 0; i < n; i++)
          if (strcmp(user, list[i]) == 0)
