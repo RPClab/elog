@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.139  2003/07/18 06:55:03  midas
+  Fixed bug with logging file if resource dir is present
+
   Revision 1.138  2003/07/17 08:51:02  midas
   Fixed missing </tr> in logbook selection page
 
@@ -1170,13 +1173,13 @@ struct {
   { "" },
 };
 
-
 typedef struct {
   int    message_id;
   char   file_name[32];
   time_t file_time;
   int    offset;
   int    in_reply_to;
+  unsigned char md5_digest[16];
 } EL_INDEX;
 
 typedef struct {
@@ -1537,6 +1540,267 @@ void do_crypt(char *s, char *d)
   base64_encode(s, d);
 #endif
 }
+
+/*------------------------------------------------------------------*/
+
+/*------------------------------------------------------------------*\
+
+  MD5 Checksum Routines
+
+\*------------------------------------------------------------------*/
+
+typedef struct
+{
+  unsigned int  state[4];   // state (ABCD)
+  unsigned int  count[2];   // number of bits, modulo 2^64 (lsb first)
+  unsigned char buffer[64]; // input buffer
+}
+MD5_CONTEXT;
+
+/*------------------------------------------------------------------*/
+
+/* prototypes of the support routines */
+void _MD5_update(MD5_CONTEXT *, const void *, unsigned int) ;
+void _MD5_transform(unsigned int[4], unsigned char[64]);
+void _MD5_encode(unsigned char *, unsigned int *, unsigned int);
+void _MD5_decode(unsigned int *, unsigned char *, unsigned int);
+
+/* F, G, H and I are basic MD5 functions */
+#define F(x, y, z) (((x) & (y)) | ((~x) & (z)))
+#define G(x, y, z) (((x) & (z)) | ((y) & (~z)))
+#define H(x, y, z) ((x) ^ (y) ^ (z))
+#define I(x, y, z) ((y) ^ ((x) | (~z)))
+
+/* ROTATE_LEFT rotates x left n bits */
+#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32-(n))))
+
+/* FF, GG, HH, and II transformations for rounds 1, 2, 3, and 4 */
+/* Rotation is separate from addition to prevent recomputation */
+#define FF(a, b, c, d, x, s, ac) {                  \
+    (a) += F ((b), (c), (d)) + (x) + (unsigned int)(ac);  \
+    (a) = ROTATE_LEFT ((a), (s));                   \
+    (a) += (b);                                     \
+  }
+#define GG(a, b, c, d, x, s, ac) {                  \
+    (a) += G ((b), (c), (d)) + (x) + (unsigned int)(ac);  \
+    (a) = ROTATE_LEFT ((a), (s));                   \
+    (a) += (b);                                     \
+  }
+#define HH(a, b, c, d, x, s, ac) {                  \
+    (a) += H ((b), (c), (d)) + (x) + (unsigned int)(ac);  \
+    (a) = ROTATE_LEFT ((a), (s));                   \
+    (a) += (b);                                     \
+  }
+#define II(a, b, c, d, x, s, ac) {                  \
+    (a) += I ((b), (c), (d)) + (x) + (unsigned int)(ac);  \
+    (a) = ROTATE_LEFT ((a), (s));                   \
+    (a) += (b);                                     \
+  }
+
+/*------------------------------------------------------------------*/
+
+/* main MD5 checksum routine, returns digest from pdata buffer */
+
+void MD5_checksum(const void *pdata, unsigned int len, unsigned char digest[16]) 
+{
+MD5_CONTEXT   ctx;
+unsigned char bits[8];
+unsigned int  i, padlen;
+
+/* to allow multithreading we have to locate the padding memory here */
+unsigned char PADDING[64] = {
+  0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
+  memset(&ctx, 0, sizeof(MD5_CONTEXT));
+  ctx.count[0] = ctx.count[1] = 0;
+
+  /* load magic initialization constants */
+  ctx.state[0] = 0x67452301;
+  ctx.state[1] = 0xefcdab89;
+  ctx.state[2] = 0x98badcfe;
+  ctx.state[3] = 0x10325476;
+
+  _MD5_update(&ctx, pdata, len); 
+
+  // save number of bits
+  _MD5_encode(bits, ctx.count, 8);
+
+  // pad out to 56 mod 64
+  i = (unsigned int)((ctx.count[0] >> 3) & 0x3f);
+  padlen = (i < 56) ? (56 - i) : (120 - i);
+  _MD5_update(&ctx, PADDING, padlen);
+  
+  // append length (before padding)
+  _MD5_update(&ctx, bits, 8);
+
+  // store state in digest
+  _MD5_encode(digest, ctx.state, 16);
+}
+
+/*------------------------------------------------------------------*/
+
+void _MD5_update(MD5_CONTEXT *pctx, const void *pdata, unsigned int len) 
+{
+unsigned char *pin;
+unsigned int  i, index, partlen;
+
+  pin = (unsigned char *)pdata;
+
+  // compute number of bytes mod 64
+  index = (unsigned int)((pctx->count[0] >> 3) & 0x3F);
+
+  // update number of bits
+  if ((pctx->count[0] += ((unsigned int)len << 3)) < ((unsigned int)len << 3))
+    pctx->count[1]++;
+  pctx->count[1] += ((unsigned int)len >> 29);
+  
+  partlen = 64 - index;
+  
+  // transform as many times as possible.
+  if (len >= partlen) 
+    {
+    memcpy(&pctx->buffer[index], pin, partlen);
+    _MD5_transform(pctx->state, pctx->buffer);
+
+    for (i = partlen; i + 63 < len; i += 64)
+      _MD5_transform(pctx->state, &pin[i]);
+
+    index = 0;
+    }
+  else 
+    i = 0;
+  
+  /* buffer remaining input */
+  memcpy(&pctx->buffer[index], &pin[i], len - i);
+}
+
+/*------------------------------------------------------------------*/
+
+/* basic transformation, transforms state based on block */
+void _MD5_transform(unsigned int state[4], unsigned char block[64]) 
+{
+unsigned int lA = state[0], lB = state[1], lC = state[2], lD = state[3];
+unsigned int x[16];
+  
+  _MD5_decode(x, block, 64);
+
+  /* round 1 */
+  FF ( lA, lB, lC, lD, x[ 0],  7, 0xd76aa478); // 1 
+  FF ( lD, lA, lB, lC, x[ 1], 12, 0xe8c7b756); // 2 
+  FF ( lC, lD, lA, lB, x[ 2], 17, 0x242070db); // 3 
+  FF ( lB, lC, lD, lA, x[ 3], 22, 0xc1bdceee); // 4 
+  FF ( lA, lB, lC, lD, x[ 4],  7, 0xf57c0faf); // 5 
+  FF ( lD, lA, lB, lC, x[ 5], 12, 0x4787c62a); // 6 
+  FF ( lC, lD, lA, lB, x[ 6], 17, 0xa8304613); // 7 
+  FF ( lB, lC, lD, lA, x[ 7], 22, 0xfd469501); // 8 
+  FF ( lA, lB, lC, lD, x[ 8],  7, 0x698098d8); // 9 
+  FF ( lD, lA, lB, lC, x[ 9], 12, 0x8b44f7af); // 10 
+  FF ( lC, lD, lA, lB, x[10], 17, 0xffff5bb1); // 11 
+  FF ( lB, lC, lD, lA, x[11], 22, 0x895cd7be); // 12 
+  FF ( lA, lB, lC, lD, x[12],  7, 0x6b901122); // 13 
+  FF ( lD, lA, lB, lC, x[13], 12, 0xfd987193); // 14 
+  FF ( lC, lD, lA, lB, x[14], 17, 0xa679438e); // 15 
+  FF ( lB, lC, lD, lA, x[15], 22, 0x49b40821); // 16 
+
+  /* round 2 */
+  GG ( lA, lB, lC, lD, x[ 1],  5, 0xf61e2562); // 17 
+  GG ( lD, lA, lB, lC, x[ 6],  9, 0xc040b340); // 18 
+  GG ( lC, lD, lA, lB, x[11], 14, 0x265e5a51); // 19 
+  GG ( lB, lC, lD, lA, x[ 0], 20, 0xe9b6c7aa); // 20 
+  GG ( lA, lB, lC, lD, x[ 5],  5, 0xd62f105d); // 21 
+  GG ( lD, lA, lB, lC, x[10],  9,  0x2441453); // 22 
+  GG ( lC, lD, lA, lB, x[15], 14, 0xd8a1e681); // 23 
+  GG ( lB, lC, lD, lA, x[ 4], 20, 0xe7d3fbc8); // 24 
+  GG ( lA, lB, lC, lD, x[ 9],  5, 0x21e1cde6); // 25 
+  GG ( lD, lA, lB, lC, x[14],  9, 0xc33707d6); // 26 
+  GG ( lC, lD, lA, lB, x[ 3], 14, 0xf4d50d87); // 27 
+  GG ( lB, lC, lD, lA, x[ 8], 20, 0x455a14ed); // 28 
+  GG ( lA, lB, lC, lD, x[13],  5, 0xa9e3e905); // 29 
+  GG ( lD, lA, lB, lC, x[ 2],  9, 0xfcefa3f8); // 30 
+  GG ( lC, lD, lA, lB, x[ 7], 14, 0x676f02d9); // 31 
+  GG ( lB, lC, lD, lA, x[12], 20, 0x8d2a4c8a); // 32 
+
+  /* round 3 */
+  HH ( lA, lB, lC, lD, x[ 5],  4, 0xfffa3942); // 33 
+  HH ( lD, lA, lB, lC, x[ 8], 11, 0x8771f681); // 34 
+  HH ( lC, lD, lA, lB, x[11], 16, 0x6d9d6122); // 35 
+  HH ( lB, lC, lD, lA, x[14], 23, 0xfde5380c); // 36 
+  HH ( lA, lB, lC, lD, x[ 1],  4, 0xa4beea44); // 37 
+  HH ( lD, lA, lB, lC, x[ 4], 11, 0x4bdecfa9); // 38 
+  HH ( lC, lD, lA, lB, x[ 7], 16, 0xf6bb4b60); // 39 
+  HH ( lB, lC, lD, lA, x[10], 23, 0xbebfbc70); // 40 
+  HH ( lA, lB, lC, lD, x[13],  4, 0x289b7ec6); // 41 
+  HH ( lD, lA, lB, lC, x[ 0], 11, 0xeaa127fa); // 42 
+  HH ( lC, lD, lA, lB, x[ 3], 16, 0xd4ef3085); // 43 
+  HH ( lB, lC, lD, lA, x[ 6], 23,  0x4881d05); // 44 
+  HH ( lA, lB, lC, lD, x[ 9],  4, 0xd9d4d039); // 45 
+  HH ( lD, lA, lB, lC, x[12], 11, 0xe6db99e5); // 46 
+  HH ( lC, lD, lA, lB, x[15], 16, 0x1fa27cf8); // 47 
+  HH ( lB, lC, lD, lA, x[ 2], 23, 0xc4ac5665); // 48 
+
+  /* round 4 */
+  II ( lA, lB, lC, lD, x[ 0],  6, 0xf4292244); // 49 
+  II ( lD, lA, lB, lC, x[ 7], 10, 0x432aff97); // 50 
+  II ( lC, lD, lA, lB, x[14], 15, 0xab9423a7); // 51 
+  II ( lB, lC, lD, lA, x[ 5], 21, 0xfc93a039); // 52 
+  II ( lA, lB, lC, lD, x[12],  6, 0x655b59c3); // 53 
+  II ( lD, lA, lB, lC, x[ 3], 10, 0x8f0ccc92); // 54 
+  II ( lC, lD, lA, lB, x[10], 15, 0xffeff47d); // 55 
+  II ( lB, lC, lD, lA, x[ 1], 21, 0x85845dd1); // 56 
+  II ( lA, lB, lC, lD, x[ 8],  6, 0x6fa87e4f); // 57 
+  II ( lD, lA, lB, lC, x[15], 10, 0xfe2ce6e0); // 58 
+  II ( lC, lD, lA, lB, x[ 6], 15, 0xa3014314); // 59 
+  II ( lB, lC, lD, lA, x[13], 21, 0x4e0811a1); // 60 
+  II ( lA, lB, lC, lD, x[ 4],  6, 0xf7537e82); // 61 
+  II ( lD, lA, lB, lC, x[11], 10, 0xbd3af235); // 62 
+  II ( lC, lD, lA, lB, x[ 2], 15, 0x2ad7d2bb); // 63 
+  II ( lB, lC, lD, lA, x[ 9], 21, 0xeb86d391); // 64 
+
+  state[0] += lA;
+  state[1] += lB;
+  state[2] += lC;
+  state[3] += lD;
+  
+  /* lClear sensitive information */
+  memset(x, 0, sizeof(x));
+}
+
+/*------------------------------------------------------------------*/
+
+/* encodes input (unsigned int) into output (unsigned char), 
+   assumes that lLen is a multiple of 4 */
+void _MD5_encode(unsigned char *pout, unsigned int *pin, unsigned int len) 
+{
+unsigned int i, j;
+
+  for (i=0,j=0; j<len; i++,j += 4) 
+    {
+    pout[j]     = (unsigned char)(pin[i] & 0x0ff);
+    pout[j + 1] = (unsigned char)((pin[i] >> 8) & 0x0ff);
+    pout[j + 2] = (unsigned char)((pin[i] >> 16) & 0x0ff);
+    pout[j + 3] = (unsigned char)((pin[i] >> 24) & 0x0ff);
+    }
+}
+
+/*------------------------------------------------------------------*/
+
+/* encodes input (unsigned char) into output (unsigned int),
+   assumes that lLen is a multiple of 4 */
+void _MD5_decode(unsigned int *pout, unsigned char *pin, unsigned int len) 
+{
+unsigned int i, j;
+
+  for (i=0,j=0; j<len; i++,j+=4)
+    pout[i] = ((unsigned int)pin[j]) |
+              (((unsigned int)pin[j + 1]) << 8) |
+              (((unsigned int)pin[j + 2]) << 16) |
+              (((unsigned int)pin[j + 3]) << 24);
+}
+
+/*------------------------------------------------------------------*/
 
 /* Wrapper for setegid. */
 int setgroup(char *str)
@@ -2493,9 +2757,9 @@ int el_build_index(LOGBOOK *lbs, BOOL rebuild)
 /* scan all ??????a.log files and build an index table in eli[] */
 {
 char      *file_list, str[256], date[256], dir[256], file_name[MAX_PATH_LENGTH], *buffer, *p,
-          in_reply_to[80];
+          *pn, in_reply_to[80];
 int       index, n, length;
-int       i, fh;
+int       i, fh, len;
 time_t    ltime;
 struct tm tms;
 
@@ -2620,6 +2884,14 @@ struct tm tms;
           lbs->el_index[*lbs->n_el_index].offset = (int) p - (int) buffer;
           lbs->el_index[*lbs->n_el_index].in_reply_to = atoi(in_reply_to);
 
+          pn = strstr(p+8, "$@MID@$:");
+          if (pn)
+            len = (int)pn - (int)p;
+          else
+            len = strlen(p);
+
+          MD5_checksum(p, len, lbs->el_index[*lbs->n_el_index].md5_digest);
+
           if (lbs->el_index[*lbs->n_el_index].message_id > 0)
             {
             if (verbose)
@@ -2627,10 +2899,14 @@ struct tm tms;
               if (*lbs->n_el_index == 0)
                 printf("\n");
 
-              printf("  ID %3d in %s, offset %5d, %s\n",
+              printf("  ID %3d in %s, ofs %5d, %s, MD5=",
                 lbs->el_index[*lbs->n_el_index].message_id, str,
                 lbs->el_index[*lbs->n_el_index].offset,
-                lbs->el_index[*lbs->n_el_index].in_reply_to ? "reply" : "thread head");
+                lbs->el_index[*lbs->n_el_index].in_reply_to ? "reply" : "thead");
+
+              for (i=0 ; i<16 ; i++)
+                printf("%02X", lbs->el_index[*lbs->n_el_index].md5_digest[i]);
+              printf("\n");
               }
 
             /* valid ID */
@@ -2656,7 +2932,7 @@ struct tm tms;
     {
     printf("After sort:\n");
     for (i=0 ; i<*lbs->n_el_index ; i++)
-      printf("  ID %3d in %s, offset %5d\n",
+      printf("  ID %3d in %s, ofs %5d\n",
         lbs->el_index[i].message_id, lbs->el_index[i].file_name,
         lbs->el_index[i].offset);
     }
@@ -3957,7 +4233,7 @@ char   att_file[MAX_ATTACHMENTS][256];
 
 void logf(LOGBOOK *lbs, const char *format, ...)
 {
-char    fname[2000];
+char    file_name[2000];
 va_list argptr;
 char    str[10000], lb[256];
 FILE*   f;
@@ -3967,14 +4243,19 @@ char    buf[256];
   if (!getcfg(lbs->name, "logfile", str))
     return;
 
-  strlcpy(fname, resource_dir, sizeof(fname));
-  strlcat(fname, str, sizeof(fname));
+  if (str[0] == DIR_SEPARATOR || str[1] == ':')
+    strcpy(file_name, str);
+  else
+    {
+    strlcpy(file_name, resource_dir, sizeof(file_name));
+    strlcat(file_name, str, sizeof(file_name));
+    }
 
   va_start(argptr, format);
   vsprintf(str, (char *) format, argptr);
   va_end(argptr);
 
-  f = fopen(fname, "a");
+  f = fopen(file_name, "a");
   if (!f)
     return;
 
@@ -7642,6 +7923,34 @@ char   message[TEXT_SIZE+1000], *p;
 
 /*------------------------------------------------------------------*/
 
+int show_md5_page(LOGBOOK *lbs, char *path)
+{
+int    i, j;
+
+  /* header */
+  rsprintf("HTTP/1.1 200 Document follows\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+  rsprintf("Accept-Ranges: bytes\r\n");
+  rsprintf("Connection: close\r\n");
+  rsprintf("Content-Type: text/plain;charset=iso-8859-1\r\n");
+  rsprintf("Pragma: no-cache\r\n");
+  rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
+
+  for (i=0 ; i<*lbs->n_el_index ; i++)
+    {
+    rsprintf("ID: %6d MD5:", lbs->el_index[i].message_id);
+    for (j=0 ; j<16 ; j++)
+      rsprintf("%02X", lbs->el_index[i].md5_digest[j]);
+    rsprintf("\n");
+    }
+
+  keep_alive = 0;
+
+  return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
                   int expand, int level, BOOL printable, int n_line, int show_attachments,
                   char *date, char *in_reply_to, char *reply_to,
@@ -8418,8 +8727,18 @@ int  i, n;
     {
     return TRUE;
     }
-  /* check if command is present in the menu list, exclude non-localized submit for elog */
-  else if (command[0] && !equal_ustring(command, "Submit"))
+  /* exclude non-localized submit for elog */
+  else if (command[0] && equal_ustring(command, "Submit"))
+    {
+    return TRUE;
+    }
+  /* exclude other non-localized commands */
+  else if (command[0] && equal_ustring(command, "GetMD5"))
+    {
+    return TRUE;
+    }
+  /* check if command is present in the menu list */
+  else if (command[0])
     {
     n = strbreak(menu_str, menu_item, MAX_N_LIST);
     for (i=0 ; i<n ; i++)
@@ -12798,6 +13117,12 @@ FILE    *f;
       equal_ustring(command, "Download"))
     {
     show_download_page(lbs, dec_path);
+    return;
+    }
+
+  if (equal_ustring(command, "getmd5"))
+    {
+    show_md5_page(lbs, dec_path);
     return;
     }
 
