@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.305  2004/03/21 18:46:31  midas
+   Removed size parameter in csv_import
+
    Revision 1.304  2004/03/21 18:42:59  midas
    Implemented CSV import and XML export
 
@@ -9004,7 +9007,7 @@ void show_import_page(LOGBOOK * lbs)
 
 /*------------------------------------------------------------------*/
 
-void csv_import(LOGBOOK * lbs, char *csv, int size, char *csvfile)
+void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
 {
    char *list, *line, *p, str[256], date[80], sep[80];
    int i, n, n_attr, iline, n_imported;
@@ -16804,7 +16807,7 @@ void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
                /* import CSVfile */
                if (file_name[0]) {
                   setparam("csvfile", file_name);
-                  csv_import(lbs, string, (int) (p - string), file_name);
+                  csv_import(lbs, string, file_name);
                   return;
                }
 
