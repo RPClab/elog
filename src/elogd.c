@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.476  2004/09/18 04:54:17  midas
+   Fixed problem withe missing attachment images
+
    Revision 1.475  2004/09/18 04:42:46  midas
    Fixed bug with not displaying inline images
 
@@ -16447,7 +16450,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    int size, i, j, n, n_log, status, fh, length, message_error, index, n_hidden,
        message_id, orig_message_id, format_flags[MAX_N_ATTR], att_hide[MAX_ATTACHMENTS],
        n_attachments, n_lines;
-   char str[1000], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
+   char str[1000], ref[256], file_name[256], file_enc[256], attrib[MAX_N_ATTR][NAME_LENGTH];
    char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], cmd_enc[256],
        orig_tag[80], reply_tag[MAX_REPLY_TO * 10], display[256],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
@@ -17130,8 +17133,9 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
                strcpy(str, attachment[index]);
                str[13] = 0;
-               sprintf(ref, "%s/%s", str, attachment[index] + 14);
-               url_encode(ref, sizeof(ref));    /* for file names with special characters like "+" */
+               strcpy(file_enc, attachment[index] + 14);
+               url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
+               sprintf(ref, "%s/%s", str, file_enc);
 
                /* overall table */
                rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>\n");
