@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.399  2004/07/23 09:42:39  midas
+   Use onUnload only if locking enabled
+
    Revision 1.398  2004/07/23 07:42:57  midas
    Fixed bug in extract_host()
 
@@ -7093,7 +7096,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    rsprintf("</head>\n");
 
-   rsprintf("<body onUnload=\"unload();\">\n");
+   if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1)
+      rsprintf("<body onUnload=\"unload();\">\n");
+   else
+      rsprintf("<body>\n");
+
    rsprintf("<form name=form1 method=\"POST\" action=\"./\" ");
    rsprintf("enctype=\"multipart/form-data\">\n");
 
