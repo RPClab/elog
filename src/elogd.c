@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.224  2004/02/02 21:13:06  midas
+   Form validatin now also works for radio buttons
+
    Revision 1.223  2004/02/02 16:28:04  midas
    Added javascript for required attributes checking
 
@@ -4189,7 +4192,7 @@ void rsputs2(const char *str)
                sprintf(return_buffer + j, "<a href=\"%s%s\">%s", list[l], link, list[l]);
                j += strlen(return_buffer + j);
                strlen_retbuf = j;
-               
+
                /* link_text can contain special characters */
                rsputs2(link_text);
                j = strlen_retbuf;
@@ -4813,7 +4816,7 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head)
    rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">\n", css);
 
    if (close_head)
-     rsprintf("</head>\n");
+      rsprintf("</head>\n");
 }
 
 void show_standard_header(LOGBOOK * lbs, BOOL expires, char *title, char *path)
@@ -6033,15 +6036,38 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    for (i = 0; i < lbs->n_attr; i++)
       if (attr_flags[i] & AF_REQUIRED) {
-         
-         if ((attr_flags[i] & AF_MULTI) == 0) {
+
+         if (attr_flags[i] & AF_MULTI) {
+            rsprintf("  if (\n");
+            for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
+               sprintf(str, "%s_%d", attr_list[i], j);
+               rsprintf("    !document.form1.%s.checked", str);
+               if (attr_options[i][j + 1][0])
+                  rsprintf(" &&\n");
+            }
+            rsprintf(") {\n");
+            sprintf(str, loc("Please select at least one '%s'"), attr_list[i]);
+            rsprintf("    alert(\"%s\");\n", str);
+            rsprintf("    document.form1.%s_0.focus();\n", attr_list[i]);
+            rsprintf("    return false;\n");
+            rsprintf("  }\n");
+         } else if (attr_flags[i] & AF_RADIO) {
+            rsprintf("  for (var i=0 ; i<document.form1.%s.length ; i++)\n",
+                     attr_list[i]);
+            rsprintf("    if (document.form1.%s[i].checked) { break }\n", attr_list[i]);
+            rsprintf("  if (i == document.form1.%s.length) {\n", attr_list[i]);
+            sprintf(str, loc("Please select a '%s'"), attr_list[i]);
+            rsprintf("    alert(\"%s\");\n", str);
+            rsprintf("    document.form1.%s[0].focus();\n", attr_list[i]);
+            rsprintf("    return false;\n");
+            rsprintf("  }\n");
+         } else {
             rsprintf("  if (document.form1.%s.value == \"\") {\n", attr_list[i]);
             sprintf(str, loc("Please enter attribute '%s'"), attr_list[i]);
             rsprintf("    alert(\"%s\");\n", str);
             rsprintf("    document.form1.%s.focus();\n", attr_list[i]);
             rsprintf("    return false;\n");
             rsprintf("  }\n");
-         } else {
          }
       }
 
@@ -6053,7 +6079,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    rsprintf("<body>\n");
    rsprintf("<form name=form1 method=\"POST\" action=\".\" ");
-   rsprintf("enctype=\"multipart/form-data\" onSubmit=\"return chkform();\">\n");
+   rsprintf("enctype=\"multipart/form-data\">\n");
 
    /*---- add password in case cookie expires during edit ----*/
 
@@ -6076,7 +6102,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* default cmd */
    rsprintf("<input type=hidden name=cmd value=\"%s\">\n", loc("Update"));
 
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Submit"));
+   rsprintf
+       ("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n",
+        loc("Submit"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Back"));
    rsprintf("</span></td></tr>\n\n");
 
@@ -6203,7 +6231,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
          if (attr_flags[index] & AF_MULTI) {
             for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
-               sprintf(str, "%s#%d", attr_list[index], i);
+               sprintf(str, "%s_%d", attr_list[index], i);
 
                if (strstr(attrib[index], attr_options[index][i]))
                   rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\">\n", str,
@@ -6211,7 +6239,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             }
          } else if (attr_flags[index] & AF_RADIO) {
             for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
-               sprintf(str, "%s#%d", attr_list[index], i);
+               sprintf(str, "%s_%d", attr_list[index], i);
 
                if (strstr(attrib[index], attr_options[index][i]))
                   rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\">\n", str,
@@ -6219,7 +6247,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             }
          } else if (attr_flags[index] & AF_ICON) {
             for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
-               sprintf(str, "%s#%d", attr_list[index], i);
+               sprintf(str, "%s_%d", attr_list[index], i);
 
                if (strstr(attrib[index], attr_options[index][i]))
                   rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\">\n", str,
@@ -6250,7 +6278,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   rsprintf("<td class=\"attribvalue\">\n");
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
-                     sprintf(str, "%s#%d", attr_list[index], i);
+                     sprintf(str, "%s_%d", attr_list[index], i);
 
                      if (strstr(attrib[index], attr_options[index][i]))
                         rsprintf
@@ -6849,7 +6877,7 @@ void show_find_form(LOGBOOK * lbs)
 
    rsprintf("<option value=\"\">\n");
    for (i = 0; i < 12; i++)
-      rsprintf("<option value=\"%d\">%s\n", i+1, month_name(i));
+      rsprintf("<option value=\"%d\">%s\n", i + 1, month_name(i));
    rsprintf("</select>\n");
 
    rsprintf("<select name=\"d1\">");
@@ -6862,12 +6890,22 @@ void show_find_form(LOGBOOK * lbs)
             loc("Year"));
 
    rsprintf("\n<script language=\"javascript\" type=\"text/javascript\">\n");
+   rsprintf("<!--\n");
+   rsprintf("function opencal(i)\n");
+   rsprintf("{\n");
+   rsprintf("  window.open(\"cal.html?i=\"+i, \"\",\n");
+   rsprintf
+       ("  \"width=300,height=195,dependent=yes,menubar=no,scrollbars=no,location=no\");\n");
+   rsprintf("}\n\n");
+
    rsprintf("if (navigator.javaEnabled()) {\n");
    rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
+   rsprintf("  document.write(\"<a href=\\\"javascript:opencal(1)\\\">\");\n");
    rsprintf
-       ("  document.write(\"<input type=button value=\\\"%s\\\" onClick=window.open(\\\"cal.html?i=1\\\",\\\"\\\",\\\"width=300,height=220,dependent=yes,menubar=no,scrollbars=no,location=no\\\");>\");\n",
-        loc("Calendar"));
+       ("  document.writeln(\"<img src=\\\"cal.gif\\\" border=\\\"0\\\" alt=\\\"%s\\\"></a>\");\n",
+        loc("Pick a date"));
    rsprintf("} \n");
+   rsprintf("//-->\n");
    rsprintf("</script>\n");
 
    rsprintf("&nbsp;&nbsp;/&nbsp;&nbsp;%s:&nbsp;", loc("Show last"));
@@ -6889,7 +6927,7 @@ void show_find_form(LOGBOOK * lbs)
 
    rsprintf("<option value=\"\">\n");
    for (i = 0; i < 12; i++)
-      rsprintf("<option value=\"%d\">%s\n", i+1, month_name(i));
+      rsprintf("<option value=\"%d\">%s\n", i + 1, month_name(i));
    rsprintf("</select>\n");
 
    rsprintf("<select name=\"d2\">");
@@ -6904,9 +6942,10 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf("\n<script language=\"javascript\" type=\"text/javascript\">\n");
    rsprintf("if (navigator.javaEnabled()) {\n");
    rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
+   rsprintf("  document.write(\"<a href=\\\"javascript:opencal(2)\\\">\");\n");
    rsprintf
-       ("  document.write(\"<input type=button value=\\\"%s\\\" onClick=window.open(\\\"cal.html?i=2\\\",\\\"\\\",\\\"width=300,height=220,dependent=yes,menubar=no,scrollbars=no,location=no\\\");>\");\n",
-        loc("Calendar"));
+       ("  document.writeln(\"<img src=\\\"cal.gif\\\" border=\\\"0\\\" alt=\\\"%s\\\"></a>\");\n",
+        loc("Pick a date"));
    rsprintf("} \n");
    rsprintf("</script>\n");
 
@@ -10668,19 +10707,19 @@ void show_select_navigation(LOGBOOK * lbs)
 
    rsprintf("<tr><td class=\"menuframe\"><span class=\"menu4\">\n");
 
-   rsprintf("<script language=\"JavaScript\" type=\"text/javascript\">         \n");
-   rsprintf("<!--                                                              \n");
-   rsprintf("function ToggleAll()                                              \n");
-   rsprintf("  {                                                               \n");
-   rsprintf("  for (var i = 0; i < document.form1.elements.length; i++)  \n");
-   rsprintf("    {                                                             \n");
-   rsprintf("    if( document.form1.elements[i].type == 'checkbox' )     \n");
+   rsprintf("<script language=\"JavaScript\" type=\"text/javascript\">\n");
+   rsprintf("<!--\n");
+   rsprintf("function ToggleAll()\n");
+   rsprintf("  {\n");
+   rsprintf("  for (var i = 0; i < document.form1.elements.length; i++)\n");
+   rsprintf("    {\n");
+   rsprintf("    if( document.form1.elements[i].type == 'checkbox' )\n");
    rsprintf
-       ("      document.form1.elements[i].checked = !(document.form1.elements[i].checked); \n");
-   rsprintf("    }                                                             \n");
-   rsprintf("  }                                                               \n");
-   rsprintf("//-->                                                             \n");
-   rsprintf("</script>                                                         \n");
+       ("      document.form1.elements[i].checked = !(document.form1.elements[i].checked);\n");
+   rsprintf("    }\n");
+   rsprintf("  }\n");
+   rsprintf("//-->\n");
+   rsprintf("</script>\n");
 
    rsprintf("%s:&nbsp;\n", loc("Selected entries"));
 
@@ -10753,7 +10792,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 {
    int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line;
    int current_year, current_month, current_day, printable, n_logbook,
-       n_display, reverse, n_attr_disp, total_n_msg, n_msg, search_all, message_id, 
+       n_display, reverse, n_attr_disp, total_n_msg, n_msg, search_all, message_id,
        n_page, i_start, i_stop, in_reply_to_id;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH],
        list[10000], *text, *text1, *text2, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
@@ -12124,7 +12163,7 @@ void submit_elog(LOGBOOK * lbs)
          }
          if ((attr_flags[i] & AF_MULTI)) {
             for (j = 0; j < MAX_N_LIST; j++) {
-               sprintf(str, "%s#%d", attr_list[i], j);
+               sprintf(str, "%s_%d", attr_list[i], j);
                if (getparam(str) && *getparam(str))
                   break;
             }
@@ -12209,7 +12248,7 @@ void submit_elog(LOGBOOK * lbs)
          attrib[i][0] = 0;
          first = 1;
          for (j = 0; j < MAX_N_LIST; j++) {
-            sprintf(str, "%s#%d", attr_list[i], j);
+            sprintf(str, "%s_%d", attr_list[i], j);
             if (getparam(str)) {
                if (*getparam(str)) {
                   if (first)
@@ -12336,7 +12375,7 @@ void submit_elog(LOGBOOK * lbs)
                strcat(str, " ");
 
                if (attr_flags[index] & AF_MULTI) {
-                  sprintf(str2, "%s#%d", attr_list[index], mindex);
+                  sprintf(str2, "%s_%d", attr_list[index], mindex);
 
                   mindex++;
                   if (mindex == MAX_N_LIST)
@@ -14152,7 +14191,7 @@ void show_calendar(LOGBOOK * lbs)
       index = 1;
 
    show_html_header(lbs, FALSE, loc("Calendar"), TRUE);
-   rsprintf("<body><form name=form1 method=\"GET\" action=\"\">\n");
+   rsprintf("<body class=\"calwindow\"><form name=form1 method=\"GET\" action=\"\">\n");
    rsprintf("<input type=hidden name=\"y\" value=\"%d\">\n", cur_year);
 
    rsprintf("<script language=\"JavaScript\">\n\n");
@@ -14165,15 +14204,15 @@ void show_calendar(LOGBOOK * lbs)
    rsprintf("}\n");
    rsprintf("</script>\n\n");
 
-   rsprintf("<table border=1 width=294 height=214><tr>");
+   rsprintf("<table border=1 width=300><tr>");
    rsprintf("<td colspan=7 class=\"caltitle\">\n");
 
    rsprintf("<select name=\"m\" onChange=\"document.form1.submit()\">\n");
    for (i = 0; i < 12; i++)
-      if (i+1 == cur_mon)
-        rsprintf("<option selected value=\"%d\">%s\n", i+1, month_name(i));
+      if (i + 1 == cur_mon)
+         rsprintf("<option selected value=\"%d\">%s\n", i + 1, month_name(i));
       else
-        rsprintf("<option value=\"%d\">%s\n", i+1, month_name(i));
+         rsprintf("<option value=\"%d\">%s\n", i + 1, month_name(i));
    rsprintf("</select>\n");
 
    /* link to previous year */
