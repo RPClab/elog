@@ -39,8 +39,10 @@ ALL : "$(OUTDIR)\elogd.exe" "$(OUTDIR)\elogd.bsc"
 CLEAN :
 	-@erase "$(INTDIR)\elogd.obj"
 	-@erase "$(INTDIR)\regex.obj"
+	-@erase "$(INTDIR)\mxml.obj"
 	-@erase "$(INTDIR)\elogd.sbr"
 	-@erase "$(INTDIR)\regex.sbr"
+	-@erase "$(INTDIR)\mxml.sbr"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(OUTDIR)\elogd.bsc"
 	-@erase "$(OUTDIR)\elogd.exe"
@@ -85,7 +87,7 @@ RSC=rc.exe
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\elogd.bsc" 
 BSC32_SBRS= \
-	"$(INTDIR)\elogd.sbr" "$(INTDIR)\regex.sbr"
+	"$(INTDIR)\elogd.sbr" "$(INTDIR)\regex.sbr" "$(INTDIR)\mxml.sbr"
 
 "$(OUTDIR)\elogd.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
     $(BSC32) @<<
@@ -95,8 +97,8 @@ BSC32_SBRS= \
 LINK32=link.exe
 LINK32_FLAGS=wsock32.lib advapi32.lib /nologo /subsystem:console /stack:4000000 /incremental:no /pdb:"$(OUTDIR)\elogd.pdb" /machine:I386 /out:"$(OUTDIR)\elogd.exe" 
 LINK32_OBJS= \
-	"$(INTDIR)\elogd.obj" "$(INTDIR)\regex.obj"
-
+	"$(INTDIR)\elogd.obj" "$(INTDIR)\regex.obj" "$(INTDIR)\mxml.obj"
+ 
 "$(OUTDIR)\elogd.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
   $(LINK32_FLAGS) $(LINK32_OBJS)
@@ -118,6 +120,8 @@ CLEAN :
 	-@erase "$(INTDIR)\elogd.sbr"
 	-@erase "$(INTDIR)\regex.obj"
 	-@erase "$(INTDIR)\regex.sbr"
+	-@erase "$(INTDIR)\mxml.obj"
+	-@erase "$(INTDIR)\mxml.sbr"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(INTDIR)\vc60.pdb"
 	-@erase "$(OUTDIR)\elogd.bsc"
@@ -165,7 +169,7 @@ RSC=rc.exe
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\elogd.bsc" 
 BSC32_SBRS= \
-	"$(INTDIR)\elogd.sbr" "$(INTDIR)\regex.sbr" 
+	"$(INTDIR)\elogd.sbr" "$(INTDIR)\regex.sbr" "$(INTDIR)\mxml.sbr" 
 
 "$(OUTDIR)\elogd.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
     $(BSC32) @<<
@@ -175,7 +179,7 @@ BSC32_SBRS= \
 LINK32=link.exe
 LINK32_FLAGS=wsock32.lib advapi32.lib /nologo /subsystem:console /stack:4000000 /incremental:yes /pdb:"$(OUTDIR)\elogd.pdb" /debug /machine:I386 /out:"$(OUTDIR)\elogd.exe" /pdbtype:sept 
 LINK32_OBJS= \
-	"$(INTDIR)\elogd.obj" "$(INTDIR)\regex.obj"
+	"$(INTDIR)\elogd.obj" "$(INTDIR)\regex.obj" "$(INTDIR)\mxml.obj"
 
 "$(OUTDIR)\elogd.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -204,6 +208,9 @@ SOURCE=..\src\regex.c
 "$(INTDIR)\regex.obj"	"$(INTDIR)\regex.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
+SOURCE=..\src\mxml.c
+"$(INTDIR)\mxml.obj"	"$(INTDIR)\mxml.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) /D "STRLCPY_DEFINED" $(SOURCE)
 
 !ENDIF 
 
