@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.185  2004/01/13 15:02:17  midas
+   Sort user names in selection box
+
    Revision 1.184  2004/01/13 11:40:40  midas
    Fixed probelem with redirection
 
@@ -7119,11 +7122,19 @@ int remove_user(LOGBOOK * lbs, char *user)
 
 /*------------------------------------------------------------------*/
 
+int ascii_compare(const void *s1, const void *s2)
+{
+   return stricmp(*(char **)s1, *(char **)s2);
+}
+
+/*------------------------------------------------------------------*/
+
 void show_config_page(LOGBOOK * lbs)
 {
    char str[256], user[80], password[80], full_name[80], user_email[80],
        email_notify[256], logbook[256];
-   int i;
+   char **user_list;
+   int i, n;
 
    if (lbs)
       strcpy(logbook, lbs->name);
@@ -7165,15 +7176,33 @@ void show_config_page(LOGBOOK * lbs)
       rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Select user"));
       rsprintf("<td><select name=cfg_user onChange=\"document.form1.submit()\">\n");
 
-      for (i = 0;; i++) {
-         if (enum_user_line(lbs, i, str)) {
-            if (strcmp(str, user) == 0)
-               rsprintf("<option selected value=\"%s\">%s\n", str, str);
-            else
-               rsprintf("<option value=\"%s\">%s\n", str, str);
-         } else
+      /* count user list */
+      for (n = 0;; n++) {
+         if (!enum_user_line(lbs, n, str)) 
             break;
       }
+
+      /* allocate list of users and populate it */
+      user_list = calloc(sizeof(char *), n);
+      for (i=0 ; i<n ; i++)
+         user_list[i] = calloc(NAME_LENGTH, 1);
+
+      for (i = 0; i<n ; i++) 
+         enum_user_line(lbs, i, user_list[i]);
+
+      /* sort list */
+      qsort(user_list, n, sizeof(char *), ascii_compare);
+
+      for (i = 0; i<n; i++) {
+         if (strcmp(user_list[i], user) == 0)
+            rsprintf("<option selected value=\"%s\">%s\n", user_list[i], user_list[i]);
+         else
+            rsprintf("<option value=\"%s\">%s\n", user_list[i], user_list[i]);
+      }
+
+      for (i=0 ; i<n ; i++)
+         free(user_list[i]);
+      free(user_list);
 
       rsprintf("</select>\n");
 
@@ -14018,8 +14047,10 @@ void server_loop(int tcp_port, int daemon)
                      puts(p + 2);
                      printf("\n");
                   }
-               } else
+               } else {
                   printf("Internal error, no valid header!\n");
+                  keep_alive = 0;
+               }
             } else {
                send(_sock, return_buffer, return_length, 0);
                if (verbose) {
