@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.72  2002/09/10 15:34:38  midas
+  Version 2.1.2
+
   Revision 2.71  2002/09/10 05:59:04  midas
   Made selections work with 'copy to' and 'move to'
 
@@ -317,7 +320,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.1.1"
+#define VERSION "2.1.2"
 
 #include <stdio.h>
 #include <sys/types.h>
