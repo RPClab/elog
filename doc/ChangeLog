@@ -8,6 +8,7 @@ Version 2.3.7, released April 23rd, 2003
 - Implemented 3D cell frames
 - Added anchor for attachments
 - Replace CRLF.CRLF by CRLF..CRLF in email notifications
+- Option 'selection page' can now contain absolute URL
 
 Version 2.3.6, released April 23rd, 2003
 ========================================

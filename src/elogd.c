@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.104  2003/05/08 19:57:59  midas
+  Option 'selection page' can now contain absolute URL
+
   Revision 1.103  2003/05/07 19:07:17  midas
   Replace CR.CR by CR..CR in email notifications
 
@@ -11269,6 +11272,13 @@ FILE    *f;
   /* check for global selection page if no logbook given */
   if (!logbook[0] && getcfg("global", "Selection page", str))
     {
+    /* check for URL */
+    if (strstr(str, "http://"))
+      {
+      redirect(NULL, str);
+      return;
+      }
+
     /* check if file starts with an absolute directory */
     if (str[0] == DIR_SEPARATOR || str[1] == ':')
       strlcpy(file_name, str, sizeof(file_name));
