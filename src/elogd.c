@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.8  2003/02/14 15:35:38  midas
+  Revised cookie handling and absolute paths
+
   Revision 1.7  2003/02/11 15:43:15  midas
   Revised attachment upload
 
@@ -3439,7 +3442,149 @@ int i;
 
 /*------------------------------------------------------------------*/
 
-void redirect(char *path)
+void extract_path(char *str)
+{
+char *p, str2[256];
+
+  if (strstr(str, "http://"))
+    {
+    p = str+7;
+    while (*p && *p != '/')
+      p++;
+    if (*p == '/')
+      p++;
+
+    strcpy(str2, p);
+    strcpy(str, str2);
+    if (str[strlen(str)-1] != '/')
+      strcat(str, "/");
+    }
+}
+
+/*------------------------------------------------------------------*/
+
+void set_location(LOGBOOK *lbs, char *rel_path)
+{
+char str[256];
+
+  if (strncmp(rel_path, "http://", 7) == 0)
+    rsprintf("Location: %s", rel_path);
+  else
+    {
+    if (lbs)
+      getcfg(lbs->name, "URL", str);
+    else
+      getcfg("global", "URL", str);
+
+    if (str[0])
+      {
+      /* absolute path */
+      if (str[strlen(str)-1] != '/')
+        strcat(str, "/");
+
+      rsprintf("Location: %s", str);
+
+      if (strncmp(rel_path, "../", 3) == 0)
+        rsprintf(rel_path+3);
+      else if (strcmp(rel_path, ".") == 0)
+        rsprintf(lbs->name_enc);
+      else if (rel_path[0] == '/')
+        rsprintf(rel_path+1);
+      else
+        {
+        if (lbs)
+          rsprintf("%s/%s", lbs->name_enc, rel_path);
+        else
+          rsprintf("%s", rel_path);
+        }
+      }
+    else
+      /* relative path */
+      rsprintf("Location: %s", rel_path);
+    }
+
+  rsprintf("\r\n\r\n<html>redir</html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void set_redir(LOGBOOK *lbs, char *redir)
+{
+char str[256];
+
+  /* prepare relative path */
+  if (redir[0])
+    strcpy(str, redir);
+  else
+    {
+    if (lbs)
+      sprintf(str, "../%s/", lbs->name_enc);
+    else
+      sprintf(str, ".");
+    }
+
+  set_location(lbs, str);
+}
+
+/*------------------------------------------------------------------*/
+
+void set_cookie(LOGBOOK *lbs, char *name, char *value, BOOL global, char *expiration)
+{
+char   lb_name[256], str[256];
+double exp;
+time_t now;
+struct tm *gmt;
+
+  if (lbs)
+    strcpy(lb_name, lbs->name);
+  else
+    strcpy(lb_name, "global");
+
+  rsprintf("Set-Cookie: %s=%s;", name, value);
+
+  /* add path */
+  if (global)
+    {
+    /* path for all logbooks */
+    if (getcfg(lb_name, "URL", str))
+      {
+      extract_path(str);
+      rsprintf(" path=/%s;", str);
+      }
+    else
+      rsprintf(" path=/;");
+    }
+  else
+    {
+    /* path for individual logbook */
+    if (getcfg(lb_name, "URL", str))
+      {
+      extract_path(str);
+      rsprintf(" path=%s%s;", str, lbs->name);
+      }
+    else
+      rsprintf(" path=/%s;", lbs->name);
+    }
+
+  exp = atof(expiration);
+
+  /* add expriation date */
+  if (exp != 0)
+    {
+    time(&now);
+    now += (int) (3600*exp);
+    gmt = gmtime(&now);
+    strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+
+    rsprintf(" expires=%s;", str);
+    }
+
+  rsprintf("\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void redirect(LOGBOOK *lbs, char *rel_path)
 {
   /* redirect */
   rsprintf("HTTP/1.1 302 Found\r\n");
@@ -3450,15 +3595,7 @@ void redirect(char *path)
     rsprintf("Keep-Alive: timeout=60, max=10\r\n");
     }
 
-  rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", path);
-}
-
-void redirect2(char *path)
-{
-  redirect(path);
-  send(_sock, return_buffer, strlen(return_buffer)+1, 0);
-  closesocket(_sock);
-  return_length = -1;
+  set_location(lbs, rel_path);
 }
 
 /*------------------------------------------------------------------*/
@@ -4006,10 +4143,8 @@ void show_error(char *error)
 
 void set_login_cookies(LOGBOOK *lbs, char *user, char *enc_pwd)
 {
-char   str[256], str2[256], lb_name[256];
-double exp;
-time_t now;
-struct tm *gmt;
+char   str[256], lb_name[256], exp[80];
+BOOL   global;
 
   rsprintf("HTTP/1.1 302 Found\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
@@ -4025,53 +4160,16 @@ struct tm *gmt;
     strcpy(lb_name, "global");
 
   /* get optional expriation from configuration file */
-  exp = 0;
-  if (getcfg(lb_name, "Login expiration", str))
-    exp = atof(str);
+  getcfg(lb_name, "Login expiration", exp);
 
-  if (exp == 0)
-    {
-    if (getcfg("global", "Password file", str))
-      {
-      rsprintf("Set-Cookie: upwd=%s; path=/\r\n", enc_pwd);
-      rsprintf("Set-Cookie: unm=%s; path=/\r\n", user);
-      }
-    else
-      {
-      rsprintf("Set-Cookie: upwd=%s\r\n", enc_pwd);
-      rsprintf("Set-Cookie: unm=%s\r\n", user);
-      }
-    }
-  else
-    {
-    time(&now);
-    now += (int) (3600*exp);
-    gmt = gmtime(&now);
-    strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+  /* check if cookies should be global */
+  global = getcfg("global", "Password file", str);
 
-    if (getcfg("global", "Password file", str2))
-      {
-      rsprintf("Set-Cookie: upwd=%s; path=/; expires=%s\r\n", enc_pwd, str);
-      rsprintf("Set-Cookie: unm=%s; path=/; expires=%s\r\n", user, str);
-      }
-    else
-      {
-      rsprintf("Set-Cookie: upwd=%s; expires=%s\r\n", enc_pwd, str);
-      rsprintf("Set-Cookie: unm=%s; expires=%s\r\n", user, str);
-      }
-    }
+  /* two cookies for password and user name */
+  set_cookie(lbs, "upwd", enc_pwd, global, exp);
+  set_cookie(lbs, "unm", user, global, exp);
 
-  strlcpy(str, getparam("redir"), sizeof(str));
-  if (!str[0])
-    {
-    if (lbs)
-      sprintf(str, "../%s/", lbs->name_enc);
-    else
-      sprintf(str, ".");
-    }
-
-  rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
-  return;
+  set_redir(lbs, getparam("redir"));
 }
 
 /*------------------------------------------------------------------*/
@@ -4381,7 +4479,7 @@ int    i, fh, wrong_pwd, size;
 
       if (!wrong_pwd)
         {
-        redirect(".");
+        redirect(lbs, ".");
         return;
         }
       }
@@ -5582,6 +5680,8 @@ int    i, fh, size, self_register;
       }
     else
       {
+      if (url[strlen(url)-1] != '/')
+        strlcat(url, "/", sizeof(url));
       strlcat(url, lbs->name, sizeof(url));
       strlcat(url, "/", sizeof(url));
       }
@@ -5661,7 +5761,7 @@ int    i, fh, size, self_register;
 
       if (self_register == 3)
         {
-        redirect("?cmd=Requested");
+        redirect(lbs, "?cmd=Requested");
         return 0;
         }
       }
@@ -5849,7 +5949,7 @@ int  i;
   rsprintf("<td><input type=text size=40 name=new_user_email value=\"%s\">&nbsp;&nbsp;&nbsp;&nbsp;\n", 
             user_email);
 
-  rsprintf("%s:\n", loc("Automatic email notifications"));
+  rsprintf("%s:\n", loc("Enable email notifications"));
   
   if (email_notify[0])
     rsprintf("<input type=checkbox checked name=email_notify value=all></td></tr>\n");
@@ -5915,8 +6015,8 @@ void show_new_user_page(LOGBOOK *lbs)
   rsprintf("<tr><td nowrap width=10%%>Email:</td>\n");
   rsprintf("<td><input type=text size=40 name=new_user_email></tr>\n");
 
-  rsprintf("<tr><td colspan=2>%s:&nbsp;\n", loc("Automatic email notifications"));
-  rsprintf("<input type=checkbox name=email_notify value=all></tr>\n");
+  rsprintf("<tr><td colspan=2>%s:&nbsp;\n", loc("Enable email notifications"));
+  rsprintf("<input type=checkbox checked name=email_notify value=all></tr>\n");
 
   rsprintf("<tr><td nowrap width=10%%>%s:</td>\n", loc("Password"));
   rsprintf("<td><input type=password size=40 name=newpwd>\n");
@@ -5944,13 +6044,13 @@ char   str[256], in_reply_to[80], reply_to[256];
     if (message_id)
       {
       sprintf(str, "%d", message_id);
-      redirect(str);
+      redirect(lbs, str);
       }
     else
       {
       strlcpy(str, getparam("lastcmd"), sizeof(str));
       url_decode(str);
-      redirect(str);
+      redirect(lbs, str);
       }
     return;
     }
@@ -5975,9 +6075,9 @@ char   str[256], in_reply_to[80], reply_to[256];
           if (atoi(str) == 0)
             sprintf(str, "%d", el_search_message(lbs, EL_LAST, 0, TRUE));
           if (atoi(str) == 0)
-            redirect("");
+            redirect(lbs, "");
           else
-            redirect(str);
+            redirect(lbs, str);
           return;
           }
         }
@@ -5990,7 +6090,7 @@ char   str[256], in_reply_to[80], reply_to[256];
             status = el_delete_message(lbs, atoi(getparam(str)), TRUE, NULL, TRUE, TRUE);
           }
 
-        redirect(getparam("lastcmd"));
+        redirect(lbs, getparam("lastcmd"));
         return;
         }
       }
@@ -7335,7 +7435,7 @@ LOGBOOK *lbs_cur;
       else
         strlcat(_cmdline, "?reverse=0", sizeof(_cmdline));
       }
-    redirect(_cmdline);
+    redirect(lbs, _cmdline);
     return;
     }
 
@@ -7364,7 +7464,7 @@ LOGBOOK *lbs_cur;
           subst_param(str, sizeof(str), attr_list[i], getparam(attr_list[i]));
         }
 
-    redirect(str);
+    redirect(lbs, str);
     return;
     }
 
@@ -7373,7 +7473,7 @@ LOGBOOK *lbs_cur;
     {
     strlcpy(str, _cmdline, sizeof(str));
     subst_param(str, sizeof(str), "last", "");
-    redirect(str);
+    redirect(lbs, str);
     return;
     }
   for (i=0 ; i<MAX_N_ATTR ; i++)
@@ -7381,7 +7481,7 @@ LOGBOOK *lbs_cur;
       {
       strlcpy(str, _cmdline, sizeof(str));
       subst_param(str, sizeof(str), attr_list[i], "");
-      redirect(str);
+      redirect(lbs, str);
       return;
       }
 
@@ -8747,21 +8847,8 @@ int    i, j, n, missing, first, index, suppress, message_id, resubmit_orig, mail
     return;
     }
 
-  rsprintf("HTTP/1.1 302 Found\r\n");
-  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-  if (use_keepalive)
-    {
-    rsprintf("Connection: Keep-Alive\r\n");
-    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
-    }
-
-  /* bug for old Konqueror */
-  if (strstr(browser, "Konqueror") && !strstr(browser, "Konqueror/3"))
-    rsprintf("Location: %s/%d%s\r\n\r\n<html>redir</html>\r\n",
-              lbs->name_enc, message_id, mail_param);
-  else
-    rsprintf("Location: %d%s\r\n\r\n<html>redir</html>\r\n",
-              message_id, mail_param);
+  sprintf(str, "%d%s", message_id, mail_param);
+  redirect(lbs, str);
 }
 
 /*------------------------------------------------------------------*/
@@ -9007,7 +9094,7 @@ BOOL   first;
 
     if (!message_id)
       {
-      redirect("");
+      redirect(lbs, "");
       return;
       }
 
@@ -9084,7 +9171,7 @@ BOOL   first;
           }
         }
 
-      redirect(str);
+      redirect(lbs, str);
       return;
 
       } while (TRUE);
@@ -9631,7 +9718,7 @@ char  str[256];
         strlcat(str, "&wpwd=1", sizeof(str));
       else
         strlcat(str, "?wpwd=1", sizeof(str));
-      redirect(str);
+      redirect(lbs, str);
       return FALSE;
       }
 
@@ -9844,12 +9931,12 @@ char  status, str[256], upwd[256], full_name[256], email[256];
 
     if (!isparam("wpwd") && password[0])
       {
-      redirect("?wpwd=1");
+      redirect(lbs, "?wpwd=1");
       return FALSE;
       }
 
     /* show login password page */
-    show_standard_header(lbs, FALSE, "ELOG login", NULL);
+    show_standard_header(lbs, TRUE, "ELOG login", NULL);
 
     /* define hidden fields for current destination */
     rsprintf("<input type=hidden name=redir value=\"%s\">\n", redir);
@@ -9980,7 +10067,7 @@ char str[256];
       return 0;
 
     sprintf(str, "../%s/", lbs->name_enc);
-    redirect(str);
+    redirect(lbs, str);
     return 0;
     }
         
@@ -10021,12 +10108,11 @@ void interprete(char *lbook, char *path)
 \********************************************************************/
 {
 int     i, j, n, index, lb_index, message_id;
-double  exp;
+char    exp[80];
 char    str[256], enc_pwd[80], file_name[256], command[80], ref[256];
 char    enc_path[256], dec_path[256], logbook[256], logbook_enc[256];
 char    *experiment, *value, *group, css[256];
-time_t  now;
-struct  tm *gmt;
+BOOL    global;
 LOGBOOK *lbs;
 FILE    *f;
 
@@ -10179,36 +10265,16 @@ FILE    *f;
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
       }
 
+    global = getcfg("global", "Write password", str);
+
     /* get optional expriation from configuration file */
-    exp = 0;
-    if (getcfg(logbook, "Write password expiration", str))
-      exp = atof(str);
+    getcfg(logbook, "Write password expiration", exp);
 
-    if (exp == 0)
-      {
-      if (getcfg("global", "Write password", str))
-        rsprintf("Set-Cookie: wpwd=%s; path=/\r\n", enc_pwd);
-      else
-        rsprintf("Set-Cookie: wpwd=%s\r\n", enc_pwd);
-      }
-    else
-      {
-      time(&now);
-      now += (int) (3600*exp);
-      gmt = gmtime(&now);
-      strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+    /* set "wpwd" cookie */
+    set_cookie(lbs, "wpwd", enc_pwd, global, exp);
 
-      if (getcfg("global", "Write password", str))
-        rsprintf("Set-Cookie: wpwd=%s; path=/; expires=%s\r\n", enc_pwd, logbook_enc, str);
-      else
-        rsprintf("Set-Cookie: wpwd=%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
-      }
-
-    sprintf(str, "%s", getparam("redir"));
-    if (!str[0])
-      sprintf(str, "../%s/", logbook_enc);
-
-    rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
+    /* redirect according to "redir" parameter */
+    set_redir(lbs, getparam("redir"));
     return;
     }
 
@@ -10228,36 +10294,16 @@ FILE    *f;
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
       }
 
+    global = getcfg("global", "Admin password", str);
+
     /* get optional expriation from configuration file */
-    exp = 0;
-    if (getcfg(logbook, "Admin password expiration", str))
-      exp = atof(str);
+    getcfg(logbook, "Admin password expiration", exp);
 
-    if (exp == 0)
-      {
-      if (getcfg("global", "Admin password", str))
-        rsprintf("Set-Cookie: apwd=%s; path=/\r\n", enc_pwd);
-      else
-        rsprintf("Set-Cookie: apwd=%s\r\n", enc_pwd);
-      }
-    else
-      {
-      time(&now);
-      now += (int) (3600*exp);
-      gmt = gmtime(&now);
-      strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+    /* set "apwd" cookie */
+    set_cookie(lbs, "apwd", enc_pwd, global, exp);
 
-      if (getcfg("global", "Admin password", str))
-        rsprintf("Set-Cookie: apwd=%s; path=/; expires=%s\r\n", enc_pwd);
-      else
-        rsprintf("Set-Cookie: apwd=%s; expires=%s\r\n", enc_pwd);
-      }
-
-    sprintf(str, "%s", getparam("redir"));
-    if (!str[0])
-      sprintf(str, "../%s/", logbook_enc);
-
-    rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
+    /* redirect according to "redir" parameter */
+    set_redir(lbs, getparam("redir"));
     return;
     }
 
@@ -10347,7 +10393,7 @@ FILE    *f;
       getcfg(lbs->name, "Back to main", str) &&
       atoi(str) == 1)
     {
-    redirect("../");
+    redirect(lbs, "../");
     return;
     }
 
@@ -10358,7 +10404,7 @@ FILE    *f;
     else
       sprintf(str, "../%s/", logbook_enc);
 
-    redirect(str);
+    redirect(lbs, str);
     return;
     }
 
@@ -10366,7 +10412,7 @@ FILE    *f;
   if (equal_ustring(command, loc("Cancel")))
     {
     sprintf(str, "../%s/%s", logbook_enc, path);
-    redirect(str);
+    redirect(lbs, str);
     return;
     }
 
@@ -10378,7 +10424,7 @@ FILE    *f;
     sprintf(str, "last%d", i);
     if (isparam("mode"))
       sprintf(str+strlen(str), "?mode=%s", getparam("mode"));
-    redirect(str);
+    redirect(lbs, str);
     return;
     }
 
@@ -10387,7 +10433,7 @@ FILE    *f;
     {
     i = atoi(strchr(str, ' '));
     sprintf(str, "past%d", i);
-    redirect(str);
+    redirect(lbs, str);
     return;
     }
 
@@ -10501,7 +10547,7 @@ FILE    *f;
       else
         strcpy(ref, str);
 
-      redirect(ref);
+      redirect(lbs, ref);
       return;
       }
 
@@ -10520,7 +10566,7 @@ FILE    *f;
 
     f = fopen(file_name, "r");
     if (f == NULL)
-      redirect("http://midas.psi.ch/elog/eloghelp_en.html");
+      redirect(lbs, "http://midas.psi.ch/elog/eloghelp_en.html");
     else
       {
       fclose(f);
@@ -10603,7 +10649,7 @@ FILE    *f;
     if (dec_path[0])
       {
       sprintf(str, "../%s/?cmd=%s", lbs->name_enc, loc("Find"));
-      redirect(str);
+      redirect(lbs, str);
       return;
       }
     show_find_form(lbs);
@@ -10620,18 +10666,6 @@ FILE    *f;
       }
 
     show_elog_list(lbs, 0, 0, 1);
-    return;
-    }
-
-  if (equal_ustring(command, loc("Last day")))
-    {
-    redirect("past1");
-    return;
-    }
-
-  if (equal_ustring(command, loc("Last 10")))
-    {
-    redirect("last10");
     return;
     }
 
@@ -10678,7 +10712,7 @@ FILE    *f;
       return;
 
     sprintf(str, "../%s/", lbs->name_enc);
-    redirect(str);
+    redirect(lbs, str);
     return;
     }
 
@@ -10770,7 +10804,7 @@ FILE    *f;
   /* check for start page */
   if (!_cmdline[0] && getcfg(lbs->name, "Start page", str) && str[0])
     {
-    redirect(str);
+    redirect(lbs, str);
     return;
     }
 
@@ -11487,11 +11521,12 @@ struct timeval       timeout;
         if (logbook[0] && *p == ' ')
           {
           if (!strstr(logbook, ".css") &&
+              !strstr(logbook, ".htm") &&
               !strstr(logbook, ".gif") &&
               !strstr(logbook, ".jpg"))
             {
             sprintf(str, "%s/", logbook_enc);
-            redirect(str);
+            redirect(NULL, str);
             goto redir;
             }
           }
@@ -11609,7 +11644,7 @@ struct timeval       timeout;
           strlcat(logbook_enc, "/", sizeof(logbook_enc));
 
           /* redirect to logbook, necessary to get optional cookies for that logbook */
-          redirect(logbook_enc);
+          redirect(NULL, logbook_enc);
 
           send(_sock, return_buffer, strlen(return_buffer), 0);
 
