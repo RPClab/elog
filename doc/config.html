@@ -21,9 +21,11 @@
 &nbsp;[<a class=nav href="#global">Global</a>]&nbsp;
 - Logbooks :&nbsp;
 &nbsp;[<a class=nav href="#general">General</a>]&nbsp;
+&nbsp;[<a class=nav href="#groups">Logbook groups</a>]&nbsp;
 &nbsp;[<a class=nav href="#attrib">Attributes</a>]&nbsp;
+&nbsp;[<a class=nav href="#conditional">Conditional Attributes</a>]&nbsp;
 &nbsp;[<a class=nav href="#email">E-mail</a>]&nbsp;
-&nbsp;[<a class=nav href="#access">Access</a>]&nbsp;
+&nbsp;[<a class=nav href="#access">Access Control</a>]&nbsp;
 &nbsp;[<a class=nav href="#flags">Flags</a>]&nbsp;
 &nbsp;[<a class=nav href="#themes">Themes</a>]&nbsp;
 *&nbsp;</div>
@@ -246,6 +248,7 @@ The user and group to run the elogd daemon under when started by root.<p>
 </UL>
 
 <hr>
+<a name="groups"><hr>
 <div class=section>&nbsp; Groups of logbooks &nbsp;</div>
 <p>
 
@@ -279,6 +282,43 @@ Where the selected group or logbook becomes blue. The lower groups/logbooks chan
 to the selected upper group. Please note that a logbook can be contained in more than one
 group, but then it should not be the first logbook in those groups. The colors of the tabs
 and the title bar can be specified in the CSS file.<p>
+
+<hr>
+
+<div class=section>&nbsp; Top groups &nbsp;</div>
+<p>
+
+Sometimes groups of logbooks should be completely separate. Imagine two groups of logbooks,
+one for the engineering department and one for the administration department. These groups
+should have different administrators, and the logbook tabs at the top of the screen should
+not show the logbooks from the other department. Prior to ELOG version 2.4.1, one had to
+run two elogd servers in parallel, listening under different ports. Since 2.4.1, one can achieve
+the same behaviour using <code><b>Top groups</b></code>. The configuration could look like this:
+
+<UL><pre>
+Group Linux PCs = Red Hat, Debian, Mandrake
+Group Windows PCs = 98, ME, NT, XP, CE
+Group CE = 1.0, 2.UL
+
+Top group engineering = Linux PCs, Windows PCs
+Top group administration = Employees, Purchases
+
+[global engineering]
+Password file = engineers.pwd
+Admin user = stefan
+
+[global administration]
+Password file = admin.pwd
+Admin user = bill
+</UL></pre>
+
+Note that there can be a <b><code>[global]</code></b> section for each top level group of logbooks. 
+The rule is that a configuration setting in an individual logbook section overrides a setting
+in the <b><code>[global &lt;top group&gt;]</code></b> setting, which by itsel overrides a setting
+in the <b><code>[global]</code></b> section. This way one can define settings for all top level
+groups (such as the SMTP host) in the <b><code>[global]</code></b> section, and define different
+password files and administrators in the individual top level group sections.
+<p>
 
 <hr>
 <div class=title>&nbsp; Individual logbook options &nbsp;</div>
@@ -539,21 +579,34 @@ switch between the different display modi:<br>
 &lt;/small&gt;
 </pre>
 
-<li><b><code>Bottom text = &lt;file&gt;</code></b>
-</br>
-If this option is present, the HTML contents of <b><code>file</code></b> is displayed at
-the bottom of an Elog page instead of the little Elog home page link. It can contain for
-example a link back to the main logbook selection page like:
+<li><b><code>Top text = &lt;file&gt | &lt;string&gt;</code></b>
+<br>
+The text of this option gets displayed at the top of every Elog page.
+It can be a string or a filename which gets displayed. Might be useful
+to display company logos etc.<br>
+<br>
+
+If a file is specified, it must be present in the resource directory.
+Alternatively, an absolute path can be used if the file
+name starts with a <b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or <b><code>
+"x:"</code></b> (Windows).
+<p>
+
+<li><b><code>Bottom text = &lt;file&gt; | &lt;string&gt;</code></b>
+<br>
+The text of this option gets displayed at the bottom of every Elog page
+instead of the little Elog home page link. It can be a string or a file.
+It can contain for example a link back to the main logbook selection page like:
 
 <pre>
 &lt;center&gt;&lt;a href="/"&gt;Main page&lt;/a&gt;&lt;/center&gt;
 </pre>
 
-Or it can contain other useful links. The file must be present in the resource directory.
+Or it can contain other useful links. If a file is specified, it must 
+be present in the resource directory.
 Alternatively, an absolute path can be used if the file
 name starts with a <b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or <b><code>
 "x:"</code></b> (Windows).
-
 <p>
 
 <li><b><code>Help URL = &lt;URL&gt;</code></b>
@@ -1466,7 +1519,7 @@ These two images display the same logbook entry using different themes:
 <div class=footer>&nbsp;
 Content by <a class=nav href="mailto:Stefan.Ritt@psi.ch">Stefan Ritt</a>,
 Web pages by <a class=nav href="mailto:fredp@mygale.org">Fred Pacquier</a>
- - last modified on 19/12/2001
+ - last modified on 12/01/2004
 &nbsp;</div>
 </BODY>
 </HTML>
