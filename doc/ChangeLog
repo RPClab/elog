@@ -1,3 +1,9 @@
+Version 2.3.9, released June xxth, 2003
+======================================
+
+- Fixed problem when submitting elog.c itself as an attachment through elog.exe
+- Added option "Use Lock"
+
 Version 2.3.8, released June 4th, 2003
 ======================================
 
