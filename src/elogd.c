@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.165  2003/12/04 20:56:51  midas
+  Added 'date on reply' flag
+
   Revision 1.164  2003/12/04 11:34:36  midas
   Made 'preset xxx' work with boolean attributes
 
@@ -5199,6 +5202,7 @@ char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
        owner[256], locked_by[256], class_value[80], class_name[80];
 time_t now;
 char   fl[8][NAME_LENGTH];
+struct tm *ts;
 
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     att[i][0] = 0;
@@ -5808,6 +5812,20 @@ char   fl[8][NAME_LENGTH];
               }
 
             } while (TRUE);
+
+          if (getcfg(lbs->name, "Date on reply", str) && atoi(str) > 0)
+            {
+            time(&now);
+            ts = localtime(&now);
+            if (getcfg(lbs->name, "Date format", format))
+              strftime(str, sizeof(str), format, ts);
+            else
+              {
+              strcpy(str, ctime(&now));
+              str[strlen(str)-1] = 0;
+              }
+            rsprintf("%s\n\n", str);
+            }
           }
         }
       }
