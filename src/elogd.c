@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.144  2003/09/08 07:34:18  midas
+  Increased timeout in SMTP conversation
+
   Revision 1.143  2003/09/05 15:16:21  midas
   Changed search for '\r' to '\n' in determination of reply line length
 
@@ -1982,7 +1985,9 @@ char                 list[1024][NAME_LENGTH], buffer[256];
     snprintf(str, strsize - 1, "RCPT TO: <%s>\r\n", list[i]);
     send(s, str, strlen(str), 0);
     if (verbose) fputs(str, stdout);
-    recv_string(s, str, strsize, 3000);
+
+    /* increased timeout for SMTP servers with long alias lists */
+    recv_string(s, str, strsize, 30000); 
     if (verbose) fputs(str, stdout);
     }
 
@@ -11616,10 +11621,10 @@ BOOL   first;
         {
         if (atoi(attrib[i]) == 1)
           rsprintf("%s:</td><td class=\"%s\"><input type=checkbox checked disabled></td>\n",
-                   class_value, attr_list[i]);
+                   attr_list[i], class_value);
         else
           rsprintf("%s:</td><td class=\"%s\"><input type=checkbox disabled></td>\n",
-                   class_value, attr_list[i]);
+                   attr_list[i], class_value);
         }
       /* display image for icon */
       else if (attr_flags[i] & AF_ICON)
