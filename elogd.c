@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.93  2002/11/05 15:14:37  midas
+  Move whole thread on re-submission of individual entry
+
   Revision 2.92  2002/11/04 16:20:26  midas
   Made 'allow <commdn> = <user>' work in localized versions
 
@@ -611,6 +614,7 @@ void show_error(char *error);
 void show_http_header();
 BOOL enum_user_line(LOGBOOK *lbs, int n, char *user);
 int  get_user_line(char *logbook_name, char *user, char *password, char *full_name, char *email, char *email_notify);
+int strbreak(char *str, char list[][NAME_LENGTH], int size);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -2268,7 +2272,8 @@ int el_submit(LOGBOOK *lbs, int message_id,
               char *encoding,
               char afilename[MAX_ATTACHMENTS][256],
               char *buffer[MAX_ATTACHMENTS],
-              INT buffer_size[MAX_ATTACHMENTS])
+              INT buffer_size[MAX_ATTACHMENTS],
+              BOOL mark_original)
 /********************************************************************\
 
   Routine: el_submit
@@ -2294,6 +2299,7 @@ int el_submit(LOGBOOK *lbs, int message_id,
     INT    *buffer_size[]   Size of attachment in bytes
     char   *tag             If given, edit existing message
     INT    *tag_size        Maximum size of tag
+    BOOL   mark_original    Tag original message for replies
 
   Function value:
     int                     New message ID
@@ -2403,7 +2409,7 @@ BOOL    bedit;
       /* file might have been edited, rebuild index */
       el_build_index(lbs, TRUE);
       return el_submit(lbs, message_id, date, attr_name, attr_value, n_attr, text,
-                       in_reply_to, reply_to, encoding, afilename, buffer, buffer_size);
+                       in_reply_to, reply_to, encoding, afilename, buffer, buffer_size, TRUE);
       }
 
     /* check for correct ID */
@@ -2530,6 +2536,8 @@ BOOL    bedit;
 
   /* keep original attachment if edit and no new attachment */
 
+  sprintf(message+strlen(message), "Attachment: ");
+
   if (bedit)
     {
     for (i=n=0 ; i<MAX_ATTACHMENTS ; i++)
@@ -2552,7 +2560,7 @@ BOOL    bedit;
         {
         if (n == 0)
           {
-          sprintf(message+strlen(message), "Attachment: %s", afile_name[i]);
+          sprintf(message+strlen(message), "%s", afile_name[i]);
           n++;
           }
         else
@@ -2563,7 +2571,7 @@ BOOL    bedit;
         {
         if (n == 0)
           {
-          sprintf(message+strlen(message), "Attachment: %s", p);
+          sprintf(message+strlen(message), "%s", p);
           n++;
           }
         else
@@ -2574,7 +2582,7 @@ BOOL    bedit;
     }
   else
     {
-    sprintf(message+strlen(message), "Attachment: %s", afile_name[0]);
+    sprintf(message+strlen(message), afile_name[0]);
     for (i=1 ; i<MAX_ATTACHMENTS ; i++)
       if (afile_name[i][0])
         sprintf(message+strlen(message), ",%s", afile_name[i]);
@@ -2618,7 +2626,7 @@ BOOL    bedit;
   close(fh);
 
   /* if reply, mark original message */
-  if (in_reply_to[0] && !bedit && atoi(in_reply_to) > 0)
+  if (mark_original && in_reply_to[0] && !bedit && atoi(in_reply_to) > 0)
     {
     char date[80], attr[MAX_N_ATTR][NAME_LENGTH], enc[80],
          att[MAX_ATTACHMENTS][256], reply_to[256];
@@ -2639,7 +2647,7 @@ BOOL    bedit;
 
     /* write modified message */
     el_submit(lbs, reply_id, date, attr_list, attr, n_attr,
-              message, in_reply_to, reply_to, enc, att, NULL, NULL);
+              message, in_reply_to, reply_to, enc, att, NULL, NULL, TRUE);
     }
 
   return message_id;
@@ -2690,7 +2698,7 @@ int  size, status;
 
   /* write modified message */
   el_submit(lbs, message_id, date, attr_list, attr, lbs->n_attr,
-            message, in_reply_to, reply_to, enc, att, NULL, NULL);
+            message, in_reply_to, reply_to, enc, att, NULL, NULL, TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -2898,6 +2906,116 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
     }
 
   return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int el_correct_links(LOGBOOK *lbs, int old_id, int new_id)
+/* If a message gets resubmitted, the links to that message are wrong.
+   This routine corrects that. */
+{
+int    i, i1, n, n1, size;
+char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
+       in_reply_to[80], reply_to[256], encoding[80];
+char   list[MAX_N_ATTR][NAME_LENGTH], list1[MAX_N_ATTR][NAME_LENGTH];
+char   att_file[MAX_ATTACHMENTS][256];
+
+  el_retrieve(lbs, new_id, date, attr_list, attrib, lbs->n_attr,
+              NULL, 0, in_reply_to, reply_to, att_file, encoding);
+
+  /* go through in_reply_to list */
+  n = strbreak(in_reply_to, list, MAX_N_ATTR);
+  for (i=0 ; i<n ; i++)
+    {
+    size = sizeof(text);
+    el_retrieve(lbs, atoi(list[i]), date, attr_list, attrib, lbs->n_attr,
+                text, &size, in_reply_to, reply_to, att_file, encoding);
+
+    n1 = strbreak(reply_to, list1, MAX_N_ATTR);
+    reply_to[0] = 0;
+    for (i1 = 0 ; i1 < n1 ; i1++)
+      {
+      /* replace old ID by new ID */
+      if (atoi(list1[i1]) == old_id)
+        sprintf(reply_to+strlen(reply_to), "%d", new_id);
+      else
+        strcat(reply_to, list1[i1]);
+
+      if (i1 < n1-1)
+        strcat(reply_to, ", ");
+      }
+
+    el_submit(lbs, atoi(list[i]), date, attr_list, attrib, lbs->n_attr, text,
+              in_reply_to, reply_to, encoding, att_file, _attachment_buffer, _attachment_size, TRUE);
+    }
+
+  el_retrieve(lbs, new_id, date, attr_list, attrib, lbs->n_attr,
+              NULL, 0, in_reply_to, reply_to, att_file, encoding);
+
+  /* go through reply_to list */
+  n = strbreak(reply_to, list, MAX_N_ATTR);
+  for (i=0 ; i<n ; i++)
+    {
+    size = sizeof(text);
+    el_retrieve(lbs, atoi(list[i]), date, attr_list, attrib, lbs->n_attr,
+                text, &size, in_reply_to, reply_to, att_file, encoding);
+
+    n1 = strbreak(in_reply_to, list1, MAX_N_ATTR);
+    in_reply_to[0] = 0;
+    for (i1 = 0 ; i1 < n1 ; i1++)
+      {
+      /* replace old ID by new ID */
+      if (atoi(list1[i1]) == old_id)
+        sprintf(in_reply_to+strlen(in_reply_to), "%d", new_id);
+      else
+        strcat(in_reply_to, list1[i1]);
+
+      if (i1 < n1-1)
+        strcat(in_reply_to, ", ");
+      }
+
+    el_submit(lbs, atoi(list[i]), date, attr_list, attrib, lbs->n_attr, text,
+              in_reply_to, reply_to, encoding, att_file, _attachment_buffer, _attachment_size, TRUE);
+    }
+
+  return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int el_move_message_thread(LOGBOOK *lbs, int message_id)
+{
+int    i, n, size, new_id;
+char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
+       in_reply_to[80], reply_to[256], encoding[80];
+char   list[MAX_N_ATTR][NAME_LENGTH];
+char   att_file[MAX_ATTACHMENTS][256];
+
+  /* retrieve message */
+  size = sizeof(text);
+  el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
+              text, &size, in_reply_to, reply_to, att_file, encoding);
+
+  /* submit as new message */
+  date[0] = 0;
+  new_id = el_submit(lbs, 0, date, attr_list, attrib, lbs->n_attr, text,
+                     in_reply_to, reply_to, encoding, att_file, _attachment_buffer, _attachment_size, FALSE);
+  
+  /* correct links */
+  el_correct_links(lbs, message_id, new_id);
+  
+  /* delete original message */
+  el_delete_message(lbs, message_id, FALSE, NULL, FALSE, FALSE);
+
+  /* move all replies recursively */
+  if (reply_to[0])
+    {
+    n = strbreak(reply_to, list, MAX_N_ATTR);
+    for (i=0 ; i<n ; i++)
+      el_move_message_thread(lbs, atoi(list[i]));
+    }
+
+  return new_id;
 }
 
 /*------------------------------------------------------------------*/
@@ -4095,6 +4213,8 @@ int  i, n;
 /*------------------------------------------------------------------*/
 
 int get_last_index(LOGBOOK *lbs, int index)
+/* return value of specific attribute of last entry, can be used to 
+   auto-increment tags */
 {
 int    i, message_id;
 char   str[80], date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
@@ -7801,12 +7921,26 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id, resubmit_or
       *getparam("resubmit") &&
       atoi(getparam("resubmit")) == 1)
     {
-    /* delete old message */
     resubmit_orig = atoi(getparam("orig"));
-    el_delete_message(lbs, resubmit_orig, FALSE, att_file, TRUE, FALSE);
-    unsetparam("orig");
-    strcpy(reply_to, "<keep>");
+
+    /* get old links */
+    el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0,
+                NULL, 0, in_reply_to, reply_to, NULL, NULL);
+
+    /* if not message head, move all preceeding messages */
+    if (in_reply_to[0])
+      {
+      do
+        {
+        resubmit_orig = atoi(in_reply_to);
+        el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0,
+                    NULL, 0, in_reply_to, reply_to, NULL, NULL);
+        } while (in_reply_to[0]);
+      }
+
+    message_id = atoi(getparam("orig"));
     strcpy(in_reply_to, "<keep>");
+    strcpy(reply_to, "<keep>");
     date[0] = 0;
     }
   else
@@ -7826,7 +7960,7 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id, resubmit_or
                      in_reply_to, reply_to, *getparam("html") ? "HTML" : "plain",
                      att_file,
                      _attachment_buffer,
-                     _attachment_size);
+                     _attachment_size, TRUE);
 
   if (message_id <= 0)
     {
@@ -7837,10 +7971,9 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id, resubmit_or
     return;
     }
 
-  /* correct links for resubmitted messages */
+  /* resubmit thread if requested */
   if (resubmit_orig)
-    {
-    }
+    message_id = el_move_message_thread(lbs, resubmit_orig);
 
   /*---- email notifications ----*/
 
@@ -8019,7 +8152,7 @@ LOGBOOK *lbs_dest;
                        "", "", encoding,
                        attachment,
                        _attachment_buffer,
-                       _attachment_size);
+                       _attachment_size, TRUE);
 
     for (i=0 ; i<MAX_ATTACHMENTS ; i++)
       if (attachment[i][0])
