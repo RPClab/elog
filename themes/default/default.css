@@ -1,6 +1,6 @@
 /* default formatting */
 body {
-  margin:5px;
+  margin:3px;
   color:black;
   background-color:white;
   font-family:sans-serif;
@@ -90,6 +90,9 @@ td {
 
 .title1 {
   background-color:#486090;
+  border-bottom:1px solid black;
+  border-top:1px solid #E0E0E0;
+  border-left:1px solid #E0E0E0;
   color:white;
   font-size:medium;
   font-family:sans-serif;
@@ -98,6 +101,8 @@ td {
 
 .title2 {
   background-color:#486090;
+  border-bottom:1px solid black;
+  border-top:1px solid #E0E0E0;
   color:white;
   font-size:medium;
   font-family:sans-serif;
@@ -105,6 +110,9 @@ td {
 }
 
 .title3 {
+  border-bottom:1px solid black;
+  border-top:1px solid #E0E0E0;
+  border-right:1px solid black;
   background-color:#486090;
   text-align:right;
 }
@@ -113,7 +121,8 @@ td {
 
 .menuframe {
   border:1px solid #486090;
-  border-top:0px;
+  border-top:1px solid white;
+  border-left:1px solid white;
   padding:3px;
   background-color:#E0E0E0;
 }
@@ -147,25 +156,36 @@ td {
 
 /* frame table in listings */
 .listframe {
+  border:1px solid #0000FF;
+  border-top:1px solid white;
+  border-left:1pc solid white;
   background-color:#486090;
   border:0px;
 }
 
 /* title row in listing */
 .listtitle {
+  border:1px solid #0000FF;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#CCCCFF;
   text-align:center;
-  padding:5px;
 }
 
 /* odd and even lines in message listing */
 
 .list1 {
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#DDEEBB;
   text-align:center;
 }
 
 .list2 {
+  border:1px solid #808040;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#FFFFB0;
   text-align:center;
 }
@@ -173,17 +193,26 @@ td {
 /* attachment line */
 
 .attachment {
+  border:1px solid #808040;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#FFFFB0;
   text-align:left;
 }
 
 /* threaded listing */
 .thread {
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#DDEEBB;
   text-align:left;
 }
 
 .threadreply {
+  border:1px solid #808040;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#FFFFB0;
   text-align:left;
 }
@@ -191,15 +220,24 @@ td {
 /* attribute names and values on single message page */
 .attribname {
   background-color:#CCCCFF;
+  border:1px solid #0000FF;
+  border-top:1px solid white;
+  border-left:1px solid white;
   padding:3px;
 }
 
 .attribvalue {
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#DDEEBB;
   padding:3px;
 }
 
 .attribvalue2 {
+  border:1px solid #808040;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#FFFFB0;
   padding:3px;
 }
@@ -207,6 +245,9 @@ td {
 /* message cell in listing */
 .messagelist {
   background-color:white;
+  border-right:1px solid gray;
+  border-left:1px solid gray;
+  border-bottom:1px solid gray;
   font-family:'lucida console',courier,monospace;
   font-size:10pt;
   padding:5px;
@@ -217,7 +258,7 @@ td {
   background-color:white;
   border:1px solid #486090;
   border-top:0px;
-  padding:5px;
+  padding:3px;
 }
 
 .messagepre {
@@ -233,6 +274,9 @@ td {
 
 /* summary display (threaded mode expand) */
 .summary {
+  border:1px solid black;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:white;
   font-family:'lucida console',courier,monospace;
   font-size:8pt;
@@ -240,14 +284,17 @@ td {
 
 /* input forms */
 .form1 {
-  border:1px solid #486090;
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#DDEEBB;
   padding:3px;
 }
 
 .form2 {
-  border:1px solid #486090;
-  border-top:0px;
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#DDEEBB;
   padding:3px;
 }
@@ -264,6 +311,9 @@ td {
 /* notification (warning) */
 .notifymsg {
   padding:5px;
+  border:1px solid #806000;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#FFD070;
   text-align:center;
   font-size:small;
@@ -295,6 +345,9 @@ td {
 }
 
 .dlgform {
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#DDEEBB;
   padding:5px;
 }

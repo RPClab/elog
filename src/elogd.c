@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.101  2003/05/02 21:40:06  midas
+  Introduced 3D cell frames
+
   Revision 1.100  2003/05/02 20:51:15  midas
   Fixed wrong string
 
@@ -5253,7 +5256,7 @@ time_t now;
   /*---- entry form ----*/
 
   /* table for two-column items */
-  rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=1>");
+  rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>");
 
   /* print required message if one of the attributes has it set */
   for (i= 0 ; i < lbs->n_attr ; i++)
@@ -7181,6 +7184,8 @@ FILE *f;
       rsprintf("<td class=\"%s\">", sclass);
       if (in_reply_to[0] == 0)
         rsprintf("<input type=checkbox name=\"s%d\" value=%d>\n", (*n_display)++, message_id);
+      else
+        rsprintf("&nbsp;\n");
       }
 
     if (equal_ustring(mode, "Threaded"))
@@ -8991,7 +8996,7 @@ LOGBOOK *lbs_cur;
   if (disp_filter)
     {
     rsprintf("<tr><td class=\"listframe\">\n");
-    rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=1>\n");
+    rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
 
     if (*getparam("m1") || *getparam("y1") || *getparam("d1"))
       {
@@ -9075,7 +9080,7 @@ LOGBOOK *lbs_cur;
   /*---- table titles ----*/
 
   /* overall listing table */
-  rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=1>\n");
+  rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>\n");
 
   size = printable ? 2 : 3;
 
@@ -9111,7 +9116,7 @@ LOGBOOK *lbs_cur;
 
     /* empty title for selection box */
     if (atoi(getparam("select")) == 1)
-      rsprintf("<th class=\"listtitle\"></td>\n");
+      rsprintf("<th class=\"listtitle\"></td>&nbsp;\n");
     
     for (i=0 ; i<n_attr_disp ; i++)
       {
@@ -10334,7 +10339,7 @@ BOOL   first;
   /*---- message ----*/
 
   /* overall message table */
-  rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=1>\n");
+  rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>\n");
 
   if (message_error == EL_EMPTY)
     rsprintf("<tr><td class=\"errormsg\" colspan=2>%s</td></tr>\n", loc("Logbook is empty"));
@@ -10560,7 +10565,7 @@ BOOL   first;
         url_encode(ref, sizeof(ref)); /* for file names with special characters like "+" */
 
         /* overall table */
-        rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=1>\n");
+        rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>\n");
 
         rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s %d:</td>\n", 
                  loc("Attachment"), index+1);
@@ -11061,7 +11066,7 @@ char str[10000];
 
   rsprintf("<body>\n\n");
 
-  rsprintf("<table class=\"dlgframe\" cellspacing=1 align=center>");
+  rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
   rsprintf("<tr><td colspan=3 class=\"dlgtitle\">\n");
 
   if (getcfg("global", "Welcome title", str))
