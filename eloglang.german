@@ -282,3 +282,7 @@ Entry is currently edited by = Eintrag wird momentan bearbeitet von
 # New string for V2.3.9
 recipients = Empfänger
 Suppress shell execution = Kommando-Ausführung unterdrücken
+
+#
+# New string for V2.4.0
+Maximum number of replies (%d) exceeded
