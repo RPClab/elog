@@ -1,5 +1,5 @@
-Version 2.3.7, released April 23rd, 2003
-========================================
+Version 2.3.7, released May 15th, 2003
+======================================
 
 - Fixed bug in password recovery with logbooks containing blanks
 - Fixed bug with logbooks containing blanks in registration notification
@@ -9,6 +9,10 @@ Version 2.3.7, released April 23rd, 2003
 - Added anchor for attachments
 - Replace CRLF.CRLF by CRLF..CRLF in email notifications
 - Option 'selection page' can now contain absolute URL
+- Removed "mailto:" in email notifications
+- Sort correctly upper and lower case
+- Added warning if message is being edited
+- Get remote host from X-Forwarded-For: in case of proxy
 
 Version 2.3.6, released April 23rd, 2003
 ========================================
