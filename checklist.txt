@@ -8,6 +8,7 @@ On PC4534:
 - Do the same in doc/index.html
 - Modify ChangeLog
 - Add release date to ChangeLog
+- Do a "make indent"
 - c:\elog> cvs commit -m "Version x.x.x" 
 - build xxx
 
