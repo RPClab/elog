@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.608  2005/03/29 13:31:37  ritt
+   Handle logbook subscriptios correctly with self register = 3
+
    Revision 1.607  2005/03/29 13:16:47  ritt
    Subsittute ' ' in attachment file names by '_'
 
@@ -10217,10 +10220,19 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
                      url_encode(str, sizeof(str));
                      do_crypt(getparam("newpwd"), enc_pwd);
                      url_encode(enc_pwd, sizeof(enc_pwd));
-                     sprintf(mail_text + strlen(mail_text),
-                             "?cmd=Activate&new_user_name=%s&new_full_name=%s&new_user_email=%s&email_notify=%s&encpwd=%s&unm=%s\r\n",
-                             getparam("new_user_name"), str, getparam("new_user_email"),
-                             getparam("email_notify"), enc_pwd, pl);
+                     sprintf(mail_text + strlen(mail_text), "?cmd=Activate&new_user_name=%s&new_full_name=%s",
+                             getparam("new_user_name"), str);
+                     sprintf(mail_text + strlen(mail_text), "&new_user_email=%s",
+                             getparam("new_user_email"));
+
+                     for (i=0 ; lb_list[i].name[0] ; i++) {
+                        sprintf(str, "sub_lb%d", i);
+                        if (isparam(str) && atoi(getparam(str)) == 1)
+                           sprintf(mail_text + strlen(mail_text),"&%s=1", str);
+                     }
+
+                     sprintf(mail_text + strlen(mail_text),"&encpwd=%s&unm=%s\r\n",
+                             enc_pwd, pl);
                   } else {
                      sprintf(mail_text + strlen(mail_text),
                              "\r\n%s URL         : %s?cmd=Config&cfg_user=%s&unm=%s\r\n",
