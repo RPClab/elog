@@ -80,6 +80,8 @@ Section "ELOG system (required)" SecSystem
   ; src directory
   SetOutPath $INSTDIR\src
   File src\*.c
+  File \mxml\mxml.c
+  File \mxml\mxml.h
 
   ; config file
   SetOutPath $INSTDIR
