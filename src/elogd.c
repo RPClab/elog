@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.414  2004/07/30 07:12:59  midas
+   Made p<attribute>=value work again
+
    Revision 1.413  2004/07/28 19:53:28  midas
    Increased possible size of 'welcome title' to 10000 chars
 
@@ -7413,6 +7416,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                strcpy(attrib[index], preset);
          }
       }
+
+      /* chech for p<attribute> */
+      sprintf(str, "p%s", attr_list[index]);
+      if (isparam(str))
+         strlcpy(attrib[index], getparam(str), NAME_LENGTH);
 
       /* display text box with optional tooltip */
       sprintf(str, "Tooltip %s", attr_list[index]);
