@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.22  2003/02/20 08:03:25  midas
+  Fixed language problems with self register
+
   Revision 1.21  2003/02/19 10:41:08  midas
   Fixed problem with logooks containing blanks and cookies
 
@@ -5808,7 +5811,7 @@ int    i, fh, size, self_register;
             if (self_register == 3)
               {
               sprintf(subject, loc("Registration request on logbook \"%s\""), lbs->name);
-              sprintf(mail_text, loc("A new ELOG user wants to register on %s"), host_name);
+              sprintf(mail_text, loc("A new ELOG user wants to register on \"%s\""), host_name);
               }
             else
               {
@@ -5856,7 +5859,8 @@ int    i, fh, size, self_register;
 
       if (self_register == 3)
         {
-        redirect(lbs, "?cmd=Requested");
+        sprintf(str, "?cmd=%s", loc("Requested"));
+        redirect(lbs, str);
         return 0;
         }
       }
@@ -7066,7 +7070,7 @@ int  i, n;
       strlcat(menu_str, "Config, ", sizeof(menu_str));
     }
 
-  strcpy(other_str, "Upload, Submit, Back, Search, Save, Download, Cancel, First, Last, Previous, Next, ");
+  strcpy(other_str, "Upload, Submit, Back, Search, Save, Download, Cancel, First, Last, Previous, Next, Requested, ");
 
   /* admin commands */
   if (getcfg(lbs->name, "Admin user", str) && 
@@ -10068,8 +10072,12 @@ char  status, str[256], upwd[256], full_name[256], email[256];
     rsprintf("<td align=left class=\"dlgform\"><input type=password name=upassword></td></tr>\n");
 
     if (getcfg(lbs->name, "Self register", str) && atoi(str) > 0)
-      rsprintf("<tr><td align=center colspan=2 class=\"dlgform\"><a href=\"?cmd=New+user\">%s</td></tr>", 
-                loc("Register as new user"));
+      {
+      strcpy(str, loc("New user"));
+      url_encode(str, sizeof(str));
+      rsprintf("<tr><td align=center colspan=2 class=\"dlgform\"><a href=\"?cmd=%s\">%s</td></tr>", 
+                str, loc("Register as new user"));
+      }
 
     rsprintf("<tr><td align=center colspan=2 class=\"dlgform\"><input type=submit value=\"%s\"></td></tr>", 
               loc("Submit"));
@@ -10164,7 +10172,7 @@ int do_self_register(LOGBOOK *lbs, char *command)
 char str[256];
 
   /* display new user page if "self register" is clicked */
-  if (equal_ustring(command, "New user"))
+  if (equal_ustring(command, loc("New user")))
     {
     show_new_user_page(lbs);
     return 0;
@@ -10182,7 +10190,7 @@ char str[256];
     }
         
   /* display account request notification */
-  if (equal_ustring(command, "Requested"))
+  if (equal_ustring(command, loc("Requested")))
     {
     show_standard_header(lbs, FALSE, loc("ELOG registration"), "");
 
