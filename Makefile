@@ -4,7 +4,7 @@
 # S. Ritt, May 12th 2000
 # install/clean section by Th. Bullinger, Apr. 26th, 2002
 #
-# add "-DUSE_CRYPT" and "-lcrypt" to use crypt() function
+# add "-DHAVE_CRYPT" and "-lcrypt" to use crypt() function
 #
 
 CC = gcc
@@ -32,7 +32,7 @@ endif
 
 all: $(EXECS)
 
-%: %.c
+%: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 install: $(EXECS)
