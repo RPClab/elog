@@ -6,10 +6,13 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.150  2003/10/26 15:55:46  midas
+  Fixed bug in el_delete_message
+
   Revision 1.149  2003/10/24 20:14:45  midas
   - user cannot change login name if already existing
   - user cannot search in logbooks of which he has no access
-  - added date of last entry in logbook selection pageg
+  - added date of last entry in logbook selection page
 
   Revision 1.148  2003/10/01 06:52:01  midas
   Started to implement synchronize
@@ -3160,7 +3163,7 @@ char *message, attachment_all[64*MAX_ATTACHMENTS];
   message = malloc(TEXT_SIZE+1000);
 
   lseek(fh, lbs->el_index[index].offset, SEEK_SET);
-  i = read(fh, message, sizeof(message)-1);
+  i = read(fh, message, TEXT_SIZE+1000-1);
   if (i <= 0)
     {
     free(message);
