@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.581  2005/03/03 16:03:39  ritt
+   Fixed problem with top groups and password files
+
    Revision 1.580  2005/03/03 15:35:00  ritt
    Removed debugging statements
 
@@ -18525,7 +18528,7 @@ int get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name,
                   char *email, BOOL email_notify[1000])
 {
    int i, j;
-   char str[256], global[256];
+   char str[256], global[256], orig_topgroup[256];
    PMXML_NODE user_node, node, subnode;
 
    if (password)
@@ -18539,9 +18542,15 @@ int get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name,
 
    /* if global password file is requested, search for first 
       logbook with same password file than global section */
+   orig_topgroup[0] = 0;
    if (lbs == NULL) {
       getcfg("global", "Password file", global, sizeof(global));
+      if (*getcfg_topgroup())
+         strcpy(orig_topgroup, getcfg_topgroup());
+
       for (i=0 ; lb_list[i].name[0] ; i++) {
+         if (lb_list[i].top_group[0])
+            setcfg_topgroup(lb_list[i].top_group);
          getcfg(lb_list[i].name, "Password file", str, sizeof(str));
          if (strieq(str, global)) {
             lbs = lb_list+i;
@@ -18551,6 +18560,9 @@ int get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name,
 
       if (!lb_list[i].name[0])
          return 1;
+
+      if (orig_topgroup[0])
+         setcfg_topgroup(orig_topgroup);
    }
 
    getcfg(lbs->name, "Password file", str, sizeof(str));
