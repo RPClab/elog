@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.433  2004/08/04 13:32:27  midas
+   Fixed windows service related problems
+
    Revision 1.432  2004/08/04 12:38:22  midas
    Warn if port is already used
 
@@ -19442,20 +19445,20 @@ void server_loop(int tcp_port)
    flag = 0;
    setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR, (char *) &flag, sizeof(INT));
    status = bind(lsock, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
-   if (status < 0)
+   if (status < 0) {
       eprintf("Warning: another server might already run on port %d.\n\n",tcp_port);
 
-   /* now try with reusing address */
-   flag = 1;
-   setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR, (char *) &flag, sizeof(INT));
-   status = bind(lsock, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
-   if (status < 0) {
-      eprintf
-          ("Cannot bind to port %d.\nPlease use the \"-p\" flag to specify a different port.\n",
-           tcp_port);
-      exit(EXIT_FAILURE);
+      /* now try with reusing address */
+      flag = 1;
+      setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR, (char *) &flag, sizeof(INT));
+      status = bind(lsock, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
+      if (status < 0) {
+         eprintf
+             ("Cannot bind to port %d.\nPlease use the \"-p\" flag to specify a different port.\n",
+              tcp_port);
+         exit(EXIT_FAILURE);
+      }
    }
-
 
    /* get host name for mail notification */
    gethostname(host_name, sizeof(host_name));
@@ -20621,10 +20624,10 @@ void cleanup(void)
 #define ELOGDAPPNAME            "elogd"
 
 // Internal service name
-#define ELOGDSERVICENAME        "elgod"
+#define ELOGDSERVICENAME        "elogd"
 
 // Displayed service name
-#define ELOGDSERVICEDISPLAYNAME "ELOG Server"
+#define ELOGDSERVICEDISPLAYNAME "elogd"
 
 SERVICE_STATUS serviceStatus;
 SERVICE_STATUS_HANDLE serviceStatusHandle = 0;
@@ -20683,14 +20686,20 @@ int install_service(void)
       if (GetLastError() == ERROR_SERVICE_EXISTS)
          eprintf("The elogd service is already registered.\n");
       else
-         eprintf("The elogd service could not be registered.\n");
+         eprintf("The elogd service could not be registered. Error code %d.\n", GetLastError());
    } else {
-
       eprintf("The elogd service has been registered successfully.\n");
+      CloseServiceHandle(hservice);
+   }
 
-      /* Try to start the elogd service */
+   /* Try to start the elogd service */
+   hservice = OpenService(hsrvmanager, ELOGDSERVICENAME, SERVICE_ALL_ACCESS);
+
+   if (hservice == NULL)
+      eprintf("The elogd service could not be accessed. Error code %d.\n", GetLastError());
+   else {
       if (!StartService(hservice, 0, NULL))
-         eprintf("The elogd service could not be started.\n");
+         eprintf("The elogd service could not be started. Error code %d.\n", GetLastError());
       else
          eprintf("The elogd service has been started successfully.\n");
 
