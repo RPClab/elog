@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.479  2004/09/20 16:12:57  midas
+   Added urs_slash_encode because of mirroring problem
+
    Revision 1.478  2004/09/18 05:48:33  midas
    Version 2.5.4-4
 
@@ -1459,6 +1462,31 @@ Decode the given string in-place by expanding %XX escapes
 void url_encode(char *ps, int size)
 /********************************************************************\
 Encode the given string in-place by adding %XX escapes
+\********************************************************************/
+{
+   unsigned char *pd, *p, str[NAME_LENGTH];
+
+   pd = str;
+   p = ps;
+   while (*p && (int) pd < (int) str + 250) {
+      if (strchr("%&=#?+", *p) || *p > 127) {
+         sprintf(pd, "%%%02X", *p);
+         pd += 3;
+         p++;
+      } else if (*p == ' ') {
+         *pd++ = '+';
+         p++;
+      } else {
+         *pd++ = *p++;
+      }
+   }
+   *pd = '\0';
+   strlcpy(ps, str, size);
+}
+
+void url_slash_encode(char *ps, int size)
+/********************************************************************\
+Do the same including '/' characters
 \********************************************************************/
 {
    unsigned char *pd, *p, str[NAME_LENGTH];
@@ -9916,7 +9944,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
                }
             }
 
-            url_encode(pwd, sizeof(pwd));
+            url_slash_encode(pwd, sizeof(pwd));
             sprintf(redir, "?cmd=%s&oldpwd=%s", loc("Change password"), pwd);
             url_encode(redir, sizeof(redir));
             sprintf(str, "?redir=%s&uname=%s&upassword=%s", redir, login_name, pwd);
