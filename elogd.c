@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.95  2002/11/06 08:59:18  midas
+  Files can be specified with absolute path
+
   Revision 2.94  2002/11/05 15:40:58  midas
   Hide non-allowed commands
 
@@ -4678,10 +4681,16 @@ time_t now;
 
     if (!message_id && getcfg(lbs->name, "Preset text", str))
       {
-      /* check if file */
-      strcpy(file_name, cfg_dir);
-      strcat(file_name, str);
-
+      /* check if file starts with an absolute directory */
+      if (str[0] == DIR_SEPARATOR || str[1] == ':')
+        strcpy(file_name, str);
+      else
+        {
+        strcpy(file_name, cfg_dir);
+        strcat(file_name, str);
+        }
+       
+      /* check if file exists */
       fh = open(file_name, O_RDONLY | O_BINARY);
       if (fh > 0)
         {
@@ -7671,8 +7680,14 @@ MSG_LIST *msg_list;
     FILE *f;
     char file_name[256], *buf;
 
-    strcpy(file_name, cfg_dir);
-    strcat(file_name, str);
+    /* check if file starts with an absolute directory */
+    if (str[0] == DIR_SEPARATOR || str[1] == ':')
+      strcpy(file_name, str);
+    else
+      {
+      strcpy(file_name, cfg_dir);
+      strcat(file_name, str);
+      }
 
     f = fopen(file_name, "r");
     if (f != NULL)
@@ -8048,8 +8063,14 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id, resubmit_or
 
   if (getcfg(lbs->name, "Submit page", str))
     {
-    strcpy(file_name, cfg_dir);
-    strcat(file_name, str);
+    /* check if file starts with an absolute directory */
+    if (str[0] == DIR_SEPARATOR || str[1] == ':')
+      strcpy(file_name, str);
+    else
+      {
+      strcpy(file_name, cfg_dir);
+      strcat(file_name, str);
+      }
     send_file(file_name);
     return;
     }
@@ -8992,8 +9013,14 @@ BOOL   first;
     FILE *f;
     char file_name[256], *buf;
 
-    strcpy(file_name, cfg_dir);
-    strcat(file_name, str);
+    /* check if file starts with an absolute directory */
+    if (str[0] == DIR_SEPARATOR || str[1] == ':')
+      strcpy(file_name, str);
+    else
+      {
+      strcpy(file_name, cfg_dir);
+      strcat(file_name, str);
+      }
 
     f = fopen(file_name, "r");
     if (f != NULL)
@@ -9482,8 +9509,14 @@ FILE    *f;
   /* check for global selection page if no logbook given */
   if (!logbook[0] && getcfg("global", "Selection page", str))
     {
-    strcpy(file_name, cfg_dir);
-    strcat(file_name, str);
+    /* check if file starts with an absolute directory */
+    if (str[0] == DIR_SEPARATOR || str[1] == ':')
+      strcpy(file_name, str);
+    else
+      {
+      strcpy(file_name, cfg_dir);
+      strcat(file_name, str);
+      }
     send_file(file_name);
     return;
     }
@@ -10096,8 +10129,14 @@ FILE    *f;
   /* check for welcome page */
   if (!_cmdline[0] && getcfg(lbs->name, "Welcome page", str) && str[0])
     {
-    strcpy(file_name, cfg_dir);
-    strcat(file_name, str);
+    /* check if file starts with an absolute directory */
+    if (str[0] == DIR_SEPARATOR || str[1] == ':')
+      strcpy(file_name, str);
+    else
+      {
+      strcpy(file_name, cfg_dir);
+      strcat(file_name, str);
+      }
     send_file(file_name);
     return;
     }

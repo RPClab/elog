@@ -128,7 +128,11 @@ contents of the tab.
 <br>
 This optional HTML code gets displayed in the title of the logbook selection
 page. It can contain images via <b><code>&lt;img src="welcome.gif"&gt;</code></b>.
-These images must be in the same directory as the elodg.cfg file.
+These images must be in the same directory as the <b><code>elodg.cfg</b></code> file.
+Alternatively, an absolute path can be used if the file name starts with a
+<b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or <b><code>"x:"</code></b>
+(Windows).<br><br>
+
 The following line is an example Welcome Title:<br>
 <br>
 <pre>Welcome title = &lt;img src="welcome.jpg"&gt;&lt;p&gt;&lt;font size=5 color=white&gt;Welcome to our Elog&lt;/font&gt;</pre>
@@ -145,8 +149,12 @@ used by most browsers for bookmark names.
 <LI><b><code>Selection page = &lt;file&gt;</code></b>
 <br>
 When this option is present, a user defined file is displayed instead of the logbook
-selection page. This file must be in the same directory as the <code><b>elogd</b></code>
-file. It can be completely customized in order to contain logos etc. As a template,
+selection page. This file must be in the same directory as the <code><b>elogd.cfg</b></code>
+file. Alternatively, an absolute path can be used if the file name starts with a
+<b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or <b><code>"x:"</code></b>
+(Windows).<br><br>
+
+It can be completely customized in order to contain logos etc. As a template,
 the standard selection page produced by <code><b>elogd</b></code> can be used.
 <p>
 
@@ -251,6 +259,9 @@ messages of for logbook queries. Here is a simple example of such a file:
 </pre>
 
 The file must be present in the same directory as the <code><b>elogd</b></code> file.
+Alternatively, an absolute path can be used if the file name starts with a
+<b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or <b><code>"x:"</code></b>
+(Windows).
 <p>
 
 <LI><b><code>Start page = &lt;command&gt;</code></b>
@@ -279,6 +290,9 @@ Here is an example:
 </pre>
 
 The file must be present in the same directory as the <code><b>elogd</b></code> file.
+Alternatively, an absolute path can be used if the file name starts with a
+<b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or <b><code>"x:"</code></b>
+(Windows).
 <p>
 
 <li><b><code>Message comment = &lt;comment&gt;</code></b>
@@ -371,8 +385,11 @@ example a link back to the main logbook selection page like:
 &lt;center&gt;&lt;a href="/"&gt;Main page&lt;/a&gt;&lt;/center&gt;
 </pre>
 
-Or it can contain other useful links. The file must be present in the same directory
-as the <code><b>elogd</b></code> file.
+Or it can contain other useful links. The file must be present in the same directory as the
+<code><b>elogd.cfg</b></code> file. Alternatively, an absolute path can be used if the file
+name starts with a <b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or <b><code>
+"x:"</code></b> (Windows).
+
 <p>
 
 <li><b><code>Help URL = &lt;URL&gt;</code></b>
@@ -491,6 +508,9 @@ down box by default.
 <br>
 This preset value is used for the main body text. It can be a string or a file,
 which must be present in the same directory as the <code><b>elogd.cfg</b></code> file.
+Alternatively, an absolute path can be used if the file name starts with a
+<b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or <b><code>"x:"</code></b>
+(Windows).
 <p>
 
 <LI><b><code>Locked Attributes = &lt;list&gt;</code></b>
