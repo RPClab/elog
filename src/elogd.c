@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.442  2004/08/05 09:13:18  midas
+   Added check for 'Full name'
+
    Revision 1.441  2004/08/05 08:26:32  midas
    Changed reusing port back to old scheme
 
@@ -9220,6 +9223,13 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
    char smtp_host[256], email_addr[256], mail_from[256], subject[256], mail_text[2000];
    char admin_user[80], enc_pwd[80], url[256];
    int i, fh, size, self_register;
+
+   /* check for full name */
+   if (!isparam("new_full_name") || *getparam("new_full_name") == 0) {
+      sprintf(str, loc("Please enter \"%s\""), loc("Full name"));
+      show_error(str);
+      return 0;
+   }
 
    /* check self register flag */
    self_register = 0;
