@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.69  2003/04/07 15:26:58  midas
+  Added password recovery facility
+
   Revision 1.68  2003/04/07 09:25:57  midas
   Added button 'remember me'
 
@@ -1468,9 +1471,12 @@ char                 list[1024][NAME_LENGTH];
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
 
-  snprintf(str, strsize - 1, "X-Elog-URL: %s\r\n", url);
-  send(s, str, strlen(str), 0);
-  if (verbose) puts(str);
+  if (url)
+    {
+    snprintf(str, strsize - 1, "X-Elog-URL: %s\r\n", url);
+    send(s, str, strlen(str), 0);
+    if (verbose) puts(str);
+    }
 
   snprintf(str, strsize - 1, "X-Elog-submit-type: web|elog\r\n");
   send(s, str, strlen(str), 0);
@@ -4703,20 +4709,11 @@ struct tm      *ts;
 
 /*------------------------------------------------------------------*/
 
-void show_change_pwd_page(LOGBOOK *lbs)
+BOOL change_pwd(LOGBOOK *lbs, char *user, char *pwd)
 {
-char   str[256], str2[256], file_name[256], line[256], *p, *pl, old_pwd[32], 
-       new_pwd[32], new_pwd2[32], user[80];
+char   str[256], file_name[256], line[256], *p, *pl;
 char   *buf;
-int    i, fh, wrong_pwd, size;
-
-  do_crypt(getparam("oldpwd"), old_pwd);
-  do_crypt(getparam("newpwd"), new_pwd);
-  do_crypt(getparam("newpwd2"), new_pwd2);
-
-  strcpy(user, getparam("unm"));
-  if (isparam("config"))
-    strcpy(user, getparam("config"));
+int    i, fh, size;
 
   getcfg(lbs->name, "Password file", str);
 
@@ -4728,108 +4725,134 @@ int    i, fh, wrong_pwd, size;
     strlcat(file_name, str, sizeof(file_name));
     }
 
+  fh = open(file_name, O_RDWR | O_BINARY, 644);
+  if (fh > 0)
+    {
+    lseek(fh, 0, SEEK_END);
+    size = TELL(fh);
+    lseek(fh, 0, SEEK_SET);
+
+    buf = malloc(size+1);
+    read(fh, buf, size);
+    buf[size] = 0;
+    pl = buf;
+
+    while (pl < buf+size)
+      {
+      for (i=0 ; pl[i] && pl[i] != '\r' && pl[i] != '\n' ; i++)
+        line[i] = pl[i];
+      line[i] = 0;
+
+      if (line[0] == ';' || line[0] == '#' || line[0] == 0)
+        {
+        pl += strlen(line);
+        while (*pl && (*pl == '\r' || *pl == '\n'))
+          pl++;
+        continue;
+        }
+
+      strcpy(str, line);
+      if (strchr(str, ':'))
+        *strchr(str, ':') = 0;
+      if (strcmp(str, user) == 0)
+        break;
+
+      pl += strlen(line);
+      while (*pl && (*pl == '\r' || *pl == '\n'))
+        pl++;
+      }
+
+    /* return if not found */
+    if (pl >= buf+size)
+      {
+      free(buf);
+      close(fh);
+      return FALSE;
+      }
+
+    p = strchr(line, ':');
+    if (p)
+      p = strchr(p+1, ':');
+    if (p == NULL)
+      return FALSE;
+
+    /* replace password */
+    lseek(fh, 0, SEEK_SET);
+    write(fh, buf, pl-buf);
+
+    sprintf(str, "%s:%s%s\n", user, pwd, p);
+    write(fh, str, strlen(str));
+
+    pl += strlen(line);
+    while (*pl && (*pl == '\r' || *pl == '\n'))
+      pl++;
+
+    write(fh, pl, strlen(pl));
+
+#ifdef _MSC_VER
+    chsize(fh, TELL(fh));
+#else
+    ftruncate(fh, TELL(fh));
+#endif
+
+    free(buf);
+    close(fh);
+
+    return TRUE;
+    }
+
+  return FALSE;
+}
+
+/*------------------------------------------------------------------*/
+
+void show_change_pwd_page(LOGBOOK *lbs)
+{
+char   str[256], old_pwd[32], 
+       new_pwd[32], new_pwd2[32], act_pwd[32], user[80];
+int    wrong_pwd;
+
+  do_crypt(getparam("oldpwd"), old_pwd);
+  do_crypt(getparam("newpwd"), new_pwd);
+  do_crypt(getparam("newpwd2"), new_pwd2);
+
+  strcpy(user, getparam("unm"));
+  if (isparam("config"))
+    strcpy(user, getparam("config"));
+
   wrong_pwd = FALSE;
 
   if (old_pwd[0] || new_pwd[0])
     {
-    fh = open(file_name, O_RDWR | O_BINARY, 644);
-    if (fh > 0)
+    if (user[0] && get_user_line(lbs->name, user, act_pwd, NULL, NULL, NULL))
       {
-      lseek(fh, 0, SEEK_END);
-      size = TELL(fh);
-      lseek(fh, 0, SEEK_SET);
-
-      buf = malloc(size+1);
-      read(fh, buf, size);
-      buf[size] = 0;
-      pl = buf;
-
-      while (pl < buf+size)
+      if (getcfg(lbs->name, "Admin user", str) &&
+          strstr(str, user) != 0)
+        wrong_pwd = 0;
+      else
         {
-        for (i=0 ; pl[i] && pl[i] != '\r' && pl[i] != '\n' ; i++)
-          line[i] = pl[i];
-        line[i] = 0;
-
-        if (line[0] == ';' || line[0] == '#' || line[0] == 0)
-          {
-          pl += strlen(line);
-          while (*pl && (*pl == '\r' || *pl == '\n'))
-            pl++;
-          continue;
-          }
-
-        strcpy(str, line);
-        if (strchr(str, ':'))
-          *strchr(str, ':') = 0;
-        if (strcmp(str, user) == 0)
-          break;
-
-        pl += strlen(line);
-        while (*pl && (*pl == '\r' || *pl == '\n'))
-          pl++;
+        if (strcmp(old_pwd, act_pwd) != 0)
+          wrong_pwd = 1;
         }
 
-      /* if user found, check old password */
-      if (user[0] && (strcmp(str, user) == 0))
-        {
-        p = line+strlen(str);
-        if (*p)
-          p++;
+      if (strcmp(new_pwd, new_pwd2) != 0)
+        wrong_pwd = 2;
+      }
 
-        strcpy(str2, p);
-        if (strchr(str2, ':'))
-          *strchr(str2, ':') = 0;
+    /* replace password */
+    if (!wrong_pwd)
+      change_pwd(lbs, user, new_pwd);
 
-        if (getcfg(lbs->name, "Admin user", str) &&
-            strstr(str, getparam("unm")) != 0)
-          wrong_pwd = 0;
-        else
-          {
-          if (strcmp(old_pwd, str2) != 0)
-            wrong_pwd = 1;
-          }
+    if (!wrong_pwd && strcmp(user, getparam("unm")) == 0)
+      {
+      set_login_cookies(lbs, user, new_pwd);
+      return;
+      }
 
-        if (strcmp(new_pwd, new_pwd2) != 0)
-          wrong_pwd = 2;
-        }
-
-      /* replace password */
-      if (!wrong_pwd)
-        {
-        lseek(fh, 0, SEEK_SET);
-        write(fh, buf, pl-buf);
-
-        sprintf(str, "%s:%s:%s:%s\n", user, new_pwd, 
-                getparam("full_name"), getparam("user_email"));
-        write(fh, str, strlen(str));
-
-        pl += strlen(line);
-        while (*pl && (*pl == '\r' || *pl == '\n'))
-          pl++;
-
-        write(fh, pl, strlen(pl));
-
-#ifdef _MSC_VER
-        chsize(fh, TELL(fh));
-#else
-        ftruncate(fh, TELL(fh));
-#endif
-        }
-
-      free(buf);
-      close(fh);
-
-      if (!wrong_pwd && strcmp(user, getparam("unm")) == 0)
-        {
-        set_login_cookies(lbs, user, new_pwd);
-        return;
-        }
-
-      if (!wrong_pwd)
-        {
-        redirect(lbs, ".");
-        return;
-        }
+    if (!wrong_pwd)
+      {
+      redirect(lbs, ".");
+      return;
       }
     }
 
@@ -4852,8 +4875,14 @@ int    i, fh, wrong_pwd, size;
   if (!getcfg(lbs->name, "Admin user", str) ||
       !strstr(str, getparam("unm")) != 0)
     {
-    rsprintf("<tr><td align=right class=\"dlgform\">%s:\n", loc("Old password"));
-    rsprintf("<td align=left class=\"dlgform\"><input type=password name=oldpwd></td></tr>\n");
+    if (isparam("old_pwd"))
+      rsprintf("<input type=hidden name=oldpwd value=\"%s\"", getparam("old_pwd"));
+    else
+      {
+      rsprintf("<tr><td align=right class=\"dlgform\">%s:\n", loc("Old password"));
+      rsprintf("<td align=left class=\"dlgform\"><input type=password name=oldpwd>\n");
+      rsprintf("</td></tr>\n");
+      }
     }
 
   rsprintf("<tr><td align=right class=\"dlgform\">%s:</td>\n", loc("New password"));
@@ -4902,6 +4931,10 @@ BOOL is_author(LOGBOOK *lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], char *owner)
 {
 char str[1000], preset[1000];
 int i;
+
+  /* check if current user is admin */
+  if (getcfg(lbs->name, "Admin user", str) && strstr(str, getparam("unm")) != 0)
+    return TRUE;
 
   /* search attribute which contains short_name of author */
   for (i=0 ; i<lbs->n_attr ; i++)
@@ -6412,6 +6445,149 @@ int  i;
   rsprintf("</span></td></tr></table>\n\n");
   rsprintf("</body></html>\r\n");
 }
+
+/*------------------------------------------------------------------*/
+
+void show_forgot_pwd_page(LOGBOOK *lbs)
+{
+int  i;
+char str[1000], login_name[256], full_name[256], user_email[256], name[256], pwd[256], redir[256],
+     pwd_encrypted[256], smtp_host[256], mail_from[256], subject[256], mail_text[1000], url[1000];
+
+  if (isparam("login_name"))
+    {
+    /* seach in pwd file */
+
+    strcpy(name, getparam("login_name"));
+
+    for (i=0 ; ; i++)
+      {
+      if (!enum_user_line(lbs, i, login_name))
+        break;
+
+      get_user_line(lbs->name, login_name, NULL, full_name, user_email, NULL);
+
+      if (equal_ustring(name, login_name) || equal_ustring(name, full_name) || equal_ustring(name, user_email))
+        {
+        if (user_email[0] == 0)
+          {
+          sprintf(str, loc("No Email address registered with user name <i>\"%s\"</i>"), name);
+          show_error(str);
+          return;
+          }
+
+        /* create random password */
+        srand((unsigned int)time(NULL));
+        for (i=0 ; i<6 ; i++)
+          str[i] = rand() & 0x7F;
+        str[i] = 0;
+        base64_encode(str, pwd);
+        do_crypt(pwd, pwd_encrypted);
+
+        /* send email with new password */
+        if (!getcfg("global", "SMTP host", smtp_host))
+          {
+          show_error(loc("No SMTP host defined in [global] section of configuration file"));
+          return;
+          }
+
+        /* try to get URL from referer */
+        if (!getcfg("global", "URL", url))
+          {
+          if (referer[0])
+            strcpy(url, referer);
+          else
+            {
+            if (tcp_port == 80)
+              sprintf(url, "http://%s/", host_name);
+            else
+              sprintf(url, "http://%s:%d/", host_name, tcp_port);
+            }
+          }
+        else
+          {
+          if (url[strlen(url)-1] != '/')
+            strlcat(url, "/", sizeof(url));
+          strlcat(url, lbs->name, sizeof(url));
+          strlcat(url, "/", sizeof(url));
+          }
+
+        sprintf(redir, "?cmd=Change password&old_pwd=%s", pwd);
+        url_encode(redir, sizeof(redir));
+        sprintf(str, "?redir=%s&uname=%s&upassword=%s", redir, login_name, pwd);
+        strlcat(url, str, sizeof(url));
+
+        if (!getcfg(lbs->name, "Use Email from", mail_from))
+          sprintf(mail_from, "ELog@%s", host_name);
+
+        if (lbs)
+          sprintf(subject, loc("Password recovery for ELOG %s"), lbs->name);
+        else
+          sprintf(subject, loc("Password recovery for ELOG %s"), host_name);
+
+        sprintf(mail_text, loc("A new password has been created for you on host %s"), host_name);
+        strlcat(mail_text, ".\r\n", sizeof(mail_text));
+        strlcat(mail_text, loc("Plese log on by clicking on following link and change your password"), sizeof(mail_text));
+        strlcat(mail_text, ":\r\n\r\n", sizeof(mail_text));
+        strlcat(mail_text, url, sizeof(mail_text));
+        strlcat(mail_text, "\r\n\r\n", sizeof(mail_text));
+        sprintf(mail_text+strlen(mail_text), "ELOG Version %s\r\n", VERSION);
+
+        if (sendmail(smtp_host, mail_from, user_email, subject, mail_text, TRUE, url) != -1)
+          {
+          /* save new password */
+          change_pwd(lbs, login_name, pwd_encrypted);
+
+          /* show notification web page */
+          show_standard_header(lbs, FALSE, loc("ELOG password recovery"), "");
+
+          rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
+          rsprintf("<tr><td colspan=2 class=\"dlgtitle\">\n");
+
+          rsprintf(loc("A new password for user <i>\"%s\"</i> has been sent to %s"), full_name, user_email);
+
+          rsprintf("</td></tr></table>\n");
+          rsprintf("</body></html>\n");
+          return;
+          }
+        else
+          show_error(loc("Error sending Email"));
+        }
+      }
+
+    if (strchr(name, '@'))
+      sprintf(str, loc("Email address <i>\"%s\"</i> not registered"), name);
+    else
+      sprintf(str, loc("User name <i>\"%s\"</i> not registered"), name);
+
+    show_error(str);
+
+    return;
+    }
+  else
+    {
+    /*---- header ----*/
+
+    show_standard_header(lbs, TRUE, loc("ELOG password recovery"), NULL);
+
+    rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
+
+    /*---- entry form ----*/
+
+    rsprintf("<tr><td class=\"dlgtitle\">%s</td></tr>\n", loc("Enter your user name or email address"));
+
+
+    rsprintf("<tr><td align=center class=\"dlgform\">\n");
+    rsprintf("<input type=hidden name=cmd value=forgot>\n");
+    rsprintf("<input type=text size=40 name=login_name></td></tr>\n");
+
+    rsprintf("<tr><td align=center class=\"dlgform\"><input type=submit value=\"%s\">\n", loc("Submit"));
+
+    rsprintf("</td></tr></table>\n\n");
+    rsprintf("</body></html>\r\n");
+    }
+}
+
 
 /*------------------------------------------------------------------*/
 
@@ -10576,6 +10752,13 @@ int   i, n;
     return FALSE;
     }
 
+  /* check for "forgot password" */
+  if (isparam("cmd") && strcmp(getparam("cmd"), "forgot") == 0)
+    {
+    show_forgot_pwd_page(lbs);
+    return FALSE;
+    }
+
   /* display error message for invalid user */
   if (isparam("iusr"))
     {
@@ -10909,10 +11092,21 @@ FILE    *f;
       /* if password file is given in global section, protect also logbook selection page */
       if (getcfg("global", "password file", str))
         {
+        /* check for self register */
         if (getcfg("global", "Self register", str) && atoi(str) > 0)
           {
           if (!do_self_register(NULL, command))
             return;
+          }
+
+        /* check for password recovery */
+        if (isparam("cmd") || isparam("newpwd"))
+          {
+          if (equal_ustring(getparam("cmd"), "Change password") || isparam("newpwd"))
+            {
+            show_change_pwd_page(NULL);
+            return;
+            }
           }
 
         /* if data from login screen, evaluate it and set cookies */
@@ -10939,7 +11133,6 @@ FILE    *f;
 
           return;
           }
-        
         
         if (!check_user_password(NULL, getparam("unm"), getparam("upwd"), ""))
           return;
@@ -11483,6 +11676,12 @@ FILE    *f;
   if (equal_ustring(command, loc("New user")))
     {
     show_new_user_page(lbs);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Forgot")))
+    {
+    show_forgot_pwd_page(lbs);
     return;
     }
 
