@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.488  2004/09/28 23:18:59  midas
+   Changed 'first','next' etc. to '|<', '>' etc.
+
    Revision 1.487  2004/09/28 23:02:23  midas
    Fixed problem with attachment submits on edit
 
@@ -16781,7 +16784,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    /*---- next/previous buttons ----*/
 
    if (!getcfg(lbs->name, "Enable browsing", str, sizeof(str)) || atoi(str) == 1) {
-      rsprintf("<td class=\"menu1\" width=\"10%%\" nowrap align=right>\n");
+      rsprintf("<td class=\"menu1a\" width=\"10%%\" nowrap align=right>\n");
 
       /* check if first.gif exists, just put link there if not */
       strlcpy(file_name, resource_dir, sizeof(file_name));
@@ -16801,10 +16804,10 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          rsprintf("<input type=image name=cmd_next alt=\"%s\" src=\"next.gif\">\n", loc("Next entry"));
          rsprintf("<input type=image name=cmd_last alt=\"%s\" src=\"last.gif\">\n", loc("Last entry"));
       } else {
-         rsprintf("<a href=\"%d?cmd=%s\">%s</a>&nbsp;|&nbsp;\n", message_id, loc("First"), loc("First"));
-         rsprintf("<a href=\"%d?cmd=%s\">%s</a>&nbsp;|&nbsp;\n", message_id, loc("Previous"), loc("Previous"));
-         rsprintf("<a href=\"%d?cmd=%s\">%s</a>&nbsp;|&nbsp;\n", message_id, loc("Next"), loc("Next"));
-         rsprintf("<a href=\"%d?cmd=%s\">%s</a>&nbsp;\n", message_id, loc("Last"), loc("Last"));
+         rsprintf("<a href=\"%d?cmd=%s\">|&lt;</a>&nbsp;\n", message_id, loc("First"));
+         rsprintf("<a href=\"%d?cmd=%s\">&lt;</a>&nbsp;\n", message_id, loc("Previous"));
+         rsprintf("<a href=\"%d?cmd=%s\">&gt;</a>&nbsp;\n", message_id, loc("Next"));
+         rsprintf("<a href=\"%d?cmd=%s\">&gt;|</a>&nbsp;\n", message_id, loc("Last"));
       }
 
       rsprintf("</td></tr>\n");
