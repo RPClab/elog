@@ -255,7 +255,7 @@ Entry time = Geef de tijd op
 Start = Start
 End = Eind
 Remote entry received = Bericht van andere server ontvangen
-From = Van
+>From = Van
 After = Na
 to = aan
 Before = Voor
@@ -328,19 +328,15 @@ You can "steal" the lock by editing this entry = Je kan het slot op dit bericht 
 Several logbooks groups are defined on this host = Verschillende logboek groepen zijn op deze server gedefinieerd
 Please select one to list the logbooks in that group = Kies er een om de logboeken in die groep te zien
 No logbook defined on this server = Geen logboek gedefinieerd op deze server
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Goto ELOG home page = 
-Please enter "%s" = 
-Change config file = 
-Click here to delete %d entries = 
-Please check that it exists and elogd has write access and disk is not full = 
-Show = 
-Hide = 
-Hide all = 
-Show all = 
-This logbook requires authentication = 
-Attachment file <b>"%s"</b> empty or not found = 
-Please increase <b>"Max content length"</b> in config file = 
+Goto ELOG home page = Ga naar de ELOG home pagina
+Please enter "%s" = Vul "%s" in
+Change config file = Configuratie bestand veranderen
+Click here to delete %d entries = Klik hier om %d berichten te verwijderen 
+Please check that it exists and elogd has write access and disk is not full = Controleer dat het bestaat en dat naar elogd geschreven kan worden en dat de schijf niet vol is
+Show = Laat zien
+Hide = Verberg
+Hide all = Alles Verbergen
+Show all = Alles laten zien
+This logbook requires authentication = Dit logboek vereist authenticatie
+Attachment file <b>"%s"</b> empty or not found = Bijlage bestand <b>"%s"</b> leeg of niet gevonden
+Please increase <b>"Max content length"</b> in config file = Verhoog astublieft de <b>"Max content length" (maximale lengte van inhoud)</b> in het configuratie bestand
