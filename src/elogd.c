@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.340  2004/06/14 10:59:13  midas
+   Added server code for cloning
+
    Revision 1.339  2004/06/14 10:58:51  midas
    Added client code for cloning
 
@@ -7548,6 +7551,9 @@ void load_config_section(char *section, char **buffer, char *error)
    (*buffer)[length] = 0;
    close(fh);
 
+   if (section == NULL)
+      return;
+
    if ((p = (char *) find_section(*buffer, section)) != NULL) {
       if (strchr(p, ']')) {
          p = strchr(p, ']') + 1;
@@ -8714,12 +8720,10 @@ int show_download_page(LOGBOOK * lbs, char *path)
    int index, message_id, fh, i, size, delta;
    char message[TEXT_SIZE + 1000], *p, *buffer;
 
-   message_id = atoi(path);
+   if (stricmp(path, "gbl") == 0) {
 
-   if (message_id == 0) {
-
-      /* return config */
-      load_config_section(lbs->name, &buffer, error_str);
+      /* return complete config file */
+      load_config_section(NULL, &buffer, error_str);
       if (error_str[0]) {
          rsprintf("Error loading configuration file: %s", error_str);
          return EL_FILE_ERROR;
@@ -8731,39 +8735,93 @@ int show_download_page(LOGBOOK * lbs, char *path)
 
    } else {
 
-      /* return entry */
+      message_id = atoi(path);
 
-      for (index = 0; index < *lbs->n_el_index; index++)
-         if (lbs->el_index[index].message_id == message_id)
-            break;
+      if (message_id == 0) {
 
-      if (index == *lbs->n_el_index)
-         return EL_NO_MSG;
+         /* return config */
+         load_config_section(lbs->name, &buffer, error_str);
+         if (error_str[0]) {
+            rsprintf("Error loading configuration file: %s", error_str);
+            return EL_FILE_ERROR;
+         }
 
-      sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
-      fh = open(file_name, O_RDWR | O_BINARY, 0644);
-      if (fh < 0)
-         return EL_FILE_ERROR;
+         size = strlen(buffer);
+         strlcpy(message, buffer, sizeof(message));
+         free(buffer);
 
-      lseek(fh, lbs->el_index[index].offset, SEEK_SET);
-      i = read(fh, message, sizeof(message) - 1);
-      if (i <= 0) {
+      } else {
+
+         /* return entry */
+
+         for (index = 0; index < *lbs->n_el_index; index++)
+            if (lbs->el_index[index].message_id == message_id)
+               break;
+
+         if (index == *lbs->n_el_index)
+            return EL_NO_MSG;
+
+         sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
+         fh = open(file_name, O_RDWR | O_BINARY, 0644);
+         if (fh < 0)
+            return EL_FILE_ERROR;
+
+         lseek(fh, lbs->el_index[index].offset, SEEK_SET);
+         i = read(fh, message, sizeof(message) - 1);
+         if (i <= 0) {
+            close(fh);
+            return EL_FILE_ERROR;
+         }
+
+         message[i] = 0;
          close(fh);
-         return EL_FILE_ERROR;
+
+         /* decode message size */
+         p = strstr(message + 8, "$@MID@$:");
+         if (p == NULL)
+            size = strlen(message);
+         else
+            size = (int) p - (int) message;
+
+         message[size] = 0;
       }
-
-      message[i] = 0;
-      close(fh);
-
-      /* decode message size */
-      p = strstr(message + 8, "$@MID@$:");
-      if (p == NULL)
-         size = strlen(message);
-      else
-         size = (int) p - (int) message;
-
-      message[size] = 0;
    }
+
+   show_plain_header(size, "export.txt");
+
+   /* increase return buffer size if file too big */
+   if (size > return_buffer_size - (int) strlen(return_buffer)) {
+      delta = size - (return_buffer_size - strlen(return_buffer)) + 1000;
+
+      return_buffer = realloc(return_buffer, return_buffer_size + delta);
+      memset(return_buffer + return_buffer_size, 0, delta);
+      return_buffer_size += delta;
+   }
+
+   return_length = strlen(return_buffer) + size;
+   strlcat(return_buffer, message, return_buffer_size);
+
+   return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int download_config()
+{
+   char error_str[256];
+   int size, delta;
+   char message[TEXT_SIZE + 1000], *buffer;
+
+   /* return complete config file */
+   load_config_section(NULL, &buffer, error_str);
+   if (error_str[0]) {
+      rsprintf("Error loading configuration file: %s", error_str);
+      return EL_FILE_ERROR;
+   }
+
+   size = strlen(buffer);
+   strlcpy(message, buffer, sizeof(message));
+   free(buffer);
 
    show_plain_header(size, "export.txt");
 
@@ -17155,7 +17213,7 @@ void server_loop(int tcp_port, int daemon)
    char pwd[256], str[256], url[256], cl_pwd[256], *p, *pd;
    char cookie[256], boundary[256], list[1000], theme[256],
        host_list[MAX_N_LIST][NAME_LENGTH], rem_host_ip[256], logbook[256],
-       logbook_enc[256];
+       logbook_enc[256], global_cmd[256];
    int lsock, len, flag, content_length, header_length;
    struct hostent *phe;
    fd_set readfds;
@@ -17645,6 +17703,17 @@ void server_loop(int tcp_port, int daemon)
             }
          }
 
+         /* check for global command */
+         global_cmd[0] = 0;
+         if ((p = strstr(net_buffer, "?cmd=")) != NULL) {
+            p += 5;
+            strlcpy(global_cmd, p, sizeof(global_cmd));
+            if (strchr(global_cmd, ' '))
+               *strchr(global_cmd, ' ') = 0;
+            if (strchr(global_cmd, '\r'))
+               *strchr(global_cmd, '\r') = 0;
+         }
+
          /* check if logbook exists */
          for (i = 0;; i++) {
             if (!enumgrp(i, str))
@@ -17705,7 +17774,7 @@ void server_loop(int tcp_port, int daemon)
          }
 
          /* if no logbook is given and only one logbook defined, use this one */
-         if (!logbook[0]) {
+         if (!logbook[0] && !global_cmd[0]) {
             for (i = n = 0;; i++) {
                if (!enumgrp(i, str))
                   break;
@@ -17877,7 +17946,13 @@ void server_loop(int tcp_port, int daemon)
             rsprintf("</BODY></HTML>\r\n");
             keep_alive = FALSE;
          } else {
-            if (strncmp(net_buffer, "GET", 3) == 0) {
+
+            if (global_cmd[0]) {
+               if (stricmp(global_cmd, "GetConfig") == 0) {
+                 download_config();
+                 goto redir;
+               } 
+            } else if (strncmp(net_buffer, "GET", 3) == 0) {
                /* extract path and commands */
                *strchr(net_buffer, '\r') = 0;
                if (!strstr(net_buffer, "HTTP"))
