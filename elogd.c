@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.19  2002/05/02 14:45:10  midas
+  Evaluage 'HEAD' request (for wget)
+
   Revision 1.18  2002/04/30 13:40:33  midas
   Version 1.3.5
 
@@ -7600,6 +7603,20 @@ struct timeval       timeout;
 
           if (header_length > 0 && len >= header_length+content_length)
             break;
+          }
+        else if (strstr(net_buffer, "HEAD") != NULL)
+          {
+          /* just return header */
+          rsprintf("HTTP/1.1 200 OK\r\n");
+          rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+          rsprintf("Connection: close\r\n");
+          rsprintf("Content-Type: text/html\r\n\r\n");
+
+          keep_alive = FALSE;
+          return_length = strlen_retbuf+1;
+          send(_sock, return_buffer, return_length, 0);
+
+          goto error;
           }
         else if (strstr(net_buffer, "OPTIONS") != NULL)
           goto error;
