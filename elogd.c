@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.22  2002/05/13 20:50:53  midas
+  Fixed problem with daylight savings time
+
   Revision 1.21  2002/05/03 07:39:16  midas
   Fixed bug with "Content-Length"
 
@@ -462,7 +465,7 @@ INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text)
 {
 struct sockaddr_in   bind_addr;
 struct hostent       *phe;
-int                  s;
+int                  s, offset;
 char                 buf[80];
 char                 str[10000];
 time_t               now;
@@ -526,8 +529,11 @@ struct tm            *ts;
   time(&now);
   ts = localtime(&now);
   strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S", ts);
+  offset = (-(int)timezone);
+  if (daylight)
+    offset += 3600;
   snprintf(str, sizeof(str) - 1, "Date: %s %+03d%02d\r\n\r\n", buf, 
-          (int) (-(int)timezone/3600), (int) ((abs((int)timezone)/60) % 60));
+          (int) (offset/3600), (int) ((abs((int)offset)/60) % 60));
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
 
