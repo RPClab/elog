@@ -45,6 +45,8 @@ Section "ELOG system (required)"
   SetOutPath $INSTDIR\themes\default
   File themes\default\*.cfg
   File themes\default\*.gif
+  SetOutPath $INSTDIR\themes\default\icons
+  File themes\default\icons\*.*
 
   SetOutPath $INSTDIR\logbooks\demo
   File logbooks\demo\*
@@ -125,6 +127,8 @@ Section "Uninstall"
   Delete $INSTDIR\doc\*
   RMDir $INSTDIR\doc
 
+  Delete $INSTDIR\themes\default\icons\*.*
+  RMDir $INSTDIR\themes\default\icons
   Delete $INSTDIR\themes\default\*.*
   RMDir $INSTDIR\themes\default
   RMDir $INSTDIR\themes
