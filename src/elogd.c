@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.36  2003/03/01 16:08:02  midas
+  Ignore <tab>'s in config file correctly
+
   Revision 1.35  2003/02/28 15:21:00  midas
   On 'restrict edit' check long_name only if short_name is not present
 
@@ -1525,7 +1528,7 @@ int  i;
           while (*p && *p != '=' && *p != '\n' && *p != '\r')
             *pstr++ = *p++;
           *pstr-- = 0;
-          while (pstr > str && (*pstr == ' ' || *pstr == '='))
+          while (pstr > str && (*pstr == ' ' || *pstr == '\t' || *pstr == '='))
             *pstr-- = 0;
 
           if (i == index)
@@ -1534,13 +1537,13 @@ int  i;
             if (*p == '=')
               {
               p++;
-              while (*p == ' ')
+              while (*p == ' ' || *p == '\t')
                 p++;
               pstr = str;
               while (*p && *p != '\n' && *p != '\r')
                 *pstr++ = *p++;
               *pstr-- = 0;
-              while (*pstr == ' ')
+              while (*pstr == ' ' || *pstr == '\t')
                 *pstr-- = 0;
 
               if (value)
@@ -1691,11 +1694,11 @@ static char old_language[256];
           continue;
 
         ptrans[n] = p + 1;
-        while (*ptrans[n] == ' ')
+        while (*ptrans[n] == ' ' || *ptrans[n] == '\t')
           ptrans[n] ++;
 
         /* remove '=' and surrounding blanks */
-        while (*p == '=' || *p == ' ')
+        while (*p == '=' || *p == ' ' || *p == '\t')
           *p-- = 0;
 
         p = ptrans[n];
