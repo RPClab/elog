@@ -40,7 +40,14 @@ indent:
 	indent $(IFLAGS) src/elogd.c
 	indent $(IFLAGS) src/elog.c
 	indent $(IFLAGS) src/elconv.c
+	indent $(IFLAGS) src/locext.c
 
+loc:
+	locext src\elogd.c eloglang.brazilian
+	locext src\elogd.c eloglang.dutch
+	locext src\elogd.c eloglang.french
+	locext src\elogd.c eloglang.german
+	locext src\elogd.c eloglang.spanish
 
 install: $(EXECS)
 	$(INSTALL) -m 0755 -d $(DESTDIR) $(SDESTDIR) $(MANDIR)/man1/ $(MANDIR)/man8/
