@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.90  2003/04/23 08:58:20  midas
+  Fixed bug on login with guest access
+
   Revision 1.89  2003/04/23 08:38:55  midas
   Added warning if max. number of attachments reached
 
@@ -10944,7 +10947,7 @@ int   i, n;
 
     if (isparam("wusr"))
       {
-      sprintf(str, loc("Invalid user name <b>%s</b>"), getparam("wusr"));
+      sprintf(str, loc("Invalid user name <i>\"%s\"</i>"), getparam("wusr"));
       rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n", str);
       }
 
@@ -11405,7 +11408,8 @@ FILE    *f;
       strlcpy(css, str, sizeof(css));
 
     /* check if guest access */
-    if (getcfg(lbs->name, "Guest menu commands", str) && *getparam("unm") == 0)
+    if (getcfg(lbs->name, "Guest menu commands", str) && *getparam("unm") == 0 && 
+        !isparam("wpwd") && !isparam("wusr"))
       logf("Guest access");
     else 
       if (strcmp(path, css) != 0)
