@@ -6,6 +6,12 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.484  2004/09/24 20:39:11  midas
+   Added cvs_revision
+
+   Revision 1.483  2004/09/24 16:07:07  midas
+   Display first/previous/next/last directly as link if first.gif is missing
+
    Revision 1.482  2004/09/24 00:40:57  midas
    Fixed bug with 'expand all' on logbook selection page
 
@@ -561,6 +567,7 @@
 
 /* Version of ELOG */
 #define VERSION "2.5.4-4"
+char cvs_revision = "$Id";
 
 /* ELOG identification */
 static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
@@ -16493,17 +16500,18 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    int size, i, j, n, n_log, status, fh, length, message_error, index, n_hidden,
        message_id, orig_message_id, format_flags[MAX_N_ATTR], att_hide[MAX_ATTACHMENTS],
        n_attachments, n_lines;
-   char str[1000], ref[256], file_name[256], file_enc[256], attrib[MAX_N_ATTR][NAME_LENGTH];
+   char str[1000], ref[256], file_enc[256], attrib[MAX_N_ATTR][NAME_LENGTH];
    char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], cmd_enc[256],
        orig_tag[80], reply_tag[MAX_REPLY_TO * 10], display[256],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        att[256], lattr[256], mid[80], menu_item[MAX_N_LIST][NAME_LENGTH], format[80],
-       slist[MAX_N_ATTR + 10][NAME_LENGTH],
+       slist[MAX_N_ATTR + 10][NAME_LENGTH], file_name[MAX_PATH_LENGTH],
        gattr[MAX_N_ATTR][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], *p,
        lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256], class_name[80], class_value[80], fl[8][NAME_LENGTH];
    FILE *f;
    BOOL first, show_text, display_inline, subtable;
    struct tm *pts;
+   struct stat st;
    time_t ltime;
 
    message_id = atoi(dec_path);
@@ -16766,13 +16774,31 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    /*---- next/previous buttons ----*/
 
    if (!getcfg(lbs->name, "Enable browsing", str, sizeof(str)) || atoi(str) == 1) {
-      rsprintf("<td width=\"10%%\" nowrap align=right>\n");
+      rsprintf("<td class=\"menu1\" width=\"10%%\" nowrap align=right>\n");
 
-      rsprintf("<input type=image name=cmd_first alt=\"%s\" src=\"first.gif\">\n", loc("First entry"));
-      rsprintf("<input type=image name=cmd_previous alt=\"%s\" src=\"previous.gif\">\n",
-               loc("Previous entry"));
-      rsprintf("<input type=image name=cmd_next alt=\"%s\" src=\"next.gif\">\n", loc("Next entry"));
-      rsprintf("<input type=image name=cmd_last alt=\"%s\" src=\"last.gif\">\n", loc("Last entry"));
+      /* check if first.gif exists, just put link there if not */
+      strlcpy(file_name, resource_dir, sizeof(file_name));
+      if (file_name[0] && file_name[strlen(file_name)- 1] != DIR_SEPARATOR)
+         strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+      strlcat(file_name, "themes", sizeof(file_name));
+      strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+      if (theme_name[0]) {
+         strlcat(file_name, theme_name, sizeof(file_name));
+         strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+      }
+      strlcat(file_name, "first.gif", sizeof(file_name));
+      if (stat(file_name, &st) >=0) {
+         rsprintf("<input type=image name=cmd_first alt=\"%s\" src=\"first.gif\">\n", loc("First entry"));
+         rsprintf("<input type=image name=cmd_previous alt=\"%s\" src=\"previous.gif\">\n",
+                  loc("Previous entry"));
+         rsprintf("<input type=image name=cmd_next alt=\"%s\" src=\"next.gif\">\n", loc("Next entry"));
+         rsprintf("<input type=image name=cmd_last alt=\"%s\" src=\"last.gif\">\n", loc("Last entry"));
+      } else {
+         rsprintf("<a href=\"%d?cmd=%s\">%s</a>&nbsp;|&nbsp;\n", message_id, loc("First"), loc("First"));
+         rsprintf("<a href=\"%d?cmd=%s\">%s</a>&nbsp;|&nbsp;\n", message_id, loc("Previous"), loc("Previous"));
+         rsprintf("<a href=\"%d?cmd=%s\">%s</a>&nbsp;|&nbsp;\n", message_id, loc("Next"), loc("Next"));
+         rsprintf("<a href=\"%d?cmd=%s\">%s</a>&nbsp;\n", message_id, loc("Last"), loc("Last"));
+      }
 
       rsprintf("</td></tr>\n");
    }
