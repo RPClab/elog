@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.49  2003/03/19 08:56:40  midas
+  Added 'quote on reply'
+
   Revision 1.48  2003/03/14 08:55:46  midas
   Version 2.3.3
 
@@ -5298,49 +5301,52 @@ time_t now;
         }
       else
         {
-        p = text;
-
-        if (!getcfg(lbs->name, "Reply string", reply_string))
-          strcpy(reply_string, "> ");
-
-        do
+        if (!getcfg(lbs->name, "Quote on reply", str) || atoi(str) > 0)
           {
-          if (strchr(p, '\n'))
-            {
-            *strchr(p, '\n') = 0;
+          p = text;
 
-            if (encoding[0] == 'H')
+          if (!getcfg(lbs->name, "Reply string", reply_string))
+            strcpy(reply_string, "> ");
+
+          do
+            {
+            if (strchr(p, '\n'))
               {
-              rsputs2(reply_string);
-              rsprintf("%s<br>\n", p);
+              *strchr(p, '\n') = 0;
+
+              if (encoding[0] == 'H')
+                {
+                rsputs2(reply_string);
+                rsprintf("%s<br>\n", p);
+                }
+              else
+                {
+                rsputs(reply_string);
+                rsprintf("%s\n", p);
+                }
+
+              p += strlen(p)+1;
+              if (*p == '\n')
+                p++;
               }
             else
               {
-              rsputs(reply_string);
-              rsprintf("%s\n", p);
+              if (encoding[0] == 'H')
+                {
+                rsputs2(reply_string);
+                rsprintf("%s<p>\n", p);
+                }
+              else
+                {
+                rsputs(reply_string);
+                rsprintf("%s\n\n", p);
+                }
+
+              break;
               }
 
-            p += strlen(p)+1;
-            if (*p == '\n')
-              p++;
-            }
-          else
-            {
-            if (encoding[0] == 'H')
-              {
-              rsputs2(reply_string);
-              rsprintf("%s<p>\n", p);
-              }
-            else
-              {
-              rsputs(reply_string);
-              rsprintf("%s\n\n", p);
-              }
-
-            break;
-            }
-
-          } while (TRUE);
+            } while (TRUE);
+          }
         }
       }
 

@@ -3,8 +3,8 @@
 # $Revision$
 #
 
-# ElogLang.French - French interface file for ELOG 2.2.5+
-# version 1.5 - 12/01/03 by Fred Pacquier <fredp@dial.oleane.com>
+# ElogLang.French - French interface file for ELOG 2.3.3+
+# version 1.6 - 14/03/03 by Fred Pacquier <fredp@dial.oleane.com>
 #
 
 #
@@ -220,3 +220,29 @@ Expand = Développer
 Full = Détail
 Summary = Résumé
 Threaded = Arborescence
+
+#
+# New strings for V2.2.6
+ELOG Entries = entrées ELOG
+Filters = Filtres
+Mode = Mode
+Options = Options
+Error: start date after end date = Erreur : la date de début est postérieure à la date de fin
+and all their replies = et toutes leurs réponses
+Your request has been forwarded to the administrator. You will be notified by email upon activation of your new account. = Votre demande a été envoyée à l'administrateur. Vous serez averti(e) par mél lors de l'activation de votre nouveau compte.
+
+#
+# New strings for V2.3.1
+Upload = Envoyer
+Requested = Demandé
+Registration request on logbook "%s" = Demande d'inscription pour le registre "%s"
+A new ELOG user wants to register on "%s" = Un nouvel utilisateur ELOG souhaite s'inscrire à "%s"
+
+#
+# New strings for V2.3.2
+One message = Un message
+%d messages = %d messges
+and its replies = avec ses réponses
+and their replies =	avec leurs réponses
+moved successfully from "%s" to "%s" = déplacés avec succès de "%s" à "%s"
+copied successfully from "%s" to "%s" = copiés avec succès de "%s" à "%s"
