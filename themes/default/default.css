@@ -130,7 +130,7 @@ td {
   border-right:1px solid #084070;
 }
 
-.sgtab a:visited { color:white; } /* buf for IE */
+.sgtab a:visited { color:white; } /* bug for IE */
 
 /* unselected and selected logbook tabs */
 
@@ -172,6 +172,9 @@ td {
   font-family:sans-serif;
   text-align:left;
 }
+
+.title1 a:visited { color:#A0FFA0; }
+.title1 a:link { color:#A0FFA0; }
 
 .title2 {
   background-color:#486090;
@@ -428,6 +431,9 @@ td {
   text-align:center;
   padding:5px;
 }
+
+.dlgtitle a:visited { color:#A0FFA0; }
+.dlgtitle a:link { color:#A0FFA0; }
 
 .dlgform {
   background-color:#DDEEBB;
