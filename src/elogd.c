@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.503  2004/10/27 07:00:44  midas
+   Version 2.5.4-6
+
    Revision 1.502  2004/10/26 20:37:24  midas
    Fixed problems with favicon.ico
 
@@ -618,7 +621,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.4-5"
+#define VERSION "2.5.4-6"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
