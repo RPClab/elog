@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.208  2004/01/22 21:19:09  midas
+   Fixed mirror errors for replies
+
    Revision 1.207  2004/01/22 16:40:00  midas
    Keep attachment date/time on mirroring
 
@@ -3281,7 +3284,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
          /* file might have been edited, rebuild index */
          el_build_index(lbs, TRUE);
          return el_submit(lbs, message_id, bedit, date, attr_name, attr_value,
-                          n_attr, text, in_reply_to, reply_to, encoding, afilename, TRUE,
+                          n_attr, text, in_reply_to, reply_to, encoding, afilename, mark_original,
                           locked_by);
       }
 
@@ -8665,7 +8668,7 @@ void synchronize(LOGBOOK * lbs, char *path)
                sprintf(loc_ref, "<a href=\"%d\">%s</a>", message_id, loc("local"));
                sprintf(rem_ref, "<a href=\"http://%s%d\">%s</a>", str, message_id,
                        loc("remote"));
-               rsprintf("%s\n\t", loc("Entry has been changed locally and remotely."));
+               rsprintf("%s.\n\t", loc("Entry has been changed locally and remotely"));
                rsprintf(loc("Please delete %s or %s entry to resolve conflict"),
                         loc_ref, rem_ref);
                rsprintf(".\n");
@@ -8681,7 +8684,7 @@ void synchronize(LOGBOOK * lbs, char *path)
             it must have been deleted remotely, so remove it locally */
          if (exist_cache && !exist_remote) {
             el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
-            rsprintf("%s\n", loc("Entry has been deleted locally"));
+            rsprintf("%s\n", loc("Entry deleted locally"));
             md5_cache[i_cache].message_id = 0;
 
             /* message got deleted from local message list, so redo current index */
@@ -8741,15 +8744,14 @@ void synchronize(LOGBOOK * lbs, char *path)
                   retrieve_url(url, &buffer);
 
                   if (strstr(buffer, "Location: "))
-                     rsprintf(loc("Entry deleted remotely"));
+                     rsprintf("%s\n", loc("Entry deleted remotely"));
                   else
-                     rsprintf(loc("Error deleting remote entry"));
+                     rsprintf("%s\n", loc("Error deleting remote entry"));
 
                   free(buffer);
                }
             }
          }
-
 
       free(md5_remote);
 
@@ -11453,7 +11455,8 @@ void submit_elog(LOGBOOK * lbs)
    message_id =
        el_submit(lbs, message_id, bedit, date, attr_list, attrib, lbs->n_attr,
                  getparam("text"), in_reply_to, reply_to,
-                 *getparam("html") ? "HTML" : "plain", att_file, TRUE, NULL);
+                 *getparam("html") ? "HTML" : "plain", att_file, 
+                 !isparam("mirror_id"), NULL);
 
    if (message_id <= 0) {
       sprintf(str, loc("New entry cannot be written to directory \"%s\""),
