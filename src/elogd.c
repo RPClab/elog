@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.610  2005/03/29 21:20:37  ritt
+   Fixed find form for DATETIME
+
    Revision 1.609  2005/03/29 21:15:24  ritt
    Implemented 'Type <attrib> = datetime'
 
@@ -9332,13 +9335,18 @@ void show_find_form(LOGBOOK * lbs)
             show_date_selector(0, 0, 0, str);
             if (attr_flags[i] & AF_DATETIME) {
                rsprintf("&nbsp;&nbsp;");
-               show_time_selector(0, 0, str);
+               show_time_selector(-1, -1, str);
             }
 
             rsprintf("</td></tr>\n");
             rsprintf("<tr><td width=\"1%%\">%s:<td>", loc("End"));
             sprintf(str, "%db", i);
             show_date_selector(0, 0, 0, str);
+            if (attr_flags[i] & AF_DATETIME) {
+               rsprintf("&nbsp;&nbsp;");
+               show_time_selector(-1, -1, str);
+            }
+
             rsprintf("</td></tr></table>\n");
 
          } else {
