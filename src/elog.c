@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.3  2003/06/03 13:18:00  midas
+  Fixed bug in base64_encode
+
   Revision 1.2  2003/03/01 16:07:02  midas
   Show error if wrong username/password
 
@@ -81,6 +84,8 @@ void base64_encode(char *s, char *d)
 unsigned int t, pad;
 
   pad = 3 - strlen(s) % 3;
+  if (pad == 3)
+    pad = 0;
   while (*s)
     {
     t =   (*s++) << 16;
