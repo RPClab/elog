@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.556  2005/02/14 10:44:16  ritt
+   Fixed buffer overflow in decode_post()
+
    Revision 1.555  2005/02/13 15:42:39  ritt
    Solved bug with 'fixed' ROptions attributes
 
@@ -780,7 +783,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.6-2"
+#define VERSION "2.5.7-1"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -4396,13 +4399,13 @@ INT el_retrieve(LOGBOOK * lbs,
 
 int el_submit_attachment(LOGBOOK * lbs, char *afilename, char *buffer, int buffer_size, char *full_name)
 {
-   char file_name[MAX_PATH_LENGTH], ext_file_name[MAX_PATH_LENGTH], str[MAX_PATH_LENGTH], *p;
+   char file_name[MAX_PATH_LENGTH], ext_file_name[MAX_PATH_LENGTH+100], str[MAX_PATH_LENGTH], *p;
    int fh;
    time_t now;
    struct tm tms;
 
    /* strip directory, add date and time to filename */
-   strcpy(str, afilename);
+   strlcpy(str, afilename, sizeof(str));
    p = str;
    while (strchr(p, ':'))
       p = strchr(p, ':') + 1;
@@ -4410,14 +4413,14 @@ int el_submit_attachment(LOGBOOK * lbs, char *afilename, char *buffer, int buffe
       p = strchr(p, '\\') + 1;  /* NT */
    while (strchr(p, '/'))
       p = strchr(p, '/') + 1;   /* Unix */
-   strcpy(file_name, p);
+   strlcpy(file_name, p, sizeof(file_name));
 
    /* assemble ELog filename */
    if (file_name[0]) {
 
       if (file_name[6] == '_' && file_name[13] == '_' && isdigit(file_name[0])
           && isdigit(file_name[1]))
-         strcpy(ext_file_name, file_name);
+         strlcpy(ext_file_name, file_name, sizeof(ext_file_name));
       else {
          time(&now);
          memcpy(&tms, localtime(&now), sizeof(struct tm));
@@ -4428,15 +4431,16 @@ int el_submit_attachment(LOGBOOK * lbs, char *afilename, char *buffer, int buffe
       }
 
       if (full_name)
-         strcpy(full_name, ext_file_name);
+         strlcpy(full_name, ext_file_name, MAX_PATH_LENGTH);
 
-      strcpy(str, lbs->data_dir);
-      strcat(str, ext_file_name);
+      strlcpy(str, lbs->data_dir, sizeof(str));
+      strlcat(str, ext_file_name, sizeof(str));
 
       /* save attachment */
       fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
       if (fh < 0) {
-         sprintf(str, "Cannot write attachment file \"%s\"", str);
+         strlcpy(file_name, str, sizeof(str)-40);
+         sprintf(str, "Cannot write attachment file \"%s\"", file_name);
          show_error(str);
          return -1;
       } else {
@@ -19933,6 +19937,8 @@ void interprete(char *lbook, char *path)
    }
 
    if (strieq(command, loc("Config"))) {
+      if (!check_password(lbs, "Write password", getparam("wpwd"), str))
+         return;
       if (!getcfg(lbs->name, "Password file", str, sizeof(str)))
          show_admin_page(lbs, NULL);
       else
@@ -19942,6 +19948,8 @@ void interprete(char *lbook, char *path)
 
    if (strieq(command, loc("Download"))
        || strieq(command, "Download")) {
+      if (!check_password(lbs, "Write password", getparam("wpwd"), str))
+         return;
       show_download_page(lbs, dec_path);
       return;
    }
@@ -20046,8 +20054,9 @@ void decode_get(char *logbook, char *string)
 void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
 {
    int n_att;
-   char *pinit, *p, *ptmp, file_name[256], full_name[256], str[NAME_LENGTH],
-       line[NAME_LENGTH], item[NAME_LENGTH];
+   char *pinit, *p, *ptmp, file_name[MAX_PATH_LENGTH], full_name[MAX_PATH_LENGTH], 
+      str[NAME_LENGTH], line[NAME_LENGTH], item[NAME_LENGTH];
+
    n_att = 0;
    pinit = string;
    /* return if no boundary defined */
@@ -20062,9 +20071,9 @@ void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
             *strchr(line, '\r') = 0;
          if (strchr(line, '\n'))
             *strchr(line, '\n') = 0;
-         strcpy(item, line);
+         strlcpy(item, line, sizeof(item));
          if (item[0] == '\"') {
-            strcpy(item, line + 1);
+            strlcpy(item, line + 1, sizeof(item));
             if (strchr(item, '\"'))
                *strchr(item, '\"') = 0;
          } else if (strchr(item, ' '))
@@ -20087,7 +20096,7 @@ void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
                if (strchr(p, '\"'))
                   *strchr(p, '\"') = 0;
                /* set attachment filename */
-               strcpy(file_name, p);
+               strlcpy(file_name, p, sizeof(file_name));
                if (file_name[0]) {
                   if (verbose)
                      eprintf("decode_post: Found CSV import file\n");
@@ -20137,7 +20146,7 @@ void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
                if (strchr(p, '\"'))
                   *strchr(p, '\"') = 0;
                /* set attachment filename */
-               strcpy(file_name, p);
+               strlcpy(file_name, p, sizeof(file_name));
                if (file_name[0]) {
                   if (verbose)
                      eprintf("decode_post: Found attachment %s\n", file_name);
@@ -21121,7 +21130,7 @@ void server_loop(void)
                      while (*p == ' ')
                         p++;
                      i = 0;
-                     while (*p && *p != ' ' && *p != '\r')
+                     while (*p && *p != ' ' && *p != '\r' && i < sizeof(cl_pwd)-1)
                         str[i++] = *p++;
                      str[i] = 0;
                   }
