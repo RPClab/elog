@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.285  2004/03/08 13:00:12  midas
+   Filter entries with invalid date
+
    Revision 1.284  2004/03/08 12:52:51  midas
    Filter entries with invalid date
 
@@ -11928,22 +11931,16 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          for (i = 0; i < lbs->n_attr; i++)
             if (attr_flags[i] & AF_DATE) {
 
-               /* remove entry if no valid date */
-               if (atoi(attrib[i]) == 0) {
-                  msg_list[index].lbs = NULL;
-                  continue;
-               }
-
                sprintf(str, "%da", i);
                ltime = retrieve_date(str, TRUE);
-               if (ltime > 0 && atoi(attrib[i]) > 0 && atoi(attrib[i]) < ltime) {
+               if (ltime > 0 && atoi(attrib[i]) < ltime) {
                   msg_list[index].lbs = NULL;
                   continue;
                }
 
                sprintf(str, "%db", i);
                ltime = retrieve_date(str, FALSE);
-               if (ltime > 0 && atoi(attrib[i]) > ltime) {
+               if (ltime > 0 && (atoi(attrib[i]) > ltime || atoi(attrib[i]) == 0)) {
                   msg_list[index].lbs = NULL;
                   continue;
                }
