@@ -448,11 +448,12 @@ td {
 }
 
 .caltitle {
-  background-color:#DDDDFF;
+  background-color:#4682B4;
   padding:3px;
   font-size:medium;
   text-align:center;
   font-weight:bold;
+  color:white;
 }
 
 .calhead {
