@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.463  2004/09/08 12:06:18  midas
+   Do not display *.ps and *.pdf files inline
+
    Revision 1.462  2004/09/08 10:18:37  midas
    Use rsput3 to display config page
 
@@ -5021,6 +5024,14 @@ int is_ascii(char *file_name)
 
    xfree(buf);
    return TRUE;
+}
+
+/*------------------------------------------------------------------*/
+
+int is_image(char *att)
+{
+   return strstr(att, ".GIF") || strstr(att, ".JPG") || strstr(att, ".JPEG") ||
+      strstr(att, ".PNG");
 }
 
 /*------------------------------------------------------------------*/
@@ -13405,8 +13416,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;&nbsp;&nbsp; ", ref,
                         attachment[index] + 14);
             } else {
-               if (strstr(str, ".GIF") || strstr(str, ".JPG") || strstr(str, ".JPEG")
-                   || strstr(str, ".PNG")) {
+               if (is_image(str)) {
                   rsprintf
                       ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
                        colspan, loc("Attachment"), index + 1, ref,
@@ -17405,8 +17415,9 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                rsprintf("</span>\n");
 
                /* determine if displayed inline */
-               display_inline = (strstr(att, ".GIF") || strstr(att, ".JPG") || strstr(att, ".JPEG")
-                                 || strstr(att, ".PNG") || is_ascii(file_name));
+               display_inline = is_image(file_name) || is_ascii(file_name);
+               if (strstr(att, ".PS") || strstr(att, ".PDF"))
+                  display_inline = 0;
 
                if (display_inline) {
                   rsprintf("<span class=\"bytes\">");
@@ -17456,10 +17467,9 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                strlcat(file_name, attachment[index], sizeof(file_name));
 
                if ((!getcfg(lbs->name, "Show attachments", str, sizeof(str))
-                   || atoi(str) == 1) && !att_hide[index]) {
+                  || atoi(str) == 1) && !att_hide[index] && display_inline) {
 
-                  if (strstr(att, ".GIF") || strstr(att, ".JPG") || strstr(att, ".JPEG")
-                      || strstr(att, ".PNG")) {
+                  if (is_image(att)) {
                      rsprintf("<tr><td class=\"messageframe\">\n");
                      rsprintf("<a name=\"att%d\"></a>\n", index + 1);
                      rsprintf("<img src=\"%s\"></td></tr>", ref);
