@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.588  2005/03/14 20:53:23  ritt
+   Implemented option 'link display'
+
    Revision 1.587  2005/03/14 20:07:46  ritt
    Show attributes as HTML if they contain '<b>' etc.
 
@@ -13379,6 +13382,7 @@ void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
                   int show_attachments, char *date, char *in_reply_to,
                   char *reply_to, int n_attr_disp,
                   char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH],
+                  BOOL disp_attr_link[MAX_N_ATTR + 4],
                   char attrib[MAX_N_ATTR][NAME_LENGTH], int n_attr,
                   char *text, BOOL show_text,
                   char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], char *encoding,
@@ -13552,7 +13556,8 @@ void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
                } else
                   sprintf(display, "%d", message_id);
 
-               rsprintf("<a href=\"%s\">&nbsp;&nbsp;%s&nbsp;&nbsp;</a></td>\n", ref, display);
+               rsprintf("<a href=\"%s\">&nbsp;&nbsp;%s&nbsp;&nbsp;</a>\n", ref, display);
+               rsprintf("</td>\n");
             }
          }
 
@@ -13563,8 +13568,12 @@ void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
                   skip_comma = FALSE;
                } else
                   rsprintf(", %s", lbs->name);
-            } else
-               rsprintf("<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", sclass, nowrap, ref, lbs->name);
+            } else {
+               if (disp_attr_link == NULL || disp_attr_link[index])
+                  rsprintf("<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", sclass, nowrap, ref, lbs->name);
+               else
+                  rsprintf("<td class=\"%s\" %s>%s</td>\n", sclass, nowrap, lbs->name);
+            }
          }
 
          if (strieq(disp_attr[index], loc("Edit"))) {
@@ -13595,8 +13604,12 @@ void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
                   skip_comma = FALSE;
                } else
                   rsprintf(", %s", str);
-            } else
-               rsprintf("<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", sclass, nowrap, ref, str);
+            } else {
+               if (disp_attr_link == NULL || disp_attr_link[index])
+                  rsprintf("<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", sclass, nowrap, ref, str);
+               else
+                  rsprintf("<td class=\"%s\" %s>%s</td>\n", sclass, nowrap, str);
+            }
          }
 
          for (i = 0; i < n_attr; i++)
@@ -13658,8 +13671,10 @@ void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
                      else
                         strftime(str, sizeof(str), format, pts);
 
-                     rsprintf("<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", sclass, ref, str);
-
+                     if (disp_attr_link == NULL || disp_attr_link[i])
+                        rsprintf("<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", sclass, ref, str);
+                     else
+                        rsprintf("<td class=\"%s\">%s</td>\n", sclass, str);
                   }
 
                   else if (attr_flags[i] & AF_ICON) {
@@ -13675,7 +13690,8 @@ void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
                      if (is_html(attrib[i]))
                         rsputs(attrib[i]);
                      else {
-                        rsprintf("<a href=\"%s\">", ref);
+                        if (disp_attr_link == NULL || disp_attr_link[i])
+                           rsprintf("<a href=\"%s\">", ref);
 
                         sprintf(str, "Display %s", attr_list[i]);
                         if (getcfg(lbs->name, str, display, sizeof(display))) {
@@ -13706,10 +13722,15 @@ void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
                            rsputs2(display);
                         }
 
-                        rsprintf("</a>");
+                        if (disp_attr_link == NULL || disp_attr_link[i])
+                           rsprintf("</a>");
+
+                        /* at least one space to produce non-empty table cell */
+                        if (!display[0])
+                           rsprintf("&nbsp;");
                      }
 
-                     rsprintf("&nbsp</td>");
+                     rsprintf("</td>");
                   }
                }
             }
@@ -13942,7 +13963,7 @@ void display_reply(LOGBOOK *lbs, int message_id, int printable,
 
    display_line(lbs, message_id, 0, "threaded", expand, level, printable,
                 n_line, FALSE, date, in_reply_to, reply_to, n_attr_disp,
-                disp_attr, (void *) attrib, lbs->n_attr, text, show_text,
+                disp_attr, NULL, (void *) attrib, lbs->n_attr, text, show_text,
                 NULL, encoding, 0, NULL, locked_by, highlight, &re_buf[0]);
 
    if (reply_to[0]) {
@@ -14943,7 +14964,7 @@ void show_elog_list(LOGBOOK *lbs, INT past_n, INT last_n, INT page_n, char *info
        sort_attr[MAX_N_ATTR + 4][NAME_LENGTH];
    char *p, *pt, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
    BOOL show_attachments, threaded, csv, xml, mode_commands, expand, filtering, disp_filter,
-       show_text, searched, found;
+       show_text, searched, found, disp_attr_link[MAX_N_ATTR+4];
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2;
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
@@ -16059,6 +16080,25 @@ void show_elog_list(LOGBOOK *lbs, INT past_n, INT last_n, INT page_n, char *info
          }
       }
 
+      list[0] = 0;
+      getcfg(lbs->name, "Link display", list, 10000);
+      if (list[0]) {
+         n = strbreak(list, (char (*)[NAME_LENGTH]) gattr, MAX_N_ATTR, ",");
+
+         for (i=0 ; i<n_attr_disp ; i++) {
+            for (j = 0; j < n; j++)
+               if (strieq(gattr + j * NAME_LENGTH, disp_attr[i]))
+                  break;
+
+            if (j < n)
+               disp_attr_link[i] = TRUE;
+            else
+               disp_attr_link[i] = FALSE;
+         }
+      } else
+         for (i=0 ; i<n_attr_disp ; i++)
+            disp_attr_link[i] = TRUE;
+              
       if (threaded) {
       } else {
          rsprintf("<tr>\n");
@@ -16225,7 +16265,7 @@ void show_elog_list(LOGBOOK *lbs, INT past_n, INT last_n, INT page_n, char *info
          display_line(msg_list[index].lbs, message_id,
                       index, mode, expand, 0, printable, n_line,
                       show_attachments, date, in_reply_to, reply_to,
-                      n_attr_disp, disp_attr, attrib, lbs->n_attr, text, show_text,
+                      n_attr_disp, disp_attr, disp_attr_link, attrib, lbs->n_attr, text, show_text,
                       attachment, encoding, atoi(getparam("select")), &n_display, locked_by, 0, re_buf);
 
          if (threaded) {
@@ -16339,7 +16379,7 @@ void show_elog_thread(LOGBOOK *lbs, int message_id)
    display_line(lbs, head_id,
                 0, "Threaded", 1, 0, FALSE, 0,
                 FALSE, date, in_reply_to, reply_to,
-                n_attr_disp, disp_attr, attrib, lbs->n_attr, text, FALSE,
+                n_attr_disp, disp_attr, NULL, attrib, lbs->n_attr, text, FALSE,
                 attachment, encoding, 0, &n_display, locked_by, message_id, NULL);
 
    if (reply_to[0]) {
