@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.302  2004/03/19 11:12:00  midas
+   Implemented 'extendable options' for MOptions
+
    Revision 1.301  2004/03/19 10:30:56  midas
    Fixed bug with topgroup initialization
 
@@ -6870,7 +6873,23 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                       ("<td class=\"attribvalue\"><input type=checkbox name=\"%s\" value=1>\n",
                        ua);
             } else {
-               if (attr_flags[index] & AF_MULTI) {
+
+               sprintf(str, loc("Add %s"), attr_list[index]);
+               if (strieq(getparam("extend"), str)) {
+
+                  rsprintf("<td class=\"attribvalue\">\n");
+                  rsprintf("<i>");
+                  rsprintf(loc("Add new option here"), attr_list[index]);
+                  rsprintf("&nbsp;:&nbsp;</i>\n");
+
+                  rsprintf
+                      ("<input type=\"text\" size=20 maxlength=%d name=\"%s\" value=\"%s\">\n",
+                       input_maxlen, ua, attrib[index]);
+
+                  rsprintf("</td></tr>\n");
+
+               } else if (attr_flags[index] & AF_MULTI) {
+
                   /* display multiple check boxes */
                   rsprintf("<td class=\"attribvalue\">\n");
 
@@ -6893,7 +6912,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         rsprintf("<br>");
                   }
 
+                  if (attr_flags[index] & AF_EXTENDABLE) {
+                     sprintf(str, loc("Add %s"), attr_list[index]);
+                     rsprintf("<input type=submit name=extend value=\"%s\">\n", str);
+                  }
+
                   rsprintf("</td></tr>\n");
+
                } else if (attr_flags[index] & AF_RADIO) {
                   /* display radio buttons */
                   rsprintf("<td class=\"attribvalue\">\n");
@@ -6915,7 +6940,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         rsprintf("<br>");
                   }
 
+                  if (attr_flags[index] & AF_EXTENDABLE) {
+                     sprintf(str, loc("Add %s"), attr_list[index]);
+                     rsprintf("<input type=submit name=extend value=\"%s\">\n", str);
+                  }
+
                   rsprintf("</td></tr>\n");
+
                } else if (attr_flags[index] & AF_ICON) {
                   /* display icons */
                   rsprintf("<td class=\"attribvalue\">\n");
@@ -6949,56 +6980,41 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                   rsprintf("<td class=\"attribvalue\">\n");
 
-                  sprintf(str, loc("Add %s"), attr_list[index]);
-                  if (strieq(getparam("extend"), str)) {
+                  /* display drop-down box */
+                  rsprintf("<select name=\"%s\"", ua);
 
-                     rsprintf("<i>");
-                     rsprintf(loc("Add new option here"), attr_list[index]);
-                     rsprintf("&nbsp;:&nbsp;</i>\n");
+                  if (is_cond_attr(index))
+                     rsprintf(" onChange=\"document.form1.submit()\">\n");
+                  else
+                     rsprintf(">\n");
 
-                     rsprintf
-                         ("<input type=\"text\" size=20 maxlength=%d name=\"%s\" value=\"%s\">\n",
-                          input_maxlen, ua, attrib[index]);
+                  /* display emtpy option */
+                  rsprintf("<option value=\"\">- %s -\n", loc("please select"));
 
+                  for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
+                     strlcpy(str, attr_options[index][i], sizeof(str));
+                     if (strchr(str, '{'))
+                        *strchr(str, '{') = 0;
 
-                  } else {
-
-                     /* display drop-down box */
-                     rsprintf("<select name=\"%s\"", ua);
-
-                     if (is_cond_attr(index))
-                        rsprintf(" onChange=\"document.form1.submit()\">\n");
+                     if (strieq(attr_options[index][i], attrib[index])
+                         || strieq(str, attrib[index]))
+                        rsprintf("<option selected value=\"%s\">%s\n", str, str);
                      else
-                        rsprintf(">\n");
+                        rsprintf("<option value=\"%s\">%s\n", str, str);
+                  }
 
-                     /* display emtpy option */
-                     rsprintf("<option value=\"\">- %s -\n", loc("please select"));
+                  rsprintf("</select>\n");
 
-                     for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
-                        strlcpy(str, attr_options[index][i], sizeof(str));
-                        if (strchr(str, '{'))
-                           *strchr(str, '{') = 0;
+                  if (is_cond_attr(index)) {
+                     /* show "update" button only of javascript is not enabled */
+                     rsprintf("<noscript>\n");
+                     rsprintf("<input type=submit value=\"%s\">\n", loc("Update"));
+                     rsprintf("</noscript>\n");
+                  }
 
-                        if (strieq(attr_options[index][i], attrib[index])
-                            || strieq(str, attrib[index]))
-                           rsprintf("<option selected value=\"%s\">%s\n", str, str);
-                        else
-                           rsprintf("<option value=\"%s\">%s\n", str, str);
-                     }
-
-                     rsprintf("</select>\n");
-
-                     if (is_cond_attr(index)) {
-                        /* show "update" button only of javascript is not enabled */
-                        rsprintf("<noscript>\n");
-                        rsprintf("<input type=submit value=\"%s\">\n", loc("Update"));
-                        rsprintf("</noscript>\n");
-                     }
-
-                     if (attr_flags[index] & AF_EXTENDABLE) {
-                        sprintf(str, loc("Add %s"), attr_list[index]);
-                        rsprintf("<input type=submit name=extend value=\"%s\">\n", str);
-                     }
+                  if (attr_flags[index] & AF_EXTENDABLE) {
+                     sprintf(str, loc("Add %s"), attr_list[index]);
+                     rsprintf("<input type=submit name=extend value=\"%s\">\n", str);
                   }
 
                   rsprintf("</td></tr>\n");
@@ -13176,6 +13192,17 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue)
    /* find location of options */
    sprintf(str, "Options %s", attrname);
    p1 = (char *) find_param(buf, lbs->name, str);
+   if (p1 == NULL) {
+     sprintf(str, "MOptions %s", attrname);
+     p1 = (char *) find_param(buf, lbs->name, str);
+   }
+   if (p1 == NULL) {
+     sprintf(str, "ROptions %s", attrname);
+     p1 = (char *) find_param(buf, lbs->name, str);
+   }
+   if (p1 == NULL)
+      return 0;
+
    p2 = strchr(p1, '\n');
    if (*(p2 - 1) == '\r')
       p2--;
