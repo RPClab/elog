@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.118  2003/01/07 08:29:44  midas
+  Fixed bug with hierarchical logbooks
+
   Revision 2.117  2003/01/04 20:22:35  midas
   Added new email options and hierarchical logbooks
 
@@ -3848,7 +3851,7 @@ char   grplist[MAX_N_LIST][NAME_LENGTH];
     for (n=0 ; lb_list[n].name[0] ; n++);
 
     /* make simple list with logbooks */
-    lbl = malloc(n * sizeof(LBNODE));
+    lbl = calloc(n, sizeof(LBNODE));
     for (i=0 ; i<n ; i++)
       strlcpy(lbl[i].name, lb_list[i].name, 256);
     }
