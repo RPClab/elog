@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.233  2004/02/04 08:25:06  midas
+   Only [global] admin user sees 'synchronize all logbooks'
+
    Revision 1.232  2004/02/03 12:31:57  midas
    Changed typo
 
@@ -14112,11 +14115,15 @@ void show_selection_page()
    rsprintf("</td></tr>\n");
 
    if (getcfg("global", "mirror server", str)) {
-      rsprintf("<tr>\n");
-      rsprintf("<td colspan=13 class=\"seltitle\">\n");
-      rsprintf("<a href=\"?cmd=Synchronize\">%s</a></td>\n",
-               loc("Synchronize all logbooks"));
-      rsprintf("</tr>\n");
+
+      /* only admin user sees synchronization link */
+      if (!getcfg("global", "Admin user", str) || strcmp(str, getparam("unm")) == 0) {
+         rsprintf("<tr>\n");
+         rsprintf("<td colspan=13 class=\"seltitle\">\n");
+         rsprintf("<a href=\"?cmd=Synchronize\">%s</a></td>\n",
+                  loc("Synchronize all logbooks"));
+         rsprintf("</tr>\n");
+      }
    }
 
 
