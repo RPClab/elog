@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.126  2003/01/08 16:01:57  midas
+  Fixed bug with style sheet
+
   Revision 2.125  2003/01/08 10:58:42  midas
   Fixed bug with unencoded logbook in URL
 
@@ -4005,13 +4008,13 @@ LBLIST clb, flb, nlb, lbl;
             {
             rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"color:%s;background-color:%s\">&nbsp;",
                       gt("LTab1 Fontcolor"), gt("LTab1 BGColor"));
-            rsprintf("<a style=\"text-decoration:none;color=%s\" href=\"../%s/\">", gt("LTab1 Fontcolor"), ref);
+            rsprintf("<a style=\"text-decoration:none;color:%s\" href=\"../%s/\">", gt("LTab1 Fontcolor"), ref);
             }
           else
             {
             rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"color:%s;background-color:%s\">&nbsp;",
                       gt("GTab1 Fontcolor"), gt("GTab1 BGColor"));
-            rsprintf("<a style=\"text-decoration:none;color=%s\" href=\"../%s/\">", gt("GTab1 Fontcolor"), ref);
+            rsprintf("<a style=\"text-decoration:none;color:%s\" href=\"../%s/\">", gt("GTab1 Fontcolor"), ref);
             }
           }
         else
@@ -4020,13 +4023,13 @@ LBLIST clb, flb, nlb, lbl;
             {
             rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"color:%s;background-color:%s\">&nbsp;",
                        gt("LTab2 Fontcolor"), gt("LTab2 BGColor"));
-            rsprintf("<a style=\"text-decoration:none;color=%s\" href=\"../%s/\">", gt("LTab2 Fontcolor"), ref);
+            rsprintf("<a style=\"text-decoration:none;color:%s\" href=\"../%s/\">", gt("LTab2 Fontcolor"), ref);
             }
           else
             {
             rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"color:%s;background-color:%s\">&nbsp;",
                       gt("GTab2 Fontcolor"), gt("GTab2 BGColor"));
-            rsprintf("<a style=\"text-decoration:none;color=%s\" href=\"../%s/\">", gt("GTab2 Fontcolor"), ref);
+            rsprintf("<a style=\"text-decoration:none;color:%s\" href=\"../%s/\">", gt("GTab2 Fontcolor"), ref);
             }
           }
 
