@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.9  2002/06/11 12:01:56  midas
+  Added 'download' command
+
   Revision 2.8  2002/06/10 11:46:36  midas
   Changed comma display in search result page
 
@@ -1418,6 +1421,11 @@ struct tm tms;
 
           if (lbs->el_index[lbs->n_el_index].message_id > 0)
             {
+            if (verbose)
+              printf("  ID %d in %s, offset %d\n", 
+                lbs->el_index[lbs->n_el_index].message_id, str, 
+                lbs->el_index[lbs->n_el_index].offset);
+
             /* valid ID */
             lbs->n_el_index++;
             }
@@ -1575,7 +1583,13 @@ char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
   close(fh);
 
   if (strncmp(message, "$@MID@$:", 8) != 0)
-    return EL_FILE_ERROR;
+    {
+    /* file might have been edited, rebuild index */
+    free(lbs->el_index);
+    el_build_index(lbs);
+    return el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr, text, 
+                       textsize, in_reply_to, reply_to, attachment, encoding);
+    }
 
   /* check for correct ID */
   if (atoi(message+8) != message_id)
@@ -1591,37 +1605,45 @@ char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
   message[size] = 0;
 
   /* decode message */
-  el_decode(message, "Date: ", date);
-  el_decode(message, "Reply to: ", reply_to);
-  el_decode(message, "In reply to: ", in_reply_to);
+  if (date)
+    el_decode(message, "Date: ", date);
+  if (reply_to)
+    el_decode(message, "Reply to: ", reply_to);
+  if (in_reply_to)
+    el_decode(message, "In reply to: ", in_reply_to);
 
-  for (i=0 ; i<n_attr ; i++)
-    {
-    sprintf(str, "%s: ", attr_list[i]);
-    el_decode(message, str, attrib[i]);
-    }
+  if (attrib)
+    for (i=0 ; i<n_attr ; i++)
+      {
+      sprintf(str, "%s: ", attr_list[i]);
+      el_decode(message, str, attrib[i]);
+      }
 
   el_decode(message, "Attachment: ", attachment_all);
-  el_decode(message, "Encoding: ", encoding);
+  if (encoding)
+    el_decode(message, "Encoding: ", encoding);
 
-  /* break apart attachements */
-  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-    if (attachment[i] != NULL)
-      attachment[i][0] = 0;
-
-  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+  if (attachment)
     {
-    if (attachment[i] != NULL)
-      {
-      if (i == 0)
-        p = strtok(attachment_all, ",");
-      else
-        p = strtok(NULL, ",");
+    /* break apart attachements */
+    for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+      if (attachment[i] != NULL)
+        attachment[i][0] = 0;
 
-      if (p != NULL)
-        strcpy(attachment[i], p);
-      else
-        break;
+    for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+      {
+      if (attachment[i] != NULL)
+        {
+        if (i == 0)
+          p = strtok(attachment_all, ",");
+        else
+          p = strtok(NULL, ",");
+
+        if (p != NULL)
+          strcpy(attachment[i], p);
+        else
+          break;
+        }
       }
     }
 
@@ -1631,7 +1653,7 @@ char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
   if (p == NULL)
     p = strstr(message, "========================================\r");
 
-  if (text != NULL)
+  if (text)
     {
     if (p != NULL)
       {
@@ -1710,7 +1732,7 @@ int el_submit(LOGBOOK *lbs, int message_id,
 
 \********************************************************************/
 {
-INT     n, i, size, fh, index, tail_size, orig_size, delta, reply_id;
+INT     n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id;
 struct  tm *tms;
 char    file_name[256], afile_name[MAX_ATTACHMENTS][256], dir[256], str[256],
         date[80], attachment_all[64*MAX_ATTACHMENTS],
@@ -1809,7 +1831,12 @@ BOOL    bedit;
     if (strncmp(message, "$@MID@$:", 8) != 0)
       {
       close(fh);
-      return -1;
+
+      /* file might have been edited, rebuild index */
+      free(lbs->el_index);
+      el_build_index(lbs);
+      return el_submit(lbs, message_id, attr_name, attr_value, n_attr, text, 
+                       in_reply_to, reply_to, encoding, afilename, buffer, buffer_size);
       }
 
     /* check for correct ID */
@@ -1888,13 +1915,19 @@ BOOL    bedit;
   sprintf(message, "$@MID@$: %d\n", message_id);
   sprintf(message+strlen(message), "Date: %s\n", date);
 
-  if (reply_to[0])
-    sprintf(message+strlen(message), "Reply to: %s\n", reply_to);
+  if (!equal_ustring(reply_to, "<keep>"))
+    {
+    if (reply_to[0])
+      sprintf(message+strlen(message), "Reply to: %s\n", reply_to);
+    }
   else if (rep1[0])
     sprintf(message+strlen(message), "Reply to: %s\n", rep1);
 
-  if (in_reply_to[0])
-    sprintf(message+strlen(message), "In reply to: %s\n", in_reply_to);
+  if (!equal_ustring(in_reply_to, "<keep>"))
+    {
+    if (in_reply_to[0])
+      sprintf(message+strlen(message), "In reply to: %s\n", in_reply_to);
+    }
   else if (rep2[0])
     sprintf(message+strlen(message), "In reply to: %s\n", rep2);
 
@@ -1968,15 +2001,16 @@ BOOL    bedit;
       n = write(fh, buffer, tail_size);
       free(buffer);
 
-      /* correct offsets for remaining messages */
+      /* correct offsets for remaining messages in same file */
       delta = strlen(message) - orig_size;
 
       for (i=0 ; i<lbs->n_el_index ; i++)
         if (lbs->el_index[i].message_id == message_id)
           break;
 
-      for (i++ ; i<lbs->n_el_index ; i++)
-        lbs->el_index[i].offset += delta;
+      for (j = i+1 ; j<lbs->n_el_index && 
+           equal_ustring(lbs->el_index[i].file_name, lbs->el_index[j].file_name); j++)
+        lbs->el_index[j].offset += delta;
       }
 
     /* truncate file here */
@@ -2019,8 +2053,60 @@ BOOL    bedit;
 
 /*------------------------------------------------------------------*/
 
+void remove_reference(LOGBOOK *lbs, int message_id, int remove_id, BOOL reply_to_flag)
+{
+char date[80], attr[MAX_N_ATTR][NAME_LENGTH], enc[80], in_reply_to[80], reply_to[256],
+     att[MAX_ATTACHMENTS][256];
+char *p, *ps, message[TEXT_SIZE+1000];
+int  size, n_attr, status;
+
+  printf("##Remove %d in %s from %d\n", remove_id, reply_to_flag ? "reply_to" : "in_reply_to", message_id);
+
+  n_attr = scan_attributes(lbs->name);
+
+  /* retrieve original message */
+  size = sizeof(message);
+  status = el_retrieve(lbs, message_id, date, attr_list, attr, n_attr,
+                       message, &size, in_reply_to, reply_to, att, enc);
+  if (status != EL_SUCCESS)
+    return;
+
+  if (reply_to_flag)
+    p = reply_to;
+  else
+    p = in_reply_to;
+
+  while (*p)
+    {
+    while (*p && (*p == ',' || *p == ' '))
+      p++;
+
+    ps = p;
+    while (isdigit(*ps))
+      ps++;
+
+    while (*ps && (*ps == ',' || *ps == ' '))
+      ps++;
+
+    if (atoi(p) == remove_id)
+      strcpy(p, ps);
+    else
+      while (isdigit(*p))
+        p++;
+    }
+
+  /* don't resubmit attachments */
+  memset(att, 0, sizeof(att));
+
+  /* write modified message */
+  el_submit(lbs, message_id, attr_list, attr, n_attr,
+            message, in_reply_to, reply_to, enc, att, NULL, NULL);
+}
+
+/*------------------------------------------------------------------*/
+
 INT el_delete_message(LOGBOOK *lbs, int message_id, BOOL delete_attachments,
-                      char attachment[MAX_ATTACHMENTS][256])
+                      char attachment[MAX_ATTACHMENTS][256], BOOL delete_bw_ref)
 /********************************************************************\
 
   Routine: el_delete_message
@@ -2042,7 +2128,7 @@ INT el_delete_message(LOGBOOK *lbs, int message_id, BOOL delete_attachments,
 \********************************************************************/
 {
 INT  i, index, n, size, fh, tail_size;
-char str[256], file_name[256];
+char str[256], file_name[256], reply_to[80], in_reply_to[256];
 char *buffer, *p;
 char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
 
@@ -2069,11 +2155,22 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
   message[i] = 0;
 
   if (strncmp(message, "$@MID@$:", 8) != 0)
-    return EL_FILE_ERROR;
+    {
+    close(fh);
+    
+    /* file might have been edited, rebuild index */
+    free(lbs->el_index);
+    el_build_index(lbs);
+    return el_delete_message(lbs, message_id, delete_attachments,
+                             attachment, delete_bw_ref);
+    }
 
   /* check for correct ID */
   if (atoi(message+8) != message_id)
+    {
+    close(fh);
     return EL_FILE_ERROR;
+    }
 
   /* decode message size */
   p = strstr(message+8, "$@MID@$:");
@@ -2117,6 +2214,10 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
       }
     }
 
+  /* decode references */
+  el_decode(message, "Reply to: ", reply_to);
+  el_decode(message, "In reply to: ", in_reply_to);
+
   /* buffer tail of logfile */
   lseek(fh, 0, SEEK_END);
   tail_size = TELL(fh) - (lbs->el_index[index].offset+size);
@@ -2156,10 +2257,47 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
     remove(file_name);
 
   /* remove message from index */
-  for (i=index ; i<lbs->n_el_index ; i++)
+  strcpy(str, lbs->el_index[index].file_name);
+  for (i=index ; i<lbs->n_el_index-1 ; i++)
+    {
     memcpy(&lbs->el_index[i], &lbs->el_index[i+1], sizeof(EL_INDEX));
+    if (equal_ustring(lbs->el_index[i].file_name, str))
+      lbs->el_index[i].offset -= size;
+    }
   lbs->n_el_index--;
   lbs->el_index = realloc(lbs->el_index, sizeof(EL_INDEX)*lbs->n_el_index);
+
+  /* delete also replies to this message */
+  if (reply_to[0])
+    {
+    p = reply_to;
+    do
+      {
+      if (atoi(p))
+        el_delete_message(lbs, atoi(p), TRUE, NULL, FALSE);
+
+      while (*p && isdigit(*p))
+        p++;
+      while (*p && (*p == ',' || *p == ' '))
+        p++;
+      } while(*p);
+    }
+
+  /* delete backward references */
+  if (in_reply_to[0] && delete_bw_ref)
+    {
+    p = in_reply_to;
+    do
+      {
+      if (atoi(p))
+        remove_reference(lbs, atoi(p), message_id, TRUE);
+
+      while (*p && isdigit(*p))
+        p++;
+      while (*p && (*p == ',' || *p == ' '))
+        p++;
+      } while(*p);
+    }
 
   return EL_SUCCESS;
 }
@@ -4132,7 +4270,7 @@ char str[80];
 void show_elog_delete(LOGBOOK *lbs, int message_id)
 {
 int    status;
-char   str[256];
+char   str[256], in_reply_to[80], reply_to[256];
 
   /* redirect if confirm = NO */
   if (getparam("confirm") && *getparam("confirm") &&
@@ -4156,7 +4294,7 @@ char   str[256];
     if (strcmp(getparam("confirm"), loc("Yes")) == 0)
       {
       /* delete message */
-      status = el_delete_message(lbs, message_id, TRUE, NULL);
+      status = el_delete_message(lbs, message_id, TRUE, NULL, TRUE);
       rsprintf("<tr><td bgcolor=#80FF80 align=center>");
       if (status == EL_SUCCESS)
         rsprintf("<b>%s</b></tr>\n", loc("Message successfully deleted"));
@@ -4177,7 +4315,16 @@ char   str[256];
     rsprintf("<font color=%s><b>%s</b></font></td></tr>\n", gt("Title fontcolor"),
             loc("Are you sure to delete this message?"));
 
-    rsprintf("<tr><td bgcolor=%s align=center>%d</td></tr>\n", gt("Cell BGColor"), message_id);
+    /* check for replies */
+
+    /* retrieve original message */
+    el_retrieve(lbs, message_id, NULL, attr_list, NULL, 0,
+                NULL, NULL, in_reply_to, reply_to, NULL, NULL);
+
+    if (reply_to[0])
+      rsprintf("<tr><td bgcolor=%s align=center>%d<br>%s</td></tr>\n", gt("Cell BGColor"), message_id, loc("and all its replies"));
+    else
+      rsprintf("<tr><td bgcolor=%s align=center>%d</td></tr>\n", gt("Cell BGColor"), message_id);
 
     rsprintf("<tr><td bgcolor=%s align=center><input type=submit name=confirm value=\"%s\">\n",
               gt("Cell BGColor"), loc("Yes"));
@@ -4187,6 +4334,83 @@ char   str[256];
 
   rsprintf("</table></td></tr></table>\n");
   rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+int show_download_page(LOGBOOK *lbs, char *path)
+{
+char   file_name[256], str[256];
+int    index, message_id, fh, i, size;
+char   message[TEXT_SIZE+1000], *p;  
+time_t now;
+struct tm *gmt;
+
+  message_id = atoi(path);
+
+  for (index = 0 ; index < lbs->n_el_index ; index++)
+    if (lbs->el_index[index].message_id == message_id)
+      break;
+
+  if (index == lbs->n_el_index)
+    return EL_NO_MSG;
+
+  sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
+  fh = open(file_name, O_RDWR | O_BINARY, 0644);
+  if (fh < 0)
+    return EL_FILE_ERROR;
+
+  lseek(fh, lbs->el_index[index].offset, SEEK_SET);
+  i = read(fh, message, sizeof(message)-1);
+  if (i <= 0)
+    {
+    close(fh);
+    return EL_FILE_ERROR;
+    }
+
+  message[i] = 0;
+  close(fh);
+
+  /* decode message size */
+  p = strstr(message+8, "$@MID@$:");
+  if (p == NULL)
+    size = strlen(message);
+  else
+    size = (int) p - (int) message;
+
+  message[size] = 0;
+
+  /* header */
+  rsprintf("HTTP/1.1 200 Document follows\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+  rsprintf("Accept-Ranges: bytes\r\n");
+
+  time(&now);
+  now += (int) (3600*3);
+  gmt = gmtime(&now);
+  strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+  rsprintf("Expires: %s\r\n", str);
+
+  if (use_keepalive)
+    {
+    rsprintf("Connection: Keep-Alive\r\n");
+    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+    }
+
+  rsprintf("Content-Type: text/plain\r\n");
+  rsprintf("Content-Length: %d\r\n\r\n", size);
+
+  /* return if file too big */
+  if (size > (int) (sizeof(return_buffer) - strlen(return_buffer)))
+    {
+    printf("return buffer too small\n");
+    return EL_MEM_ERROR;
+    }
+
+  return_length = strlen(return_buffer)+size;
+  strcat(return_buffer, message);
+
+  return EL_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -4657,6 +4881,9 @@ char   *p;
   status = el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
                        text, &size, in_reply_to, reply_to,
                        attachment, encoding);
+
+  if (status != EL_SUCCESS)
+    return;
 
   display_line(lbs, message_id, 0, "threaded", level, printable, 0,
                FALSE, date, reply_to, n_attr_disp, disp_attr, 
@@ -5221,6 +5448,8 @@ struct tm tms, *ptms;
                            text, &size, in_reply_to, reply_to,
                            attachment,
                            encoding);
+      if (status != EL_SUCCESS)
+        break;
 
       for (i=0 ; i<lbs->n_el_index ; i++)
         if (lbs->el_index[i].message_id == message_id)
@@ -5549,19 +5778,22 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, message_id;
       atoi(getparam("resubmit")) == 1)
     {
     /* delete old message */
-    el_delete_message(lbs, atoi(getparam("orig")), FALSE, att_file);
+    el_delete_message(lbs, atoi(getparam("orig")), FALSE, att_file, TRUE);
     unsetparam("orig");
     }
   else
     {
     if (*getparam("edit"))
+      {
       message_id = atoi(getparam("orig"));
+      strcpy(in_reply_to, "<keep>");
+      }
     else
       strcpy(in_reply_to, getparam("orig"));
     }
 
   message_id = el_submit(lbs, message_id, attr_list, attrib, n_attr, getparam("text"),
-                     in_reply_to, "", *getparam("html") ? "HTML" : "plain",
+                     in_reply_to, "<keep>", *getparam("html") ? "HTML" : "plain",
                      att_file,
                      _attachment_buffer,
                      _attachment_size);
@@ -5808,7 +6040,7 @@ LOGBOOK *lbs_dest;
   /* delete original message for move */
   if (move)
     {
-    el_delete_message(lbs, src_id, TRUE, NULL);
+    el_delete_message(lbs, src_id, TRUE, NULL, TRUE);
 
     /* check if this was the last message */
     src_id = el_search_message(lbs, EL_NEXT, src_id);
@@ -5939,6 +6171,8 @@ BOOL   first;
   strcat(other_str, loc("Search"));
   strcat(other_str, " ");
   strcat(other_str, loc("Save"));
+  strcat(other_str, " ");
+  strcat(other_str, loc("Download"));
   strcat(other_str, " ");
   strcat(other_str, loc("Cancel"));
   strcat(other_str, " ");
@@ -6089,7 +6323,14 @@ BOOL   first;
     {
     if (!save_config())
       return;
-    redirect(".");
+    sprintf(str, "../%s/", lbs->name_enc);
+    redirect(str);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Download")))
+    {
+    show_download_page(lbs, dec_path);
     return;
     }
 
@@ -7217,7 +7458,7 @@ LOGBOOK *cur_lb;
 
     sprintf(str, "%s", getparam("redir"));
     if (!str[0])
-      strcpy(str, ".");
+      sprintf(str, "../%s/", logbook_enc);
 
     rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
     return;
@@ -7266,7 +7507,7 @@ LOGBOOK *cur_lb;
 
     sprintf(str, "%s", getparam("redir"));
     if (!str[0])
-      strcpy(str, ".");
+      sprintf(str, "../%s/", logbook_enc);
 
     rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
     return;
@@ -7332,7 +7573,7 @@ LOGBOOK *cur_lb;
 
     sprintf(str, "%s", getparam("redir"));
     if (!str[0])
-      strcpy(str, ".");
+      sprintf(str, "../%s/", logbook_enc);
 
     rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
     return;
@@ -7382,7 +7623,8 @@ LOGBOOK *cur_lb;
 
   if (equal_ustring(command, loc("Back")))
     {
-    redirect(".");
+    sprintf(str, "../%s/", logbook_enc);
+    redirect(str);
     return;
     }
 
