@@ -1,5 +1,5 @@
-Version 2.0.6, released August xx, 2002
-=======================================
+Version 2.1.0, released August 9th, 2002
+========================================
 
 - Fixed compiling problem under Solaris
 - Added "Guest menu commands" option for anonymous login
@@ -9,6 +9,15 @@ Version 2.0.6, released August xx, 2002
 - Added sorting by columns
 - Added page wise display with navigation bar
 - Show number of entries in logbook selection page
+- Changed "config" command to "admin" command
+- Added new config user page
+- Added email notify flag to password file
+- Added "Admin user" to config file
+- Added "Suppress email on edit" to config file
+- Added self-registration option
+- Added "Find Guest Menu commands"
+- Added "entry data" and "message id" to substitution list
+- Preverve attributes on edit even for preset attributes
 
 Version 2.0.5, released July 23rd, 2002
 =======================================
