@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.459  2004/08/11 14:03:35  midas
+   Implemented possibility to server .html files through elog
+
    Revision 1.458  2004/08/11 06:41:35  midas
    Release 2.5.4-2
 
@@ -18841,7 +18844,7 @@ void interprete(char *lbook, char *path)
        || strstr(pfile, ".gif") || strstr(pfile, ".ico")
        || strstr(pfile, ".jpg") || strstr(pfile, ".jpeg")
        || strstr(pfile, ".png") || strstr(pfile, ".css")
-       || strstr(pfile, ".js")) {
+       || strstr(pfile, ".js") || strstr(pfile, ".html")) {
       if ((strlen(pfile) > 13 && pfile[6] == '_'
            && pfile[13] == '_') || (strlen(pfile) > 13 && pfile[6] == '_'
                                     && pfile[13] == '/')) {
