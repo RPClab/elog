@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.13  2002/02/25 16:12:26  midas
+  Added BGImage and BDTImage in themes
+
   Revision 1.12  2002/02/25 15:31:04  midas
   Made "move to", "copy to" and "submit" (from elog) work in other languages
 
@@ -13,7 +16,7 @@
   Fixed small bug
 
   Revision 1.10  2002/01/31 00:51:41  midas
-  Small patch to make elogd run under Max OS X (Darwin), thanks to Dominik Westner <westner@logicunited.com>
+  Small patch to make elogd run under Mac OS X (Darwin), thanks to Dominik Westner <westner@logicunited.com>
 
   Revision 1.9  2002/01/30 04:26:05  midas
   Added flag 'restrict edit = 0/1'
@@ -942,6 +945,9 @@ THEME default_theme [] = {
 
   { "List bgcolor1",          "#DDEEBB" },
   { "List bgcolor2",          "#FFFFB0" },
+
+  { "BGImage",                ""        },
+  { "BGTImage",               ""        },
 
   { "" }
 
@@ -2707,10 +2713,16 @@ void show_standard_header(char *title, char *path)
   rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
 
   rsprintf("<html><head><title>%s</title></head>\n", title);
-  if (path)
-    rsprintf("<body bgcolor=#FFFFFF><form method=\"GET\" action=\"/%s/%s\">\n\n", logbook_enc, path);
+
+  if (*gt("BGImage"))
+    rsprintf("<body bgcolor=#FFFFFF background=\"/%s/%s\">\n", logbook_enc, gt("BGImage"));
   else
-    rsprintf("<body bgcolor=#FFFFFF><form method=\"GET\" action=\"/%s\">\n\n", logbook_enc);
+    rsprintf("<body bgcolor=#FFFFFF>\n");
+  
+  if (path)
+    rsprintf("<form method=\"GET\" action=\"/%s/%s\">\n\n", logbook_enc, path);
+  else
+    rsprintf("<form method=\"GET\" action=\"/%s\">\n\n", logbook_enc);
 }
 
 /*------------------------------------------------------------------*/
@@ -6242,7 +6254,11 @@ FILE   *f;
     if (!getcfg(logbook, "Show text", str) || atoi(str) == 1)
       {
       rsprintf("<tr><td><table width=100%% border=0 cellpadding=1 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
-      rsprintf("<tr><td bgcolor=%s><br>\n", gt("Text BGColor"));
+      
+      if (*gt("BGTimage"))
+        rsprintf("<tr><td background=\"/%s/%s\" bgcolor=%s><br>\n", logbook_enc, gt("BGTimage"), gt("Text BGColor"));
+      else
+        rsprintf("<tr><td bgcolor=%s><br>\n", gt("Text BGColor"));
 
       if (equal_ustring(encoding, "plain"))
         {
