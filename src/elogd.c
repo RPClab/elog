@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.434  2004/08/04 13:38:43  midas
+   Removed \r for syslog
+
    Revision 1.433  2004/08/04 13:32:27  midas
    Fixed windows service related problems
 
@@ -981,11 +984,22 @@ HANDLE hEventLog;
 /* Print MSG to syslog */
 void print_syslog(const char *msg)
 {
+   char *p;
+
+   /* strip trailing \r and \n */
+   p = malloc(strlen(msg));
+   assert(p);
+   strcpy(p, msg);
+   while (p[strlen(p)-1] == '\r' || p[strlen(p)-1] == '\n')
+      p[strlen(p)-1] = 0;
+
 #ifdef OS_UNIX
    syslog(SYSLOG_PRIORITY, "%s", msg);
 #else
    ReportEvent(hEventLog, EVENTLOG_INFORMATION_TYPE, 0, 0, NULL, 1, 0, &msg, NULL);
 #endif
+
+   free(p);
 }
 
 /* Print MSG to stderr */
@@ -997,11 +1011,22 @@ void print_stderr(const char *msg)
 /* Dump BUF to syslog */
 void fputs_syslog(const char *buf)
 {
+   char *p;
+
+   /* strip trailing \r and \n */
+   p = malloc(strlen(buf));
+   assert(p);
+   strcpy(p, buf);
+   while (p[strlen(p)-1] == '\r' || p[strlen(p)-1] == '\n')
+      p[strlen(p)-1] = 0;
+
 #ifdef OS_UNIX
-   syslog(SYSLOG_PRIORITY, "%s", buf);
+   syslog(SYSLOG_PRIORITY, "%s", p);
 #else
-   ReportEvent(hEventLog, EVENTLOG_INFORMATION_TYPE, 0, 0, NULL, 1, 0, &buf, NULL);
+   ReportEvent(hEventLog, EVENTLOG_INFORMATION_TYPE, 0, 0, NULL, 1, 0, &p, NULL);
 #endif
+
+   free(p);
 }
 
 /* Dump BUF to stderr */
