@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.107  2002/11/29 10:37:10  midas
+  Added strlcpy and strlcat
+
   Revision 2.106  2002/11/28 16:28:59  midas
   Fixed bug with config and German
 
@@ -675,6 +678,74 @@ BOOL equal_ustring(char *str1, char *str2)
     return FALSE;
 
   return TRUE;
+}
+
+/*---- strlcpy and strlcat to avoid buffer overflow ----------------*/
+
+/*
+ * Copy src to string dst of size siz.  At most siz-1 characters
+ * will be copied.  Always NUL terminates (unless size == 0).
+ * Returns strlen(src); if retval >= siz, truncation occurred.
+ */
+size_t strlcpy(char *dst, const char *src, size_t size)
+{
+char *d = dst;
+const char *s = src;
+size_t n = size;
+
+  /* Copy as many bytes as will fit */
+  if (n != 0 && --n != 0)
+    {
+    do
+      {
+      if ((*d++ = *s++) == 0)
+        break;
+      } while (--n != 0);
+    }
+
+  /* Not enough room in dst, add NUL and traverse rest of src */
+  if (n == 0)
+    {
+    if (size != 0)
+      *d = '\0';    /* NUL-terminate dst */
+    while (*s++);
+    }
+
+  return (s - src - 1); /* count does not include NUL */
+}
+
+/*
+ * Appends src to string dst of size siz (unlike strncat, siz is the
+ * full size of dst, not space left).  At most siz-1 characters
+ * will be copied.  Always NUL terminates (unless size <= strlen(dst)).
+ * Returns strlen(src) + MIN(size, strlen(initial dst)).
+ * If retval >= size, truncation occurred.
+ */
+size_t strlcat(char *dst, const char *src, size_t size)
+{
+char *d = dst;
+const char *s = src;
+size_t n = size;
+size_t dlen;
+
+	/* Find the end of dst and adjust bytes left but don't go past end */
+	while (n-- != 0 && *d != '\0')
+		d++;
+	dlen = d - dst;
+	n = size - dlen;
+
+	if (n == 0)
+		return(dlen + strlen(s));
+	while (*s != '\0') {
+		if (n != 1) {
+			*d++ = *s;
+			n--;
+		}
+		s++;
+	}
+	*d = '\0';
+
+	return(dlen + (s - src));	/* count does not include NUL */
 }
 
 /*-------------------------------------------------------------------*/
@@ -3883,7 +3954,7 @@ struct tm *gmt;
 
 /*------------------------------------------------------------------*/
 
-void send_file(char *file_name)
+void send_file_direct(char *file_name)
 {
 int    fh, i, length;
 char   str[256];
@@ -8201,7 +8272,7 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id, resubmit_or
       strcpy(file_name, cfg_dir);
       strcat(file_name, str);
       }
-    send_file(file_name);
+    send_file_direct(file_name);
     return;
     }
 
@@ -9691,7 +9762,7 @@ FILE    *f;
       strcpy(file_name, cfg_dir);
       strcat(file_name, str);
       }
-    send_file(file_name);
+    send_file_direct(file_name);
     return;
     }
 
@@ -10045,7 +10116,7 @@ FILE    *f;
       strcat(file_name, dec_path);
       }
 
-    send_file(file_name);
+    send_file_direct(file_name);
     return;
     }
 
@@ -10110,7 +10181,7 @@ FILE    *f;
     else
       {
       fclose(f);
-      send_file(file_name);
+      send_file_direct(file_name);
       }
     return;
     }
@@ -10311,7 +10382,7 @@ FILE    *f;
       strcpy(file_name, cfg_dir);
       strcat(file_name, str);
       }
-    send_file(file_name);
+    send_file_direct(file_name);
     return;
     }
 
@@ -10927,7 +10998,7 @@ struct timeval       timeout;
           goto error;
         else
           {
-          printf(net_buffer);
+          puts(net_buffer);
           goto error;
           }
 
@@ -11081,7 +11152,7 @@ struct timeval       timeout;
         /* serve file directly */
         strcpy(str, cfg_dir);
         strcat(str, logbook);
-        send_file(str);
+        send_file_direct(str);
         send(_sock, return_buffer, return_length, 0);
 
         goto error;
