@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.116  2003/06/04 13:20:06  midas
+  Fixed problem with 'change elogd.cfg' and user-defined menu commands
+
   Revision 1.115  2003/06/04 12:57:46  midas
   Added attachment referencing
 
@@ -868,7 +871,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.3.7"
+#define VERSION "2.3.8"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -7987,6 +7990,12 @@ int  i, n;
           continue;
         }
       strcat(menu_str, menu_item[i]);
+      strcat(menu_str, ", ");
+      }
+
+    if (strstr(admin_user, getparam("unm")) != NULL)
+      {
+      strcat(menu_str, loc("Change elogd.cfg"));
       strcat(menu_str, ", ");
       }
     }
