@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.265  2004/02/25 15:55:19  midas
+   Expand substitutions with 'preset' and conditional attributes
+
    Revision 1.264  2004/02/25 14:39:26  midas
    Automatic hot links terminated with a '.' get correctly displayed
 
@@ -6498,7 +6501,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
          if (!bedit || (breedit && i == 2)) {   /* subst on reedit only if preset is under condition */
 
-            i = build_subst_list(lbs, slist, svalue, NULL);
+            i = build_subst_list(lbs, slist, svalue, attrib);
             strsubst(preset, slist, svalue, i);
 
             /* check for index substitution */
