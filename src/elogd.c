@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.425  2004/08/04 07:56:33  midas
+   Changed 0644 to 0755 in mkdir()
+
    Revision 1.424  2004/08/04 07:53:43  midas
    Changed 644 to 0644
 
@@ -21000,7 +21003,7 @@ int main(int argc, char *argv[])
 #ifdef OS_WINNT
       if (mkdir(logbook_dir) == 0)
 #else
-      if (mkdir(logbook_dir, 0644) == 0)
+      if (mkdir(logbook_dir, 0755) == 0)
 #endif
          eprintf("Logbook directory \"%s\" successfully created.\n", logbook_dir);
       else {
