@@ -37,6 +37,12 @@ td {
 }
 
 /* logbook selection page */
+.selframe {
+  width:60%;
+  background-color:#486090; 
+  border:1px solid #486090;
+}
+
 .seltitle {
   border:1px solid #0000FF;
   border-top:1px solid white;

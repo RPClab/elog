@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.166  2003/12/05 12:16:23  midas
+  Added .selframe style class
+
   Revision 1.165  2003/12/04 20:56:51  midas
   Added 'date on reply' flag
 
@@ -12120,7 +12123,7 @@ struct tm *tms;
 
   rsprintf("<body>\n\n");
 
-  rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>\n");
+  rsprintf("<table class=\"selframe\" cellspacing=0 align=center>\n");
   rsprintf("<tr><td colspan=3 class=\"dlgtitle\">\n");
 
   if (getcfg("global", "Welcome title", str))
