@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.548  2005/01/26 20:32:50  ritt
+   Fixed other problem in searching
+
    Revision 1.547  2005/01/26 19:25:15  ritt
    Fixed bug yielding in wrong search results
 
@@ -15042,7 +15045,6 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          }
       }
 
-
       /* check if sort by attribute */
       if (strieq(getparam("sort"), attr_list[i])
           || strieq(getparam("rsort"), attr_list[i]))
@@ -15116,12 +15118,14 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          if (status != EL_SUCCESS)
             break;
 
-         /* apply filter for AF_MULTI attributes */
-         searched = found = FALSE;
+         /* apply filter for attributes */
          for (i = 0; i < lbs->n_attr; i++) {
+            
+            /* check for multi attributes */
             if (attr_flags[i] & AF_MULTI) {
 
                /* OR of any of the values */
+               searched = found = FALSE;
                for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
                   sprintf(str, "%s_%d", attr_list[i], j);
                   if (*getparam(str)) {
@@ -15133,79 +15137,73 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                   }
                }
 
-               if (found)
-                  break;
-
                if (searched && !found)
                   break;
-            }
-         }
 
-         if (searched && !found) {
-            msg_list[index].lbs = NULL;
-            continue;
-            break;
-         }
+            } else if (attr_flags[i] & AF_DATE) {
 
-         searched = found = FALSE;
+               /* check for last[i]/next[i] */
 
-         for (i = 0; i < lbs->n_attr; i++) {
+               ltime = atoi(getparam(attr_list[i]));
 
-            if (*getparam(attr_list[i])) {
+               /* today 12h noon */
+               time(&now);
+               memcpy(&tms, localtime(&now), sizeof(struct tm));
+               tms.tm_hour = 12;
+               tms.tm_min = 0;
+               tms.tm_sec = 0;
+               now = mktime(&tms);
 
-               /* check non-multi attributes */
-               if ((attr_flags[i] & AF_MULTI) == 0) {
-
-                  searched = TRUE;
-                  strcpy(str, getparam(attr_list[i]));
-
-                  /* if value starts with '$', substitute it */
-                  if (str[0] == '$') {
-                     j = build_subst_list(lbs,
-                                          (char (*)[NAME_LENGTH]) slist,
-                                          (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
-                     sprintf(mid, "%d", message_id);
-                     add_subst_list((char (*)[NAME_LENGTH]) slist,
-                                    (char (*)[NAME_LENGTH]) svalue, "message id", mid, &j);
-                     add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
-                                    (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
-
-                     strsubst(str, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
-                     setparam(attr_list[i], str);
-                  }
-
-                  status = regexec(re_buf + 1 + i, attrib[i], 10, pmatch, 0);
-                  if (status != REG_NOMATCH) {
-                     found = TRUE;
+               /* negative i: last [i] days */
+               if (ltime < 0)
+                  if (atoi(attrib[i]) < now + ltime * 3600 * 24 || atoi(attrib[i]) > now)
                      break;
-                  }
-               }
-            }
-         }
 
-         if (searched && !found) {
-            msg_list[index].lbs = NULL;
-            continue;
-         }
+               /* positive i: next [i] days */
+               if (ltime > 0)
+                  if (atoi(attrib[i]) > now + ltime * 3600 * 24 || atoi(attrib[i]) < now)
+                     break;
 
-         /* apply filter for AF_DATE attributes */
-         for (i = 0; i < lbs->n_attr; i++)
-            if (attr_flags[i] & AF_DATE) {
-
+               /* check for start date / end date */
                sprintf(str, "%da", i);
                ltime = retrieve_date(str, TRUE);
-               if (ltime > 0 && atoi(attrib[i]) < ltime) {
-                  msg_list[index].lbs = NULL;
-                  continue;
-               }
+               if (ltime > 0 && atoi(attrib[i]) < ltime)
+                  break;
 
                sprintf(str, "%db", i);
                ltime = retrieve_date(str, FALSE);
-               if (ltime > 0 && (atoi(attrib[i]) > ltime || atoi(attrib[i]) == 0)) {
-                  msg_list[index].lbs = NULL;
-                  continue;
+               if (ltime > 0 && (atoi(attrib[i]) > ltime || atoi(attrib[i]) == 0))
+                  break;
+
+            } else {
+
+               strcpy(str, getparam(attr_list[i]));
+
+               /* if value starts with '$', substitute it */
+               if (str[0] == '$') {
+                  j = build_subst_list(lbs,
+                                       (char (*)[NAME_LENGTH]) slist,
+                                       (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
+                  sprintf(mid, "%d", message_id);
+                  add_subst_list((char (*)[NAME_LENGTH]) slist,
+                                 (char (*)[NAME_LENGTH]) svalue, "message id", mid, &j);
+                  add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
+                                 (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
+
+                  strsubst(str, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
+                  setparam(attr_list[i], str);
                }
+
+               status = regexec(re_buf + 1 + i, attrib[i], 10, pmatch, 0);
+               if (status == REG_NOMATCH)
+                  break;
             }
+         }
+
+         if (i < lbs->n_attr) {
+            msg_list[index].lbs = NULL;
+            continue;
+         }
 
          if (*getparam("subtext")) {
 
