@@ -6,6 +6,11 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.149  2003/10/24 20:14:45  midas
+  - user cannot change login name if already existing
+  - user cannot search in logbooks of which he has no access
+  - added date of last entry in logbook selection pageg
+
   Revision 1.148  2003/10/01 06:52:01  midas
   Started to implement synchronize
 
@@ -36,7 +41,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.3.9"
+#define VERSION "2.3.10beta"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -318,6 +323,7 @@ int execute_shell(LOGBOOK *lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LEN
 BOOL isparam(char *param);
 char *getparam(char *param);
 void logf(LOGBOOK *lbs, const char *format, ...);
+BOOL check_login_user(LOGBOOK *lbs, char *user);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -6877,23 +6883,23 @@ void show_new_user_page(LOGBOOK *lbs)
   /*---- entry form ----*/
 
   rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Login name"));
-  rsprintf("<td><input type=text size=40 name=new_user_name> <i>(%s)</i></td></tr>\n",
+  rsprintf("<td><input type=text size=40 name=new_user_name></td><td align=left><i><font size=2>(%s)</i></font></td></tr>\n",
             loc("name may not contain blanks"));
 
   rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Full name"));
-  rsprintf("<td><input type=text size=40 name=new_full_name></tr>\n");
+  rsprintf("<td colspan=2><input type=text size=40 name=new_full_name></tr>\n");
 
   rsprintf("<tr><td nowrap width=\"10%%\">Email:</td>\n");
-  rsprintf("<td><input type=text size=40 name=new_user_email></tr>\n");
+  rsprintf("<td colspan=2><input type=text size=40 name=new_user_email></tr>\n");
 
-  rsprintf("<tr><td colspan=2>%s:&nbsp;\n", loc("Enable email notifications"));
+  rsprintf("<tr><td colspan=3>%s:&nbsp;\n", loc("Enable email notifications"));
   rsprintf("<input type=checkbox checked name=email_notify value=all></tr>\n");
 
   rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Password"));
-  rsprintf("<td><input type=password size=40 name=newpwd>\n");
+  rsprintf("<td colspan=2><input type=password size=40 name=newpwd>\n");
 
   rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Retype password"));
-  rsprintf("<td><input type=password size=40 name=newpwd2>\n");
+  rsprintf("<td colspan=2><input type=password size=40 name=newpwd2>\n");
 
   rsprintf("</td></tr></table></td></tr>\n");
 
@@ -9100,6 +9106,10 @@ LOGBOOK *lbs_cur;
       {
       if (!lb_list[n_logbook].name[0])
         break;
+
+      if (isparam("unm") && !check_login_user(&lb_list[n_logbook], getparam("unm")))
+        continue;
+
       n_msg += *lb_list[n_logbook].n_el_index;
       }
     }
@@ -9116,6 +9126,9 @@ LOGBOOK *lbs_cur;
     {
     if (search_all)
       lbs_cur = &lb_list[i];
+
+    if (isparam("unm") && !check_login_user(lbs_cur, getparam("unm")))
+      continue;
 
     for (j=0 ; j<*lbs_cur->n_el_index ; j++)
       {
@@ -10167,7 +10180,7 @@ char   str[1000], str2[1000], file_name[256], error[1000], date[80],
        mail_list[MAX_N_LIST][NAME_LENGTH], list[10000],
        attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[MAX_PATH_LENGTH], in_reply_to[80],
        reply_to[256], user[256], user_email[256], email_notify[256];
-char   mail_param[1000], *mail_to, user_list[MAX_N_LIST][NAME_LENGTH];
+char   mail_param[1000], *mail_to;
 char   att_file[MAX_ATTACHMENTS][256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
 int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_orig, mail_to_size;
@@ -10423,17 +10436,8 @@ int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_or
           if (email_notify[0])
             {
             /* check if user has access to this logbook */
-            if (getcfg(lbs->name, "Login user", str))
-              {
-              n = strbreak(str, user_list, MAX_N_LIST);
-              for (i=0 ; i<n ; i++)
-                if (strcmp(user, user_list[i]) == 0)
-                  break;
-
-              /* invalid user if name not in list */
-              if (i == n)
-                continue;
-              }
+            if (!check_login_user(lbs, user))
+              continue;
 
             if ((int)strlen(mail_to) + (int)strlen(user_email) >= mail_to_size)
               {
@@ -11711,11 +11715,30 @@ int   i;
 
 /*------------------------------------------------------------------*/
 
+BOOL check_login_user(LOGBOOK *lbs, char *user)
+{
+int   i, n;
+char  str[1000];
+char  list[MAX_N_LIST][NAME_LENGTH];
+
+  if (getcfg(lbs->name, "Login user", str) && user[0])
+    {
+    n = strbreak(str, list, MAX_N_LIST);
+    for (i=0 ; i<n ; i++)
+      if (strcmp(user, list[i]) == 0)
+        break;
+
+    if (i== n)
+      return FALSE;
+    }
+  return TRUE;
+}
+
+/*------------------------------------------------------------------*/
+
 BOOL check_user_password(LOGBOOK *lbs, char *user, char *password, char *redir)
 {
 char  status, str[1000], upwd[256], full_name[256], email[256];
-char  list[MAX_N_LIST][NAME_LENGTH];
-int   i, n;
 
   if (lbs == NULL)
     status = get_user_line("global", user, upwd, full_name, email, NULL);
@@ -11754,27 +11777,18 @@ int   i, n;
     rsprintf("<tr><td class=\"errormsg\">");
     rsprintf("<a href=\"../\">%s</a></td></tr>", loc("Goto logbook selection page"));
 
-    rsprintf("<</table>\n");
+    rsprintf("</table>\n");
     rsprintf("</center></body></html>\n");
 
     return FALSE;
     }
 
-  if (getcfg(lbs->name, "Login user", str) && user[0])
+  if (!check_login_user(lbs, user))
     {
-    n = strbreak(str, list, MAX_N_LIST);
-    for (i=0 ; i<n ; i++)
-      if (strcmp(user, list[i]) == 0)
-        break;
+    sprintf(str, "?iusr=%s", user);
 
-    /* invalid user if name not in list */
-    if (i == n)
-      {
-      sprintf(str, "?iusr=%s", user);
-
-      redirect(lbs, str);
-      return FALSE;
-      }
+    redirect(lbs, str);
+    return FALSE;
     }
 
   if (status == 1)
@@ -11880,6 +11894,7 @@ void show_selection_page()
 {
 int  i;
 char str[10000];
+struct tm *tms;
 
   if (getcfg("global", "Page Title", str))
     show_html_header(NULL, TRUE, str);
@@ -11903,6 +11918,12 @@ char str[10000];
 
   rsprintf("</td></tr>\n");
 
+  rsprintf("<tr>\n");
+  rsprintf("<th class=\"seltitle\">%s</th>\n", loc("Logbook"));
+  rsprintf("<th class=\"seltitle\">%s</th>\n", loc("Entries"));
+  rsprintf("<th class=\"seltitle\">%s</th>\n", loc("Last submission"));
+  rsprintf("</tr>\n");
+
   for (i=0 ;  ; i++)
     {
     if (!lb_list[i].name[0])
@@ -11910,20 +11931,31 @@ char str[10000];
 
     if (!getcfg(lb_list[i].name, "Hidden", str) || atoi(str) == 0)
       {
-      rsprintf("<tr><td class=\"attribname\"><a href=\"%s/\">%s</a>", lb_list[i].name_enc, lb_list[i].name);
+      rsprintf("<tr><td class=\"sellogbook\"><a href=\"%s/\">%s</a>", lb_list[i].name_enc, lb_list[i].name);
 
       if (getcfg(lb_list[i].name, "Read password", str) ||
          (getcfg(lb_list[i].name, "Password file", str) &&
           !getcfg(lb_list[i].name, "Guest menu commands", str)))
         rsprintf("&nbsp;&nbsp;<img src=\"lock.gif\">");
 
-      rsprintf("</td>\n");
+      rsprintf("<br>\n");
       str[0] = 0;
       getcfg(lb_list[i].name, "Comment", str);
-      rsprintf("<td class=\"attribvalue\">%s&nbsp;</td>\n", str);
+      rsprintf("<span class=\"selcomment\">%s</span></td>\n", str);
 
-      rsprintf("<td nowrap class=\"attribvalue2\">");
-      rsprintf(loc("%d entries"), *lb_list[i].n_el_index);
+      rsprintf("<td nowrap class=\"selentries\">");
+      rsprintf("%d", *lb_list[i].n_el_index);
+      rsprintf("</td>\n");
+
+      rsprintf("<td nowrap class=\"selentries\">");
+      if (*lb_list[i].n_el_index == 0)
+        rsprintf("-");
+      else
+        {
+        tms = localtime(&(lb_list[i].el_index[*lb_list[i].n_el_index-1].file_time));
+        strftime(str, sizeof(str), "%a %b %d, %Y %H:%M", tms);
+        rsprintf(str);
+        }
       rsprintf("</td></tr>\n");
       }
     }
@@ -12714,6 +12746,17 @@ FILE    *f;
     {
     if (isparam("config"))
       {
+      if (!equal_ustring(getparam("config"), getparam("new_user_name")))
+        {
+        if (get_user_line(lbs->name, getparam("new_user_name"), NULL, NULL, NULL, NULL) == 1)
+          {
+          sprintf(str, "%s \"%s\" %s", loc("Login name"), getparam("new_user_name"), 
+                  loc("exists already"));
+          show_error(str);
+          return;
+          }
+        }
+
       /* change existing user */
       if (!save_user_config(lbs, getparam("config"), FALSE, FALSE))
         return;
