@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.20  2002/06/14 09:28:40  midas
+  Show error for URLs like '/logbook/<id>/'
+
   Revision 2.19  2002/06/14 07:21:38  midas
   Corrected parameters to qsort()
 
@@ -8050,7 +8053,7 @@ void server_loop(int tcp_port, int daemon)
 {
 int                  status, i, n, n_error, authorized, min, i_min, i_conn, length;
 struct sockaddr_in   serv_addr, acc_addr;
-char                 pwd[256], str[256], cl_pwd[256], *p;
+char                 pwd[256], str[256], url[256], cl_pwd[256], *p, *pd;
 char                 cookie[256], boundary[256], list[1000],
                      host_list[MAX_N_LIST][NAME_LENGTH], rem_host_name[256],
                      rem_host_ip[256], logbook[256], logbook_enc[256];
@@ -8520,6 +8523,32 @@ struct timeval       timeout;
         sprintf(str, "%s/", logbook_enc);
         redirect(str);
         goto redir;
+        }
+
+      /* check for trailing '/' after logbook/ID */
+      if (logbook[0] && *p == '/' && *(p+1) != ' ')
+        {
+        sprintf(url, "%s", logbook_enc);
+        pd = url+strlen(url);
+
+        while (*p && *p != ' ')
+          *pd++ = *p++;
+        *pd = 0;
+
+        if (*(p-1) == '/')
+          {
+          sprintf(str, "Invalid URL: %s", url);
+          show_error(str);
+          send(_sock, return_buffer, strlen_retbuf+1, 0);
+          keep_alive = 0;
+          if (verbose)
+            {
+            printf("==== Return ================================\n");
+            puts(return_buffer);
+            printf("\n\n");
+            }
+          goto error;
+          }
         }
 
       /* check if logbook exists */
