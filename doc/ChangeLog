@@ -1,3 +1,9 @@
+Version 2.3.3, released March 14th, 2003
+========================================
+
+- Fixed bug which prevented elogd to bind to port 80 under Linux
+- Resubmission of entries does not resubmit replies to those entries
+
 Version 2.3.2, released March 12th, 2003
 ========================================
 

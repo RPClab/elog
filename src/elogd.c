@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.48  2003/03/14 08:55:46  midas
+  Version 2.3.3
+
   Revision 1.47  2003/03/10 15:26:18  midas
   Fixed another bug with parameter filter
 
@@ -659,7 +662,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.3.2"
+#define VERSION "2.3.3"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -3371,7 +3374,7 @@ int el_move_message_thread(LOGBOOK *lbs, int message_id)
 int    i, n, size, new_id;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
        in_reply_to[80], reply_to[256], encoding[80];
-char   list[MAX_N_ATTR][NAME_LENGTH];
+char   list[MAX_N_ATTR][NAME_LENGTH], str[256];
 char   att_file[MAX_ATTACHMENTS][256];
 
   /* retrieve message */
@@ -3391,11 +3394,14 @@ char   att_file[MAX_ATTACHMENTS][256];
   el_delete_message(lbs, message_id, FALSE, NULL, FALSE, FALSE);
 
   /* move all replies recursively */
-  if (reply_to[0])
+  if (getcfg(lbs->name, "Resubmit replies", str) && atoi(str) == 1)
     {
-    n = strbreak(reply_to, list, MAX_N_ATTR);
-    for (i=0 ; i<n ; i++)
-      el_move_message_thread(lbs, atoi(list[i]));
+    if (reply_to[0])
+      {
+      n = strbreak(reply_to, list, MAX_N_ATTR);
+      for (i=0 ; i<n ; i++)
+        el_move_message_thread(lbs, atoi(list[i]));
+      }
     }
 
   return new_id;
@@ -11477,7 +11483,7 @@ int ka_time[N_MAX_CONNECTION];
 struct in_addr remote_addr[N_MAX_CONNECTION];
 char remote_host[N_MAX_CONNECTION][256];
 
-void server_loop(int tcp_port)
+void server_loop(int tcp_port, int daemon)
 {
 int                  status, i, n, n_error, authorized, min, i_min, i_conn, length;
 struct sockaddr_in   serv_addr, acc_addr;
@@ -11561,14 +11567,103 @@ struct stat          cfg_stat;
 
   /* open configuration file */
   getcfg("dummy", "dummy", str);
+  
+  /* initiate daemon */
+  if (daemon)
+    {
+    printf("Becoming a daemon...\n");
+    ss_daemon_init();
+    }
 
 #ifdef OS_UNIX
+  /* create PID file if given as command line parameter or if running under root */
+
+  if (geteuid() == 0 || pidfile[0])
+    {
+    int fd;
+    char buf[20];
+    struct stat finfo;
+
+    if (pidfile[0] == 0)
+      strcpy(pidfile, PIDFILE);
+
+    /* check if file exists */
+    if (stat(pidfile, &finfo) >= 0)
+      {
+      printf("File \"%s\" exists, using \"%s.%d\" instead.\n", pidfile, pidfile, tcp_port);
+      sprintf(pidfile + strlen(pidfile), ".%d", tcp_port);
+
+      /* check again for the new name */
+      if (stat(pidfile, &finfo) >= 0)
+        {
+        /* never overwrite a file */
+        printf("Refuse to overwrite existing file \"%s\".\n", pidfile);
+        exit(EXIT_FAILURE);
+        }
+      }
+
+    fd = open(pidfile, O_CREAT | O_RDWR, 0644);
+    if (fd < 0)
+      {
+      sprintf(str, "Error creating pid file \"%s\"", pidfile);
+      perror(str);
+      exit(EXIT_FAILURE);
+      }
+
+    sprintf(buf, "%d\n", (int)getpid());
+    if (write(fd, buf, strlen(buf)) == -1)
+      {
+      sprintf(str, "Error writing to pid file \"%s\"", pidfile);
+      perror(str);
+      exit(EXIT_FAILURE);
+      }
+    close(fd);
+    }
 
   /* install signal handler */
   signal(SIGTERM, ctrlc_handler);
   signal(SIGINT, ctrlc_handler);
   signal(SIGPIPE, SIG_IGN);
+
+  /* give up root privilege */
+
+  if (geteuid() == 0)
+    {
+    if (!getcfg("global", "Grp", str) || setgroup(str) < 0)
+      {
+      printf("Falling back to default group \"elog\"\n");
+      if (setgroup("elog") < 0)
+        {
+        printf("Falling back to default group \"%s\"\n", DEFAULT_GROUP);
+        if (setgroup(DEFAULT_GROUP) < 0)
+          {
+          printf("Refuse to run as setgid root.\n");
+          printf("Please consider to define a Grp statement in configuration file\n");
+          exit(EXIT_FAILURE);
+          }
+        }
+      }
+
+    if (!getcfg("global", "Usr", str) || setuser(str) < 0)
+      {
+      printf("Falling back to default user \"elog\"\n");
+      if (setuser("elog") < 0)
+        {
+        printf("Falling back to default user \"%s\"\n", DEFAULT_USER);
+        if (setuser(DEFAULT_USER) < 0)
+          {
+          printf("Refuse to run as setuid root.\n");
+          printf("Please consider to define a Usr statement in configuration file\n");
+          exit(EXIT_FAILURE);
+          }
+        }
+      }
+    }
 #endif
+
+  /* build logbook indices */
+  if (el_index_logbooks(FALSE) != EL_SUCCESS)
+    exit(EXIT_FAILURE);
 
   /* listen for connection */
   status = listen(lsock, SOMAXCONN);
@@ -12503,9 +12598,15 @@ char   read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256];
 time_t now;
 struct tm *tms;
 
+#ifdef OS_UNIX
+  /* save gid/uid to regain later */
+  orig_gid = getegid();
+  orig_uid = geteuid();
+#endif
+
   /* register cleanup function */
   atexit(cleanup);
-
+  
   tzset();
 
   read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = 0;
@@ -12541,7 +12642,7 @@ struct tm *tms;
   if (fh < 0)
     {
     printf("Configuration file \"%s\" not found.\n", config_file);
-    return 1;
+    exit(EXIT_FAILURE);
     }
   close(fh);
 
@@ -12570,7 +12671,7 @@ struct tm *tms;
       printf("Actual date/time: %02d%02d%02d_%02d%02d%02d\n",
              tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
              tms->tm_hour, tms->tm_min, tms->tm_sec);
-      return 0;
+      exit(EXIT_SUCCESS);
       }
     else if (argv[i][0] == '-')
       {
@@ -12613,149 +12714,36 @@ usage:
         printf("       -l <logbook> specify logbook for -r and -w commands\n\n");
         printf("       -k do not use keep-alive\n");
         printf("       -f path/filename for PID file\n\n");
-        return 0;
+        exit(EXIT_SUCCESS);
         }
       }
     }
 
-  /* get port from configuration file */
-  if (tcp_port_cl != 0)
-    tcp_port = tcp_port_cl;
-  else
+  if ((read_pwd[0] || write_pwd[0] || admin_pwd[0]) && !logbook[0])
     {
-    if (getcfg("global", "Port", str))
-      tcp_port = atoi(str);
+    printf("Must specify a lookbook via the -l parameter.\n");
+    exit(EXIT_SUCCESS);
     }
-  
-  /* initiate daemon */
-  if (daemon)
-    {
-    printf("Becoming a daemon...\n");
-    ss_daemon_init();
-    }
-
-#ifdef OS_UNIX
-  /* create PID file if given as command line parameter or if running under root */
-
-  if (!read_pwd[0] && !write_pwd[0] && !admin_pwd[0])
-    {
-    if (geteuid() == 0 || pidfile[0])
-      {
-      int fd;
-      char buf[20];
-      struct stat finfo;
-
-      if (pidfile[0] == 0)
-        strcpy(pidfile, PIDFILE);
-
-      /* check if file exists */
-      if (stat(pidfile, &finfo) >= 0)
-        {
-        printf("File \"%s\" exists, using \"%s.%d\" instead.\n", pidfile, pidfile, tcp_port);
-        sprintf(pidfile + strlen(pidfile), ".%d", tcp_port);
-
-        /* check again for the new name */
-        if (stat(pidfile, &finfo) >= 0)
-          {
-          /* never overwrite a file */
-          printf("Refuse to overwrite existing file \"%s\".\n", pidfile);
-          exit(EXIT_FAILURE);
-          }
-        }
-
-      fd = open(pidfile, O_CREAT | O_RDWR, 0644);
-      if (fd < 0)
-        {
-        sprintf(str, "Error creating pid file \"%s\"", pidfile);
-        perror(str);
-        exit(EXIT_FAILURE);
-        }
-
-      sprintf(buf, "%d\n", (int)getpid());
-      if (write(fd, buf, strlen(buf)) == -1)
-        {
-        sprintf(str, "Error writing to pid file \"%s\"", pidfile);
-        perror(str);
-        exit(EXIT_FAILURE);
-        }
-      close(fd);
-      }
-
-    /* save gid/uid to regain later for deleting the PID file */
-    orig_gid = getegid();
-    orig_uid = geteuid();
- 
-    /* give up root privilege */
-
-    if (geteuid() == 0)
-      {
-      if (!getcfg("global", "Grp", str) || setgroup(str) < 0)
-        {
-        printf("Falling back to default group \"elog\"\n");
-        if (setgroup("elog") < 0)
-          {
-          printf("Falling back to default group \"%s\"\n", DEFAULT_GROUP);
-          if (setgroup(DEFAULT_GROUP) < 0)
-            {
-            printf("Refuse to run as setgid root.\n");
-            printf("Please consider to define a Grp statement in configuration file\n");
-            exit(EXIT_FAILURE);
-            }
-          }
-        }
-
-      if (!getcfg("global", "Usr", str) || setuser(str) < 0)
-        {
-        printf("Falling back to default user \"elog\"\n");
-        if (setuser("elog") < 0)
-          {
-          printf("Falling back to default user \"%s\"\n", DEFAULT_USER);
-          if (setuser(DEFAULT_USER) < 0)
-            {
-            printf("Refuse to run as setuid root.\n");
-            printf("Please consider to define a Usr statement in configuration file\n");
-            exit(EXIT_FAILURE);
-            }
-          }
-        }
-      }
-    }
-#endif
 
   if (read_pwd[0])
     {
-    if (!logbook[0])
-      {
-      printf("Must specify a lookbook via the -l parameter.\n");
-      return 0;
-      }
     do_crypt(read_pwd, str);
     create_password(logbook, "Read Password", str);
-    return 0;
+    exit(EXIT_SUCCESS);
     }
 
   if (write_pwd[0])
     {
-    if (!logbook[0])
-      {
-      printf("Must specify a lookbook via the -l parameter.\n");
-      return 0;
-      }
     do_crypt(write_pwd, str);
     create_password(logbook, "Write Password", str);
-    return 0;
+    exit(EXIT_SUCCESS);
     }
 
   if (admin_pwd[0])
     {
-    if (!logbook[0])
-      {
-      printf("Must specify a lookbook via the -l parameter.\n");
-      return 0;
-      }
     do_crypt(admin_pwd, str);
     create_password(logbook, "Admin Password", str);
-    return 0;
+    exit(EXIT_SUCCESS);
     }
 
   /* extract resource directory from configuration file if not given */
@@ -12799,12 +12787,17 @@ usage:
     printf("Resource dir : %s\n", resource_dir[0] ? resource_dir : "current dir");
     printf("Logbook dir  : %s\n", logbook_dir[0] ? logbook_dir : "current dir");
     }
+  
+  /* get port from configuration file */
+  if (tcp_port_cl != 0)
+    tcp_port = tcp_port_cl;
+  else
+    {
+    if (getcfg("global", "Port", str))
+      tcp_port = atoi(str);
+    }
 
-  /* build logbook indices */
-  if (el_index_logbooks(FALSE) != EL_SUCCESS)
-    exit(EXIT_FAILURE);
-
-  server_loop(tcp_port);
+  server_loop(tcp_port, daemon);
 
   exit(EXIT_SUCCESS);
 }
