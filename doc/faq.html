@@ -59,7 +59,16 @@ all logbooks, the above statements can be placed in the <b><code>[global]</code>
 
 <LI><a name=#2><b>Are there any plans to implement a MySQL back end?</b>
 <p>
-No. The idea behind <b>ELOG</b> is that it is a <I>simple to use, simple to install</I> application. Many people use <b>ELOG</b> under Windows, and they even don't know what MySQL means. Other people like the flat file database format, because it's simple, easily accessible from other programs, and it's easy to backup certain days or months of the database (since the filenames contain the date). Since <b>ELOG</b> should be independent of any other package, some "switchable" backend between native <b>ELOG</b> format and MySQL would be needed, which is lots of work and not planned right now.
+No. The idea behind <b>ELOG</b> is that it is a <I>simple to use, simple to install</I> application.
+Many people use <b>ELOG</b> under Windows, and they even don't know what MySQL means. Other people like
+the flat file database format, because it's simple, easily accessible from other programs, and it's easy
+to backup certain days or months of the database (since the filenames contain the date). Since <b>ELOG
+</b> should be independent of any other package, some "switchable" backend between native <b>ELOG</b>
+format and MySQL would be needed, which is lots of work and not planned right now.<p>
+
+However, there are several contributions from other people who wrote scripts to put ELOG entries
+into a MySQL database. One is available at
+<a href="http://midas.psi.ch/elogdemo/Forum/387">http://midas.psi.ch/elogdemo/Forum/387</a>.
 <p>
 
 <LI><a name=#3><b>Can I run the ELOG daemon from inside Apache or any other Web server?</b>
