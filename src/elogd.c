@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.206  2004/01/22 12:29:48  midas
+   Search 'all logbooks' only for current top group
+
    Revision 1.205  2004/01/21 16:25:07  midas
    Changed 'message' to 'entry' consistently
 
@@ -4295,6 +4298,8 @@ void set_location(LOGBOOK * lbs, char *rel_path)
 void set_redir(LOGBOOK * lbs, char *redir)
 {
    char str[NAME_LENGTH];
+
+   str[0] = 0;
 
    /* prepare relative path */
    if (redir[0])
@@ -10166,6 +10171,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          if (!lb_list[n_logbook].name[0])
             break;
 
+         if (lbs->top_group[0] && !equal_ustring(lbs->top_group, lb_list[n_logbook].top_group))
+            continue;
+
          if (isparam("unm")
              && !check_login_user(&lb_list[n_logbook], getparam("unm")))
             continue;
@@ -10183,6 +10191,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    for (i = n = 0; i < n_logbook; i++) {
       if (search_all)
          lbs_cur = &lb_list[i];
+
+      if (lbs->top_group[0] && !equal_ustring(lbs->top_group, lbs_cur->top_group))
+         continue;
 
       if (isparam("unm") && !check_login_user(lbs_cur, getparam("unm")))
          continue;
@@ -12927,8 +12938,14 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
             el_retrieve(&lb_list[i],
                         j, date, attr_list, attrib, lb_list[i].n_attr, NULL, 0, NULL,
                         NULL, NULL, NULL, NULL);
-            if (!getcfg(lb_list[i].name, "Last submission", str))
-               sprintf(str, "$entry date %s $author", loc("by"));
+            if (!getcfg(lb_list[i].name, "Last submission", str)) {
+               sprintf(str, "$entry date");
+               for (i=0 ; i<lb_list[i].n_attr ; i++)
+                  if (equal_ustring(attr_list[i], "Author"))
+                     break;
+               if (i<lb_list[i].n_attr)
+                 sprintf(str+strlen(str), " %s $author", loc("by"));
+            }
             j = build_subst_list(&lb_list[i], slist, svalue, attrib);
             strcpy(slist[j], "entry date");
             if (!getcfg(lb_list[i].name, "Date format", format))
@@ -12983,14 +13000,14 @@ void show_selection_page()
       return;
    }
 
+   /* top group present and no top group in URL -> abort connection */
+   if (exist_top_group() && getcfg_topgroup() == NULL)
+      return;
+
    /* if selection page protected, check password */
    if (getcfg("global", "password file", str))
       if (!check_user_password(NULL, getparam("unm"), getparam("upwd"), ""))
          return;
-
-   /* top group present and no top group in URL -> abort connection */
-   if (exist_top_group() && getcfg_topgroup() == NULL)
-      return;
 
    if (getcfg("global", "Page Title", str))
       show_html_header(NULL, TRUE, str);
