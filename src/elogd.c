@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.568  2005/02/22 07:19:41  ritt
+   Fixed bug in parse_config_file()
+
    Revision 1.567  2005/02/20 20:18:26  ritt
    Fixed problem with conditional attributes and presets
 
@@ -3083,6 +3086,7 @@ int parse_config_file(char *file_name)
                lb_config[n_lb_config].n_params = i;
             }
 
+            /* search for next line beginning */
             while (*p && *p != '\r' && *p != '\n')
                p++;
             while (*p && (*p == '\r' || *p == '\n'))
@@ -3095,6 +3099,13 @@ int parse_config_file(char *file_name)
          n_lb_config++;
          index++;
       }
+
+      /* search for next line beginning */
+      while (*p && *p != '\r' && *p != '\n' && *p != '[')
+         p++;
+      while (*p && (*p == '\r' || *p == '\n'))
+         p++;
+
    } while (*p);
 
    xfree(str);
@@ -22144,7 +22155,7 @@ int main(int argc, char *argv[])
    close(fh);
    
    /* parse contents of config file into internal structure */
-   parse_config_file(config_file);
+   check_config();
 
    /* evaluate directories from config file */
    if (getcfg("global", "Resource Dir", str, sizeof(str)))
