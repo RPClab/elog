@@ -714,8 +714,8 @@ attachments. The default is 10485760 (= 10 MB).<p>
 <UL>
 <LI><b><code>Attributes = &lt;list&gt;</code></b>
 <br>
-Define a number of attributes for the logbook, separated by commata. A maximum of 
-100 attributes can be defined. Typical values are "<I>Author</I>", "<I>Subject</I>" 
+Define a number of attributes for the logbook, separated by commata. A maximum of
+100 attributes can be defined. Typical values are "<I>Author</I>", "<I>Subject</I>"
 or "<I>Type</I>".
 <p>
 
@@ -1061,7 +1061,7 @@ so specifying for example only the flags is possible.
 <LI><b><code>Type &lt;attribute&gt; = date | numeric | userlist</b></code>
 <br>
 A normal attribute can contain strings of any type. With this option, attributes can be
-forced to be numeric or to be a date, or to consist of a list of all users from the password file. 
+forced to be numeric or to be a date, or to consist of a list of all users from the password file.
 When new logbook entries are made,
 numeric attributes are checked to contain only digits. Note that JavaScript has to be
 enabled to do this.<br><br>
@@ -1171,8 +1171,8 @@ Same as before, but for editing entries.
 <li><b><code>Sort Attributes = &lt;list&gt;</code></b>
 <br>
 For the list display, the entries are normally sorted by their ID. Alternatively,
-one can specify one or more (separated by commata) attributes, which are used 
-for sorting. The first attribute in the list has the highest priority. Only if two 
+one can specify one or more (separated by commata) attributes, which are used
+for sorting. The first attribute in the list has the highest priority. Only if two
 entries have the same value in the first sort attribute, they are sorted according to
 the second sort attribute and so on.
 <p>
@@ -1258,6 +1258,25 @@ Another use of conditional attributes is in conjunction with the option
 message comment can be displayed to tell the user what to enter exactly in the
 message body for that attribute value.
 <p>
+
+<li><b><code>Hidden Attributes = &lt;list&gt;</code></b>
+<br>
+When using conditional attributes, it might be necessary to omit certain attributes
+under certain conditions, to make the input mask shorter. With this option, a list
+of attributes can be specified which are not displayed on the new entry input page.
+This option only makes sense when used with condisions, such as:<p>
+
+<ul><pre>
+Attributes = PC Name, Operating System, Version, Distribution
+Options Operating System = Linux{1}, Windows{2}
+{1} Hidden Attributes = Version
+{2} Hidden Attributes = Distribution
+</pre></ul>
+<p>
+
+The above statements caus the atrribute <b><code>Version</code></b> to be only
+visible when "Windows" is selected, and <b><code>Version</code></b> to be only
+visible when "Linux" is selected.<p>
 
 <h2>Multiple conditions</h2>
 

@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.534  2005/01/06 10:02:34  midas
+   Implemented 'hidden attributes'
+
    Revision 1.533  2005/01/06 08:51:22  midas
    Made extendable attributes work with conditional attributes
 
@@ -942,6 +945,7 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 #define AF_DATE               (1<<8)
 #define AF_NUMERIC            (1<<9)
 #define AF_USERLIST          (1<<10)
+#define AF_HIDDEN            (1<<11)
 
 /* attribute format flags */
 #define AFF_SAME_LINE              1
@@ -6075,7 +6079,15 @@ and attr_flags arrays */
          for (j = 0; j < n; j++)
             if (strieq(attr_list[j], tmp_list[i]))
                attr_flags[j] |= AF_EXTENDABLE;
+      }
 
+      /* check for hidden attributes */
+      getcfg(logbook, "Hidden Attributes", list, sizeof(list));
+      m = strbreak(list, tmp_list, MAX_N_ATTR, ",");
+      for (i = 0; i < m; i++) {
+         for (j = 0; j < n; j++)
+            if (strieq(attr_list[j], tmp_list[i]))
+               attr_flags[j] |= AF_HIDDEN;
       }
 
       for (i = 0; i < n; i++) {
@@ -7704,7 +7716,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("{\n");
 
    for (i = 0; i < n_attr; i++) {
-      if (attr_flags[i] & AF_REQUIRED) {
+      if ((attr_flags[i] & AF_REQUIRED) && (attr_flags[i] & AF_HIDDEN) == 0) {
 
          /* convert blanks to underscores */
          strcpy(ua, attr_list[i]);
@@ -7942,6 +7954,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    /* display attributes */
    for (index = 0; index < n_attr; index++) {
+
+      if (attr_flags[index] & AF_HIDDEN)
+         continue;
+
       strcpy(class_name, "attribname");
       strcpy(class_value, "attribvalue");
       input_size = 80;
