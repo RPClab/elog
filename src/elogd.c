@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.145  2003/09/08 09:29:27  midas
+  Fixed HTML errors with nested tables etc.
+
   Revision 1.144  2003/09/08 07:34:18  midas
   Increased timeout in SMTP conversation
 
@@ -5157,9 +5160,9 @@ int    i, j, n_grp, n_lb, nnum, level;
 LBLIST clb, flb, nlb, lbl;
 
   if (printable)
-    rsprintf("<table class=\"pframe\" cellpadding=0 cellspacing=0>\n\n");
+    rsprintf("<table class=\"pframe\" cellpadding=0 cellspacing=0><!-- show_standard_title -->\n\n");
   else
-    rsprintf("<table class=\"frame\" cellpadding=0 cellspacing=0>\n\n");
+    rsprintf("<table class=\"frame\" cellpadding=0 cellspacing=0><!-- show_standard_title -->\n\n");
 
   /* scan logbook hierarchy */
   n_grp = get_logbook_hierarchy(&lbl);
@@ -5300,7 +5303,7 @@ void show_error(char *error)
   show_html_header(NULL, FALSE, "ELOG error");
 
   rsprintf("<body><center>\n");
-  rsprintf("<table class=\"dlgframe\" width=50%% cellpadding=1 cellspacing=0");
+  rsprintf("<table class=\"dlgframe\" width=\"50%%\" cellpadding=1 cellspacing=0");
   rsprintf("<tr><td class=\"errormsg\">%s</td></tr>\n", error);
 
   rsprintf("<tr><td class=\"errormsg\">");
@@ -6307,19 +6310,6 @@ char   fl[8][NAME_LENGTH];
       }
     }
 
-  if (breply)
-    /* hidden text for original message */
-    rsprintf("<input type=hidden name=reply_to value=\"%d\">\n", message_id);
-
-  if (bupload)
-    /* hidden text for original message */
-    rsprintf("<input type=hidden name=reply_to value=\"%s\">\n", getparam("reply_to"));
-
-  if (bedit && message_id)
-    rsprintf("<input type=hidden name=edit_id value=\"%d\">\n", message_id);
-
-  rsprintf("</td></tr>\n");
-
   /* set textarea width */
   width = 76;
 
@@ -6359,6 +6349,17 @@ char   fl[8][NAME_LENGTH];
     height = atoi(str);
 
   rsprintf("<tr><td colspan=2 class=\"attribvalue\">\n");
+
+  if (breply)
+    /* hidden text for original message */
+    rsprintf("<input type=hidden name=reply_to value=\"%d\">\n", message_id);
+
+  if (bupload)
+    /* hidden text for original message */
+    rsprintf("<input type=hidden name=reply_to value=\"%s\">\n", getparam("reply_to"));
+
+  if (bedit && message_id)
+    rsprintf("<input type=hidden name=edit_id value=\"%d\">\n", message_id);
 
   if (getcfg(lbs->name, "Message comment", comment) && !bedit && !message_id)
     {
@@ -6641,7 +6642,7 @@ char   fl[8][NAME_LENGTH];
       }
     }
 
-  rsprintf("</td></tr></table>\n");
+  rsprintf("</table><!-- listframe -->\n");
 
   /*---- menu buttons again ----*/
 
@@ -6650,7 +6651,7 @@ char   fl[8][NAME_LENGTH];
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
   rsprintf("</span></td></tr>\n\n");
 
-  rsprintf("</td></tr></table>\n");
+  rsprintf("</table><!-- show_standard_title -->\n");
   rsprintf("</form></body></html>\r\n");
 }
 
@@ -11433,15 +11434,15 @@ BOOL   first;
 
   /*---- message ----*/
 
-  /* overall message table */
-  rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>\n");
-
   if (message_error == EL_EMPTY)
     rsprintf("<tr><td class=\"errormsg\" colspan=2>%s</td></tr>\n", loc("Logbook is empty"));
   else if (message_error == EL_NO_MSG)
     rsprintf("<tr><td class=\"errormsg\" colspan=2>%s</td></tr>\n", loc("This message has been deleted"));
   else
     {
+    /* overall message table */
+    rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0 cellpadding=0>\n");
+
     /* check for locked attributes */
     for (i=0 ; i<lbs->n_attr ; i++)
       {
@@ -11602,7 +11603,7 @@ BOOL   first;
         }
 
       if ((format_flags[i] & AFF_SAME_LINE) == 0)
-        rsprintf("<table width=100%% cellpadding=0 cellspacing=0><tr>");
+        rsprintf("<tr><td><table width=\"100%%\" cellpadding=0 cellspacing=0><tr>");
 
       sprintf(lattr, "l%s", attr_list[i]);
       rsprintf("<td nowrap class=\"%s\">", class_name);
@@ -11638,7 +11639,7 @@ BOOL   first;
           if (comment[0])
             rsprintf("<img src=\"icons/%s\" alt=\"%s\">", attrib[i], comment);
           else
-            rsprintf("<img src=\"icons/%s\">", attrib[i]);
+            rsprintf("<img src=\"icons/%s\" alt=\"%s\">", attrib[i], attrib[i]);
           }
         rsprintf("&nbsp</td>\n");
         }
@@ -11672,9 +11673,11 @@ BOOL   first;
         }
 
       if (i == lbs->n_attr-1 || (format_flags[i+1] & AFF_SAME_LINE) == 0)
-        rsprintf("</tr></table>\n");
+        rsprintf("</tr></table></td></tr>\n");
       }
 
+    rsputs("</table><!-- listframe -->\n");
+    
     rsputs("</td></tr>\n");
 
     /*---- message text ----*/
@@ -11799,8 +11802,8 @@ BOOL   first;
       }
     }
 
-  /* overall table */
-  rsprintf("</table>\n");
+  /* overall table (class "frame" from show_standard_header) */
+  rsprintf("\r\n</table><!-- show_standard_title -->\r\n");
 
   if (getcfg(lbs->name, "bottom text", str))
     {
@@ -12085,7 +12088,7 @@ int   i, n;
     show_html_header(NULL, FALSE, "ELOG error");
 
     rsprintf("<body><center>\n");
-    rsprintf("<table class=\"dlgframe\" width=50%% cellpadding=1 cellspacing=0>");
+    rsprintf("<table class=\"dlgframe\" width=\"50%%\" cellpadding=1 cellspacing=0>");
     sprintf(str, loc("User <i>\"%s\"</i> has no access to logbook <i>\"%s\"</i>"), getparam("iusr"), lbs->name);
     rsprintf("<tr><td class=\"errormsg\">%s</td></tr>\n", str);
 
