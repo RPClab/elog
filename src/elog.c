@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.22  2004/11/02 16:46:55  midas
+  Added -H flag for HTML submit
+
   Revision 1.21  2004/09/18 04:42:46  midas
   Fixed bug with not displaying inline images
 
@@ -560,6 +563,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
                 int reply,
                 int edit,
                 int suppress,
+                int html,
                 char attrib_name[MAX_N_ATTR][NAME_LENGTH],
                 char attrib[MAX_N_ATTR][NAME_LENGTH],
                 int n_attr,
@@ -581,6 +585,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
     int    reply            Reply to existing message
     int    edit             Edit existing message
     int    suppress         Suppress Email notification
+    int    html             Submit as HTML
     char   *attrib_name     Attribute names
     char   *attrib          Attribute values
     char   *text            Message text
@@ -675,7 +680,6 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
 
       if (i < n_attr)
          encoding = attrib[i];
-
 
       strlcpy(new_text, text, sizeof(new_text));
 
@@ -807,6 +811,10 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
    if (suppress)
       sprintf(content + strlen(content),
               "%s\r\nContent-Disposition: form-data; name=\"suppress\"\r\n\r\n1\r\n", boundary);
+
+   if (html)
+      sprintf(content + strlen(content),
+              "%s\r\nContent-Disposition: form-data; name=\"html\"\r\n\r\n1\r\n", boundary);
 
    for (i = 0; i < n_attr; i++) {
       strcpy(str, attrib_name[i]);
@@ -956,12 +964,12 @@ int main(int argc, char *argv[])
    char host_name[256], logbook[32], textfile[256], password[80], subdir[256];
    char *buffer[MAX_ATTACHMENTS], attachment[MAX_ATTACHMENTS][256];
    INT att_size[MAX_ATTACHMENTS];
-   INT i, n, fh, n_att, n_attr, size, port, reply, edit, suppress;
+   INT i, n, fh, n_att, n_attr, size, port, reply, edit, suppress, html;
    char attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 
    text[0] = textfile[0] = uname[0] = upwd[0] = suppress = 0;
    host_name[0] = logbook[0] = password[0] = subdir[0] = 0;
-   n_att = n_attr = reply = edit = 0;
+   n_att = n_attr = reply = edit = html = 0;
    port = 80;
 
    for (i = 0; i < MAX_ATTACHMENTS; i++) {
@@ -976,6 +984,8 @@ int main(int argc, char *argv[])
          verbose = 1;
       else if (argv[i][0] == '-' && argv[i][1] == 'x')
          suppress = 1;
+      else if (argv[i][0] == '-' && argv[i][1] == 'H')
+         html = 1;
       else {
          if (argv[i][0] == '-') {
             if (i + 1 >= argc || argv[i + 1][0] == '-')
@@ -1026,6 +1036,7 @@ int main(int argc, char *argv[])
                printf("           [-r <id>]                Reply to existing message\n");
                printf("           [-e <id>]                Edit existing message\n");
                printf("           [-x]                     Suppress email notification\n");
+               printf("           [-H]                     Submit entry in HTML format\n");
                printf("           -m <textfile>] | <text>\n");
                printf("\nArguments with blanks must be enclosed in quotes\n");
                printf("The elog message can either be submitted on the command line, piped in like\n");
@@ -1125,7 +1136,7 @@ int main(int argc, char *argv[])
 
    /* now submit message */
    submit_elog(host_name, port, subdir, logbook, password,
-               uname, upwd, reply, edit, suppress, attr_name, attrib, n_attr, text,
+               uname, upwd, reply, edit, suppress, html, attr_name, attrib, n_attr, text,
                attachment, buffer, att_size);
 
    for (i = 0; i < MAX_ATTACHMENTS; i++)
