@@ -14,6 +14,8 @@ Version 2.5.1, released February xxth, 2004
 - Changed "entry date" to "entry time"
 - Changed "Date format" to "Time format"
 - Implemented "Type <attrib> = date"
+- Implemented search and quick filter facilities for date attributes
+- Added Japanese language support
 
 Version 2.5.0, released January 28th, 2004
 ==========================================
