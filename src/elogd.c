@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.362  2004/06/29 18:57:23  midas
+   Made rename/create logbook work with groups
+
    Revision 1.361  2004/06/28 20:29:49  midas
    Rename logbook in groups on logbook rename
 
@@ -1740,10 +1743,18 @@ time_t cfgfile_mtime = 0;
 
 /*-------------------------------------------------------------------*/
 
-void check_config_file()
+void check_config_file(BOOL force)
 {
    struct stat cfg_stat;
 
+   if (force) {
+      if (cfgbuffer) {
+         free(cfgbuffer);
+         cfgbuffer = NULL;
+      }
+      return;
+   }
+      
    /* force re-read configuration file if changed */
    if (stat(config_file, &cfg_stat) == 0) {
       if (cfgfile_mtime < cfg_stat.st_mtime) {
@@ -2420,7 +2431,7 @@ time_t date_to_ltime(char *date)
 
 void check_config()
 {
-   check_config_file();
+   check_config_file(FALSE);
    check_language();
 }
 
@@ -5385,11 +5396,45 @@ void change_logbook_in_group(LOGBOOK *lbs, char *new_name)
          n = strbreak(grpmembers, grplist, MAX_N_LIST, ",");
          for (j = 0; j < n; j++) {
             if (strieq(lbs->name, grplist[j])) {
-               if (new_name[0]) {
-                  /* rename logbook */
-                  change_config_line(lbs, grpname, lbs->name, new_name);
-                  break;
-               }
+               /* rename or remove logbook */
+               change_config_line(lbs, grpname, lbs->name, new_name);
+               break;
+            }
+         }
+      }
+   }
+}
+   
+/*------------------------------------------------------------------*/
+
+void add_logbook_to_group(LOGBOOK *lbs, char *new_name)
+{
+   int i, j, n, flag;
+   char str[1000], grpname[256], grpmembers[1000];
+   char grplist[MAX_N_LIST][NAME_LENGTH];
+
+   /* enumerate groups */
+   for (i = 0;; i++) {
+      if (!enumcfg("global", grpname, grpmembers, i))
+         break;
+
+      flag = 0;
+      strlcpy(str, grpname, sizeof(str));
+      str[9] = 0;
+      if (strieq(str, "top group"))
+         flag = 2;
+      str[5] = 0;
+      if (strieq(str, "group"))
+         flag = 1;
+
+      if (flag) {
+
+         n = strbreak(grpmembers, grplist, MAX_N_LIST, ",");
+         for (j = 0; j < n; j++) {
+            if (strieq(lbs->name, grplist[j])) {
+               /* rename or remove logbook */
+               change_config_line(lbs, grpname, "", new_name);
+               break;
             }
          }
       }
@@ -8003,7 +8048,7 @@ int save_admin_config(char *section, char *buffer, char *error)
    free(buf);
 
    /* force re-read of config file */
-   check_config();
+   check_config_file(TRUE);
 
    return 1;
 }
@@ -8128,14 +8173,14 @@ int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_v
    free(buf);
 
    /* force re-read of config file */
-   check_config();
+   check_config_file(TRUE);
 
    return 1;
 }
 
 /*------------------------------------------------------------------*/
 
-int delete_logbook(char *logbook, char *error)
+int delete_logbook(LOGBOOK *lbs, char *error)
 {
    int fh, i, length;
    char *buf, *p1, *p2;
@@ -8150,6 +8195,9 @@ int delete_logbook(char *logbook, char *error)
       return 0;
    }
 
+   /* remove logbook name in groups */
+   change_logbook_in_group(lbs, "");
+
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
@@ -8159,7 +8207,7 @@ int delete_logbook(char *logbook, char *error)
    buf[length] = 0;
 
    /* find logbook config */
-   p1 = (char *) find_section(buf, logbook);
+   p1 = (char *) find_section(buf, lbs->name);
    p2 = (char *) find_next_section(p1 + 1);
 
    if (p2)
@@ -8188,7 +8236,7 @@ int delete_logbook(char *logbook, char *error)
    free(buf);
 
    /* force re-read of config file */
-   check_config();
+   check_config_file(TRUE);
    el_index_logbooks(TRUE);
    
    return 1;
@@ -8196,19 +8244,18 @@ int delete_logbook(char *logbook, char *error)
 
 /*------------------------------------------------------------------*/
 
-int rename_logbook(LOGBOOK *lbs, char *new_name, char *error)
+int rename_logbook(LOGBOOK *lbs, char *new_name)
 {
    int fh, i, length;
    char *buf, *buf2, *p1, *p2;
    char str[256], lb_dir[256], old_dir[256], new_dir[256];
 
-   error[0] = 0;
-
    fh = open(config_file, O_RDWR | O_BINARY, 644);
    if (fh < 0) {
-      sprintf(error, loc("Cannot open file <b>%s</b>"), config_file);
-      strcat(error, ": ");
-      strcat(error, strerror(errno));
+      sprintf(str, loc("Cannot open file <b>%s</b>"), config_file);
+      strcat(str, ": ");
+      strcat(str, strerror(errno));
+      show_error(str);
       return 0;
    }
 
@@ -8240,7 +8287,7 @@ int rename_logbook(LOGBOOK *lbs, char *new_name, char *error)
    if (p2 == NULL) {
       close(fh);
       free(buf);
-      strcpy(error, loc("Syntax error in config file"));
+      show_error(loc("Syntax error in config file"));
       return 0;
    }
    p2 ++;
@@ -8266,9 +8313,10 @@ int rename_logbook(LOGBOOK *lbs, char *new_name, char *error)
    lseek(fh, 0, SEEK_SET);
    i = write(fh, buf, strlen(buf));
    if (i < (int) strlen(buf)) {
-      sprintf(error, loc("Cannot write to <b>%s</b>"), config_file);
-      strcat(error, ": ");
-      strcat(error, strerror(errno));
+      sprintf(str, loc("Cannot write to <b>%s</b>"), config_file);
+      strcat(str, ": ");
+      strcat(str, strerror(errno));
+      show_error(str);
       close(fh);
       free(buf);
       return 0;
@@ -8282,9 +8330,8 @@ int rename_logbook(LOGBOOK *lbs, char *new_name, char *error)
    close(fh);
    free(buf);
 
-
    /* force re-read of config file */
-   check_config();
+   check_config_file(TRUE);
    el_index_logbooks(TRUE);
    
    return 1;
@@ -8292,20 +8339,22 @@ int rename_logbook(LOGBOOK *lbs, char *new_name, char *error)
 
 /*------------------------------------------------------------------*/
 
-int create_logbook(char *logbook, char *templ, char *error)
+int create_logbook(LOGBOOK *oldlbs, char *logbook, char *templ)
 {
    int fh, i, length, templ_length;
-   char *buf, *p1, *p2;
-
-   error[0] = 0;
+   char *buf, *p1, *p2, str[256];
 
    fh = open(config_file, O_RDWR | O_BINARY, 644);
    if (fh < 0) {
-      sprintf(error, loc("Cannot open file <b>%s</b>"), config_file);
-      strcat(error, ": ");
-      strcat(error, strerror(errno));
+      sprintf(str, loc("Cannot open file <b>%s</b>"), config_file);
+      strcat(str, ": ");
+      strcat(str, strerror(errno));
+      show_error(str);
       return 0;
    }
+
+   /* add logbook to current group */
+   add_logbook_to_group(oldlbs, logbook);
 
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
@@ -8363,9 +8412,10 @@ int create_logbook(char *logbook, char *templ, char *error)
    lseek(fh, 0, SEEK_SET);
    i = write(fh, buf, strlen(buf));
    if (i < (int) strlen(buf)) {
-      sprintf(error, loc("Cannot write to <b>%s</b>"), config_file);
-      strcat(error, ": ");
-      strcat(error, strerror(errno));
+      sprintf(str, loc("Cannot write to <b>%s</b>"), config_file);
+      strcat(str, ": ");
+      strcat(str, strerror(errno));
+      show_error(str);
       close(fh);
       free(buf);
       return 0;
@@ -8381,7 +8431,7 @@ int create_logbook(char *logbook, char *templ, char *error)
    free(buf);
 
    /* force re-read of config file */
-   check_config();
+   check_config_file(TRUE);
    el_index_logbooks(TRUE);
    
    return 1;
@@ -8428,7 +8478,7 @@ int save_config(char *buffer, char *error)
    close(fh);
 
    /* force re-read of config file */
-   check_config();
+   check_config_file(TRUE);
 
    return 1;
 }
@@ -9324,7 +9374,7 @@ void show_logbook_delete(LOGBOOK * lbs)
 
          /* delete logbook */
          str[0] = 0;
-         delete_logbook(lbs->name, str);
+         delete_logbook(lbs, str);
          if (str[0])
             show_error(str);
          else
@@ -9362,18 +9412,25 @@ void show_logbook_delete(LOGBOOK * lbs)
 
 void show_logbook_rename(LOGBOOK * lbs)
 {
-   char str[256];
+   int i;
+   char str[256], lbn[256];
    
-   /* redirect if confirm = NO */
    if (getparam("lbname") && *getparam("lbname")) {
 
-      rename_logbook(lbs, getparam("lbname"), str);
-      if (str[0])
-         show_error(str);
-      else {
-         sprintf(str, "../%s/?cmd=Config", getparam("lbname"));
-         redirect(NULL, str);
+      /* check if logbook name exists already */
+      strcpy(lbn, getparam("lbname"));
+      for (i = 0; lb_list[i].name[0]; i++)
+         if (strieq(lbn, lb_list[i].name)) {
+            sprintf(str, loc("Logbook \"%s\" exists already, please choose different name"), lbn);
+            show_error(str);
+            return;
       }
+
+      if (!rename_logbook(lbs, getparam("lbname")))
+         return;
+
+      sprintf(str, "../%s/?cmd=Config", getparam("lbname"));
+      redirect(NULL, str);
       return;
 
    } else {
@@ -9411,6 +9468,7 @@ void show_logbook_new(LOGBOOK * lbs)
 
    if (getparam("lbname") && *getparam("lbname")) {
 
+      /* check if logbook name exists already */
       strcpy(lbn, getparam("lbname"));
       for (i = 0; lb_list[i].name[0]; i++)
          if (strieq(lbn, lb_list[i].name)) {
@@ -9420,15 +9478,13 @@ void show_logbook_new(LOGBOOK * lbs)
       }
 
       /* create new logbook */
-      create_logbook(getparam("lbname"), getparam("template"), str);
-      if (str[0])
-         show_error(str);
-      else {
-         strcpy(lbn, getparam("lbname"));
-         url_encode(lbn, sizeof(lbn));
-         sprintf(str, "../%s/?cmd=Config", lbn);
-         redirect(NULL, str);
-      }
+      if (!create_logbook(lbs, getparam("lbname"), getparam("template")))
+         return;
+
+      strcpy(lbn, getparam("lbname"));
+      url_encode(lbn, sizeof(lbn));
+      sprintf(str, "../%s/?cmd=Config", lbn);
+      redirect(NULL, str);
       return;
    }
 
@@ -14431,7 +14487,7 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue)
    free(buf);
 
    /* force re-read of config file */
-   check_config();
+   check_config_file(TRUE);
 
    return 1;
 }
@@ -14525,7 +14581,7 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
    free(buf);
 
    /* force re-read of config file */
-   check_config();
+   check_config_file(TRUE);
 
    return 1;
 }
