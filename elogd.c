@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.99  2002/11/20 13:48:10  midas
+  Create data dir automatically, allow for substitutions in find attributes
+
   Revision 2.98  2002/11/19 11:17:31  midas
   Added 'table align'
 
@@ -418,6 +421,7 @@
 #include <windows.h>
 #include <io.h>
 #include <time.h>
+#include <direct.h>
 #else
 
 #define OS_UNIX
@@ -1911,7 +1915,7 @@ int  i, j, n, status;
         free(lb_list[i].el_index);
         free(lb_list[i].n_el_index);
 
-        /* check if othe logbooks uses same index */
+        /* check if other logbook uses same index */
         for (j=i+1 ; lb_list[j].name[0] ; j++)
           {
           /* mark that logbook already freed */
@@ -1960,6 +1964,26 @@ int  i, j, n, status;
 
     if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
       strcat(data_dir, DIR_SEPARATOR_STR);
+
+    /* create data directory if not existing */
+    getcwd(str, sizeof(str));
+    j = chdir(data_dir);
+    if (j < 0)
+      {
+#ifdef OS_WINNT
+      j = mkdir(data_dir);
+#else
+      j = mkdir(data_dir, 0755);
+#endif
+      if (j == 0)
+        printf("Created directory \"%s\"\n", data_dir);
+      else
+        {
+        perror("el_index_logbooks");
+        printf("Cannot create directlry \"%s\"\n", data_dir);
+        }
+      }
+    chdir(str);
 
     strcpy(lb_list[n].data_dir, data_dir);
     lb_list[n].el_index = NULL;
@@ -6770,6 +6794,7 @@ BOOL   show_attachments, threaded;
 time_t ltime, ltime_start, ltime_end, now;
 struct tm tms, *ptms;
 MSG_LIST *msg_list;
+char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
 
   /* redirect if enpty parameters */
   if (strstr(_cmdline, "=&"))
@@ -7104,6 +7129,15 @@ MSG_LIST *msg_list;
       if (*getparam(attr_list[i]))
         {
         strcpy(str, getparam(attr_list[i]));
+
+        /* if value starts with '$', substitute it */
+        if (str[0] == '$')
+          {
+          j = build_subst_list(lbs, slist, svalue, attrib);
+          strsubst(str, slist, svalue, j);
+          setparam(attr_list[i], str);
+          }
+
         for (j=0 ; j<(int)strlen(str) ; j++)
           str[j] = toupper(str[j]);
         str[j] = 0;
@@ -8189,9 +8223,10 @@ LOGBOOK *lbs_dest;
         strcpy(attachment[i], str+14);
         }
 
-    /* submit in destination logbook without links */
+    /* submit in destination logbook without links, submit all attributes from
+       the source logbook even if the destination has a differnt number of attributes */
 
-    message_id = el_submit(lbs_dest, 0, date, attr_list, attrib, lbs_dest->n_attr, text,
+    message_id = el_submit(lbs_dest, 0, date, attr_list, attrib, lbs->n_attr, text,
                        "", "", encoding,
                        attachment,
                        _attachment_buffer,
