@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.125  2003/01/08 10:58:42  midas
+  Fixed bug with unencoded logbook in URL
+
   Revision 2.124  2003/01/08 10:07:18  midas
   Issue warning for wrong group syntax in elogd.cfg
 
@@ -8591,7 +8594,7 @@ char   list[MAX_PARAM][NAME_LENGTH];
     }
   else
     {
-    strlcat(str, lbs->name, sizeof(str));
+    strlcat(str, lbs->name_enc, sizeof(str));
     strlcat(str, "/", sizeof(str));
     }
 
