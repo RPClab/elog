@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.15  2004/02/17 11:17:03  midas
+  Fixed compiler warnings
+
   Revision 1.14  2004/02/13 20:58:21  midas
   Changed email suppression flag from '-s' to '-p'
 
@@ -82,6 +85,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <ctype.h>
 
 #ifdef _MSC_VER
 #include <windows.h>
@@ -1016,7 +1020,7 @@ int main(int argc, char *argv[])
       size = lseek(fh, 0, SEEK_END);
       lseek(fh, 0, SEEK_SET);
 
-      if (size > sizeof(text) - 1) {
+      if (size > (int)sizeof(text) - 1) {
          printf("Message file \"%s\" is too long (%d bytes max).\n", textfile,
                 sizeof(text));
          return 1;

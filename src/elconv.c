@@ -6,6 +6,9 @@
   Contents:     Conversion program for ELOG messages
 
   $Log$
+  Revision 1.4  2004/02/17 11:19:49  midas
+  Fixed compiler warnings
+
   Revision 1.3  2004/01/07 11:14:53  midas
   Changed line length
 
@@ -562,8 +565,7 @@ INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
               char attr_value[MAX_N_ATTR][NAME_LENGTH],
               int n_attr, char *text, char *reply_to, char *encoding,
               char afilename[MAX_ATTACHMENTS][256],
-              char *buffer[MAX_ATTACHMENTS], INT buffer_size[MAX_ATTACHMENTS], char *tag,
-              INT tag_size)
+              char *buffer[MAX_ATTACHMENTS], INT buffer_size[MAX_ATTACHMENTS], char *tag)
 /********************************************************************\
 
   Routine: el_submit
@@ -656,6 +658,9 @@ INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
    /* generate new file name YYMMDD.log in data directory */
    strcpy(dir, data_dir);
 
+   offset = tail_size = 0;
+   tms = NULL;
+   p = NULL;
    if (bedit) {
       /* edit existing message */
       strcpy(str, tag);
