@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.402  2004/07/23 22:49:02  midas
+   Improved cloning message display
+
    Revision 1.401  2004/07/23 22:28:17  midas
    Cloning now works with password access
 
@@ -1072,11 +1075,11 @@ void base64_decode(char *s, char *d)
    unsigned int t;
 
    while (*s) {
-      t =  cind(*s) << 18;
+      t = cind(*s) << 18;
       s++;
-      t |= cind(*s) << 12; 
+      t |= cind(*s) << 12;
       s++;
-      t |= cind(*s) << 6; 
+      t |= cind(*s) << 6;
       s++;
       t |= cind(*s) << 0;
       s++;
@@ -1918,8 +1921,8 @@ int retrieve_url(char *url, char **buffer, char *rpwd)
       sock = 0;
    }
 
-   if (sock) {  // keep-alive does not yet work, requires evaluation of Content-Length !!!
-      closesocket(sock); 
+   if (sock) {                  // keep-alive does not yet work, requires evaluation of Content-Length !!!
+      closesocket(sock);
       sock = 0;
    }
 
@@ -5016,11 +5019,11 @@ void extract_path(char *str)
 
    p = NULL;
 
-   if (strstr(str, "http://")) 
+   if (strstr(str, "http://"))
       p = str + 7;
-   if (strstr(str, "https://")) 
+   if (strstr(str, "https://"))
       p = str + 8;
-   
+
    if (p) {
       while (*p && *p != '/')
          p++;
@@ -5042,11 +5045,11 @@ void extract_host(char *str)
 
    p = NULL;
 
-   if (strstr(str, "http://")) 
+   if (strstr(str, "http://"))
       p = str + 7;
-   else if (strstr(str, "https://")) 
+   else if (strstr(str, "https://"))
       p = str + 8;
-   
+
    if (p) {
       ph = p;
       while (*p && *p != '/' && *p != ':')
@@ -5816,17 +5819,20 @@ void show_standard_title(char *logbook, char *text, int printable)
       for (level = 0;; level++) {
          rsprintf("<tr><td class=\"tabs\">\n");
 
-         if (level == 0 && getcfg("global", "main tab", str, sizeof(str)) && !getcfg_topgroup())
+         if (level == 0 && getcfg("global", "main tab", str, sizeof(str))
+             && !getcfg_topgroup())
             rsprintf("<span class=\"ltab\"><a href=\"../\">%s</a></span>\n", str);
 
-         if (level == 1 && getcfg("global", "main tab", str, sizeof(str)) && getcfg_topgroup())
+         if (level == 1 && getcfg("global", "main tab", str, sizeof(str))
+             && getcfg_topgroup())
             rsprintf("<span class=\"ltab\"><a href=\"../%s/\">%s</a></span>\n",
                      getcfg_topgroup(), str);
 
          /* iterate through members of this group */
          for (i = 0; i < pnode->n_members; i++) {
 
-            if (getcfg(pnode->member[i]->name, "Hidden", str, sizeof(str)) && atoi(str) == 1)
+            if (getcfg(pnode->member[i]->name, "Hidden", str, sizeof(str))
+                && atoi(str) == 1)
                continue;
 
             strlcpy(str, pnode->member[i]->name, sizeof(str));
@@ -7792,8 +7798,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* Suppress email check box */
-   if (!(bedit && !breedit && !bupload && getcfg(lbs->name, "Suppress Email on edit", str, sizeof(str))
-         && atoi(str) == 1)) {
+   if (!
+       (bedit && !breedit && !bupload
+        && getcfg(lbs->name, "Suppress Email on edit", str, sizeof(str))
+        && atoi(str) == 1)) {
       if (getcfg(lbs->name, "Suppress default", str, sizeof(str))) {
          if (atoi(str) == 0) {
             rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
@@ -10535,7 +10543,7 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
                  loc("Passwords for user \"%s\" do not match locally and remotely"),
                  getparam("unm"));
       else {
-         strlcpy(str, p+9, sizeof(str));
+         strlcpy(str, p + 9, sizeof(str));
          if (strchr(str, '?'))
             *strchr(str, '?') = 0;
          strcpy(error_str, loc("URL is redirected to:"));
@@ -11545,14 +11553,14 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
 
          rsprintf("<pre>");
       } else if (mode == SYNC_CLONE)
-         if (list[index][strlen(list[index])-1] != '/')
+         if (list[index][strlen(list[index]) - 1] != '/')
             eprintf("\nRetrieving entries from \"%s/%s\"...\n", list[index], lbs->name);
          else
             eprintf("\nRetrieving entries from \"%s%s\"...\n", list[index], lbs->name);
 
       /* send partial return buffer */
       flush_return_buffer();
-          
+
       do {
 
          n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote, error_str);
@@ -11560,16 +11568,18 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
 
             if (n_remote == -2 && mode == SYNC_CLONE) {
                /* ask for username and password */
-               eprintf("\nPlease enter username to access\n%s%s: ", list[index], lbs->name);
+               eprintf("\nPlease enter username to access\n%s%s: ", list[index],
+                       lbs->name);
                fgets(str, sizeof(str), stdin);
-               while (str[strlen(str)-1] == '\r' || str[strlen(str)-1] == '\n')
-                  str[strlen(str)-1] = 0;
+               while (str[strlen(str) - 1] == '\r' || str[strlen(str) - 1] == '\n')
+                  str[strlen(str) - 1] = 0;
                setparam("unm", str);
 
-               eprintf("\nPlease enter password to access\n%s%s: ", list[index], lbs->name);
+               eprintf("\nPlease enter password to access\n%s%s: ", list[index],
+                       lbs->name);
                fgets(str, sizeof(str), stdin);
-               while (str[strlen(str)-1] == '\r' || str[strlen(str)-1] == '\n')
-                  str[strlen(str)-1] = 0;
+               while (str[strlen(str) - 1] == '\r' || str[strlen(str) - 1] == '\n')
+                  str[strlen(str) - 1] = 0;
                do_crypt(str, pwd);
                setparam("upwd", pwd);
 
@@ -11597,8 +11607,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
 
       /*---- check for configuration file ----*/
 
-      if (getcfg(lbs->name, "Mirror config", str, sizeof(str)) && atoi(str) == 1 
-         && md5_cache && mode != SYNC_CLONE) {
+      if (getcfg(lbs->name, "Mirror config", str, sizeof(str)) && atoi(str) == 1
+          && md5_cache && mode != SYNC_CLONE) {
 
          load_config_section(lbs->name, &buffer, error_str);
          if (error_str[0])
@@ -11631,7 +11641,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                   logf(lbs, "MIRROR send config");
 
                /* submit configuration section */
-               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
+               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                   || atoi(str) == 0)
                   submit_config(lbs, list[index], buffer, error_str);
 
                if (error_str[0])
@@ -11649,7 +11660,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                if (_logging_level > 1)
                   logf(lbs, "MIRROR receive config");
 
-               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
+               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                   || atoi(str) == 0)
                   receive_config(lbs, list[index], error_str);
 
                if (error_str[0])
@@ -11721,19 +11733,22 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
             if (!equal_md5(md5_cache[i_cache].md5_digest, lbs->el_index[i_msg].md5_digest)
                 && equal_md5(md5_cache[i_cache].md5_digest,
                              md5_remote[i_remote].md5_digest)) {
-               
+
                all_identical = FALSE;
                if (mode == SYNC_CLONE) {
 
-                  eprintf("Warning: Entry #%d has been changed locally, will not be retrieved\n", message_id);
+                  eprintf
+                      ("Warning: Entry #%d has been changed locally, will not be retrieved\n",
+                       message_id);
 
-               }  else {
+               } else {
 
                   if (_logging_level > 1)
                      logf(lbs, "MIRROR send entry #%d", message_id);
 
                   /* submit local message */
-                  if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
+                  if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                      || atoi(str) == 0)
                      submit_message(lbs, list[index], message_id, error_str);
 
                   /* not that submit_message() may have changed attr_list !!! */
@@ -11754,10 +11769,24 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                    && equal_md5(md5_cache[i_cache].md5_digest,
                                 lbs->el_index[i_msg].md5_digest)) {
 
+               if (mode == SYNC_CLONE) {
+                  eprintf("ID%s:\t", message_id);
+               } else if (mode == SYNC_HTML) {
+                  if (getcfg_topgroup())
+                     rsprintf("<a href=\"../%s/%d\">ID%d:</a>\t", lbs->name_enc,
+                              message_id, message_id);
+                  else
+                     rsprintf("<a href=\"%s/%d\">ID%d:</a>\t", lbs->name_enc, message_id,
+                              message_id);
+
+                  flush_return_buffer();
+               }
+
                if (_logging_level > 1)
                   logf(lbs, "MIRROR receive entry #%d", message_id);
 
-               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
+               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                   || atoi(str) == 0)
                   receive_message(lbs, list[index], message_id, error_str, FALSE);
                all_identical = FALSE;
 
@@ -11766,15 +11795,15 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                   mprint(lbs, mode, str);
                } else if (mode == SYNC_HTML) {
 
-                  if (getcfg_topgroup())
-                     rsprintf("<a href=\"../%s/%d\">ID%d:</a>\t", lbs->name_enc,
-                              message_id, message_id);
-                  else
-                     rsprintf("<a href=\"%s/%d\">ID%d:</a>\t", lbs->name_enc, message_id,
-                              message_id);
-
                   rsprintf("%s\n", loc("Remote entry received"));
+
+               } else if (mode == SYNC_CLONE) {
+                  eprintf("%s\n", loc("Remote entry received"));
+               } else {
+                  sprintf(str, "ID%s:\t%s", message_id, loc("Remote entry received"));
+                  mprint(lbs, mode, str);
                }
+
 
                md5_cache[i_cache].message_id = -1;
 
@@ -11791,9 +11820,11 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
 
                if (mode == SYNC_CLONE) {
 
-                  eprintf("Warning: Entry #%d has been changed locally and remotely, will not be retrieved\n", message_id);
+                  eprintf
+                      ("Warning: Entry #%d has been changed locally and remotely, will not be retrieved\n",
+                       message_id);
 
-               }  else {
+               } else {
 
                   if (_logging_level > 1)
                      logf(lbs, "MIRROR conflict entry #%d", message_id);
@@ -11812,8 +11843,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                   sprintf(str, "ID%d:\t%s. ", message_id,
                           loc("Entry has been changed locally and remotely"));
                   sprintf(str + strlen(str),
-                          loc("Please delete %s or %s entry to resolve conflict"), loc_ref,
-                          rem_ref);
+                          loc("Please delete %s or %s entry to resolve conflict"),
+                          loc_ref, rem_ref);
                   strcat(str, ".");
                   mprint(lbs, mode, str);
                }
@@ -11830,26 +11861,30 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
             /* if message has been changed locally, send it */
             if (!equal_md5(md5_cache[i_cache].md5_digest,
                            lbs->el_index[i_msg].md5_digest)) {
-               
+
                all_identical = FALSE;
 
                if (mode == SYNC_CLONE) {
 
-                  eprintf("Warning: Entry #%d has been changed locally, will not be retrieved\n", message_id);
+                  eprintf
+                      ("Warning: Entry #%d has been changed locally, will not be retrieved\n",
+                       message_id);
 
-               }  else {
+               } else {
 
                   if (_logging_level > 1)
                      logf(lbs, "MIRROR send entry #%d", message_id);
 
                   /* submit local message */
-                  if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
+                  if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                      || atoi(str) == 0)
                      submit_message(lbs, list[index], message_id, error_str);
 
                   /* not that submit_message() may have changed attr_list !!! */
 
                   if (error_str[0])
-                     sprintf(str, "%s: %s", loc("Error sending local message"), error_str);
+                     sprintf(str, "%s: %s", loc("Error sending local message"),
+                             error_str);
                   else
                      sprintf(str, "ID%d:\t%s", message_id, loc("Local entry submitted"));
                   mprint(lbs, mode, str);
@@ -11863,7 +11898,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                   it must have been deleted remotely, so remove it locally */
 
                if (!isparam("confirm") && mode == SYNC_HTML) {
-               
+
                   combine_url(lbs, list[index], "", str, sizeof(str));
 
                   if (getcfg_topgroup())
@@ -11872,14 +11907,16 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                   else
                      sprintf(loc_ref, "<a href=\"%d\">%s</a>", message_id, loc("local"));
 
-                  rsprintf("ID%d:\t%s\n", message_id, loc("Local entry %s should be deleted"), loc_ref);
+                  rsprintf("ID%d:\t%s\n", message_id,
+                           loc("Local entry %s should be deleted"), loc_ref);
 
                } else {
 
                   if (_logging_level > 1)
                      logf(lbs, "MIRROR delete local entry #%d", message_id);
 
-                  if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
+                  if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                      || atoi(str) == 0)
                      el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
                   all_identical = FALSE;
 
@@ -11903,19 +11940,23 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
 
             if (mode == SYNC_CLONE) {
 
-               eprintf("Warning: Entry #%d exists only locally, should be sent to server\n", message_id);
+               eprintf
+                   ("Warning: Entry #%d exists only locally, should be sent to server\n",
+                    message_id);
 
-            }  else {
+            } else {
 
                if (_logging_level > 1)
                   logf(lbs, "MIRROR send entry #%d", message_id);
 
                remote_id = 0;
-               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
+               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                   || atoi(str) == 0)
                   remote_id = submit_message(lbs, list[index], message_id, error_str);
 
                if (remote_id != message_id) {
-                  sprintf(str, "Error: Submitting entry #%d resulted in remote entry #%d\n",
+                  sprintf(str,
+                          "Error: Submitting entry #%d resulted in remote entry #%d\n",
                           message_id, remote_id);
                   mprint(lbs, mode, str);
                } else {
@@ -11939,9 +11980,11 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
 
             if (mode == SYNC_CLONE) {
 
-               eprintf("Warning: Entry #%d is new locally and remotely, will not be retrieved\n", message_id);
+               eprintf
+                   ("Warning: Entry #%d is new locally and remotely, will not be retrieved\n",
+                    message_id);
 
-            }  else {
+            } else {
 
                /* find max id both locally and remotely */
                max_id = 1;
@@ -11957,11 +12000,13 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                   logf(lbs, "MIRROR change entry #%d to #%d", message_id, max_id + 1);
 
                /* rearrange local message not to conflict with remote message */
-               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
+               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                   || atoi(str) == 0)
                   el_move_message(lbs, message_id, max_id + 1);
 
                sprintf(str, "ID%d:\t", message_id);
-               sprintf(str + strlen(str), loc("Changed local entry ID to %d"), max_id + 1);
+               sprintf(str + strlen(str), loc("Changed local entry ID to %d"),
+                       max_id + 1);
                mprint(lbs, mode, str);
 
                /* current message has been changed, so start over */
@@ -12004,7 +12049,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                   }
 
                   /* if message does not exist locally and in cache, it is new, so retrieve it */
-                  if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
+                  if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                      || atoi(str) == 0)
                      receive_message(lbs, list[index], message_id, error_str, TRUE);
                   all_identical = FALSE;
 
@@ -12026,7 +12072,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                                  md5_remote[i_remote].md5_digest)) {
 
                      /* if message has changed remotely, receive it */
-                     if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
+                     if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                         || atoi(str) == 0)
                         receive_message(lbs, list[index], message_id, error_str, TRUE);
                      all_identical = FALSE;
 
@@ -12056,10 +12103,11 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                         if (!isparam("confirm") && mode == SYNC_HTML) {
 
                            combine_url(lbs, list[index], "", str, sizeof(str));
-                           sprintf(rem_ref, "<a href=\"http://%s%d\">%s</a>", str, message_id,
-                                   loc("remote"));
+                           sprintf(rem_ref, "<a href=\"http://%s%d\">%s</a>", str,
+                                   message_id, loc("remote"));
 
-                           rsprintf("ID%d:\t%s\n", message_id, loc("Remote entry %s should be deleted"), rem_ref);
+                           rsprintf("ID%d:\t%s\n", message_id,
+                                    loc("Remote entry %s should be deleted"), rem_ref);
                         }
 
                         if (isparam("confirm") || mode == SYNC_CRON) {
@@ -12071,7 +12119,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                                    loc("Yes"));
                            combine_url(lbs, list[index], str, url, sizeof(url));
 
-                           if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0) {
+                           if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                               || atoi(str) == 0) {
                               retrieve_url(url, &buffer, NULL);
 
                               if (strstr(buffer, "Location: ")) {
@@ -12169,7 +12218,8 @@ void synchronize(LOGBOOK * lbs, int mode)
                   continue;
 
             /* if called by cron, set user name and password */
-            if (mode == SYNC_CRON && getcfg(lb_list[i].name, "mirror user", str, sizeof(str))) {
+            if (mode == SYNC_CRON
+                && getcfg(lb_list[i].name, "mirror user", str, sizeof(str))) {
                if (get_user_line(lb_list[i].name, str, pwd, NULL, NULL, NULL) ==
                    EL_SUCCESS) {
                   setparam("unm", str);
@@ -12280,7 +12330,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   attr_icon);
       else {
          /* if top level only, display reply icon if message has a reply */
-         if (getcfg(lbs->name, "Top level only", str, sizeof(str)) && atoi(str) == 1 && reply_to[0])
+         if (getcfg(lbs->name, "Top level only", str, sizeof(str)) && atoi(str) == 1
+             && reply_to[0])
             rsprintf("<a href=\"%s\"><img border=0 src=\"reply.gif\"></a>&nbsp;", ref);
          else {
             /* display standard icons */
@@ -12914,7 +12965,8 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
       return TRUE;
 
    /* check for guest access */
-   if (!getcfg(lbs->name, "Guest Menu commands", menu_str, sizeof(menu_str)) || *getparam("unm") != 0)
+   if (!getcfg(lbs->name, "Guest Menu commands", menu_str, sizeof(menu_str))
+       || *getparam("unm") != 0)
       getcfg(lbs->name, "Menu commands", menu_str, sizeof(menu_str));
 
    /* default menu commands */
@@ -13001,7 +13053,8 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 
    /* check find menu commands */
    str[0] = 0;
-   if (!getcfg(lbs->name, "Guest Find Menu commands", str, sizeof(str)) || *getparam("unm") != 0)
+   if (!getcfg(lbs->name, "Guest Find Menu commands", str, sizeof(str))
+       || *getparam("unm") != 0)
       getcfg(lbs->name, "Find Menu commands", str, sizeof(str));
 
    if (str[0])
@@ -13599,7 +13652,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          }
       }
       /* add reverse=0 if not present */
-      if (strstr(_cmdline, "reverse=") == NULL && getcfg(lbs->name, "Reverse sort", str, sizeof(str))
+      if (strstr(_cmdline, "reverse=") == NULL
+          && getcfg(lbs->name, "Reverse sort", str, sizeof(str))
           && atoi(str) == 1) {
          if (strchr(_cmdline, '?'))
             strlcat(_cmdline, "&reverse=0", sizeof(_cmdline));
@@ -14982,7 +15036,8 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
       url_encode(str, sizeof(str));
       sprintf(mail_param, "?error=%s", str);
    } else {
-      if (!getcfg(lbs->name, "Display email recipients", str, sizeof(str)) || atoi(str) == 1) {
+      if (!getcfg(lbs->name, "Display email recipients", str, sizeof(str))
+          || atoi(str) == 1) {
          if (mail_param[0] == 0)
             strcpy(mail_param, "?");
          else
@@ -15579,7 +15634,8 @@ void submit_elog(LOGBOOK * lbs)
             }
          }
 
-         if (!getcfg(lbs->name, "Suppress Email to users", str, sizeof(str)) || atoi(str) == 0) {
+         if (!getcfg(lbs->name, "Suppress Email to users", str, sizeof(str))
+             || atoi(str) == 0) {
             /* go through password file */
             for (index = 0;; index++) {
                if (!enum_user_line(lbs, index, user))
@@ -15967,7 +16023,8 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
    _current_message_id = message_id;
 
    /* check for guest access */
-   if (!getcfg(lbs->name, "Guest Menu commands", menu_str, sizeof(menu_str)) || *getparam("unm") != 0)
+   if (!getcfg(lbs->name, "Guest Menu commands", menu_str, sizeof(menu_str))
+       || *getparam("unm") != 0)
       getcfg(lbs->name, "Menu commands", menu_str, sizeof(menu_str));
 
    /* default menu commands */
@@ -16628,7 +16685,8 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
                rsprintf("</span></td></tr></table></td></tr>\n");
 
-               if (!getcfg(lbs->name, "Show attachments", str, sizeof(str)) || atoi(str) == 1) {
+               if (!getcfg(lbs->name, "Show attachments", str, sizeof(str))
+                   || atoi(str) == 1) {
                   if (strstr(att, ".GIF") || strstr(att, ".JPG") || strstr(att, ".JPEG")
                       || strstr(att, ".PNG")) {
                      rsprintf("<tr><td class=\"messageframe\">\n");
@@ -17214,7 +17272,8 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
                      lb_list[index].name);
          if (getcfg(lb_list[index].name, "Read password", str, sizeof(str))
              || (getcfg(lb_list[index].name, "Password file", str, sizeof(str))
-                 && !getcfg(lb_list[index].name, "Guest menu commands", str, sizeof(str))))
+                 && !getcfg(lb_list[index].name, "Guest menu commands", str,
+                            sizeof(str))))
             rsprintf("&nbsp;&nbsp;<img src=\"lock.gif\">");
          rsprintf("<br>\n");
          str[0] = 0;
@@ -19861,7 +19920,7 @@ int install_service(void)
 
    strcpy(dir, path);
    if (strrchr(dir, '\\'))
-      *(strrchr(dir, '\\')+1) = 0;
+      *(strrchr(dir, '\\') + 1) = 0;
 
    sprintf(cmd, "\"%s\" -D -c \"%selogd.cfg\"", path, dir);
 
