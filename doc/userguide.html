@@ -1,0 +1,269 @@
+<HTML>
+<HEAD>
+  <TITLE>ELOG User's Guide</TITLE>
+  <LINK REV="made" HREF="mailto:fredp@mygale.org">
+  <META NAME="generator" CONTENT="NoteTab Light 4.86c">
+  <META NAME="author" CONTENT="Fred Pacquier">
+  <META NAME="description" CONTENT="Home of the Electronic Logbook (ELOG) package">
+  <META NAME="keywords" CONTENT="ELOG MIDAS PSI RITT">
+<LINK REL="stylesheet" TYPE="text/css" HREF="elog.css">
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#0000FF" VLINK="#800080" ALINK="#FF0000">
+
+<div class=title>&nbsp; ELOG User's Guide &nbsp;</div>
+<p>
+<div class=menu>&nbsp; Site map :&nbsp;
+&nbsp;[<a class=nav href="index.html">Home</a>]&nbsp;
+&nbsp;[User's Guide]&nbsp;
+&nbsp;[<a class=nav href="adminguide.html">Administrator's Guide</a>]&nbsp;
+&nbsp;[<a class=nav href="faq.html">FAQ</a>]&nbsp;
+&nbsp;[<a class=nav href="http://midas.psi.ch:8000">DEMO</a>]&nbsp;
+&nbsp;[<a class=nav href="download.html">Download</a>]&nbsp;
+</div>
+<p>
+<div class=menu>&nbsp;* this section :&nbsp;
+&nbsp;[<a class=nav href="#intro">Introduction</a>]&nbsp;
+&nbsp;[<a class=nav href="#terms">Terminology</a>]&nbsp;
+&nbsp;[<a class=nav href="#access">Accessing</a>]&nbsp;
+&nbsp;[<a class=nav href="#view">Viewing</a>]&nbsp;
+&nbsp;[<a class=nav href="#browse">Browsing</a>]&nbsp;
+&nbsp;[<a class=nav href="#add">Adding</a>]&nbsp;
+&nbsp;[<a class=nav href="#misc">Misc.</a>]&nbsp;
+*&nbsp;</div>
+<p>
+<div class=Sub><i>How to get the most from your ELOG server</i></div>
+
+<hr><a name="intro">
+<div class=section>&nbsp;A Quick Intro&nbsp;</div>
+<p>
+<b>ELOG</b> is part of a family of applications known as <i><i>weblog</i>s</i>. Their general purpose is :
+<p>
+<ol>
+<li>to make it easy for people to put information online in a chronological fashion, in the form of short, time-stamped text messages ("<I>entries</I>") with optional HTML markup for presentation, and optional file attachments (images, archives, etc.)
+<p>
+<li>to make it easy for other people to access this information through a Web interface, browse entries, search, download files, and optionally add, update, delete or comment on entries.
+</ol>
+<p>
+<b>ELOG</b> is a remarkable implementation of a <i>weblog</i> in at least two respects :
+<p>
+<ul>
+<li>its simplicity of use : you don't need to be a seasoned server operator and/or an experimented database administrator to run <b>ELOG</b> ; one executable file (under Unix or Windows), a simple configuration text file, and it works. No Web server or relational database required. It is also easy to translate the interface to the appropriate language for your users.
+<p>
+<li>its versatility : through its single configuration file, <b>ELOG</b> can be made to display an infinity of variants of the <i>weblog</i> concept. There are options for what to display, how to display it, what commands are available and to whom, access control, etc. Moreover, a single server can host several <i><i>weblog</i>s</i>, and each <i>weblog</i> can be totally different from the rest.
+<p>
+This is actually a problem when writing a User's Guide, because <b>ELOG</b> servers, and individual <i><i>weblog</i>s</i> on one server, can vary wildly in appearance and functionality... This guide only attempts to cover the main concepts of importance for <b>ELOG</b> users, describing the default "<I>out-of-the-box</I>" setup and how that behaviour may have been modified by the server administrator.
+</ul>
+<p>
+
+<hr><a name="terms">
+<div class=section>&nbsp;What Words Mean Here&nbsp;</div>
+<p>
+Just to be clear, some definitions of terms that will be used throughout the guide :
+<p>
+<ul>
+<li><b>ELOG server</b> : the machine on which the <b>ELOG</b> server is run. Its operating system (Windows/Unix/Linux) and status (server/desktop) are not important, and of course it will probably do many other things besides.
+<p>
+<li><b>ELOG administrator</b> : the person who has the authority to modify the <b>ELOG</b> configuration file on the server. May be an actual system administrator, a normal user of a server, or just the owner of a Windows PC.
+<p>
+<li><b>logbook</b> : a <i>weblog</i> made available by the <b>ELOG</b> server. There may be many distinct such logbooks on one server.
+<p>
+<li><b>entry</b> : the individual piece of information in a logbook. Can be as basic as a text message with a time-stamp, or carry much more information : attributes (see below), HTML markup, links, attached files...
+</ul>
+<p>
+
+<hr><a name="access">
+<div class=section>&nbsp;Accessing an ELOG server and its logbook(s)&nbsp;</div>
+<p>
+Usually you will be given a URL (through mail, a Web page etc.) to access the <b>ELOG</b> server.
+<p>
+If several logbooks are defined on the server, the entry page may be a list of all logbooks, with their descriptions and links to enter the logbook you want to use (<i>this may be disabled</i>).
+<p>
+Alternatively, you may be taken directly to a specific logbook. By default you will see the latest entry, but the administrator may have defined a different "<I>default view</I>" for the logbook, like the list of the day's entries, or the last 10 entries, etc. (depending on what is most convenient for that logbook's purpose).
+<p>
+<i>Note : it is generally not recommended to link directly to a specific entry in a logbook by its URL, because under certain circumstances such addresses might change. It is possible to achieve the same result with a "<I>search</I>" URL (see below).</i>
+<p>
+There are four ways through which access to a logbook may be controlled : it may be open for all to read ; it may require a common "<I>read</I>" password for all users ; it may require each user to have an individual user account (login name) and password ; finally, access may be granted or not depending on the address of the workstation you are using.
+<p>
+
+<hr><a name="view">
+<div class=section>&nbsp;Viewing information in ELOG&nbsp;</div>
+<p>
+There are two main viewing modes in a logbook :
+<p>
+<ul>
+<li>the "<b>entry</b>" view : this is when only one entry is displayed on screen (like the latest entry when you first enter a logbook, or if you click on one in a list). Here are the various parts of the display :
+<p>
+<ul>
+<li>if there are several logbooks on the <b>ELOG</b> server you will see a row of "<I>tabs</I>" at the top with the names of all the logbooks. These are link that allow to switch quickly between logbooks (<i>this may be disabled</i>).
+<p>
+<li>below is a title bar with the name of the current logbook at the left, and the <b>ELOG</b> logo at the right. If you are logged in, there will be a "<code>Logged in as &lt;username></code>" reminder in between.
+<p>
+<li>next is the "<I>menu bar</I>" : on the left is a series of links or buttons for <b>ELOG</b> commands available to you. These are explored in the sections below (<i>Note: different users may see different menus</i>). On the right is a "<I>VCR-like</I>" set of buttons for browsing, also explained later (<i>this may be disabled</i>).
+<p>
+<li>after these comes the actual entry information. It always starts with the entry time-stamp, and may be followed by up to twenty "<I>attributes</I>". These are like fields in a database and have been defined specifically for the current logbook. Each attribute has a checkbox besides it, explained below (<i>this may be disabled</i>).
+<p>
+<li>the full-width box below holds the textual content (message) of the entry. This can be plain-text or HTML code. Note that for some special applications (say, a photo album or an event log) the attributes and/or the attached files may be enough information, so this field may not always be present.
+<p>
+<li>last and optionally, one or more attached files (that were uploaded to the server when the entry was created) are offered as clickable links for download or viewing, along with the file name and size. If these are images they may be displayed directly on the page.
+<p>
+At the bottom of every page is a common "<I>footer</I>" for the logbook. By default this is just a link to the <b>ELOG</b> home page in Switzerland, but may be customized locally (typically to provide a navigation bar and links for integration with other Web sites).
+</ul>
+<p>
+<li>the "<b>search result</b>" views : these are basically lists of entries, resulting either from a "<I>Search</I>" command or from shortcuts such as "<I>Last X days</I>" and "<I>Last X entries</I>" commands (more on this below). This mode has many options, including :
+<p>
+<ul>
+<li>a "<I>summary</I>" view : one entry per row in a table. Some attributes may not be displayed. If the entry text is displayed (or its first few lines), it goes into the rightmost column. Attachments are not displayed.
+<p>
+<li>a "<i>classical weblog</i>" view : entries appear beneath one another, with attributes on one line and the text (and attachments, if present) below. Images may be displayed or just linked to.
+<p>
+<li>entries may appear most recent first, or in reverse.
+<p>
+<li>menus on list views are different from the entry view menu. By default they only have two or three commands, but they may have been customized by the administrator to add more.
+<p>
+All these lists have a number to the left of each listed entry, that is a link to the corresponding entry view.
+</ul>
+</ul>
+<p>
+
+<hr><a name="browse">
+<div class=section>&nbsp;Browsing around and finding things&nbsp;</div>
+<p>
+There are several interesting ways to peruse the information in a logbook :
+<p>
+<ul>
+<li><i><i>weblog</i>s</i> are often used for applications where chronology (time) is relevant, so a very common approach is to see "<I>what happened last</I>". In <b>ELOG</b> there are two commands for this. They are actually shortcuts for searches, to display the last day's (24 hrs) entries, or the last 10 entries (regardless of age). Note that the menus on the "<I>search result</I>" views of these commands are a bit special : they have the same command that created them, but with the search "<I>interval</I>" doubled. From the "<I>last day</I>" list you can get the "<I>last 2 days</I>" list, from that one the "<I>last 4 days</I>", etc., and similarly for "<I>last 10</I>", "<I>last 20</I>", etc., making it easy to quickly go back in time.
+<p>
+<li>another useful method, very specific to <b>ELOG</b>, is "<I>filtered browsing</I>" - again, shortcuts for specific searches. On the entry view, the "<I>VCR</I>" buttons normally let you see the previous, next, first or last entry in the logbook. However, if on the current entry you check one (or more) of the checkboxes in front of the attributes, only entries having the same value for the checked attribute(s) will be displayed by the browse buttons. Thus you can quickly flip through all the entries you submitted yourself, or of a certain type/category, depending on what attributes have been defined. 
+<p>
+<li>for custom searches there is the query form given by the "<I>Find</I>" command. This lets you look for entries between two dates, with particular values for any attribute, or containing specific text. If you fill in several fields, only entries that meet <b>ALL</b> criteria will be selected. Possible options include sort order and summary view for results, printer-friendly formatting, displaying attachments or not, and searching through all logbooks on the <b>ELOG</b> server (if applicable).
+</ul>
+<p>
+
+<hr><a name="add">
+<div class=section>&nbsp;Adding stuff to a logbook&nbsp;</div>
+<p>
+
+If you have "<I>write access</I>" to a logbook (by one of the same four methods as for read access), then you may use the "<I>New</I>", "<I>Edit</I>", "<I>Reply</I>" and "<I>Delete</I>" commands.
+<p>
+For the quality of the information committed to the logbook, you need understand and use these as well as possible. Here are some of the important features for each commmand :
+<p>
+<ul>
+<li><b>New</b> :
+<ul>
+<li>you will not be able to save your entry if all attributes marked with a red star (<font color="red">*</font>) are not filled in.
+<p>
+<li>some attributes may be pre-filled from system variables (like your user name). Pre-filled attributes may be still editable or read-only (like the entry creation date).
+<p>
+<li>attributes may be text fields (limited to 100 characters), list-boxes (max. 100 values), or check-boxes. There is also a special type of attribute where several values are listed on a line with check-boxes, and you can check as many values as needed.
+<p>
+<li>a nice touch : URLs in attributes (http://..., ftp://..., mailto:...) are automatically converted to links.
+<p>
+<li>the Text multi-line field, if present, may be pre-filled with a template if entries need to have a common, consistent format across the logbook (especially for HTML). There may also be a comment inserted before it to explain local rules and conventions, upload rules, etc.
+<p>
+<li>check the "<I>Submit as HTML</I>" box if the entry contains HTML markup.
+<p>
+<li>a logbook may be configured to send a notification e-mail to various recipients each time an entry is submitted. This may be the default behaviour, and you should check "<I>Suppress notification</I>" if it is not wanted. Or it may be checked by default, and you need to explicitely uncheck it to send the mail. Then again, you may not have a choice... (note that notifiation recipients may or may not be disclosed).
+<p>
+<li>if the logbook allows attachments, there will be a number of fields with "<I>Browse</I>" buttons at the bottom of the form. Use these to pick one or more files on your local computer, they will be uploaded to the <b>ELOG</b> server as you submit the form. IMPORTANT : there is an upper limit on the size of individual attached files. By default it is about 1 MB but can be changed by the administrator.
+<p>
+</ul>
+<li><b>Edit</b> :
+<ul>
+<li>normally the Edit form will have all the values of the existing entry in its fields for modification. However, sometimes you may see fields that have been blanked if this makes sense for a particular logbook application (e.g. a "<I>Last modified by</I>" field).
+<p>
+<li>the "<I>Submit as new entry</I>" checkbox only appears on Edit forms. If it is unchecked, the modified entry keeps its original creation time-stamp. If it is checked, the modified entry becomes the latest in the logbook, as if it had just been created. Again, it is possible that this is checked by default, or disabled altogether on some logbooks.
+<p>
+<li>managing attachments through this form is easy. If all you want to change is the attributes or text, don't touch the fields at the bottom and the original attachments will be preserved. If you want to add an additional attachment, use an empty field. If you want to update an existing file, use the "<I>Browse</I>" button below that file's name to specify the new one. Lastly, if you want to delete an attachment without upoading a new one in its place, you must type the magic word "<code>&lt;delete></code>" in the field below its name.
+</ul>
+<p>
+<li><b>Reply</b> :
+<ul>
+<li>this command creates a new entry, but with the current entry's text "<I>quoted</I>" (with '>') in the compose form, much like when replying to e-mail.
+<p>
+<li>the new entry has a special "<I>In reply to</I>" attribute with a link to the original entry ; the latter also acquires a "<I>Reply</I>" attribute with a link to the new entry. Unfortunately these links cannot be trusted in the present <b>ELOG</b> storage system, and the whole scheme gets somewhat confusing when there are several replies.
+</ul>
+<p>
+<li><b>Delete</b> :
+<ul>
+<li>nothing much to say about this one, except that there is no "<I>Recycle bin</I>" or whatever : once you have confirmed the deletion of an entry, it's gone for good, so be careful ! (same holds for the replacement or deletion of an attached file).
+</ul>
+</ul>
+<p>
+
+<hr><a name="misc">
+<div class=section>&nbsp;Misc. tips & tricks, things to be aware of...&nbsp;</div>
+<p>
+<ul>
+
+<li>as mentioned above, it is not recommended to link directly to a specific entry by its URL (from another entry or an external Web page). However, it is easy enough to achieve the same result with "<I>search URLs</I>" : use the "<I>Search</I>" form to compose a query that will result in exactly what you want (either a single entry or a list of entries). Copy the URL for that result page from your browser, and use that as the target for your link.
+<p>
+
+<li>right now you cannot search entries for attachments by their file name.
+<p>
+
+<li>right now attributes that consist of just a checkbox ("<I>boolean</I>") can only be searched by "<I>checked</I>" state in the "<I>Search</I>" form. However, if you start from an entry where that attribute is unchecked, you can use "<I>filtered browsing</I>" to flip through all other entries where it is also unchecked.
+<p>
+
+<li>as mentioned above, the "<I>Reply</I>" command only provides a basic comment/chat facility - a full-blown discussion board is not <b>ELOG</b>'s purpose. If a logbook has a very specific purpose and format (picture gallery, event log, file library etc.) it might be a good idea to disable that command there and move all chat/comments/discussions to a separate, dedicated logbook to avoid "<I>visual pollution</I>".
+<p>
+
+<li>it is important to understand that currently the <b>ELOG</b> server application is "<I>single-process</I>" and "<I>non-streaming</I>". In normal terms this means that :
+<p>
+<ul>
+<li>only one request is processed at any one time by the server.
+<p>
+<li>uploading or downloading an attachement file is a single request, and causes the entire file to be loaded in server memory while the request is being processed.
+<p>
+This is not normally a problem for the sort of short, text-mode entries <b>ELOG</b> is designed to support. However, if a user starts to upload or download a large attachment file (or image) over a slow link, all other users on that <b>ELOG</b> server will have to wait for that transfert to finish before they can access any logbook on that server. This is why there is a low limit on the size of attachments, and why <b>ELOG</b> should not be used to distribute large files under intensive multi-user conditions.
+</ul>
+<p>
+
+<li>It is possible to use bookmarks to pre-populate various attributes when submitting an <b>ELOG</b> entry.
+This can be useful if the same person often creates similar entries from the same PC. For example, with a bookmark of the form:
+<p>
+<pre>http://your.host/your_logbook/?cmd=New&pauthor=joe&ptype=Info
+</pre>
+...a new entry is created, with the "<I>author</I>" field pre-populated with "<I>joe</I>" and the "<I>Info</I>" value preselected for the "<I>type</I>" field. The same is possible for any attribute defined in the logbook (note the leading "p"). Thus you can define a set of bookmarks for various types of logbook entries.
+<p>
+
+<li>In addition to submission of logbook entries through the Web interface, the
+standalone "<I>client</I>" program <b><code>elog</code></b> can be used. The parameters
+are:
+<p>
+<ul><pre>
+elog -h hostname [-p port] [-l logbook]
+     [-w password]
+     [-u username password]
+     -a &lt;attribute1&gt;=&lt;value1&gt;
+     -a &lt;attribute2&gt;=&lt;value2&gt;
+     ...
+     -f attachment1
+     -f attachment2
+     ...
+     -m textfile | text
+</pre></ul>
+The password must match the write password defined on the server. If
+user level access is defined on the server (via the "<I>password file </I>=" option),
+a valid user name / password pair must be specified with the <b><code>-u</code></b> option.
+<p>
+Multiple attributes can be specified as well as several attachments.
+The message text can be supplied directly at the command line or submitted
+from a file with the <b><code>-m</code></b> flag.
+<p>
+The <b><code>elog</code></b> program makes it possible to submit logbook
+entries automatically by the system or from scripts. In some shift logbooks
+this feature is used to enter alarm messages automatically into the logbook.
+<p>
+
+</ul>
+<p>
+<HR>
+<div class=footer>&nbsp;
+Content by <a class=nav href="mailto:Stefan.Ritt@psi.ch">Stefan Ritt</a>,
+Web pages by <a class=nav href="mailto:fredp@mygale.org">Fred Pacquier</a>
+ - last modified on 19/12/2001
+&nbsp;</div>
+
+</body>
+</html>

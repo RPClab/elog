@@ -1,0 +1,155 @@
+<HTML>
+<HEAD>
+  <TITLE>ELOG FAQ</TITLE>
+  <LINK REV="made" HREF="mailto:fredp@mygale.org">
+  <META NAME="generator" CONTENT="NoteTab Light 4.86c">
+  <META NAME="author" CONTENT="Fred Pacquier">
+  <META NAME="description" CONTENT="Home of the Electronic Logbook (ELOG) package">
+  <META NAME="keywords" CONTENT="ELOG MIDAS PSI RITT">
+<LINK REL="stylesheet" TYPE="text/css" HREF="elog.css">
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#0000FF" VLINK="#800080" ALINK="#FF0000">
+
+<div class=title>&nbsp; ELOG FAQ &nbsp;</div>
+<p>
+<div class=menu>&nbsp;Site map :&nbsp;
+&nbsp;[<a class=nav href="index.html">Home</a>]&nbsp;
+&nbsp;[<a class=nav href="userguide.html">User's Guide</a>]&nbsp;
+&nbsp;[<a class=nav href="adminguide.html">Administrator's Guide</a>]&nbsp;
+&nbsp;[FAQ]&nbsp;
+&nbsp;[<a class=nav href="http://midas.psi.ch:8000">DEMO</a>]&nbsp;
+&nbsp;[<a class=nav href="download.html">Download</a>]&nbsp;
+</div>
+<p>
+<div class=Sub><i>Frequently Asked Questions about usage and administration</i></div>
+<hr>
+
+<UL>
+
+<LI><b>Are there any plans to implement a MySQL back end?</b>
+<p>
+No. The idea behind <b>ELOG</b> is that it is a <I>simple to use, simple to install</I> application. Many people use <b>ELOG</b> under Windows, and they even don't know what MySQL means. Other people like the flat file database format, because it's simple, easily accessible from other programs, and it's easy to backup certain days or months of the database (since the filenames contain the date). Since <b>ELOG</b> should be independent of any other package, some "switchable" backend between native <b>ELOG</b> format and MySQL would be needed, which is lots of work and not planned right now.
+<p>
+
+<LI><b>Can I run the ELOG daemon from inside Apache or any other Web server?</b>
+<p>
+No. The <b>ELOG</b> daemon was designed as a standalone server and it will stay like that in the future. The reason for that is that <code><b>elogd</b></code> should not rely on any other software. This is for example important for many people running <code><b>elogd</b></code> under Windows, and they have no clue how to install Apache for Windows. The installation and maintenance for <code><b>elogd</b></code> therefore becomes much simpler. The disadvantage of this solution is that <code><b>elogd</b></code> needs to run on a different port than 80 in case it runs in parallel with a Web server.
+<p>
+
+<LI><b>I can access my logbook without any password, isn't that a security problem?</b>
+<p>
+By default, no password is used in <b>ELOG</b>. This can be useful for public directories etc. that anybody should be able to read. To add password security, read the documentation under <a href="config.html#access">Access control</a>.
+<p>
+Note that passwords are transferred over the network in plain text and therefore not secure. If this is a problem, a <a href="adminguide.html#secure">secure</a> network connection should be used.
+<p>
+
+<LI><b>I want a bookmark pointing to the last page where an attribute has a certain value</b>
+<p>
+Use the URL:
+<p>
+<code>http://&lt;your.host&gt;/&lt;logbook&gt;/?cmd=Last&&lt;attribute&gt;=&lt;value&gt;</code>
+<p>
+This executes the "<I>Last</I>" command using a filter with &lt;attribute&gt;=&lt;value&gt;. The following command displays the same page, but also locks the attribute (checks the box next to &lt;attribute&gt;) so that browsing (next, previous, first, last) only shows pages with that attribute value.
+<p>
+<code>http://&lt;your.host&gt;/&lt;logbook&gt;/?cmd=Last&&lt;attribute&gt;=&lt;value&gt;&l&lt;attribute&gt;=1</code>
+<p>
+Note the "l" before the second attribute, as in "<I>lAuthor=1</I>".
+<p>
+
+<LI><b>I want a logbook with public read access (no password), but restricted write access</b>
+<p>
+There is a trick for that: Define two logbooks, but with the same data directory. The first one has no passwords, but a restricted set of menu commands. The second logbook has a read and/or write password or user level access and a full menu (including edit, delete, etc.). So the public uses the first logbook, while the adminitrator uses the second logbook. Here is an example configuration file:
+<p>
+<pre>
+[global]
+logbook tabs = 0
+
+[Public]
+data dir = c:\elog
+Comment = Public access
+Attributes = Author, Type, Category, Subject
+Options Type = Routine, Software Installation, Problem Fixed, Configuration, Other
+Options Category = General, Hardware, Software, Network, Other
+Menu commands = Find, Last day, Last 10, Help
+
+[Restricted]
+Data dir = c:\elog
+Comment = Access only for administrator
+Password file = passwd.txt
+Attributes = Author, Type, Category, Subject
+Options Type = Routine, Software Installation, Problem Fixed, Configuration, Other
+Options Category = General, Hardware, Software, Network, Other
+Menu commands = New, Edit, Delete, Reply, Find, Last day, Last 10, Config, Change Password, Logout, Help
+</pre>
+Note the "<I>logbook tabs = 0</I>" which "<I>hides</I>" the restricted logbook so that public users don't get confused.
+<p>
+
+<LI><b>I have many loogbooks with password files, so if I add a user or want to change
+a password I have to do this for all logbooks which is painful.</b>
+<p>
+You can have several logbooks point to the same password file. So if you change a user or
+password in that file, it becomes automatically available in all logbooks which use that file.
+<p>
+
+<LI><b>By default, ELOG displays the last entry from a logbook. How can I configure it to
+display the last 10 messages instead?</b>
+<p>
+There is a simple trick. You use the <b>"<I>Welcome page</I>"</b> option in the <code><b>elogd</b></code> file
+to redirect the start page to the <b>last 10</b> command. Put the statement:
+<p>
+<pre>
+Welcome page = redir.html
+</pre>
+into <code><b>elogd</b></code> and create that file with following contents:
+<p>
+<pre>
+&lt;head&gt;
+&lt;meta http-equiv="refresh" content="0; URL=/logbook/last10"&gt;
+&lt;/head&gt;
+</pre>
+This causes the welcome page being redirected to <b>/logbook/last10</b>, where <b>logbook</b> must be replaced by the current logbook name. Following other redirections are possible:
+<p>
+<pre>
+/logbook/last20                         for the last 20 messages and so on
+/logbook/past1                          for the last day
+/logbook/past2                          for the last two days and so on
+/logbook?cmd=New                        for the new message entry form
+/logbook?cmd=Find                       for the "find" page
+/logbook?cmd=Search&amp;&lt;attrib&gt;=&lt;value&gt;    for a search with &lt;attrib&gt;=&lt;value&gt;
+</pre>
+
+<LI><b>What new features are planned for future releases ?</b>
+<p>
+Here are some "<I>wishlist</I>" items requested by users. I will work down the list as time permits. If you find
+a feature you find useful on the list, there is a good chance that it will appear in a future release. You can vote for a feature, or suggest one, by sending me an email.
+<p>
+
+<center>
+<table border=1>
+<tr><th>Feature<th>Votes</tr>
+
+<tr><td>Get message from standard input in elog submission program<td>1</tr>
+<tr><td>Users can only edit their own entries<td>1</tr>
+<tr><td>Make user file editable through web interface<td>1</tr>
+<tr><td>Implement groups of users<td>1</tr>
+<tr><td>Add email address field to user file, so that user name can be
+        specified for "Email &lt;attribute&gt; &lt;value&gt; =" option
+        which gets automatically substituted by email address<td>1</tr>
+<tr><td>Change internal database format from offset oriented to
+        index oriented (lots of work, need also conversion program)<td>2</tr>
+<tr><td>Implement new listing mode in between "summary only" and "full listing"
+        where a few text lines are displayed below the attribute fields<td>1</tr>
+
+</table></center><p>
+
+</UL>
+
+<HR>
+<div class=footer>&nbsp;
+Content by <a class=nav href="mailto:Stefan.Ritt@psi.ch">Stefan Ritt</a>,
+Web pages by <a class=nav href="mailto:fredp@mygale.org">Fred Pacquier</a>
+ - last modified on 19/12/2001
+&nbsp;</div>
+</BODY>
+</HTML>

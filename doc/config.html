@@ -1,0 +1,682 @@
+<HTML>
+<HEAD>
+  <TITLE>ELOG - Syntax of elogd.cfg</TITLE>
+  <LINK REV="made" HREF="mailto:fredp@mygale.org">
+  <META NAME="generator" CONTENT="NoteTab Light 4.86c">
+  <META NAME="author" CONTENT="Fred Pacquier">
+  <META NAME="description" CONTENT="Home of the Electronic Logbook (ELOG) package">
+  <META NAME="keywords" CONTENT="ELOG MIDAS PSI RITT">
+<LINK REL="stylesheet" TYPE="text/css" HREF="elog.css">
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#0000FF" VLINK="#800080" ALINK="#FF0000">
+
+<div class=title>&nbsp; ELOG - Syntax of elogd.cfg &nbsp;</div>
+<p>
+<div class=menu>
+&nbsp;[<a class=nav href="adminguide.html">back to Administrator's Guide</a>]&nbsp;
+</div>
+<p>
+<div class=menu>&nbsp;* Server :&nbsp;
+&nbsp;[<a class=nav href="#global">Global</a>]&nbsp;
+- Logbooks :&nbsp;
+&nbsp;[<a class=nav href="#general">General</a>]&nbsp;
+&nbsp;[<a class=nav href="#attrib">Attributes</a>]&nbsp;
+&nbsp;[<a class=nav href="#email">E-mail</a>]&nbsp;
+&nbsp;[<a class=nav href="#access">Access</a>]&nbsp;
+&nbsp;[<a class=nav href="#flags">Flags</a>]&nbsp;
+&nbsp;[<a class=nav href="#themes">Themes</a>]&nbsp;
+*&nbsp;</div>
+<p>
+<div class=Sub><i>Global and individual logbook options for an ELOG server</i></div>
+
+<hr>
+<p>
+The configuration file <b><code>elogd.cfg</code></b> contains entries which define
+the structure of logbooks and the behaviour of <code><b>elogd</b></code>. The file has a simple ASCII
+format. Each logbook is defined by a <b><code>[&lt;name&gt;]</code></b> section
+where &lt;name&gt; is the name of the logbook. The <b><code>[global]</code></b>
+section is used for settings common to all logbooks. Each line contains a setting
+name, followed by an equal sign and the value for this setting. Lines starting with
+";" are treated as comments.
+<p>
+Here is a simple example, which define two logbooks, "<I>Linux</I>" and "<I>PC</I>":
+<p>
+<ul><pre>
+[global]
+Logbook tabs = 1
+Tab cellpadding = 2
+SMTP host = mailsend.your.domain
+
+[Linux]
+Theme = default
+Comment = General linux tips and tricks
+Data dir = /usr/local/elog/linux
+Attributes = Author, Type, Category, Subject
+Options Type = Routine, Software Installation, Problem Fixed, Configuration, Other
+Options Category = General, Hardware, Software, Network, Account, Other
+Options Author = Stefan, Linus, unknown
+Required Attributes = Author
+
+[PC]
+Comment = Database PC installations
+Data dir = /usr/local/elog/pc
+Attributes = Location, OS, Owner
+Options Location = Building1, Building2
+Options OS = Linux, Windows ME, Windows 2000
+Required Attributes = Location, Owner
+Email All = name@address, othername@otheraddress
+Mail Subject = Location
+</pre></ul>
+<p>
+
+<a name="global"><hr>
+<div class=title>&nbsp; Global options &nbsp;</div>
+<p>
+The following options are specific to the <b><code>[global]</code></b> section:
+<p>
+<UL>
+
+<LI><b><code>Language = &lt;name&gt;</code></b>
+<br>
+The language setting determines the language of the <code><b>elogd</b></code> output. Not affected by this
+setting are the configuration file options (they are always in English) and the
+<b>attribute</b> names as well as the optional <b>Menu commands</b>. These have to be
+translated manually in the configuration file.
+<p>
+If a language name is given (currently only "<I>german</I>" and "<I>french</I>" are supported out-of-the-box),
+the system searches for a file named <b>eloglang.&lt;name&gt;</b> containing
+string translations from English into that language. <i>If you create a new translation file, please send it back to the author to be included in future distributions</i>.
+<p>
+The online help for <code><b>elogd</b></code> is contained in the file <b>eloghelp_<i>xx</i>.html</b> where
+<i>xx</i> are the first two letters of the language (like "<I>en</I>", "<I>ge</I>" and "<I>fr</I>"). For new languages, a new file of that type must be created as well.
+<p>
+
+<LI><b><code>Tab cellpadding</code></b>
+<br>
+Specifies the empty space between the name in the logbook tab and its frame, in pixels.
+<p>
+
+<LI><b><code>Logbook Tabs = 0/1</code></b>
+<br>
+This flag controls the display of "<I>tabs</I>" on top of the logbook page which
+allow to quickly switch between logbooks.
+<p>
+
+<LI><b><code>Main Tab = &lt;string&gt;</code></b>
+<br>
+If this option is present, an additional first tab is displayed which takes you back
+to the main logbook selection page. The <b><code>string</b></code> is used for the
+contents of the tab.
+<p>
+
+<LI><b><code>Welcome Title</code></b>
+<br>
+This optional HTML code gets displayed in the title of the logbook selection
+page. It can contain images via <b><code>&lt;img src="welcome.gif"&gt;</code></b>.
+These images must be in the same directory as the elodg.cfg file.
+The following line is an example Welcome Title:
+<p>
+<pre>Welcome title = &lt;img src="welcome.jpg"&gt;&lt;p&gt;&lt;font size=5 color=white&gt;Welcome to our Elog&lt;/font&gt;</pre>
+<p>
+This displays an image and a text below.
+<p>
+
+<LI><b><code>Page title = &lt;string&gt;</code></b>
+<br>
+The string specified here is used for the title of the logbook selection page. It is also
+used by most browsers for bookmark names.
+<p>
+
+<LI><b><code>Selection page = &lt;file&gt;</code></b>
+<br>
+When this option is present, a user defined file is displayed instead of the logbook
+selection page. This file must be in the same directory as the <code><b>elogd</b></code>
+file. It can be completely customized in order to contain logos etc. As a template,
+the standard selection page produced by <code><b>elogd</b></code> can be used.
+<p>
+
+<LI><b><code>SMTP host</code></b>
+<br>
+This defines the SMTP host needed to send automatic email notifications. The host
+name you can get from your email program or your local system administrator.
+<p>
+
+</UL>
+
+<hr>
+<div class=title>&nbsp; Individual logbook options &nbsp;</div>
+<p>
+For each logbook, there is a section with the logbook name in square brackets, so that each
+logbook can have different options. If an option is not present in a logbook section, then the
+system tries to locate that option in the <code><b>[global]</b></code> section. Thus if the
+following options are placed in the <code><b>[global]</b></code> section, they are defaults for
+all logbooks. If they are present in the <code><b>[global]</b></code> and in the logbook
+section, the logbook option is used.<p >
+
+Here are the available options, by broad categories:<p>
+
+<a name="general"><hr>
+<div class=section>&nbsp; General options &nbsp;</div>
+
+<UL>
+
+<LI><b><code>Data dir</code></b>
+<br>
+Each logbook has a separate directory where the logbook entries are stored, which
+is controlled by this statement. Note that the directories must exist and must
+be writable by the <code><b>elogd</b></code> program.
+<p>
+
+<LI><b><code>Number Attachments</code></b>
+<br>
+The number of attachments which can be submitted in one entry. May be zero if no
+attachments are needed. Maximum is defined by MAX_ATTACHMENTS in elogd.c
+(10 by default).
+<p>
+
+<LI><b><code>Comment</code></b>
+<br>
+The comment is displayed on the logbook selection list. The selection list is
+displayed if more than one logbook is defined on a host and no logbook is
+explicitly specified in the URL.
+<p>
+
+<LI><b><code>Theme</code></b>
+<br>
+A theme determines which layout and colors are used for a logbook, similar to
+<i>skins</i> in other programs. The <i>theme</i> option points to a subdirectory
+under the directory of the configuration file, which contains all files for
+that theme. The format of these files is described under the <i>Themes</i>
+section.
+<p>
+
+<LI><b><code>Date format = &lt;string&gt;</code></b>
+<br>
+This option determines how the date of a logbook entry is displayed. The format
+of the string is the same as the C function
+<a href="http://www.gnu.org/manual/glibc-2.2.3/html_node/libc_427.html#IDX2636">
+strftime</a>, so a string of <b>%A, %B %d, %Y</b> yields in a display of
+<b>Thursday, November 15, 2001</b> for example.
+<p>
+
+<LI><b><code>Welcome Page = &lt;file&gt;</code></b>
+<br>
+By default, the last entry of a logbook is displayed when the logbook is selected.
+This can be overridden with this option, which causes a HTML file to be shown
+instead of the last message. This file can contain further links for new logbook
+messages of for logbook queries. Here is a simple example of such a file:
+<p>
+<pre>
+&lt;h1&gt;Welcome to the test logbook&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="?cmd=new"&gt;Enter&lt;/a&gt; a new message
+&lt;li&gt;&lt;a href="?cmd=find"&gt;Search&lt;/a&gt; the logbook
+&lt;/ul&gt;
+</pre>
+
+The file must be present in the same directory as the <code><b>elogd</b></code> file.
+<p>
+
+<LI><b><code>Submit Page = &lt;file&gt;</code></b>
+<br>
+This optional page can be displayed when a new message was submitted in a logbook.
+Here is an example:
+<p>
+<pre>
+&lt;h1&gt;You successfully submitted a message&lt;/h1&gt;
+&lt;a href="linux"&gt;Back&lt;/a&gt; to the logbook&lt;p&gt;
+&lt;a href="linux?cmd=new"&gt;Enter&lt;/a&gt; another message
+</pre>
+
+The reference "<I>linux</I>" in this case corresponds to the logbook name.
+The file must be present in the same directory as the <code><b>elogd</b></code> file.
+<p>
+
+<li><b><code>Message comment</code></b>
+</br>
+This optional comment is displayed on top of the text entry field when submitting
+a new message. It can contain a sentence like "<I>Please enter your message here</I>:".
+<p>
+
+<li><b><code>Menu commands = &lt;list&gt;</code></b>
+</br>
+This option specifies the menu commands displayed on top of the logbook page. For
+certain installations, it can be useful to disable some commands. Following
+commands are possible:
+<p>
+  <ul>
+  <li><b>New</b> - Enter new logbook entry
+  <li><b>Edit</b> - Edit current logbook entry
+  <li><b>Delete</b> - Delete current logbook entry
+  <li><b>Reply</b> - Submit a reply to current entry
+  <li><b>Find</b> - Search entries in logbooks
+  <li><b>Last day</b> - Display entries from last day
+  <li><b>Last 10</b> - Display last 10 entries
+  <li><b>Move to</b> - Move entry to other logbook
+  <li><b>Copy to</b> - Copy entry to other logbook
+  <li><b>Config</b> - Edit elogd.cfg
+  <li><b>Change password</b> - Change password for current user (if "<I>Password file</I>" is given)
+  <li><b>Logout</b> - Logout current user (if "<I>Password file</I>" is given)
+
+  <li><b>Help</b> - General help
+  </ul>
+<p>
+If this option is not present, following default is used:
+<p>
+<pre>Menu commands = New, Edit, Delete, Reply, Find, Last day, Last 10, Config, Help</pre>
+<p>
+
+<li><b><code>Find Menu commands = &lt;list&gt;</code></b>
+</br>
+This option specifies the menu commands displayed on top of the listing page
+resulting from a "<I>find</I>" command. Although all commands from a above are possible,
+only the commands <code><b>New, Find, Back, Last, Last day, Last 10, config, Change
+password, Logout</b></code> and <code><b>Help</b></code> make sense. There is one
+special command in addition to the above commands: The command <b><code>Last x</b>
+</code> gets expanded to "<I>Last 2 days</I>", "<I>Last 4 days</I>" or "<I>Last 20 entries</I>", "<I>Last 40 entries</I>" and so on, similar to the standard behaviour without the "<I>Find Menu commands</I>" option.
+<p>
+
+<li><b><code>Bottom text = &lt;file&gt;</code></b>
+</br>
+If this option is present, the HTML contents of <b><code>file</code></b> is displayed at
+the bottom of an Elog page instead of the little Elog home page link. It can contain for
+example a link back to the main logbook selection page like:
+
+<pre>
+&lt;center&gt;&lt;a href="/"&gt;Main page&lt;/a&gt;&lt;/center&gt;
+</pre>
+
+Or it can contain other useful links. The file must be present in the same directory
+as the <code><b>elogd</b></code> file.
+<p>
+
+<li><b><code>Help URL</code></b>
+<br>
+This URL is used for the Help button. By default, the file <b>eloghelp_xx.html</b> is
+returned with the contents of the help page. Edit this file directly to add site-specific help for all logbooks. Alternatively, use the <b><code>Help URL</code></b> option to specify different help pages for different logbooks.
+It can point to a site-specific help page via <b><code>http://...</code></b> or to a local file like
+<b><code>file://c:/tmp/config.html</code></b>, or to the name of an HTML file which must be present in the same directory as the <code><b>elogd</b></code> file.
+<p>
+
+</UL>
+
+<a name="attrib"><hr>
+<div class=section>&nbsp; Attributes &nbsp;</div>
+
+<UL>
+<LI><b><code>Attributes = &lt;list&gt;</code></b>
+<br>
+Define a number of attributes for the logbook. A maximum of 20 attributes can be
+defined. Typical values are "<I>Author</I>", "<I>Subject</I>" or "<I>Type</I>".
+<p>
+
+<LI><b><code>Options &lt;attribute&gt; = &lt;list&gt;</code></b>
+<br>
+Usually, an text field is used for an attribute, where the user can fill in
+text of up to 100 characters. If instead a drop-down box with preset items is
+better for a given attribute, these items can be defined with this statement.
+Up to 100 items can be defined, separated by commas.
+<p>
+
+<LI><b><code>MOptions &lt;attribute&gt; = &lt;list&gt;</code></b>
+<br>
+This list allows for "<I>Multiple Options</I>", meaning that an attribute can have
+several values simultaneously. When entering an entry with MOptions, each value
+from the list is represented by a checkbox. Unlike with normal options, multiple
+checkboxes can be checked for an entry. The attribue value then becomes
+<p>
+<pre>
+&lt;value1&gt; | &lt;value2&gt; | ...
+</pre>
+In the "<I>find</I>" page only one of these values can be specified, which is then
+treated as a substring in the search filter.
+<p>
+
+<LI><b><code>Options &lt;attribute&gt; = boolean</code></b>
+<br>
+If an attribute is marked "<I>boolean</I>" this way, a checkbox is displayed for
+this attribute.
+<p>
+
+<LI><b><code>Preset &lt;attribute&gt; = &lt;string&gt;</code></b>
+<br>
+This option uses a preset string for an attribute. The string can contain
+subsitutions like the ones described under the "<I>Subst &lt;attribute&gt;</I>"
+command. One possible application is to use the login name for the author
+field like:
+<p>
+<pre>
+Preset Author = $long_name
+</pre>
+If the attribute should be locked at the Web submission, use the
+"<I>Locked Attributes = ...</I>" option. If a preset value is given for an
+attribute which has an options list, the preset value is selected in the drop
+down box by default.
+<p>
+
+<LI><b><code>Preset text = &lt;string&gt; or &lt;file&gt;</code></b>
+<br>
+This preset value is used for the main body text. It can be a string or a file,
+which must be present in the same directory as the <code><b>elogd</b></code> file.
+<p>
+
+<LI><b><code>Locked Attributes = &lt;list&gt;</code></b>
+<br>
+The attributes specified here cannot be modified when a new entry is submitted.
+This makes only sense for preset attributes.
+<p>
+
+<LI><b><code>Required Attributes = &lt;list&gt;</code></b>
+<br>
+The attributes specified here are required when a new entry is submitted. The
+attribute names are marked with <font color=red>*</font> on the entry form.
+<p>
+
+<LI><b><code>Page title = &lt;string&gt;</code></b>
+<br>
+The string specified here is used for the title of the web page. It is also
+used by most browsers for bookmark names. The string can contain substitutions
+as described unter the "<I>Subst &lt;attribute&gt;</I>" option.
+<p>
+
+<LI><b><code>Display search = &lt;list&gt;</code></b>
+<br>
+The display of attributes in a search result table can be restricted only to
+certain attributes listed here. This can be helpful is many attributes are defined
+in a logbook, which usually makes the table too big to fit in the browser.
+<p>
+
+<LI><b><code>Subst &lt;attribute&gt; = &lt;string&gt;</code></b>
+<br>
+When submitting logbook entries, attribute values can be substituted by some
+text. This text can contain arbitrary fixed text and following values:
+<p>
+<UL>
+<LI><b>$&lt;attribute&gt;</b>: The entered value of the attribute itself
+<LI><b>$host</b>: The host name where <code><b>elogd</b></code> is running
+<LI><b>$remote_host</b>: The host name of the host from with the entry was submitted
+<LI><b>$short_name</b>: The login name (if password file is present)
+<LI><b>$long_name</b>: The full name (if password file is present)
+<LI><b>$logbook</b>: The name of the current logbook
+<LI><b>$date</b>: The current date, formatted via "<I>Date format</I>"
+</UL>
+<p>
+Following example use this feature to add the remote host name to the author:
+<p>
+Subst Author = $author from $remote_host
+<p>
+
+<LI><b><code>Remove on reply = &lt;list&gt;</code></b>
+<br>
+This option clears one or more (separated by commata) attribute values from a logbook
+entry when creating a reply to that entry. This can make sense for example for
+the author, since the author of a reply can be different from the original author.
+<p>
+
+</UL>
+
+<a name="access"><hr>
+<div class=section>&nbsp; Access control &nbsp;</div>
+<p>
+Reading and writing into logbooks can be constrained using two different access methods,
+either with global passwords for read, write and admin (config, delete), or with user-
+level passwords. For these two schemes to work properly, <b>cookies have to be turned
+on in your browser</b>. Please consult your browser documentation about how to do that.
+<p>
+
+<UL>
+<LI><b><code>Read password</code></b>
+<LI><b><code>Write password</code></b>
+<LI><b><code>Admin password</code></b>
+<LI><b><code>Write password expiration = &lt;hours&gt;</code></b>
+<LI><b><code>Admin password expiration = &lt;hours&gt;</code></b>
+</ul>
+<p>
+These optional password statements define passwords for reading and writing to the
+logbook, to delete entries in the logbook and to configure a logbook via the <I>Config</I>
+menu. The passwords are stored in an encoded form. To change them, use <code><b>elogd</b></code>
+directly with the <b><code>-r </code></b>, <b><code>-w</code></b> and <b><code>-a
+</code></b> flags. To set the write password of logbook "<I>linux</I>" to "<I>test</I>", enter:
+<p>
+<ul><code>elogd -w test -l linux</code></ul>
+<p>
+The read password is queried by the browser with a pop-up window and usually stays
+active for the entire browser session. The write and admin passwords are stored in
+cookies on the browser side and have an expiration time of 24h. After that time, the
+passwords have to be re-submitted. This time can be changed with the statement <b>
+<code>Write Password Expiration = x</code></b> or <b><code>Admin Password Expiration
+= x</code></b>, where <i>x</i> is the expiration time in hours. It should be noted
+that on some systems the daylight savings time is calculated incorrectly, which can
+cause time offsets of one hour between a server PC and a client PC. In this case one
+hour must be added to the expiration time. If the expiration is set to "0", the
+passwords are kept for the current browser session only. When the browser is restarted,
+the password must be re-entered.
+<P>
+<ul>
+<LI><b><code>Password file = &lt;file&gt;</code></b>
+<LI><b><code>Login expiration = &lt;hours&gt;</code></b>
+</ul>
+<p>
+An alternative to the read/write/admin passwords is the user level access with a
+password file. This file contains user names and passwords in following format:
+<p>
+<ul><code><pre>&lt;login name1&gt;:&lt;password1&gt;:&lt;full name1&gt;
+&lt;login name2&gt;:&lt;password2&gt;:&lt;full name2&gt;
+&lt;login name3&gt;:&lt;password3&gt;:&lt;full name3&gt;
+...</pre></code></ul>
+<p>
+The passwords are encoded. To create or change them, use the "<I>Change
+Password</I>" menu point. To create a new user, edit the password file
+manually and use an empty password (like "<code>&lt;login name&gt;::&lt;full name&gt;</code>"), which can then be changed via the "<I>Change password</I>" menu point.
+<p>
+The presence of a password file requires all users to "<I>log in</I>" using their name and
+password. An additional advantage of this method is that the user name can be used as
+an attribute value for creating logbook entries. For example, the following line could be
+added to the configuration file to fill in the <i>Author</i> attribute with the user name:
+<p>
+<ul><code>Options Author = $long_name from $remote_host</code></ul>
+<p>
+Thus the author name is not user-input anymore, ensuring the entry always contains the
+actual user name. For a full listing of substitutions, see the "<I>Subst &lt;attrib></I>" option.
+<p>
+The user name and password are stored as cookies on the user side. They expire after 24
+hours by default, which can be changed with the <code><b>Login expiration</b></code >
+options. If the expiration is set to "0", the passwords are kept for the current browser
+session only. When the browser is restarted, the password must be re-entered.
+<p>
+<ul>
+<LI><b><code>Allow &lt;command&gt; = &lt;user list&gt;</code></b>
+</ul>
+<p>
+Commands can be restricted to certain login names (separated by commas). For
+each command in the list defined with the "<I>Menu commands</I>" option, a list of
+user names can be specified, which are allowed to execute that command. If the
+allow option is not present, all users may execute that command by default.
+<p>
+<ul>
+<LI><b><code>Hosts allow = &lt;list&gt;</code></b>
+<LI><b><code>Hosts deny = &lt;list&gt;</code></b>
+</ul>
+<p>
+These two settings can be used to restrict the access to the logbook to certain
+computers. It is similar to the UNIX <i>hosts.allow</i> and <i>hosts.deny</i> files.
+The list can consist of individual host names or IP numbers, subnet masks like
+<b><code>123.213.</b></code> (note the trailing '.') or <b><code>.mit.edu</b></code>,
+or the word <b><code>All</code></b>. The following rules are applied:
+<ul>
+<li>Access will be granted when a host matches a pattern in "<I>hosts allow</I>".
+<li>Otherwise, access will be denied when a host matches a pattern in "<I>hosts deny</I>".
+<li>Otherwise, access will be granted.
+</ul>
+<p>
+These rules are applied <i>before</i> any password is checked. To debug problems,
+start <code><b>elogd</b></code> with the "-v" flag, in which case the rule checking is printed
+on the screen.
+<p>
+
+<a name="email"><hr>
+<div class=section>&nbsp; EMail notification &nbsp;</div>
+
+<ul>
+<LI><b><code>Email &lt;attribute&gt; &lt;value&gt; = &lt;list&gt;</code></b>
+<LI><b><code>Use Email Subject = &lt;string&gt;</code></b>
+<LI><b><code>Use Email From = &lt;string&gt;</code></b>
+</ul>
+<p>
+To send email automatically when new entries are created in a logbook, a <b><code>SMTP host =
+</b></code> entry must be present in the <b><code>[global]</code></b> section
+of the configuration file. To submit an email based on an attribute value, use the statement <b><code>Email &lt;attribute&gt; &lt;value&gt; =
+&lt;list&gt;</b></code>. Whenever an entry is submitted where <b><code>
+attribute</code></b> is equal to <b><code>value</code></b>, an email
+notification is sent to the email addresses in <b><code>list</code></b>.
+Several mail addresses may be supplied, separated by commas. Multiple <b>
+<code>Email xxx</code></b > statements may occur in a configuration
+file. If either the attribute or the value contains one or more blanks the string
+must be enclosed with quotation marks, as in:
+<p>
+<ul><code>Email type "Normal routine" = ...</code></ul>
+<p>
+The statement <b><code>Email All = &lt;list&gt;</code></b> sends an
+email notification independent of the type and category. The <b><code>Use
+Email Subject = &lt;string&gt;</b></code> statement specifies which text is
+used as the email subject. The text can contain <b><code>$&lt;attribute&gt;
+</code></b>statements which are substituted with the current value of that
+attribute. For a full list of possible substitutions, see the
+"<I>Subst &lt;attribute&gt;</I>" option. The option <b><code>Use Email From = &lt;string&gt;
+</code></b> is used for the "<I>from</I>" field in the email.
+<p>
+
+<a name="flags"><hr>
+<div class=section>&nbsp; Flags &nbsp;</div>
+
+<ul>
+<li><b><code>Show text = 0/1</code></b>
+</br>
+This flag controls if logbook entries contain a body text. If an installation
+only requires attributes, this flag can be set to <b>0</b>. Default is
+<b>1</b>.
+<p>
+
+<li><b><code>Show attachments = 0/1</code></b>
+</br>
+This flag controls the display of attachments such as images on normal
+logbook pages. For logbooks with large images, this flag can be turned off,
+so that attachments are only displayed when they are clicked on. Default
+is <b>1</b>.
+<p>
+
+<li><b><code>Summary on default = 0/1</code></b>
+</br>
+If this flag is <b>1</b>, the buttons <i>"Last day"</i> and <i>"Last 10"</i>
+produce summary listings instead of displaying full messages. In the <i>"Find"</i>
+page, the <i>"Summary only"</i> check box is checked by default.
+<p>
+
+<li><b><code>Summary lines = x</code></b>
+</br>
+This specifies the number of text lines displayed in a summary page. Zero displays
+no text at all. The default is 3.
+<p>
+
+<li><b><code>Reverse sort = 0/1</code></b>
+</br>
+If this flag is <b>1</b>, the result of the <i>"Last day"</i> and <i>"Last 10"</i> queries
+is sorted in reverse order (newest entry down to oldest). Default is <b>0</b>.<p>
+
+<li><b><code>Enable browsing = 0/1</code></b>
+</br>
+If this flag is <b>1</b>, browsing (hitting the next/previous button) is enabled.
+For some rare occasions it might be necessary to disable browsing. Default is
+<b>1</b>.
+<p>
+
+<li><b><code>Filtered browsing = 0/1</code></b>
+</br>
+If this flag is <b>1</b>, browsing (hitting the next/previous button) can be
+filtered by individual attributes. If the checkbox next to an attribute is checked,
+only messages with the same attribute value are displayed. Default is <b>1</b>.
+<p>
+
+<li><b><code>HTML default = 0/1/2</code></b>
+</br>
+This specifies the default state of the "<I>Submit as HTML text</I>" button on the
+new message entry from. For installations where entries are normally submitted
+as HTML, the default can be set to <b>1</b>. If this value is set to <b>2
+</b>, the check box is not displayed at all, so that only text submissions
+are possible. The default is <b>0</b>.
+<p>
+
+<li><b><code>Suppress default = 0/1/2</code></b>
+</br>
+This specifies the default state of the "<I>Suppress Email notification</I>" button on the
+new message entry form. For installations where normally an email notification is
+not necessary, the default can be set to <b>1</b>. If an important entry is
+entered, users can then uncheck the suppress box. If this value is set to <b>2
+</b>, the suppress box is not displayed at all, so that an email notification is
+always produced. The default is <b>0</b>.
+<p>
+
+<li><b><code>Resubmit default = 0/1/2</code></b>
+</br>
+This specifies the default state of the "<I>Resubmit as new entry</I>" button on the
+edit message entry from. If this button is checked, the current message is removed
+from its current position in the database and submitted as a new message. This
+can for example be useful for applications where users want to see which records
+have been updated recently. If this value is set to <b>2</b>, the resubmit box
+is not displayed at all. The default is <b>0</b>.
+<p>
+
+<li><b><code>Display Email recipients = 0/1</code></b>
+</br>
+If this flag is <b>1</b>, the email recipients are displayed when a logbook
+entry is entered which produces an email notification. Setting this flag to 0
+suppresses this display, in case users need not see that email is being sent and to whom.
+The default is <b>1</b>.
+<p>
+
+<li><b><code>Email message body = 0/1</code></b>
+</br>
+If this flag is <b>1</b>, the email notification send by elog contains the
+full message body in addition to the attributes. The default is <b>0</b>.
+<p>
+
+<li><b><code>Back to main = 0/1</code></b>
+</br>
+If this flag is <b>1</b>, the "<I>Back</I>" button takes you back to the logbook
+selection page instead to the last entry of the current logbook.
+The default is <b>0</b>.
+<p>
+
+</ul><p>
+
+<a name="themes"><hr>
+<div class=section>&nbsp; Themes &nbsp;</div>
+<p>
+Themes are layout and color schemes which determine the look and feel of a logbook.
+Each theme resides in a separate subdirectory and is specified with the
+<b><code>theme = &lt;dir&gt;</code></b> option in the configuration file. The directory
+contains the file <b><code>theme.cfg</code></b> and a few images, which are used
+for the title banner and the browse buttons. A default theme is contained in the
+distribution. If new themes are developed by users, they can be sent back to the author,
+to be included in future releases.
+<p>
+Most of the options in the <b><code>theme.cfg</b></code> are self-explanatory. The colors
+are coded as #RRGGBB, where RR is a 8-bit hexadecimal value for the red part, GG for the
+green and BB for the blue part, repectively. Since theme configuration files are re-read
+at each access, the <B>elogd </B>daemon does not have to be restarted after a change in the
+theme configuration file.
+<p>
+These two images display the same logbook entry using different themes:
+<p>
+<img src=theme1.jpg>&nbsp;&nbsp;<img src=theme2.jpg>
+<p>
+
+<HR>
+<div class=footer>&nbsp;
+Content by <a class=nav href="mailto:Stefan.Ritt@psi.ch">Stefan Ritt</a>,
+Web pages by <a class=nav href="mailto:fredp@mygale.org">Fred Pacquier</a>
+ - last modified on 19/12/2001
+&nbsp;</div>
+</BODY>
+</HTML>

@@ -1,0 +1,253 @@
+<HTML>
+<HEAD>
+  <TITLE>ELOG Administrator's Guide</TITLE>
+  <LINK REV="made" HREF="mailto:fredp@mygale.org">
+  <META NAME="generator" CONTENT="NoteTab Light 4.86c">
+  <META NAME="author" CONTENT="Fred Pacquier">
+  <META NAME="description" CONTENT="Home of the Electronic Logbook (ELOG) package">
+  <META NAME="keywords" CONTENT="ELOG MIDAS PSI RITT">
+<LINK REL="stylesheet" TYPE="text/css" HREF="elog.css">
+</HEAD>
+
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#0000FF" VLINK="#800080" ALINK="#FF0000">
+
+<div class=title>&nbsp; ELOG Administrator's Guide &nbsp;</div>
+<p>
+<div class=menu>&nbsp; Site map :&nbsp;
+&nbsp;[<a class=nav href="index.html">Home</a>]&nbsp;
+&nbsp;[<a class=nav href="userguide.html">User's Guide</a>]&nbsp;
+&nbsp;[Administrator's Guide]&nbsp;
+&nbsp;[<a class=nav href="faq.html">FAQ</a>]&nbsp;
+&nbsp;[<a class=nav href="http://midas.psi.ch:8000">DEMO</a>]&nbsp;
+&nbsp;[<a class=nav href="download.html">Download</a>]&nbsp;
+</div>
+<p>
+<div class=menu>&nbsp;* this section :&nbsp;
+&nbsp;[<a class=nav href="#unix">UNIX</a>]&nbsp;
+&nbsp;[<a class=nav href="#windows">Windows</a>]&nbsp;
+&nbsp;[<a class=nav href="#config">Configuration</a>]&nbsp;
+&nbsp;[<a class=nav href="#secure">Secure Connections</a>]&nbsp;
+&nbsp;[<a class=nav href="#tech">How It Works</a>]&nbsp;
+*&nbsp;</div>
+<p>
+<div class=Sub><i>How to set up and run your very own ELOG server</i></div>
+
+<hr><a name="unix">
+<div class=section>&nbsp; Installing and running on UNIX &nbsp;</div>
+<p>
+<b>ELOG</b> is being developed and tested under Linux, and is being used on (Sparc) Solaris
+workstations. It should also compile and run on other UNIX flavours.
+<p>
+<a href="http://midas.psi.ch/elog/download/">Download</a> the latest <code><b>elog-x.x.x.tar.gz</code></b> package.
+<p>
+Expand the compressed TAR file with <code><b>tar -xzvf elog-x.x.x.tar.gz</code></b>.
+This creates a subdirectory <code><b>elog-x.x.x</b></code> where x.x.x is the
+version number. In that directory execute <code><b>make</b></code>, which
+creates the executables <code><b>elogd</b></code> and <code><b>elog</b>
+</code>. These executables can then be copied to a convenient place like
+<code><b>/usr/local/bin</b></code> or <code><b>~/bin</b></code>.
+
+The <code><b>elogd</b></code> executable can be started manually for testing with :
+<p>
+<ul><code>elogd -p 8080</code></ul>
+<p>
+where the <b>-p</b> flag specifies the port. Without the <b>-p</b> flag,
+the server uses the standard WWW port 80. Note that ports below 1024 can
+only be used if <code><b>elogd</b></code> is started a root, or the "<I>sticky bit</I>" is set on
+the executable.
+<p>
+If the program complains with something like "<I>cannot bind to port</I>...", it
+could be that the network is not started on the Linux box. This can be
+checked with the <code><b>/sbin/ifconfig</b></code> program, which must
+show that <code><b>eth0</b></code> is up and running.
+<p>
+The distribution contains a sample configuration file <code><b>elogd</b></code> and
+a demo logbook in the <i>demo</i> subdirectory. If the <code><b>elogd</b></code> server is
+started in the <i>elogd-x.x.x</i> directory, the demo logbook can be directly
+accessed with a browser by specifying the URL <b>http://localhost:8080</b>
+(or whatever port you started the elog daemon on). If the <code><b>elogd</b></code> server is
+started in some other directory, you must specify the full path of
+the <code><b>elogd</b></code> file with the <b>"-c"</b> flag and change the
+<b>Data dir = </b> option in the configuration file to a full path like
+<b>/usr/local/elogdata</b>.
+<p>
+Once testing is complete, <code><b>elogd</b></code> will typically be started with the <b><code>-D</code></b> flag
+to run as a <I>daemon</I> in the background, like this :
+<p>
+<ul><code>elogd -p 8080 -c /usr/local/elog/elogd.cfg -D</code></ul>
+<p>
+<I>Note that it is mandatory to specify the full path for the <code><b>elogd</b></code> file when started as a daemon.</I>
+<p>
+To test the daemon, connect to your host via :
+<P>
+<ul><code>http://your.host:8080/</code></ul>
+<p>
+If port 80 is used, the port can be omitted in the URL. If several logbooks
+are defined on a host, they can be specified in the URL :
+<p>
+<ul><code>http://your.host/&lt;logbook&gt;</code></ul>
+<p>
+where <code>&lt;logbook&gt;</code> is the name of the logbook.
+<p>
+The contents of the all-important configuration file <b><code>elogd.cfg</code></b> are
+described <a href="#config">below</a>.
+<p>
+To start the daemon automatically, it can be run from the <code><b>/etc/rc.d/init.d</code></b>
+system. Please consult your distribution to find out how to do that. 
+<br>
+Under RedHat 6.x. I use a <a href="elogd">script</a> which I put under <code><b>/etc/rc.d/init.d</code></b>. Then I call :
+<ul><code>chkconfig --add elogd</code></ul>
+<p>
+
+<h3><hr><i>Notes for the Solaris platform</i>:</h3>
+
+<p><a href="mailto:huber@secaron.de">Martin Huber</a> reports that
+under Solaris 7 the following command line is needed to compile elog:
+<P>
+<ul><code>gcc -L/usr/lib/ -ldl -lresolv -lm -ldl -lnsl -lsocket  elogd.c -o elogd</code></ul>
+<p>
+With some combinations of Solaris servers and client-side browsers there have also
+been problems with <b>ELOG</b>'s <I>keep-alive</I> feature. In such a case you need to add
+the "<B>-k</B>" flag to the <code><b>elogd</b></code> command line to turn keep-alives off.
+<p>
+
+<hr><a name="windows">
+<div class=section>&nbsp; Installing and running in Windows &nbsp;</div>
+<p>
+ <b>ELOG</b> is distributed in binary (executable) form for Windows platforms. It will run happily in <I>console mode</I> (or "<I>DOS box</I>") under Windows 9x and ME. Under Windows NT and 2000 it is also possible to run it as a <I>service</I> (the Windows equivalent of a UNIX <I>daemon</I>).
+<p>
+<a href="http://midas.psi.ch/elog/download/">Download</a> the latest <code><b>elogxxx.exe</b></code> file and execute it. The installer puts the <b>ELOG</b> system into a directory you specify and adds some menu
+shortcuts. With these shortcuts, the daemon <code>elogd.exe</code> can be started directly and the demo logbook can be accessed with the browser. Under Windows, the ports below 1024 can be used without restriction. So if no web server is running on the same PC the <b>ELOG</b> daemon listens under the standard
+Web port 80.
+<p>
+The "<B>-D</B>" (<I>daemon</I>) command line option only works under UNIX. To start
+<code><b>elogd</b></code> as a service under Windows NT/2000, you can do one of the following :
+<p>
+<ul>
+<li>use the <code><b>srvany.exe</b></code> and <code><b>instsrv.exe</b></code> from the Windows
+Resource Kit. If you don't have the Resource Kit, these programs can probably
+be downloaded from various places like <a href="http://www.pyeung.com/userdefinedservice.html">this one</a>. Then follow these steps:
+<p>
+<OL>
+<LI>Copy SRVANY.EXE to %window%\system32\.
+
+<LI>Use INSTSRV to install SRVANY.EXE as a service named "<I>elogd</I>":<P>
+<pre>INSTSRV ELogd %windir%\system32\srvany.exe</pre>
+
+<LI>Run REGEDIT and find "My Computer\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\elogd".
+
+<LI>Under the <i>Elogd</i> registry key, create a new key called <i>Parameters</i> via <i>Edit/New/Key</i>.
+<LI>Under the new key <i>Parameters</i>, create the following three STRING values:
+  <UL>
+  <LI><i>Application</i> set to "c:\elog\elogd.exe" (or wherever you installed the elogd program)
+  <LI><i>AppDirectory</i> set to "c:\elog" (or wherever you installed the <code><b>elogd</b></code> file)
+  <LI><i>AppParameters</i> set to "-p 8080" (or any other port which you would like to use,
+         put an empty string for port 80)
+  </UL>
+
+<LI>Under NT4, open the <i>Services</i> entry in the control panel, under Windows 2000 right-click
+    on "My Computer", click to "Manage", select "Services and Applications", expand it and select
+    "Services". On the right panel, double-click "ELogd". Then start the service manually and
+    change the startup type to "Automatic". This way the <code><b>elogd</b></code> program gets started automatically
+    on every reboot.
+</OL>
+<p>
+<li>better still, use the free <a href="http://www.firedaemon.com">FireDaemon</a> utility. Make sure <code><b>elogd</b></code> is not running, then start the FireDaemonUI application, and enter the following fields:
+<P>
+<pre>
+Service name: ELogd
+Service description: "Electronic Logbook Daemon"
+Startup type: Automatic
+Interact with desktop: off
+Start immediately: on
+Auto restart application: off
+Application working directory: c:\program files\elog\ (or wherever you installed elog)
+Application executable: c:\program files\elog\elogd.exe (or wherever you installed elogd.exe)
+</pre>
+and keep the other options as they are. After pressing "OK" the daemon should be started immediately.
+</ul>
+<p>
+
+<hr><a name="config">
+<div class=section>&nbsp; Server Configuration &nbsp;</div>
+<p>
+The appearance, functionality and behaviour of the various logbooks on an <b>ELOG</b> server are determined by the single <b><code>elogd.cfg</code></b> file in the <b>ELOG</b> installation directory.
+<p>
+This file may be edited directly from the file system, or from a form in the <b>ELOG</b> Web interface (when the <i>Config</i> menu item is available). In this case, changes are applied dynamically without having to restart the server.
+<p>
+The many options of this unique but very important file are documented on the separate <b><a href="config.html">elogd.cfg syntax page</a></b>.
+<p>
+To better control appearance and layout of the logbooks, <b><code>elogd.cfg</code></b> may optionally specify the use of additional files containing HTML code, and/or custom "<I>themes</I>" configurations. These need to be edited directly from the file system right now.
+<p>
+
+<hr><a name="secure">
+<div class=section>&nbsp; Secure Connections HOWTO &nbsp;</div>
+<p>
+Although the <code><b>elogd</b></code> program does not support secure
+connections over SSL directly, it is possible to use it together with
+<a href="http://stunnel.mirt.net/">stunnel</a> to do so. Three steps are
+necessary:
+<OL>
+<LI>Start <code><b>elogd</b></code>. If another Web server is running
+on port 80, use a different port.
+<P>
+<LI>Install the <b><code>stunnel</code></b> program if not already done
+    and start it with:
+<P>
+    <pre>stunnel -d 443 -r your.host.name:80</pre>
+    Substitute the port 80 if you started <code><b>elogd</b></code> on another port. This
+    causes <b><code>stunnel</code></b> to receive requests on the https port 443 and         forward them to the <code><b>elogd</b></code> port.
+<P>
+<LI>Connect to your logbook with a browser which supports SSL via:
+<P>
+    <pre>https://your.host.name/</pre>
+</OL>
+<p>
+Alternatively, <code><b>elogd</b></code> can be accessed through a SSH tunnel.
+To do so, open an SSH tunnel like:
+<P>
+<ul><pre>ssh -L 1234:your.server.name:8080 your.server.name</pre></ul>
+<p>
+This opens a secure tunnel from your local host, port 1234, to the server host
+where the <code><b>elogd</b></code> daemon is running on port 8080. Now you can
+access <b> <code>http://localhost:1234</code></b> from your browser and reach
+<code><b>elogd</b></code> in a secure way.
+<p>
+
+<hr><a name="tech">
+<div class=section>&nbsp; How It All Works &nbsp;</div>
+<p>
+For the technically curious :
+<p>
+The concept of <b>ELOG</b> is very simple. The logbook functionality is implemented by a single daemon program, <code><b>elogd</b></code>, which is written in C. It contains an integrated
+Web server, which does not serve files like standard Web servers, but
+reads logbook entries from its database and formats them into HTML. Since
+only forms and tables are used, no Java or Javascript is necessary, which makes the logbook display very fast. The system does not use any images on purpose to reduce the amount of data to be transferred. Since the <b>ELOG</b> daemon contains its own <i>http</i> server, no additional server like Apache is required.
+<p>
+The "<I>database</I>" in which <b>ELOG</b> saves its entries is in plain ASCII format. One file is
+created for each day in the form <b><code>YYMMDD.log</b></code> (where
+YY is the year, MM the month and DD the day). The only non-ASCII character
+is a form-feed at the end of each message. If  a log file is sent directly
+to a printer, each message is therefore printed on a separate page. Note
+that the log files should not be edited manually, since this could invalidate
+the internal database structure (each header contains the message length
+in bytes, which would then become incorrect).
+<p>
+If attachments are submitted, they are saved as separate files named
+<b><code>YYMMDD_HHMMSS_name</code></b> - where in addition to the date the
+time is specified and <b><code>name</code></b> is the original file name of
+the attachment. To copy the database to another computer, only the *.log
+files and the attachment files need to be copied. To copy for example all
+files from March 2001, just select them with <b><code>0103??.log</code>
+</b> and <b><code>0103??_*</code></b>.
+<p>
+
+<HR>
+<div class=footer>&nbsp;
+Content by <a class=nav href="mailto:Stefan.Ritt@psi.ch">Stefan Ritt</a>,
+Web pages by <a class=nav href="mailto:fredp@mygale.org">Fred Pacquier</a>
+ - last modified on 19/12/2001
+&nbsp;</div>
+
+</body>
+</html>
