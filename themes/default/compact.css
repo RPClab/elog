@@ -28,32 +28,61 @@ td {
 /* standard formatting for logbook tabs */
 .tabs {
   font-family:sans-serif;
-  font-size:small;
+  font-size:10pt;
   background-color:white;
 }
 
 /* unselected and selected group tabs */
 
-.gtab, .gtab a {
+.gtab a {
   background-color:#B0E0B0;
+  padding-left:5px;
+  padding-right:5px;
 }
 
-.sgtab, .sgtab a {
+.gtab {
+  background-color:#B0E0B0;
+  border-right:1px solid #409040;
+}
+
+.sgtab a {
+  color:white;
+  padding-left:5px;
+  padding-right:5px;
+}
+
+.sgtab {
   background-color:#486090;
   color:white;
+  border-right:1px solid #084070;
 }
 
 .sgtab a:visited { color:white; } /* buf for IE */
 
 /* unselected and selected logbook tabs */
 
-.ltab, .ltab a {
+.ltab a {
   background-color:#E0E0E0;
+  padding-left:5px;
+  padding-right:5px;
 }
 
-.sltab, .sltab a {
+.ltab {
+  background-color:#E0E0E0;
+  border-right:1px solid gray;
+}
+
+.sltab a {
   background-color:#486090;
   color:white;
+  padding-left:5px;
+  padding-right:5px;
+}
+
+.sltab {
+  background-color:#486090;
+  color:white;
+  border-right:1px solid #084070;
 }
 
 .sltab a:visited { color:white; } /* bug for IE */
