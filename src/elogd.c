@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.405  2004/07/27 20:37:08  midas
+   Implemented read_password
+
    Revision 1.404  2004/07/23 23:27:26  midas
    Finished entry deletion with confirmation
 
@@ -353,6 +356,7 @@ static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
 
 #include <windows.h>
 #include <io.h>
+#include <conio.h>
 #include <time.h>
 #include <direct.h>
 #include <sys/stat.h>
@@ -659,6 +663,7 @@ void show_bottom_text(LOGBOOK * lbs);
 int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n);
 void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *info);
 int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_value);
+int read_password(char *pwd, int size);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -11583,7 +11588,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
 
                eprintf("\nPlease enter password to access\n%s%s: ", list[index],
                        lbs->name);
-               fgets(str, sizeof(str), stdin);
+               read_password(str, sizeof(str));
+               eprintf("\n");
                while (str[strlen(str) - 1] == '\r' || str[strlen(str) - 1] == '\n')
                   str[strlen(str) - 1] = 0;
                do_crypt(str, pwd);
@@ -19795,6 +19801,184 @@ void server_loop(int tcp_port)
    } while (!_abort);
 
    eprintf("Server aborted.\n");
+}
+
+/*------------------------------------------------------------------*/
+
+int ss_getchar(BOOL reset)
+/********************************************************************\
+
+  Routine: ss_getchar
+
+  Purpose: Read a single character
+
+  Input:
+    BOOL   reset            Reset terminal to standard mode
+
+  Output:
+    <none>
+
+  Function value:
+    int             0       for no character available
+                    n       ASCII code for normal character
+
+\********************************************************************/
+{
+#ifdef OS_UNIX
+
+   static BOOL init = FALSE;
+   static struct termios save_termios;
+   struct termios buf;
+   int i, fd;
+   char c[3];
+
+   if (_daemon_flag)
+      return 0;
+
+   fd = fileno(stdin);
+
+   if (reset) {
+      if (init)
+         tcsetattr(fd, TCSAFLUSH, &save_termios);
+      init = FALSE;
+      return 0;
+   }
+
+   if (!init) {
+      tcgetattr(fd, &save_termios);
+      memcpy(&buf, &save_termios, sizeof(buf));
+
+      buf.c_lflag &= ~(ECHO | ICANON | IEXTEN);
+
+      buf.c_iflag &= ~(ICRNL | INPCK | ISTRIP | IXON);
+
+      buf.c_cflag &= ~(CSIZE | PARENB);
+      buf.c_cflag |= CS8;
+      /* buf.c_oflag &= ~(OPOST); */
+      buf.c_cc[VMIN] = 0;
+      buf.c_cc[VTIME] = 0;
+
+      tcsetattr(fd, TCSAFLUSH, &buf);
+      init = TRUE;
+   }
+
+   memset(c, 0, 3);
+   i = read(fd, c, 1);
+
+   if (i == 0)
+      return 0;
+
+   /* BS/DEL -> BS */
+   if (c[0] == 127)
+      return CH_BS;
+
+   return c[0];
+
+#elif defined(OS_WINNT)
+
+   static BOOL init = FALSE;
+   static INT repeat_count = 0;
+   static INT repeat_char;
+   HANDLE hConsole;
+   DWORD nCharsRead;
+   INPUT_RECORD ir;
+   OSVERSIONINFO vi;
+
+   /* find out if we are under W95 */
+   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+   GetVersionEx(&vi);
+
+   if (vi.dwPlatformId != VER_PLATFORM_WIN32_NT) {
+      /* under W95, console doesn't work properly */
+      int c;
+
+      if (!kbhit())
+         return 0;
+
+      c = getch();
+      return c;
+   }
+
+   hConsole = GetStdHandle(STD_INPUT_HANDLE);
+
+   if (reset) {
+      SetConsoleMode(hConsole, ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT |
+                     ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+      init = FALSE;
+      return 0;
+   }
+
+   if (!init) {
+      SetConsoleMode(hConsole, ENABLE_PROCESSED_INPUT);
+      init = TRUE;
+   }
+
+   if (repeat_count) {
+      repeat_count--;
+      return repeat_char;
+   }
+
+   PeekConsoleInput(hConsole, &ir, 1, &nCharsRead);
+
+   if (nCharsRead == 0)
+      return 0;
+
+   ReadConsoleInput(hConsole, &ir, 1, &nCharsRead);
+
+   if (ir.EventType != KEY_EVENT)
+      return ss_getchar(0);
+
+   if (!ir.Event.KeyEvent.bKeyDown)
+      return ss_getchar(0);
+
+   if (ir.Event.KeyEvent.wRepeatCount > 1) {
+      repeat_count = ir.Event.KeyEvent.wRepeatCount - 1;
+      repeat_char = ir.Event.KeyEvent.uChar.AsciiChar;
+      return repeat_char;
+   }
+
+   if (ir.Event.KeyEvent.uChar.AsciiChar)
+      return ir.Event.KeyEvent.uChar.AsciiChar;
+
+   if (ir.Event.KeyEvent.dwControlKeyState & (ENHANCED_KEY))
+      return ir.Event.KeyEvent.wVirtualKeyCode;
+
+   return ss_getchar(0);
+#endif
+}
+
+int read_password(char *pwd, int size)
+{
+   int n;
+   char c, str[256];
+
+   n = 0;
+   do {
+      c = ss_getchar(0);
+      if (c == 13)
+         break;
+
+      if (c) {
+
+         if (c == 8) {
+            if (n > 0) {
+               str[--n] = 0;
+               eprintf("\b \b");
+            }
+         } else {
+            str[n++] = c;
+            eprintf("*");
+         }
+#ifdef OS_WINNT
+      Sleep(10);
+#endif
+      }
+
+   } while (1);
+   str[n] = 0;
+     
+   strlcpy(pwd, str, size);
+   return n;
 }
 
 /*------------------------------------------------------------------*/
