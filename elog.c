@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.10  2002/10/14 08:26:26  midas
+  Made attachment size variable
+
   Revision 1.9  2002/08/02 11:01:34  midas
   Added -r for replies
 
@@ -112,7 +115,7 @@ char *p;
 
 /*------------------------------------------------------------------*/
 
-char request[600000], response[10000], content[600000];
+char request[100000], response[100000], *content;
 
 INT submit_elog(char *host, int port, char *subdir, char *experiment, 
                 char *passwd,
@@ -219,6 +222,17 @@ char                 host_name[256], boundary[80], str[80], *p;
   if (verbose)
     printf("Successfully connected to host %s, port %d\n", host, port);
 
+  content_length = 100000;
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+    if (afilename[i][0])
+      content_length += buffer_size[i];
+  content = malloc(content_length);
+  if (content == NULL)
+    {
+    printf("Not enough memory\n");
+    return -1;
+    }
+
   /* compose content */
   strcpy(boundary, "---------------------------7d0bf1a60904bc");
   strcpy(content, boundary);
@@ -292,7 +306,6 @@ char                 host_name[256], boundary[80], str[80], *p;
   strcat(request, "\r\n");
 
   header_length = strlen(request);
-  memcpy(request+header_length, content, content_length);
 
   /*
     {
@@ -304,13 +317,17 @@ char                 host_name[256], boundary[80], str[80], *p;
   */
 
   /* send request */
+  send(sock, request, header_length, 0);
   if (verbose)
     {
     printf("Request sent to host:\n");
     puts(request);
     }
 
-  send(sock, request, header_length+content_length, 0);
+  /* send content */
+  send(sock, content, content_length, 0);
+  if (verbose)
+    printf("Content sent to host.\n");
 
   /* receive response */
   i = recv(sock, response, 10000, 0);
@@ -490,6 +507,7 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
   if (text[0] == 0 && textfile[0] == 0)
     {
     printf("Please specify message text either with the \"-m\" flag or directly.\n");
+    return 1;
     }
 
   /*---- open text file ----*/
@@ -541,11 +559,13 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
     lseek(fh, 0, SEEK_SET);
 
     buffer[i] = malloc(att_size[i]+1);
+    /*
     if (buffer[i] == NULL || att_size[i] > 500*1024)
       {
       printf("Attachment file \"%s\" is too long (500k max).\n", attachment[i]);
       return 1;
       }
+    */
 
     n = read(fh, buffer[i], att_size[i]);
     if (n < att_size[i])
