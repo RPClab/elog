@@ -1,5 +1,5 @@
 #
-# German message by stefan.ritt@psi.ch
+# German translation by stefan.ritt@psi.ch
 #
 
 New = Neu
@@ -129,7 +129,6 @@ All entries = Alle Einträge
 Day = Tag
 Week = Woche
 Month = Monat
-Months = Monate
 Show last = Zeige letzte(n)
 Goto page = Gehe zu Seite
 All = Alle
@@ -264,3 +263,7 @@ to = bis
 Before = bevor 
 Previous Year = Voriges Jahr 
 Next Year = Nächstes Jahr
+Please enter numeric value for '%s' = Bitte numerischen Wert für '%s' eingeben
+Error: Attribute <b>%s</b> must be numeric = Fehler: Attribut <b>%s</b> muß numerisch sein
+3 Months = 3 Monate
+6 Months = 6 Monate

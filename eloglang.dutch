@@ -1,5 +1,5 @@
 #
-# Dutch messages by djek@xs4all.nl
+# Dutch translation by djek@xs4all.nl
 # 28-01-2004
 #
 
@@ -130,7 +130,6 @@ All entries = Alle berichten
 Day = Dag
 Week = Week
 Month = Maand
-Months = Maanden
 Show last = Toon laatste
 Goto page = Ga naar pagina
 All = Alle
@@ -248,3 +247,30 @@ Entry deleted remotely =Bericht op andere server gewist
 All entries identical =Alle berichten identiek
 Invalid mirror_id or entry_date = Ongeldige mirror_id of entry_date
 Synchronize all logbooks = Synchroniseer alle logboeken
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Pick a date = 
+Please select at least one '%s' = 
+Please select a '%s' = 
+Please enter month for attribute '%s' = 
+Please enter day for attribute '%s' = 
+Please enter year for attribute '%s' = 
+Please enter attribute '%s' = 
+Entry time = 
+Display comma-separated values (CSV) = 
+Start = 
+End = 
+Remote entry received = 
+From = 
+After = 
+to = 
+Before = 
+Calendar = 
+Previous Year = 
+Next Year = 
+Please enter numeric value for '%s' = 
+Error: Attribute <b>%s</b> must be numeric = 
+3 Months = 
+6 Months = 

@@ -1,4 +1,4 @@
-Version 2.5.1, released February xxth, 2004
+Version 2.5.1, released February 17th, 2004
 ===========================================
 
 - Avoid last '\0' in flush_return_buffer()

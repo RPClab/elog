@@ -7,6 +7,9 @@
                 them into eloglang.xxxx
 
   $Log$
+  Revision 1.6  2004/02/17 11:14:04  midas
+  Version 2.5.1
+
   Revision 1.5  2004/01/26 14:52:17  midas
   Changed indentation
 
@@ -116,7 +119,7 @@ int scan_file(char *infile, char *outfile)
 
       if (p2 == NULL) {
          /* append string to output file */
-         fho = open(outfile, O_CREAT | O_WRONLY | O_APPEND | O_BINARY);
+         fho = open(outfile, O_CREAT | O_WRONLY | O_APPEND | O_BINARY, 644);
          if (fho < 0) {
             printf("Cannot open file \"%s\" for append\n", outfile);
             return 1;
@@ -190,7 +193,7 @@ int scan_file(char *infile, char *outfile)
 
    } while (*p);
 
-   fho = open(outfile, O_CREAT | O_WRONLY | O_BINARY | O_TRUNC);
+   fho = open(outfile, O_CREAT | O_WRONLY | O_BINARY | O_TRUNC, 644);
    if (fho < 0) {
       printf("Cannot open file \"%s\" for output\n", outfile);
       return 1;

@@ -1,5 +1,5 @@
 #
-# French messages by Fred Pacquier <fredp@dial.oleane.com>
+# French translation by Fred Pacquier <fredp@dial.oleane.com>
 #
 
 New = Créer
@@ -127,7 +127,6 @@ All entries = Toutes les entrées
 Day = Jour
 Week = Semaine
 Month = Mois
-Months = Mois
 Show last = Afficher
 Goto page = Aller à la page
 All = Tous
@@ -252,3 +251,23 @@ Synchronize all logbooks = Synchroniser tous les registres
 Display comma-separated values (CSV) = 
 Calendar = 
 Remote entry received = 
+Pick a date = 
+Please select at least one '%s' = 
+Please select a '%s' = 
+Please enter month for attribute '%s' = 
+Please enter day for attribute '%s' = 
+Please enter year for attribute '%s' = 
+Please enter attribute '%s' = 
+Entry time = 
+Start = 
+End = 
+From = 
+After = 
+to = 
+Before = 
+Previous Year = 
+Next Year = 
+Please enter numeric value for '%s' = 
+Error: Attribute <b>%s</b> must be numeric = 
+3 Months = 
+6 Months = 

@@ -1,5 +1,5 @@
 #
-# Italian message by francesco@netlabor.it
+# Italian translation by francesco@netlabor.it
 #
 
 New = Nuovo
@@ -129,7 +129,6 @@ All entries = Tutti gli elementi
 Day = Giorno
 Week = Settimana
 Month = Mese
-Months = Mesi
 Show last = Mostra l'ultimo
 Goto page = Vai alla pagina
 All = Tutti gli elementi
@@ -252,3 +251,23 @@ Synchronize all logbooks =
 Display comma-separated values (CSV) = 
 Calendar = 
 Remote entry received = 
+Pick a date = 
+Please select at least one '%s' = 
+Please select a '%s' = 
+Please enter month for attribute '%s' = 
+Please enter day for attribute '%s' = 
+Please enter year for attribute '%s' = 
+Please enter attribute '%s' = 
+Entry time = 
+Start = 
+End = 
+From = 
+After = 
+to = 
+Before = 
+Previous Year = 
+Next Year = 
+Please enter numeric value for '%s' = 
+Error: Attribute <b>%s</b> must be numeric = 
+3 Months = 
+6 Months = 
