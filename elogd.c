@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.8  2002/06/10 11:46:36  midas
+  Changed comma display in search result page
+
   Revision 2.7  2002/06/10 11:22:41  midas
   Added 'Subst on reply' option
 
@@ -4711,13 +4714,12 @@ struct tm tms, *ptms;
 
   /*---- title ----*/
 
-  strcpy(str, ", ");
   if (past_n == 1)
-    strcat(str, loc("Last day"));
+    strcat(str, loc(", Last day"));
   else if (past_n > 1)
-    sprintf(str+strlen(str), loc("Last %d days"), past_n);
+    sprintf(str+strlen(str), loc(", Last %d days"), past_n);
   else if (last_n)
-    sprintf(str+strlen(str), loc("Last %d entries"), last_n);
+    sprintf(str+strlen(str), loc(", Last %d entries"), last_n);
 
   if (printable)
     show_standard_title(lbs->name, str, 1);
