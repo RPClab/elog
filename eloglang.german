@@ -14,7 +14,7 @@ Find = Finden
 Last day = Letzter Tag
 Last 10 = Letzte 10
 Config = Konfigurieren
-Change Password = Passwort ändern
+Change password = Passwort ändern
 Logout = Abmelden
 Help = Hilfe
 Back = Zurück
@@ -182,3 +182,19 @@ Are you sure to delete these messages? = Diese Einträge wirklich löschen?
 %d message moved successfully from "%s" to "%s" = Eintrag erfolgreich von "%s" nach "%s" verschoben
 %d message copied successfully from "%s" to "%s" = Eintrag erfolgreich von "%s" nach "%s" kopiert
 Select = Auswählen
+
+#
+# New strings for V2.2.0
+No message selected for deletion = Kein Eintrag zum löschen ausgewählt
+No message selected = Kein Eintrag ausgewählt
+All entries = Alle Einträge
+Day = Tag
+Week = Woche
+Month = Monat
+Months = Monate
+Show last = Zeige letzte(n)
+Goto page = Gehe zu Seite
+All = Alle
+Display = Zeige
+entries per page = Einträge pro Seite
+Toggle all = Alle umschalten
