@@ -319,6 +319,23 @@ special command in addition to the above commands: The command <b><code>Last x</
 behaviour without the "<I>Find Menu commands</I>" option.
 <p>
 
+<li><b><code>Guest Menu commands = &lt;list&gt;</code></b>
+</br>
+This option specifies the menu commands for guest logins. A guest login happens if a
+password file is used, but someone accesses the logbook for the first time, which means
+that no username/password is given. In that case the commands from the guest menu
+are displayed, which usually contain a subset of the normal commands. A typical scenario
+is a logbook which only has commands to read the logbook on the guest menu, but no
+commands to write/edit entries. Instead, the <b>login</b> command is given in the guest
+menu, with which one can login as a real user (username and password have to match those
+from the password file), which then allowes full access via the <b>"Menu commands"</b> list.
+A typical example for the menu settings for this scenario are:<p>
+<pre>
+Menu commands = New, Edit, Reply, Find, Last 10, Change password, Logout, Help
+Guest menu commands = Find, Last 10, Login, Help
+</pre>
+<p>
+
 <li><b><code>Bottom text = &lt;file&gt;</code></b>
 </br>
 If this option is present, the HTML contents of <b><code>file</code></b> is displayed at
@@ -500,7 +517,8 @@ text. This text can contain arbitrary fixed text and following values:
 <LI><b>$host</b>: The host name where <code><b>elogd</b></code> is running
 <LI><b>$remote_host</b>: The host name of the host from with the entry was submitted
 <LI><b>$short_name</b>: The login name (if password file is present)
-<LI><b>$long_name</b>: The full name (if password file is present)
+<LI><b>$long_name</b>: The full name from the password file for the current user
+<LI><b>$user_email</b>: The email address from the password file for the current user
 <LI><b>$logbook</b>: The name of the current logbook
 <LI><b>$date</b>: The current date, formatted via "<I>Date format</I>"
 </UL>
@@ -570,21 +588,25 @@ must be re-entered.
 An alternative to the read/write/admin passwords is the user level access with a
 password file. This file contains user names and passwords in following format:
 <p>
-<ul><code><pre>&lt;login name1&gt;:&lt;password1&gt;:&lt;full name1&gt;
-&lt;login name2&gt;:&lt;password2&gt;:&lt;full name2&gt;
-&lt;login name3&gt;:&lt;password3&gt;:&lt;full name3&gt;
+<ul><code><pre>&lt;login name1&gt;:&lt;password1&gt;:&lt;full name1&gt;:&lt;email1&gt;
+&lt;login name2&gt;:&lt;password2&gt;:&lt;full name2&gt;:&lt;email1&gt;
+&lt;login name3&gt;:&lt;password3&gt;:&lt;full name3&gt;:&lt;email1&gt;
 ...</pre></code></ul>
 <p>
 The passwords are encoded. To create or change them, use the "<I>Change
 Password</I>" menu point. To create a new user, edit the password file
-manually and use an empty password (like "<code>&lt;login name&gt;::&lt;full name&gt;</code>"), which can then be changed via the "<I>Change password</I>" menu point.
+manually and use an empty password (like "<code>&lt;login name&gt;::&lt;full name&gt;:&lt;email&gt;</code>"), which can then be changed via the "<I>Change password</I>" menu point.
 <p>
 The presence of a password file requires all users to "<I>log in</I>" using their name and
-password. An additional advantage of this method is that the user name can be used as
+password, excep when a guest login is allowed via the <b>"Guest menu commands"</b> option.
+An additional advantage of this method is that the user name can be used as
 an attribute value for creating logbook entries. For example, the following line could be
-added to the configuration file to fill in the <i>Author</i> attribute with the user name:
+added to the configuration file to fill in the <i>Author</i> and the <i>Email</i> attributes
+with the current user name and email:
 <p>
-<ul><code>Options Author = $long_name from $remote_host</code></ul>
+<ul><code>Attributes = Author, Email, ...</code></ul>
+<ul><code>Options Author = $long_name from $remote_host<br>
+Options Email = $user_email</code></ul>
 <p>
 Thus the author name is not user-input anymore, ensuring the entry always contains the
 actual user name. For a full listing of substitutions, see the "<I>Subst &lt;attrib></I>" option.

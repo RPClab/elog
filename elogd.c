@@ -6,8 +6,11 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.50  2002/07/27 06:52:14  midas
+  Added guest menu and user_email
+
   Revision 2.49  2002/07/26 08:40:56  midas
-  Fixed 'POST' statement containing some blanks
+  Fixed type
 
   Revision 2.48  2002/07/25 15:37:26  midas
   Fixed bug with ss_find_file under unix
@@ -251,7 +254,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.0.5"
+#define VERSION "2.0.6"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -3249,6 +3252,15 @@ int  i, j;
     rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif color=%s><b>&nbsp;&nbsp;%s \"%s\"<b></font></td>\n",
               gt("Title fontcolor"), loc("Logged in as"), getparam("full_name"));
     }
+  else
+    {
+    if (getcfg(logbook, "Guest menu commands", str))
+      {
+      rsprintf("<td bgcolor=%s align=center>", gt("Title BGColor"));
+      rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif color=%s><b>&nbsp;&nbsp;%s<b></font></td>\n",
+                gt("Title fontcolor"), loc("Not logged in"));
+      }
+    }
 
   /* right cell */
   rsprintf("<td bgcolor=%s align=right>", gt("Title BGColor"));
@@ -3468,6 +3480,11 @@ struct tm      *ts;
   strcpy(value[i++], getparam("unm"));
   strcpy(list[i], "long_name");
   strcpy(value[i++], getparam("full_name"));
+
+  /* add email */
+  strcpy(list[i], "user_email");
+  strcpy(value[i], "mailto:");
+  strcat(value[i++], getparam("user_email"));
 
   /* add logbook */
   strcpy(list[i], "logbook");
@@ -3938,7 +3955,8 @@ time_t now;
     /* if attribute cannot be changed, just display text */
     if ((attr_flags[index] & AF_LOCKED) || (bedit && (attr_flags[index] & AF_FIXED)))
       {
-      rsprintf("<td bgcolor=%s>%s\n", gt("Categories bgcolor2"), attrib[index]);
+      rsprintf("<td bgcolor=%s>\n", gt("Categories bgcolor2"));
+      rsputs2(attrib[index]);
 
       if (attr_flags[index] & AF_MULTI)
         {
@@ -6463,8 +6481,12 @@ BOOL   first;
   if (!allow_user(lbs, command))
     return;
 
-  /* get menu command */
-  getcfg(lbs->name, "Menu commands", menu_str);
+  /* check for guest access */
+  if (!getcfg(lbs->name, "Guest Menu commands", menu_str) ||
+      *getparam("unm") != 0)
+    getcfg(lbs->name, "Menu commands", menu_str);
+
+  /* default menu commands */
   if (menu_str[0] == 0)
     {
     strcpy(menu_str, loc("New"));
@@ -7459,12 +7481,12 @@ char  str[256];
 
 /*------------------------------------------------------------------*/
 
-BOOL get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name)
+BOOL get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name, char *email)
 {
 char  str[256], line[256], file_name[256], *p;
 FILE  *f;
 
-  password[0] = full_name[0] = 0;
+  password[0] = full_name[0] = email[0] = 0;
   getcfg(lbs->name, "Password file", str);
 
   if (str[0] == DIR_SEPARATOR || str[1] == ':')
@@ -7500,29 +7522,27 @@ FILE  *f;
       }
     fclose(f);
 
-    /* if user found, check password */
-    p = line+strlen(user);
-    if (*p)
-      p++;
+    /* if user found, retrieve other info */
+    p = strtok(line, ":");
 
-    strcpy(str, p);
-    if (strchr(str, ':'))
-      *strchr(str, ':') = 0;
-
-    strcpy(password, str);
-
-    p += strlen(str);
-    if (*p)
-      p++;
-    strcpy(str, p);
-    if (strchr(str, ':'))
-      *strchr(str, ':') = 0;
-    if (strchr(str, '\r'))
-      *strchr(str, '\r') = 0;
-    if (strchr(str, '\n'))
-      *strchr(str, '\n') = 0;
-
-    strcpy(full_name, str);
+    if (p)
+      {
+      p = strtok(NULL, ":");
+      if (p)
+        {
+        strcpy(password, p);
+        p = strtok(NULL, ":");
+        if (p)
+          {
+          strcpy(full_name, p);
+          p = strtok(NULL, ":");
+          if (p)
+            {
+            strcpy(email, p);
+            }
+          }
+        }
+      }
 
     return TRUE;
     }
@@ -7534,12 +7554,16 @@ FILE  *f;
 
 BOOL check_user_password(LOGBOOK *lbs, char *user, char *password, char *redir)
 {
-char  str[256], upwd[256], full_name[256];
+char  str[256], upwd[256], full_name[256], email[256];
 
-  if (get_user_line(lbs, user, upwd, full_name))
+  if (get_user_line(lbs, user, upwd, full_name, email))
     {
     if (user[0] && strcmp(password, upwd) == 0)
+      {
+      setparam("full_name", full_name);
+      setparam("user_email", email);
       return TRUE;
+      }
 
     /* show login password page */
     show_standard_header("ELOG login", NULL);
@@ -7946,12 +7970,25 @@ LOGBOOK *cur_lb;
 
   /*---- show ELog page --------------------------------------------*/
 
+
   /* if password file given, check password and user name */
   if (getcfg(logbook, "Password file", str))
     {
-    logf("Connection of user \"%s\"",getparam("unm"));
-    if (!check_user_password(cur_lb, getparam("unm"), getparam("upwd"), path))
-      return;
+    /* check if guest access */
+    if (getcfg(cur_lb->name, "Guest menu commands", str) && *getparam("unm") == 0)
+      logf("Guest access");
+    else
+      {
+      logf("Connection of user \"%s\"",getparam("unm"));
+      if (!check_user_password(cur_lb, getparam("unm"), getparam("upwd"), path))
+        return;
+      }
+    }
+
+  if (equal_ustring(command, loc("Login")))
+    {
+    check_user_password(cur_lb, "", "", path);
+    return;
     }
 
   if (equal_ustring(command, loc("New")) ||
@@ -8089,7 +8126,7 @@ char *p, *pitem;
     if (p[strlen(p)-1] == '/')
       p[strlen(p)-1] = 0;
 
-    p = strtok(p,"&");
+    p = strtok(p, "&");
     while (p != NULL)
       {
       pitem = p;
@@ -8102,7 +8139,7 @@ char *p, *pitem;
 
         setparam(pitem, p);
 
-        p = strtok(NULL,"&");
+        p = strtok(NULL, "&");
         }
       }
     }
