@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.590  2005/03/21 07:37:43  ritt
+   Fixed warnings under cygwin
+
    Revision 1.589  2005/03/16 21:07:43  ritt
    Fixed problem with MOptions and elog
 
@@ -932,7 +935,10 @@ static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
 #define TRUE 1
 #define FALSE 0
 
+#ifndef O_TEXT
 #define O_TEXT 0
+#define O_BINARY 0
+#endif
 
 #define DIR_SEPARATOR '/'
 #define DIR_SEPARATOR_STR "/"
@@ -974,11 +980,10 @@ typedef int BOOL;
 #include <termios.h>
 
 #define closesocket(s) close(s)
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
 
+#ifndef stricmp
 #define stricmp(s1, s2) strcasecmp(s1, s2)
+#endif
 
 gid_t orig_gid;                 /* Original effective GID before dropping privilege */
 uid_t orig_uid;                 /* Original effective UID before dropping privilege */
