@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.74  2003/04/08 08:09:18  midas
+  Check for existing user in self_register=3
+
   Revision 1.73  2003/04/08 08:01:53  midas
   Fixed problem with global self registering
 
@@ -6029,6 +6032,17 @@ int    i, fh, size, self_register;
       if (strcmp(new_pwd, new_pwd2) != 0)
         {
         show_error(loc("New passwords do not match, please retype"));
+        return 0;
+        }
+      }
+
+    /* check if user exists */
+    if (new_user && self_register == 3)
+      {
+      if (get_user_line(lbs->name, user, NULL, NULL, NULL, NULL) == 1)
+        {
+        sprintf(str, "%s \"%s\" %s", loc("Login name"), user, loc("exists already"));
+        show_error(str);
         return 0;
         }
       }
