@@ -35,6 +35,9 @@ all: $(EXECS)
 %: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
+indent:
+	find . -name "*.[hc]" -exec indent -kr -nut -i3 {} \;
+
 install: $(EXECS)
 	$(INSTALL) -m 0755 -d $(DESTDIR) $(SDESTDIR) $(MANDIR)/man1/ $(MANDIR)/man8/
 	$(INSTALL) -m 0755 -o bin -g bin elog elconv $(DESTDIR)
