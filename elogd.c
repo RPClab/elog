@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.59  2002/08/06 10:23:11  midas
+  Added 'entry date' to substitution list
+
   Revision 2.58  2002/08/06 09:26:16  midas
   Added automatic creation of new password file
 
@@ -5338,6 +5341,37 @@ FILE *f;
       }
 
     j = build_subst_list(lbs, slist, svalue, attrib);
+
+    /* add message id and entry date */
+    strcpy(slist[j], "Message ID");
+    sprintf(svalue[j++], "%d", message_id);
+
+    strcpy(slist[j], "entry date");
+
+    if (getcfg(lbs->name, "Date format", format))
+      {
+      struct tm ts;
+
+      memset(&ts, 0, sizeof(ts));
+
+      for (i=0 ; i<12 ; i++)
+        if (strncmp(date+4, mname[i], 3) == 0)
+          break;
+      ts.tm_mon = i;
+
+      ts.tm_mday = atoi(date+8);
+      ts.tm_hour = atoi(date+11);
+      ts.tm_min  = atoi(date+14);
+      ts.tm_sec  = atoi(date+17);
+      ts.tm_year = atoi(date+20)-1900;
+      ts.tm_isdst = -1; /* let mktime compute DST */
+
+      mktime(&ts);
+      strftime(svalue[j++], sizeof(str), format, &ts);
+      }
+    else
+      strcpy(svalue[j++], date);
+    
     strsubst(display, slist, svalue, j);
     rsputs2(display);
     }
