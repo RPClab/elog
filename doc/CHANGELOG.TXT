@@ -4,6 +4,7 @@ Version 2.0.1, released June 18th, 2002
 - Removed "width=50%" from logbook selection page
 - Added "port" option to config file
 - Created RPM and SRPM files
+- Fixed problem that "Date format = %A... always produced "Sunday"
 
 Version 2.0.0, released June 17th, 2002
 =======================================
