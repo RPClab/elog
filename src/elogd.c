@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.601  2005/03/29 07:30:30  ritt
+   Applied patch from Recai to give precedence to directories from the command line
+
    Revision 1.600  2005/03/29 07:19:37  ritt
    Added add_special_xxx
 
@@ -22276,13 +22279,6 @@ int main(int argc, char *argv[])
    /* default config file */
    strlcat(config_file, CFGFILE, sizeof(config_file));
 
-#ifdef RESOURCE_DIR
-   strlcpy(resource_dir, RESOURCE_DIR, sizeof(resource_dir));
-#endif
-#ifdef LOGBOOK_DIR
-   strlcpy(logbook_dir, LOGBOOK_DIR, sizeof(logbook_dir));
-#endif
-
    /* parse command line parameters */
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-' && argv[i][1] == 'D')
@@ -22453,11 +22449,21 @@ int main(int argc, char *argv[])
    /* parse contents of config file into internal structure */
    check_config();
 
-   /* evaluate directories from config file */
-   if (getcfg("global", "Resource Dir", str, sizeof(str)))
-      strlcpy(resource_dir, str, sizeof(resource_dir));
-   if (getcfg("global", "Logbook Dir", str, sizeof(str)))
-      strlcpy(logbook_dir, str, sizeof(logbook_dir));
+   /* evaluate undefined directories from config file or compiled-in defaults */
+   if (!resource_dir[0])
+      if (getcfg("global", "Resource Dir", str, sizeof(str)))
+         strlcpy(resource_dir, str, sizeof(resource_dir));
+#ifdef RESOURCE_DIR
+      else
+         strlcpy(resource_dir, RESOURCE_DIR, sizeof(resource_dir));
+#endif
+   if (!logbook_dir[0])
+      if (getcfg("global", "Logbook Dir", str, sizeof(str)))
+         strlcpy(logbook_dir, str, sizeof(logbook_dir));
+#ifdef LOGBOOK_DIR
+      else
+         strlcpy(logbook_dir, LOGBOOK_DIR, sizeof(logbook_dir));
+#endif
 
    /* extract resource directory from configuration file if not given */
    if (config_file[0] && strchr(config_file, DIR_SEPARATOR)
