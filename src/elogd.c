@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.259  2004/02/18 14:18:10  midas
+   Fixed synchronization problems with other language
+
    Revision 1.258  2004/02/17 20:09:36  midas
    Added 'debug' facility for synchronize
 
@@ -9069,7 +9072,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
    error_str[0] = 0;
 
    combine_url(lbs, url, "", str, sizeof(str));
-   sprintf(str + strlen(str), "%d?cmd=Download", message_id);
+   sprintf(str + strlen(str), "%d?cmd=%s", message_id, loc("Download"));
 
    retrieve_url(str, &message);
    p = strstr(message, "\r\n\r\n");
@@ -9682,9 +9685,9 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                   if (bcron)
                      logf(lbs, "Error sending local message: %s", error_str);
                   else
-                     rsprintf("Error sending local message: %s\n", error_str);
+                     rsprintf("%s: %s\n", loc("Error sending local message"), error_str);
                } else if (!bcron)
-                  rsprintf("ID%d:\tLocal entry submitted\n", message_id);
+                  rsprintf("ID%d:\t%s\n", message_id, loc("Local entry submitted"));
 
                md5_cache[i_cache].message_id = -1;
 
@@ -9706,7 +9709,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                   if (bcron)
                      logf(lbs, "Error receiving message: %s", error_str);
                   else
-                     rsprintf("Error receiving message: %s\n", error_str);
+                     rsprintf("%s: %s\n", loc("Error receiving message"), error_str);
                } else if (!bcron) {
 
                   if (getcfg_topgroup())
@@ -9891,7 +9894,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                   if (_logging_level > 1)
                      logf(lbs, "MIRROR delete remote entry #%d", message_id);
 
-                  sprintf(str, "%d?cmd=Delete&confirm=Yes", message_id);
+                  sprintf(str, "%d?cmd=%s&confirm=%s", message_id, loc("Delete"), loc("Yes"));
                   combine_url(lbs, list[index], str, url, sizeof(url));
 
                   all_identical = FALSE;
@@ -9905,8 +9908,11 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                      } else {
                         if (bcron)
                            logf(lbs, "%s", loc("Error deleting remote entry"));
-                        else
+                        else {
+                           if (isparam("debug"))
+                              rsputs(buffer);
                            rsprintf("%s\n", loc("Error deleting remote entry"));
+                        }
                      }
 
                      free(buffer);
