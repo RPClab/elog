@@ -1,11 +1,7 @@
 #
 # Italian message by francesco@netlabor.it
-# $Revision$
 #
 
-#
-# Menu commands
-#
 New = Nuovo
 Edit = Modifica
 Delete = Elimina
@@ -32,10 +28,6 @@ Move to = Sposta in
 Save = Salva
 Cancel = Cancella
 Go to = Vai a
-
-#
-# Login & password screens
-#
 Wrong password = Password errata
 Please login = Inserisci i dati per l'accesso
 Username = Nome utente
@@ -49,10 +41,6 @@ Please enter password to obtain administration access = Per favore inserisci la 
 Several logbooks are defined on this host = Su questo server sono presenti diversi registri
 Please select the one to connect to = Per favore seleziona quello a cui connetterti
 Change password for user = Cambia la password dell'utente
-
-#
-# Entry display
-#
 Logged in as = Utente:
 Entry date = Data inserimento
 with = con
@@ -69,10 +57,6 @@ Attachments = Allegati
 No message available = Nessun messaggio disponibile
 Reply to this = Rispondi a questo
 In reply to = In risposta a
-
-#
-# Submit entry
-#
 ELOG Error = ELOG Errore
 Fields marked with = I campi segnati con
 are required = sono obbligatori
@@ -82,10 +66,6 @@ Error: Attribute <b>%s</b> not supplied = Errore: Attributo <b>%s</b> non fornit
 Please go back and enter the <b>%s</b> field = Per favore torna indietro ed inserisci il campo <b>%s</b>
 Please use your browser's back button to go back = Per favore usa il pulsante indietro del tuo browser
 Only user <i>%s</i> can edit this entry = Solo l'utente <i>%s</i> può modificare questo elemento
-
-#
-# Find display
-#
 ELOG search result = ELOG risultato della ricerca
 ELOG find = ELOG Cerca
 Find = Trova
@@ -104,10 +84,6 @@ Search all logbooks = Cerca in tutti i registri
 Last %d days = Ultimi %d giorni
 Last %d entries = Ultimi %d elementi
 No entries found = Nessun elemento trovato
-
-#
-# Email, Copy/Move, Delete
-#
 A new entry has been submitted on %s = Un nuovo elemento è stato inserito in %s
 Logbook = Registro
 Copy ELog entry = Copia elemento ELOG
@@ -117,10 +93,6 @@ No = No
 Message successfully deleted = Messaggio cancellato con successo
 Error deleting message: status = Errore nel cancellare il messaggio: stato
 Goto last message = Vai all'ultimo messaggio
-
-#
-# Error messages
-#
 Error: Command "<b>%s</b>" not allowed = Errore: Comando "<b>%s</b>" non permesso
 Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = Errore: Comando "<b>%s</b>" non permesso all'utente "<b>%s</b>"
 Cannot open file <b>%s</b> = Non posso aprire il file <b>%s</b>
@@ -129,9 +101,6 @@ No SMTP host defined in [global] section of configuration file = Nessun server S
 Messags %s cannot be read from logbook "%s" = Il messaggio %s non può essere letto dal registro "%s"
 New message cannot be written to directory "%s" = Il nuovo messaggio non può essere scritto nella cartella "%s"
 Only user <i>%s</i> can edit this entry = Solo l'utente <i>%s</i> può modificare questo elemento
-
-#
-# V2.0
 Display full message = Mostra il messaggio completo
 Display threads = Mostra le discussioni
 Logbook is empty = Il registro è vuoto
@@ -139,9 +108,6 @@ This message has been deleted = Questo messaggio è stato cancellato
 Download = Scarica
 and all its replies = e tutte le sue risposte
 Message ID = ID messaggio
-
-#
-# V2.1.0
 Not logged in = Non entrato
 Login = Entra
 Page %d of %d = Pagina %d di %d
@@ -162,9 +128,6 @@ Retype password = Riscrivi la password
 exists already = esiste già
 Register as new user = Registrati come nuovo utente
 name may not contain blanks = il nome non può contenere spazi
-
-#
-# V2.1.1
 A new ELOG user has been registered on %s = Un nuovo utente ELOG è stato registrato su %s
 Email = Email
 User "%s" registered on logbook "%s" = L'utente "%s" si è registrato su "%s"
@@ -175,9 +138,6 @@ Your ELOG account has been activated on host = Il tuo account ELOG è stato attiv
 You can access it at = Puoi accedervi da
 Are you sure to delete these messages? = Sei sicuro di voler cancellare questi messaggi?
 Select = Seleziona
-
-#
-# V2.2.0
 No message selected for deletion = Nessun messaggio selezionato per la cancellazione
 No message selected = Nessun messaggio selezionato
 All entries = Tutti
@@ -193,21 +153,12 @@ entries per page = elementi per pagina
 Toggle all = Inverti
 Selected entries = Elementi selezionati
 Enable email notifications = Attiva la notifica per e-mail
-
-#
-# V2.2.2
 A old entry has been updated on %s = Un vecchio elemento è stato aggiornato su %s
-
-#
-# V2.2.4
 Collapse = Restringi
 Expand = Espandi
 Full = Completo
 Summary = Sommario
 Threaded = Ad albero
-
-#
-# V2.2.6
 ELOG Entries = ELOG Elementi
 Filters = Filtri
 Mode = Modo
@@ -215,34 +166,22 @@ Options = Opzioni
 Error: start date after end date = Errore: la data iniziale è posteriore a quella finale
 and all their replies = e tutte le loro risposte
 Your request has been forwarded to the administrator. You will be notified by email upon activation of your new account. = La tua richiesta è stata inoltrata all'amministratore. Ti verrà inviata notifica per e-mail dell'attivazione del tuo nuovo account.
-
-#
-# V2.3.1
 Upload = Carica
 Requested = Richiesto
 Registration request on logbook "%s" = Richiesta di registrazione nel registro "%s"
 A new ELOG user wants to register on "%s" = Un nuovo utente ELOG vuole registrarsi su "%s"
-
-#
-# V2.3.2
 One message = Un messaggio
 %d messages = %d messaggi
 and its replies = e le sue risposte
 and their replies = e le loro risposte
 moved successfully from "%s" to "%s" = spostate con successo da "%s" a "%s"
 copied successfully from "%s" to "%s" = copiate con successo da "%s" a "%s"
-
-#
-# V2.3.4
 Last x = Ultimi x
 Only user <i>%s</i> can delete this entry = Solo l'utente <i>%s</i> può cancellare questo elemento
 Search text also in attributes = Ricerca il testo anche negli attributi
 Goto logbook selection page = Vai alla pagina di selezione dei registri
 Login as different user = Entra come nuovo utente
 User <i>"%s"</i> has no access to logbook <i>"%s"</i> = L'utente <i>"%s"</i> non ha accesso al registro <i>"%s"</i>
-
-#
-# V2.3.5
 Date = Data
 ID = ID
 Change elogd.cfg = Modifica elogd.cfg
@@ -261,35 +200,31 @@ Please log on by clicking on following link and change your password = Per favor
 A new password has been created for you on host %s = Ti è stata creata una nuova password sul server %s
 Enter your user name or email address = Inserisci il tuo nome utente o l'indirizzo e-mail
 Password recovery for ELOG %s = Ripristino password per ELOG %s
-
-#
-# V2.3.6
 Host = Server
 Your ELOG account has been activated = Il tuo account ELOG è stato attivato
 Activate = Attiva
 Maximum number of attachments reached = Raggiunto il massimo numero di allegati consentito
 Invalid user name <i>"%s"</i> = Nome utente non valido <i>"%s"</i>
-
-#
-# V2.3.7
 User = Utente
 on = su
 computer = Server
 Entry is currently edited by = L'elemento è ora modificato da
-
-#
-# V2.3.9
 recipients = destinatari
 Suppress shell execution = Disattiva esecuzione da shell
-
-#
-# V2.4.0
 Maximum number of replies (%d) exceeded = Superato il numero massimo di risposte (%d)
 Update = Aggiorna
-
-# V2.4.1
-by = di
 Change %s = Cambia %s
 Editing %s = Cambia %s
 Add new option here = Aggiungi qui una nuova opzione
-
+Message can only be edited %1.2lg hours after creation = Il messaggio può essere modificato solo per %1.2lg ore dopo la creazione
+Add %s = Aggiungi %s
+User name <i>"%s"</i> not registered = Il nome <i>"%s"</i> non è registrato
+Synchronization = Sincronizzazione
+Synchronizing with = In sincronizzazione con
+Message identical = Messaggio identico
+Error: Value <b>%s</b> not allowed for boolean attributes = Errore: valore <b>%s</b> non consentito per elementi booleani
+Error: Attribute option <b>%s</b> not existing = Errore: l'opzione <b>%s</b> dell'elemento non esiste
+Message %s cannot be read from logbook "%s" = Il messaggio %s non si può leggere dal registro "%s"
+Last submission = Ultima immissione
+Expand all = Espandi tutto
+Synchronize = Sincronizza
