@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.123  2003/01/08 09:13:18  midas
+  Added colors for group tabs in theme file
+
   Revision 2.122  2003/01/07 21:20:16  midas
   Check for leading '/' in data dir
 
@@ -1607,6 +1610,15 @@ THEME default_theme [] = {
   { "Title Cellpadding",      "0"       },
   { "Title Image",            ""        },
   { "Title Image URL",        ""        },
+
+  { "LTab1 BGColor",          "#486090" },
+  { "LTab1 Fontcolor",        "#FFFFFF" },
+  { "LTab2 BGColor",          "#E0E0E0" },
+  { "LTab2 Fontcolor",        "#FFFFFF" },
+  { "GTab1 BGColor",          "#486090" },
+  { "GTab1 Fontcolor",        "#FFFFFF" },
+  { "GTab2 BGColor",          "#FFFFB0" },
+  { "GTab2 Fontcolor",        "#808080" },
 
   { "Merge menus",            "1"       },
   { "Use buttons",            "0"       },
@@ -3980,14 +3992,33 @@ LBLIST clb, flb, nlb, lbl;
           nlb = clb[i].member;
           nnum = clb[i].n_members;
 
-          rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"color:%s;background-color:%s\">&nbsp;",
-                    gt("Title fontcolor"), gt("Title BGColor"));
-          rsprintf("<a style=\"text-decoration:none;color:%s\" href=\"../%s/\">", gt("Title fontcolor"), ref);
+          if (clb[i].member == NULL)
+            {
+            rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"color:%s;background-color:%s\">&nbsp;",
+                      gt("LTab1 Fontcolor"), gt("LTab1 BGColor"));
+            rsprintf("<a style=\"text-decoration:none;color=%s\" href=\"../%s/\">", gt("LTab1 Fontcolor"), ref);
+            }
+          else
+            {
+            rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"color:%s;background-color:%s\">&nbsp;",
+                      gt("GTab1 Fontcolor"), gt("GTab1 BGColor"));
+            rsprintf("<a style=\"text-decoration:none;color=%s\" href=\"../%s/\">", gt("GTab1 Fontcolor"), ref);
+            }
           }
         else
           {
-          rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"background-color:#E0E0E0\">&nbsp;");
-          rsprintf("<a style=\"text-decoration:none\" href=\"../%s/\">", ref);
+          if (clb[i].member == NULL)
+            {
+            rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"color:%s;background-color:%s\">&nbsp;",
+                       gt("LTab2 Fontcolor"), gt("LTab2 BGColor"));
+            rsprintf("<a style=\"text-decoration:none;color=%s\" href=\"../%s/\">", gt("LTab2 Fontcolor"), ref);
+            }
+          else
+            {
+            rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"color:%s;background-color:%s\">&nbsp;",
+                      gt("GTab2 Fontcolor"), gt("GTab2 BGColor"));
+            rsprintf("<a style=\"text-decoration:none;color=%s\" href=\"../%s/\">", gt("GTab2 Fontcolor"), ref);
+            }
           }
 
 
