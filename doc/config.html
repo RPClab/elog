@@ -619,6 +619,7 @@ only. When the browser is restarted, the password must be re-entered.<P>
 <ul>
 <LI><b><code>Password file = &lt;file&gt;</code></b>
 <LI><b><code>Login expiration = &lt;hours&gt;</code></b>
+<LI><b><code>Admin user = &lt;user list&gt;</code></b>
 </ul>
 <p>
 An alternative to the read/write/admin passwords is the user level access with a
@@ -633,8 +634,21 @@ password file. This file contains user names and passwords in following format:
 The passwords are encoded. New users can either be created by hitting <b>Register as new user</b>
 on the login page if <b><code>Self register = 1</code></b> in the configuration file, or
 by the admin user in the <b>Config</b> page by pressing <b>New user</b>. When a user is
-logged it, the entry for this user can be modified via the <b>Config</b> command. The admin user
-can also change entries for other users.<p>
+logged it, the entry for this user can be modified via the <b>Config</b> command.<p>
+
+To start a new password file, follow these steps:
+
+<UL>
+<LI>Set <b><code>Self register = 1</b></code> in the configuration file
+<LI>Connect to the logbook. You will be presented the login page. If you have a <b><code>
+Guest menu commands</b></code> entry, you have to click on "Login" to get that screen.
+<LI>Click on "Register as new user"
+<LI>Enter your login information and save it
+<LI>Add <b><code>Admin user = &lt;user&gt;</code></b> into the configuration file, using
+your login name from above
+<LI>If you now enter the "Config" page, you can add other users
+<LI>Remove the self registration option if you like
+</UL>
 
 The presence of a password file requires all users to "<I>log in</I>" using their name and
 password, except when a guest login is allowed via the <b>"Guest menu commands"</b> option.
@@ -654,6 +668,11 @@ The user name and password are stored as cookies on the user side. They expire a
 current browser session by default, which can be changed with the <code><b>Login
 expiration</b></code > option, giving the expiration time in hours. Setting this to 24
 for example, makes the password expire after one day.<p>
+
+The <b><code>Admin user = &lt;user list&gt;</b></code> is a list of one or more user names,
+which have admin rights. The can execute the <b><code>Admin</code></b> command to directly
+edit elogd.cfg through the web and modify other users via the <b><code>Config</code></b>
+command.
 
 <ul>
 <LI><b><code>Self register = 0|1|2|3</code></b>

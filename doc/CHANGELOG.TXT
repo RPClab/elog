@@ -7,6 +7,8 @@ Version 2.1.2, released September xx, 2002
 - Added "Select" functionality
 - Added ROptions for radio button options
 - Added "Copy to" and "Move to" to specify certain logbooks
+- Fixed problems with deleted logbooks
+- Fixed bug that sorting did not work in page mode
 
 Version 2.1.1, released August 13th, 2002
 =========================================
