@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.188  2004/01/13 21:24:42  midas
+   Added 'extendable options'
+
    Revision 1.187  2004/01/13 16:37:27  midas
    Fixed bug with elog:/<n> referencing
 
@@ -334,6 +337,7 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 #define AF_FIXED_REPLY        (1<<4)
 #define AF_ICON               (1<<5)
 #define AF_RADIO              (1<<6)
+#define AF_EXTENDABLE         (1<<7)
 
 /* attribute format flags */
 #define AFF_SAME_LINE              1
@@ -1756,6 +1760,60 @@ int getcfg(char *group, char *param, char *value)
       return getcfg("global", param, value);
 
    return 0;
+}
+
+/*-------------------------------------------------------------------*/
+
+char *find_param(char *buf, char *group, char *param)
+{
+   char *str, *p, *pstr, *pstart;
+
+   /* search group */
+   str = malloc(10000);
+   p = buf;
+   do {
+      if (*p == '[') {
+         p++;
+         pstr = str;
+         while (*p && *p != ']' && *p != '\n')
+            *pstr++ = *p++;
+         *pstr = 0;
+         if (equal_ustring(str, group)) {
+            /* search parameter */
+            p = strchr(p, '\n');
+            if (p)
+               p++;
+            while (p && *p && *p != '[') {
+               pstr = str;
+               pstart = p;
+               while (*p && *p != '=' && *p != '\n')
+                  *pstr++ = *p++;
+               *pstr-- = 0;
+               while (pstr > str && (*pstr == ' ' || *pstr == '=' || *pstr == '\t'))
+                  *pstr-- = 0;
+
+               if (equal_ustring(str, param)) {
+                  free(str);
+                  return pstart;
+               }
+
+               if (p)
+                  p = strchr(p, '\n');
+               if (p)
+                  p++;
+            }
+         }
+      }
+      if (p)
+         p = strchr(p, '\n');
+      if (p)
+         p++;
+   } while (p);
+
+
+   free(str);
+
+   return NULL;
 }
 
 /*-------------------------------------------------------------------*/
@@ -4357,6 +4415,16 @@ and attr_flags arrays */
             if (equal_ustring(attr_list[j], tmp_list[i]))
                attr_flags[j] |= AF_FIXED_REPLY;
       }
+
+      /* check for extendable options */
+      getcfg_cond(logbook, condition, "Extendable Options", list);
+      m = strbreak(list, tmp_list, MAX_N_ATTR);
+      for (i = 0; i < m; i++) {
+         for (j = 0; j < n; j++)
+            if (equal_ustring(attr_list[j], tmp_list[i]))
+               attr_flags[j] |= AF_EXTENDABLE;
+      }
+
    } else {
       memcpy(attr_list, attr_list_default, sizeof(attr_list_default));
       memcpy(attr_options, attr_options_default, sizeof(attr_options_default));
@@ -5809,8 +5877,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       } else {
          if (attr_options[index][0][0] == 0) {
             rsprintf
-                ("<td class=\"%s\"><input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n",
-                 class_value, input_size, input_maxlen, attr_list[index], attrib[index]);
+                ("<td class=\"attribvalue\"><input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n",
+                 input_size, input_maxlen, attr_list[index], attrib[index]);
          } else {
             if (equal_ustring(attr_options[index][0], "boolean")) {
                /* display checkbox */
@@ -5894,48 +5962,71 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                   rsprintf("</td></tr>\n");
                } else {
-                  /* display drop-down box */
-                  rsprintf("<td class=\"attribvalue\"><select name=\"%s\"",
-                           attr_list[index]);
 
-                  if (is_cond_attr(index))
-                     rsprintf(" onChange=\"document.form1.submit()\">\n");
-                  else
-                     rsprintf(">\n");
+                  rsprintf("<td class=\"attribvalue\">\n");
 
-                  /* display emtpy option */
-                  rsprintf("<option value=\"\">- %s -\n", loc("please select"));
+                  sprintf(str, loc("Add %s"), attr_list[index]);
+                  if (equal_ustring(getparam("extend"), str)) {
 
-                  for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
-                     strlcpy(str, attr_options[index][i], sizeof(str));
-                     if (strchr(str, '{'))
-                        *strchr(str, '{') = 0;
+                     rsprintf
+                         ("<input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\">\n",
+                          input_size, input_maxlen, attr_list[index], attrib[index]);
 
-                     if (equal_ustring(attr_options[index][i], attrib[index])
-                         || equal_ustring(str, attrib[index]))
-                        rsprintf("<option selected value=\"%s\">%s\n",
-                                 attr_options[index][i], str);
+                     rsprintf("&nbsp;<i>");
+                     rsprintf(loc("Add new %s here"), attr_list[index]);
+                     rsprintf("</i>\n");
+
+                  } else {
+
+                     /* display drop-down box */
+                     rsprintf("<select name=\"%s\"", attr_list[index]);
+
+                     if (is_cond_attr(index))
+                        rsprintf(" onChange=\"document.form1.submit()\">\n");
                      else
-                        rsprintf("<option value=\"%s\">%s\n", attr_options[index][i],
-                                 str);
+                        rsprintf(">\n");
+
+                     /* display emtpy option */
+                     rsprintf("<option value=\"\">- %s -\n", loc("please select"));
+
+                     for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
+                        strlcpy(str, attr_options[index][i], sizeof(str));
+                        if (strchr(str, '{'))
+                           *strchr(str, '{') = 0;
+
+                        if (equal_ustring(attr_options[index][i], attrib[index])
+                            || equal_ustring(str, attrib[index]))
+                           rsprintf("<option selected value=\"%s\">%s\n",
+                                    attr_options[index][i], str);
+                        else
+                           rsprintf("<option value=\"%s\">%s\n", attr_options[index][i],
+                                    str);
+                     }
+
+                     rsprintf("</select>\n");
+
+                     if (is_cond_attr(index)) {
+                        /* show "update" button only of javascript is not enabled */
+                        rsprintf
+                            ("<script language=\"javascript\" type=\"text/javascript\">\n");
+                        rsprintf("if (!navigator.javaEnabled()) {\n");
+                        rsprintf
+                            ("  document.write(\"<input type=submit value=\\\"%s\\\"\")\n",
+                             loc("Update"));
+                        rsprintf("} \n");
+                        rsprintf("</script>\n");
+
+                        rsprintf("<noscript>\n");
+                        rsprintf("<input type=submit value=\"%s\">\n", loc("Update"));
+                        rsprintf("</noscript>\n");
+                     }
+
+                     if (attr_flags[index] & AF_EXTENDABLE) {
+                        sprintf(str, loc("Add %s"), attr_list[index]);
+                        rsprintf("<input type=submit name=extend value=\"%s\">\n", str);
+                     }
                   }
 
-                  rsprintf("</select>\n");
-                  if (is_cond_attr(index)) {
-                     /* show "update" button only of javascript is not enabled */
-                     rsprintf
-                         ("<script language=\"javascript\" type=\"text/javascript\">\n");
-                     rsprintf("if (!navigator.javaEnabled()) {\n");
-                     rsprintf
-                         ("  document.write(\"<input type=submit value=\\\"%s\\\"\")\n",
-                          loc("Update"));
-                     rsprintf("} \n");
-                     rsprintf("</script>\n");
-
-                     rsprintf("<noscript>\n");
-                     rsprintf("<input type=submit value=\\\"%s\\\">\n", loc("Update"));
-                     rsprintf("</noscript>\n");
-                  }
                   rsprintf("</td></tr>\n");
                }
             }
@@ -10499,6 +10590,82 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
    return SUCCESS;
 }
 
+/*------------------------------------------------------------------*/
+
+int add_attribute_option(LOGBOOK *lbs, char *attrname, char *attrvalue)
+{
+   int fh, i, length;
+   char str[NAME_LENGTH], *buf, *buf2, *p1, *p2, *p3;
+
+   fh = open(config_file, O_RDWR | O_BINARY, 644);
+   if (fh < 0) {
+      sprintf(str, loc("Cannot open file <b>%s</b>"), config_file);
+      strcat(str, ": ");
+      strcat(str, strerror(errno));
+      show_error(str);
+      return 0;
+   }
+
+   /* read previous contents */
+   length = lseek(fh, 0, SEEK_END);
+   lseek(fh, 0, SEEK_SET);
+   buf = malloc(length + strlen(attrvalue) + 3);
+   assert(buf);
+   read(fh, buf, length);
+   buf[length] = 0;
+
+   /* find location of options */
+   sprintf(str, "Options %s", attrname);
+   p1 = (char *) find_param(buf, lbs->name, str);
+   p2 = strchr(p1, '\n');
+   if (*(p2-1) == '\r')
+      p2--;
+
+   /* save tail */
+   if (p2) {
+      buf2 = malloc(strlen(p2) + 1);
+      assert(buf2);
+      strlcpy(buf2, p2, strlen(p2) + 1);
+   }
+
+   /* add option */
+   p3 = strchr(p1, '\n');
+   if (p3 == NULL)
+      p3 = p1+strlen(p1);
+   while (*(p3-1) == '\n' || *(p3-1) == '\r' || *(p3-1) == ' ' || *(p3-1) == '\t')
+      p3--;
+
+   sprintf(p3, ", %s", attrvalue);
+   if (p2) {
+      strlcat(buf, buf2, length + strlen(attrvalue) + 3);
+      free(buf2);
+   }
+
+   lseek(fh, 0, SEEK_SET);
+   i = write(fh, buf, strlen(buf));
+   if (i < (int) strlen(buf)) {
+      sprintf(str, loc("Cannot write to <b>%s</b>"), config_file);
+      strcat(str, ": ");
+      strcat(str, strerror(errno));
+      show_error(str);
+      close(fh);
+      free(buf);
+      return 0;
+   }
+#ifdef _MSC_VER
+   chsize(fh, TELL(fh));
+#else
+   ftruncate(fh, TELL(fh));
+#endif
+
+   close(fh);
+   free(buf);
+
+   /* force re-read of config file */
+   check_config();
+
+   return 1;
+}
 
 /*------------------------------------------------------------------*/
 
@@ -10549,6 +10716,28 @@ void submit_elog(LOGBOOK * lbs)
       show_error(error);
       return;
    }
+
+   /* check for extended attributs */
+   for (i = 0; i < lbs->n_attr; i++)
+      if (isparam(attr_list[i]) && attr_options[i][0][0]) {
+
+         /* check if option exists */
+         for (j=0 ; attr_options[i][j][0] ; j++)
+            if (equal_ustring(attr_options[i][j], getparam(attr_list[i])))
+               break;
+
+         if (!attr_options[i][j][0] && *getparam(attr_list[i])) {
+            if (attr_flags[i] & AF_EXTENDABLE) {
+               if (!add_attribute_option(lbs, attr_list[i], getparam(attr_list[i])))
+                  return;
+            } else {
+               sprintf(error, loc("Error: Attribute option <b>%s</b> not existing"),
+                  getparam(attr_list[i]));
+               show_error(error);
+               return;
+            }
+         }
+      }
 
    /* get attachments */
    for (i = 0; i < MAX_ATTACHMENTS; i++) {
