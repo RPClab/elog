@@ -189,15 +189,25 @@ name you can get from your email program or your local system administrator.
 This option specifies a filename which logs all login/logout activities and
 successful user connections for logbooks with user level access.<p>
 
-<LI><b><code>URL = &lt;http://host.domain&gt;</code></b>
+<LI><b><code>URL = &lt;http[s]://host.domain[:port]/[subdir/]&gt;</code></b>
 <br>
-This URL is used in automatic email notifications to point back to the new message.
-Usually, the elog daemon tries to obtain the URL from the "Referer" statement in the
-HTTP header. If this is not correct (like if the domain name is missing), the URL used
-to point back to the logbook can be overwritten by this statement. The URL has to
-contain the port number if not the standard port 80 is used like<br>
+If one of the three cases is true:<P>
+<UL>
+<LI><code><b>elogd</b></code> runs with <i>stunnel</i>
+<LI><code><b>elogd</b></code> runs under a proxy
+<LI>The automatic email notifications contains the wrong URL
+</UL><p>
+
+then the URL under which <code><b>elogd</b></code> is running has to be specified
+manually with this statement. The URL has to
+contain the port number if not the standard port 80 is used, it has to specify <i>https://</i>
+if used under <i>stunnel</i>, and it has to contain the directory if used under a proxy like<br>
 <br>
-<code>URL = http://host.domain:8080/</code>
+<table border=0 cellpadding=10>
+<tr><td><code>URL = http://host.domain:8080/</code>   <td>if running on port 8080</tr>
+<tr><td><code>URL = https://host.domain/</code>       <td>if running under <i>stunnel</i></tr>
+<tr><td><code>URL = http://host.domain/subdir/</code> <td>if running under a proxy</tr>
+</table>
 <p>
 
 <LI><b><code>Usr = &lt;name&gt;</code></b>

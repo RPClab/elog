@@ -146,10 +146,22 @@ ProxyPass /elog/ http://your.host.domain:8080/
 Make sure that the Apache modules mod_proxy.c and mod_alias.c are activated. The <i>Redirect</i>
 statement is necessary to automatically append a "/" to a request like <code><b>
 http://your.host.domain/elog</code></b>. Apache then works as a proxy and forwards all requests
-starint with <code><b>/elog</b></code> to the elogd daemon.<p>
+staring with <code><b>/elog</b></code> to the elogd daemon.<p>
+
+Because <code><b>elogd</b></code> uses links to itself (for example in the email notification and
+the redirection after a submit), it has to know under which URL it is running. If you run it
+under a proxy, you have to add the line:<br>
+
+<ul><pre>
+URL = http://your.proxy.host/subdir/
+</pre></ul><p>
+
+into elogd.cfg.<p>
 
 Note that the variable $remote_host cannot be used inside elogd since the remote host is always
 the proxy host (anybody knows how to fix that???).<p>
+
+
 
 <h3><hr><i>Notes for the Solaris platform</i>:</h3>
 
@@ -287,6 +299,8 @@ on port 80, use a different port.
     Substitute the port 80 if you started <code><b>elogd</b></code> on another port. This
     causes <b><code>stunnel</code></b> to receive requests on the https port 443 and         forward them to the <code><b>elogd</b></code> port.
 <P>
+<LI>Put the URL under which <code><b>elogd</b></code> runs into elogd.cfg:<p>
+    <pre>URL = https://your.host.name/</pre>
 <LI>Connect to your logbook with a browser which supports SSL via:
 <P>
     <pre>https://your.host.name/</pre>
