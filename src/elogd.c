@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.616  2005/04/06 19:12:25  ritt
+   Fixed bug with lowercase conditions
+
    Revision 1.615  2005/04/01 19:25:52  ritt
    Implemented drop-down boxes for copy/move also on individual entry page
 
@@ -3124,7 +3127,7 @@ BOOL match_param(char *str, char *param, int conditional_only)
 
    for (i = 0; i < ncl; i++)
       for (j = 0; j < npl; j++)
-         if (strcmp(clist[i], plist[j]) == 0) {
+         if (stricmp(clist[i], plist[j]) == 0) {
             /* condition matches */
             return strcmp(p, param) == 0;
          }
