@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.306  2004/03/21 19:25:18  midas
+   Implemented XML encoding
+
    Revision 1.305  2004/03/21 18:46:31  midas
    Removed size parameter in csv_import
 
@@ -5891,7 +5894,7 @@ void strencode(char *text)
          rsprintf("&nbsp;");
          break;
 
-         /* the translation for the search highliting */
+      /* the translation for the search highliting */
       case '\001':
          rsprintf("<");
          break;
@@ -5903,6 +5906,33 @@ void strencode(char *text)
          break;
       case '\004':
          rsprintf(" ");
+         break;
+
+      default:
+         rsprintf("%c", text[i]);
+      }
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+void xmlencode(char *text)
+{
+   int i;
+
+   for (i = 0; i < (int) strlen(text); i++) {
+      switch (text[i]) {
+      case '<':
+         rsprintf("&lt;");
+         break;
+      case '>':
+         rsprintf("&gt;");
+         break;
+      case '&':
+         rsprintf("&amp;");
+         break;
+      case '\"':
+         rsprintf("&quot;");
          break;
 
       default:
@@ -13068,10 +13098,16 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          for (i = 0; i < lbs->n_attr; i++) {
             strcpy(str, attr_list[i]);
             for (j=0 ; j<(int)strlen(str) ; j++)
-               if (!isalpha(str[j]))
+               if (!isalnum(str[j]))
                   str[j] = '_';
-            rsprintf("\t\t<%s>%s</%s>\n", str, attrib[i], str);
+
+            rsprintf("\t\t<%s>", str);
+            xmlencode(attrib[i]);
+            rsprintf("</%s>\n", str);
          }
+         rsputs("\t\t<TEXT>");
+         xmlencode(text);
+         rsputs("</TEXT>\n");
 
          rsputs("\t</ENTRY>\n");
 
