@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.519  2004/12/13 20:53:12  midas
+   Fixed problem with conditional attributes and edit
+
    Revision 1.518  2004/12/06 20:42:51  midas
    Fixed problem with 'Back' button
 
@@ -7502,7 +7505,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* rescan attributes if condition set */
    if (condition[0]) {
       n_attr = scan_attributes(lbs->name);
-      attrib_from_param(n_attr, attrib);
+      if (breedit)
+         attrib_from_param(n_attr, attrib);
    } else
       n_attr = lbs->n_attr;
 
