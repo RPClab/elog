@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.445  2004/08/06 07:52:51  midas
+   Use macro CFGFILE instead of hard-wired elogd.cfg
+
    Revision 1.444  2004/08/06 07:30:52  midas
    Sorted and completed help screen
 
@@ -461,6 +464,10 @@ static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
 #include <stdlib.h>
 #include <assert.h>
 #include <locale.h>
+
+#ifndef CFGFILE
+#define CFGFILE "elogd.cfg"
+#endif
 
 #ifdef _MSC_VER
 
@@ -5764,7 +5771,7 @@ void show_upgrade_page(LOGBOOK * lbs)
    rsprintf("<tr><td class=\"form1\"><br>\n");
 
    rsprintf
-       ("You probably use an <b>elogd.cfg</b> configuration file for a ELOG version\n");
+       ("You probably use an <b>%s</b> configuration file for a ELOG version\n", CFGFILE);
    rsprintf
        ("1.1.x, since it contains a <b><code>\"Types = ...\"</code></b> entry. From version\n");
    rsprintf("1.2.0 on, the fixed attributes <b>Type</b> and <b>Category</b> have been\n");
@@ -9710,7 +9717,8 @@ void show_config_page(LOGBOOK * lbs)
 
    if (is_admin_user(logbook, getparam("unm"))) {
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("New user"));
-      rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change elogd.cfg"));
+      sprintf(str, loc("Change config file"));
+      rsprintf("<input type=submit name=cmd value=\"%s\">\n", str);
    }
 
    /* hidden field for password */
@@ -13545,7 +13553,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          if (is_admin_user(lbs->name, getparam("unm"))) {
 
             strcat(menu_str, "Admin, ");
-            strcat(menu_str, "Change elogd.cfg, ");
+            strcat(menu_str, "Change config file, ");
             strcat(menu_str, "Delete this logbook, ");
             strcat(menu_str, "Rename this logbook, ");
             strcat(menu_str, "Create new logbook, ");
@@ -13598,7 +13606,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 
       if (is_admin_user(lbs->name, getparam("unm"))) {
 
-         strcat(menu_str, "Change elogd.cfg, ");
+         strcat(menu_str, "Change config file, ");
          strcat(menu_str, "Delete this logbook, ");
          strcat(menu_str, "Rename this logbook, ");
          strcat(menu_str, "Create new logbook, ");
@@ -18341,7 +18349,7 @@ void interprete(char *lbook, char *path)
             break;
       }
       if (!strieq(logbook, str)) {
-         sprintf(str, "Error: logbook \"%s\" not defined in elogd.cfg", logbook);
+         sprintf(str, "Error: logbook \"%s\" not defined in %s", logbook, CFGFILE);
          show_error(str);
          return;
       }
@@ -18743,7 +18751,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   /* check for new syntax in elogd.cfg */
+   /* check for new syntax in config file */
    if (getcfg(lbs->name, "Types", str, sizeof(str))) {
       show_upgrade_page(lbs);
       return;
@@ -18914,7 +18922,7 @@ void interprete(char *lbook, char *path)
    }
 
    if (strieq(command, loc("Admin"))
-       || strieq(command, loc("Change elogd.cfg"))) {
+       || strieq(command, loc("Change config file"))) {
       show_admin_page(lbs, NULL);
       return;
    }
@@ -20098,7 +20106,7 @@ void server_loop(int tcp_port)
                sprintf(str, "Top group %s", logbook);
                if (!getcfg("global", str, list, sizeof(list))) {
 
-                  sprintf(str, "Error: logbook \"%s\" not defined in elogd.cfg", logbook);
+                  sprintf(str, "Error: logbook \"%s\" not defined in %s", logbook, CFGFILE);
                   show_error(str);
                   send(_sock, return_buffer, strlen(return_buffer), 0);
                   if (verbose) {
@@ -20727,7 +20735,7 @@ int install_service(void)
    if (strrchr(dir, '\\'))
       *(strrchr(dir, '\\') + 1) = 0;
 
-   sprintf(cmd, "\"%s\" -D -c \"%selogd.cfg\"", path, dir);
+   sprintf(cmd, "\"%s\" -D -c \"%s%s\"", path, dir, CFGFILE);
 
    /* Open the default, local Service Control Manager database */
    hsrvmanager = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
@@ -20966,7 +20974,7 @@ int main(int argc, char *argv[])
    redirect_to_stderr();
 
    /* default config file */
-   strcpy(config_file, "elogd.cfg");
+   strcpy(config_file, CFGFILE);
 
    /* evaluate predefined files and directories */
 #ifdef CONFIG_FILE
@@ -21104,11 +21112,11 @@ int main(int argc, char *argv[])
    /* clone remote elogd configuration */
    if (clone_url[0]) {
 
-      /* check if local elogd.cfg exists */
+      /* check if local config file exists */
       fh = open(config_file, O_RDONLY | O_BINARY);
       if (fh > 0) {
          close(fh);
-         eprintf("Overwrite local \"elogd.cfg\"? [y]/n:  ");
+         eprintf("Overwrite local \"%s\"? [y]/n:  ", CFGFILE);
          fgets(str, sizeof(str), stdin);
          if (str[0] == 'n' || str[0] == 'N')
             exit(EXIT_FAILURE);
@@ -21260,7 +21268,7 @@ int main(int argc, char *argv[])
          }
       }
 
-      puts("\nCloning finished. Check elogd.cfg and start the server normally.");
+      puts("\nCloning finished. Check " CFGFILE " and start the server normally.");
       exit(EXIT_SUCCESS);
    }
 
