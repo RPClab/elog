@@ -20,6 +20,7 @@ EXECS = elog elogd elconv
 DESTDIR = /usr/local/bin
 SDESTDIR = /usr/local/sbin
 MANDIR = /usr/local/man
+MXMLDIR = ../mxml
 
 INSTALL = /usr/bin/install
 RM = /bin/rm
@@ -41,11 +42,11 @@ all: $(EXECS)
 regex.o: src/regex.c src/regex.h
 	$(CC) $(CFLAGS) -c -o regex.o src/regex.c
 
-mxml.o: src/mxml.c src/mxml.h
-	$(CC) $(CFLAGS) -DHAVE_STRLCPY -c -o mxml.o src/mxml.c
+mxml.o: $(MXMLDIR)/mxml.c $(MXMLDIR)/mxml.h
+	$(CC) $(CFLAGS) -DHAVE_STRLCPY -c -o mxml.o $(MXMLDIR)/mxml.c
 
 elogd: src/elogd.c regex.o mxml.o
-	$(CC) $(CFLAGS) -o elogd src/elogd.c regex.o mxml.o $(LIBS)
+	$(CC) $(CFLAGS) -I$(MXMLDIR) -o elogd src/elogd.c regex.o mxml.o $(LIBS)
 
 %: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
