@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.271  2004/02/26 21:06:32  midas
+   Added CVS import page
+
    Revision 1.270  2004/02/26 13:41:17  midas
    Changed strupr() to toupper()
 
@@ -5018,6 +5021,7 @@ void show_plain_header(int size)
    rsprintf("Pragma: no-cache\r\n");
    rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
    rsprintf("Content-Type: text/plain\r\n");
+   rsprintf("Content-disposition: attachment; filename=\"export.txt\"\r\n");
    if (size)
       rsprintf("Content-Length: %d\r\n", size);
    rsprintf("\r\n");
@@ -7204,6 +7208,8 @@ void show_find_form(LOGBOOK * lbs)
                
    rsprintf("<label for=\"CSV\">%s&nbsp;&nbsp;</label>\n", loc("Display comma-separated values (CSV)"));
 
+   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("CSV Import"));
+   
    rsprintf("</td></tr>\n");
 
    rsprintf("<tr><td class=\"form2\"><b>%s:</b><br>", loc("Options"));
@@ -8616,6 +8622,55 @@ int show_download_page(LOGBOOK * lbs, char *path)
    strlcat(return_buffer, message, return_buffer_size);
 
    return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+void show_import_page(LOGBOOK * lbs)
+{
+   /*---- header ----*/
+
+   show_standard_header(lbs, TRUE, loc("ELOG CVS import"), ".");
+
+   /*---- title ----*/
+
+   show_standard_title(lbs->name, "", 0);
+
+   /*---- menu buttons ----*/
+
+   rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
+
+   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
+   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Import"));
+
+   rsprintf("</span></td></tr>\n\n");
+
+   /* table for two-column items */
+   rsprintf("<tr><td class=\"form2\">");
+   rsprintf("<table width=\"100%%\" cellspacing=0>\n");
+
+   /*---- entry form ----*/
+
+   rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n", loc("CSV filename"));
+   rsprintf("<td class=\"attribvalue\">");
+   rsprintf("<input type=\"file\" size=\"60\" maxlength=\"200\" name=\"csvfile\" ");
+   rsprintf("accept=\"filetype/*\"></td></tr>\n");
+
+   rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n", loc("Field separator"));
+   rsprintf("<td class=\"attribvalue\">");
+   rsprintf("<input type=\"text\" size=\"1\" maxlength=\"1\" name=\"sep\" value=\",\">");
+   rsprintf("</td></tr>\n");
+
+   rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n", loc("Options"));
+   rsprintf("<td class=\"attribvalue\">");
+   rsprintf("<input type=checkbox id=\"head\" name=\"head\" value=\"1\">\n");
+   rsprintf("<label for=\"head\">%s</label>\n", loc("Derive attributes from CVS file")); 
+   rsprintf("</td></tr>\n");
+   
+   rsprintf("</table></td></tr></table>\n\n");
+   show_bottom_text(lbs);
+   rsprintf("</form></body></html>\r\n");
+
 }
 
 /*------------------------------------------------------------------*/
@@ -10895,8 +10950,8 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          strlcat(menu_str, "Config, ", sizeof(menu_str));
    }
 
-   strcpy(other_str,
-          "Update, Upload, Submit, Back, Search, Save, Download, Cancel, First, Last, Previous, Next, Requested, Forgot, ");
+   strcpy(other_str, "Update, Upload, Submit, Back, Search, Save, Download, CSV Import, ");
+   strcat(other_str, "Cancel, First, Last, Previous, Next, Requested, Forgot, ");
 
    /* admin commands */
    if (getcfg(lbs->name, "Admin user", str) && *getparam("unm")
@@ -14546,8 +14601,8 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
           ("<td align=left class=\"dlgform\"><input type=password name=upassword></td></tr>\n");
 
       if (!getcfg(lbs->name, "Login expiration", str) || atoi(str) > 0) {
-         rsprintf
-             ("<td align=center colspan=2 class=\"dlgform\"><input type=checkbox checked name=remember value=1>\n");
+         rsprintf("<td align=center colspan=2 class=\"dlgform\">");
+         rsprintf("<input type=checkbox checked name=remember value=1>\n");
          rsprintf("%s</td></tr>\n", loc("Remember me on this computer"));
       }
 
@@ -15791,6 +15846,11 @@ void interprete(char *lbook, char *path)
    if (strieq(command, loc("Download"))
        || strieq(command, "Download")) {
       show_download_page(lbs, dec_path);
+      return;
+   }
+
+   if (strieq(command, loc("CSV Import"))) {
+      show_import_page(lbs);
       return;
    }
 
