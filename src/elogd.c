@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.34  2003/02/28 14:43:53  midas
+  Do not overwrite existing pidfile
+
   Revision 1.33  2003/02/27 21:30:26  midas
   Changed path for cookies, special case for Lynx
 
@@ -11361,23 +11364,39 @@ struct timeval       timeout;
     {
     int fd;
     char buf[20];
+    struct stat finfo;
 
     if (pidfile[0] == 0)
       strcpy(pidfile, PIDFILE);
 
+    /* check if file exists */
+    if (stat(pidfile, &finfo) >= 0)
+      {
+      printf("File \"%s\" exists, using \"%s.%d\" instead.\n", pidfile, pidfile, tcp_port);
+      sprintf(pidfile + strlen(pidfile), ".%d", tcp_port);
+
+      /* check again for the new name */
+      if (stat(pidfile, &finfo) >= 0)
+        {
+        /* never overwrite a file */
+        printf("Refuse to overwrite existing file \"%s\".\n", pidfile);
+        exit(1);
+        }
+      }
+
     fd = open(pidfile, O_CREAT | O_RDWR, 0644);
     if (fd < 0)
       {
-      perror("server_loop");
-      printf("Error created pid file \"%s\".\n", pidfile);
+      sprintf(str, "Error creating pid file \"%s\"", pidfile);
+      perror(str);
       exit(1);
       }
 
     sprintf(buf, "%d\n", (int)getpid());
     if (write(fd, buf, strlen(buf)) == -1)
       {
-      perror("server_loop");
-      printf("Error writing to pid file \"%s\".\n", pidfile);
+      sprintf(str, "Error writing to pid file \"%s\"", pidfile);
+      perror(str);
       exit(1);
       }
     close(fd);
