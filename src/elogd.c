@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.195  2004/01/16 19:43:30  midas
+   Implemented setlocale() for strftime()
+
    Revision 1.194  2004/01/15 12:15:47  midas
    Fixed missing format_flags initialization
 
@@ -185,6 +188,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <locale.h>
 
 #ifdef _MSC_VER
 
@@ -261,6 +265,8 @@ typedef int INT;
 #define TELL(fh) lseek(fh, 0, SEEK_CUR)
 
 #define NAME_LENGTH  500
+
+#define DEFAULT_DATE_FORMAT "%#c"
 
 #define SUCCESS        1
 
@@ -2031,6 +2037,9 @@ int check_language()
    struct stat cfg_stat;
 
    getcfg("global", "Language", language);
+
+   /* set locale for strftime */
+   setlocale(LC_ALL, language);
 
    /* force re-read configuration file if changed */
    strlcpy(file_name, resource_dir, sizeof(file_name));
@@ -5234,12 +5243,11 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
    strcpy(list[i], "date");
    time(&now);
    ts = localtime(&now);
-   if (getcfg(lbs->name, "Date format", format))
-      strftime(str, sizeof(str), format, ts);
-   else {
-      strcpy(str, ctime(&now));
-      str[strlen(str) - 1] = 0;
-   }
+   if (!getcfg(lbs->name, "Date format", format))
+      strcpy(format, DEFAULT_DATE_FORMAT);
+
+   strftime(str, sizeof(str), format, ts);
+
    strcpy(value[i++], str);
 
    return i;
@@ -5531,7 +5539,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        class_name[80], condition[256];
    time_t now;
    char fl[8][NAME_LENGTH];
-   struct tm *ts;
+   struct tm *pts, ts;
 
    for (i = 0; i < MAX_ATTACHMENTS; i++)
       att[i][0] = 0;
@@ -5761,27 +5769,25 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    time(&now);
    if (bedit) {
-      if (getcfg_cond(lbs->name, condition, "Date format", format)) {
-         struct tm ts;
+      if (!getcfg_cond(lbs->name, condition, "Date format", format))
+         strcpy(format, DEFAULT_DATE_FORMAT);
 
-         memset(&ts, 0, sizeof(ts));
+      memset(&ts, 0, sizeof(ts));
 
-         for (i = 0; i < 12; i++)
-            if (strncmp(date + 4, mname[i], 3) == 0)
-               break;
-         ts.tm_mon = i;
+      for (i = 0; i < 12; i++)
+         if (strncmp(date + 4, mname[i], 3) == 0)
+            break;
+      ts.tm_mon = i;
 
-         ts.tm_mday = atoi(date + 8);
-         ts.tm_hour = atoi(date + 11);
-         ts.tm_min = atoi(date + 14);
-         ts.tm_sec = atoi(date + 17);
-         ts.tm_year = atoi(date + 20) - 1900;
-         ts.tm_isdst = -1;      /* let mktime compute DST */
+      ts.tm_mday = atoi(date + 8);
+      ts.tm_hour = atoi(date + 11);
+      ts.tm_min = atoi(date + 14);
+      ts.tm_sec = atoi(date + 17);
+      ts.tm_year = atoi(date + 20) - 1900;
+      ts.tm_isdst = -1;      /* let mktime compute DST */
 
-         mktime(&ts);
-         strftime(str, sizeof(str), format, &ts);
-      } else
-         strcpy(str, date);
+      mktime(&ts);
+      strftime(str, sizeof(str), format, &ts);
    } else {
       if (getcfg_cond(lbs->name, condition, "Date format", format))
          strftime(str, sizeof(str), format, localtime(&now));
@@ -6125,9 +6131,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                if (getcfg_cond(lbs->name, condition, "Date on reply", str)
                    && atoi(str) == 1) {
                   time(&now);
-                  ts = localtime(&now);
+                  pts = localtime(&now);
                   if (getcfg_cond(lbs->name, condition, "Date format", format))
-                     strftime(str, sizeof(str), format, ts);
+                     strftime(str, sizeof(str), format, pts);
                   else {
                      strcpy(str, ctime(&now));
                      str[strlen(str) - 1] = 0;
@@ -6172,9 +6178,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                if (getcfg_cond(lbs->name, condition, "Date on reply", str)
                    && atoi(str) == 2) {
                   time(&now);
-                  ts = localtime(&now);
+                  pts = localtime(&now);
                   if (getcfg_cond(lbs->name, condition, "Date format", format))
-                     strftime(str, sizeof(str), format, ts);
+                     strftime(str, sizeof(str), format, pts);
                   else {
                      strcpy(str, ctime(&now));
                      str[strlen(str) - 1] = 0;
@@ -8277,6 +8283,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    int i, j, i_line, index, colspan;
    BOOL skip_comma;
    FILE *f;
+   struct tm ts;
 
    sprintf(ref, "../%s/%d", lbs->name_enc, message_id);
 
@@ -8359,27 +8366,25 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
       strcpy(slist[j], "entry date");
 
-      if (getcfg(lbs->name, "Date format", format)) {
-         struct tm ts;
+      if (!getcfg(lbs->name, "Date format", format)) 
+         strcpy(format, DEFAULT_DATE_FORMAT);
+      
+      memset(&ts, 0, sizeof(ts));
 
-         memset(&ts, 0, sizeof(ts));
+      for (i = 0; i < 12; i++)
+         if (strncmp(date + 4, mname[i], 3) == 0)
+            break;
+      ts.tm_mon = i;
 
-         for (i = 0; i < 12; i++)
-            if (strncmp(date + 4, mname[i], 3) == 0)
-               break;
-         ts.tm_mon = i;
+      ts.tm_mday = atoi(date + 8);
+      ts.tm_hour = atoi(date + 11);
+      ts.tm_min = atoi(date + 14);
+      ts.tm_sec = atoi(date + 17);
+      ts.tm_year = atoi(date + 20) - 1900;
+      ts.tm_isdst = -1;      /* let mktime compute DST */
 
-         ts.tm_mday = atoi(date + 8);
-         ts.tm_hour = atoi(date + 11);
-         ts.tm_min = atoi(date + 14);
-         ts.tm_sec = atoi(date + 17);
-         ts.tm_year = atoi(date + 20) - 1900;
-         ts.tm_isdst = -1;      /* let mktime compute DST */
-
-         mktime(&ts);
-         strftime(svalue[j++], sizeof(str), format, &ts);
-      } else
-         strcpy(svalue[j++], date);
+      mktime(&ts);
+      strftime(svalue[j++], sizeof(str), format, &ts);
 
       strsubst(display, slist, svalue, j);
 
@@ -8438,27 +8443,25 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          }
 
          if (equal_ustring(disp_attr[index], loc("Date"))) {
-            if (getcfg(lbs->name, "Date format", format)) {
-               struct tm ts;
+            if (!getcfg(lbs->name, "Date format", format))
+               strcpy(format, DEFAULT_DATE_FORMAT);
+            
+            memset(&ts, 0, sizeof(ts));
 
-               memset(&ts, 0, sizeof(ts));
+            for (i = 0; i < 12; i++)
+               if (strncmp(date + 4, mname[i], 3) == 0)
+                  break;
+            ts.tm_mon = i;
 
-               for (i = 0; i < 12; i++)
-                  if (strncmp(date + 4, mname[i], 3) == 0)
-                     break;
-               ts.tm_mon = i;
+            ts.tm_mday = atoi(date + 8);
+            ts.tm_hour = atoi(date + 11);
+            ts.tm_min = atoi(date + 14);
+            ts.tm_sec = atoi(date + 17);
+            ts.tm_year = atoi(date + 20) - 1900;
+            ts.tm_isdst = -1;        /* let mktime compute DST */
 
-               ts.tm_mday = atoi(date + 8);
-               ts.tm_hour = atoi(date + 11);
-               ts.tm_min = atoi(date + 14);
-               ts.tm_sec = atoi(date + 17);
-               ts.tm_year = atoi(date + 20) - 1900;
-               ts.tm_isdst = -1;        /* let mktime compute DST */
-
-               mktime(&ts);
-               strftime(str, sizeof(str), format, &ts);
-            } else
-               strcpy(str, date);
+            mktime(&ts);
+            strftime(str, sizeof(str), format, &ts);
 
             if (equal_ustring(mode, "Threaded")) {
                if (skip_comma) {
@@ -10274,7 +10277,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       }
 
       if (!equal_ustring(mode, "Full") && n_line > 0)
-         rsprintf("<th class=\"listtitle\">Text</th>\n");
+         rsprintf("<th class=\"listtitle\">%s</th>\n", loc("Text"));
 
       rsprintf("</tr>\n\n");
    }
@@ -11250,6 +11253,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
        fl[8][NAME_LENGTH];
    FILE *f;
    BOOL first;
+   struct tm ts;
 
    message_id = atoi(dec_path);
    message_error = EL_SUCCESS;
@@ -11640,30 +11644,27 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
       /*---- display date ----*/
 
-      if (getcfg(lbs->name, "Date format", format)) {
-         struct tm ts;
+      if (!getcfg(lbs->name, "Date format", format))
+         strcpy(format, DEFAULT_DATE_FORMAT);
+      
+      memset(&ts, 0, sizeof(ts));
 
-         memset(&ts, 0, sizeof(ts));
+      for (i = 0; i < 12; i++)
+         if (strncmp(date + 4, mname[i], 3) == 0)
+            break;
+      ts.tm_mon = i;
 
-         for (i = 0; i < 12; i++)
-            if (strncmp(date + 4, mname[i], 3) == 0)
-               break;
-         ts.tm_mon = i;
+      ts.tm_mday = atoi(date + 8);
+      ts.tm_hour = atoi(date + 11);
+      ts.tm_min = atoi(date + 14);
+      ts.tm_sec = atoi(date + 17);
+      ts.tm_year = atoi(date + 20) - 1900;
+      ts.tm_isdst = -1;      /* let mktime compute DST */
 
-         ts.tm_mday = atoi(date + 8);
-         ts.tm_hour = atoi(date + 11);
-         ts.tm_min = atoi(date + 14);
-         ts.tm_sec = atoi(date + 17);
-         ts.tm_year = atoi(date + 20) - 1900;
-         ts.tm_isdst = -1;      /* let mktime compute DST */
+      mktime(&ts);
+      strftime(str, sizeof(str), format, &ts);
 
-         mktime(&ts);
-         strftime(str, sizeof(str), format, &ts);
-
-         rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;%s:&nbsp;<b>%s</b>\n", loc("Entry date"), str);
-      } else
-         rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;%s:&nbsp;<b>%s</b>\n", loc("Entry date"),
-                  date);
+      rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;%s:&nbsp;<b>%s</b>\n", loc("Entry date"), str);
 
       /*---- link to original message or reply ----*/
 
@@ -12314,6 +12315,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
    int i, j, expand;
    char str[10000], format[256], date[256], ref[256];
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
+   struct tm ts;
 
    if (plb->n_members > 0) {
 
@@ -12397,24 +12399,22 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
                sprintf(str, "$entry date %s $author", loc("by"));
             j = build_subst_list(&lb_list[i], slist, svalue, attrib);
             strcpy(slist[j], "entry date");
-            if (getcfg(lb_list[i].name, "Date format", format)) {
-               struct tm ts;
+            if (!getcfg(lb_list[i].name, "Date format", format))
+               strcpy(format, DEFAULT_DATE_FORMAT);
 
-               memset(&ts, 0, sizeof(ts));
-               for (i = 0; i < 12; i++)
-                  if (strncmp(date + 4, mname[i], 3) == 0)
-                     break;
-               ts.tm_mon = i;
-               ts.tm_mday = atoi(date + 8);
-               ts.tm_hour = atoi(date + 11);
-               ts.tm_min = atoi(date + 14);
-               ts.tm_sec = atoi(date + 17);
-               ts.tm_year = atoi(date + 20) - 1900;
-               ts.tm_isdst = -1;        /* let mktime compute DST */
-               mktime(&ts);
-               strftime(svalue[j++], sizeof(str), format, &ts);
-            } else
-               strcpy(svalue[j++], date);
+            memset(&ts, 0, sizeof(ts));
+            for (i = 0; i < 12; i++)
+               if (strncmp(date + 4, mname[i], 3) == 0)
+                  break;
+            ts.tm_mon = i;
+            ts.tm_mday = atoi(date + 8);
+            ts.tm_hour = atoi(date + 11);
+            ts.tm_min = atoi(date + 14);
+            ts.tm_sec = atoi(date + 17);
+            ts.tm_year = atoi(date + 20) - 1900;
+            ts.tm_isdst = -1;        /* let mktime compute DST */
+            mktime(&ts);
+            strftime(svalue[j++], sizeof(str), format, &ts);
             strsubst(str, slist, svalue, j);
             rsputs(str);
          }
