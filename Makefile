@@ -48,6 +48,7 @@ loc:
 	locext src\elogd.c eloglang.french
 	locext src\elogd.c eloglang.german
 	locext src\elogd.c eloglang.spanish
+	locext src\elogd.c eloglang.italian
 
 install: $(EXECS)
 	$(INSTALL) -m 0755 -d $(DESTDIR) $(SDESTDIR) $(MANDIR)/man1/ $(MANDIR)/man8/
