@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.159  2003/11/27 10:15:39  midas
+  Fixed bug with deny/allow commands in other languages
+
   Revision 1.158  2003/11/20 16:36:05  midas
   Added check_config_file()
 
@@ -8403,7 +8406,7 @@ int  i, n;
     return TRUE;
 
   /* check for deny */
-  sprintf(str, "Deny %s", command);
+  sprintf(str, "Deny %s", unloc(command));
   if (getcfg(lbs->name, str, users))
     {
     /* check if current user in list */
@@ -8417,7 +8420,7 @@ int  i, n;
     }
 
   /* check admin command */
-  if (equal_ustring(command, "Admin"))
+  if (equal_ustring(command, loc("Admin")))
     {
     if (getcfg(lbs->name, "Admin user", str))
       {
@@ -8429,7 +8432,7 @@ int  i, n;
     }
 
   /* check for allow */
-  sprintf(str, "Allow %s", command);
+  sprintf(str, "Allow %s", unloc(command));
   if (!getcfg(lbs->name, str, users))
     return TRUE;
 
