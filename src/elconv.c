@@ -6,6 +6,9 @@
   Contents:     Conversion program for ELOG messages
 
   $Log$
+  Revision 1.8  2004/11/21 16:51:42  midas
+  Added debug print of dir
+
   Revision 1.7  2004/09/18 04:42:46  midas
   Fixed bug with not displaying inline images
 
@@ -1091,6 +1094,9 @@ int main(int argc, char *argv[])
    /* use current directory as working directory */
    getcwd(data_dir, sizeof(data_dir));
    strcat(data_dir, DIR_SEPARATOR_STR);
+
+   if (verbose)
+      printf("Scanning directory \"%s\"\n", data_dir);
 
    scan_messages();
 
