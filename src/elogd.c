@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.365  2004/07/07 11:59:41  midas
+   Added $utcdate
+
    Revision 1.364  2004/07/05 08:51:33  midas
    Fixed typo
 
@@ -5993,7 +5996,19 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
       strftime(str, sizeof(str), format, ts);
    } else
       sprintf(str, "%d", (int) t);
+   strcpy(value[i++], str);
 
+   /* add UTC date */
+   strcpy(list[i], "utcdate");
+   time(&t);
+   if (format_date) {
+      ts = gmtime(&t);
+      if (!getcfg(lbs->name, "Time format", format))
+         strcpy(format, DEFAULT_TIME_FORMAT);
+
+      strftime(str, sizeof(str), format, ts);
+   } else
+      sprintf(str, "%d", (int) t);
    strcpy(value[i++], str);
 
    return i;
