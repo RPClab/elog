@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.121  2003/01/07 16:21:19  midas
+  Added directory separator to resource and logbook dir
+
   Revision 2.120  2003/01/07 15:54:12  midas
   Change 'User' and 'Group' to 'Usr' and 'Grp' not to conflict with groups
 
@@ -12395,6 +12398,12 @@ usage:
       logbook_dir[i] = 0;
       }
     }
+
+  if (resource_dir[0] && resource_dir[strlen(resource_dir)-1] != DIR_SEPARATOR)
+    strlcat(resource_dir, DIR_SEPARATOR_STR, sizeof(resource_dir));
+
+  if (logbook_dir[0] && logbook_dir[strlen(logbook_dir)-1] != DIR_SEPARATOR)
+    strlcat(logbook_dir, DIR_SEPARATOR_STR, sizeof(logbook_dir));
 
   if (verbose)
     {
