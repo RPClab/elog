@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.529  2005/01/04 19:42:52  midas
+   Version 2.5.5-4
+
    Revision 1.528  2005/01/04 10:31:10  midas
    Changed date format to RFC-822 in RSS feed
 
@@ -695,7 +698,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.5-3"
+#define VERSION "2.5.5-4"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -2266,7 +2269,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    if (email_to)
       snprintf(str, strsize - 1, "To: %s\r\n", to);
    else
-      snprintf(str, strsize - 1, "To: ELOG user\r\n");
+      snprintf(str, strsize - 1, "To: ELOG\r\n");
 
    send(s, str, strlen(str), 0);
    if (verbose)
