@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.586  2005/03/14 20:00:34  ritt
+   Fixed problem with multiple extendable options
+
    Revision 1.585  2005/03/14 08:36:56  ritt
    Added thumbnail display for list display
 
@@ -8403,8 +8406,8 @@ void show_edit_form(LOGBOOK *lbs, int message_id, BOOL breply, BOOL bedit, BOOL 
                        title, ua);
             } else {
 
-               sprintf(str, loc("Add %s"), attr_list[index]);
-               if (strieq(getparam("extend"), str)) {
+               sprintf(str, "extend_%d", index);
+               if (isparam(str)) {
 
                   rsprintf("<td%s class=\"attribvalue\">\n", title);
                   rsprintf("<i>");
@@ -8420,6 +8423,7 @@ void show_edit_form(LOGBOOK *lbs, int message_id, BOOL breply, BOOL bedit, BOOL 
                          ("<input type=\"text\" size=20 maxlength=%d name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
                           input_maxlen, ua, attrib[index]);
 
+                  rsprintf("<input type=\"hidden\" name=\"extend_%d\" value=\"1\">\n", index);
                   rsprintf("</td>\n");
 
                } else if (attr_flags[index] & AF_MULTI) {
@@ -8448,8 +8452,8 @@ void show_edit_form(LOGBOOK *lbs, int message_id, BOOL breply, BOOL bedit, BOOL 
                   if (attr_flags[index] & AF_EXTENDABLE) {
                      sprintf(str, loc("Add %s"), attr_list[index]);
                      rsprintf
-                         ("<input type=submit name=extend value=\"%s\" onClick=\"return mark_submit();\">\n",
-                          str);
+                         ("<input type=submit name=\"extend_%d\" value=\"%s\" onClick=\"return mark_submit();\">\n",
+                          index, str);
                   }
 
                   rsprintf("</td>\n");
@@ -8478,8 +8482,8 @@ void show_edit_form(LOGBOOK *lbs, int message_id, BOOL breply, BOOL bedit, BOOL 
                   if (attr_flags[index] & AF_EXTENDABLE) {
                      sprintf(str, loc("Add %s"), attr_list[index]);
                      rsprintf
-                         ("<input type=submit name=extend value=\"%s\" onClick=\"return mark_submit();\">\n",
-                          str);
+                         ("<input type=submit name=\"extend_%d\" value=\"%s\" onClick=\"return mark_submit();\">\n",
+                          index, str);
                   }
 
                   rsprintf("</td>\n");
@@ -8553,8 +8557,8 @@ void show_edit_form(LOGBOOK *lbs, int message_id, BOOL breply, BOOL bedit, BOOL 
                   if (attr_flags[index] & AF_EXTENDABLE) {
                      sprintf(str, loc("Add %s"), attr_list[index]);
                      rsprintf
-                         ("<input type=submit name=extend value=\"%s\" onClick=\"return mark_submit();\">\n",
-                          str);
+                         ("<input type=submit name=\"extend_%d\" value=\"%s\" onClick=\"return mark_submit();\">\n",
+                          index, str);
                   }
 
                   rsprintf("</td>\n");
