@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.84  2002/09/25 15:00:31  midas
+  Fixed HTML bug
+
   Revision 2.83  2002/09/25 10:33:47  midas
   Fixed URL problem with delete
 
@@ -5521,7 +5524,6 @@ char   str[256], in_reply_to[80], reply_to[256];
         {
         /* delete message */
         status = el_delete_message(lbs, message_id, TRUE, NULL, TRUE);
-        rsprintf("<tr><td bgcolor=#80FF80 align=center>");
         if (status != EL_SUCCESS)
           {
           sprintf(str, "%s = %d", loc("Error deleting message: status"), status);
