@@ -19,11 +19,11 @@
 elog \- utility program for Electronic Logbook ELOG
 .SH SYNOPSIS
 .sp
-\fBelog\fR \fB-a \fIattribute=value\fB\fR [ \fB-f \fIfile...\fB\fR ]
+\fBelog\fR \fB-a \fIattribute=value\fB\fR [ \fB-e \fIid\fB\fR ] [ \fB-f \fIfile...\fB\fR ]
 \fB-h \fIhost\fB\fR [ \fB-l \fIlogbook\fB\fR ] [ \fB-m \fItextfile\fB\fR ]
 [ \fB-p \fIport\fB\fR ] [ \fB-r \fIid\fB\fR ] [ \fB-s \fIsubdir\fB\fR ]
 [ \fB-u \fIusername\fB \fIpassword\fB\fR ] [ \fB-v\fR ]
-[ \fB-w \fIpassword\fB\fR ] \fImessage\fB\fR
+[ \fB-w \fIpassword\fB\fR ] \fImessage\fB\fR  [ \fB-x\fR ]
 .SH DESCRIPTION
 .PP
 The Electronic Logbook
@@ -56,6 +56,9 @@ messages automatically into the logbook.
 .TP
 .BI -a " attribute=value"
 set attribute to value
+.TP
+.BI -e " id"
+edit existing message of id
 .TP
 .BI -f " file..."
 attach files while submitting
@@ -90,6 +93,9 @@ verbose output
 .TP
 .BI -w " password"
 write password defined on server
+.TP
+.BR \-x
+suppress email notification
 .SH SEE ALSO
 .BR elogd (8).
 .PP

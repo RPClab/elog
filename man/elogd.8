@@ -19,10 +19,12 @@
 elogd \- web server program for Electronic Logbook ELOG
 .SH SYNOPSIS
 .sp
-\fBelog\fR [ \fB-a \fIpassword\fB\fR ] [ \fB-c \fIfile\fB\fR ] [ \fB-D\fR ]
-[ \fB-d \fIdirectory\fB\fR ] [ \fB-f \fIfile\fB\fR ] [ \fB-k\fR ]
-[ \fB-l \fIlogbook\fB\fR ] [ \fB-p \fIport\fB\fR ] [ \fB-r \fIpassword\fB\fR ]
-[ \fB-s \fIdirectory\fB\fR ] [ \fB-v\fR ] [ \fB-w \fIpassword\fB\fR ]
+\fBelog\fR [ \fB-a \fIpassword\fB\fR ] [ \fB-C \fIurl\fB\fR ] [ \fB-c \fIfile\fB\fR ]
+[ \fB-D\fR ] [ \fB-d \fIdirectory\fB\fR ] [ \fB-f \fIfile\fB\fR ] [ \fB-k\fR ]
+[ \fB-l \fIlogbook\fB\fR ] [ \fB-n \fIhostname\fB\fR ] [ \fB-p \fIport\fB\fR ]
+[ \fB-r \fIpassword\fB\fR ] [ \fB-s \fIdirectory\fB\fR ] [ \fB-v\fR ]
+[ \fB-w \fIpassword\fB\fR ] [ \fB-x\fR ]
+
 .SH DESCRIPTION
 .PP
 The Electronic Logbook
@@ -42,6 +44,9 @@ system.
 .BI -a " password"
 create/overwrite admin password in config file
 .TP
+.BI -C " url"
+clone remote elogd configuration
+.TP
 .BI -c " file"
 specify configuration file
 .TP
@@ -54,7 +59,7 @@ specify logbook root directory
 .BI -f " file"
 specify PID file
 .TP
-.BI -h " host"
+.BI -n " host"
 host where
 .B elogd
 will run
