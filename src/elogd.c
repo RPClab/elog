@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.299  2004/03/17 20:57:07  midas
+   Fixed config sync problem due to CRLF-LF
+
    Revision 1.298  2004/03/16 15:39:53  midas
    Fixed endless loop in strip_html
 
@@ -8926,6 +8929,7 @@ int show_md5_page(LOGBOOK * lbs)
    else {
       rsprintf("ID: %6d MD5:", 0);
 
+      remove_crlf(buffer);
       MD5_checksum(buffer, strlen(buffer), digest);
 
       for (i = 0; i < 16; i++)
@@ -9885,22 +9889,22 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                logf(lbs, "Error loading configuration file: %s", error_str);
             else
                rsprintf("Error loading configuration file: %s\n", error_str);
-         } else
+         } else {
+            remove_crlf(buffer);
             MD5_checksum(buffer, strlen(buffer), digest);
+         }
 
          /* compare MD5s */
-         /*
-            printf("ID0:    ");
-            for (j = 0; j < 16; j++)
-            printf("%02X", digest[j]);
-            printf("\nCache : ");
-            for (j = 0; j < 16; j++)
-            printf("%02X", md5_cache[0].md5_digest[j]);
-            printf("\nRemote: ");
-            for (j = 0; j < 16; j++)
-            printf("%02X", md5_remote[0].md5_digest[j]);
-            printf("\n\n");
-          */
+         printf("ID0:    ");
+         for (j = 0; j < 16; j++)
+         printf("%02X", digest[j]);
+         printf("\nCache : ");
+         for (j = 0; j < 16; j++)
+         printf("%02X", md5_cache[0].md5_digest[j]);
+         printf("\nRemote: ");
+         for (j = 0; j < 16; j++)
+         printf("%02X", md5_remote[0].md5_digest[j]);
+         printf("\n\n");
 
          if (n_remote > 0) {
             /* if config has been changed on this server, but not remotely, send it */
