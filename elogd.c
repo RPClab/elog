@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.15  2002/06/14 06:08:19  midas
+  Sort index by date
+
   Revision 2.14  2002/06/13 12:46:09  midas
   Fixed problem wiht 'reply to:' in subject
 
@@ -1347,12 +1350,23 @@ INT ss_file_find(char *path, char *pattern, char **plist)
 
 /*------------------------------------------------------------------*/
 
+int eli_compare(const EL_INDEX *e1, const EL_INDEX *e2)
+{
+  if (e1->file_time < e2->file_time)
+    return -1;
+  if (e1->file_time > e2->file_time)
+    return 1;
+  return 0;
+}
+
+/*------------------------------------------------------------------*/
+
 int el_build_index(LOGBOOK *lbs)
 /* scan all ??????a.log files and build an index table in eli[] */
 {
-char      *file_list, str[256], dir[256], file_name[256], *buffer, *p;
+char      *file_list, str[256], date[256], dir[256], file_name[256], *buffer, *p;
 int       index, n, length;
-int       fh;
+int       i, fh;
 time_t    ltime;
 struct tm tms;
 
@@ -1423,11 +1437,20 @@ struct tm tms;
           strcpy(str, file_list+index*MAX_PATH_LENGTH);
           strcpy(lbs->el_index[lbs->n_el_index].file_name, str);
           
+          el_decode(p, "Date: ", date);
+
           memset(&tms, 0, sizeof(struct tm));
-          tms.tm_year = (str[0]-'0')*10 + (str[1]-'0');
-          tms.tm_mon  = (str[2]-'0')*10 + (str[3]-'0') -1;
-          tms.tm_mday = (str[4]-'0')*10 + (str[5]-'0');
-          tms.tm_hour = 0;
+
+          for (i=0 ; i<12 ; i++)
+            if (strncmp(date+4, mname[i], 3) == 0)
+              break;
+          tms.tm_mon = i;
+
+          tms.tm_mday = atoi(date+8);
+          tms.tm_hour = atoi(date+11);
+          tms.tm_min  = atoi(date+14);
+          tms.tm_sec  = atoi(date+17);
+          tms.tm_year = atoi(date+20)-1900;
 
           if (tms.tm_year < 90)
             tms.tm_year += 100;
@@ -1460,6 +1483,18 @@ struct tm tms;
     }
 
   free(file_list);
+
+  /* sort entries according to date */
+  qsort(lbs->el_index, lbs->n_el_index, sizeof(EL_INDEX), eli_compare);
+
+  if (verbose)
+    {
+    printf("After sort:\n");
+    for (i=0 ; i<lbs->n_el_index ; i++)
+      printf("  ID %d in %s, offset %d\n", 
+        lbs->el_index[i].message_id, lbs->el_index[i].file_name, 
+        lbs->el_index[i].offset);
+    }
 
   return EL_SUCCESS;
 }
@@ -1712,6 +1747,7 @@ char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
 /*------------------------------------------------------------------*/
 
 int el_submit(LOGBOOK *lbs, int message_id,
+              char *date,
               char attr_name[MAX_N_ATTR][NAME_LENGTH],
               char attr_value[MAX_N_ATTR][NAME_LENGTH],
               int n_attr, char *text, 
@@ -1730,7 +1766,7 @@ int el_submit(LOGBOOK *lbs, int message_id,
     LOGBOOK lbs             Logbook structure
     int    message_id       Message id for existing message, 0 for
                             new message
-
+    char   *date            Message date
     char   attr_name[][]    Name of attributes
     char   attr_value[][]   Value of attributes
     int    n_attr           Number of attributes
@@ -1752,11 +1788,11 @@ int el_submit(LOGBOOK *lbs, int message_id,
 \********************************************************************/
 {
 INT     n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id;
-struct  tm *tms;
+struct  tm tms;
 char    file_name[256], afile_name[MAX_ATTACHMENTS][256], dir[256], str[256],
-        date[80], attachment_all[64*MAX_ATTACHMENTS],
+        attachment_all[64*MAX_ATTACHMENTS],
         rep1[256], rep2[256];
-time_t  now;
+time_t  now, ltime;
 char    message[TEXT_SIZE+100], *p;
 BOOL    bedit;
 
@@ -1795,15 +1831,15 @@ BOOL    bedit;
           strcpy(dir, lbs->data_dir);
 
           time(&now);
-          tms = localtime(&now);
+          memcpy(&tms, localtime(&now), sizeof(struct tm));
 
           strcpy(str, p);
           sprintf(afile_name[index], "%02d%02d%02d_%02d%02d%02d_%s",
-                  tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
-                  tms->tm_hour, tms->tm_min, tms->tm_sec, str);
+                  tms.tm_year % 100, tms.tm_mon+1, tms.tm_mday,
+                  tms.tm_hour, tms.tm_min, tms.tm_sec, str);
           sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir,
-                  tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
-                  tms->tm_hour, tms->tm_min, tms->tm_sec, str);
+                  tms.tm_year % 100, tms.tm_mon+1, tms.tm_mday,
+                  tms.tm_hour, tms.tm_min, tms.tm_sec, str);
 
           /* save attachment */
           fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
@@ -1854,7 +1890,7 @@ BOOL    bedit;
       /* file might have been edited, rebuild index */
       free(lbs->el_index);
       el_build_index(lbs);
-      return el_submit(lbs, message_id, attr_name, attr_value, n_attr, text, 
+      return el_submit(lbs, message_id, date, attr_name, attr_value, n_attr, text, 
                        in_reply_to, reply_to, encoding, afilename, buffer, buffer_size);
       }
 
@@ -1874,9 +1910,12 @@ BOOL    bedit;
 
     message[size] = 0;
 
-    el_decode(message, "Date: ", date);
-    el_decode(message, "Reply to: ", rep1);
-    el_decode(message, "In reply to: ", rep2);
+    if (equal_ustring(date, "<keep>"))
+      el_decode(message, "Date: ", date);
+    if (equal_ustring(reply_to, "<keep>"))
+      el_decode(message, "Reply to: ", reply_to);
+    if (equal_ustring(in_reply_to, "<keep>"))
+      el_decode(message, "In reply to: ", in_reply_to);
     el_decode(message, "Attachment: ", attachment_all);
 
     /* buffer tail of logfile */
@@ -1901,32 +1940,57 @@ BOOL    bedit;
   else
     {
     /* create new message */
-    time(&now);
-    tms = localtime(&now);
+    if (!date[0])
+      {
+      time(&now);
+      strcpy(date, ctime(&now));
+      date[24] = 0;
+      }
 
-    sprintf(file_name, "%02d%02d%02da.log",
-            tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
+    for (i=0 ; i<12 ; i++)
+      if (strncmp(date+4, mname[i], 3) == 0)
+        break;
+
+    memset(&tms, 0, sizeof(struct tm));
+    tms.tm_mon = i;
+    tms.tm_mday = atoi(date+8);
+    tms.tm_hour = atoi(date+11);
+    tms.tm_min  = atoi(date+14);
+    tms.tm_sec  = atoi(date+17);
+    tms.tm_year = atoi(date+20)-1900;
+
+    if (tms.tm_year < 90)
+      tms.tm_year += 100;
+    ltime = mktime(&tms);
+
+    sprintf(file_name, "%c%c%02d%c%ca.log",
+            date[22], date[23], i+1, date[8], date[9]);
 
     sprintf(str, "%s%s", dir, file_name);
     fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
     if (fh < 0)
       return -1;
 
-    strcpy(date, ctime(&now));
-    date[24] = 0;
-
     lseek(fh, 0, SEEK_END);
 
     /* new message id is old plus one */
-    message_id = el_search_message(lbs, EL_LAST, 0)+1;
+    message_id = 1;
+    for (i= 0 ; i<lbs->n_el_index ; i++)
+      if (lbs->el_index[i].message_id >= message_id)
+        message_id = lbs->el_index[i].message_id + 1;
 
     /* enter message in index */
     lbs->n_el_index++;
     lbs->el_index = realloc(lbs->el_index, sizeof(EL_INDEX)*lbs->n_el_index);
     lbs->el_index[lbs->n_el_index-1].message_id = message_id;
     strcpy(lbs->el_index[lbs->n_el_index-1].file_name, file_name);
-    lbs->el_index[lbs->n_el_index-1].file_time = now;
+    lbs->el_index[lbs->n_el_index-1].file_time = ltime;
     lbs->el_index[lbs->n_el_index-1].offset = TELL(fh);
+
+    /* if index not ordered, sort it */
+    i = lbs->n_el_index;
+    if (i > 1 && lbs->el_index[i-1].file_time < lbs->el_index[i-2].file_time)
+      qsort(lbs->el_index, i, sizeof(EL_INDEX), eli_compare);
     }
 
   /* compose message */
@@ -1934,21 +1998,11 @@ BOOL    bedit;
   sprintf(message, "$@MID@$: %d\n", message_id);
   sprintf(message+strlen(message), "Date: %s\n", date);
 
-  if (!equal_ustring(reply_to, "<keep>"))
-    {
-    if (reply_to[0])
-      sprintf(message+strlen(message), "Reply to: %s\n", reply_to);
-    }
-  else if (rep1[0])
-    sprintf(message+strlen(message), "Reply to: %s\n", rep1);
+  if (reply_to[0])
+    sprintf(message+strlen(message), "Reply to: %s\n", reply_to);
 
-  if (!equal_ustring(in_reply_to, "<keep>"))
-    {
-    if (in_reply_to[0])
-      sprintf(message+strlen(message), "In reply to: %s\n", in_reply_to);
-    }
-  else if (rep2[0])
-    sprintf(message+strlen(message), "In reply to: %s\n", rep2);
+  if (in_reply_to[0])
+    sprintf(message+strlen(message), "In reply to: %s\n", in_reply_to);
 
   for (i=0 ; i<n_attr ; i++)
     sprintf(message+strlen(message), "%s: %s\n", attr_name[i], attr_value[i]);
@@ -2063,7 +2117,7 @@ BOOL    bedit;
     memset(att, 0, sizeof(att));
 
     /* write modified message */
-    el_submit(lbs, reply_id, attr_list, attr, n_attr,
+    el_submit(lbs, reply_id, date, attr_list, attr, n_attr,
               message, in_reply_to, reply_to, enc, att, NULL, NULL);
     }
 
@@ -2118,7 +2172,7 @@ int  size, n_attr, status;
   memset(att, 0, sizeof(att));
 
   /* write modified message */
-  el_submit(lbs, message_id, attr_list, attr, n_attr,
+  el_submit(lbs, message_id, date, attr_list, attr, n_attr,
             message, in_reply_to, reply_to, enc, att, NULL, NULL);
 }
 
@@ -2290,16 +2344,17 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
   if (reply_to[0])
     {
     p = reply_to;
-    do
-      {
-      if (atoi(p))
-        el_delete_message(lbs, atoi(p), TRUE, NULL, FALSE);
+    if (isdigit(*p))
+      do
+        {
+        if (atoi(p))
+          el_delete_message(lbs, atoi(p), TRUE, NULL, FALSE);
 
-      while (*p && isdigit(*p))
-        p++;
-      while (*p && (*p == ',' || *p == ' '))
-        p++;
-      } while(*p);
+        while (*p && isdigit(*p))
+          p++;
+        while (*p && (*p == ',' || *p == ' '))
+          p++;
+        } while(*p);
     }
 
   /* delete backward references */
@@ -2909,6 +2964,7 @@ int  i;
 
   if (!printable && getcfg(logbook, "logbook tabs", str) && atoi(str) == 1)
     {
+    /*
     if (!getcfg("global", "tab cellpadding", str))
       strcpy(str, "5");
     rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=0 bgcolor=#FFFFFF><tr>\n", str);
@@ -2938,6 +2994,31 @@ int  i;
       }
     rsprintf("<td width=100%% bgcolor=#FFFFFF>&nbsp;</td>\n");
     rsprintf("</tr></table></td></tr>\n\n");
+    */
+    
+    rsprintf("<tr><td bgcolor=#FFFFFF>\n");
+
+    if (getcfg("global", "main tab", str))
+      rsprintf("<font style=\"background-color:#E0E0E0\">&nbsp;<a href=\"../\">%s</a>&nbsp;</font>&nbsp\n", str);
+
+    for (i=0 ;  ; i++)
+      {
+      if (!enumgrp(i, str))
+        break;
+
+      if (equal_ustring(str, "global"))
+        continue;
+
+      strcpy(ref, str);
+      url_encode(ref);
+
+      if (equal_ustring(str, logbook))
+        rsprintf("<font style=\"color:%s;background-color:%s\">&nbsp;%s&nbsp;</font>&nbsp;\n", gt("Title fontcolor"), gt("Title BGColor"), str);
+      else
+        rsprintf("<font style=\"background-color:#E0E0E0\">&nbsp;<a href=\"../%s/\">%s</a>&nbsp;</font>&nbsp\n", ref, str);
+      }
+    rsprintf("</td></tr>\n\n");
+    
     }
 
   /*---- title row ----*/
@@ -5692,9 +5773,10 @@ skip:
 
 void submit_elog(LOGBOOK *lbs)
 {
-char   str[256], mail_to[256], mail_from[256], file_name[256], error[1000],
+char   str[256], mail_to[256], mail_from[256], file_name[256], error[1000], date[80],
        mail_text[TEXT_SIZE+1000], mail_list[MAX_N_LIST][NAME_LENGTH], list[10000], smtp_host[256],
-       subject[256], attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[256], in_reply_to[80];
+       subject[256], attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[256], in_reply_to[80],
+       reply_to[256];
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
 char   att_file[MAX_ATTACHMENTS][256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
@@ -5804,7 +5886,9 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, message_id;
     }
 
   message_id = 0;
+  reply_to[0] = 0;
   in_reply_to[0] = 0;
+  date[0] = 0;
 
   if (*getparam("edit") &&
       *getparam("resubmit") &&
@@ -5813,6 +5897,9 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, message_id;
     /* delete old message */
     el_delete_message(lbs, atoi(getparam("orig")), FALSE, att_file, TRUE);
     unsetparam("orig");
+    strcpy(reply_to, "<keep>");
+    strcpy(in_reply_to, "<keep>");
+    date[0] = 0;
     }
   else
     {
@@ -5820,13 +5907,15 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, message_id;
       {
       message_id = atoi(getparam("orig"));
       strcpy(in_reply_to, "<keep>");
+      strcpy(reply_to, "<keep>");
+      strcpy(date, "<keep>");
       }
     else
       strcpy(in_reply_to, getparam("orig"));
     }
 
-  message_id = el_submit(lbs, message_id, attr_list, attrib, n_attr, getparam("text"),
-                     in_reply_to, "<keep>", *getparam("html") ? "HTML" : "plain",
+  message_id = el_submit(lbs, message_id, date, attr_list, attrib, n_attr, getparam("text"),
+                     in_reply_to, reply_to, *getparam("html") ? "HTML" : "plain",
                      att_file,
                      _attachment_buffer,
                      _attachment_size);
@@ -6051,7 +6140,7 @@ LOGBOOK *lbs_dest;
 
   /* submit in destination logbook without links */
 
-  message_id = el_submit(lbs_dest, 0, attr_list, attrib, n_attr, text,
+  message_id = el_submit(lbs_dest, 0, date, attr_list, attrib, n_attr, text,
                      "", "", encoding,
                      attachment,
                      _attachment_buffer,
