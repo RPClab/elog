@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.264  2004/02/25 14:39:26  midas
+   Automatic hot links terminated with a '.' get correctly displayed
+
    Revision 1.263  2004/02/25 10:22:22  midas
    Made 'subst <attrib> = $<attrib>' work correctly
 
@@ -4272,10 +4275,17 @@ void rsputs2(const char *str)
          if (strncmp(str + i, list[l], strlen(list[l])) == 0) {
             p = (char *) (str + i + strlen(list[l]));
             i += strlen(list[l]);
-            for (k = 0; *p && strcspn(p, " ,\t\n\r({[)}]"); k++, i++)
+            for (k = 0; *p && strcspn(p, " ,;\t\n\r({[)}]"); k++, i++)
                link[k] = *p++;
             link[k] = 0;
             i--;
+
+            /* link may not end with a '.' (like in a sentence) */
+            if (link[k-1] == '.') {
+               link[k-1] = 0;
+               k--;
+               i--;
+            }
 
             /* check if link contains coloring */
             p = strchr(link, '\001');
