@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.7  2002/06/10 11:22:41  midas
+  Added 'Subst on reply' option
+
   Revision 2.6  2002/06/10 10:38:22  midas
   Added 'top level only' flag
 
@@ -3342,6 +3345,21 @@ time_t now;
         if (equal_ustring(attr_list[j], list[i]))
           attrib[j][0] = 0;
         }
+    }
+
+  /* subst attributes for replies */
+  if (message_id && !bedit)
+    {
+    for (index = 0 ; index < n_attr ; index++)
+      {
+      sprintf(str, "Subst on reply %s", attr_list[index]);
+      if (getcfg(lbs->name, str, preset))
+        {
+        i = build_subst_list(lbs, slist, svalue, attrib);
+        strsubst(preset, slist, svalue, i);
+        strcpy(attrib[index], preset);
+        }
+      }
     }
 
   /* header */
