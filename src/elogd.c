@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.582  2005/03/08 08:29:47  ritt
+   Fixed problem with self-register and password file
+
    Revision 1.581  2005/03/03 16:03:39  ritt
    Fixed problem with top groups and password files
 
@@ -9990,7 +9993,8 @@ int save_user_config(LOGBOOK *lbs, char *user, BOOL new_user, BOOL activate)
       }
 
       if (new_user) {
-         node = mxml_add_node(lbs->pwd_xml_tree, "user", NULL);
+         node = mxml_find_node(lbs->pwd_xml_tree, "/list");
+         node = mxml_add_node(node, "user", NULL);
 
          mxml_add_node(node, "full_name", getparam("new_full_name"));
          mxml_add_node(node, "name", getparam("new_user_name"));
