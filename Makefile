@@ -9,7 +9,8 @@
 
 CC = gcc
 LIBS = 
-CFLAGS = -g -O -W -Wall
+CFLAGS = -O3 -funroll-loops -fomit-frame-pointer -W -Wall
+DFLAGS = -g -O -W -Wall
 IFLAGS = -kr -nut -i3 -l90
 EXECS = elog elogd elconv
 DESTDIR = /usr/local/bin
@@ -32,6 +33,9 @@ CC = cc
 endif
 
 all: $(EXECS)
+
+debug: src/elogd.c
+	$(CC) $(DFLAGS) -o elogd src/elogd.c $(LIBS)
 
 %: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
