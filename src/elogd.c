@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.70  2003/04/07 15:30:46  midas
+  V2.3.5beta
+
   Revision 1.69  2003/04/07 15:26:58  midas
   Added password recovery facility
 
@@ -725,7 +728,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.3.4"
+#define VERSION "2.3.5"
 
 #include <stdio.h>
 #include <sys/types.h>
