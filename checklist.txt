@@ -1,7 +1,7 @@
 Checklist for new ELOG release
 ==============================
 
-On PC810:
+On PC4534:
 
 - Put all new options in doc/config.html
 - Increse version in elogd.c

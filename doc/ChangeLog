@@ -6,12 +6,15 @@ Version 2.4.1, released January 13th, 2004
 - Only section of current logbook can be edited in elogd.cfg, this
   makes it possible to declar different administrators for different
   logbooks
+- Added "top group" option to have completely separated logbook
+  groups without having to run multiple elogd servers in parallel
 - Added logging for SMTP communication (for debugging)
 - Added "last submission" option
 - Evaluate configuration options after conditional attributes change
 - Implemented expansion of logbook selection page
 - Fixed bug that text disappeared after upload
 - Admin users can edit "[global <top group>]" and "[global]" sections
+- User names in configuration page selection box are now sorted
 
 Version 2.4.0, released January 5th, 2004
 =========================================
