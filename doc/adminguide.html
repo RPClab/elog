@@ -26,6 +26,7 @@
 &nbsp;[<a class=nav href="#unix">UNIX</a>]&nbsp;
 &nbsp;[<a class=nav href="#windows">Windows</a>]&nbsp;
 &nbsp;[<a class=nav href="#config">Configuration</a>]&nbsp;
+&nbsp;[<a class=nav href="config.html">elogd.cfg syntax</a>]&nbsp;
 &nbsp;[<a class=nav href="#secure">Secure Connections</a>]&nbsp;
 &nbsp;[<a class=nav href="#tech">How It Works</a>]&nbsp;
 *&nbsp;</div>
@@ -93,7 +94,7 @@ The contents of the all-important configuration file <b><code>elogd.cfg</code></
 described <a href="#config">below</a>.
 <p>
 To start the daemon automatically, it can be run from the <code><b>/etc/rc.d/init.d</code></b>
-system. Please consult your distribution to find out how to do that. 
+system. Please consult your distribution to find out how to do that.
 <br>
 Under RedHat 6.x. I use a <a href="elogd">script</a> which I put under <code><b>/etc/rc.d/init.d</code></b>. Then I call :
 <ul><code>chkconfig --add elogd</code></ul>
@@ -171,6 +172,28 @@ and keep the other options as they are. After pressing "OK" the daemon should be
 <hr><a name="config">
 <div class=section>&nbsp; Server Configuration &nbsp;</div>
 <p>
+<a name="config">The <b>ELOG</b> daemon <b><code>elogd</code></b> can be executed with the following options :
+<ul><code><pre>elogd [-p port] [-h hostname/IP] [-D] [-c file] [-v] [-k]</code></pre></ul>
+<p>with :
+<ul>
+<li><code>-p &lt;port></code> : TCP port number to use for the http server (if other than 80)
+<li><code>-h &lt;hostname or IP address></code> : in the case of a "multihomed" server, host name or IP address of the interface ELOG should run on
+<li><code>-D</code> : become a daemon (Unix only)
+<li><code>-c &lt;file></code> : specify the configuration file (full path mandatory if -D is used)
+<li><code>-v </code> : verbose output for debugging
+<li><code>-k </code> : do not use TCP keep-alive
+</ul>
+<p>
+It may also be used to generate passwords :
+<ul><code><pre>elogd [-r pwd] [-w pwd] [-a pwd] [-l logbook]</code></pre></ul>
+<p>with :
+<ul>
+<li><code>-r &lt;pwd></code> : create/overwrite read password in config file
+<li><code>-w &lt;pwd></code> : create/overwrite write password in config file
+<li><code>-a &lt;pwd></code> : create/overwrite administrative password in config file
+<li><code>-l &lt;logbook></code> : specify logbook for -r and -w commands
+</ul>
+<p>
 The appearance, functionality and behaviour of the various logbooks on an <b>ELOG</b> server are determined by the single <b><code>elogd.cfg</code></b> file in the <b>ELOG</b> installation directory.
 <p>
 This file may be edited directly from the file system, or from a form in the <b>ELOG</b> Web interface (when the <i>Config</i> menu item is available). In this case, changes are applied dynamically without having to restart the server.
@@ -246,7 +269,7 @@ files from March 2001, just select them with <b><code>0103??.log</code>
 <div class=footer>&nbsp;
 Content by <a class=nav href="mailto:Stefan.Ritt@psi.ch">Stefan Ritt</a>,
 Web pages by <a class=nav href="mailto:fredp@mygale.org">Fred Pacquier</a>
- - last modified on 19/12/2001
+ - last modified on 16/01/2002
 &nbsp;</div>
 
 </body>
