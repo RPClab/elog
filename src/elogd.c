@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.526  2004/12/20 16:14:58  midas
+   Version 2.5.5-3
+
    Revision 1.525  2004/12/20 16:14:04  midas
    Use encoded logbook name in substitutions
 
@@ -686,7 +689,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.5-2"
+#define VERSION "2.5.5-3"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
