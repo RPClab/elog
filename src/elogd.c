@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.490  2004/09/29 03:27:45  midas
+   Added error display if disk is full
+
    Revision 1.489  2004/09/28 23:21:47  midas
    Version 2.5.4-5
 
@@ -4461,7 +4464,13 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
    strlcat(message, text, TEXT_SIZE + 100);
    strlcat(message, "\n", TEXT_SIZE + 100);
 
-   write(fh, message, strlen(message));
+   n = write(fh, message, strlen(message));
+   if (n != strlen(message)) {
+      if (tail_size > 0)
+         xfree(buffer);
+      close(fh);
+      return -1;
+   }
 
    /* update MD5 checksum */
    MD5_checksum(message, strlen(message), lbs->el_index[index].md5_digest);
@@ -4485,8 +4494,6 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 
       /* truncate file here */
       TRUNCATE(fh);
-
-
    }
 
    close(fh);
@@ -16079,7 +16086,7 @@ void submit_elog(LOGBOOK * lbs)
    if (message_id <= 0) {
       sprintf(str, loc("New entry cannot be written to directory \"%s\""), lbs->data_dir);
       strcat(str, "\n<p>");
-      strcat(str, loc("Please check that it exists and elogd has write access"));
+      strcat(str, loc("Please check that it exists and elogd has write access and disk is not full"));
       show_error(str);
       return;
    }
@@ -17880,7 +17887,8 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
          if (getcfg(lb_list[index].name, "Read password", str, sizeof(str))
              || (getcfg(lb_list[index].name, "Password file", str, sizeof(str))
                  && !getcfg(lb_list[index].name, "Guest menu commands", str, sizeof(str))))
-            rsprintf("&nbsp;&nbsp;<img src=\"lock.gif\">");
+            rsprintf("&nbsp;&nbsp;<img src=\"lock.gif\" alt=\"%s\" title=\"%s\">", 
+              loc("This logbook requires authentication"), loc("This logbook requires authentication"));
          rsprintf("<br>\n");
          str[0] = 0;
          getcfg(lb_list[index].name, "Comment", str, sizeof(str));
