@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.6  2003/06/25 15:25:13  midas
+  Fixed bug with 'reply_to'
+
   Revision 1.5  2003/06/05 07:16:36  midas
   Creat boundary randomly
 
@@ -274,7 +277,7 @@ char                 host_name[256], boundary[80], str[80], *p;
   
   if (reply)
     sprintf(content+strlen(content), 
-            "%s\r\nContent-Disposition: form-data; name=\"orig\"\r\n\r\n%d\r\n", boundary, reply);
+            "%s\r\nContent-Disposition: form-data; name=\"reply_to\"\r\n\r\n%d\r\n", boundary, reply);
 
   for (i=0 ; i<n_attr ; i++)
     sprintf(content+strlen(content), 
