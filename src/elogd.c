@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.274  2004/03/01 07:32:29  midas
+   Added label for 'search across all logbooks'
+
    Revision 1.273  2004/02/27 08:20:02  midas
    Do not sort 'edit' and 'delete' in 'list display'
 
@@ -13,7 +16,7 @@
    Added 'edit' and 'delete' to 'list display'
 
    Revision 1.271  2004/02/26 21:06:32  midas
-   Added CVS import page
+   Added CSV import page
 
    Revision 1.270  2004/02/26 13:41:17  midas
    Changed strupr() to toupper()
@@ -7242,9 +7245,10 @@ void show_find_form(LOGBOOK * lbs)
    }
 
    if (i > 2) {
-      if (!getcfg(lbs->name, "Search all logbooks", str) || atoi(str) == 1)
-         rsprintf("<input type=checkbox name=all value=1>%s<br>\n",
-                  loc("Search all logbooks"));
+      if (!getcfg(lbs->name, "Search all logbooks", str) || atoi(str) == 1) {
+         rsprintf("<input type=checkbox id=all name=all value=1>\n");
+         rsprintf("<label for=\"all\">%s</label>\n", loc("Search all logbooks"));
+      }
    }
 
    rsprintf(loc("Display"));
@@ -8634,7 +8638,7 @@ void show_import_page(LOGBOOK * lbs)
 {
    /*---- header ----*/
 
-   show_standard_header(lbs, TRUE, loc("ELOG CVS import"), ".");
+   show_standard_header(lbs, TRUE, loc("ELOG CSV import"), ".");
 
    /*---- title ----*/
 
@@ -8668,7 +8672,7 @@ void show_import_page(LOGBOOK * lbs)
    rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n", loc("Options"));
    rsprintf("<td class=\"attribvalue\">");
    rsprintf("<input type=checkbox id=\"head\" name=\"head\" value=\"1\">\n");
-   rsprintf("<label for=\"head\">%s</label>\n", loc("Derive attributes from CVS file")); 
+   rsprintf("<label for=\"head\">%s</label>\n", loc("Derive attributes from CSV file")); 
    rsprintf("</td></tr>\n");
    
    rsprintf("</table></td></tr></table>\n\n");
