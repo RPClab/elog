@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.388  2004/07/15 10:01:03  midas
+   First attribute cannot be on same line
+
    Revision 1.387  2004/07/15 09:55:03  midas
    Use 'format <attrib> = 1' also in entry form
 
@@ -6965,7 +6968,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             input_maxlen = atoi(fl[4]);
       }
 
-      if ((format_flags[index] & AFF_SAME_LINE) == 0)
+      if (index == 0 || (format_flags[index] & AFF_SAME_LINE) == 0)
          rsprintf("<tr><td colspan=2><table width=\"100%%\" cellpadding=0 cellspacing=0><tr>");
 
       strcpy(star, (attr_flags[index] & AF_REQUIRED) ? "<font color=red>*</font>" : "");
