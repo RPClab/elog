@@ -76,7 +76,6 @@ In reply to = Als Antwort auf
 ELOG Error = ELOG Fehler
 Fields marked with = Felder markiert mit
 are required = sind Pflichteinträge
-Error: Attachment file <i>%s</i> invalid, please bo back and enter a proper file name = Fehler: Datei <i>%s</i> ist ungültig, bitte zurück und korrekten Dateinamen eingeben
 New message cannot be written to directory "%s" = Neuer Entrag kann nicht ins Verzeichnig "%s" geschrieben werden
 Please check that it exists and elogd has write access = Bitte überprüfen, ob es existiert und ob elogd Schreibzugriff hat
 Error: Attribute <b>%s</b> not supplied = Fehler: Attribut <b>%s</b> nicht ausgefüllt
@@ -233,3 +232,9 @@ and its replies = mit Antworten
 and their replies =	mit Antworten
 moved successfully from "%s" to "%s" = erfolgreich von "%s" nach "%s" verschoben
 copied successfully from "%s" to "%s" = erfolgreich von "%s" nach "%s" kopiert
+
+#
+# New strings for V2.3.4
+Last x = Letzte x
+Only user <i>%s</i> can delete this entry = Dieser Eintrag kann nur von <i>%s</i> gelöscht werden
+
