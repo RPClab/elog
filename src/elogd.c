@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.204  2004/01/20 21:05:39  midas
+   Synchronization almost works
+
    Revision 1.203  2004/01/20 16:25:57  midas
    Remove last CR in receive_message()
 
@@ -7945,10 +7948,31 @@ int show_md5_page(LOGBOOK * lbs, char *path)
 
 /*------------------------------------------------------------------*/
 
-int retrieve_remote_md5(char *url, MD5_INDEX ** md5_index)
+void combine_url(LOGBOOK * lbs, char *url, char *param, char *result, int size)
+{
+   strlcpy(result, url, size);
+   url_encode(result, size);
+
+   if (result[strlen(result) - 1] != '/')
+      strlcat(result, "/", size);
+
+   if (!strstr(result, lbs->name_enc)) {
+      strlcat(result, lbs->name_enc, size);
+      strlcat(result, "/", size);
+   }
+
+   if (param)
+      strlcat(result, param, size);
+}
+
+/*------------------------------------------------------------------*/
+
+int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index)
 {
    int i, n, id;
-   char *text, *p;
+   char *text, *p, url[256];
+
+   combine_url(lbs, host, "?cmd=GetMD5", url, sizeof(url));
 
    text = NULL;
    retrieve_url(url, &text);
@@ -7984,16 +8008,16 @@ int retrieve_remote_md5(char *url, MD5_INDEX ** md5_index)
    }
 
    /* debugging only
-   for (i = 0; i < n; i++) {
+      for (i = 0; i < n; i++) {
       int j;
 
       printf("ID %d MD5:", (*md5_index)[i].message_id);
       for (j = 0; j < 16; j++)
-         printf("%02X", (*md5_index)[i].md5_digest[j]);
+      printf("%02X", (*md5_index)[i].md5_digest[j]);
 
       printf("\n");
-   }
-   */
+      }
+    */
 
    free(text);
 
@@ -8002,11 +8026,11 @@ int retrieve_remote_md5(char *url, MD5_INDEX ** md5_index)
 
 /*------------------------------------------------------------------*/
 
-int submit_message(LOGBOOK * lbs, char *url, int message_id, char *error_str)
+int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 {
    int size, i, n, status, fh, port, sock, content_length, header_length, remote_id;
    char str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
-   char host_name[256], subdir[256], param[256], local_host_name[256];
+   char host_name[256], subdir[256], param[256], local_host_name[256], url[256];
    char date[80], *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        *buffer;
@@ -8029,6 +8053,7 @@ int submit_message(LOGBOOK * lbs, char *url, int message_id, char *error_str)
       return -1;
    }
 
+   combine_url(lbs, host, "", url, sizeof(url));
    split_url(url, host_name, &port, subdir, param);
 
    /* create socket */
@@ -8266,6 +8291,7 @@ int submit_message(LOGBOOK * lbs, char *url, int message_id, char *error_str)
 
 /*------------------------------------------------------------------*/
 
+
 int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, BOOL bnew)
 {
    int i, status, size;
@@ -8276,9 +8302,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
 
    error_str[0] = 0;
 
-   strlcpy(str, url, sizeof(str));
-   if (str[strlen(str) - 1] != '/')
-      strlcat(str, "/", sizeof(str));
+   combine_url(lbs, url, "", str, sizeof(str));
    sprintf(str + strlen(str), "%d?cmd=Download", message_id);
 
    retrieve_url(str, &message);
@@ -8288,12 +8312,12 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
       sprintf(error_str, loc("Cannot receive \"%s\""), str);
       return -1;
    }
-   p+= 4;
+   p += 4;
 
    /* check for correct ID */
    if (atoi(p + 8) != message_id) {
       free(message);
-      sprintf(error_str, loc("Received wrong message id \"%d\""), atoi(p+8));
+      sprintf(error_str, loc("Received wrong message id \"%d\""), atoi(p + 8));
       return -1;
    }
 
@@ -8343,8 +8367,8 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
       p += 41;
 
       /* remove last CR */
-      if (p[strlen(p)-1] == '\n')
-         p[strlen(p)-1] = 0;
+      if (p[strlen(p) - 1] == '\n')
+         p[strlen(p) - 1] = 0;
 
       status = el_submit(lbs, message_id, !bnew, date, attr_list,
                          attrib, lbs->n_attr, p, in_reply_to, reply_to,
@@ -8353,7 +8377,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
       free(message);
 
       if (status != message_id) {
-         sprintf(error_str, loc("Cannot submit local message"));
+         sprintf(error_str, loc("Cannot save remote message locally"));
          return -1;
       }
 
@@ -8366,7 +8390,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
             sprintf(str + strlen(str), "%d/%s", message_id, attachment[i]);
 
             size = retrieve_url(str, &message);
-            
+
             el_submit_attachment(lbs, attachment[i], message, size, NULL);
          }
       }
@@ -8491,9 +8515,9 @@ void synchronize(LOGBOOK * lbs, char *path)
    int index, i, j, i_msg, i_remote, i_cache, n_remote, n_cache, nserver,
        remote_id, exist_remote, exist_cache, message_id;
    int priority_remote = 0;
-   char str[2000];
+   char str[2000], url[256], loc_ref[256], rem_ref[256];
    MD5_INDEX *md5_remote, *md5_cache;
-   char list[MAX_N_LIST][NAME_LENGTH], error_str[256];
+   char list[MAX_N_LIST][NAME_LENGTH], error_str[256], *buffer;
 
    if (!getcfg(lbs->name, "Mirror server", str)) {
       show_error(loc("No mirror server defined in configuration file"));
@@ -8502,14 +8526,6 @@ void synchronize(LOGBOOK * lbs, char *path)
 
    nserver = strbreak(str, list, MAX_N_LIST);
 
-   /* check if URL contains subdirectory */
-   for (i = 0; i < nserver; i++)
-      if (strchr(list[i], '/') == NULL) {
-         sprintf(str, loc("Mirror URL \"%s\" does not contain logbook name"), list[i]);
-         show_error(str);
-         return;
-      }
- 
    show_html_header(NULL, FALSE, loc("Synchronization"));
 
    rsprintf("<body>\n");
@@ -8527,8 +8543,7 @@ void synchronize(LOGBOOK * lbs, char *path)
       /* send partial return buffer */
       flush_return_buffer();
 
-      sprintf(str, "%s?cmd=GetMD5", list[index]);
-      n_remote = retrieve_remote_md5(str, &md5_remote);
+      n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote);
       if (n_remote < 0) {
          rsprintf("Error receiving remote message list from \"%s\"\n", list[index]);
          free(md5_remote);
@@ -8542,7 +8557,7 @@ void synchronize(LOGBOOK * lbs, char *path)
       for (i_msg = 0; i_msg < *lbs->n_el_index; i_msg++) {
 
          message_id = lbs->el_index[i_msg].message_id;
-         rsprintf("ID%d: ", message_id);
+         rsprintf("ID%d:\t", message_id);
 
          /* look for message id in MD5s */
          for (i_remote = 0; i_remote < n_remote; i_remote++)
@@ -8560,13 +8575,13 @@ void synchronize(LOGBOOK * lbs, char *path)
 
             //##
             printf("ID%02d:   ", message_id);
-            for (j=0 ; j<16 ; j++)
+            for (j = 0; j < 16; j++)
                printf("%02X", lbs->el_index[i_msg].md5_digest[j]);
             printf("\nCache : ");
-            for (j=0 ; j<16 ; j++)
+            for (j = 0; j < 16; j++)
                printf("%02X", md5_cache[i_cache].md5_digest[j]);
             printf("\nRemote: ");
-            for (j=0 ; j<16 ; j++)
+            for (j = 0; j < 16; j++)
                printf("%02X", md5_remote[i_remote].md5_digest[j]);
             printf("\n\n");
 
@@ -8583,6 +8598,8 @@ void synchronize(LOGBOOK * lbs, char *path)
                else
                   rsprintf("Local message submitted\n");
 
+               md5_cache[i_cache].message_id = 0;
+
             } else
                /* if message has been changed remotely, but not on this server, receive it */
                if (!equal_md5
@@ -8591,26 +8608,37 @@ void synchronize(LOGBOOK * lbs, char *path)
                                 lbs->el_index[i_msg].md5_digest)) {
 
                receive_message(lbs, list[index], message_id, error_str, FALSE);
-             
+
                if (error_str[0])
                   rsprintf("Error receiving message: %s\n", error_str);
                else
                   rsprintf("Remote message received\n");
 
-             } else
+               md5_cache[i_cache].message_id = 0;
+
+            } else
                /* if message has been changed remotely and on this server, show conflict */
                if (!equal_md5
                    (md5_cache[i_cache].md5_digest, md5_remote[i_remote].md5_digest)
                    && !equal_md5(md5_cache[i_cache].md5_digest,
+                                 lbs->el_index[i_msg].md5_digest)
+                   && !equal_md5(md5_remote[i_remote].md5_digest,
                                  lbs->el_index[i_msg].md5_digest)) {
 
-               rsprintf("%s\n",
-                        loc
-                        ("Message has been changed locally and remotely, please delete one to resolve conflict"));
+               combine_url(lbs, list[index], "", str, sizeof(str));
+               sprintf(loc_ref, "<a href=\"%d\">%s</a>", message_id, loc("local"));
+               sprintf(rem_ref, "<a href=\"http://%s%d\">%s</a>", str, message_id,
+                       loc("remote"));
+               rsprintf("%s\n\t", loc("Message has been changed locally and remotely."));
+               rsprintf(loc("Please delete %s or %s message to resolve conflict"),
+                        loc_ref, rem_ref);
+               rsprintf(".\n");
+            } else {
 
-            } else
-
+               /* messages are identical */
                rsprintf("%s\n", loc("Message identical"));
+               md5_cache[i_cache].message_id = 0;
+            }
          }
 
          /* if message exists only in cache, but not remotely, 
@@ -8618,15 +8646,21 @@ void synchronize(LOGBOOK * lbs, char *path)
          if (exist_cache && !exist_remote) {
             el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
             rsprintf("%s\n", loc("Message has been deleted locally"));
+            md5_cache[i_cache].message_id = 0;
+
+            /* message got deleted from local message list, so redo current index */
+            i_msg--;
          }
 
          /* if message does not exist in cache and remotely, 
             it must be new, so send it  */
          if (!exist_cache && !exist_remote) {
-            remote_id =
-                submit_message(lbs, list[index], lbs->el_index[i_msg].message_id, error_str);
+            remote_id = submit_message(lbs, list[index], message_id, error_str);
 
-            if (error_str[0])
+            if (remote_id != message_id)
+               rsprintf("Error: Submitting message #%d resulted in remote message #%d",
+                        message_id, remote_id);
+            else if (error_str[0])
                rsprintf("%s: %s\n", loc("Error sending local message"), error_str);
             else
                rsprintf("%s\n", loc("Local message submitted"));
@@ -8635,14 +8669,77 @@ void synchronize(LOGBOOK * lbs, char *path)
          flush_return_buffer();
       }
 
+      /* go through remote message which do not exist locally */
+      for (i_remote = 0; i_remote < n_remote; i_remote++)
+         if (md5_remote[i_remote].message_id) {
+
+            message_id = md5_remote[i_remote].message_id;
+
+            for (i_msg = 0; i_msg < *lbs->n_el_index; i_msg++)
+               if (message_id == lbs->el_index[i_msg].message_id)
+                  break;
+
+            if (i_msg == *lbs->n_el_index) {
+
+               rsprintf("ID%d:\t", message_id);
+
+               for (i_cache = 0; i_cache < n_cache; i_cache++)
+                  if (md5_cache[i_cache].message_id == message_id)
+                     break;
+               exist_cache = i_cache < n_cache;
+
+               if (!exist_cache) {
+   
+                  /* if message does not exist locally and in cache, it is new, so retrieve it */
+                  receive_message(lbs, list[index], message_id, error_str, TRUE);
+
+                  if (error_str[0])
+                     rsprintf("Error receiving message: %s\n", error_str);
+                  else
+                     rsprintf("Remote message received\n");
+
+               } else {
+                  /* if message does not exist locally but in cache, delete remote message */
+                  sprintf(str, "%d?cmd=Delete&confirm=Yes", message_id);
+                  combine_url(lbs, list[index], str, url, sizeof(url));
+                  retrieve_url(url, &buffer);
+
+                  if (strstr(buffer, "Location: "))
+                     rsprintf(loc("Message has been deleted remotely"));
+                  else
+                     rsprintf(loc("Error deleting remote message"));
+
+                  free(buffer);
+               }
+            }
+         }
+
+
       free(md5_remote);
-      free(md5_cache);
 
       /* save remote MD5s in file */
-      sprintf(str, "%s?cmd=GetMD5", list[index]);
-      n_remote = retrieve_remote_md5(str, &md5_remote);
+      strcpy(str, list[index]);
+
+      if (!strstr(str, lbs->name)) {
+         strlcat(str, lbs->name, sizeof(str));
+         strlcat(str, "/", sizeof(str));
+      }
+
+      n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote);
+
+      /* keep conflicting messages in cache */
+      for (i = 0; i < n_cache; i++)
+         if (md5_cache[i].message_id) {
+            for (j = 0; j < n_remote; j++)
+               if (md5_remote[j].message_id == md5_cache[i].message_id) {
+                  memcpy(md5_remote[j].md5_digest, md5_cache[j].md5_digest, 16);
+                  break;
+               }
+         }
+
       save_md5(list[index], md5_remote, n_remote);
       free(md5_remote);
+      free(md5_cache);
    }
 
    rsprintf("</pre>\n");
@@ -8650,7 +8747,7 @@ void synchronize(LOGBOOK * lbs, char *path)
    rsprintf("<table width=\"100%%\" cellpadding=1 cellspacing=0");
    rsprintf("<tr><td class=\"seltitle\"><a href=\".\">%s</a></td></tr>\n", loc("Back"));
    rsprintf("</table><p>\n");
-   
+
    rsprintf("</body></html>\n");
    flush_return_buffer();
    keep_alive = 0;
