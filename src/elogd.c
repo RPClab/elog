@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.381  2004/07/14 10:09:47  midas
+   Fixed bug in stristr()
+
    Revision 1.380  2004/07/13 21:04:37  midas
    Implemented synchronizing during cloning
 
@@ -593,25 +596,26 @@ BOOL strieq(const char *str1, const char *str2)
 
 char *stristr(const char *str, const char *pattern)
 {
-   char c1, c2, *ps;
+   char c1, c2, *ps, *pp;
 
    if (str == NULL || pattern == NULL)
       return NULL;
 
    while (*str) {
       ps = (char *) str;
-      c1 = *str;
-      c2 = *pattern;
+      pp = (char *) pattern;
+      c1 = *ps;
+      c2 = *pp;
       if (my_toupper(c1) == my_toupper(c2)) {
-         while (*pattern) {
+         while (*pp) {
             c1 = *ps++;
-            c2 = *pattern++;
+            c2 = *pp++;
 
             if (my_toupper(c1) != my_toupper(c2))
                break;
          }
 
-         if (!*pattern)
+         if (!*pp)
             return (char *) str;
       }
       str++;
