@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.21  2002/06/14 18:34:38  midas
+  Fixed bug in el_build_index()
+
   Revision 2.20  2002/06/14 09:28:40  midas
   Show error for URLs like '/logbook/<id>/'
 
@@ -1423,7 +1426,7 @@ struct tm tms;
 
     if (length > 0)
       {
-      buffer = malloc(length);
+      buffer = malloc(length+1);
       if (buffer == NULL)
         {
         printf("Not enough memory to allocate file buffer (%d bytes)\n", length);
@@ -1432,6 +1435,7 @@ struct tm tms;
 
       lseek(fh, 0, SEEK_SET);
       read(fh, buffer, length);
+      buffer[length] = 0;
       close(fh);
 
       /* go through buffer */
