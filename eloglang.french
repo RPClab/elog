@@ -87,6 +87,7 @@ New message cannot be written to directory "%s" = Le nouveau message ne peut pas
 Please check that it exists and elogd has write access = Vérifier qu'il existe bien et qu'elogd a le droit d'y écrire
 Error: Attribute <b>%s</b> not supplied = Erreur : l'attribut <b>%s</b> n'est pas spécifié
 Please go back and enter the <b>%s</b> field = Revenez en arrière et renseignez le champ <b>%s</b>
+Please use your browser's back button to go back = Utilisez le bouton "page précédente" de votre navigateur pour revenir en arrière
 Original attachment = Ancien attachement
 New attachment = Nouvel attachement
 
