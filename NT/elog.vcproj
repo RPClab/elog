@@ -97,7 +97,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="wsock32.lib"
 				OutputFile=".\Debug/elog.exe"
-				LinkIncremental="1"
+				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\Debug/elog.pdb"
