@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.160  2003/12/03 11:55:27  midas
+  Added 'use email heading'
+
   Revision 1.159  2003/11/27 10:15:39  midas
   Fixed bug with deny/allow commands in other languages
 
@@ -10136,7 +10139,7 @@ char   list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
     return 0;
     }
 
-  flags = 31;
+  flags = 63;
   if (getcfg(lbs->name, "Email format", str))
     flags = atoi(str);
 
@@ -10155,18 +10158,26 @@ char   list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
 
   if (flags & 1)
     {
-    if (old_mail)
-      sprintf(mail_text+strlen(mail_text), loc("A old entry has been updated on %s"), host_name);
+    if (getcfg(lbs->name, "Use Email heading", str))
+      {
+      sprintf(mail_text+strlen(mail_text), str);
+      }
     else
-      sprintf(mail_text+strlen(mail_text), loc("A new entry has been submitted on %s"), host_name);
+      {
+      if (old_mail)
+        sprintf(mail_text+strlen(mail_text), loc("A old entry has been updated on %s"), host_name);
+      else
+        sprintf(mail_text+strlen(mail_text), loc("A new entry has been submitted on %s"), host_name);
+      }
 
     sprintf(mail_text+strlen(mail_text), "\r\n\r\n");
     }
 
-  if (flags & 2)
-    {
+  if (flags & 32)
     sprintf(mail_text+strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), lbs->name);
 
+  if (flags & 2)
+    {
     for (j=0 ; j<lbs->n_attr ; j++)
       {
       strcpy(str, "                                    ");

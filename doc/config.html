@@ -1086,6 +1086,7 @@ individual logbook sections, one has to log in to each logbook separately.<p>
 <LI><b><code>Email &lt;attribute&gt; &lt;value&gt; = &lt;list&gt;</code></b>
 <LI><b><code>Use Email Subject = &lt;string&gt;</code></b>
 <LI><b><code>Use Email From = &lt;string&gt;</code></b>
+<LI><b><code>Use Email Heading = &lt;string&gt;</code></b>
 <LI><b><code>Omit Email To = 0|1</code></b>
 <LI><b><code>Suppress Email to users = 0|1</code></b>
 
@@ -1114,7 +1115,9 @@ Email Subject = &lt;string&gt;</b></code> statement specifies which text is
 used as the email subject. The text can contain <b><code>$&lt;attribute&gt;
 </code></b>statements which are substituted with the current value of that
 attribute. For a full list of possible substitutions, see the
-"<I>Subst &lt;attribute&gt;</I>" option.<p>
+"<I>Subst &lt;attribute&gt;</I>" option. The <b><code>Use Email Heading
+= &lt;string&gt;</code></b> specifies the text for the email heading line.
+Default is <i>"A new entry has been submitted/updated on [host]"</i>.<p>
 
 The option <b><code>Use Email From = &lt;string&gt;
 </code></b> is used for the "<I>From:</I>" field in the email. Please note that more and
@@ -1241,10 +1244,11 @@ flags:<br>
 <li>4 : Send URL of logbook entry
 <li>8 : Send message body
 <li>16: Send optional attachments as email attachments
+<li>32: Send logbook name
 </ul>
 
 So to send for example only the attributes and the URL, set &lt;n&gt;
-to <b>6</b>. Default is <b>31</b> (send everything).
+to <b>6</b>. Default is <b>63</b> (send everything).
 <p>
 
 <li><b><code>Suppress Email on edit = 0|1</code></b>
