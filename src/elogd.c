@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.350  2004/06/18 19:26:33  midas
+   Fixed typo
+
    Revision 1.349  2004/06/18 19:19:44  midas
    Fixed typo
 
@@ -5791,7 +5794,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
 
                t = (time_t)atoi(attrib[i]);
                ts = localtime(&t);
-               if (!getcfg(lbs->name, "Time format", format))
+               if (!getcfg(lbs->name, "Date format", format))
                   strcpy(format, DEFAULT_DATE_FORMAT);
 
                strftime(value[i], NAME_LENGTH, format, ts);
