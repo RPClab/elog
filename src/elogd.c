@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.421  2004/08/03 09:58:36  midas
+   Added 0644 to mkdir under linux
+
    Revision 1.420  2004/08/03 09:49:04  midas
    Added verbose output to cloning
 
@@ -20968,7 +20971,11 @@ int main(int argc, char *argv[])
    /* check for directories */
    if (logbook_dir[0] && stat(logbook_dir, &finfo) < 0) {
 
+#ifdef OS_WINNT
       if (mkdir(logbook_dir) == 0)
+#else
+      if (mkdir(logbook_dir, 0644) == 0)
+#endif
          eprintf("Logbook directory \"%s\" successfully created.\n", logbook_dir);
       else {
          eprintf("Cannot create logbook directory \"%s\":%s.\n", logbook_dir, strerror(errno));
