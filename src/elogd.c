@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.50  2003/03/21 16:04:28  midas
+  Added 'admin textarea'
+
   Revision 1.49  2003/03/19 08:56:40  midas
   Added 'quote on reply'
 
@@ -5725,7 +5728,7 @@ char   str[NAME_LENGTH], mode[256];
 
 void show_admin_page(LOGBOOK *lbs)
 {
-int  fh, length;
+int  fh, length, rows, cols;
 char *buffer;
 char str[NAME_LENGTH];
 
@@ -5774,7 +5777,18 @@ char str[NAME_LENGTH];
   buffer[length] = 0;
   close(fh);
 
-  rsprintf("<textarea rows=40 cols=80 wrap=virtual name=Text>");
+  if (getcfg(lbs->name, "Admin textarea", str) && strchr(str, ',') != NULL)
+    {
+    cols = atoi(str);
+    rows = atoi(strchr(str, ',')+1);
+    }
+  else
+    {
+    cols = 80;
+    rows = 40;
+    }
+
+  rsprintf("<textarea cols=%d rows=%d wrap=virtual name=Text>", cols, rows);
 
   rsputs(buffer);
   free(buffer);
