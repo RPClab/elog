@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.121  2003/06/30 18:38:21  midas
+  Increase textarea width for old messages according to longest line
+
   Revision 1.120  2003/06/30 15:04:48  midas
   Don't send email notificatin to users which are not in the 'Login user' list
 
@@ -5289,7 +5292,7 @@ int i;
 void show_edit_form(LOGBOOK *lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload)
 {
 int    i, j, n, index, size, width, height, fh, length, first;
-char   str[1000], preset[1000], *p, star[80], comment[10000], reply_string[256];
+char   str[1000], preset[1000], *p, *pend, star[80], comment[10000], reply_string[256];
 char   list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256];
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
        orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80],
@@ -5735,9 +5738,32 @@ time_t now;
   if (getcfg(lbs->name, "Message width", str))
     width = atoi(str);
 
-  /* increased wrapping width for replies (leave space for '> ' */
-  if (message_id && !bedit)
-    width += 2;
+  /* increased width according to longest line */
+  if (message_id)
+    {
+    p = text;
+    do
+      {
+      pend = strchr(p, '\r');
+      if (pend == NULL)
+        pend = p+strlen(p);
+
+      if ((int) pend - (int) p + 1 > width)
+        width = (int) pend - (int) p + 1;
+
+      if (*pend == 0)
+        break;
+
+      p = pend;
+      while (*p && (*p == '\r' || *p == '\n'))
+        p++;
+      } while (1);
+
+
+    /* leave space for '> ' */
+    if (!bedit)
+      width += 2;
+    }
 
   /* set textarea height */
   height = 20;
