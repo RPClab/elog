@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.314  2004/03/25 20:33:47  midas
+   *** empty log message ***
+
    Revision 1.313  2004/03/25 19:47:48  midas
    Fixed problem with attributes containing spaces
 
@@ -18130,8 +18133,6 @@ int main(int argc, char *argv[])
    char read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256];
    time_t now;
    struct tm *tms;
-
-   chdir("c:\\program files\\elog\\");
 
    printf("elogd %s built %s, %s\n", VERSION, __DATE__, __TIME__);
 
