@@ -7,6 +7,9 @@
                 them into eloglang.xxxx
 
   $Log$
+  Revision 1.2  2004/01/18 21:46:20  midas
+  Applied indent
+
   Revision 1.1  2004/01/15 14:22:38  midas
   Initial revision
 
@@ -67,7 +70,7 @@ int scan_file(char *infile, char *outfile)
          break;
 
       /* check that we did not find "malloc(" */
-      if (isalpha(*(p-1))) {
+      if (isalpha(*(p - 1))) {
          p++;
          continue;
       }
@@ -75,12 +78,12 @@ int scan_file(char *infile, char *outfile)
       p += 5;
       p2 = p;
       while (*p2) {
-         if (*p2 == '"' && *(p2-1) != '\\')
+         if (*p2 == '"' && *(p2 - 1) != '\\')
             break;
          p2++;
       }
-      
-      size = (int)p2 - (int)p;
+
+      size = (int) p2 - (int) p;
       if (size >= sizeof(str)) {
          printf("Error: string too long\n");
          free(buf);
@@ -91,9 +94,9 @@ int scan_file(char *infile, char *outfile)
       memcpy(str, p, size);
 
       /* convert \" to " */
-      for (p2 = str ; *p2 ; p2++)
+      for (p2 = str; *p2; p2++)
          if (*p2 == '\\')
-            strcpy(p2, p2+1);
+            strcpy(p2, p2 + 1);
 
       /* check if string exists in output file */
       read_buf(outfile, &bufout);
