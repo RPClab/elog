@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.426  2004/08/04 08:33:18  midas
+   Use resource dir in GetPwdFile
+
    Revision 1.425  2004/08/04 07:56:33  midas
    Changed 0644 to 0755 in mkdir()
 
@@ -18812,7 +18815,15 @@ void interprete(char *lbook, char *path)
 
    if (strieq(command, "GetPwdFile")) {
       getcfg(lbs->name, "Password file", str, sizeof(str));
-      send_file_direct(str);
+
+      if (str[0] == DIR_SEPARATOR || str[1] == ':')
+         strcpy(file_name, str);
+      else {
+         strlcpy(file_name, resource_dir, sizeof(file_name));
+         strlcat(file_name, str, sizeof(file_name));
+      }
+      
+      send_file_direct(file_name);
       return;
    }
 
