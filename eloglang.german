@@ -64,9 +64,6 @@ please select = bitte auswählen
 Submit as HTML text = Als HTML Text abschicken
 Suppress Email notification = Email Benachrichtigung unterdrücken
 Resubmit as new entry = Als neuen Eintrag abschicken
-If no attachments are resubmitted, the original ones are kept = Falls keine neuen Anhänge abgeschickt werden, werden die Originale behalten
-To delete an old attachment, enter <code>&lt;delete&gt;</code> in the new attachment field = Um einen alten Anhang zu löschen, bitte <code>&lt;entfernen&gt;</code> eingeban
-<delete> = <entfernen>
 Attachment = Anhang
 Attachments = Anhänge
 No message available = Kein Entrag vorhanden
@@ -85,8 +82,6 @@ Please check that it exists and elogd has write access = Bitte überprüfen, ob es
 Error: Attribute <b>%s</b> not supplied = Fehler: Attribut <b>%s</b> nicht ausgefüllt
 Please go back and enter the <b>%s</b> field = Bitte zurückgehen und das Feld <b>%s</b> ausfüllen
 Please use your browser's back button to go back = Bitte die Zurück-Taste Ihres Browsers betätigen
-Original attachment = Alter Anhang
-New attachment = Neuer Anhang
 Only user <i>%s</i> can edit this entry = Dieser Eintrag kann nur von <i>%s</i> verändert werden
 
 #
@@ -226,3 +221,8 @@ Options = Optionen
 Error: start date after end date = Fehler: Anfangsdatum nach Enddatum
 and all their replies = und alle Antworten
 Your request has been forwarded to the administrator. You will be notified by email upon activation of your new account. = Ihr Gesuch wurde an den Administrator weitergeleitet. Sie werden per Email benachrichtigt, wenn Ihr Zugang aktiviert wurde.
+
+#
+# New strings for V2.3.1
+Upload = Hochladen
+

@@ -277,13 +277,6 @@ option. So if <b><code>Logbook dir = /usr/local/elog/logbooks</b></code> and
 ("\" under Windows), then it is used as an absolute path independent of the logbook dir.
 <p>
 
-<LI><b><code>Number Attachments = &lt;number&gt;</code></b>
-<br>
-The number of attachments which can be submitted in one entry. May be zero if no
-attachments are needed. Maximum is defined by MAX_ATTACHMENTS in elogd.c
-(10 by default).
-<p>
-
 <LI><b><code>Comment = &lt;comment&gt;</code></b>
 <br>
 The comment is displayed on the logbook selection list. The selection list is
@@ -967,6 +960,14 @@ statements but not to the users who have registerd for automatic email notificat
 This flag controls if logbook entries contain a body text. If an installation
 only requires attributes, this flag can be set to <b>0</b>. Default is
 <b>1</b>.
+<p>
+
+<li><b><code>Enable attachments = 0|1</code></b>
+</br>
+This flag controls the attachment submission at the bottom of a message
+entry page. If this flag is <b>0</b>, the attachment section is not displayed.
+This might be useful for logbooks where attachments are not used. Default
+is <b>1</b>.
 <p>
 
 <li><b><code>Show attachments = 0|1</code></b>

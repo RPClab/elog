@@ -1,3 +1,12 @@
+Version 2.3.1, released Februar xxx, 2003
+=========================================
+
+- All attributes in listing are now a link
+- Link color & style in listings can be changed in CSS file
+- Added option 'subst on edit <attrib> = <value>"
+- Removed "number attachments", added "enable attachments"
+- Redesigned attachment uploading
+
 Version 2.3.0, released Februar 7th, 2003
 =========================================
 

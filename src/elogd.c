@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.7  2003/02/11 15:43:15  midas
+  Revised attachment upload
+
   Revision 1.6  2003/02/10 10:48:32  midas
   All items in listing are now a link
 
@@ -536,7 +539,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.3.0"
+#define VERSION "2.3.1"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -633,7 +636,7 @@ char theme_name[80];
 
 #define MAX_GROUPS       32
 #define MAX_PARAM       100
-#define MAX_ATTACHMENTS  10
+#define MAX_ATTACHMENTS  20
 #define MAX_N_LIST      100
 #define MAX_N_ATTR       50
 #define VALUE_SIZE      256
@@ -646,8 +649,8 @@ char _param[MAX_PARAM][PARAM_LENGTH];
 char _value[MAX_PARAM][VALUE_SIZE];
 char _mtext[TEXT_SIZE];
 char _cmdline[CMD_SIZE];
-char *_attachment_buffer[MAX_ATTACHMENTS];
-INT  _attachment_size[MAX_ATTACHMENTS];
+char *_attachment_buffer;
+INT  _attachment_size;
 struct in_addr rem_addr;
 char rem_host[256];
 INT  _sock;
@@ -2411,6 +2414,73 @@ char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
 
 /*------------------------------------------------------------------*/
 
+int el_submit_attachment(LOGBOOK *lbs, char *afilename, char *buffer, 
+                         int buffer_size, char *full_name)
+{
+char       file_name[256], dir[256], str[256], *p;
+int        fh;
+time_t     now;
+struct  tm tms;
+
+  /* strip directory, add date and time to filename */
+  strcpy(file_name, afilename);
+  p = file_name;
+  while (strchr(p, ':'))
+    p = strchr(p, ':')+1;
+  while (strchr(p, '\\'))
+    p = strchr(p, '\\')+1; /* NT */
+  while (strchr(p, '/'))
+    p = strchr(p, '/')+1;  /* Unix */
+
+  /* assemble ELog filename */
+  if (p[0])
+    {
+    strcpy(dir, lbs->data_dir);
+
+    time(&now);
+    memcpy(&tms, localtime(&now), sizeof(struct tm));
+
+    strcpy(str, p);
+    if (full_name)
+      sprintf(full_name, "%02d%02d%02d_%02d%02d%02d_%s",
+              tms.tm_year % 100, tms.tm_mon+1, tms.tm_mday,
+              tms.tm_hour, tms.tm_min, tms.tm_sec, str);
+
+    sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir,
+            tms.tm_year % 100, tms.tm_mon+1, tms.tm_mday,
+            tms.tm_hour, tms.tm_min, tms.tm_sec, str);
+
+    /* save attachment */
+    fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
+    if (fh < 0)
+      {
+      sprintf(str, "Cannot write attachment file \"%s\"", file_name);
+      show_error(str);
+      return -1;
+      }
+    else
+      {
+      write(fh, buffer, buffer_size);
+      close(fh);
+      }
+    }
+
+  return 0;
+}
+
+/*------------------------------------------------------------------*/
+
+void el_delete_attachment(LOGBOOK *lbs, char *file_name)
+{
+char str[256];
+
+  strlcpy(str, lbs->data_dir, sizeof(str));
+  strlcat(str, file_name, sizeof(str));
+  remove(str);
+}
+
+/*------------------------------------------------------------------*/
+
 int el_submit(LOGBOOK *lbs, int message_id,
               char *date,
               char attr_name[MAX_N_ATTR][NAME_LENGTH],
@@ -2419,8 +2489,6 @@ int el_submit(LOGBOOK *lbs, int message_id,
               char *in_reply_to, char *reply_to,
               char *encoding,
               char afilename[MAX_ATTACHMENTS][256],
-              char *buffer[MAX_ATTACHMENTS],
-              INT buffer_size[MAX_ATTACHMENTS],
               BOOL mark_original)
 /********************************************************************\
 
@@ -2443,8 +2511,6 @@ int el_submit(LOGBOOK *lbs, int message_id,
     char   *encoding        Text encoding, either HTML or plain
 
     char   *afilename[]     File name of attachments
-    char   *buffer[]        Attachment contents
-    INT    *buffer_size[]   Size of attachment in bytes
     char   *tag             If given, edit existing message
     INT    *tag_size        Maximum size of tag
     BOOL   mark_original    Tag original message for replies
@@ -2456,73 +2522,11 @@ int el_submit(LOGBOOK *lbs, int message_id,
 {
 INT     n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id;
 struct  tm tms;
-char    file_name[256], afile_name[MAX_ATTACHMENTS][256], dir[256], str[256],
-        attachment_all[64*MAX_ATTACHMENTS],
+char    file_name[256], dir[256], str[256],
         rep1[256], rep2[256];
 time_t  now, ltime;
-char    message[TEXT_SIZE+100], *p;
+char    message[TEXT_SIZE+100], *p, *buffer;
 BOOL    bedit;
-
-  for (index = 0 ; index < MAX_ATTACHMENTS ; index++)
-    {
-    /* generate filename for attachment */
-    afile_name[index][0] = file_name[0] = 0;
-
-    if (equal_ustring(afilename[index], loc("<delete>")))
-      {
-      strcpy(afile_name[index], loc("<delete>"));
-      }
-    else if (afilename[index][0] && buffer_size[index] == 0)
-      {
-      /* resubmission of existing attachment */
-      strcpy(afile_name[index], afilename[index]);
-      }
-    else
-      {
-      if (afilename[index][0])
-        {
-        /* strip directory, add date and time to filename */
-
-        strcpy(file_name, afilename[index]);
-        p = file_name;
-        while (strchr(p, ':'))
-          p = strchr(p, ':')+1;
-        while (strchr(p, '\\'))
-          p = strchr(p, '\\')+1; /* NT */
-        while (strchr(p, '/'))
-          p = strchr(p, '/')+1;  /* Unix */
-
-        /* assemble ELog filename */
-        if (p[0])
-          {
-          strcpy(dir, lbs->data_dir);
-
-          time(&now);
-          memcpy(&tms, localtime(&now), sizeof(struct tm));
-
-          strcpy(str, p);
-          sprintf(afile_name[index], "%02d%02d%02d_%02d%02d%02d_%s",
-                  tms.tm_year % 100, tms.tm_mon+1, tms.tm_mday,
-                  tms.tm_hour, tms.tm_min, tms.tm_sec, str);
-          sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir,
-                  tms.tm_year % 100, tms.tm_mon+1, tms.tm_mday,
-                  tms.tm_hour, tms.tm_min, tms.tm_sec, str);
-
-          /* save attachment */
-          fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
-          if (fh < 0)
-            {
-            printf("Cannot write attachment file \"%s\"", file_name);
-            }
-          else
-            {
-            write(fh, buffer[index], buffer_size[index]);
-            close(fh);
-            }
-          }
-        }
-      }
-    }
 
   /* generate new file name YYMMDD.log in data directory */
   strcpy(dir, lbs->data_dir);
@@ -2557,7 +2561,7 @@ BOOL    bedit;
       /* file might have been edited, rebuild index */
       el_build_index(lbs, TRUE);
       return el_submit(lbs, message_id, date, attr_name, attr_value, n_attr, text,
-                       in_reply_to, reply_to, encoding, afilename, buffer, buffer_size, TRUE);
+                       in_reply_to, reply_to, encoding, afilename, TRUE);
       }
 
     /* check for correct ID */
@@ -2582,7 +2586,6 @@ BOOL    bedit;
       el_decode(message, "Reply to: ", reply_to);
     if (equal_ustring(in_reply_to, "<keep>"))
       el_decode(message, "In reply to: ", in_reply_to);
-    el_decode(message, "Attachment: ", attachment_all);
 
     /* buffer tail of logfile */
     lseek(fh, 0, SEEK_END);
@@ -2690,50 +2693,24 @@ BOOL    bedit;
     {
     for (i=n=0 ; i<MAX_ATTACHMENTS ; i++)
       {
-      if (i == 0)
-        p = strtok(attachment_all, ",");
-      else
-        if (p != NULL)
-          p = strtok(NULL, ",");
-
-      if (p && (afile_name[i][0] || equal_ustring(afile_name[i], loc("<delete>"))))
-        {
-        /* delete old attachment */
-        strlcpy(str, lbs->data_dir, sizeof(str));
-        strlcat(str, p, sizeof(str));
-        remove(str);
-        }
-
-      if (afile_name[i][0] && !equal_ustring(afile_name[i], loc("<delete>")))
+      if (afilename[i][0])
         {
         if (n == 0)
           {
-          sprintf(message+strlen(message), "%s", afile_name[i]);
+          sprintf(message+strlen(message), "%s", afilename[i]);
           n++;
           }
         else
-          sprintf(message+strlen(message), ",%s", afile_name[i]);
+          sprintf(message+strlen(message), ",%s", afilename[i]);
         }
-
-      else if (p && !equal_ustring(afile_name[i], loc("<delete>")))
-        {
-        if (n == 0)
-          {
-          sprintf(message+strlen(message), "%s", p);
-          n++;
-          }
-        else
-          sprintf(message+strlen(message), ",%s", p);
-        }
-
       }
     }
   else
     {
-    sprintf(message+strlen(message), afile_name[0]);
+    sprintf(message+strlen(message), afilename[0]);
     for (i=1 ; i<MAX_ATTACHMENTS ; i++)
-      if (afile_name[i][0])
-        sprintf(message+strlen(message), ",%s", afile_name[i]);
+      if (afilename[i][0])
+        sprintf(message+strlen(message), ",%s", afilename[i]);
     }
   sprintf(message+strlen(message), "\n");
 
@@ -2795,7 +2772,7 @@ BOOL    bedit;
 
     /* write modified message */
     el_submit(lbs, reply_id, date, attr_list, attr, n_attr,
-              message, in_reply_to, reply_to, enc, att, NULL, NULL, TRUE);
+              message, in_reply_to, reply_to, enc, att, TRUE);
     }
 
   return message_id;
@@ -2846,7 +2823,7 @@ int  size, status;
 
   /* write modified message */
   el_submit(lbs, message_id, date, attr_list, attr, lbs->n_attr,
-            message, in_reply_to, reply_to, enc, att, NULL, NULL, TRUE);
+            message, in_reply_to, reply_to, enc, att, TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -3094,7 +3071,7 @@ char   att_file[MAX_ATTACHMENTS][256];
       }
 
     el_submit(lbs, atoi(list[i]), date, attr_list, attrib, lbs->n_attr, text,
-              in_reply_to, reply_to, encoding, att_file, _attachment_buffer, _attachment_size, TRUE);
+              in_reply_to, reply_to, encoding, att_file, TRUE);
     }
 
   el_retrieve(lbs, new_id, date, attr_list, attrib, lbs->n_attr,
@@ -3123,7 +3100,7 @@ char   att_file[MAX_ATTACHMENTS][256];
       }
 
     el_submit(lbs, atoi(list[i]), date, attr_list, attrib, lbs->n_attr, text,
-              in_reply_to, reply_to, encoding, att_file, _attachment_buffer, _attachment_size, TRUE);
+              in_reply_to, reply_to, encoding, att_file, TRUE);
     }
 
   return EL_SUCCESS;
@@ -3147,7 +3124,7 @@ char   att_file[MAX_ATTACHMENTS][256];
   /* submit as new message */
   date[0] = 0;
   new_id = el_submit(lbs, 0, date, attr_list, attrib, lbs->n_attr, text,
-                     in_reply_to, reply_to, encoding, att_file, _attachment_buffer, _attachment_size, FALSE);
+                     in_reply_to, reply_to, encoding, att_file, FALSE);
   
   /* correct links */
   el_correct_links(lbs, message_id, new_id);
@@ -4475,9 +4452,9 @@ char   str[80], date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
 
 /*------------------------------------------------------------------*/
 
-void show_elog_new(LOGBOOK *lbs, int message_id, BOOL bedit)
+void show_edit_form(LOGBOOK *lbs, int message_id, BOOL bedit, BOOL upload)
 {
-int    i, j, n, index, size, width, height, fh, length;
+int    i, j, n, index, size, width, height, fh, length, first;
 char   str[1000], preset[1000], *p, star[80], comment[10000];
 char   list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256];
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
@@ -4493,11 +4470,69 @@ time_t now;
 
   if (message_id)
     {
-    /* get message for reply */
+    if (upload)
+      {
+      /* get date */
+      time(&now);
+      if (getcfg(lbs->name, "Date format", format))
+        strftime(date, sizeof(str), format, localtime(&now));
+      else
+        strcpy(date, ctime(&now));
 
-    size = sizeof(text);
-    el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
-                text, &size, orig_tag, reply_tag, att, encoding);
+      /* get attributes from parameters */
+      for (i=0 ; i<lbs->n_attr ; i++)
+        {
+        if (attr_flags[i] & AF_MULTI)
+          {
+          attrib[i][0] = 0;
+          first = 1;
+          for (j=0 ; j<MAX_N_LIST ; j++)
+            {
+            sprintf(str, "%s#%d", attr_list[i], j);
+            if (getparam(str))
+              {
+              if (*getparam(str))
+                {
+                if (first)
+                  first = 0;
+                else
+                  strlcat(attrib[i], " | ", NAME_LENGTH);
+                if (strlen(attrib[i]) + strlen(getparam(str)) < NAME_LENGTH-2)
+                  strlcat(attrib[i], getparam(str), NAME_LENGTH);
+                else
+                  break;
+                }
+              }
+            else
+              break;
+            }
+          }
+        else
+          {
+          strlcpy(attrib[i], getparam(attr_list[i]), NAME_LENGTH);
+          }
+        }
+
+      strlcpy(text, getparam("text"), TEXT_SIZE);
+
+      for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+        {
+        sprintf(str, "attachment%d", i);
+        if (isparam(str))
+          strlcpy(att[i], getparam(str), 256);
+        }
+
+      /* get encoding */
+      strcpy(encoding, atoi(getparam("html")) == 1 ? "HTML" : "plain");
+      }
+    else
+      {
+      /* get message for reply/edit */
+
+      size = sizeof(text);
+      el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
+                  text, &size, orig_tag, reply_tag, att, encoding);
+      }
     }
   else
     {
@@ -4559,6 +4594,25 @@ time_t now;
     for (index = 0 ; index < lbs->n_attr ; index++)
       {
       sprintf(str, "Subst on reply %s", attr_list[index]);
+      if (getcfg(lbs->name, str, preset))
+        {
+        /* check if already second reply */
+        if (orig_tag[0] == 0)
+          {
+          i = build_subst_list(lbs, slist, svalue, attrib);
+          strsubst(preset, slist, svalue, i);
+          strcpy(attrib[index], preset);
+          }
+        }
+      }
+    }
+
+  /* subst attributes for edits */
+  if (message_id && bedit)
+    {
+    for (index = 0 ; index < lbs->n_attr ; index++)
+      {
+      sprintf(str, "Subst on edit %s", attr_list[index]);
       if (getcfg(lbs->name, str, preset))
         {
         /* check if already second reply */
@@ -5022,46 +5076,33 @@ time_t now;
 
   rsprintf("</tr>\n");
 
-  if (getcfg(lbs->name, "Number attachments", str))
-    n = atoi(str);
-  else
-    n = 5;
-
-  if (n > MAX_ATTACHMENTS)
-    n = MAX_ATTACHMENTS;
-
-  if (n > 0)
+  if (!getcfg(lbs->name, "Enable attachments", str) || atoi(str) > 0)
     {
+    i = 0;
     if (bedit)
       {
-      rsprintf("<tr><td colspan=2 class=\"attribname\">%s.<br>\n",
-                loc("If no attachments are resubmitted, the original ones are kept"));
-      rsprintf("%s.</td></tr>\n", loc("To delete an old attachment, enter <code>&lt;delete&gt;</code> in the new attachment field"));
-
-      for (i=0 ; i<n ; i++)
-        {
+      /* show existing attachments */
+      for (i=0 ; i<MAX_ATTACHMENTS ; i++)
         if (att[i][0])
           {
-          rsprintf("<tr><td nowrap class=\"attribname\">%s %d:<br>%s %d:</td>",
-                    loc("Original attachment"), i+1, loc("New attachment"), i+1);
-
-          rsprintf("<td class=\"attribvalue\">%s<br>", att[i]+14);
-          rsprintf("<input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></td></tr>\n",
-                    i+1);
+          rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), i+1);
+          sprintf(str, "attachment%d", i);
+          rsprintf("<td class=\"attribvalue\">\n");
+          rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", str, att[i]);
+          rsprintf("%s\n", att[i]+14);
+          rsprintf("&nbsp;&nbsp;<input type=submit name=delatt%d value=\"%s\"></td></tr>\n", 
+                    i, loc("Delete"));
           }
         else
-          rsprintf("<tr><td class=\"attribname\">%s %d:</td><td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></td></tr>\n",
-                    loc("Attachment"), i+1, i+1);
-        }
+          break;
+      }
 
-      }
-    else
-      {
-      /* attachment */
-      for (i=0 ; i<n ; i++)
-        rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td><td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></td></tr>\n",
-                 loc("Attachment"), i+1, i+1);
-      }
+    /* field for add attachment */
+    rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td>\n",  
+             loc("Attachment"), i+1);
+    rsprintf("<td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile\" accept=\"filetype/*\">\n");
+    rsprintf("&nbsp;&nbsp;<input type=submit name=cmd value=\"%s\">\n", loc("Upload"));
+    rsprintf("</td></tr>\n");
     }
 
   rsprintf("</td></tr></table>\n");
@@ -6834,7 +6875,7 @@ int  i, n;
       strlcat(menu_str, "Config, ", sizeof(menu_str));
     }
 
-  strcpy(other_str, "Submit, Back, Search, Save, Download, Cancel, First, Last, Previous, Next, ");
+  strcpy(other_str, "Upload, Submit, Back, Search, Save, Download, Cancel, First, Last, Previous, Next, ");
 
   /* admin commands */
   if (getcfg(lbs->name, "Admin user", str) && 
@@ -8436,7 +8477,7 @@ char   str[256], file_name[256], error[1000], date[80],
        mail_list[MAX_N_LIST][NAME_LENGTH], list[10000],
        attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[256], in_reply_to[80],
        reply_to[256], user[256], user_email[256], email_notify[256];
-char   *buffer[MAX_ATTACHMENTS], mail_param[1000], *mail_to;
+char   mail_param[1000], *mail_to;
 char   att_file[MAX_ATTACHMENTS][256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
 int    i, j, n, missing, first, index, suppress, message_id, resubmit_orig, mail_to_size;
@@ -8480,18 +8521,11 @@ int    i, j, n, missing, first, index, suppress, message_id, resubmit_orig, mail
     return;
     }
 
-  /* check for valid attachment files */
+  /* get attachments */
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     {
-    buffer[i] = NULL;
     sprintf(str, "attachment%d", i);
     strcpy(att_file[i], getparam(str));
-    if (att_file[i][0] && _attachment_size[i] == 0 && !equal_ustring(att_file[i], loc("<delete>")))
-      {
-      sprintf(error, loc("Error: Attachment file <i>%s</i> invalid, please bo back and enter a proper file name"), getparam(str));
-      show_error(error);
-      return;
-      }
     }
 
   /* compile substitution list */
@@ -8588,9 +8622,7 @@ int    i, j, n, missing, first, index, suppress, message_id, resubmit_orig, mail
 
   message_id = el_submit(lbs, message_id, date, attr_list, attrib, lbs->n_attr, getparam("text"),
                      in_reply_to, reply_to, *getparam("html") ? "HTML" : "plain",
-                     att_file,
-                     _attachment_buffer,
-                     _attachment_size, TRUE);
+                     att_file, TRUE);
 
   if (message_id <= 0)
     {
@@ -8701,10 +8733,6 @@ int    i, j, n, missing, first, index, suppress, message_id, resubmit_orig, mail
 
   free(mail_to);
 
-  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-    if (buffer[i])
-      free(buffer[i]);
-
   if (getcfg(lbs->name, "Submit page", str))
     {
     /* check if file starts with an absolute directory */
@@ -8743,7 +8771,7 @@ void copy_to(LOGBOOK *lbs, int src_id, char *dest_logbook, int move)
 int     size, i, n, n_done, index, status, fh, source_id, message_id;
 char    str[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char    date[80], text[TEXT_SIZE], msg_str[32], in_reply_to[80], reply_to[256],
-        attachment[MAX_ATTACHMENTS][256], encoding[80];
+        attachment[MAX_ATTACHMENTS][256], encoding[80], *buffer;
 LOGBOOK *lbs_dest;
 
   for (i=0 ; lb_list[i].name[0] ; i++)
@@ -8797,21 +8825,29 @@ LOGBOOK *lbs_dest;
         if (fh > 0)
           {
           lseek(fh, 0, SEEK_END);
-          _attachment_size[i] = TELL(fh);
+          size = TELL(fh);
           lseek(fh, 0, SEEK_SET);
 
      
-          _attachment_buffer[i] = malloc(_attachment_size[i]);
+          buffer = malloc(size);
 
-          if (_attachment_buffer[i])
-            read(fh, _attachment_buffer[i], _attachment_size[i]);
+          if (buffer)
+            read(fh, buffer, size);
 
           close(fh);
-          }
 
-        /* stip date/time from file name */
-        strlcpy(str, attachment[i], sizeof(str));
-        strlcpy(attachment[i], str+14, NAME_LENGTH);
+          /* stip date/time from file name */
+          strlcpy(file_name, attachment[i]+14, NAME_LENGTH);
+
+          el_submit_attachment(lbs_dest, file_name, buffer, size,
+                               attachment[i]);
+
+          if (buffer)
+            free(buffer);
+          }
+        else
+          /* attachment is invalid */
+          attachment[i][0] = 0;
         }
 
     /* submit in destination logbook without links, submit all attributes from
@@ -8819,13 +8855,7 @@ LOGBOOK *lbs_dest;
 
     message_id = el_submit(lbs_dest, 0, date, attr_list, attrib, lbs->n_attr, text,
                        "", "", encoding,
-                       attachment,
-                       _attachment_buffer,
-                       _attachment_size, TRUE);
-
-    for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-      if (attachment[i][0])
-        free(_attachment_buffer[i]);
+                       attachment, TRUE);
 
     if (message_id <= 0)
       {
@@ -8906,7 +8936,7 @@ int    size, i, j, n, n_log, status, fh, length, message_error, index;
 int    message_id, orig_message_id;
 char   str[1000], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char   date[80], text[TEXT_SIZE], menu_str[1000], cmd[256],
-       orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
+       orig_tag[80], reply_tag[256], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
 char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80], admin_user[80],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH], *p;
 char   lbk_list[MAX_N_LIST][NAME_LENGTH];
@@ -10294,6 +10324,7 @@ FILE    *f;
       equal_ustring(command, loc("Edit")) ||
       equal_ustring(command, loc("Reply")) ||
       equal_ustring(command, loc("Delete")) ||
+      equal_ustring(command, loc("Upload")) ||
       equal_ustring(command, loc("Submit")))
     {
     sprintf(str, "%s?cmd=%s", path, command);
@@ -10500,24 +10531,62 @@ FILE    *f;
 
   if (equal_ustring(command, loc("New")))
     {
-    show_elog_new(lbs, 0, FALSE);
+    show_edit_form(lbs, 0, FALSE, FALSE);
     return;
     }
 
   message_id = atoi(dec_path);
 
+  if (equal_ustring(command, loc("Upload")))
+    {
+    show_edit_form(lbs, atoi(getparam("orig")), TRUE, TRUE);
+    return;
+    }
+
+  /* check for deletion of attachments */
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+    {
+    sprintf(str, "delatt%d", i);
+    if (isparam(str))
+      {
+      sprintf(str, "attachment%d", i);
+      strlcpy(file_name, getparam(str), sizeof(file_name));
+      el_delete_attachment(lbs, file_name);
+
+      /* re-order attachments */
+      for (j=i ; j<MAX_ATTACHMENTS ; j++)
+        {
+        sprintf(str, "attachment%d", j+1);
+        if (isparam(str))
+          strlcpy(file_name, getparam(str), sizeof(file_name));
+        else
+          file_name[0] = 0;
+
+        sprintf(str, "attachment%d", j);
+
+        if (file_name[0])
+          setparam(str, file_name);
+        else
+          unsetparam(str);
+        }
+
+      show_edit_form(lbs, atoi(getparam("orig")), TRUE, TRUE);
+      return;
+      }
+    }
+
   if (equal_ustring(command, loc("Edit")))
     {
     if (message_id)
       {
-      show_elog_new(lbs, message_id, TRUE);
+      show_edit_form(lbs, message_id, TRUE, FALSE);
       return;
       }
     }
 
   if (equal_ustring(command, loc("Reply")))
     {
-    show_elog_new(lbs, message_id, FALSE);
+    show_edit_form(lbs, message_id, FALSE, FALSE);
     return;
     }
 
@@ -10760,13 +10829,12 @@ char *p, *pitem;
 
 /*------------------------------------------------------------------*/
 
-void decode_post(char *logbook, char *string, char *boundary, int length)
+void decode_post(LOGBOOK *lbs, char *string, char *boundary, int length)
 {
-char *pinit, *p, *ptmp, file_name[256], str[256], line[256], item[256];
-int  i, n;
+int  n_att;
+char *pinit, *p, *ptmp, file_name[256], full_name[256], str[256], line[256], item[256];
 
-  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-    _attachment_size[i]=  0;
+  n_att = 0;
 
   pinit = string;
 
@@ -10801,10 +10869,14 @@ int  i, n;
         if (strchr(item, ' '))
           *strchr(item, ' ') = 0;
 
+      if (strncmp(item, "attachment", 10) == 0)
+        {
+        /* attachment names from previous uploads */
+        n_att = atoi(item+10)+1;
+        }
+
       if (strncmp(item, "attfile", 7) == 0)
         {
-        n = atoi(item+7)-1;
-
         /* evaluate file attachment */
         if (strstr(string, "filename="))
           {
@@ -10821,18 +10893,19 @@ int  i, n;
 
           /* set attachment filename */
           strcpy(file_name, p);
-          sprintf(str, "attachment%d", n);
-          setparam(str, file_name);
 
-          if (verbose)
-            printf("decode_post: Found attachment %s\n", file_name);
-
-          /* check filename for invalid characters */
-          if (strpbrk(file_name, ",;"))
+          if (file_name[0])
             {
-            sprintf(str, "Error: Filename \"%s\" contains invalid character", file_name);
-            show_error(str);
-            return;
+            if (verbose)
+              printf("decode_post: Found attachment %s\n", file_name);
+
+            /* check filename for invalid characters */
+            if (strpbrk(file_name, ",;"))
+              {
+              sprintf(str, "Error: Filename \"%s\" contains invalid character", file_name);
+              show_error(str);
+              return;
+              }
             }
 
           /* find next boundary */
@@ -10860,12 +10933,14 @@ int  i, n;
 
             } while (TRUE);
 
-          /* save pointer to file */
+          /* save attachment */
           if (file_name[0])
             {
-            _attachment_buffer[n] = string;
-            _attachment_size[n] = (int)(p - string);
+            el_submit_attachment(lbs, file_name, string, (int)(p - string), full_name);
+            sprintf(str, "attachment%d", n_att++);
+            setparam(str, full_name);
             }
+          
           string = strstr(p, boundary) + strlen(boundary);
           }
         else
@@ -10901,7 +10976,7 @@ int  i, n;
 
     } while ((int)(string - pinit) < length);
 
-  interprete(logbook, "");
+  interprete(lbs->name, "");
 }
 
 /*------------------------------------------------------------------*/
@@ -11744,7 +11819,13 @@ struct timeval       timeout;
           {
           if (verbose)
             printf("%s\n", net_buffer+header_length);
-          decode_post(logbook, net_buffer+header_length, boundary, content_length);
+
+          /* get logbook from list (needed for attachment dir) */
+          for (i=0 ; lb_list[i].name[0] ; i++)
+            if (equal_ustring(logbook, lb_list[i].name))
+              break;
+
+          decode_post(&lb_list[i], net_buffer+header_length, boundary, content_length);
           }
         else
           {
