@@ -94,7 +94,7 @@ via the '-p' command line flag.
 Specifies the root directory for ELOG resources like help files, themes, icons and user HTML
 files. Can be overwritten with the <b><code>-s</code></b> flag when starting elogd. If not
 specified, use the directory where the configuration file <b><code>elogd.cfg</code></b> resides.
-<i>Changing this option requires a restart of the elogd server<i>.
+<i>Changing this option requires a restart of the elogd server</i>.
 <p>
 
 <LI><b><code>Logbook dir = &lt;directory&gt;</code></b>
@@ -103,7 +103,7 @@ Specifies the root directory for logbooks. Can be overwritten with the <b><code>
 starting elogd. If not specified, use the directory where the configuration file <b><code>elogd.cfg
 </code></b> resides. Each logbook data is stored in a separate directory under this root directory
 specified by the <b><code>Subdir</b></code> option.
-<i>Changing this option requires a restart of the elogd server<i>.
+<i>Changing this option requires a restart of the elogd server</i>.
 <p>
 
 <LI><b><code>Language = &lt;name&gt;</code></b>
@@ -241,7 +241,7 @@ The logbook tabs would then look like this:<p>
 Where the selected group or logbook becomes blue. The lower groups/logbooks change according
 to the selected upper group. Please note that a logbook can be contained in more than one
 group, but then it should not be the first logbook in those groups. The colors of the tabs
-and the title bar can be specified in the theme file.<p>
+and the title bar can be specified in the CSS file.<p>
 
 <hr>
 <div class=title>&nbsp; Individual logbook options &nbsp;</div>
@@ -300,13 +300,20 @@ It contains all files for that theme. The format of these files is described und
 the <i>Themes</i> section.
 <p>
 
-<LI><b><code>Title BGColor = &lt;color&gt;</code></b>
-<LI><b><code>Title Fontcolor = &lt;color&gt;</code></b>
+<LI><b><code>CSS = &lt;filename&gt;</code></b>
 <br>
-Determines the font and background colors of the title bar. Colors are specified
-in the usual HTML format, like <i>white, black,</i> or <i>#808080</i> for hexadecimal
-RGB values. See here for <a href="http://www.w3schools.com/html/html_colors.asp">more
-examples</a>. The title colors are also used for the currently selected logbook tab.<p>
+A given theme can contain several Cascading Style Sheets (CSS). This can be usefule
+if several logbooks use the same images and icons, but differnt colors. By default,
+the CSS <i>default.css</i> is used. This can be overwritten by this statement.
+<p>
+
+<LI><b><code>Title image URL = &lt;URL&gt;</code></b>
+<br>
+The ELOG icon at the right upper corner usually points to the ELOG home page. This
+URL can be changed to point to a corporate page for example with this option. The
+icon can be changed by replacing the <b><code>elog.gif</code></b> icon in the
+theme directory.
+<p>
 
 <LI><b><code>Date format = &lt;string&gt;</code></b>
 <br>
@@ -686,7 +693,7 @@ A typical example would be
 <LI><b><code>Thread icon = &lt;attribute&gt;</code></b>
 <br>
 If a logbook uses some icons for an attribute, these icons can be displayed
-in the search result page instead of the default icons defined in the themes.cfg file.
+in the search result page instead of the default icons contained in the themes directory.
 <p>
 
 <LI><b><code>Subst &lt;attribute&gt; = &lt;string&gt;</code></b>
@@ -1084,19 +1091,30 @@ The default is <b>1</b>.
 <a name="themes"><hr>
 <div class=section>&nbsp; Themes &nbsp;</div>
 <p>
-Themes are layout and color schemes which determine the look and feel of a logbook.
-Each theme resides in a separate subdirectory and is specified with the
-<b><code>theme = &lt;dir&gt;</code></b> option in the configuration file. The directory
-contains the file <b><code>theme.cfg</code></b> and a few images, which are used
-for the title banner and the browse buttons. A default theme is contained in the
-distribution. If new themes are developed by users, they can be sent back to the author,
-to be included in future releases.
+Themes are layout and color schemes which determine the look and feel of a logbook
+(sometimes called <i>"skins"</i>). A theme
+consists of a set of images, which are used for the title banner and browse buttons, and
+a Cascading Style Scheet (CSS), which defines the colors, fonts and spacing of the ELOG pages.
 <p>
-Most of the options in the <b><code>theme.cfg</b></code> are self-explanatory. The colors
-are coded as #RRGGBB, where RR is a 8-bit hexadecimal value for the red part, GG for the
-green and BB for the blue part, repectively. Since theme configuration files are re-read
-at each access, the <B>elogd </B>daemon does not have to be restarted after a change in the
-theme configuration file.
+
+Each theme resides in a separate subdirectory and is specified with the
+<b><code>theme = &lt;dir&gt;</code></b> option in the configuration file. Each theme can
+contain several CSSs, which can be selected with the <b><code>CSS = &lt;filename&gt;</code></b>
+option.
+<p>
+
+A default theme is contained in the distribution. If new themes are developed by users,
+they can be sent back to the author, to be included in future releases.
+<p>
+
+To change colors and fonts, the source of a ELOG page can be examined. All elements use
+CSS classes which are specified in the <b><code>class="&lt;name&gt;"</code></b> statements.
+These classes can be found in the <b><code>.../themes/default/default.css</code></b>
+file and changed accordingly. For a description of all options, please consult for example the
+<a href="http://www.w3.org/TR/REC-CSS1">W3C</a> consortium.<p>
+
+If the CSS file is edited, most browsers require a "reload" to refresh the modified file.
+The <B>elogd </B>daemon does not have to be restarted after a change in the DSS file.
 <p>
 These two images display the same logbook entry using different themes:
 <p>
