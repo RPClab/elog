@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.272  2004/02/27 08:10:40  midas
+   Added 'edit' and 'delete' to 'list display'
+
    Revision 1.271  2004/02/26 21:06:32  midas
    Added CVS import page
 
@@ -7208,8 +7211,6 @@ void show_find_form(LOGBOOK * lbs)
                
    rsprintf("<label for=\"CSV\">%s&nbsp;&nbsp;</label>\n", loc("Display comma-separated values (CSV)"));
 
-   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("CSV Import"));
-   
    rsprintf("</td></tr>\n");
 
    rsprintf("<tr><td class=\"form2\"><b>%s:</b><br>", loc("Options"));
@@ -8515,7 +8516,7 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
                      loc("and all their replies"));
 
       } else {
-         rsprintf("%s</td></tr>\n", loc("Are you sure to delete this message?"));
+         rsprintf("%s</td></tr>\n", loc("Are you sure to delete this entry?"));
 
          /* check for replies */
 
@@ -10336,6 +10337,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   rsprintf("<img border=0 src=\"reply.gif\">&nbsp;");
 
                skip_comma = TRUE;
+            
             } else {
                rsprintf("<td class=\"%s\">", sclass);
 
@@ -10359,6 +10361,20 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             } else
                rsprintf("<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", sclass,
                         nowrap, ref, lbs->name);
+         }
+
+         if (strieq(disp_attr[index], loc("Edit"))) {
+            if (!strieq(mode, "Threaded")) {
+               rsprintf("<td class=\"%s\" %s><a href=\"%s?cmd=Edit\">", sclass, nowrap, ref);
+               rsprintf("<img src=\"edit.gif\" border=0 alt=\"%s\"></a></td>\n", loc("Edit entry"));
+            }
+         }
+
+         if (strieq(disp_attr[index], loc("Delete"))) {
+            if (!strieq(mode, "Threaded")) {
+               rsprintf("<td class=\"%s\" %s><a href=\"%s?cmd=Delete\">", sclass, nowrap, ref);
+               rsprintf("<img src=\"delete.gif\" border=0 alt=\"%s\"></a></td>\n", loc("Delete entry"));
+            }
          }
 
          if (strieq(disp_attr[index], loc("Date"))) {
