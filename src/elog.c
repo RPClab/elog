@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.16  2004/02/19 08:18:31  midas
+  Changed '-p' for email suppress to '-x'
+
   Revision 1.15  2004/02/17 11:17:03  midas
   Fixed compiler warnings
 
@@ -920,7 +923,7 @@ int main(int argc, char *argv[])
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-' && argv[i][1] == 'v')
          verbose = 1;
-      else if (argv[i][0] == '-' && argv[i][1] == 'p')
+      else if (argv[i][0] == '-' && argv[i][1] == 'x')
          suppress = 1;
       else {
          if (argv[i][0] == '-') {
@@ -978,7 +981,7 @@ int main(int argc, char *argv[])
                printf("           [-r <id>]                Reply to existing message\n");
                printf("           [-e <id>]                Edit existing message\n");
                printf
-                   ("           [-p]                     Suppress email notification\n");
+                   ("           [-x]                     Suppress email notification\n");
                printf("           -m <textfile>] | <text>\n");
                printf("\nArguments with blanks must be enclosed in quotes\n");
                printf
