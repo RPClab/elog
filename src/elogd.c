@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.525  2004/12/20 16:14:04  midas
+   Use encoded logbook name in substitutions
+
    Revision 1.524  2004/12/20 12:41:53  midas
    Fixed endless loop with handcrafted POST header
 
@@ -7002,7 +7005,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
 
    /* add logbook */
    strcpy(list[i], "logbook");
-   strlcpy(value[i++], lbs->name, NAME_LENGTH);
+   strlcpy(value[i++], lbs->name_enc, NAME_LENGTH);
 
    /* add date */
    strcpy(list[i], "date");
