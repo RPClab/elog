@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.443  2004/08/06 06:45:01  midas
+   Added strerror in more places
+
    Revision 1.442  2004/08/05 09:13:18  midas
    Added check for 'Full name'
 
@@ -9274,6 +9277,8 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
       fh = open(file_name, O_RDWR | O_BINARY | O_CREAT, 0644);
       if (fh < 0) {
          sprintf(str, loc("Cannot open file <b>%s</b>"), file_name);
+         strcat(str, ": ");
+         strlcat(str, strerror(errno), sizeof(str));
          show_error(str);
          return 0;
       }
@@ -17752,7 +17757,8 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
       } else {
          getcfg(lbs->name, "Password file", full_name, sizeof(full_name));
          sprintf(str, loc("Cannot open file <b>%s</b>"), full_name);
-
+         strcat(str, ": ");
+         strlcat(str, strerror(errno), sizeof(str));
          show_error(str);
       }
       return FALSE;
