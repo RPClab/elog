@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.157  2003/11/20 16:22:54  midas
+  Removed printf()
+
   Revision 1.156  2003/11/20 16:05:03  midas
   Implemented check_config
 
@@ -1861,7 +1864,6 @@ int n;
 
 void check_config()
 {
-  printf("Check config...\n");
   check_language();
 }
 
@@ -13229,7 +13231,6 @@ void ctrlc_handler(int sig)
 void hup_handler(int sig)
 {
   /* reload configuration */
-
   check_config();
 }
 
