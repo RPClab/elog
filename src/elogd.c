@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.569  2005/02/22 08:15:19  ritt
+   Applied patch from Emiliano Gabrielli to use chkext()
+
    Revision 1.568  2005/02/22 07:19:41  ritt
    Fixed bug in parse_config_file()
 
@@ -18262,7 +18265,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                         /* anchor for references */
                         rsprintf("<a name=\"att%d\"></a>\n", index + 1);
 
-                        if (!strstr(att, ".HTML"))
+                        if (!chkext(att, ".HTML"))
                            rsprintf("<pre class=\"messagepre\">");
 
                         f = fopen(file_name, "rt");
@@ -18273,7 +18276,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                               fgets(str, sizeof(str), f);
 
                               if (n_lines < 1000) {
-                                 if (!strstr(att, ".HTML"))
+                                 if (!chkext(att, ".HTML"))
                                     rsputs2(str);
                                  else
                                     rsputs(str);
@@ -18283,7 +18286,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                            fclose(f);
                         }
 
-                        if (!strstr(att, ".HTML"))
+                        if (!chkext(att, ".HTML"))
                            rsprintf("</pre>");
                         rsprintf("\n");
                         if (n_lines > 1000)
@@ -19640,7 +19643,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (strncmp(path, "last", 4) == 0 && strstr(path, ".png") == NULL &&
+   if (strncmp(path, "last", 4) == 0 && !chkext(path, ".png")&&
        (!isparam("cmd") || strieq(getparam("cmd"), loc("Select")))
        && !isparam("newpwd")) {
       show_elog_list(lbs, 0, atoi(path + 4), 0, NULL);
@@ -19676,10 +19679,10 @@ void interprete(char *lbook, char *path)
 
    if ((strlen(pfile) > 13 && pfile[6] == '_' && pfile[13] == '_')
        || (strlen(pfile) > 13 && pfile[6] == '_' && pfile[13] == '/')
-       || strstr(pfile, ".gif") || strstr(pfile, ".ico")
-       || strstr(pfile, ".jpg") || strstr(pfile, ".jpeg")
-       || strstr(pfile, ".png") || strstr(pfile, ".css")
-       || strstr(pfile, ".js") || strstr(pfile, ".html")) {
+       || chkext(pfile, ".gif") || chkext(pfile, ".ico")
+       || chkext(pfile, ".jpg") || chkext(pfile, ".jpeg")
+       || chkext(pfile, ".png") || chkext(pfile, ".css")
+       || chkext(pfile, ".js")  || chkext(pfile, ".html")) {
       if ((strlen(pfile) > 13 && pfile[6] == '_'
            && pfile[13] == '_') || (strlen(pfile) > 13 && pfile[6] == '_' && pfile[13] == '/')) {
          if (pfile[13] == '/')
@@ -21009,9 +21012,9 @@ void server_loop(void)
             /* check for trailing '/' after logbook */
             if (strstr(net_buffer, "POST") == NULL) {   // fix for konqueror
                if (logbook[0] && *p == ' ') {
-                  if (!strstr(logbook, ".css") && !strstr(logbook, ".htm")
-                      && !strstr(logbook, ".gif") && !strstr(logbook, ".jpg")
-                      && !strstr(logbook, ".png") && !strstr(logbook, ".ico")) {
+                  if (!chkext(logbook, ".css") && !chkext(logbook, ".htm")
+                      && !chkext(logbook, ".gif") && !chkext(logbook, ".jpg")
+                      && !chkext(logbook, ".png") && !chkext(logbook, ".ico")) {
                      sprintf(str, "%s/", logbook_enc);
                      redirect(NULL, str);
                      goto redir;
@@ -21059,10 +21062,10 @@ void server_loop(void)
                   break;
             }
 
-            if (strstr(logbook, ".gif") || strstr(logbook, ".jpg") ||
-                strstr(logbook, ".jpg") || strstr(logbook, ".png") ||
-                strstr(logbook, ".ico") || strstr(logbook, ".htm")
-                || strstr(logbook, ".css")) {
+            if (chkext(logbook, ".gif") || chkext(logbook, ".jpg") ||
+                chkext(logbook, ".jpg") || chkext(logbook, ".png") ||
+                chkext(logbook, ".ico") || chkext(logbook, ".htm")
+                || chkext(logbook, ".css")) {
                /* check if file in resource directory */
                strlcpy(str, resource_dir, sizeof(str));
                strlcat(str, logbook, sizeof(str));
