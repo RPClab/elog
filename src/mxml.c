@@ -6,6 +6,9 @@
    Contents:     Midas XML Library
 
    $Log$
+   Revision 1.4  2005/03/03 15:36:05  ritt
+   Fixed compiler warnings
+
    Revision 1.3  2005/03/03 15:34:21  ritt
    Implemented mxml_debug_tree()
 
@@ -1061,10 +1064,10 @@ void mxml_debug_tree(PMXML_NODE tree, int level)
    printf("Name: %s\n", tree->name);
    for (i=0 ; i<level ; i++)
       printf("  ");
-   printf("Addr: %08X\n", tree);
+   printf("Addr: %08X\n", (size_t)tree);
    for (i=0 ; i<level ; i++)
       printf("  ");
-   printf("Prnt: %08X\n", tree->parent);
+   printf("Prnt: %08X\n", (size_t)tree->parent);
    for (i=0 ; i<level ; i++)
       printf("  ");
    printf("NCld: %d\n", tree->n_children);
