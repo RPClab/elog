@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.564  2005/02/16 14:50:40  ritt
+   Implemented $attachements subsitution in 'execute' command
+
    Revision 1.563  2005/02/16 08:22:25  ritt
    Added web link to regular expressions
 
@@ -1175,7 +1178,8 @@ BOOL enum_user_line(LOGBOOK * lbs, int n, char *user);
 int get_user_line(char *logbook_name, char *user, char *password, char *full_name,
                   char *email, char *email_notify);
 int strbreak(char *str, char list[][NAME_LENGTH], int size, char *brk);
-int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], char *sh_cmd);
+int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], 
+                  char att_file[MAX_ATTACHMENTS][256], char *sh_cmd);
 BOOL isparam(char *param);
 char *getparam(char *param);
 void write_logfile(LOGBOOK * lbs, const char *format, ...);
@@ -5083,7 +5087,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
 
    /* execute shell if requested */
    if (getcfg(lbs->name, "Execute delete", str, sizeof(str)))
-      execute_shell(lbs, message_id, NULL, str);
+      execute_shell(lbs, message_id, NULL, NULL, str);
 
    return EL_SUCCESS;
 }
@@ -16451,11 +16455,12 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
 
 /*------------------------------------------------------------------*/
 
-int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], char *sh_cmd)
+int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], 
+                  char att_file[MAX_ATTACHMENTS][256], char *sh_cmd)
 {
    int i;
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
-   char shell_cmd[1000], str[80];
+   char shell_cmd[10000], tail[1000], str[80], *p;
 
    if (!enable_execute) {
       eprintf("Shell execution not enabled via -x flag.\n");
@@ -16468,6 +16473,21 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
    sprintf(str, "%d", message_id);
    add_subst_list(slist, svalue, "message id", str, &i);
    strsubst(shell_cmd, slist, svalue, i);
+   
+   if (att_file && stristr(shell_cmd, "$attachments")) {
+      /* substitute attachments */
+      p = stristr(shell_cmd, "$attachments");
+      strlcpy(tail, p + strlen("$attachments"), sizeof(tail));
+      for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+         if (att_file[i][0] && 
+              strlen(shell_cmd)+strlen(lbs->data_dir)+strlen(att_file[i]) < sizeof(shell_cmd)+1) {
+            strcpy(p, lbs->data_dir);
+            strcat(p, att_file[i]);
+            strcat(p, " ");
+            p += strlen(p);
+         }
+      strlcat(shell_cmd, tail, sizeof(shell_cmd));
+   }
 
    write_logfile(lbs, "SHELL \"%s\"", shell_cmd);
 
@@ -17077,10 +17097,10 @@ void submit_elog(LOGBOOK * lbs)
    if (!atoi(getparam("shell_suppress"))) {
       if (!*getparam("edit_id")) {
          if (getcfg(lbs->name, "Execute new", str, sizeof(str)))
-            execute_shell(lbs, message_id, attrib, str);
+            execute_shell(lbs, message_id, attrib, att_file, str);
       } else {
          if (getcfg(lbs->name, "Execute edit", str, sizeof(str)))
-            execute_shell(lbs, message_id, attrib, str);
+            execute_shell(lbs, message_id, attrib, att_file, str);
       }
    }
 
