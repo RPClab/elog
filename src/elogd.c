@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.596  2005/03/24 12:54:05  ritt
+   Fixed problem with '&' in href links
+
    Revision 1.595  2005/03/24 10:37:43  ritt
    Fixed problem with 'protect selection page' ans invalid authentication
 
@@ -5677,7 +5680,15 @@ void rsputs2(const char *str)
                else
                   sprintf(return_buffer + j, "<a href=\"%s\">elog:%s</a>", link, link_text);
             } else {
-               sprintf(return_buffer + j, "<a href=\"%s%s\">%s", key_list[l], link, key_list[l]);
+               sprintf(return_buffer + j, "<a href=\"%s", key_list[l]);
+               j += strlen(return_buffer + j);
+               strlen_retbuf = j;
+
+               /* link can contain special characters */
+               rsputs2(link);
+               j = strlen_retbuf;
+               
+               sprintf(return_buffer + j, "\">%s", key_list[l]);
                j += strlen(return_buffer + j);
                strlen_retbuf = j;
 
