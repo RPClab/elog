@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.5  2002/06/11 12:01:45  midas
+  Added -s for subdirectory
+
   Revision 1.4  2002/02/25 15:28:01  midas
   Require -l flag, output better error messages
 
@@ -97,7 +100,8 @@ char *p;
 
 char request[600000], response[10000], content[600000];
 
-INT submit_elog(char *host, int port, char *experiment, char *passwd,
+INT submit_elog(char *host, int port, char *subdir, char *experiment, 
+                char *passwd,
                 char *uname, char *upwd,
                 char attrib_name[MAX_N_ATTR][NAME_LENGTH],
                 char attrib[MAX_N_ATTR][NAME_LENGTH],
@@ -115,6 +119,7 @@ INT submit_elog(char *host, int port, char *experiment, char *passwd,
   Input:
     char   *host            Host name where ELog server runs
     in     port             ELog server port number
+    char   *subdir          Subdirectoy to elog server
     char   *passwd          Write password
     char   *uname           User name
     char   *upwd            User password
@@ -247,10 +252,13 @@ char                 host_name[256], boundary[80], str[80], *p;
       }
   
   /* compose request */
+  strcpy(request, "POST /");
+  if (subdir[0])
+    sprintf(request+strlen(request), "%s/", subdir);
   if (experiment[0])
-    sprintf(request, "POST /%s/ HTTP/1.0\r\n", experiment);
-  else
-    sprintf(request, "POST / HTTP/1.0\r\n");
+    sprintf(request+strlen(request), "%s/", experiment);
+  strcat(request, " HTTP/1.0\r\n");
+
   sprintf(request+strlen(request), "Content-Type: multipart/form-data; boundary=%s\r\n", boundary);
   sprintf(request+strlen(request), "Host: %s\r\n", host_name);
   sprintf(request+strlen(request), "User-Agent: ELOG\r\n");
@@ -331,14 +339,14 @@ char                 host_name[256], boundary[80], str[80], *p;
 int main(int argc, char *argv[])
 {
 char      str[1000], text[10000], uname[80], upwd[80];
-char      host_name[256], logbook[32], textfile[256], password[80];
+char      host_name[256], logbook[32], textfile[256], password[80], subdir[256];
 char      *buffer[MAX_ATTACHMENTS], attachment[MAX_ATTACHMENTS][256];
 INT       att_size[MAX_ATTACHMENTS];
 INT       i, n, fh, n_att, n_attr, size, port;
 char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH]; 
 
   text[0] = textfile[0] = uname[0] = upwd[0] = 0;
-  host_name[0] = logbook[0] = password[0] = n_att = n_attr = 0;
+  host_name[0] = logbook[0] = password[0] = subdir[0] = n_att = n_attr = 0;
   port = 80;
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     {
@@ -366,6 +374,8 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
           strcpy(logbook, argv[++i]);
         else if (argv[i][1] == 'w')
           strcpy(password, argv[++i]);
+        else if (argv[i][1] == 's')
+          strcpy(subdir, argv[++i]);
         else if (argv[i][1] == 'u')
           {
           strcpy(uname, argv[++i]);
@@ -395,7 +405,7 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
           {
   usage:
           printf("\nusage: elog\n");
-          printf("           -h <hostname> [-p port]  Name of host where elogd is running\n");
+          printf("           -h <hostname> [-p port] [-s subdir] Name of host where elogd is running\n");
           printf("           -l logbook/experiment    Name of logbook or experiment\n");
           printf("           [-v]                     for verbose output\n");
           printf("           [-w password]            write password defined on server\n");
@@ -505,7 +515,7 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
     }
 
   /* now submit message */
-  submit_elog(host_name, port, logbook, password, 
+  submit_elog(host_name, port, subdir, logbook, password, 
               uname, upwd,
               attr_name, attrib, n_attr, text,
               attachment, buffer, att_size); 
