@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.148  2003/10/01 06:52:01  midas
+  Started to implement synchronize
+
   Revision 1.147  2003/09/29 13:14:33  midas
   Create password file if not present
 
@@ -29,937 +32,6 @@
 
   Revision 1.140  2003/07/25 08:34:52  midas
   Fixed bugs in HTML code
-
-  Revision 1.139  2003/07/18 06:55:03  midas
-  Fixed bug with logging file if resource dir is present
-
-  Revision 1.138  2003/07/17 08:51:02  midas
-  Fixed missing </tr> in logbook selection page
-
-  Revision 1.137  2003/07/17 08:01:24  midas
-  Renames 'display search' to 'list display'
-
-  Revision 1.136  2003/07/15 12:29:10  midas
-  Fixed typo
-
-  Revision 1.135  2003/07/15 12:27:50  midas
-  Added resource directory in front of logging file
-
-  Revision 1.134  2003/07/15 12:15:21  midas
-  Added extended logging facilities
-
-  Revision 1.133  2003/07/15 11:19:28  midas
-  Download now works with elog utility
-
-  Revision 1.132  2003/07/15 08:00:04  midas
-  Fixed problem with coloring hyperlinks in find result page
-
-  Revision 1.131  2003/07/10 16:02:19  midas
-  Added '-x' flag
-
-  Revision 1.130  2003/07/06 13:28:55  midas
-  Added shell execution facility
-
-  Revision 1.129  2003/07/04 18:13:42  midas
-  Fixed small bug
-
-  Revision 1.128  2003/07/04 18:06:44  midas
-  Changed order of attrib format params
-
-  Revision 1.127  2003/07/04 16:06:50  midas
-  Removed width from attrname cells (should be in CSS now)
-
-  Revision 1.126  2003/07/04 15:28:29  midas
-  Implemented attribute formats
-
-  Revision 1.125  2003/07/03 15:04:11  midas
-  Fixed bug with attachment redirection
-
-  Revision 1.124  2003/07/01 14:32:52  midas
-  Do not display logbook tabs during self-registration
-
-  Revision 1.123  2003/07/01 14:08:43  midas
-  Dont display more than 10 email recipients
-
-  Revision 1.122  2003/07/01 06:21:19  midas
-  Added emailing of attachments
-
-  Revision 1.121  2003/06/30 18:38:21  midas
-  Increase textarea width for old messages according to longest line
-
-  Revision 1.120  2003/06/30 15:04:48  midas
-  Don't send email notificatin to users which are not in the 'Login user' list
-
-  Revision 1.119  2003/06/27 16:14:42  midas
-  Added 'file://' to automatic link display
-
-  Revision 1.118  2003/06/23 11:22:42  midas
-  Added option 'Title image'
-
-  Revision 1.117  2003/06/18 14:26:11  midas
-  Added option 'Use lock'
-
-  Revision 1.116  2003/06/04 13:20:06  midas
-  Fixed problem with 'change elogd.cfg' and user-defined menu commands
-
-  Revision 1.115  2003/06/04 12:57:46  midas
-  Added attachment referencing
-
-  Revision 1.114  2003/06/04 10:33:49  midas
-  Added 'Guest Selection page' option
-
-  Revision 1.113  2003/06/04 08:17:35  midas
-  Fixed problem with registration notification
-
-  Revision 1.112  2003/05/22 22:07:52  midas
-  For printable output, display all pages
-
-  Revision 1.111  2003/05/20 00:11:51  midas
-  Check for .jpg & co files in resource dir, then in themes dir
-
-  Revision 1.110  2003/05/17 16:00:31  midas
-  Remove message lock on 'Back' button; on config user page, don't go back after 'Save'
-
-  Revision 1.109  2003/05/15 11:34:42  midas
-  Fixed stricmp under linux
-
-  Revision 1.108  2003/05/15 11:22:10  midas
-  Get remote host from X-Forwarded-For:
-
-  Revision 1.107  2003/05/15 10:39:47  midas
-  Sort correctly upper and lower case
-
-  Revision 1.106  2003/05/12 20:15:03  midas
-  Added warning if message is being edited
-
-  Revision 1.105  2003/05/12 14:00:20  midas
-  Removed 'mailto:' in email notifications
-
-  Revision 1.104  2003/05/08 19:57:59  midas
-  Option 'selection page' can now contain absolute URL
-
-  Revision 1.103  2003/05/07 19:07:17  midas
-  Replace CR.CR by CR..CR in email notifications
-
-  Revision 1.102  2003/05/07 18:45:42  midas
-  - moved lock.gif to themes directory
-  - fixed a few bugs with </th>
-  - added anchor <a name=attX> (X=1,2,3) for attachments
-
-  Revision 1.101  2003/05/02 21:40:06  midas
-  Introduced 3D cell frames
-
-  Revision 1.100  2003/05/02 20:51:15  midas
-  Fixed wrong string
-
-  Revision 1.99  2003/05/02 10:00:31  midas
-  Added lock icon for protected logbooks
-
-  Revision 1.98  2003/05/02 06:57:40  midas
-  Increased MAX_ATTACHMENT to 50
-
-  Revision 1.97  2003/05/01 08:34:04  midas
-  Fixed bug with logbooks containing blanks in registration notification
-
-  Revision 1.96  2003/05/01 08:17:45  midas
-  Removed deleting cookies again (was Apache problem)
-
-  Revision 1.95  2003/05/01 07:00:36  midas
-  Delete old cookies on login
-
-  Revision 1.94  2003/05/01 06:17:54  midas
-  Fixed bug in password recovery with logbooks containing blanks
-
-  Revision 1.93  2003/04/28 12:52:58  midas
-  Removed &nbsp; from logbook tabs
-
-  Revision 1.92  2003/04/23 10:40:21  midas
-  Version 2.3.6
-
-  Revision 1.91  2003/04/23 09:59:46  midas
-  Fixed bug that administrator could not change passwords of other users
-
-  Revision 1.90  2003/04/23 08:58:20  midas
-  Fixed bug on login with guest access
-
-  Revision 1.89  2003/04/23 08:38:55  midas
-  Added warning if max. number of attachments reached
-
-  Revision 1.88  2003/04/22 09:57:23  midas
-  Fixed missing translation strings
-
-  Revision 1.87  2003/04/22 07:50:05  midas
-  Fixed crashes with user registration and password file in [global] section
-
-  Revision 1.86  2003/04/22 07:02:12  midas
-  Added javascript code to put focus on name field on login page
-
-  Revision 1.85  2003/04/16 19:17:35  midas
-  Added flag 'Hidden'
-
-  Revision 1.84  2003/04/15 10:58:09  midas
-  Added 'hide from selection' flag
-
-  Revision 1.83  2003/04/14 08:43:11  midas
-  Fixed bug that attachments got deleted if one replies to a message
-
-  Revision 1.82  2003/04/11 07:25:52  midas
-  Eliminated WEB_BUFFER_SIZE and made memory allocation dynamically
-
-  Revision 1.81  2003/04/09 14:02:18  midas
-  Better error message on email send failure
-
-  Revision 1.80  2003/04/09 11:55:39  midas
-  Fixed bug with 'summary page title'
-
-  Revision 1.79  2003/04/08 11:28:03  midas
-  Increased TEXT_SIZE to 250000
-
-  Revision 1.78  2003/04/08 11:10:06  midas
-  Made password recovery work in German
-
-  Revision 1.77  2003/04/08 10:40:48  midas
-  Fixed missing/wrong translation
-
-  Revision 1.76  2003/04/08 10:25:56  midas
-  Fixed small bug in debugging code
-
-  Revision 1.75  2003/04/08 08:31:00  midas
-  Made self_register=3 work with [global] password file
-
-  Revision 1.74  2003/04/08 08:09:18  midas
-  Check for existing user in self_register=3
-
-  Revision 1.73  2003/04/08 08:01:53  midas
-  Fixed problem with global self registering
-
-  Revision 1.72  2003/04/07 20:38:50  midas
-  Fixed problem with 'Forgot'
-
-  Revision 1.71  2003/04/07 15:44:58  midas
-  Added 'Forgot' to allowed commands list
-
-  Revision 1.71  2003/04/07 15:38:20  midas
-  Added 'forgot' to allowed commands list
-
-  Revision 1.70  2003/04/07 15:30:46  midas
-  V2.3.5beta
-
-  Revision 1.69  2003/04/07 15:26:58  midas
-  Added password recovery facility
-
-  Revision 1.68  2003/04/07 09:25:57  midas
-  Added button 'remember me'
-
-  Revision 1.67  2003/04/04 20:50:15  midas
-  Fixed bug in base64_encode
-
-  Revision 1.66  2003/04/04 11:00:22  midas
-  Removed 'admin' command, added link 'change elogd.cfg' on config page instead
-
-  Revision 1.65  2003/04/04 10:24:27  midas
-  Translate 'Date' and changed '#' to 'ID'
-
-  Revision 1.64  2003/04/03 08:08:50  midas
-  Added option 'Summary page title'
-
-  Revision 1.63  2003/04/02 08:11:49  midas
-  Fixed bug with missing link in reply/upload
-
-  Revision 1.62  2003/03/31 18:54:17  midas
-  Added link to main page
-
-  Revision 1.61  2003/03/31 12:30:15  midas
-  Added notification about invalid user
-
-  Revision 1.60  2003/03/31 08:52:13  midas
-  Added option 'Login user'
-
-  Revision 1.59  2003/03/28 10:21:31  midas
-  Use 'Icon comment' in filter display
-
-  Revision 1.58  2003/03/28 10:04:06  midas
-  Use 'Icon comment' in quick filter
-
-  Revision 1.57  2003/03/27 13:05:28  midas
-  Removed borders around icons in threaded display
-
-  Revision 1.56  2003/03/26 11:45:31  midas
-  Added text search in all attributes
-
-  Revision 1.55  2003/03/26 11:21:37  midas
-  Added 'Icon comment' option
-
-  Revision 1.54  2003/03/26 10:38:49  midas
-  Fixed error that logbook URL was wrong if messages are submitted via elog
-
-  Revision 1.53  2003/03/26 10:15:21  midas
-  Only ownwer can delete entry if 'restrict edit = 1'
-
-  Revision 1.52  2003/03/25 19:55:15  midas
-  Sort threaded list correctly if replies are resubmitted
-
-  Revision 1.51  2003/03/25 16:08:46  midas
-  Fixed problem that uploading attachments on a reply deleted the original message
-
-  Revision 1.50  2003/03/21 16:04:28  midas
-  Added 'admin textarea'
-
-  Revision 1.49  2003/03/19 08:56:40  midas
-  Added 'quote on reply'
-
-  Revision 1.48  2003/03/14 08:55:46  midas
-  Version 2.3.3
-
-  Revision 1.47  2003/03/10 15:26:18  midas
-  Fixed another bug with parameter filter
-
-  Revision 1.46  2003/03/10 15:15:57  midas
-  Fixed bug with parameter filter
-
-  Revision 1.45  2003/03/10 11:56:07  midas
-  Don't create PID file when creating/changing passwords
-
-  Revision 1.44  2003/03/10 08:08:11  midas
-  Fallback to elog/elog added
-
-  Revision 1.43  2003/03/09 19:57:53  midas
-  V2.3.2(beta)
-
-  Revision 1.42  2003/03/09 19:48:24  midas
-  Exchanged priviledge drop and directory creation (Recai Oktas)
-
-  Revision 1.41  2003/03/06 10:51:51  midas
-  Added 'X-Mailer: Elog'
-
-  Revision 1.40  2003/03/06 08:33:50  midas
-  Added 'X-Elog-URL' in mail header
-
-  Revision 1.39  2003/03/05 20:29:21  midas
-  Fixed status message for copy/move
-
-  Revision 1.38  2003/03/05 07:39:26  midas
-  Only re-read elogd.cfg if changed, using stat()
-
-  Revision 1.37  2003/03/04 21:14:47  midas
-  'Copy to' and 'Move to' now processes whole threads
-
-  Revision 1.36  2003/03/01 16:08:02  midas
-  Ignore <tab>'s in config file correctly
-
-  Revision 1.35  2003/02/28 15:21:00  midas
-  On 'restrict edit' check long_name only if short_name is not present
-
-  Revision 1.34  2003/02/28 14:43:53  midas
-  Do not overwrite existing pidfile
-
-  Revision 1.33  2003/02/27 21:30:26  midas
-  Changed path for cookies, special case for Lynx
-
-  Revision 1.32  2003/02/27 20:48:15  midas
-  Added '-f <pidfile>' option
-
-  Revision 1.31  2003/02/27 16:40:13  midas
-  Avoid cleartext password on URL if wrong username was supplied
-
-  Revision 1.30  2003/02/26 21:20:35  midas
-  Fixed bug that attributes in replies were not found in searches if display in threaded mode
-
-  Revision 1.29  2003/02/26 21:03:28  midas
-  Fixed problem that entry date changed on upload
-
-  Revision 1.28  2003/02/26 08:17:22  midas
-  Added 'attachment comment'
-
-  Revision 1.27  2003/02/24 16:07:43  midas
-  Changed mode display with 'show text = 0'
-
-  Revision 1.26  2003/02/24 13:53:39  midas
-  Improved display of links in messages
-
-  Revision 1.25  2003/02/24 13:39:33  midas
-  Fixed problem with emails depending on MOptions attribute
-
-  Revision 1.24  2003/02/24 13:04:50  midas
-  Fixed problem with creation of nested logbook directories
-
-  Revision 1.23  2003/02/24 12:22:00  midas
-  Fixed bug with 'theme =' option in [global] section
-
-  Revision 1.22  2003/02/20 08:03:25  midas
-  Fixed language problems with self register
-
-  Revision 1.21  2003/02/19 10:41:08  midas
-  Fixed problem with logooks containing blanks and cookies
-
-  Revision 1.20  2003/02/19 09:32:05  midas
-  Fixed problem with cookie path
-
-  Revision 1.19  2003/02/19 08:05:49  midas
-  Changed permission of 'elogd.pid' file
-
-  Revision 1.18  2003/02/17 18:51:55  midas
-  Fixed yet another bug with 'Location:'
-
-  Revision 1.17  2003/02/17 15:53:44  midas
-  Fixed absolute path for cookies
-
-  Revision 1.16  2003/02/17 15:25:32  midas
-  Fixed bug with vanishing attributes on upload in new message
-
-  Revision 1.15  2003/02/17 15:08:53  midas
-  Incresed attribute value size to 1000 Bytes
-
-  Revision 1.14  2003/02/16 13:29:02  midas
-  Added option 'Reply string'
-
-  Revision 1.13  2003/02/15 10:12:33  midas
-  Special treatement of <br> in attributes
-
-  Revision 1.12  2003/02/14 22:48:17  midas
-  Fixed bug from previous modification
-
-  Revision 1.11  2003/02/14 22:22:12  midas
-  GET without '/' does not crash any more elogd
-
-  Revision 1.10  2003/02/14 22:07:56  midas
-  Made most HTML pages pass validator.w3.org
-
-  Revision 1.9  2003/02/14 19:17:36  midas
-  Implemented quick filters for free-form attributes (without an options list)
-
-  Revision 1.8  2003/02/14 15:35:38  midas
-  Revised cookie handling and absolute paths
-
-  Revision 1.7  2003/02/11 15:43:15  midas
-  Revised attachment upload
-
-  Revision 1.6  2003/02/10 10:48:32  midas
-  All items in listing are now a link
-
-  Revision 1.5  2003/02/07 12:25:27  midas
-  Fixed bug with '\' in front of resource directory
-
-  Revision 1.4  2003/01/31 20:29:27  midas
-  Fixed typo
-
-  Revision 1.3  2003/01/31 11:57:16  midas
-  Do not allow commands which are not present in menu list
-
-  Revision 1.2  2003/01/30 14:52:41  midas
-  Change USE_CRYPT to HAVE_CRYPT
-
-  Revision 1.1  2003/01/30 14:45:08  midas
-  Moved files to src/ subdirectory
-
-  Revision 2.138  2003/01/30 12:15:46  midas
-  CSS finished
-
-  Revision 2.137  2003/01/30 08:42:02  midas
-  More CSS stuff
-
-  Revision 2.136  2003/01/29 16:34:35  midas
-  More CSS stuff
-
-  Revision 2.135  2003/01/29 12:05:15  midas
-  CSS half finished
-
-  Revision 2.134  2003/01/13 19:18:34  midas
-  Fixed yet another bug with logbook_dir
-
-  Revision 2.133  2003/01/13 19:04:03  midas
-  Changed 'Mail' to 'EMail'
-
-  Revision 2.132  2003/01/13 19:01:49  midas
-  Fixed bug with logbook_dir
-
-  Revision 2.131  2003/01/12 11:36:00  midas
-  Fixed problem with attachment names containg '+' also in find result page
-
-  Revision 2.130  2003/01/11 19:25:59  midas
-  Removed bugfix for old Konqueror wich is not necessary from Konqueror 3.0.4 on
-
-  Revision 2.129  2003/01/11 11:26:40  midas
-  Fixed problem with attachment names containing a '+'
-
-  Revision 2.128  2003/01/09 09:07:13  midas
-  Fixed bug with missing thread head
-
-  Revision 2.127  2003/01/09 08:47:52  midas
-  Added 'title bgcolor' and 'title fontcolor' in config file
-
-  Revision 2.126  2003/01/08 16:01:57  midas
-  Fixed bug with style sheet
-
-  Revision 2.125  2003/01/08 10:58:42  midas
-  Fixed bug with unencoded logbook in URL
-
-  Revision 2.124  2003/01/08 10:07:18  midas
-  Issue warning for wrong group syntax in elogd.cfg
-
-  Revision 2.123  2003/01/08 09:13:18  midas
-  Added colors for group tabs in theme file
-
-  Revision 2.122  2003/01/07 21:20:16  midas
-  Check for leading '/' in data dir
-
-  Revision 2.121  2003/01/07 16:21:19  midas
-  Added directory separator to resource and logbook dir
-
-  Revision 2.120  2003/01/07 15:54:12  midas
-  Change 'User' and 'Group' to 'Usr' and 'Grp' not to conflict with groups
-
-  Revision 2.119  2003/01/07 15:17:28  midas
-  Improved performance, introduced resource and logbook dirs
-
-  Revision 2.118  2003/01/07 08:29:44  midas
-  Fixed bug with hierarchical logbooks
-
-  Revision 2.117  2003/01/04 20:22:35  midas
-  Added new email options and hierarchical logbooks
-
-  Revision 2.116  2002/12/19 14:37:14  midas
-  Avoid long lines with many radio/check buttons
-
-  Revision 2.115  2002/12/13 12:07:01  midas
-  Improved email sending
-
-  Revision 2.114  2002/12/12 13:25:59  midas
-  Make active logbook tab also a link
-
-  Revision 2.113  2002/12/12 12:42:37  midas
-  Added 'quick filter' option
-
-  Revision 2.112  2002/12/10 08:20:09  midas
-  Hide wrong password from URL
-
-  Revision 2.111  2002/12/10 07:53:21  midas
-  Implemented expand/collapse
-
-  Revision 2.110  2002/12/02 16:38:57  midas
-  Added parameter length check
-
-  Revision 2.109  2002/12/02 07:48:08  midas
-  Implemented 'line as link'
-
-  Revision 2.108  2002/11/29 14:49:12  midas
-  Renamed _text to _mtext (problems under AIX)
-
-  Revision 2.107  2002/11/29 10:37:10  midas
-  Added strlcpy and strlcat
-
-  Revision 2.106  2002/11/28 16:28:59  midas
-  Fixed bug with config and German
-
-  Revision 2.105  2002/11/28 08:20:32  midas
-  Fixed bug with missing attributes in search all logbooks
-
-  Revision 2.104  2002/11/28 07:47:34  midas
-  Do not expire entry form
-
-  Revision 2.103  2002/11/22 07:56:53  midas
-  Fixed bug with self register in German
-
-  Revision 2.102  2002/11/21 09:25:05  midas
-  Fixed bug with 'hosts allow'
-
-  Revision 2.101  2002/11/21 09:13:33  midas
-  Added 'menu text' and 'find menu text'
-
-  Revision 2.100  2002/11/20 14:20:16  midas
-  Fixed bug with bottom text file display
-
-  Revision 2.99  2002/11/20 13:48:10  midas
-  Create data dir automatically, allow for substitutions in find attributes
-
-  Revision 2.98  2002/11/19 11:17:31  midas
-  Added 'table align'
-
-  Revision 2.97  2002/11/19 08:32:29  midas
-  Fixed bug with 10 attachments
-
-  Revision 2.96  2002/11/06 13:39:29  midas
-  Added charset= option
-
-  Revision 2.95  2002/11/06 08:59:18  midas
-  Files can be specified with absolute path
-
-  Revision 2.94  2002/11/05 15:40:58  midas
-  Hide non-allowed commands
-
-  Revision 2.93  2002/11/05 15:14:37  midas
-  Move whole thread on re-submission of individual entry
-
-  Revision 2.92  2002/11/04 16:20:26  midas
-  Made 'allow <commdn> = <user>' work in localized versions
-
-  Revision 2.91  2002/11/04 12:56:25  midas
-  Fixed bug selecting messages in other languages
-
-  Revision 2.90  2002/10/25 04:21:19  midas
-  Made self registration work with global password file
-
-  Revision 2.89  2002/10/18 05:36:20  midas
-  Fixed bugs with 'Start page = ...'
-
-  Revision 2.88  2002/10/15 08:49:02  midas
-  Version 2.2.1
-
-  Revision 2.87  2002/10/15 08:07:13  midas
-  Fixed display of multiple messages in threaded find
-
-  Revision 2.86  2002/09/30 07:07:02  midas
-  Fixed typo
-
-  Revision 2.85  2002/09/26 06:57:14  midas
-  Check reverse sort box if 'reverse sort = 1'
-
-  Revision 2.84  2002/09/25 15:00:31  midas
-  Fixed HTML bug
-
-  Revision 2.83  2002/09/25 10:33:47  midas
-  Fixed URL problem with delete
-
-  Revision 2.82  2002/09/24 15:16:05  midas
-  Version 2.2.0
-
-  Revision 2.81  2002/09/24 14:28:11  midas
-  'Show last xxx' finished
-
-  Revision 2.80  2002/09/23 07:18:05  midas
-  'Show last' xxx half finished
-
-  Revision 2.79  2002/09/16 08:27:20  midas
-  Fixed problem with Konqueror and 'Cancel'
-
-  Revision 2.78  2002/09/16 07:02:54  midas
-  Version 2.1.3
-
-  Revision 2.77  2002/09/16 06:45:22  midas
-  Fixed problem with saving other user as admin
-
-  Revision 2.76  2002/09/16 06:22:45  midas
-  Various fixed and enhancement
-
-  Revision 2.75  2002/09/13 15:32:58  midas
-  Various fixes and enhancements
-
-  Revision 2.74  2002/09/12 10:08:25  midas
-  Fixed problem with 'self register = 3'
-
-  Revision 2.73  2002/09/12 08:48:54  midas
-  Fixed sorting bug
-
-  Revision 2.72  2002/09/10 15:34:38  midas
-  Version 2.1.2
-
-  Revision 2.71  2002/09/10 05:59:04  midas
-  Made selections work with 'copy to' and 'move to'
-
-  Revision 2.70  2002/09/09 08:04:58  midas
-  Added select boxes
-
-  Revision 2.69  2002/08/13 12:24:37  midas
-  Version 2.1.1
-
-  Revision 2.68  2002/08/13 12:23:01  midas
-  Implemented 'self register = 3'
-
-  Revision 2.67  2002/08/12 15:03:42  midas
-  Improved error dispaly for too large parameters
-
-  Revision 2.66  2002/08/09 13:43:14  midas
-  Preserve attributes on edit also for preset attributes
-
-  Revision 2.65  2002/08/06 13:41:40  midas
-  Fixed problem with empty logbooks
-
-  Revision 2.64  2002/08/06 12:26:20  midas
-  Fixed crash for logbooks without a password file
-
-  Revision 2.63  2002/08/06 12:01:19  midas
-  Fixed another problem with file truncate
-
-  Revision 2.62  2002/08/06 11:40:00  midas
-  Fixed problem with file truncate
-
-  Revision 2.61  2002/08/06 11:06:48  midas
-  Adjusted text box sized
-
-  Revision 2.60  2002/08/06 10:50:53  midas
-  Added 'guest find menu commands'
-
-  Revision 2.59  2002/08/06 10:23:11  midas
-  Added 'entry date' to substitution list
-
-  Revision 2.58  2002/08/06 09:26:16  midas
-  Added automatic creation of new password file
-
-  Revision 2.57  2002/08/06 09:03:41  midas
-  Removed itoa()
-
-  Revision 2.56  2002/08/06 08:57:39  midas
-  Added email notify flag to password file
-
-  Revision 2.55  2002/08/05 15:37:21  midas
-  First version of self-registration
-
-  Revision 2.54  2002/08/02 11:00:10  midas
-  Started working on user configuration page
-
-  Revision 2.53  2002/07/31 11:48:08  midas
-  Added page wise display
-
-  Revision 2.52  2002/07/30 12:44:54  midas
-  Added sortable columns
-
-  Revision 2.51  2002/07/27 14:09:24  midas
-  Fixed processing of password file
-
-  Revision 2.50  2002/07/27 06:52:14  midas
-  Added guest menu and user_email
-
-  Revision 2.49  2002/07/26 08:40:56  midas
-  Fixed type
-
-  Revision 2.48  2002/07/25 15:37:26  midas
-  Fixed bug with ss_find_file under unix
-
-  Revision 2.47  2002/07/25 09:22:05  midas
-  Removed scandir() for Solaris compatibility
-
-  Revision 2.46  2002/07/23 13:50:11  midas
-  Improved speed for threaded display
-
-  Revision 2.45  2002/07/23 11:31:33  midas
-  Store encoded user name in 'new' page for expired cookies
-
-  Revision 2.44  2002/07/11 08:49:49  midas
-  Fixed caching problem in Konqueror
-
-  Revision 2.43  2002/07/11 08:13:31  midas
-  Fixed problem of submitting messages with konqueror
-
-  Revision 2.42  2002/07/11 07:22:42  midas
-  Made 'elog:<logbook>/<id>' reference work
-
-  Revision 2.41  2002/07/09 07:37:37  midas
-  Fixed bug that 'last xx entries?mode=threaded' was displayed
-
-  Revision 2.40  2002/07/09 07:31:13  midas
-  Removed alphasort() for Solaris compatibility
-
-  Revision 2.39  2002/07/09 07:22:12  midas
-  Fixed bug in error display on save config file
-
-  Revision 2.38  2002/07/08 08:39:18  midas
-  Fixed various small bugs
-
-  Revision 2.37  2002/07/02 07:33:48  midas
-  Added attribute lists with commas
-
-  Revision 2.36  2002/07/01 09:32:32  midas
-  Fixed problem with submitting '------' as only text
-
-  Revision 2.35  2002/07/01 08:29:08  midas
-  Propagage '?mode=xxx' though 'lastxx' commands
-
-  Revision 2.34  2002/07/01 08:13:46  midas
-  Fixed problem with wrong color in command '?cmd=Search'
-
-  Revision 2.33  2002/06/26 11:53:43  midas
-  Use ts->tm_isdst instead daylight
-
-  Revision 2.32  2002/06/26 11:44:54  midas
-  Fixed bug when deleting last message in logbook
-
-  Revision 2.31  2002/06/25 12:08:32  midas
-  Version 2.0.3
-
-  Revision 2.30  2002/06/25 11:52:24  midas
-  Fixed problem with changeing passwords
-
-  Revision 2.29  2002/06/20 14:53:33  midas
-  Synchronize indices if several logbooks share the same data directory
-
-  Revision 2.28  2002/06/20 09:41:11  midas
-  Added syntax help link to configuration page
-
-  Revision 2.27  2002/06/20 09:19:10  midas
-  Fixed problems with find
-
-  Revision 2.26  2002/06/19 10:58:57  midas
-  Fixed bug that 'date format = %A...' always produced 'Sunday'
-
-  Revision 2.25  2002/06/18 13:15:29  midas
-  Version 2.0.1
-
-  Revision 2.24  2002/06/18 07:48:33  midas
-  Fixed bug with previous submission
-
-  Revision 2.23  2002/06/18 07:32:03  midas
-  Add logbook name when URL is specified
-
-  Revision 2.22  2002/06/18 07:22:28  midas
-  Removed width from logbook selection page
-
-  Revision 2.21  2002/06/14 18:34:38  midas
-  Fixed bug in el_build_index()
-
-  Revision 2.20  2002/06/14 09:28:40  midas
-  Show error for URLs like '/logbook/<id>/'
-
-  Revision 2.19  2002/06/14 07:21:38  midas
-  Corrected parameters to qsort()
-
-  Revision 2.18  2002/06/14 07:15:22  midas
-  Fixed <keep> on resubmits
-
-  Revision 2.17  2002/06/14 06:55:33  midas
-  Rebuild index if data file got deleted
-
-  Revision 2.16  2002/06/14 06:46:41  midas
-  Introduced wrapping logbook tabs
-
-  Revision 2.15  2002/06/14 06:08:19  midas
-  Sort index by date
-
-  Revision 2.14  2002/06/13 12:46:09  midas
-  Fixed problem wiht 'reply to:' in subject
-
-  Revision 2.13  2002/06/13 08:59:53  midas
-  Made '../last10?mode=summary' work
-
-  Revision 2.12  2002/06/12 10:18:16  midas
-  Added redirection if '/' is missing after logbook
-
-  Revision 2.11  2002/06/12 09:30:03  midas
-  Added elog:x HTML link
-
-  Revision 2.10  2002/06/12 07:48:56  midas
-  Display message ID's
-
-  Revision 2.9  2002/06/11 12:01:56  midas
-  Added 'download' command
-
-  Revision 2.8  2002/06/10 11:46:36  midas
-  Changed comma display in search result page
-
-  Revision 2.7  2002/06/10 11:22:41  midas
-  Added 'Subst on reply' option
-
-  Revision 2.6  2002/06/10 10:38:22  midas
-  Added 'top level only' flag
-
-  Revision 2.5  2002/06/07 14:56:53  midas
-  Fixed time offset due to DST when using 'Date format'
-
-  Revision 2.4  2002/06/07 14:40:37  midas
-  Check URL tail before displaying logbook page
-
-  Revision 2.3  2002/06/07 14:22:00  midas
-  Workaround for Konqueror browser
-
-  Revision 2.2  2002/06/07 11:58:43  midas
-  'Display search' can now supress display of '#', 'Logbook' and 'Date'
-
-  Revision 2.1  2002/06/07 09:37:02  midas
-  Added 'HTML default = 3'
-
-  Revision 2.0  2002/06/06 15:16:39  midas
-  First version with new database scheme
-
-  Revision 1.31  2002/06/03 09:55:08  midas
-  Added 'start page=' option
-
-  Revision 1.30  2002/06/03 09:37:47  midas
-  Fixed bug with MOptions in Email notification
-
-  Revision 1.29  2002/06/03 08:30:44  midas
-  Add <br> for replies in HTML format
-
-  Revision 1.28  2002/06/03 08:12:24  midas
-  Reversed setuid() and creation of elogd.pid
-
-  Revision 1.27  2002/06/03 08:07:47  midas
-  elogd.pid is now created from child
-
-  Revision 1.26  2002/06/03 07:32:27  midas
-  Added 'Title image URL' in theme file
-
-  Revision 1.25  2002/05/31 14:20:50  midas
-  Added 'user' and 'group' statements in configuration file
-
-  Revision 1.24  2002/05/31 13:24:18  midas
-  Use Referer for mail notification URL
-
-  Revision 1.23  2002/05/31 12:51:58  midas
-  First version with truely relative paths
-
-  Revision 1.22  2002/05/13 20:50:53  midas
-  Fixed problem with daylight savings time
-
-  Revision 1.21  2002/05/03 07:39:16  midas
-  Fixed bug with "Content-Length"
-
-  Revision 1.20  2002/05/02 15:42:06  midas
-  Removed lingering and do a REUSEADDR by default
-
-  Revision 1.19  2002/05/02 14:45:10  midas
-  Evaluage 'HEAD' request (for wget)
-
-  Revision 1.18  2002/04/30 13:40:33  midas
-  Version 1.3.5
-
-  Revision 1.17  2002/04/29 08:11:38  midas
-  Added icons via IOptions configuration
-
-  Revision 1.16  2002/04/22 10:32:35  midas
-  Version 1.3.4
-
-  Revision 1.15  2002/04/22 10:31:58  midas
-  Added "logfile", fixed hightlighting problems, thanks to
-  Heiko.Schleit@mpi-hd.mpg.de
-
-  Revision 1.14  2002/03/14 11:48:43  midas
-  Added .jpeg file extension
-
-  Revision 1.13  2002/02/25 16:12:26  midas
-  Added BGImage and BDTImage in themes
-
-  Revision 1.12  2002/02/25 15:31:04  midas
-  Made "move to", "copy to" and "submit" (from elog) work in other languages
-
-  Revision 1.11  2002/02/12 16:06:10  midas
-  Fixed small bug
-
-  Revision 1.10  2002/01/31 00:51:41  midas
-  Small patch to make elogd run under Mac OS X (Darwin), thanks to Dominik Westner <westner@logicunited.com>
-
-  Revision 1.9  2002/01/30 04:26:05  midas
-  Added flag 'restrict edit = 0/1'
-
-  Revision 1.8  2002/01/29 10:06:23  midas
-  Fixed various bugs with fixed attributes
-
-  Revision 1.7  2002/01/23 08:41:42  midas
-  Added "Search all logbooks" flag
-
-  Revision 1.6  2002/01/15 10:23:59  midas
-  - Remove "back" button from error display (NS4.7 does not support it)
-  - Fixed wrong URL in email notification
-  - Submission of new messages possible even if cookie expired during editing
-
-  Revision 1.5  2002/01/14 13:05:41  midas
-  - Check for JavaScript in error display
-  - Improved decoding of POST message (needed for lynx)
-
-  Revision 1.4  2001/12/21 16:03:23  midas
-  Moved themes directories under "themes/"
-
-  Revision 1.3  2001/12/21 15:28:51  midas
-  Initial version as separate package, corresponds to V1.3.2
-
 
 \********************************************************************/
 
@@ -1198,37 +270,42 @@ struct {
 };
 
 typedef struct {
-  int    message_id;
-  char   file_name[32];
-  time_t file_time;
-  int    offset;
-  int    in_reply_to;
+  int           message_id;
+  char          file_name[32];
+  time_t        file_time;
+  int           offset;
+  int           in_reply_to;
   unsigned char md5_digest[16];
 } EL_INDEX;
 
 typedef struct {
-  char      name[256];
-  char      name_enc[256];
-  char      data_dir[256];
-  EL_INDEX  *el_index;
-  int       *n_el_index;
-  int       n_attr;
+  char          name[256];
+  char          name_enc[256];
+  char          data_dir[256];
+  EL_INDEX      *el_index;
+  int           *n_el_index;
+  int           n_attr;
 } LOGBOOK;
+
+typedef struct {
+  int           message_id;
+  unsigned char md5_digest[16];
+} MD5_INDEX;
 
 typedef struct LBNODE *LBLIST;
 
 struct LBNODE  {
-  char    name[256];
-  LBLIST  member;
-  int     n_members;
-  int     subgroup;
+  char          name[256];
+  LBLIST        member;
+  int           n_members;
+  int           subgroup;
 } LBNODE;
 
 typedef struct {
-  LOGBOOK   *lbs;
-  int       index;
-  char      string[256];
-  int       in_reply_to;
+  LOGBOOK       *lbs;
+  int           index;
+  char          string[256];
+  int           in_reply_to;
 } MSG_LIST;
 
 LOGBOOK *lb_list = NULL;
@@ -1238,6 +315,7 @@ BOOL enum_user_line(LOGBOOK *lbs, int n, char *user);
 int  get_user_line(char *logbook_name, char *user, char *password, char *full_name, char *email, char *email_notify);
 int strbreak(char *str, char list[][NAME_LENGTH], int size);
 int execute_shell(LOGBOOK *lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], char *sh_cmd);
+BOOL isparam(char *param);
 char *getparam(char *param);
 void logf(LOGBOOK *lbs, const char *format, ...);
 
@@ -1564,8 +642,6 @@ void do_crypt(char *s, char *d)
   base64_encode(s, d);
 #endif
 }
-
-/*------------------------------------------------------------------*/
 
 /*------------------------------------------------------------------*\
 
@@ -1918,6 +994,7 @@ struct timeval timeout;
   return n-1;
 }
 
+/*-------------------------------------------------------------------*/
 
 INT sendmail(LOGBOOK *lbs, char *smtp_host, char *from, char *to, char *subject, char *text,
              BOOL email_to, char *url, char att_file[MAX_ATTACHMENTS][256])
@@ -2175,6 +1252,130 @@ char                 list[1024][NAME_LENGTH], buffer[256];
   free(str);
 
   return 1;
+}
+
+/*-------------------------------------------------------------------*/
+
+void split_url(char *url, char *host, int *port, char *subdir)
+{
+char *p;
+
+  host[0] = subdir[0] = 0;
+  *port = 80;
+
+  p = url;
+  if (strncmp(url, "http://", 7) == 0)
+    p += 7;
+
+  strncpy(host, p, 256);
+  if (strchr(host, '/'))
+    {
+    strncpy(subdir, strchr(host, '/'), 256);
+    *strchr(host, '/') = 0;
+    }
+
+  if (strchr(host, ':'))
+    {
+    *port = atoi(strchr(host, ':')+1);
+    *strchr(host, ':') = 0;
+    }
+}
+
+/*-------------------------------------------------------------------*/
+
+int retrieve_url(char *url, char **buffer)
+{
+struct         sockaddr_in   bind_addr;
+struct         hostent       *phe;
+char           str[256], host[256], subdir[256];
+int            port, sock, bufsize;
+INT            i, n;
+fd_set         readfds;
+struct timeval timeout;
+
+  *buffer = NULL;
+  split_url(url, host, &port, subdir);
+
+  /* create a new socket for connecting to remote server */
+  sock = socket(AF_INET, SOCK_STREAM, 0);
+  if (sock == -1)
+    return -1;
+
+  /* connect to remote node */
+  memset(&bind_addr, 0, sizeof(bind_addr));
+  bind_addr.sin_family      = AF_INET;
+  bind_addr.sin_port        = htons((short) port);
+
+  phe = gethostbyname(host);
+  if (phe == NULL)
+    return -1;
+  memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
+
+  if (connect(sock, (void *) &bind_addr, sizeof(bind_addr)) < 0)
+    {
+    closesocket(sock);
+    return -1;
+    }
+
+  /* compose GET request */
+  sprintf(str, "GET %s HTTP/1.1\r\nConnection: Close\r\n", subdir);
+
+  /* add local username/password */
+  if (isparam("unm"))
+    sprintf(str+strlen(str), "Cookie: unm=%s; upwd=%s\r\n", getparam("unm"), getparam("upwd"));
+
+  strcat(str, "\r\n");
+
+  send(sock, str, strlen(str), 0);
+
+  bufsize = TEXT_SIZE+1000;
+  *buffer = malloc(bufsize);
+  memset(*buffer, 0, bufsize);
+
+  n = 0;
+
+  do
+    {
+    FD_ZERO(&readfds);
+    FD_SET(sock, &readfds);
+
+    timeout.tv_sec  = 30; /* 30 sec. timeout */
+    timeout.tv_usec = 0;
+
+    select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+
+    if (!FD_ISSET(sock, &readfds))
+      {
+      closesocket(sock);
+      free(buffer);
+      buffer = NULL;
+      return -1;
+      }
+
+    i = recv(sock, *buffer+n, bufsize-n, 0);
+
+    if (i<=0)
+      break;
+
+    n += i;
+
+    if (n >= bufsize)
+      {
+      /* increase buffer size */
+      bufsize += 10000;
+      *buffer = realloc(*buffer, bufsize);
+      if (*buffer == NULL)
+        {
+        closesocket(sock);
+        return -1;
+        }
+      }
+
+    } while (1);
+
+  closesocket(sock);
+
+  return n;
 }
 
 /*-------------------------------------------------------------------*/
@@ -3936,7 +3137,7 @@ INT el_delete_message(LOGBOOK *lbs, int message_id, BOOL delete_attachments,
 INT  i, index, n, size, fh, tail_size;
 char str[MAX_PATH_LENGTH], file_name[MAX_PATH_LENGTH], reply_to[80], in_reply_to[256];
 char *buffer, *p;
-char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
+char *message, attachment_all[64*MAX_ATTACHMENTS];
 
   for (index = 0 ; index < *lbs->n_el_index ; index++)
     if (lbs->el_index[index].message_id == message_id)
@@ -3950,10 +3151,13 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
   if (fh < 0)
     return EL_FILE_ERROR;
 
+  message = malloc(TEXT_SIZE+1000);
+
   lseek(fh, lbs->el_index[index].offset, SEEK_SET);
   i = read(fh, message, sizeof(message)-1);
   if (i <= 0)
     {
+    free(message);
     close(fh);
     return EL_FILE_ERROR;
     }
@@ -3966,6 +3170,7 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
   if (strncmp(message, "$@MID@$:", 8) != 0)
     {
     close(fh);
+    free(message);
 
     /* file might have been edited, rebuild index */
     el_build_index(lbs, TRUE);
@@ -3977,6 +3182,7 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
   if (atoi(message+8) != message_id)
     {
     close(fh);
+    free(message);
     return EL_FILE_ERROR;
     }
 
@@ -4035,6 +3241,7 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
     buffer = malloc(tail_size);
     if (buffer == NULL)
       {
+      free(message);
       close(fh);
       return EL_FILE_ERROR;
       }
@@ -4060,6 +3267,7 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
   /* if file length gets zero, delete file */
   tail_size = lseek(fh, 0, SEEK_END);
   close(fh);
+  free(message);
 
   if (tail_size == 0)
     remove(file_name);
@@ -4467,6 +3675,15 @@ char    str[10000];
   strcpy(return_buffer+strlen_retbuf, str);
 
   strlen_retbuf += strlen(str);
+}
+
+/*------------------------------------------------------------------*/
+
+void flush_return_buffer()
+{
+  send(_sock, return_buffer, strlen_retbuf+1, 0);
+  memset(return_buffer, 0, return_buffer_size);
+  strlen_retbuf= 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -7971,6 +7188,426 @@ int    i, j;
   keep_alive = 0;
 
   return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int retrieve_remote_md5(char *url, MD5_INDEX **md5_index)
+{
+int  i, n, id;
+char *text, *p;
+
+  text = NULL;
+  retrieve_url(url, &text);
+  *md5_index = NULL;
+  p = strstr(text, "\r\n\r\n");
+  if (!p)
+    return -1;
+
+  for (n=0 ; ; n++)
+    {
+    p = strstr(p, "ID:");
+    if (!p)
+      break;
+    p += 3;
+
+    id = atoi(p);
+
+    p = strstr(p, "MD5:");
+    if (!p)
+      break;
+    p += 4;
+
+    if (n==0)
+      *md5_index = malloc(sizeof(MD5_INDEX));
+    else
+      *md5_index = realloc(*md5_index, (i+1)*sizeof(MD5_INDEX));
+
+    (*md5_index)[n].message_id = id;
+
+    for (i=0 ; i<16 ; i++)
+      sscanf(p+2*i, "%02X", &((*md5_index)[n].md5_digest[i]));
+    }
+
+  for (i=0 ; i<n ; i++)
+    {
+    int j;
+
+    printf("ID %d MD5:", (*md5_index)[i].message_id);
+    for (j=0 ; j<16 ; j++)
+      printf("%02X", (*md5_index)[i].md5_digest[j]);
+
+    printf("\n");
+    }
+
+  free(text);
+
+  return n;
+}
+
+/*------------------------------------------------------------------*/
+
+int submit_message(LOGBOOK *lbs, char *url, int message_id, char *error_str)
+{
+int     size, i, n, status, fh, port, sock, content_length, header_length;
+char    str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
+char    host_name[256], subdir[256], local_host_name[256];
+char    date[80], *text, in_reply_to[80], reply_to[256],
+        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
+        *buffer;
+char    *content, *p, boundary[80], request[10000], response[10000];
+struct hostent       *phe;
+struct sockaddr_in   bind_addr;
+
+  text = malloc(TEXT_SIZE);
+  error_str[0] = 0;
+
+  /* get message */
+  size = TEXT_SIZE;
+  status = el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
+                       text, &size, in_reply_to, reply_to,
+                       attachment, encoding, locked_by);
+
+  if (status != EL_SUCCESS)
+    {
+    free(text);
+    strcpy(error_str, "cannot read message from local logbook");
+    return -1;
+    }
+
+  split_url(url, host_name, &port, subdir);
+
+  /* create socket */
+  if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+    free(text);
+    strcpy(error_str, "cannot create socket");
+    return -1;
+    }
+
+  /* get local host name */
+  gethostname(local_host_name, sizeof(local_host_name));
+
+  /* compose remote address */
+  memset(&bind_addr, 0, sizeof(bind_addr));
+  bind_addr.sin_family      = AF_INET;
+  bind_addr.sin_addr.s_addr = 0;
+  bind_addr.sin_port        = htons((unsigned short)port);
+
+  phe = gethostbyname(host_name);
+  if (phe == NULL)
+    {
+    closesocket(sock);
+    free(text);
+    strcpy(error_str, "cannot get host name");
+    return -1;
+    }
+  memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
+
+  /* connect to server */
+  status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
+  if (status != 0)
+    {
+    closesocket(sock);
+    free(text);
+    sprintf(error_str, "Cannot connect to host %s, port %d\n", host_name, port);
+    return -1;
+    }
+
+  content_length = 100000;
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+    if (attachment[i][0])
+      {
+      strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+      strlcat(file_name, attachment[i], sizeof(file_name));
+
+      fh = open(file_name, O_RDONLY | O_BINARY);
+      if (fh > 0)
+        {
+        lseek(fh, 0, SEEK_END);
+        size = TELL(fh);
+        close(fh);
+        }
+      else
+        size = 0;
+
+      content_length += size;
+      }
+
+  content = malloc(content_length);
+  if (content == NULL)
+    {
+    closesocket(sock);
+    free(text);
+    strcpy(error_str, "Not enough memory\n");
+    return -1;
+    }
+
+  /* compose content */
+  srand((unsigned)time(NULL));
+  sprintf(boundary, "---------------------------%04X%04X%04X", rand(), rand(), rand());
+  strcpy(content, boundary);
+  strcat(content, "\r\nContent-Disposition: form-data; name=\"cmd\"\r\n\r\nSubmit\r\n");
+
+  if (isparam("unm"))
+    sprintf(content+strlen(content), 
+            "%s\r\nContent-Disposition: form-data; name=\"unm\"\r\n\r\n%s\r\n", boundary, getparam("unm"));
+
+  if (isparam("upwd"))
+    sprintf(content+strlen(content), 
+            "%s\r\nContent-Disposition: form-data; name=\"upwd\"\r\n\r\n%s\r\n", boundary, getparam("upwd"));
+
+  if (isparam("exp"))
+    sprintf(content+strlen(content), 
+            "%s\r\nContent-Disposition: form-data; name=\"exp\"\r\n\r\n%s\r\n", boundary, getparam("exp"));
+  
+  if (reply_to[0])
+    sprintf(content+strlen(content), 
+            "%s\r\nContent-Disposition: form-data; name=\"reply_to\"\r\n\r\n%d\r\n", boundary, reply_to);
+
+  for (i=0 ; i<lbs->n_attr ; i++)
+    sprintf(content+strlen(content), 
+            "%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n", boundary, attr_list[i], attrib[i]);
+
+  sprintf(content+strlen(content), 
+          "%s\r\nContent-Disposition: form-data; name=\"Text\"\r\n\r\n%s\r\n%s\r\n", boundary, text, boundary);
+
+  content_length = strlen(content);
+  p = content+content_length;
+
+  /* read attachments */
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+    if (attachment[i][0])
+      {
+      strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+      strlcat(file_name, attachment[i], sizeof(file_name));
+
+      fh = open(file_name, O_RDONLY | O_BINARY);
+      if (fh > 0)
+        {
+        lseek(fh, 0, SEEK_END);
+        size = TELL(fh);
+        lseek(fh, 0, SEEK_SET);
+
+        buffer = malloc(size);
+
+        if (buffer == NULL)
+          {
+          closesocket(sock);
+          free(text);
+          strcpy(error_str, "Not enough memory");
+          return -1;
+          }
+
+        read(fh, buffer, size);
+
+        close(fh);
+
+        /* submit attachment */
+        sprintf(p, "Content-Disposition: form-data; name=\"attfile%d\"; filename=\"%s\"\r\n\r\n", 
+                i+1, attachment[i]);
+
+        content_length += strlen(p);
+        p += strlen(p);
+
+        memcpy(p, buffer, size);
+        p += size;
+        strcpy(p, boundary);
+        strcat(p, "\r\n");
+
+        content_length += size + strlen(p);
+        p += strlen(p);
+
+        free(buffer);
+        }
+      }
+ 
+  /* compose request */
+  strcpy(request, "POST ");
+  if (subdir[0])
+    {
+    if (subdir[0] != '/')
+      strcat(request, "/");
+    strcat(request, subdir);
+    if (request[strlen(request)-1] != '/')
+      strcat(request, "/");
+    }
+  strcat(request, " HTTP/1.0\r\n");
+
+  sprintf(request+strlen(request), "Content-Type: multipart/form-data; boundary=%s\r\n", boundary);
+  sprintf(request+strlen(request), "Host: %s\r\n", local_host_name);
+  sprintf(request+strlen(request), "User-Agent: ELOGD\r\n");
+  sprintf(request+strlen(request), "Content-Length: %d\r\n", content_length);
+
+  if (isparam("wpwd"))
+    sprintf(request+strlen(request), "Cookie: wpwd=%s\r\n", getparam("wpwd"));
+
+  strcat(request, "\r\n");
+
+  header_length = strlen(request);
+
+  /* send request */
+  send(sock, request, header_length, 0);
+
+  /* send content */
+  send(sock, content, content_length, 0);
+
+  /* receive response */
+  i = recv(sock, response, 10000, 0);
+  if (i < 0)
+    {
+    closesocket(sock);
+    free(text);
+    strcpy(error_str, "Cannot receive response");
+    return -1;
+    }  
+
+  /* discard remainder of response */
+  n = i;
+  while (i > 0)
+    {
+    i = recv(sock, response+n, 10000, 0);
+    if (i > 0)
+      n += i;
+    }
+  response[n] = 0;
+
+  closesocket(sock);
+
+  /* check response status */
+  if (strstr(response, "302 Found"))
+    {
+    if (strstr(response, "Location:"))
+      {
+      if (strstr(response, "wpwd"))
+        sprintf(error_str, "Invalid password\n");
+      else if (strstr(response, "wusr"))
+        sprintf(error_str, "Invalid user name\n");
+      }  
+    }
+  else if (strstr(response, "Logbook Selection"))
+    sprintf(error_str, "No logbook specified\n");
+  else if (strstr(response, "enter password"))
+    sprintf(error_str, "Missing or invalid password\n");
+  else if (strstr(response, "form name=form1"))
+    sprintf(error_str, "Missing or invalid user name/password\n");
+  else if (strstr(response, "Error: Attribute"))
+    {
+    strncpy(str, strstr(response, "Error: Attribute")+20, sizeof(str));
+    if (strchr(str, '<'))
+      *strchr(str, '<') = 0;
+    sprintf(error_str, "Missing required attribute \"%s\"\n", str);
+    }
+  else
+    sprintf(error_str, "Error transmitting message\n");
+
+  free(text);
+
+  if (error_str[0])
+    return -1;
+
+  return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+void synchronize(LOGBOOK *lbs, char *path)
+{
+int       index, i, j, k, n, nserver, priority_remote = 0;
+char      str[2000];
+MD5_INDEX *md5_index;
+char      list[MAX_N_LIST][NAME_LENGTH], error_str[256];
+
+  show_html_header(NULL, FALSE, loc("Synchronization"));
+
+  rsprintf("<body>\n");
+
+  rsprintf("</td></tr>\n</table>\n");
+
+  if (getcfg(lbs->name, "Mirror server", str))
+    {
+    nserver = strbreak(str, list, MAX_N_LIST);
+
+    for (index=0 ; index<nserver; index++)
+      {
+      rsprintf("<table width=\"100%%\" cellpadding=1 cellspacing=0");
+      rsprintf("<tr><td class=\"title1\">%s <b>%s</b></td></tr>\n", loc("Synchronizing with"), list[index]);
+      rsprintf("</table><p>\n");
+
+      /* send partial return buffer */
+      flush_return_buffer();
+
+      sprintf(str, "%s?cmd=GetMD5", list[index]);
+      n = retrieve_remote_md5(str, &md5_index);
+      if (n<0)
+        continue;
+
+      /* loop through logbook entries */
+      for (i=0 ; i<*lbs->n_el_index ; i++)
+        {
+        rsprintf("ID: %6d ", lbs->el_index[i].message_id);
+
+        for (j=0 ; j<n ; j++)
+          if (md5_index[j].message_id == lbs->el_index[i].message_id)
+            break;
+
+        if (j < n)
+          {
+          /* message found, compare MD5 */
+
+          for (k=0 ; k<16 ; k++)
+            if (md5_index[j].md5_digest[k] != lbs->el_index[j].md5_digest[k])
+              break;
+
+          if (k < 16)
+            {
+            if (priority_remote)
+              {
+              /* retrieve remote message */
+              rsprintf("Retrieve remote message<br>\n");
+              }
+            else
+              {
+              /* submit local message */
+              submit_message(lbs, list[index], lbs->el_index[i].message_id, error_str);
+
+              if (error_str[0])
+                rsprintf("Error sending local message: %s<br>\n", error_str);
+              else
+                rsprintf("Local message submitted<br>\n");
+              }
+            }
+          else
+            {
+            rsprintf("%s<br>\n", loc("Message identical"));
+            }
+          }
+        else
+          {
+          /* message not found remotely */
+          if (priority_remote)
+            {
+            /* delete local message */
+            rsprintf("Delete local message<br>\n");
+            }
+          else
+            {
+            /* submit message */
+            submit_message(lbs, list[index], lbs->el_index[j].message_id, error_str);
+
+            if (error_str[0])
+              rsprintf("Error sending local message: %s<br>\n", error_str);
+            else
+              rsprintf("Local message submitted<br>\n");
+            }
+          }
+        }
+      }
+    }
+
+  rsprintf("</body></html>\n");
+  flush_return_buffer();
+  keep_alive = 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -13167,6 +12804,12 @@ FILE    *f;
   if (equal_ustring(command, "getmd5"))
     {
     show_md5_page(lbs, dec_path);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Synchronize")))
+    {
+    synchronize(lbs, dec_path);
     return;
     }
 
