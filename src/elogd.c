@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.228  2004/02/03 10:10:50  midas
+   Fixed missing logbook when language!=english
+
    Revision 1.227  2004/02/03 09:44:42  midas
    Fixed bug that 'save config' gave strange redirection
 
@@ -2283,7 +2286,8 @@ char *loc(char *orig)
       }
 
    /* special case: "Change %s" */
-   if (strstr(orig, "Change ")) {
+   if (strstr(orig, "Change ") && 
+       strcmp(orig, "Change %s") != 0) {
       sprintf(result, loc("Change %s"), orig + 7);
       return result;
    }
@@ -9835,7 +9839,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             }
          }
 
-         if (equal_ustring(disp_attr[index], "Logbook")) {
+         if (equal_ustring(disp_attr[index], loc("Logbook"))) {
             if (equal_ustring(mode, "Threaded")) {
                if (skip_comma) {
                   rsprintf(" %s", lbs->name);
