@@ -1,6 +1,8 @@
 #
 # Dutch translation by djek@xs4all.nl
 # 17-02-2004
+# A more recent version may be available at :
+# http://midas.psi.ch/cgi-bin/cvsweb/elog/eloglang.dutch
 #
 
 New = Nieuw
@@ -84,7 +86,6 @@ No entries found = Geen berichten gevonden
 A new entry has been submitted on %s = Een nieuwe bericht is verzonden op %s
 Logbook = Logboek
 Copy ELog entry = ELog bericht kopiëren
-Are you sure to delete this message? = Wil je echt het bericht wissen?
 Yes = Ja
 No = Nee
 Error deleting message: status = Fout bij wissen: Status
@@ -270,3 +271,18 @@ Please enter numeric value for '%s' = Geef een numerieke waarde voor '%s'
 Error: Attribute <b>%s</b> must be numeric = Fout Attribuut <b>%s</b> moet numeriek zijn
 3 Months = 3 Maanden
 6 Months = 6 Maanden
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Error sending local message = 
+Error receiving message = 
+Are you sure to delete this entry? = 
+Import = 
+CSV filename = 
+Field separator = 
+Edit entry = 
+Delete entry = 
+CSV Import = 
+ELOG CSV import = 
+Derive attributes from CSV file = 

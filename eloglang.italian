@@ -1,5 +1,7 @@
 #
 # Italian translation by francesco@netlabor.it
+# A more recent version may be available at :
+# http://midas.psi.ch/cgi-bin/cvsweb/elog/eloglang.italian
 #
 
 New = Nuovo
@@ -83,7 +85,6 @@ No entries found = Nessun elemento trovato
 A new entry has been submitted on %s = Un nuovo elemento è stato inserito in %s
 Logbook = Registro
 Copy ELog entry = Copia elemento ELOG
-Are you sure to delete this message? = Sei sicuro di voler cancellare questo messaggio?
 Yes = Si
 No = No
 Error deleting message: status = Errore nel cancellare il messaggio: stato
@@ -271,3 +272,14 @@ Please enter numeric value for '%s' =
 Error: Attribute <b>%s</b> must be numeric = 
 3 Months = 
 6 Months = 
+Error sending local message = 
+Error receiving message = 
+Are you sure to delete this entry? = 
+Import = 
+CSV filename = 
+Field separator = 
+Edit entry = 
+Delete entry = 
+CSV Import = 
+ELOG CSV import = 
+Derive attributes from CSV file = 

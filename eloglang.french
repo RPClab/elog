@@ -1,5 +1,7 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
+# A more recent version may be available at :
+# http://midas.psi.ch/cgi-bin/cvsweb/elog/eloglang.french
 #
 
 New = Créer
@@ -81,7 +83,6 @@ No entries found = Aucune entrée trouvée
 A new entry has been submitted on %s = Une nouvelle entrée a été créée le %s
 Logbook = Registre
 Copy ELog entry = Copier l'entrée ELog
-Are you sure to delete this message? = Confirmez-vous la suppression de cette entrée ?
 Yes = Oui
 No = Non
 Error deleting message: status = Erreur lors de la suppression de l'entrée : Status
@@ -267,3 +268,18 @@ Please enter numeric value for '%s' = Veuillez saisir une valeur numérique pour 
 Error: Attribute <b>%s</b> must be numeric = Erreur: l'attribut <b>%s</b> doit être numérique
 3 Months = 3 mois
 6 Months = 6 mois
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Error sending local message = 
+Error receiving message = 
+Are you sure to delete this entry? = 
+Import = 
+CSV filename = 
+Field separator = 
+Edit entry = 
+Delete entry = 
+CSV Import = 
+ELOG CSV import = 
+Derive attributes from CSV file = 

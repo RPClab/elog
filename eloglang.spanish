@@ -1,5 +1,7 @@
 #
 # Spanish translation by Julio Calvo <jhcalvo@arnet.com.ar>
+# A more recent version may be available at :
+# http://midas.psi.ch/cgi-bin/cvsweb/elog/eloglang.spanish
 #
 
 New = Nuevo
@@ -79,7 +81,6 @@ No entries found = No se encontro ninguna entrada
 A new entry has been submitted on %s = Nueva entrada enviada en %s 
 Logbook = Logbook
 Copy ELog entry = Copiar entrada de ELog 
-Are you sure to delete this message? = Esta seguro de borrar este mensaje?
 Yes = Si
 No = No
 Error deleting message: status = Error al borrar mensaje: Status
@@ -269,3 +270,14 @@ Please enter numeric value for '%s' =
 Error: Attribute <b>%s</b> must be numeric = 
 3 Months = 
 6 Months = 
+Error sending local message = 
+Error receiving message = 
+Are you sure to delete this entry? = 
+Import = 
+CSV filename = 
+Field separator = 
+Edit entry = 
+Delete entry = 
+CSV Import = 
+ELOG CSV import = 
+Derive attributes from CSV file = 

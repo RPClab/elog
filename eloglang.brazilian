@@ -1,5 +1,7 @@
 #
-# Brazilian Portuguese messages by Carlos Augusto Marcicano <caumg@ig.com.br>
+# Brazilian Portuguese translation by Carlos Augusto Marcicano <caumg@ig.com.br>
+# A more recent version may be available at :
+# http://midas.psi.ch/cgi-bin/cvsweb/elog/eloglang.brazilian
 #
 
 New = Novo
@@ -79,7 +81,6 @@ No entries found = Não foi encontrada nenhuma mensagem
 A new entry has been submitted on %s = Uma nova mensagem foi enviada em %s 
 Logbook = Logbook
 Copy ELog entry = Copiar mensagem do ELog 
-Are you sure to delete this message? = Você tem certeza de que quer apagar esta mensagem?
 Yes = Sim
 No = Não
 Error deleting message: status = Erro ao apagar a mensagem: status
@@ -272,3 +273,14 @@ Please enter numeric value for '%s' =
 Error: Attribute <b>%s</b> must be numeric = 
 3 Months = 
 6 Months = 
+Error sending local message = 
+Error receiving message = 
+Are you sure to delete this entry? = 
+Import = 
+CSV filename = 
+Field separator = 
+Edit entry = 
+Delete entry = 
+CSV Import = 
+ELOG CSV import = 
+Derive attributes from CSV file = 

@@ -1,6 +1,8 @@
 #
 # Japanese translation by Satoshi Mihara (mihara@icepp.s.u-tokyo.ac.jp)
 #      Shift_JISコードを使用してください。
+# A more recent version may be available at :
+# http://midas.psi.ch/cgi-bin/cvsweb/elog/eloglang.japanese
 #
 
 Change %s = %s 変更
@@ -119,7 +121,6 @@ No entry selected for deletion = 削除する記事が選択されていません
 Only user <i>%s</i> can delete this entry = ユーザー <i>%s</i>だけがこの記事を削除できます
 Are you sure to delete these messages? = これらの記事を削除してもよろしいですか？
 and all their replies = 返信記事も削除されます。よろしいですか？
-Are you sure to delete this message? = この記事を削除してもよろしいですか？
 and all its replies = 返信記事も削除されます。よろしいですか？
 Cannot connect to remote server "%s" = リモートサーバー "%s"に接続できません
 Remote server is not an ELOG server = リモートサーバーはELOGサーバーではありません
@@ -266,3 +267,18 @@ Previous Year = 前年
 Next Year = 次年
 3 Months = 3ヶ月
 6 Months = 6ヶ月
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Error sending local message = 
+Error receiving message = 
+Are you sure to delete this entry? = 
+Import = 
+CSV filename = 
+Field separator = 
+Edit entry = 
+Delete entry = 
+CSV Import = 
+ELOG CSV import = 
+Derive attributes from CSV file = 
