@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.173  2004/01/07 14:05:14  midas
+  Fixed bug with permissions
+
   Revision 1.172  2004/01/07 11:14:36  midas
   Only section of current logbook can be edited in elogd.cfg
 
@@ -8415,8 +8418,10 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
       }
 
       if (strstr(admin_user, getparam("unm")) != NULL) {
-         strcat(menu_str, "Change elogd.cfg");
-         strcat(menu_str, ", ");
+         strcat(menu_str, "Change elogd.cfg, ");
+         if (!getcfg("global", "Admin user", str)
+             || strstr(str, getparam("unm")) != 0)
+            strcat(menu_str, "Change [global], ");
       }
    }
 
