@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.16  2002/06/14 06:46:41  midas
+  Introduced wrapping logbook tabs
+
   Revision 2.15  2002/06/14 06:08:19  midas
   Sort index by date
 
@@ -2950,7 +2953,7 @@ void show_standard_header(char *title, char *path)
 void show_standard_title(char *logbook, char *text, int printable)
 {
 char str[256], ref[256];
-int  i;
+int  i, j;
 
   /* overall table, containing title, menu and message body */
   if (printable)
@@ -2964,42 +2967,10 @@ int  i;
 
   if (!printable && getcfg(logbook, "logbook tabs", str) && atoi(str) == 1)
     {
-    /*
-    if (!getcfg("global", "tab cellpadding", str))
-      strcpy(str, "5");
-    rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=0 bgcolor=#FFFFFF><tr>\n", str);
-
-    if (getcfg("global", "main tab", str))
-      {
-      rsprintf("<td nowrap bgcolor=#E0E0E0><a href=\"../\">%s</a></td>\n", str);
-      rsprintf("<td width=10 bgcolor=#FFFFFF>&nbsp;</td>\n");
-      }
-
-    for (i=0 ;  ; i++)
-      {
-      if (!enumgrp(i, str))
-        break;
-
-      if (equal_ustring(str, "global"))
-        continue;
-
-      strcpy(ref, str);
-      url_encode(ref);
-
-      if (equal_ustring(str, logbook))
-        rsprintf("<td nowrap bgcolor=%s><font color=%s>%s</font></td>\n", gt("Title BGColor"), gt("Title fontcolor"), str);
-      else
-        rsprintf("<td nowrap bgcolor=#E0E0E0><a href=\"../%s/\">%s</a></td>\n", ref, str);
-      rsprintf("<td width=10 bgcolor=#FFFFFF>&nbsp;</td>\n");
-      }
-    rsprintf("<td width=100%% bgcolor=#FFFFFF>&nbsp;</td>\n");
-    rsprintf("</tr></table></td></tr>\n\n");
-    */
-    
     rsprintf("<tr><td bgcolor=#FFFFFF>\n");
 
     if (getcfg("global", "main tab", str))
-      rsprintf("<font style=\"background-color:#E0E0E0\">&nbsp;<a href=\"../\">%s</a>&nbsp;</font>&nbsp\n", str);
+      rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"background-color:#E0E0E0\">&nbsp;<a href=\"../\">%s</a>&nbsp;</font>&nbsp\n", str);
 
     for (i=0 ;  ; i++)
       {
@@ -3013,9 +2984,31 @@ int  i;
       url_encode(ref);
 
       if (equal_ustring(str, logbook))
-        rsprintf("<font style=\"color:%s;background-color:%s\">&nbsp;%s&nbsp;</font>&nbsp;\n", gt("Title fontcolor"), gt("Title BGColor"), str);
+        {
+        rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"color:%s;background-color:%s\">&nbsp;",
+                 gt("Title fontcolor"), gt("Title BGColor"));
+        
+        for (j=0 ; j<(int)strlen(str) ; j++)
+          if (str[j] == ' ')
+            rsprintf("&nbsp;");
+          else
+            rsprintf("%c", str[j]);
+
+        rsprintf("&nbsp;</font>&nbsp;\n");
+        }
       else
-        rsprintf("<font style=\"background-color:#E0E0E0\">&nbsp;<a href=\"../%s/\">%s</a>&nbsp;</font>&nbsp\n", ref, str);
+        {
+        rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"background-color:#E0E0E0\">&nbsp;");
+        rsprintf("<a style=\"text-decoration:none\" href=\"../%s/\">", ref);
+
+        for (j=0 ; j<(int)strlen(str) ; j++)
+          if (str[j] == ' ')
+            rsprintf("&nbsp;");
+          else
+            rsprintf("%c", str[j]);
+
+        rsprintf("</a>&nbsp;</font>&nbsp\n");
+        }
       }
     rsprintf("</td></tr>\n\n");
     
