@@ -62,7 +62,6 @@ td {
 .title1 {
   background-color:#486090;
   color:white;
-  font-weight:bold;
   font-size:medium;
   font-family:sans-serif;
   text-align:left;
@@ -71,7 +70,6 @@ td {
 .title2 {
   background-color:#486090;
   color:white;
-  font-weight:bold;
   font-size:medium;
   font-family:sans-serif;
   text-align:center;
@@ -115,7 +113,6 @@ td {
 .menu4 {
   text-align:right;
   font-size:10pt;
-  font-weight:bold;
   vertical-align:middle;
 }
 
@@ -129,7 +126,6 @@ td {
 .listtitle {
   background-color:#CCCCFF;
   text-align:center;
-  font-weight:bold;
   padding:5px;
 }
 
@@ -174,6 +170,11 @@ td {
   padding:3px;
 }
 
+.attribvalue2 {
+  background-color:#FFFFB0;
+  padding:3px;
+}
+
 /* message cell in listing */
 .messagelist {
   background-color:white;
@@ -199,14 +200,13 @@ td {
 .bytes {
   font-family:'lucida console',courier,monospace;
   font-size:10pt;
-  font-weight:bold;
 }
 
 /* summary display (threaded mode expand) */
 .summary {
   background-color:white;
   font-family:'lucida console',courier,monospace;
-  font-size:small;
+  font-size:8pt;
 }
 
 /* input forms */
@@ -238,6 +238,36 @@ td {
   background-color:#FFD070;
   text-align:center;
   font-size:small;
+}
+
+/* dialog boxes (login, delete, etc.) */
+.dlgframe {
+  width:50%;
+  background-color:#486090; 
+  border:1px solid #486090;
+  margin-top:2cm;
+}
+
+.dlgerror {
+  background-color:red;
+  padding:10px;
+  font-size:small;
+  text-align:center;
+  font-size:medium;
+  color:white;
+}
+
+.dlgtitle {
+  background-color:#486090;
+  color:white;
+  font-size:medium;
+  text-align:center;
+  padding:5px;
+}
+
+.dlgform {
+  background-color:#DDEEBB;
+  padding:5px;
 }
 
 /* ELOG home page link at bottom of page */
