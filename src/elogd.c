@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.62  2003/03/31 18:54:17  midas
+  Added link to main page
+
   Revision 1.61  2003/03/31 12:30:15  midas
   Added notification about invalid user
 
@@ -10543,12 +10546,14 @@ int   i, n;
 
     rsprintf("<body><center>\n");
     rsprintf("<table class=\"dlgframe\" width=50%% cellpadding=1 cellspacing=0");
-    sprintf(str, "User <i>\"%s\"</i> has no access to logbook <i>\"%s\"</i>", getparam("iusr"), lbs->name);
+    sprintf(str, loc("User <i>\"%s\"</i> has no access to logbook <i>\"%s\"</i>"), getparam("iusr"), lbs->name);
     rsprintf("<tr><td class=\"errormsg\">%s</td></tr>\n", str);
 
     rsprintf("<tr><td class=\"errormsg\">");
+    rsprintf("<a href=\"?LO=1\">%s</a></td></tr>", loc("Login as different user"));
 
-    rsprintf("<a href=\"?LO=1\">Login as different user</a>", str);
+    rsprintf("<tr><td class=\"errormsg\">");
+    rsprintf("<a href=\"../\">%s</a></td></tr>", loc("Goto logbook selection page"));
 
     rsprintf("</td></tr>\n</table>\n");
     rsprintf("</center></body></html>\n");

@@ -238,3 +238,6 @@ copied successfully from "%s" to "%s" = erfolgreich von "%s" nach "%s" kopiert
 Last x = Letzte x
 Only user <i>%s</i> can delete this entry = Dieser Eintrag kann nur von <i>%s</i> gelöscht werden
 Search text also in attributes = Text auch in Attributen suchen
+Goto logbook selection page = Zur Logbuch Auswahl Seite
+Login as different user = Als anderer Benutzer anmelden
+User <i>"%s"</i> has no access to logbook <i>"%s"</i> = Benutzer <i>"%s"</i> hat keinen Zugriff auf Logbuch <i>"%s"</i>
