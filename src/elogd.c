@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.254  2004/02/17 09:52:04  midas
+   Added 'x Months', needed for Japanese translation
+
    Revision 1.253  2004/02/17 08:38:56  midas
    Fixed bug with AF_NUMERIC
 
@@ -7176,8 +7179,8 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf("<option value=1>%s\n", loc("Day"));
    rsprintf("<option value=7>%s\n", loc("Week"));
    rsprintf("<option value=31>%s\n", loc("Month"));
-   rsprintf("<option value=92>3 %s\n", loc("Months"));
-   rsprintf("<option value=182>6 %s\n", loc("Months"));
+   rsprintf("<option value=92>%s\n", loc("3 Months"));
+   rsprintf("<option value=182>%s\n", loc("6 Months"));
    rsprintf("<option value=364>%s\n", loc("Year"));
    rsprintf("</select> \n");
 
@@ -10887,10 +10890,10 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
             rsprintf("<option %s value=1>%s\n", i == 1 ? "selected" : "", loc("Day"));
             rsprintf("<option %s value=7>%s\n", i == 7 ? "selected" : "", loc("Week"));
             rsprintf("<option %s value=31>%s\n", i == 31 ? "selected" : "", loc("Month"));
-            rsprintf("<option %s value=92>3 %s\n", i == 92 ? "selected" : "",
-                     loc("Months"));
-            rsprintf("<option %s value=182>6 %s\n", i == 182 ? "selected" : "",
-                     loc("Months"));
+            rsprintf("<option %s value=92>%s\n", i == 92 ? "selected" : "",
+                     loc("3 Months"));
+            rsprintf("<option %s value=182>%s\n", i == 182 ? "selected" : "",
+                     loc("6 Months"));
             rsprintf("<option %s value=364>%s\n", i == 364 ? "selected" : "",
                      loc("Year"));
 
@@ -10913,10 +10916,10 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
 
                   rsprintf("<option %s value=364>%s %s\n", i == 364 ? "selected" : "",
                            loc("Next"), loc("Year"));
-                  rsprintf("<option %s value=182>%s 6 %s\n", i == 182 ? "selected" : "",
-                           loc("Next"), loc("Months"));
-                  rsprintf("<option %s value=92>%s 3 %s\n", i == 92 ? "selected" : "",
-                           loc("Next"), loc("Months"));
+                  rsprintf("<option %s value=182>%s %s\n", i == 182 ? "selected" : "",
+                           loc("Next"), loc("6 Months"));
+                  rsprintf("<option %s value=92>%s %s\n", i == 92 ? "selected" : "",
+                           loc("Next"), loc("3 Months"));
                   rsprintf("<option %s value=31>%s %s\n", i == 31 ? "selected" : "",
                            loc("Next"), loc("Month"));
                   rsprintf("<option %s value=7>%s %s\n", i == 7 ? "selected" : "",
@@ -10933,10 +10936,10 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
                            loc("Last"), loc("Week"));
                   rsprintf("<option %s value=-31>%s %s\n", i == -31 ? "selected" : "",
                            loc("Last"), loc("Month"));
-                  rsprintf("<option %s value=-92>%s 3 %s\n", i == -92 ? "selected" : "",
-                           loc("Last"), loc("Months"));
-                  rsprintf("<option %s value=-182>%s 6 %s\n", i == -182 ? "selected" : "",
-                           loc("Last"), loc("Months"));
+                  rsprintf("<option %s value=-92>%s %s\n", i == -92 ? "selected" : "",
+                           loc("Last"), loc("3 Months"));
+                  rsprintf("<option %s value=-182>%s %s\n", i == -182 ? "selected" : "",
+                           loc("Last"), loc("6 Months"));
                   rsprintf("<option %s value=-364>%s %s\n", i == -364 ? "selected" : "",
                            loc("Last"), loc("Year"));
 
