@@ -77,11 +77,11 @@ Just to be clear, some definitions of terms that will be used throughout the gui
 <p>
 Usually you will be given a URL (through mail, a Web page etc.) to access the <b>ELOG</b> server.
 <p>
-If several logbooks are defined on the server, the entry page may be a list of all logbooks, with their descriptions and links to enter the logbook you want to use (<i>this may be disabled</i>).
+If several logbooks are defined on the server, the entry page may be a list of all logbooks, with their descriptions, number of entries, and links to enter the logbook you want to use.
 <p>
 Alternatively, you may be taken directly to a specific logbook. By default you will see the latest entry, but the administrator may have defined a different "<I>default view</I>" for the logbook, like the list of the day's entries, or the last 10 entries, etc. (depending on what is most convenient for that logbook's purpose).
 <p>
-<i>Note : it is generally not recommended to link directly to a specific entry in a logbook by its URL, because under certain circumstances such addresses might change. It is possible to achieve the same result with a "<I>search</I>" URL (see below).</i>
+Each entry in a logbook is identified by an unique ID, which is last part of the URL when that message is displayed. This ID might be used to create a bookmark in a browser pointing directly to a specific entry.
 <p>
 There are four ways through which access to a logbook may be controlled : it may be open for all to read ; it may require a common "<I>read</I>" password for all users ; it may require each user to have an individual user account (login name) and password ; finally, access may be granted or not depending on the address of the workstation you are using.
 <p>
@@ -198,7 +198,7 @@ For the quality of the information committed to the logbook, you need understand
 <p>
 <ul>
 
-<li>as mentioned above, it is not recommended to link directly to a specific entry by its URL (from another entry or an external Web page). However, it is easy enough to achieve the same result with "<I>search URLs</I>" : use the "<I>Search</I>" form to compose a query that will result in exactly what you want (either a single entry or a list of entries). Copy the URL for that result page from your browser, and use that as the target for your link.
+<li>you can link directly to a specific entry by its URL, using the message ID (from another entry or an external Web page). It is also possible to link to a search result this way: use the "<I>Search</I>" form to compose a query that will result in exactly what you want (either a single entry or a list of entries). Copy the URL for that result page from your browser, and use that as the target for your link.
 <p>
 
 <li>right now you cannot search entries for attachments by their file name.
