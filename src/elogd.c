@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.155  2003/11/20 13:37:20  midas
+  Added 'restrict edit time'
+
   Revision 1.154  2003/11/19 14:11:38  midas
   Added MAX_REPLY_TO
 
@@ -5246,6 +5249,21 @@ char   fl[8][NAME_LENGTH];
     if (!is_author(lbs, attrib, owner))
       {
       sprintf(str, loc("Only user <i>%s</i> can edit this entry"), owner);
+      show_error(str);
+      return;
+      }
+    }
+
+  /* check for editing interval */
+  if (bedit && getcfg(lbs->name, "Restrict edit time", str))
+    {
+    for (i = 0 ; i < *lbs->n_el_index ; i++)
+      if (lbs->el_index[i].message_id == message_id)
+        break;
+
+    if (i < *lbs->n_el_index && time(NULL) > lbs->el_index[i].file_time + atof(str)*3600)
+      {
+      sprintf(str, loc("Message can only be edited %1.2lg hours after creation"), atof(str));
       show_error(str);
       return;
       }
