@@ -55,25 +55,29 @@ together with the sample logbook will be installed under <code><b>/usr/local/elo
 and the documentation goes to <code><b>/usr/share/doc</code></B>. The elogd startup script
 will be installed at <code><b>/etc/rc.d/init.d/elogd</code></B>. To start the daemon, enter
 
-<ul><code>/etc/rc.d/init.d/elogd start</code></ul>
+<ul><code>/etc/rc.d/init.d/elogd start</code></ul><p>
 
 It will listen under the port specified in <code><b>/usr/local/elog/elogd.cfg</b></code>
 which is 8080 by default. So one can connect using any browser with the URL:
 
-<ul><code>http://localhost:8080</code></ul>
+<ul><code>http://localhost:8080</code></ul><p>
 
 To start the daemon automatically, enter:
 <br>
 <ul>
 <code>chkconfig --add elogd</code><br>
 <code>chkconfig --level 345 elogd on</code>
-</ul>
+</ul><p>
 
 which will start the daemon on run levels 3,4 and 5 after the next reboot.
 <p>
 Note that the RPM installation creates a user and group <b><code>elog</code></b>, under
 which the daemon runs.
 <p>
+
+To start the daemon on non-RedHat systems, like SuSE or Solaris, a more generic
+startup scrips has been provided by Steve Jones in the <a href="http://midas.psi.ch/elogs/Contributions/9">
+Contributions</a> section.<p>
 
 <h3><hr><i>Installation from the tarball</i>:</h3>
 
