@@ -93,17 +93,20 @@ via the '-p' command line flag.
 
 <LI><b><code>Language = &lt;name&gt;</code></b>
 <br>
-The language setting determines the language of the <code><b>elogd</b></code> output. Not affected by this
-setting are the configuration file options (they are always in English) and the
-<b>attribute</b> names as well as the optional <b>Menu commands</b>. These have to be
-translated manually in the configuration file.
-<p>
+
+The language setting determines the language of the <code><b>elogd</b></code> output. Not
+affected by this setting are the configuration file options and the commands specified with the
+optional <code><b>Menu commands</b></code> and <code><b>Find menu commands</b></code>, which
+have to be specified in English and are translated automatically by elogd. The attribute names
+are unaffected by the language setting and have to be translated manually.<br><br>
+
 If a language name is given (currently "<I>german</I>", "<I>french</I>", "<I>spanish</I>",
 "<I>dutch</I>", "<I>brazilian</I>" are supported out-of-the-box),
 the system searches for a file named <b>eloglang.&lt;name&gt;</b> containing
 string translations from English into that language. <i>If you create a new translation file,
 please send it back to the author to be included in future distributions</i>.
-<p>
+<br><br>
+
 The online help for <code><b>elogd</b></code> is contained in the file <b>eloghelp_<i>xx</i>.html</b> where
 <i>xx</i> are the first two letters of the language (like "<I>en</I>", "<I>ge</I>" and "<I>fr</I>"). For new languages, a new file of that type must be created as well.
 <p>
@@ -309,11 +312,14 @@ commands are possible:
 
   <li><b>Help</b> - General help
   </ul>
-<p>
+<br><br>
+The commands are always in English, independent of the <code><b>lanugae = ...</b></code>
+setting, and are automatically translated into the specified language.<br><br>
+
 If this option is not present, following default is used:
-<p>
+<br>
 <pre>Menu commands = Back, New, Edit, Delete, Reply, Find, Config, Help</pre>
-<p>
+<br>
 
 <li><b><code>Copy to = &lt;logbook list&gt;</code></b>
 <li><b><code>Move to = &lt;logbook list&gt;</code></b>
@@ -330,8 +336,9 @@ make sense if only certain logbooks make sense as destinations.<p>
 This option specifies the menu commands displayed on top of the listing page.
 Although all commands from a above are possible,
 only the commands <code><b>New, Find, Select, Config, Admin, Change
-password, Logout</b></code> and <code><b>Help</b></code> make sense.
-<p>
+password, Logout</b></code> and <code><b>Help</b></code> make sense. The command <code><b>
+Select</b></code> can be used to select multiple messages for deletion of moving to other
+logbooks.<p>
 
 <li><b><code>Guest Menu commands = &lt;list&gt;</code></b>
 </br>
