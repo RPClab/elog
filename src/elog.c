@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.2  2003/03/01 16:07:02  midas
+  Show error if wrong username/password
+
   Revision 1.1  2003/01/30 14:45:07  midas
   Moved files to src/ subdirectory
 
@@ -363,31 +366,41 @@ char                 host_name[256], boundary[80], str[80], *p;
     {
     if (strstr(response, "Location:"))
       {
-      strncpy(str, strstr(response, "Location:")+10, sizeof(str));
-      if (strchr(str, '?'))
-        *strchr(str, '?') = 0;
-      if (strchr(str, '\n'))
-        *strchr(str, '\n') = 0;
-      if (strchr(str, '\r'))
-        *strchr(str, '\r') = 0;
+      if (strstr(response, "wpwd"))
+        printf("Error: Invalid password\n");
+      else if (strstr(response, "wusr"))
+        printf("Error: Invalid user name\n");
+      else
+        {
+        strncpy(str, strstr(response, "Location:")+10, sizeof(str));
+        if (strchr(str, '?'))
+          *strchr(str, '?') = 0;
+        if (strchr(str, '\n'))
+          *strchr(str, '\n') = 0;
+        if (strchr(str, '\r'))
+          *strchr(str, '\r') = 0;
 
-      printf("Message successfully transmitted, ID=%s\n", str);
+        if (strrchr(str, '/'))
+          printf("Message successfully transmitted, ID=%s\n", strrchr(str, '/')+1);
+        else
+          printf("Message successfully transmitted, ID=%s\n", str);
+        }
       }  
     else
       printf("Message successfully transmitted\n");
     }
   else if (strstr(response, "Logbook Selection"))
-    printf("No logbook specified\n");
+    printf("Error: No logbook specified\n");
   else if (strstr(response, "enter password"))
-    printf("Missing or invalid password\n");
+    printf("Error: Missing or invalid password\n");
   else if (strstr(response, "login"))
-    printf("Missing or invalid user name/password\n");
+    printf("Error: Missing or invalid user name/password\n");
   else if (strstr(response, "Error: Attribute"))
     {
     strncpy(str, strstr(response, "Error: Attribute")+20, sizeof(str));
     if (strchr(str, '<'))
       *strchr(str, '<') = 0;
-    printf("Missing required attribute \"%s\"\n", str);
+    printf("Error: Missing required attribute \"%s\"\n", str);
     }
   else
     printf("Error transmitting message\n");
