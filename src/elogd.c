@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.226  2004/02/03 08:49:15  midas
+   Fixed bug with conditional attributes
+
    Revision 1.225  2004/02/03 08:38:23  midas
    Validation now works with attributes containing blanks
 
@@ -5874,11 +5877,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       /* get attributes from parameters */
       for (i = 0; i < lbs->n_attr; i++) {
+         strcpy(ua, attr_list[i]);
+         btou(ua);
          if (attr_flags[i] & AF_MULTI) {
             attrib[i][0] = 0;
             first = 1;
             for (j = 0; j < MAX_N_LIST; j++) {
-               sprintf(str, "%s#%d", attr_list[i], j);
+               sprintf(str, "%s#%d", ua, j);
                if (getparam(str)) {
                   if (*getparam(str)) {
                      if (first)
@@ -5894,7 +5899,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   break;
             }
          } else {
-            strlcpy(attrib[i], getparam(attr_list[i]), NAME_LENGTH);
+            strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
          }
       }
 
@@ -6758,7 +6763,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /*---- menu buttons again ----*/
 
    rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Submit"));
+   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n", loc("Submit"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Back"));
    rsprintf("</span></td></tr>\n\n");
 
