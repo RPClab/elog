@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.230  2004/02/03 12:26:55  midas
+   Change CRLF -> CR when saving elogd.cfg under Unix
+
    Revision 1.229  2004/02/03 10:36:17  midas
    Do not renumber and entries if they are already identical
 
@@ -7267,6 +7270,18 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
 
 /*------------------------------------------------------------------*/
 
+void remove_crlf(char *buffer)
+{
+   char *p;
+
+   p = buffer;
+   while ((p = strstr(p, "\r\n")) != NULL) {
+      strcpy(p+1, p+2);
+   }
+}
+
+/*------------------------------------------------------------------*/
+
 int save_admin_config(LOGBOOK * lbs, char *section, char *buffer, char *error)
 {
    int fh, i, length;
@@ -7281,6 +7296,13 @@ int save_admin_config(LOGBOOK * lbs, char *section, char *buffer, char *error)
       strcat(error, strerror(errno));
       return 0;
    }
+
+#ifdef OS_UNIX
+
+   /* under unix, convert CRLF to CR */
+   remove_crlf(buffer);
+
+#endif
 
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
@@ -7302,9 +7324,16 @@ int save_admin_config(LOGBOOK * lbs, char *section, char *buffer, char *error)
    }
 
    /* combine old and new config */
+#ifdef OS_UNIX
+   sprintf(p1, "[%s]\r", section);
+   strcat(p1, buffer);
+   strcat(p1, "\r\r");
+#else
    sprintf(p1, "[%s]\r\n", section);
    strcat(p1, buffer);
    strcat(p1, "\r\n\r\n");
+#endif
+   
    if (p2) {
       strlcat(p1, buf2, length + strlen(buffer) + 1);
       free(buf2);
