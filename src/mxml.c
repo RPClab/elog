@@ -6,6 +6,9 @@
    Contents:     Midas XML Library
 
    $Log$
+   Revision 1.10  2005/03/23 10:02:13  ritt
+   Fixed compiler warnings
+
    Revision 1.9  2005/03/22 16:10:09  ritt
    Allow ' in xpath
 
@@ -50,8 +53,6 @@
 
 #define TRUE 1
 #define FALSE 0
-
-typedef int int;
 
 #ifndef O_TEXT
 #define O_TEXT 0
@@ -153,7 +154,7 @@ MXML_WRITER *mxml_open_document(const char *file_name)
    time_t now;
    MXML_WRITER *writer;
 
-   writer = malloc(sizeof(MXML_WRITER));
+   writer = (MXML_WRITER *)malloc(sizeof(MXML_WRITER));
 
    writer->fh = open(file_name, O_RDWR | O_CREAT | O_TRUNC | O_TEXT, 0644);
 
@@ -283,9 +284,9 @@ int mxml_start_element(MXML_WRITER *writer, const char *name)
 
    /* put element on stack */
    if (writer->level == 0)
-      writer->stack = malloc(sizeof(char *));
+      writer->stack = (char **)malloc(sizeof(char *));
    else
-      writer->stack = realloc(writer->stack, sizeof(char *)*(writer->level+1));
+      writer->stack = (char **)realloc(writer->stack, sizeof(char *)*(writer->level+1));
    
    writer->stack[writer->level] = (char *) malloc(strlen(name_enc)+1);
    strcpy(writer->stack[writer->level], name_enc);
@@ -378,11 +379,11 @@ int mxml_write_value(MXML_WRITER *writer, const char *data)
    writer->data_was_written = TRUE;
 
    if (data_size == 0) {
-      data_enc = malloc(1000);
+      data_enc = (char *)malloc(1000);
       data_size = 1000;
    } else if ((int)strlen(data)*2+1000 > data_size) {
       data_size = 1000+strlen(data)*2;
-      data_enc = realloc(data_enc, data_size);
+      data_enc = (char *)realloc(data_enc, data_size);
    }
 
    strcpy(data_enc, data);
@@ -438,10 +439,10 @@ PMXML_NODE mxml_add_node_at(PMXML_NODE parent, char *node_name, char *value, int
 
    assert(parent);
    if (parent->n_children == 0)
-      parent->child = malloc(sizeof(MXML_NODE));
+      parent->child = (PMXML_NODE)malloc(sizeof(MXML_NODE));
    else {
       pchild = parent->child;
-      parent->child = realloc(parent->child, sizeof(MXML_NODE)*(parent->n_children+1));
+      parent->child = (PMXML_NODE)realloc(parent->child, sizeof(MXML_NODE)*(parent->n_children+1));
 
       if (parent->child != pchild) {
          /* correct parent pointer for children */
@@ -468,7 +469,7 @@ PMXML_NODE mxml_add_node_at(PMXML_NODE parent, char *node_name, char *value, int
    parent->n_children++;
 
    if (value) {
-      pnode->value = malloc(strlen(value)+1);
+      pnode->value = (char *)malloc(strlen(value)+1);
       assert(pnode->value);
       strcpy(pnode->value, value);
    }
@@ -490,15 +491,15 @@ int mxml_add_attribute(PMXML_NODE pnode, char *attrib_name, char *attrib_value)
 /* add an attribute to an existing node */
 {
    if (pnode->n_attributes == 0) {
-      pnode->attribute_name  = malloc(MXML_NAME_LENGTH);
-      pnode->attribute_value = malloc(sizeof(char *));
+      pnode->attribute_name  = (char*)malloc(MXML_NAME_LENGTH);
+      pnode->attribute_value = (char**)malloc(sizeof(char *));
    } else {
-      pnode->attribute_name  = realloc(pnode->attribute_name,  MXML_NAME_LENGTH*(pnode->n_attributes+1));
-      pnode->attribute_value = realloc(pnode->attribute_value, sizeof(char *)*(pnode->n_attributes+1));
+      pnode->attribute_name  = (char*)realloc(pnode->attribute_name,  MXML_NAME_LENGTH*(pnode->n_attributes+1));
+      pnode->attribute_value = (char**)realloc(pnode->attribute_value, sizeof(char *)*(pnode->n_attributes+1));
    }
 
    strlcpy(pnode->attribute_name+pnode->n_attributes*MXML_NAME_LENGTH, attrib_name, MXML_NAME_LENGTH);
-   pnode->attribute_value[pnode->n_attributes] = malloc(strlen(attrib_value)+1);
+   pnode->attribute_value[pnode->n_attributes] = (char *)malloc(strlen(attrib_value)+1);
    strcpy(pnode->attribute_value[pnode->n_attributes], attrib_value);
    pnode->n_attributes++;
 
@@ -534,9 +535,9 @@ int mxml_add_resultnode(PMXML_NODE node, char *xml_path, PMXML_NODE **nodelist, 
    /* if at end of path, add this node */
    if (*xml_path == 0) {
       if (*found == 0)
-         *nodelist = malloc(sizeof(PMXML_NODE));
+         *nodelist = (PMXML_NODE *)malloc(sizeof(PMXML_NODE));
       else
-         *nodelist = realloc(*nodelist, sizeof(PMXML_NODE)*(*found + 1));
+         *nodelist = (PMXML_NODE *)realloc(*nodelist, sizeof(PMXML_NODE)*(*found + 1));
 
       (*nodelist)[*found] = node;
       (*found)++;
@@ -734,9 +735,9 @@ int mxml_replace_node_name(PMXML_NODE pnode, char *name)
 int mxml_replace_node_value(PMXML_NODE pnode, char *value)
 {
    if (pnode->value)
-      pnode->value = realloc(pnode->value, strlen(value)+1);
+      pnode->value = (char *)realloc(pnode->value, strlen(value)+1);
    else
-      pnode->value = malloc(strlen(value)+1);
+      pnode->value = (char *)malloc(strlen(value)+1);
    
    strcpy(pnode->value, value);
    return TRUE;
@@ -799,7 +800,7 @@ int mxml_replace_attribute_value(PMXML_NODE pnode, char *attrib_name, char *attr
    if (i == pnode->n_attributes)
       return FALSE;
 
-   pnode->attribute_value[i] = realloc(pnode->attribute_value[i], strlen(attrib_value)+1);
+   pnode->attribute_value[i] = (char *)realloc(pnode->attribute_value[i], strlen(attrib_value)+1);
    strcpy(pnode->attribute_value[i], attrib_value);
    return TRUE;
 }
@@ -828,7 +829,7 @@ int mxml_delete_node(PMXML_NODE pnode)
             memcpy(&parent->child[j], &parent->child[j+1], sizeof(MXML_NODE));
          parent->n_children--;
          if (parent->n_children)
-            parent->child = realloc(parent->child, sizeof(MXML_NODE)*(parent->n_children));
+            parent->child = (PMXML_NODE)realloc(parent->child, sizeof(MXML_NODE)*(parent->n_children));
          else
             free(parent->child);
       }
@@ -858,8 +859,8 @@ int mxml_delete_attribute(PMXML_NODE pnode, char *attrib_name)
    }
 
    if (pnode->n_attributes > 0) {
-      pnode->attribute_name  = realloc(pnode->attribute_name,  MXML_NAME_LENGTH*(pnode->n_attributes-1));
-      pnode->attribute_value = realloc(pnode->attribute_value, sizeof(char *)*(pnode->n_attributes-1));
+      pnode->attribute_name  = (char *)realloc(pnode->attribute_name,  MXML_NAME_LENGTH*(pnode->n_attributes-1));
+      pnode->attribute_value = (char **)realloc(pnode->attribute_value, sizeof(char *)*(pnode->n_attributes-1));
    } else {
       free(pnode->attribute_name);
       free(pnode->attribute_value);
@@ -879,7 +880,7 @@ PMXML_NODE read_error(PMXML_NODE root, char *file_name, int line_number, char *e
    va_list argptr;
 
    sprintf(str, "XML read error in file \"%s\", line %d: ", file_name, line_number);
-   msg = malloc(error_size);
+   msg = (char *)malloc(error_size);
    strlcpy(error, str, error_size);
 
    va_start(argptr, format);
@@ -917,7 +918,7 @@ PMXML_NODE mxml_parse_file(char *file_name, char *error, int error_size)
 
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   buf = malloc(length+1);
+   buf = (char *)malloc(length+1);
    if (buf == NULL) {
       close(fh);
       sprintf(line, "Cannot allocate buffer: ");
@@ -1150,7 +1151,7 @@ PMXML_NODE mxml_parse_file(char *file_name, char *error, int error_size)
                         return read_error(HERE, "Unexpected end of file");
 
                      len = (size_t)pv - (size_t)p;
-                     pnew->value = malloc(len+1);
+                     pnew->value = (char *)malloc(len+1);
                      memcpy(pnew->value, p, len);
                      pnew->value[len] = 0;
                      mxml_decode(pnew->value);
