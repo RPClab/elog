@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.114  2002/12/12 13:25:59  midas
+  Make active logbook tab also a link
+
   Revision 2.113  2002/12/12 12:42:37  midas
   Added 'quick filter' option
 
@@ -3781,28 +3784,22 @@ int  i, j;
         {
         rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"color:%s;background-color:%s\">&nbsp;",
                  gt("Title fontcolor"), gt("Title BGColor"));
-
-        for (j=0 ; j<(int)strlen(str) ; j++)
-          if (str[j] == ' ')
-            rsprintf("&nbsp;");
-          else
-            rsprintf("%c", str[j]);
-
-        rsprintf("&nbsp;</font>&nbsp;\n");
+        rsprintf("<a style=\"text-decoration:none;color:%s\" href=\"../%s/\">", gt("Title fontcolor"), ref);
         }
       else
         {
         rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"background-color:#E0E0E0\">&nbsp;");
         rsprintf("<a style=\"text-decoration:none\" href=\"../%s/\">", ref);
-
-        for (j=0 ; j<(int)strlen(str) ; j++)
-          if (str[j] == ' ')
-            rsprintf("&nbsp;");
-          else
-            rsprintf("%c", str[j]);
-
-        rsprintf("</a>&nbsp;</font>&nbsp\n");
         }
+
+
+      for (j=0 ; j<(int)strlen(str) ; j++)
+        if (str[j] == ' ')
+          rsprintf("&nbsp;");
+        else
+          rsprintf("%c", str[j]);
+
+      rsprintf("</a>&nbsp;</font>&nbsp\n");
       }
     rsprintf("</td></tr>\n\n");
 
