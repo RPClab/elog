@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.67  2002/08/12 15:03:42  midas
+  Improved error dispaly for too large parameters
+
   Revision 2.66  2002/08/09 13:43:14  midas
   Preserve attributes on edit also for preset attributes
 
@@ -2803,7 +2806,7 @@ void initparam()
 int setparam(char *param, char *value)
 {
 int i;
-char str[256];
+char str[10000];
 
   if (equal_ustring(param, "text"))
     {
@@ -2831,7 +2834,8 @@ char str[256];
 
     if (strlen(value) >= VALUE_SIZE)
       {
-      show_error("Error: Parameter value too big. Please increase VALUE_SIZE and recompile elogd\n");
+      sprintf(str, "Error: Parameter value <b>%s</b> for parameter <b>%s</b> too big. Please increase VALUE_SIZE and recompile elogd\n", param);
+      show_error(str);
       return 0;
       }
 
@@ -8548,6 +8552,40 @@ static char last_password[32];
 
 /*------------------------------------------------------------------*/
 
+void index_new_logbook(char *logbook)
+{
+int i;
+char str[256], data_dir[256];
+
+  for (i=0 ; lb_list[i].name[0]; i++);
+
+  lb_list = realloc(lb_list, sizeof(LOGBOOK)*(i+2));
+  strcpy(lb_list[i].name, logbook);
+  strcpy(lb_list[i].name_enc, logbook);
+  url_encode(lb_list[i].name_enc);
+
+  /* get data dir from configuration file */
+  getcfg(logbook, "Data dir", str);
+  if (str[0] == DIR_SEPARATOR || str[1] == ':')
+    strcpy(data_dir, str);
+  else
+    {
+    strcpy(data_dir, cfg_dir);
+    strcat(data_dir, str);
+    }
+
+  if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
+    strcat(data_dir, DIR_SEPARATOR_STR);
+
+  strcpy(lb_list[i].data_dir, data_dir);
+  lb_list[i].el_index = NULL;
+  el_build_index(&lb_list[i], FALSE);
+
+  lb_list[i+1].name[0] = 0;
+}
+
+/*------------------------------------------------------------------*/
+
 void interprete(char *lbook, char *path)
 /********************************************************************\
 
@@ -8563,9 +8601,9 @@ void interprete(char *lbook, char *path)
 
 \********************************************************************/
 {
-int     i, n, index, lb_index;
+int     i, j, n, index, lb_index;
 double  exp;
-char    str[256], enc_pwd[80], file_name[256], data_dir[256];
+char    str[256], enc_pwd[80], file_name[256];
 char    enc_path[256], dec_path[256], logbook[256], logbook_enc[256];
 char    *experiment, *command, *value, *group;
 time_t  now;
@@ -8575,7 +8613,6 @@ LOGBOOK *cur_lb;
   /* encode path for further usage */
   strcpy(dec_path, path);
   url_decode(dec_path);
-  url_decode(dec_path); /* necessary for %2520 -> %20 -> ' ' */
   strcpy(enc_path, dec_path);
   url_encode(enc_path);
 
@@ -8608,20 +8645,27 @@ LOGBOOK *cur_lb;
     return;
     }
 
+  /* check if new logbook */
+  for (i=n=0 ; ; i++)
+    {
+    if (!enumgrp(i, str))
+      break;
+    if (!equal_ustring(str, "global"))
+      {
+      /* set up logbook entry if not existing */
+      for (j=0 ; lb_list[j].name[0] ; j++)
+        if (equal_ustring(str, lb_list[j].name))
+          break;
+      if (!lb_list[j].name[0])
+        index_new_logbook(str);
+      
+      n++;
+      }
+    }
+
   /* if no logbook given, display logbook selection page */
   if (!logbook[0])
     {
-    for (i=n=0 ; ; i++)
-      {
-      if (!enumgrp(i, str))
-        break;
-      if (!equal_ustring(str, "global"))
-        {
-        strcpy(logbook, str);
-        n++;
-        }
-      }
-
     if (n > 1)
       {
       show_selection_page();
@@ -8632,40 +8676,21 @@ LOGBOOK *cur_lb;
     url_encode(logbook_enc);
     }
 
+  /* get logbook from list */
+  for (i=0 ; lb_list[i].name[0] ; i++)
+    if (equal_ustring(logbook, lb_list[i].name))
+      break;
+  if (!lb_list[i].name[0])
+    index_new_logbook(logbook);
+
+  cur_lb = &lb_list[i];
+  
   /* get theme for logbook */
   if (getcfg(logbook, "Theme", str))
     loadtheme(str);
   else
     loadtheme(NULL); /* get default values */
 
-  /* set up logbook entry if not existing */
-  for (i=0 ; lb_list[i].name[0] ; i++)
-    if (equal_ustring(logbook, lb_list[i].name))
-      break;
-  if (!lb_list[i].name[0])
-    {
-    lb_list = realloc(lb_list, sizeof(LOGBOOK)*(i+2));
-    strcpy(lb_list[i].name, logbook);
-    strcpy(lb_list[i].name_enc, logbook_enc);
-
-    /* get data dir from configuration file */
-    getcfg(logbook, "Data dir", str);
-    if (str[0] == DIR_SEPARATOR || str[1] == ':')
-      strcpy(data_dir, str);
-    else
-      {
-      strcpy(data_dir, cfg_dir);
-      strcat(data_dir, str);
-      }
-
-    if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
-      strcat(data_dir, DIR_SEPARATOR_STR);
-
-    strcpy(lb_list[i].data_dir, data_dir);
-    lb_list[i].el_index = NULL;
-
-    lb_list[i+1].name[0] = 0;
-    }
   lb_index = i;
   cur_lb = lb_list+i;
   cur_lb->n_attr = scan_attributes(cur_lb->name);
@@ -9254,6 +9279,7 @@ struct timeval       timeout;
   /* install signal handler */
   signal(SIGTERM, ctrlc_handler);
   signal(SIGINT, ctrlc_handler);
+  signal(SIGPIPE, SIG_IGN);
 
   /* give up root privilege */
 
@@ -9658,6 +9684,13 @@ struct timeval       timeout;
           }
         }
 
+      /* force re-read configuration file */
+      if (cfgbuffer)
+        {
+        free(cfgbuffer);
+        cfgbuffer = NULL;
+        }
+
       /* check if logbook exists */
       for (i=0 ; ; i++)
         {
@@ -9734,13 +9767,6 @@ struct timeval       timeout;
             }
           goto error;
           }
-        }
-
-      /* force re-read configuration file */
-      if (cfgbuffer)
-        {
-        free(cfgbuffer);
-        cfgbuffer = NULL;
         }
 
       /*---- check "hosts deny" ----*/
