@@ -1,0 +1,135 @@
+#
+# $Revision$
+#
+
+#
+# Menu commands
+#
+New = Nieuw
+Edit = Wijzig
+Delete = Wis
+Reply = Antwoord
+Find = Zoek
+Last day = Laatste dag
+Last 10 = Laatste 10
+Config = Configuratie
+Change Password = Wachtwoord wijzigen
+Logout = Afmelden
+Help = Help
+Back = Terug
+Submit = Verzend
+First = Eerste
+First entry = Eerste bericht
+Last = Laatste
+Last entry = Laatste bericht
+Previous = Vorige
+Previous entry = Vorige bericht
+Next = Volgende
+Next entry = Volgende bericht
+Copy to = Kopieren naar
+Move to = Verplaats naar
+Save = Opslaan
+Cancel = Afbreken
+Go to = Naar
+
+#
+# Login & password screens
+#
+Wrong password = Verkeerde wachtwoord
+Please login = Aanmelden
+Username = Gebruikersnaam
+Password = &nbsp;&nbsp;&nbsp;&nbsp;Wachtwoord
+Old Password = &nbsp;Oude wachtwoord
+New Password = Nieuw wachtwoord
+ELOG password = ELOG wachtwoord
+ELOG change password = ELOG wachtwoord wijzigen
+Please enter password to obtain write access = Geef wachtwoord om schrijfrechten te verkrijgen
+Please enter password to obtain administration access = Geef wachtwoord voor administratie rechten
+Several logbooks are defined on this host = Meerdere logboeken aanwezig op deze machine
+Please select the one to connect to = Selecteer er een om aan te melden
+Change password for user = Wachtwoord wijzigen voor gebruiker
+
+#
+# Entry display
+#
+Logged in as = Aangemeld als
+Entry date = Startdatum
+with = met
+This is the last entry = Dit is het laatste bericht
+This is the first entry = Dir is het eerste bericht
+Email sent to = E-mail verzonden naar
+Email notification suppressed = Email verzending onderdrukt
+please select = Kies
+Submit as HTML text = Als HTML Tekst aanbieden
+Suppress Email notification = Email verzending onderdrukken
+Resubmit as new entry = Als nieuwe bericht verzenden
+If no attachments are resubmitted, the original ones are kept = Als er geen bijlagen worden verzonden worden de originele bewaard.
+To delete an old attachment, enter <code>&lt;delete&gt;</code> in the new attachment field = Om een oude bijlage te wissen, geef <code>&lt;wissen&gt;</code> op
+<delete> = <wissen>
+Attachment = Bijlage
+Attachments = Bijlagen
+No message available = Geen bericht aanwezig
+Reply to this = Beantwoord dit
+In reply to = In antwoord op
+
+#
+# Submit entry
+#
+ELOG Error = ELOG Fout
+Fields marked with = Velden gemarkeerd met
+are required = zijn verplicht
+Error: Attachment file <i>%s</i> invalid, please bo back and enter a proper file name = Fout: Bijlage <i>%s</i> is onjuist, ga terug en geef een juiste bestandsnaam op
+New message cannot be written to directory "%s" = Nieuw bericht kan niet naar map "%s" worden geschreven
+Please check that it exists and elogd has write access = Controleer of het bestaat en of elog schrijfrechten heeft
+Error: Attribute <b>%s</b> not supplied = Fout: Attribuut <b>%s</b> niet ingevuld
+Please go back and enter the <b>%s</b> field = Ga terug en vul het veld <b>%s</b> in
+Original attachment = Oude bijlage
+New attachment = Nieuwe bijlage
+
+#
+# Find display
+#
+ELOG search result = ELOG zoekresultaat
+ELOG find = ELOG zoeken
+Find = zoek
+Search = Zoeken
+Reset Form = Schoon formulier
+Summary only = Alleen de samenvatting
+Show attachments = Toon de bijlagen
+Printable output = Afdrukbare weergave
+Sort in reverse order = Sorteer in omgekeerde volgorde
+Start date = Startdatum
+End date = Einddatum
+Year = Jaar
+Text = Tekst
+(case insensitive substring) = (ongevoelig voor HOOFD -en kleineletters)
+Search all logbooks = Alle Logboeken doorzoeken
+Last %d days = Laatste %d dagen
+Last %d entries = Laatste %d bericht
+No entries found = Geen bericht gevonden
+
+#
+# Email, Copy/Move, Delete
+#
+A new entry has been submitted on %s = Een nieuwe bericht is verzonden op %s
+Logbook = Logboek
+Copy ELog entry = ELog bericht kopiëren
+Message moved successfully from "%s" to "%s" = bericht met succes verplaatst van "%s" naar "%s"
+Message copied successfully from "%s" to "%s" = bericht met succes gekopieerd van "%s" naar "%s"
+Are you sure to delete this message? = Wil je echt het bericht wissen?
+Yes = Ja
+No = Nee
+Message successfully deleted = bericht met succes gewist
+Error deleting message: status = Fout bij wissen: Status
+Goto last message = Ga naar laatste bericht
+
+#
+# Error messages
+#
+Error: Command "<b>%s</b>" not allowed = Fout: Commando "<b>%s</b>" niet toegestaan
+Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = Fout: Commando "<b>%s</b>" is niet toegestaan voor "<b>%s</b>"
+Cannot open file <b>%s</b> = Bestand <b>%s</b> kan niet worden geopend
+Cannot write to <b>%s</b> = Kan niet schrijven naar bestand <b>%s</b>
+No SMTP host defined in [global] section of configuration file = Geen SMTP Host vermeld in [global] van het configuratiebestand
+Messags %s cannot be read from logook "%s" = bericht %s kan niet uit "%s" worden gelezen
+New message cannot be written to directory "%s" = Nieuwe bericht kan niet naar map "%s" worden geschreven
