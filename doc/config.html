@@ -98,9 +98,11 @@ setting are the configuration file options (they are always in English) and the
 <b>attribute</b> names as well as the optional <b>Menu commands</b>. These have to be
 translated manually in the configuration file.
 <p>
-If a language name is given (currently only "<I>german</I>" and "<I>french</I>" are supported out-of-the-box),
+If a language name is given (currently "<I>german</I>", "<I>french</I>", "<I>spanish</I>",
+"<I>dutch</I>", "<I>brazilian</I>" are supported out-of-the-box),
 the system searches for a file named <b>eloglang.&lt;name&gt;</b> containing
-string translations from English into that language. <i>If you create a new translation file, please send it back to the author to be included in future distributions</i>.
+string translations from English into that language. <i>If you create a new translation file,
+please send it back to the author to be included in future distributions</i>.
 <p>
 The online help for <code><b>elogd</b></code> is contained in the file <b>eloghelp_<i>xx</i>.html</b> where
 <i>xx</i> are the first two letters of the language (like "<I>en</I>", "<I>ge</I>" and "<I>fr</I>"). For new languages, a new file of that type must be created as well.
@@ -257,6 +259,10 @@ form <b><code>?cmd=xxx</code></b>. To start with the search page, one uses<p>
 <pre>
 Start page = ?cmd=Find
 </pre>
+
+Please note that if another language than English is selected via the <b>Language = xxx</b> option,
+the commands have to be in that language as well (like <i>"Start page = 0?cmd=Letzter"</i> for
+German).<p>
 
 <LI><b><code>Submit Page = &lt;file&gt;</code></b>
 <br>
