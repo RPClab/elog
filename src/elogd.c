@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.372  2004/07/08 11:30:29  midas
+   Fixed string overflow in rsputs2()
+
    Revision 1.371  2004/07/07 15:53:11  midas
    Added error display if max. number of attribute options gets exceeded
 
@@ -4380,7 +4383,7 @@ char *list[] = { "http://", "https://", "ftp://", "mailto:", "elog:", "file://",
 void rsputs2(const char *str)
 {
    int i, j, k, l, m, n;
-   char *p, *pd, link[1000], link_text[1000], tmp[256];
+   char *p, *pd, link[1000], link_text[1000], tmp[1000];
 
    if (strlen_retbuf + (int) strlen(str) > return_buffer_size) {
       return_buffer = realloc(return_buffer, return_buffer_size + 100000);
@@ -4394,7 +4397,7 @@ void rsputs2(const char *str)
          if (strncmp(str + i, list[l], strlen(list[l])) == 0) {
             p = (char *) (str + i + strlen(list[l]));
             i += strlen(list[l]);
-            for (k = 0; *p && strcspn(p, " ,;\t\n\r({[)}]"); k++, i++)
+            for (k = 0; *p && strcspn(p, " ,;\t\n\r({[)}]") && k<sizeof(link); k++, i++)
                link[k] = *p++;
             link[k] = 0;
             i--;
