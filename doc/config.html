@@ -1113,6 +1113,29 @@ message comment can be displayed to tell the user what to enter exactly in the
 message body for that attribute value.
 <p>
 
+<h2>Multiple conditions</h2>
+
+It is possible to define conditions in more than one options list. The only requiremnt
+is that conditions are uniquie, meaning that a condition in one option list cannot
+be used in another list. This can easily be avoided by using numbers for one condition
+and letters for the other condition, like in the following example:
+<p>
+
+<ul><pre>
+Attributes = PC Name, Operating System, Version, Location, Floor
+Options Operating System = Linux{1}, Windows{2}
+Options Location = Main Building{a}, New Building{b}, Old Building{c}
+{1} Options Version = 2.2, 2.4, 2.6
+{2} Options Version = ME, 2k, NT, XP
+{a} Options Floor = Ground, First, Second
+{b,c} Options Floor = Ground, First
+</pre></ul>
+<p>
+
+It is possible to specify an OR of several conditions like in the case {b,c}. This is 
+also possible over several conditions, like {1,a} would mean 
+<i>"The PC has Linux or is in the Main Building"</i>.
+
 <a name="access"><hr>
 <div class=section>&nbsp; Access control &nbsp;</div>
 <p>
