@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.207  2004/01/22 16:40:00  midas
+   Keep attachment date/time on mirroring
+
    Revision 1.206  2004/01/22 12:29:48  midas
    Search 'all logbooks' only for current top group
 
@@ -1478,7 +1481,7 @@ void split_url(char *url, char *host, int *port, char *subdir, char *param)
 {
    char *p;
 
-   host[0] = subdir[0] = 0;
+   host[0] = subdir[0] = param[0] = 0;
    *port = 80;
 
    p = url;
@@ -3064,42 +3067,46 @@ INT el_retrieve(LOGBOOK * lbs,
 int el_submit_attachment(LOGBOOK * lbs, char *afilename, char *buffer, int buffer_size,
                          char *full_name)
 {
-   char file_name[MAX_PATH_LENGTH], dir[MAX_PATH_LENGTH], str[MAX_PATH_LENGTH], *p;
+   char file_name[MAX_PATH_LENGTH], ext_file_name[MAX_PATH_LENGTH], str[MAX_PATH_LENGTH], *p;
    int fh;
    time_t now;
    struct tm tms;
 
    /* strip directory, add date and time to filename */
-   strcpy(file_name, afilename);
-   p = file_name;
+   strcpy(str, afilename);
+   p = str;
    while (strchr(p, ':'))
       p = strchr(p, ':') + 1;
    while (strchr(p, '\\'))
       p = strchr(p, '\\') + 1;  /* NT */
    while (strchr(p, '/'))
       p = strchr(p, '/') + 1;   /* Unix */
+   strcpy(file_name, p);
 
    /* assemble ELog filename */
-   if (p[0]) {
-      strcpy(dir, lbs->data_dir);
+   if (file_name[0]) {
 
-      time(&now);
-      memcpy(&tms, localtime(&now), sizeof(struct tm));
+      if (file_name[6] == '_' && file_name[13] == '_' && isdigit(file_name[0]) && isdigit(file_name[1]))
+         strcpy(ext_file_name, file_name);
+      else {
+         time(&now);
+         memcpy(&tms, localtime(&now), sizeof(struct tm));
 
-      strcpy(str, p);
-      if (full_name)
-         sprintf(full_name, "%02d%02d%02d_%02d%02d%02d_%s",
+         sprintf(ext_file_name, "%02d%02d%02d_%02d%02d%02d_%s",
                  tms.tm_year % 100, tms.tm_mon + 1, tms.tm_mday, tms.tm_hour, tms.tm_min,
-                 tms.tm_sec, str);
+                 tms.tm_sec, file_name);
+      }
 
-      sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir,
-              tms.tm_year % 100, tms.tm_mon + 1, tms.tm_mday, tms.tm_hour, tms.tm_min,
-              tms.tm_sec, str);
+      if (full_name)
+         strcpy(full_name, ext_file_name);
+
+      strcpy(str, lbs->data_dir);
+      strcat(str, ext_file_name);
 
       /* save attachment */
-      fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
+      fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
       if (fh < 0) {
-         sprintf(str, "Cannot write attachment file \"%s\"", file_name);
+         sprintf(str, "Cannot write attachment file \"%s\"", str);
          show_error(str);
          return -1;
       } else {
@@ -7977,7 +7984,7 @@ void combine_url(LOGBOOK * lbs, char *url, char *param, char *result, int size)
 
 int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index)
 {
-   int i, n, id;
+   int i, n, id, x;
    char *text, *p, url[256];
 
    combine_url(lbs, host, "?cmd=GetMD5", url, sizeof(url));
@@ -8007,12 +8014,14 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index)
       if (n == 0)
          *md5_index = malloc(sizeof(MD5_INDEX));
       else
-         *md5_index = realloc(*md5_index, (i + 1) * sizeof(MD5_INDEX));
+         *md5_index = realloc(*md5_index, (n + 1) * sizeof(MD5_INDEX));
 
       (*md5_index)[n].message_id = id;
 
-      for (i = 0; i < 16; i++)
-         sscanf(p + 2 * i, "%02X", &((*md5_index)[n].md5_digest[i]));
+      for (i = 0; i < 16; i++) {
+         sscanf(p + 2 * i, "%02X", &x);
+         (*md5_index)[n].md5_digest[i] = (unsigned char) x;
+      }
    }
 
    /* debugging only
@@ -8148,9 +8157,14 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
               "%s\r\nContent-Disposition: form-data; name=\"exp\"\r\n\r\n%s\r\n",
               boundary, getparam("exp"));
 
+   if (in_reply_to[0])
+      sprintf(content + strlen(content),
+              "%s\r\nContent-Disposition: form-data; name=\"in_reply_to\"\r\n\r\n%s\r\n",
+              boundary, in_reply_to);
+
    if (reply_to[0])
       sprintf(content + strlen(content),
-              "%s\r\nContent-Disposition: form-data; name=\"reply_to\"\r\n\r\n%d\r\n",
+              "%s\r\nContent-Disposition: form-data; name=\"reply_to\"\r\n\r\n%s\r\n",
               boundary, reply_to);
 
    for (i = 0; i < lbs->n_attr; i++)
@@ -8303,7 +8317,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, BOOL bnew)
 {
    int i, status, size;
-   char str[256], *p, *p2, *message, date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
+   char str[256], str2[245], *p, *p2, *message, date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
        in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        attachment_all[64 * MAX_ATTACHMENTS];
@@ -8392,14 +8406,14 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
       for (i = 0; i < MAX_ATTACHMENTS; i++) {
          if (attachment[i][0]) {
 
-            strlcpy(str, url, sizeof(str));
-            if (str[strlen(str) - 1] != '/')
-               strlcat(str, "/", sizeof(str));
-            sprintf(str + strlen(str), "%d/%s", message_id, attachment[i]);
+            combine_url(lbs, url, "", str, sizeof(str));
+            strlcpy(str2, attachment[i], sizeof(str2));
+            str2[13] = '/';
+            strlcat(str, str2, sizeof(str));
 
             size = retrieve_url(str, &message);
-
             el_submit_attachment(lbs, attachment[i], message, size, NULL);
+            free(message);
          }
       }
    } else {
@@ -8412,16 +8426,17 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
 
 /*------------------------------------------------------------------*/
 
-int save_md5(char *server, MD5_INDEX * md5_index, int n)
+int save_md5(LOGBOOK *lbs, char *server, MD5_INDEX * md5_index, int n)
 {
-   char str[256], file_name[256];
+   char str[256], url[256], file_name[256];
    int i, j;
    FILE *f;
 
-   strlcpy(file_name, resource_dir, sizeof(file_name));
-   strcpy(str, server);
-   if (strstr(str, "http://"))
-      strcpy(str, server + 7);
+   combine_url(lbs, server, "", url, sizeof(url));
+   if (strstr(url, "http://"))
+      strcpy(str, url + 7);
+   else
+      strcpy(str, url);
 
    for (i = 0; i < (int) strlen(str); i++)
       if (strchr(":/\\", str[i]))
@@ -8430,6 +8445,7 @@ int save_md5(char *server, MD5_INDEX * md5_index, int n)
    while (str[strlen(str) - 1] == '_')
       str[strlen(str) - 1] = 0;
 
+   strlcpy(file_name, resource_dir, sizeof(file_name));
    strlcat(file_name, str, sizeof(file_name));
    strlcat(file_name, ".md5", sizeof(file_name));
 
@@ -8450,16 +8466,19 @@ int save_md5(char *server, MD5_INDEX * md5_index, int n)
 
 /*------------------------------------------------------------------*/
 
-int load_md5(char *server, MD5_INDEX ** md5_index)
+int load_md5(LOGBOOK *lbs, char *server, MD5_INDEX ** md5_index)
 {
-   char str[256], file_name[256], *p;
+   char str[256], url[256], file_name[256], *p;
    int i, j, x;
    FILE *f;
 
-   strlcpy(file_name, resource_dir, sizeof(file_name));
-   strcpy(str, server);
-   if (strstr(str, "http://"))
-      strcpy(str, server + 7);
+   *md5_index = NULL;
+
+   combine_url(lbs, server, "", url, sizeof(url));
+   if (strstr(url, "http://"))
+      strcpy(str, url + 7);
+   else
+      strcpy(str, url);
 
    for (i = 0; i < (int) strlen(str); i++)
       if (strchr(":/\\", str[i]))
@@ -8468,6 +8487,7 @@ int load_md5(char *server, MD5_INDEX ** md5_index)
    while (str[strlen(str) - 1] == '_')
       str[strlen(str) - 1] = 0;
 
+   strlcpy(file_name, resource_dir, sizeof(file_name));
    strlcat(file_name, str, sizeof(file_name));
    strlcat(file_name, ".md5", sizeof(file_name));
 
@@ -8559,7 +8579,15 @@ void synchronize(LOGBOOK * lbs, char *path)
       }
 
       /* load local copy of remote MD5s from file */
-      n_cache = load_md5(list[index], &md5_cache);
+      n_cache = load_md5(lbs, list[index], &md5_cache);
+      
+      /* if this is the first time (no cache exists yet), use remote list instead */
+      if (md5_cache == NULL && n_remote) {
+         md5_cache = calloc(sizeof(MD5_INDEX), n_remote);
+         assert(md5_cache);
+         memcpy(md5_cache, md5_remote, sizeof(MD5_INDEX)*n_remote);
+         n_cache = n_remote;
+      }
 
       /* loop through logbook entries */
       for (i_msg = 0; i_msg < *lbs->n_el_index; i_msg++) {
@@ -8713,7 +8741,7 @@ void synchronize(LOGBOOK * lbs, char *path)
                   retrieve_url(url, &buffer);
 
                   if (strstr(buffer, "Location: "))
-                     rsprintf(loc("Entry has been deleted remotely"));
+                     rsprintf(loc("Entry deleted remotely"));
                   else
                      rsprintf(loc("Error deleting remote entry"));
 
@@ -8726,13 +8754,6 @@ void synchronize(LOGBOOK * lbs, char *path)
       free(md5_remote);
 
       /* save remote MD5s in file */
-      strcpy(str, list[index]);
-
-      if (!strstr(str, lbs->name)) {
-         strlcat(str, lbs->name, sizeof(str));
-         strlcat(str, "/", sizeof(str));
-      }
-
       n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote);
 
       /* keep conflicting messages in cache */
@@ -8745,9 +8766,11 @@ void synchronize(LOGBOOK * lbs, char *path)
                }
          }
 
-      save_md5(list[index], md5_remote, n_remote);
+      save_md5(lbs, list[index], md5_remote, n_remote);
+
       free(md5_remote);
-      free(md5_cache);
+      if (md5_cache)
+        free(md5_cache);
    }
 
    rsprintf("</pre>\n");
@@ -11372,45 +11395,60 @@ void submit_elog(LOGBOOK * lbs)
 
       if (isparam("entry_date"))
          strcpy(date, getparam("entry_date"));
-   }
 
-   if (*getparam("edit_id") && *getparam("resubmit") && atoi(getparam("resubmit")) == 1) {
-      resubmit_orig = atoi(getparam("edit_id"));
+      if (isparam("reply_to"))
+         strcpy(reply_to, getparam("reply_to"));
 
-      /* get old links */
-      el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0, NULL, 0, in_reply_to, reply_to,
-                  NULL, NULL, NULL);
+      if (isparam("in_reply_to"))
+         strcpy(in_reply_to, getparam("in_reply_to"));
 
-      /* if not message head, move all preceeding messages */
-      /* outcommented, users want only resubmitted message occur at end (see what's new)
-         if (in_reply_to[0])
-         {
-         do
-         {
-         resubmit_orig = atoi(in_reply_to);
-         el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0,
-         NULL, 0, in_reply_to, reply_to, NULL, NULL);
-         } while (in_reply_to[0]);
-         }
-       */
+      if (_logging_level > 1)
+         logf(lbs, "MIRROR entry #%d", message_id);
 
-      message_id = atoi(getparam("edit_id"));
-      strcpy(in_reply_to, "<keep>");
-      strcpy(reply_to, "<keep>");
-      date[0] = 0;
    } else {
-      if (*getparam("edit_id")) {
-         bedit = TRUE;
+
+      if (*getparam("edit_id") && *getparam("resubmit") && atoi(getparam("resubmit")) == 1) {
+         resubmit_orig = atoi(getparam("edit_id"));
+
+         /* get old links */
+         el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0, NULL, 0, in_reply_to, reply_to,
+                     NULL, NULL, NULL);
+
+         /* if not message head, move all preceeding messages */
+         /* outcommented, users want only resubmitted message occur at end (see what's new)
+            if (in_reply_to[0])
+            {
+            do
+            {
+            resubmit_orig = atoi(in_reply_to);
+            el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0,
+            NULL, 0, in_reply_to, reply_to, NULL, NULL);
+            } while (in_reply_to[0]);
+            }
+          */
+
          message_id = atoi(getparam("edit_id"));
          strcpy(in_reply_to, "<keep>");
          strcpy(reply_to, "<keep>");
-         strcpy(date, "<keep>");
-      } else
-         strcpy(in_reply_to, getparam("reply_to"));
-   }
+         date[0] = 0;
+      } else {
+         if (*getparam("edit_id")) {
+            bedit = TRUE;
+            message_id = atoi(getparam("edit_id"));
+            strcpy(in_reply_to, "<keep>");
+            strcpy(reply_to, "<keep>");
+            strcpy(date, "<keep>");
+         } else
+            strcpy(in_reply_to, getparam("reply_to"));
+      }
 
-   if (_logging_level > 1 && message_id)
-      logf(lbs, "EDIT entry #%d", message_id);
+      if (_logging_level > 1) {
+         if (isparam("edit_id"))
+           logf(lbs, "EDIT entry #%d", message_id);
+         else
+           logf(lbs, "NEW entry #%d", message_id);
+      }
+   }
 
    message_id =
        el_submit(lbs, message_id, bedit, date, attr_list, attrib, lbs->n_attr,
@@ -11426,14 +11464,11 @@ void submit_elog(LOGBOOK * lbs)
       return;
    }
 
-   if (_logging_level > 1 && !*getparam("edit_id"))
-      logf(lbs, "NEW entry #%d", message_id);
-
    /* resubmit thread if requested */
    if (resubmit_orig)
       message_id = el_move_message_thread(lbs, resubmit_orig);
 
-      /*---- email notifications ----*/
+   /*---- email notifications ----*/
 
    suppress = atoi(getparam("suppress"));
 
@@ -11532,7 +11567,7 @@ void submit_elog(LOGBOOK * lbs)
 
    free(mail_to);
 
-      /*---- shell execution ----*/
+   /*---- shell execution ----*/
 
    if (!atoi(getparam("shell_suppress"))) {
       if (!*getparam("edit_id")) {
@@ -11544,7 +11579,7 @@ void submit_elog(LOGBOOK * lbs)
       }
    }
 
-      /*---- custom submit page ----*/
+   /*---- custom submit page ----*/
 
    if (getcfg(lbs->name, "Submit page", str)) {
       /* check if file starts with an absolute directory */
