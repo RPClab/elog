@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.11  2002/06/12 09:30:03  midas
+  Added elog:x HTML link
+
   Revision 2.10  2002/06/12 07:48:56  midas
   Display message ID's
 
@@ -2410,6 +2413,18 @@ char *p, link[256];
         i--;
 
         sprintf(return_buffer+j, "<a href=\"mailto:%s\">%s</a>", link, link);
+        j += strlen(return_buffer+j);
+        }
+      else if (strncmp(str+i, "elog:", 5) == 0)
+        {
+        p = (char *) (str+i+5);
+        i += 5;
+        for (k=0 ; *p && *p != '>' && *p != ' ' && *p != ',' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
+          link[k] = *p++;
+        link[k] = 0;
+        i--;
+
+        sprintf(return_buffer+j, "<a href=\"%s\">elog:%s</a>", link, link);
         j += strlen(return_buffer+j);
         }
       else
