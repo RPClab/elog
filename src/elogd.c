@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.176  2004/01/09 14:09:41  midas
+  Added 'last submission' option
+
   Revision 1.175  2004/01/07 15:04:03  midas
   Check for duplicate logbooks
 
@@ -382,9 +385,10 @@ typedef struct LBNODE *LBLIST;
 
 struct LBNODE {
    char name[256];
-   LBLIST member;
+   LBLIST *member;
    int n_members;
-   int subgroup;
+   int is_subgroup;
+   int is_top;
 } LBNODE;
 
 typedef struct {
@@ -2373,7 +2377,7 @@ int el_index_logbooks(BOOL reinit)
          continue;
 
       /* check for duplicate name */
-      for (j=0 ; j<i ; j++)
+      for (j = 0; j < i; j++)
          if (equal_ustring(lb_list[j].name, logbook)) {
             printf("Error in configuration file: Duplicate logbook \"%s\"\n", logbook);
             return EL_DUPLICATE;
@@ -4342,59 +4346,86 @@ void show_upgrade_page(LOGBOOK * lbs)
 
 /*------------------------------------------------------------------*/
 
-int get_logbook_hierarchy(LBLIST * lblist)
+LBLIST get_logbook_hierarchy(void)
 {
-   int i, j, k, n, m;
+   int i, j, k, n, m, flag;
    char str[1000], grpname[256], grpmembers[1000];
-   LBLIST lbl;
+   LBLIST root;
    char grplist[MAX_N_LIST][NAME_LENGTH];
+
+   /* allocate root node */
+   root = malloc(sizeof(LBNODE));
+   memset(root, 0, sizeof(LBNODE));
 
    /* enumerate groups */
    for (i = n = 0;; i++) {
       if (!enumcfg("global", grpname, grpmembers, i))
          break;
 
+      flag = 0;
       strlcpy(str, grpname, sizeof(str));
+      str[9] = 0;
+      if (equal_ustring(str, "top group"))
+         flag = 2;
       str[5] = 0;
-      if (equal_ustring(str, "group")) {
+      if (equal_ustring(str, "group"))
+         flag = 1;
+
+      if (flag) {
+
+         /* allocate new node, increase member pointer array by one */
          if (n == 0)
-            lbl = malloc(sizeof(LBNODE));
+            root->member = malloc(sizeof(void *));
          else
-            lbl = realloc(lbl, (n + 1) * sizeof(LBNODE));
-         memset(lbl + n, 0, sizeof(LBNODE));
+            root->member = realloc(root->member, (n + 1) * sizeof(void *));
+         root->member[n] = malloc(sizeof(LBNODE));
 
          if (strlen(grpname) < 7)
-            strlcpy(lbl[n].name, "Invalid group definition!", 256);
+            strlcpy(root->member[n]->name, "Invalid group definition!", 256);
+         else if (flag == 1)
+            strlcpy(root->member[n]->name, grpname + 6, 256);
          else
-            strlcpy(lbl[n].name, grpname + 6, 256);
-         m = strbreak(grpmembers, grplist, MAX_N_LIST);
-         lbl[n].n_members = m;
+            strlcpy(root->member[n]->name, grpname + 10, 256);
 
-         lbl[n].member = calloc(sizeof(LBNODE), m);
-         for (j = 0; j < m; j++)
-            strlcpy(lbl[n].member[j].name, grplist[j], 256);
+         m = strbreak(grpmembers, grplist, MAX_N_LIST);
+         root->member[n]->n_members = m;
+
+         root->member[n]->member = calloc(sizeof(void *), m);
+         root->member[n]->n_members = m;
+         for (j = 0; j < m; j++) {
+            root->member[n]->member[j] = calloc(sizeof(LBNODE), 1);
+            strlcpy(root->member[n]->member[j]->name, grplist[j], 256);
+         }
+
+         root->member[n]->is_top = (flag == 2);
 
          n++;
       }
    }
 
+   root->n_members = n;
+
    /* populate nodes with logbooks or other groups */
-   for (i = 0; i < n; i++)
-      for (j = 0; j < lbl[i].n_members; j++) {
+   for (i = 0; i < root->n_members; i++)
+      for (j = 0; j < root->member[i]->n_members; j++) {
          /* check if node is valid logbook */
          for (k = 0; lb_list[k].name[0]; k++)
-            if (equal_ustring(lbl[i].member[j].name, lb_list[k].name))
+            if (equal_ustring(root->member[i]->member[j]->name, lb_list[k].name))
                break;
 
-         /* check if node is other node */
+         /* check if node is subgroup of other node */
          if (!lb_list[k].name[0]) {
             for (k = 0; k < n; k++)
-               if (equal_ustring(lbl[i].member[j].name, lbl[k].name)) {
-                  lbl[i].member[j].member = lbl[k].member;
-                  lbl[i].member[j].n_members = lbl[k].n_members;
+               if (equal_ustring(root->member[i]->member[j]->name, root->member[k]->name)) {
 
-                  /* mark group as subgroup */
-                  lbl[k].subgroup = 1;
+                  /* node is allocated twice, so free one... */
+                  free(root->member[i]->member[j]);
+
+                  /* ... and reference the other */
+                  root->member[i]->member[j] = root->member[k];
+
+                  /* mark original pointer invalid */
+                  root->member[k] = NULL;
                   break;
                }
          }
@@ -4404,42 +4435,60 @@ int get_logbook_hierarchy(LBLIST * lblist)
       for (n = 0; lb_list[n].name[0]; n++);
 
       /* make simple list with logbooks */
-      lbl = calloc(n, sizeof(LBNODE));
-      for (i = 0; i < n; i++)
-         strlcpy(lbl[i].name, lb_list[i].name, 256);
+      root->member = calloc(n, sizeof(void *));
+
+      for (i = 0; i < n; i++) {
+         root->member[i] = calloc(1, sizeof(LBNODE));
+         strlcpy(root->member[i]->name, lb_list[i].name, 256);
+      }
    }
 
-   *lblist = lbl;
-
-   return n;
+   return root;
 }
 
-int is_logbook_in_group(LBLIST lbl, char *logbook)
+/*------------------------------------------------------------------*/
+
+void free_logbook_hierarchy(LBLIST root)
 {
    int i;
 
-   if (equal_ustring(lbl->name, logbook))
+   for (i = 0; i < root->n_members; i++) {
+      if (root->member[i] != NULL)
+         free_logbook_hierarchy(root->member[i]);
+
+      free(root->member);
+      free(root);
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+int is_logbook_in_group(LBLIST pgrp, char *logbook)
+/* test if "logbook" is in group node plb */
+{
+   int i;
+
+   if (equal_ustring(pgrp->name, logbook))
       return 1;
 
-   for (i = 0; i < lbl->n_members; i++) {
-      if (equal_ustring(logbook, lbl->member[i].name))
+   for (i = 0; i < pgrp->n_members; i++) {
+      if (equal_ustring(logbook, pgrp->member[i]->name))
          return 1;
 
-      if (lbl->member[i].n_members > 0 && is_logbook_in_group(&(lbl->member[i]), logbook))
+      if (pgrp->member[i]->n_members > 0 && is_logbook_in_group(pgrp->member[i], logbook))
          return 1;
    }
 
    return 0;
 }
 
-
 /*------------------------------------------------------------------*/
 
 void show_standard_title(char *logbook, char *text, int printable)
 {
    char str[256], ref[256], sclass[32];
-   int i, j, n_grp, n_lb, nnum, level;
-   LBLIST clb, flb, nlb, lbl;
+   int i, j, level;
+   LBLIST phier, pnode, pnext, flb;
 
    if (printable)
       rsprintf
@@ -4449,53 +4498,58 @@ void show_standard_title(char *logbook, char *text, int printable)
           ("<table class=\"frame\" cellpadding=0 cellspacing=0><!-- show_standard_title -->\n\n");
 
    /* scan logbook hierarchy */
-   n_grp = get_logbook_hierarchy(&lbl);
+   phier = get_logbook_hierarchy();
 
   /*---- logbook selection row ----*/
 
-   clb = lbl;
-   nlb = NULL;
-   n_lb = n_grp;
+   pnode = phier;               /* start at root of tree */
+   pnext = NULL;
+
    if (!printable && getcfg(logbook, "logbook tabs", str)
        && atoi(str) == 1) {
+
       for (level = 0;; level++) {
          rsprintf("<tr><td class=\"tabs\">\n");
 
          if (level == 0 && getcfg("global", "main tab", str))
             rsprintf("<span class=\"ltab\"><a href=\"../\">%s</a></span>\n", str);
 
-         for (i = 0; i < n_lb; i++) {
-            if (level == 0 && clb[i].subgroup)  // check for subgroup
+         /* iterate through members of this group */
+         for (i = 0; i < pnode->n_members; i++) {
+
+            /* check if valid node */
+            if (pnode->member[i] == NULL)
                continue;
 
-            if (getcfg(clb[i].name, "Hidden", str) && atoi(str) == 1)
+            if (getcfg(pnode->member[i]->name, "Hidden", str) && atoi(str) == 1)
                continue;
 
-            strlcpy(str, clb[i].name, sizeof(str));
+            strlcpy(str, pnode->member[i]->name, sizeof(str));
 
             /* build reference to first logbook in group */
-            if (clb[i].member == NULL)
+            if (pnode->member[i]->member == NULL)
                strlcpy(ref, str, sizeof(ref));  // current node is logbook
             else {
-               flb = &clb[i].member[0]; // current node is group
+               flb = pnode->member[i]->member[0];       // current node is group
                while (flb->member)      // so traverse hierarchy
-                  flb = &flb->member[0];
+                  flb = flb->member[0];
                strlcpy(ref, flb->name, sizeof(ref));
             }
             url_encode(ref, sizeof(ref));
 
-            if (is_logbook_in_group(&clb[i], logbook)) {
-               nlb = clb[i].member;
-               nnum = clb[i].n_members;
+            if (is_logbook_in_group(pnode->member[i], logbook)) {
 
-               if (clb[i].member == NULL)
+               /* remember member list of this group for next row */
+               pnext = pnode->member[i];
+
+               if (pnode->member[i]->member == NULL)
                   /* selected logbook */
                   strcpy(sclass, "sltab");
                else
                   /* selected group */
                   strcpy(sclass, "sgtab");
             } else {
-               if (clb[i].member == NULL)
+               if (pnode->member[i]->member == NULL)
                   /* unselected logbook */
                   strcpy(sclass, "ltab");
                else
@@ -4503,36 +4557,33 @@ void show_standard_title(char *logbook, char *text, int printable)
                   strcpy(sclass, "gtab");
             }
 
-            // rsprintf("<span class=\"%s\">&nbsp;<a class=\"%s\" href=\"../%s/\">", sclass, sclass, ref);
-            rsprintf("<span class=\"%s\"><a href=\"../%s/\">", sclass, ref);
+            if (!pnode->member[i]->is_top) {
 
-            strlcpy(str, clb[i].name, sizeof(str));
+               rsprintf("<span class=\"%s\"><a href=\"../%s/\">", sclass, ref);
 
-            for (j = 0; j < (int) strlen(str); j++)
-               if (str[j] == ' ')
-                  rsprintf("&nbsp;");
-               else
-                  rsprintf("%c", str[j]);
+               strlcpy(str, pnode->member[i]->name, sizeof(str));
 
-            rsprintf("</a></span>\n");
+               for (j = 0; j < (int) strlen(str); j++)
+                  if (str[j] == ' ')
+                     rsprintf("&nbsp;");
+                  else
+                     rsprintf("%c", str[j]);
+
+               rsprintf("</a></span>\n");
+            }
          }
+
          rsprintf("</td></tr>\n\n");
 
-         clb = nlb;
-         n_lb = nnum;
+         pnode = pnext;
+         pnext = NULL;
 
-         if (nlb == NULL)
+         if (pnode == NULL)
             break;
-
       }
    }
 
-   /* free logbook node memory */
-   for (i = 0; i < n_grp; i++)
-      if (lbl[i].member)
-         free(lbl[i].member);
-
-   free(lbl);
+   free_logbook_hierarchy(phier);
 
   /*---- title row ----*/
 
@@ -8681,7 +8732,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, int n_page, BOOL to
                    ("<input type=text onChange=\"document.form1.submit()\" name=\"%s\" value=\"%s\">\n",
                     list[index], getparam(list[index]));
             } else {
-               rsprintf("<select name=%s onChange=\"document.form1.submit()\">\n",
+               rsprintf("<select name=\"%s\" onChange=\"document.form1.submit()\">\n",
                         list[index]);
 
                rsprintf("<option value=\"_all_\">%s\n", loc("All entries"));
@@ -11737,7 +11788,7 @@ void show_selection_page()
 {
    int i, j;
    char str[10000];
-   struct tm *tms;
+   char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
 
    if (getcfg("global", "Page Title", str))
       show_html_header(NULL, TRUE, str);
@@ -11792,10 +11843,6 @@ void show_selection_page()
          else {
             char attrib[MAX_N_ATTR][NAME_LENGTH];
 
-            tms = localtime(&(lb_list[i].el_index[*lb_list[i].n_el_index - 1].file_time));
-            strftime(str, sizeof(str), "%a %b %d, %Y %H:%M", tms);
-            rsprintf(str);
-
             lb_list[i].n_attr = scan_attributes(lb_list[i].name, NULL);
 
             el_retrieve(&lb_list[i],
@@ -11803,9 +11850,13 @@ void show_selection_page()
                         attr_list, attrib, lb_list[i].n_attr, NULL, 0, NULL, NULL, NULL,
                         NULL, NULL);
 
-            for (j = 0; j < lb_list[i].n_attr; j++)
-               if (equal_ustring(attr_list[j], loc("Author")))
-                  rsprintf(" %s %s", loc("by"), attrib[j]);
+            if (!getcfg(lb_list[i].name, "Last submission", str))
+               sprintf(str, "$date %s $author", loc("by"));
+
+            j = build_subst_list(&lb_list[i], slist, svalue, attrib);
+            strsubst(str, slist, svalue, j);
+
+            rsputs(str);
 
          }
          rsprintf("</td></tr>\n");

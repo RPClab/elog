@@ -904,6 +904,14 @@ in elogd by default and has to be enabled explicitly with the "-x" command line 
 The administrator has to ensure then of course that only trusted people can edit elogd.cfg.
 <p>
 
+<LI><b><code>Last submission = &lt;string&gt;</b></code>
+<br>
+This option determines what gets displayed on the logbook selection page in the 
+<i>Last submission</i> colum. The default string is <code><b>$date by $author</b></code>. If
+a logbook does not contain an <code><b>author</b></code> attribute, another string can
+be chosen.
+<p>
+
 </UL>
 
 <a name="conditional"><hr>
@@ -915,10 +923,10 @@ depending on the value of other attributes.	Let's assume you have a logbook cont
 for different computers with different operating systems. Your elogd.cfg file starts like that:
 <p>
 
-<pre>
+<ul><pre>
 Attributes = PC Name, Operating System, Version
 Options Operating System = Linux, Windows
-</pre>
+</pre></ul>
 <p>
 
 For the operating system version, you would like a list, but this list has to be different 
@@ -926,12 +934,12 @@ for Linux and Windows. This can be achieved with <i>conditional attributes</i>. 
 following configuration:
 <p>
 
-<pre>
+<ul><pre>
 Attributes = PC Name, Operating System, Version
 Options Operating System = Linux{1}, Windows{2}
 {1} Options Version = 2.2, 2.4, 2.6
 {2} Options Version = ME, 2k, NT, XP
-</pre>
+</pre></ul>
 <p>
 
 If you enter a new entry into that logbook, the drop-down list for <code><b>Version</b></code>
@@ -954,24 +962,24 @@ of forms. Depending on an attribute, the configuration option
 the message body, which can then be filled out. Consider following example:
 <p>
 
-<pre>
+<ul><pre>
 Attributes = Author, Type
 Options Type = Network check{1}, System check{2}
 
 {1} Preset text = network.txt
 {2} Preset text = system.txt
-</pre>
+</pre></ul>
 <p>
 This causes two text files <i>network.txt</i> and <i>system.txt</i> to be copied
 into the message body when a new entry is made. The file <i>network.txt</i> could
 look like:
 <p>
 
-<pre>
+<ul><pre>
 Routers checked:  [ ]
 DHCP checked:     [ ]
 Comment: ...
-</pre>
+</pre></ul>
 <p>
 
 This works like a pre-defined form, the user puts X's between the "[ ]" when that
