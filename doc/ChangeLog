@@ -6,6 +6,8 @@ Version 2.3.7, released April 23rd, 2003
 - Added icon for protected logbooks
 - Increased number of attachments to 50
 - Implemented 3D cell frames
+- Added anchor for attachments
+- Replace CRLF.CRLF by CRLF..CRLF in email notifications
 
 Version 2.3.6, released April 23rd, 2003
 ========================================
