@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.575  2005/03/02 14:20:16  ritt
+   Fixed wrong comma display together with 'List display'
+
    Revision 1.574  2005/03/02 14:04:18  ritt
    Implemented support for thumbnail display
 
@@ -13402,6 +13405,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             rsprintf("<b>");
       }
 
+      skip_comma = TRUE;
       for (index = 0; index < n_attr_disp; index++) {
          if (strieq(disp_attr[index], loc("ID"))) {
             if (strieq(mode, "Threaded")) {
@@ -13409,8 +13413,6 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   rsprintf("<img border=0 src=\"entry.png\" alt=\"%s\">&nbsp;", loc("Entry"));
                else
                   rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\">&nbsp;", loc("Reply"));
-
-               skip_comma = TRUE;
 
             } else {
                rsprintf("<td class=\"%s\">", sclass);
