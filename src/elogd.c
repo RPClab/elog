@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.4  2003/01/31 20:29:27  midas
+  Fixed typo
+
   Revision 1.3  2003/01/31 11:57:16  midas
   Do not allow commands which are not present in menu list
 
@@ -3963,7 +3966,7 @@ LBLIST clb, flb, nlb, lbl;
     rsprintf("<td class=\"title2\">%s \"%s\"</td>\n", loc("Logged in as"), getparam("full_name"));
   else
     if (getcfg(logbook, "Guest menu commands", str))
-      rsprintf("<td clas=\"title2\" align=center>%s</td>\n", loc("Not logged in"));
+      rsprintf("<td class=\"title2\" align=center>%s</td>\n", loc("Not logged in"));
 
   /* right cell */
   rsprintf("<td class=\"title3\">");
