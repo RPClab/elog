@@ -222,18 +222,20 @@ to-do list with a due date). To do that, on can add a new attribute (let's call 
 <i>Record date</i>, to be different from the pre-defined <i>Date</i>:<p>
 
 <code>
-Attributes = Author, ..., Record date
-Preset Record date = $date
-Date format = %Y %m %d
-List Display = Record date, Author, ...
-Start page = ?rsort=Record date
-</code>
+Attributes = Author, ..., Record date<br>
+Preset Record date = $date<br>
+Date format = %Y %m %d<br>
+List Display = Record date, Author, ...<br>
+Start page = ?rsort=Record date<br>
+</code><p>
 
 The <i>Preset Record date</i> statement sets the record date to the current date, but
-this can then of course edite during the message entry. The <i>List Display</i> and
+this can then of course edited during the message entry. The <i>List Display</i> and
 <i>Start page</i> statements show the record date as the first column in the summary
 display and also sort by that. Note the <i>Date format</i> showing first year, then month
-and day. This is necessary since sorting is done only lexically.
+and day. This is necessary since sorting is done only lexically. Please note that the
+<i>List Display</i> was renamed recently. Prior to version 2.3.10, it was called
+<i>Display Search</i>.
 
 </UL>
 
