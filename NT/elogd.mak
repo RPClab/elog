@@ -51,7 +51,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\elogd.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_PROJ=/nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\elogd.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c /I/mxml
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -208,9 +208,9 @@ SOURCE=..\src\regex.c
 "$(INTDIR)\regex.obj"	"$(INTDIR)\regex.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
-SOURCE=..\src\mxml.c
+SOURCE=..\..\mxml\mxml.c
 "$(INTDIR)\mxml.obj"	"$(INTDIR)\mxml.sbr" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) /D "STRLCPY_DEFINED" $(SOURCE)
+	$(CPP) $(CPP_PROJ) /D "HAVE_STRLCPY" $(SOURCE)
 
 !ENDIF 
 
