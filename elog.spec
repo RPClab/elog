@@ -56,6 +56,8 @@ each weblog can be totally different from the rest.
 
 %prep
 %setup -q
+
+%pre
 %{_sbindir}/groupadd -r -g %{elog_gid} elog 2>/dev/null || :
 %{_sbindir}/useradd -d /no/such/path -s /bin/false -u %{elog_uid} \
    -g elog -M -r elog 2>/dev/null || :
