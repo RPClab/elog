@@ -1,6 +1,6 @@
 #
 # Dutch translation by djek@xs4all.nl
-# 17-02-2004
+# 22-03-2004
 # A more recent version may be available at :
 # http://midas.psi.ch/cgi-bin/cvsweb/elog/eloglang.dutch
 #
@@ -103,7 +103,8 @@ Not logged in = Niet ingelogd
 Login = Inloggen
 Page %d of %d = Pagina %d van de %d
 all entries = alle berichten
-Login name = Loginnaam
+Lo
+gin name = Loginnaam
 Full name = Gebruikersnaam
 ELOG user config = ELOG gebruikers configuratie
 ELOG new user = ELOG Nieuwe gebruiker
@@ -271,26 +272,22 @@ Please enter numeric value for '%s' = Geef een numerieke waarde voor '%s'
 Error: Attribute <b>%s</b> must be numeric = Fout Attribuut <b>%s</b> moet numeriek zijn
 3 Months = 3 Maanden
 6 Months = 6 Maanden
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Error sending local message = 
-Error receiving message = 
-Are you sure to delete this entry? = 
-Import = 
-CSV filename = 
-Field separator = 
-Edit entry = 
-Delete entry = 
-CSV Import = 
-ELOG CSV import = 
-Derive attributes from CSV file = 
-Comma = 
-Semicolon = 
-Ignore first line = 
-Preview import = 
-CVS import preview of %s = 
-Too many attributes in CSV file = 
-%d entries successfully imported = 
-No 'Attributes' option present in %s = 
+Error sending local message = Fout bij versturen lokaal bericht
+Error receiving message = Fout bij ontvangen bericht
+Are you sure to delete this entry? = Weet je zeker dat je dit bericht wilt wissen?
+Import = Importeer
+CSV filename = CSV bestandsnaam
+Field separator = Veldscheidingsteken
+Edit entry = Wijzig bericht
+Delete entry = Wis bericht
+CSV Import = CSV Import
+ELOG CSV import = ELOG CSV import
+Derive attributes from CSV file = Haal attributen uit csv bestand
+Comma = Komma
+Semicolon = Punt Komma
+Ignore first line = Negeer eerste regel
+Preview import = Import voorbeeld
+CSV import preview of %s = CSV import voorbeeld van %s
+Too many attributes in CSV file = Te veel attributen in CSV bestand 
+%d entries successfully imported = %d  berichten succesvol geïmporteerd
+No 'Attributes' option present in %s = Geen 'Attributen' optie aanwezig in %s

@@ -101,10 +101,17 @@ Section "Multi-language support"
   File eloghelp_fr.html
   File eloghelp_sp.html
   File eloghelp_du.html
+  File eloghelp_br.html
+  File eloghelp_ja.html
+  File eloghelp_it.html
+  File eloghelp_en.html
   File eloglang.german
   File eloglang.french
   File eloglang.spanish
   File eloglang.dutch
+  File eloglang.brazilian
+  File eloglang.japanese
+  File eloglang.italian
 SectionEnd
 
 ; optional section
@@ -152,10 +159,16 @@ Section "Uninstall"
   Delete $INSTDIR\eloghelp_ge.html
   Delete $INSTDIR\eloghelp_sp.html
   Delete $INSTDIR\eloghelp_du.html
+  Delete $INSTDIR\eloghelp_it.html
+  Delete $INSTDIR\eloghelp_ja.html
+  Delete $INSTDIR\eloghelp_br.html
   Delete $INSTDIR\eloglang.french
   Delete $INSTDIR\eloglang.german
   Delete $INSTDIR\eloglang.spanish
   Delete $INSTDIR\eloglang.dutch
+  Delete $INSTDIR\eloglang.brazilian
+  Delete $INSTDIR\eloglang.italian
+  Delete $INSTDIR\eloglang.japanese
 
   Delete $INSTDIR\doc\*
   RMDir $INSTDIR\doc
