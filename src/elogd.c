@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.95  2003/05/01 07:00:36  midas
+  Delete old cookies on login
+
   Revision 1.94  2003/05/01 06:17:54  midas
   Fixed bug in password recovery with logbooks containing blanks
 
@@ -3969,6 +3972,10 @@ struct tm *gmt;
 
   exp = atof(expiration);
 
+  /* to clear a cookie, set expiration date to yesterday */
+  if (value[0] == 0)
+    exp = -24;
+  
   /* add expriation date */
   if (exp != 0)
     {
@@ -10865,8 +10872,8 @@ int   i;
 BOOL check_user_password(LOGBOOK *lbs, char *user, char *password, char *redir)
 {
 char  status, str[1000], upwd[256], full_name[256], email[256];
-char  list[MAX_N_LIST][NAME_LENGTH];
-int   i, n;
+char  list[MAX_N_LIST][NAME_LENGTH], css[256];
+int   i, n, global;
 
   if (lbs == NULL)
     status = get_user_line("global", user, upwd, full_name, email, NULL);
@@ -10944,8 +10951,34 @@ int   i, n;
       }
 
     /* show login password page */
-    show_html_header(lbs, TRUE, "ELOG login");
+    //show_html_header(lbs, TRUE, "ELOG login");
+    rsprintf("HTTP/1.1 200 Document follows\r\n");
+    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+    if (getcfg("global", "charset", str))
+      rsprintf("Content-Type: text/html;charset=%s\r\n", str);
+    else
+      rsprintf("Content-Type: text/html;charset=iso-8859-1\r\n");
+    rsprintf("Pragma: no-cache\r\n");
+    rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
 
+    /* delete any remaining cookie */
+    global = getcfg("global", "Password file", str);
+    set_cookie(lbs, "upwd", "", global, "");
+    set_cookie(lbs, "unm", "", global, "");
+    rsprintf("\r\n");
+
+    /* HTML header */
+    rsprintf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n"); 
+    rsprintf("<html><head><title>ELOG %s</title>\n", loc("login"));
+    strlcpy(css, "default.css", sizeof(css));
+    if (lbs != NULL && getcfg(lbs->name, "CSS", str))
+      strlcpy(css, str, sizeof(css));
+    else if (lbs == NULL && getcfg("global", "CSS", str))
+      strlcpy(css, str, sizeof(css));
+    rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">", css);
+    rsprintf("</head>\n");
+
+    /* set focus on name field */
     rsprintf("<body OnLoad=\"document.form1.uname.focus();\">\n");
 
     rsprintf("<form name=form1 method=\"GET\" action=\"\">\n\n");
