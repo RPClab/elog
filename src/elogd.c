@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.597  2005/03/24 18:41:16  ritt
+   Fixed small pointer bug
+
    Revision 1.596  2005/03/24 12:54:05  ritt
    Fixed problem with '&' in href links
 
@@ -1937,7 +1940,7 @@ void base64_decode(char *s, char *d)
 {
    unsigned int t;
 
-   while (*s) {
+   while (s && *s) {
       t = cind(*s) << 18;
       s++;
       t |= cind(*s) << 12;
