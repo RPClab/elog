@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.480  2004/09/22 19:20:57  midas
+   Fixed superfluous spaces
+
    Revision 1.479  2004/09/20 16:12:57  midas
    Added urs_slash_encode because of mirroring problem
 
@@ -10065,7 +10068,7 @@ void show_new_user_page(LOGBOOK * lbs)
    rsprintf("<td align=left><i><font size=2>(%s)</i></font></td></tr>\n",
             loc(" name may not contain blanks "));
 
-   rsprintf(" < tr >< td nowrap width = \"10%%\">%s:</td>\n", loc("Full name"));
+   rsprintf("<tr><td nowrap width = \"10%%\">%s:</td>\n", loc("Full name"));
    rsprintf("<td colspan=2><input type=text size=40 name=new_full_name></tr>\n");
 
    rsprintf("<tr><td nowrap width=\"10%%\">Email:</td>\n");
