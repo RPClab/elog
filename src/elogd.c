@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.267  2004/02/26 13:00:27  midas
+   Fixed bug with 'start page = 0?cmd=Last
+
    Revision 1.266  2004/02/26 12:41:42  midas
    Fixed bug in el_decode, added <label> to buttons
 
@@ -13543,10 +13546,9 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
       if (strieq(command, loc("First")))
          message_id = el_search_message(lbs, EL_FIRST, 0, FALSE);
 
-      if (!message_id) {
-         redirect(lbs, "");
-         return;
-      }
+      /* avoid display of "invalid id '0'", if "start page = 0?cmd=Last" */
+      if (!message_id)
+         dec_path[0] = 0;
 
       first = TRUE;
       do {
