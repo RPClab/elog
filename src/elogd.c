@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.136  2003/07/15 12:29:10  midas
+  Fixed typo
+
   Revision 1.135  2003/07/15 12:27:50  midas
   Added resource directory in front of logging file
 
@@ -3978,7 +3981,7 @@ char    buf[256];
     strlcpy(lb, lbs->name, sizeof(lb));
 
   if (*getparam("unm"))
-    fprintf(f,"%s [%sd@%s] %s: %s", buf, getparam("unm"), rem_host, lb, str);
+    fprintf(f,"%s [%s@%s] %s: %s", buf, getparam("unm"), rem_host, lb, str);
   else
     fprintf(f,"%s [%s] %s: %s", buf, rem_host, lb, str);
 
