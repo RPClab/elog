@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.161  2003/12/03 12:10:24  midas
+  Change email notification format
+
   Revision 1.160  2003/12/03 11:55:27  midas
   Added 'use email heading'
 
@@ -10245,8 +10248,9 @@ char   list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
 
   if (flags & 8)
     {
-    sprintf(mail_text+strlen(mail_text), "\r\n=================================\r\n\r\n%s",
-      getparam("text"));
+    if (*getparam("text"))
+      sprintf(mail_text+strlen(mail_text), "\r\n=================================\r\n\r\n%s",
+              getparam("text"));
     }
 
   status = 0;
