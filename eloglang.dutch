@@ -292,11 +292,13 @@ CSV ("," separated) = CSV (";" gescheiden)
 CSV (";" separated) = CSV (";" gescheiden)
 Login name = Loginnaam
 Auto detect = Auto ontdek
-
+Text = Tekst
+Column header '%s' must be present in CSV file = Kolonne hoved '%s' skal være tilstede i CSV filen
+Fill text body = Udfyld tekst feltet
+Please re-enter filename = Gentag fil navn
+Last x = Sidste X
 #
 #---- please translate following items and then remove this comment ----#
 #
 text = 
-Column header '%s' must be present in CSV file = 
-Fill text body = 
-Please re-enter filename = 
+Activate = 

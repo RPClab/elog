@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.334  2004/06/04 22:20:20  midas
+   Added missing translations
+
    Revision 1.333  2004/06/04 22:11:36  midas
    Added missing loc() dummies
 
@@ -16395,7 +16398,7 @@ void interprete(char *lbook, char *path)
       }
 
       /* check for activate */
-      strcpy(str, "Activate");
+      strcpy(str, loc("Activate"));
       if (strieq(getparam("cmd"), "Activate")) {
          if (!save_user_config(NULL, getparam("new_user_name"), TRUE, TRUE))
             return;

@@ -294,3 +294,5 @@ text =
 Column header '%s' must be present in CSV file = 
 Fill text body = 
 Please re-enter filename = 
+Last x = 
+Activate = 

@@ -293,3 +293,5 @@ text = Text
 Column header '%s' must be present in CSV file = Spaltenüberschrift '%s' muß in der CSV Datei vorhanden sein
 Fill text body = Haupttext importieren
 Please re-enter filename = Bitte Dateinamen erneut eingeben
+Last x = Letzte x
+Activate = Aktivieren
