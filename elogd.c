@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.5  2002/06/07 14:56:53  midas
+  Fixed time offset due to DST when using 'Date format'
+
   Revision 2.4  2002/06/07 14:40:37  midas
   Check URL tail before displaying logbook page
 
@@ -535,7 +538,7 @@ struct sockaddr_in   bind_addr;
 struct hostent       *phe;
 int                  s, offset;
 char                 buf[80];
-char                 str[10000];
+char                 str[TEXT_SIZE+1000];
 time_t               now;
 struct tm            *ts;
 
@@ -3400,7 +3403,6 @@ time_t now;
       ts.tm_sec  = atoi(date+17);
       ts.tm_year = atoi(date+20)-1900;
 
-      mktime(&ts);
       strftime(str, sizeof(str), format, &ts);
       }
     else
@@ -4879,7 +4881,6 @@ FILE   *f;
             ts.tm_sec  = atoi(date+17);
             ts.tm_year = atoi(date+20)-1900;
 
-            mktime(&ts);
             strftime(str, sizeof(str), format, &ts);
             }
           else
@@ -6251,7 +6252,6 @@ BOOL   first;
       ts.tm_sec  = atoi(date+17);
       ts.tm_year = atoi(date+20)-1900;
 
-      mktime(&ts);
       strftime(str, sizeof(str), format, &ts);
 
       rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>%s:</b></td><td bgcolor=%s>%s\n\n",
