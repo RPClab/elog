@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.456  2004/08/09 18:19:27  midas
+   Added better error reporting
+
    Revision 1.455  2004/08/09 10:54:53  midas
    Fixed another memory leak
 
@@ -21285,7 +21288,7 @@ int main(int argc, char *argv[])
    /* check for configuration file */
    fh = open(config_file, O_RDONLY | O_BINARY);
    if (fh < 0) {
-      eprintf("Configuration file \"%s\" not found.\n", config_file);
+      eprintf("Cannot open \"%s\": %s\n", config_file, strerror(errno));
       exit(EXIT_FAILURE);
    }
    close(fh);
