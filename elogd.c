@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.100  2002/11/20 14:20:16  midas
+  Fixed bug with bottom text file display
+
   Revision 2.99  2002/11/20 13:48:10  midas
   Create data dir automatically, allow for substitutions in find attributes
 
@@ -7742,7 +7745,7 @@ char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
       strcat(file_name, str);
       }
 
-    f = fopen(file_name, "r");
+    f = fopen(file_name, "rb");
     if (f != NULL)
       {
       fseek(f, 0, SEEK_END);
@@ -9076,7 +9079,7 @@ BOOL   first;
       strcat(file_name, str);
       }
 
-    f = fopen(file_name, "r");
+    f = fopen(file_name, "rb");
     if (f != NULL)
       {
       fseek(f, 0, SEEK_END);
