@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.482  2004/09/24 00:40:57  midas
+   Fixed bug with 'expand all' on logbook selection page
+
    Revision 1.481  2004/09/23 22:06:31  midas
    Added error when non-existing attachments get submitted
 
@@ -18029,15 +18032,9 @@ void show_selection_page()
             break;
          }
    } else
-      for (i = 0; i < phier->n_members; i++) {
+      for (i = 0; i < phier->n_members; i++)
          if (phier->member[i]->n_members == 0)
             show_title = 1;
-         else
-            for (j = 0; j < phier->member[i]->n_members; j++)
-               if (phier->member[i]->member[j]->n_members == 0)
-                  show_title = 1;
-      }
-
 
    if (isparam("gexp"))
       show_title = 1;
