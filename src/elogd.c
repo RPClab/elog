@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.103  2003/05/07 19:07:17  midas
+  Replace CR.CR by CR..CR in email notifications
+
   Revision 1.102  2003/05/07 18:45:42  midas
   - moved lock.gif to themes directory
   - fixed a few bugs with </th>
@@ -1485,7 +1488,7 @@ struct sockaddr_in   bind_addr;
 struct hostent       *phe;
 int                  i, n, s, offset, strsize;
 char                 buf[80];
-char                 *str;
+char                 *str, *p;
 time_t               now;
 struct tm            *ts;
 char                 list[1024][NAME_LENGTH];
@@ -1600,7 +1603,19 @@ char                 list[1024][NAME_LENGTH];
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
 
-  snprintf(str, strsize - 1, "%s\r\n.\r\n", text);
+  /* analyze text for "." at beginning of line */
+  p = text;
+  str[0] = 0;
+  while (strstr(p, "\r\n.\r\n"))
+    {
+    i = (int) strstr(p, "\r\n.\r\n") - (int) p + 1;
+    strlcat(str, p, i);
+    p += i+4;
+    strlcat(str, "\r\n..\r\n", strsize);
+    }
+  strlcat(str, p, strsize);
+  strlcat(str, "\r\n.\r\n", strsize);
+
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
   recv_string(s, str, strsize, 3000);
