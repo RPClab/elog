@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.412  2004/07/28 19:20:46  midas
+   Fixed wrong date on date attributes on edit/reply if attribute is fixed
+
    Revision 1.411  2004/07/28 18:51:48  midas
    Close syslog on cleanup
 
@@ -7431,8 +7434,23 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
           (bedit && (attr_flags[index] & AF_FIXED_EDIT)) || (message_id && !bedit
                                                              && (attr_flags[index] &
                                                                  AF_FIXED_REPLY))) {
+         if (attr_flags[index] & AF_DATE) {
+            
+            if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
+               strcpy(format, DEFAULT_DATE_FORMAT);
+
+            ltime = atoi(attrib[index]);
+            pts = localtime(&ltime);
+            if (ltime == 0)
+               strcpy(str, "-");
+            else
+               strftime(str, sizeof(str), format, pts);
+
+         } else 
+            strlcpy(str, attrib[index], sizeof(str));
+
          rsprintf("<td%s class=\"attribvalue\">\n", title);
-         rsputs2(attrib[index]);
+         rsputs2(str);
          rsprintf("&nbsp;");
 
          if (attr_flags[index] & AF_MULTI) {
@@ -15577,28 +15595,33 @@ void submit_elog(LOGBOOK * lbs)
          }
       } else if (attr_flags[i] & AF_DATE) {
 
-         sprintf(str, "y%d", i);
-         year = atoi(getparam(str));
-         if (year < 100)
-            year += 2000;
-
-         sprintf(str, "m%d", i);
-         month = atoi(getparam(str));
-
-         sprintf(str, "d%d", i);
-         day = atoi(getparam(str));
-
-         if (month == 0 || day == 0)
-            strcpy(attrib[i], "");
+         if (isparam(ua)) // from edit/reply of fixed attributes
+            strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
          else {
-            memset(&tms, 0, sizeof(struct tm));
-            tms.tm_year = year - 1900;
-            tms.tm_mon = month - 1;
-            tms.tm_mday = day;
-            tms.tm_hour = 12;
 
-            ltime = mktime(&tms);
-            sprintf(attrib[i], "%d", ltime);
+            sprintf(str, "y%d", i);
+            year = atoi(getparam(str));
+            if (year < 100)
+               year += 2000;
+
+            sprintf(str, "m%d", i);
+            month = atoi(getparam(str));
+
+            sprintf(str, "d%d", i);
+            day = atoi(getparam(str));
+
+            if (month == 0 || day == 0)
+               strcpy(attrib[i], "");
+            else {
+               memset(&tms, 0, sizeof(struct tm));
+               tms.tm_year = year - 1900;
+               tms.tm_mon = month - 1;
+               tms.tm_mday = day;
+               tms.tm_hour = 12;
+
+               ltime = mktime(&tms);
+               sprintf(attrib[i], "%d", ltime);
+            }
          }
 
       } else {
