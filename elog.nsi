@@ -81,7 +81,7 @@ Section "Start Menu Shortcuts"
   CreateShortCut "$SMPROGRAMS\ELOG\ELOG server.lnk" "$INSTDIR\elogd.exe" "" "$INSTDIR\elogd.exe" 0 
   Delete "$SMPROGRAMS\ELOG\Demo Logbook (start server first!).lnk"
   WriteINIStr "$SMPROGRAMS\ELOG\Demo Logbook (start server first!).url" \
-              "InternetShortcut" "URL" "http://localhost/demo/"
+              "InternetShortcut" "URL" "http://localhost:8080/demo/"
   CreateShortCut "$SMPROGRAMS\ELOG\ELOG Documentation.lnk" "$INSTDIR\doc\index.html"
   CreateShortCut "$SMPROGRAMS\ELOG\Uninstall ELOG.lnk" "$INSTDIR\uninst_elog.exe" "" "$INSTDIR\uninst_elog.exe" 0
 SectionEnd
