@@ -6,6 +6,9 @@
   Contents:     Conversion program for ELOG messages
 
   $Log$
+  Revision 1.3  2002/06/07 09:30:37  midas
+  Fixed thread_list re-allocation
+
   Revision 1.2  2002/06/03 12:37:54  midas
   Added thread evaluation
 
@@ -1030,6 +1033,7 @@ THREAD      *thread_list;
 
     message_id++;
     strcat(tag, "+1");
+    thread_list = realloc(thread_list, sizeof(THREAD)*message_id);
     
     } while (1);
 
@@ -1062,6 +1066,7 @@ THREAD      *thread_list;
     if (fh < 0)
       {
       printf("Error: Cannot open file %s for writing.\n", file_name);
+      free(thread_list);
       return;
       }
 
@@ -1115,6 +1120,7 @@ THREAD      *thread_list;
 
     } while (1);
 
+  free(thread_list);
 }
 
 /*------------------------------------------------------------------*/
