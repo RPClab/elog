@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.15  2003/02/17 15:08:53  midas
+  Incresed attribute value size to 1000 Bytes
+
   Revision 1.14  2003/02/16 13:29:02  midas
   Added option 'Reply string'
 
@@ -621,22 +624,23 @@ typedef int INT;
 
 #define TELL(fh) lseek(fh, 0, SEEK_CUR)
 
-#define NAME_LENGTH 256
-#define SUCCESS       1
+#define NAME_LENGTH  500
 
-#define EL_SUCCESS    1
-#define EL_FIRST_MSG  2
-#define EL_LAST_MSG   3
-#define EL_NO_MSG     4
-#define EL_FILE_ERROR 5
-#define EL_UPGRADE    6
-#define EL_EMPTY      7
-#define EL_MEM_ERROR  8
+#define SUCCESS        1
 
-#define EL_FIRST      1
-#define EL_LAST       2
-#define EL_NEXT       3
-#define EL_PREV       4
+#define EL_SUCCESS     1
+#define EL_FIRST_MSG   2
+#define EL_LAST_MSG    3
+#define EL_NO_MSG      4
+#define EL_FILE_ERROR  5
+#define EL_UPGRADE     6
+#define EL_EMPTY       7
+#define EL_MEM_ERROR   8
+
+#define EL_FIRST       1
+#define EL_LAST        2
+#define EL_NEXT        3
+#define EL_PREV        4
 
 #define WEB_BUFFER_SIZE 2000000
 
@@ -660,14 +664,12 @@ char theme_name[80];
 #define MAX_ATTACHMENTS  20
 #define MAX_N_LIST      100
 #define MAX_N_ATTR       50
-#define VALUE_SIZE      256
-#define PARAM_LENGTH    256
 #define CMD_SIZE      10000
 #define TEXT_SIZE    100000
 #define MAX_PATH_LENGTH 256
 
-char _param[MAX_PARAM][PARAM_LENGTH];
-char _value[MAX_PARAM][VALUE_SIZE];
+char _param[MAX_PARAM][NAME_LENGTH];
+char _value[MAX_PARAM][NAME_LENGTH];
 char _mtext[TEXT_SIZE];
 char _cmdline[CMD_SIZE];
 char *_attachment_buffer;
@@ -901,7 +903,7 @@ void strsubst(char *string, char name[][NAME_LENGTH], char value[][NAME_LENGTH],
 /* subsitute "$name" with value corresponding to name */
 {
 int  i, j;
-char tmp[1000], str[256], uattr[256], *ps, *pt, *p;
+char tmp[1000], str[NAME_LENGTH], uattr[NAME_LENGTH], *ps, *pt, *p;
 
   pt = tmp;
   ps = string;
@@ -999,7 +1001,7 @@ void url_encode(char *ps, int size)
    Encode the given string in-place by adding %XX escapes
 \********************************************************************/
 {
-char *pd, *p, str[256];
+char *pd, *p, str[NAME_LENGTH];
 
   pd = str;
   p  = ps;
@@ -1144,9 +1146,9 @@ INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text, B
 {
 struct sockaddr_in   bind_addr;
 struct hostent       *phe;
-int                  i, n, s, offset;
+int                  i, n, s, offset, strsize;
 char                 buf[80];
-char                 str[TEXT_SIZE+1000];
+char                 *str;
 time_t               now;
 struct tm            *ts;
 char                 list[1024][NAME_LENGTH];
@@ -1175,27 +1177,30 @@ char                 list[1024][NAME_LENGTH];
     return -1;
     }
 
-  recv_string(s, str, sizeof(str), 10000);
+  strsize = TEXT_SIZE+1000;
+  str = malloc(strsize);
+
+  recv_string(s, str, strsize, 10000);
   if (verbose) puts(str);
 
   /* drain server messages */
   do
     {
     str[0] = 0;
-    recv_string(s, str, sizeof(str), 300);
+    recv_string(s, str, strsize, 300);
     if (verbose) puts(str);
     } while (str[0]);
 
-  snprintf(str, sizeof(str) - 1, "HELO %s\r\n", host_name);
+  snprintf(str, strsize - 1, "HELO %s\r\n", host_name);
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
-  recv_string(s, str, sizeof(str), 3000);
+  recv_string(s, str, strsize, 3000);
   if (verbose) puts(str);
 
-  snprintf(str, sizeof(str) - 1, "MAIL FROM: <%s>\r\n", from);
+  snprintf(str, strsize - 1, "MAIL FROM: <%s>\r\n", from);
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
-  recv_string(s, str, sizeof(str), 3000);
+  recv_string(s, str, strsize, 3000);
   if (verbose) puts(str);
 
   /* break recipients into list */
@@ -1203,32 +1208,32 @@ char                 list[1024][NAME_LENGTH];
 
   for (i=0 ; i<n ; i++)
     {
-    snprintf(str, sizeof(str) - 1, "RCPT TO: <%s>\r\n", list[i]);
+    snprintf(str, strsize - 1, "RCPT TO: <%s>\r\n", list[i]);
     send(s, str, strlen(str), 0);
     if (verbose) puts(str);
-    recv_string(s, str, sizeof(str), 3000);
+    recv_string(s, str, strsize, 3000);
     if (verbose) puts(str);
     }
 
-  snprintf(str, sizeof(str) - 1, "DATA\r\n");
+  snprintf(str, strsize - 1, "DATA\r\n");
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
-  recv_string(s, str, sizeof(str), 3000);
+  recv_string(s, str, strsize, 3000);
   if (verbose) puts(str);
 
   if (email_to)
-    snprintf(str, sizeof(str) - 1, "To: %s\r\n", to);
+    snprintf(str, strsize - 1, "To: %s\r\n", to);
   else
-    snprintf(str, sizeof(str) - 1, "To: ELOG user\r\n");
+    snprintf(str, strsize - 1, "To: ELOG user\r\n");
 
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
 
-  snprintf(str, sizeof(str) - 1, "From: %s\r\nSubject: %s\r\n", from, subject);
+  snprintf(str, strsize - 1, "From: %s\r\nSubject: %s\r\n", from, subject);
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
 
-  snprintf(str, sizeof(str) - 1, "Content-Type: text/plain\r\n");
+  snprintf(str, strsize - 1, "Content-Type: text/plain\r\n");
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
 
@@ -1238,24 +1243,25 @@ char                 list[1024][NAME_LENGTH];
   offset = (-(int)timezone);
   if (ts->tm_isdst)
     offset += 3600;
-  snprintf(str, sizeof(str) - 1, "Date: %s %+03d%02d\r\n\r\n", buf,
+  snprintf(str, strsize - 1, "Date: %s %+03d%02d\r\n\r\n", buf,
           (int) (offset/3600), (int) ((abs((int)offset)/60) % 60));
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
 
-  snprintf(str, sizeof(str) - 1, "%s\r\n.\r\n", text);
+  snprintf(str, strsize - 1, "%s\r\n.\r\n", text);
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
-  recv_string(s, str, sizeof(str), 3000);
+  recv_string(s, str, strsize, 3000);
   if (verbose) puts(str);
 
-  snprintf(str, sizeof(str) - 1, "QUIT\r\n");
+  snprintf(str, strsize - 1, "QUIT\r\n");
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
-  recv_string(s, str, sizeof(str), 3000);
+  recv_string(s, str, strsize, 3000);
   if (verbose) puts(str);
 
   closesocket(s);
+  free(str);
 
   return 1;
 }
@@ -1850,7 +1856,7 @@ int eli_compare(const void *e1, const void *e2)
 int el_build_index(LOGBOOK *lbs, BOOL rebuild)
 /* scan all ??????a.log files and build an index table in eli[] */
 {
-char      *file_list, str[256], date[256], dir[256], file_name[256], *buffer, *p,
+char      *file_list, str[256], date[256], dir[256], file_name[MAX_PATH_LENGTH], *buffer, *p,
           in_reply_to[80];
 int       index, n, length;
 int       i, fh;
@@ -2261,7 +2267,7 @@ INT el_retrieve(LOGBOOK *lbs,
                 char attrib[MAX_N_ATTR][NAME_LENGTH], int n_attr,
                 char *text, int *textsize,
                 char *in_reply_to, char *reply_to,
-                char attachment[MAX_ATTACHMENTS][256],
+                char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
                 char *encoding)
 /********************************************************************\
 
@@ -2296,7 +2302,7 @@ INT el_retrieve(LOGBOOK *lbs,
 \********************************************************************/
 {
 int     i, index, size, fh;
-char    str[256], file_name[256], *p;
+char    str[NAME_LENGTH], file_name[256], *p;
 char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
 
   if (message_id == 0)
@@ -2445,7 +2451,7 @@ char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
 int el_submit_attachment(LOGBOOK *lbs, char *afilename, char *buffer, 
                          int buffer_size, char *full_name)
 {
-char       file_name[256], dir[256], str[256], *p;
+char       file_name[MAX_PATH_LENGTH], dir[MAX_PATH_LENGTH], str[MAX_PATH_LENGTH], *p;
 int        fh;
 time_t     now;
 struct  tm tms;
@@ -2500,7 +2506,7 @@ struct  tm tms;
 
 void el_delete_attachment(LOGBOOK *lbs, char *file_name)
 {
-char str[256];
+char str[MAX_PATH_LENGTH];
 
   strlcpy(str, lbs->data_dir, sizeof(str));
   strlcat(str, file_name, sizeof(str));
@@ -2550,8 +2556,7 @@ int el_submit(LOGBOOK *lbs, int message_id,
 {
 INT     n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id;
 struct  tm tms;
-char    file_name[256], dir[256], str[256],
-        rep1[256], rep2[256];
+char    file_name[256], dir[256], str[NAME_LENGTH];
 time_t  now, ltime;
 char    message[TEXT_SIZE+100], *p, *buffer;
 BOOL    bedit;
@@ -2560,7 +2565,6 @@ BOOL    bedit;
   strcpy(dir, lbs->data_dir);
 
   bedit = (message_id > 0);
-  rep1[0] = rep2[0] = 0;
 
   if (bedit)
     {
@@ -2857,7 +2861,7 @@ int  size, status;
 /*------------------------------------------------------------------*/
 
 INT el_delete_message(LOGBOOK *lbs, int message_id, BOOL delete_attachments,
-                      char attachment[MAX_ATTACHMENTS][256], BOOL delete_bw_ref,
+                      char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], BOOL delete_bw_ref,
                       BOOL delete_reply_to)
 /********************************************************************\
 
@@ -2882,7 +2886,7 @@ INT el_delete_message(LOGBOOK *lbs, int message_id, BOOL delete_attachments,
 \********************************************************************/
 {
 INT  i, index, n, size, fh, tail_size;
-char str[256], file_name[256], reply_to[80], in_reply_to[256];
+char str[MAX_PATH_LENGTH], file_name[MAX_PATH_LENGTH], reply_to[80], in_reply_to[256];
 char *buffer, *p;
 char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
 
@@ -3391,23 +3395,23 @@ char str[10000];
 
   if (i<MAX_PARAM)
     {
-    if (strlen(param) >= PARAM_LENGTH)
+    if (strlen(param) >= NAME_LENGTH)
       {
       sprintf(str, "Error: Parameter name too big (%d bytes).\n", strlen(param));
       show_error(str);
       return 0;
       }
 
-    strlcpy(_param[i], param, PARAM_LENGTH);
+    strlcpy(_param[i], param, NAME_LENGTH);
 
-    if (strlen(value) >= VALUE_SIZE)
+    if (strlen(value) >= NAME_LENGTH)
       {
-      sprintf(str, "Error: Parameter value for parameter <b>%s</b> too big (%d bytes). Please increase VALUE_SIZE and recompile elogd\n", param, strlen(value));
+      sprintf(str, "Error: Parameter value for parameter <b>%s</b> too big (%d bytes). Please increase NAME_LENGTH and recompile elogd\n", param, strlen(value));
       show_error(str);
       return 0;
       }
 
-    strlcpy(_value[i], value, VALUE_SIZE);
+    strlcpy(_value[i], value, NAME_LENGTH);
     }
   else
     {
@@ -3463,8 +3467,8 @@ int i;
     {
     for ( ; i<MAX_PARAM-1 ; i++)
       {
-      strlcpy(_param[i], _param[i+1], PARAM_LENGTH);
-      strlcpy(_value[i], _value[i+1], PARAM_LENGTH);
+      strlcpy(_param[i], _param[i+1], NAME_LENGTH);
+      strlcpy(_value[i], _value[i+1], NAME_LENGTH);
       }
     _param[MAX_PARAM-1][0] = 0;
     _value[MAX_PARAM-1][0] = 0;
@@ -3496,7 +3500,7 @@ char *p, str2[256];
 
 void set_location(LOGBOOK *lbs, char *rel_path)
 {
-char str[256];
+char str[NAME_LENGTH];
 
   if (strncmp(rel_path, "http://", 7) == 0)
     rsprintf("Location: %s", rel_path);
@@ -3541,7 +3545,7 @@ char str[256];
 
 void set_redir(LOGBOOK *lbs, char *redir)
 {
-char str[256];
+char str[NAME_LENGTH];
 
   /* prepare relative path */
   if (redir[0])
@@ -3561,7 +3565,7 @@ char str[256];
 
 void set_cookie(LOGBOOK *lbs, char *name, char *value, BOOL global, char *expiration)
 {
-char   lb_name[256], str[256];
+char   lb_name[256], str[NAME_LENGTH];
 double exp;
 time_t now;
 struct tm *gmt;
@@ -3580,6 +3584,7 @@ struct tm *gmt;
     if (getcfg(lb_name, "URL", str))
       {
       extract_path(str);
+      url_encode(str, sizeof(str));
       rsprintf(" path=/%s;", str);
       }
     else
@@ -3591,10 +3596,11 @@ struct tm *gmt;
     if (getcfg(lb_name, "URL", str))
       {
       extract_path(str);
-      rsprintf(" path=%s%s;", str, lbs->name);
+      url_encode(str, sizeof(str));
+      rsprintf(" path=%s%s;", str, lbs->name_enc);
       }
     else
-      rsprintf(" path=/%s;", lbs->name);
+      rsprintf(" path=/%s;", lbs->name_enc);
     }
 
   exp = atof(expiration);
@@ -3692,7 +3698,7 @@ int scan_attributes(char *logbook)
 /* scan configuration file for attributes and fill attr_list, attr_options
    and attr_flags arrays */
 {
-char list[10000], str[256], tmp_list[MAX_N_ATTR][NAME_LENGTH];
+char list[10000], str[NAME_LENGTH], tmp_list[MAX_N_ATTR][NAME_LENGTH];
 int  i, j, n, m;
 
   if (getcfg(logbook, "Attributes", list))
@@ -4211,7 +4217,7 @@ BOOL   global;
 void send_file_direct(char *file_name)
 {
 int    fh, i, length;
-char   str[256];
+char   str[MAX_PATH_LENGTH];
 time_t now;
 struct tm *gmt;
 
@@ -4337,7 +4343,7 @@ int build_subst_list(LOGBOOK *lbs, char list[][NAME_LENGTH],
                      char value[][NAME_LENGTH], char attrib[][NAME_LENGTH])
 {
 int            i;
-char           str[256], format[256];
+char           str[NAME_LENGTH], format[256];
 time_t         now;
 struct tm      *ts;
 
@@ -4750,16 +4756,12 @@ time_t now;
       sprintf(str, "Subst on edit %s", attr_list[index]);
       if (getcfg(lbs->name, str, preset))
         {
-        /* check if already second reply */
-        if (orig_tag[0] == 0)
-          {
-          i = build_subst_list(lbs, slist, svalue, attrib);
-          strsubst(preset, slist, svalue, i);
-          if (strncmp(preset, "<br>", 4) == 0)
-            strcpy(attrib[index], preset+4);
-          else
-            strcpy(attrib[index], preset);
-          }
+        i = build_subst_list(lbs, slist, svalue, attrib);
+        strsubst(preset, slist, svalue, i);
+        if (strncmp(preset, "<br>", 4) == 0)
+          strcpy(attrib[index], preset+4);
+        else
+          strcpy(attrib[index], preset);
         }
       }
     }
@@ -5277,7 +5279,7 @@ time_t now;
 void show_find_form(LOGBOOK *lbs)
 {
 int    i, j;
-char   str[256], mode[256];
+char   str[NAME_LENGTH], mode[256];
 
   /*---- header ----*/
 
@@ -5467,7 +5469,7 @@ void show_admin_page(LOGBOOK *lbs)
 {
 int  fh, length;
 char *buffer;
-char str[256];
+char str[NAME_LENGTH];
 
   /*---- header ----*/
 
@@ -6255,11 +6257,7 @@ int show_download_page(LOGBOOK *lbs, char *path)
 char   file_name[256];
 int    index, message_id, fh, i, size;
 char   message[TEXT_SIZE+1000], *p;
-/*
-char   str[256];
-time_t now;
-struct tm *gmt;
-*/
+
   message_id = atoi(path);
 
   for (index = 0 ; index < *lbs->n_el_index ; index++)
@@ -6337,12 +6335,12 @@ void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
                   int n_attr_disp, char disp_attr[MAX_N_ATTR+4][NAME_LENGTH],
                   char attrib[MAX_N_ATTR][NAME_LENGTH],
                   int n_attr, char *text,
-                  char attachment[MAX_ATTACHMENTS][256], char *encoding,
+                  char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], char *encoding,
                   BOOL select, int *n_display)
 {
-char str[256], ref[256], *nowrap, sclass[80], format[256], file_name[256];
+char str[NAME_LENGTH], ref[256], *nowrap, sclass[80], format[256], file_name[MAX_PATH_LENGTH];
 char slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
-char display[256], attr_icon[80];
+char display[NAME_LENGTH], attr_icon[80];
 int  i, j, i_line, index, colspan;
 BOOL skip_comma;
 FILE *f;
@@ -6794,7 +6792,7 @@ void display_reply(LOGBOOK *lbs, int message_id, int printable, int expand, int 
                    int n_attr_disp, char disp_attr[MAX_N_ATTR+4][NAME_LENGTH], int level)
 {
 char   date[80], *text, in_reply_to[80], reply_to[256], encoding[80],
-       attachment[MAX_ATTACHMENTS][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
+       attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 int    status, size;
 char   *p;
 
@@ -7103,7 +7101,7 @@ void show_page_filters(LOGBOOK *lbs, int n_msg, int page_n, int n_page, BOOL top
                        BOOL threaded)
 {
 int  cur_exp, n, i, j, index;
-char ref[256], str[256];
+char ref[256], str[NAME_LENGTH];
 char list[MAX_N_LIST][NAME_LENGTH];
 
   rsprintf("<tr><td class=\"menuframe\">\n");
@@ -7353,7 +7351,7 @@ char ref[256];
 void show_select_navigation(LOGBOOK *lbs)
 {
 int  i, n_log;
-char str[256];
+char str[NAME_LENGTH];
 char lbk_list[MAX_N_LIST][NAME_LENGTH];
 
   rsprintf("<tr><td class=\"menuframe\"><span class=\"menu4\">\n");
@@ -7459,8 +7457,8 @@ int    current_year, current_month, current_day, printable, n_logbook, n_display
        in_reply_to_id;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR+4][NAME_LENGTH],
        list[10000], text[TEXT_SIZE], text1[TEXT_SIZE], text2[TEXT_SIZE],
-       in_reply_to[80], reply_to[256], attachment[MAX_ATTACHMENTS][256], encoding[80];
-char   str[256], ref[256], img[80];
+       in_reply_to[80], reply_to[256], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80];
+char   str[NAME_LENGTH], ref[256], img[80];
 char   mode[80];
 char   menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH];
 char   *p , *pt, *pt1, *pt2;
@@ -8527,7 +8525,7 @@ int compose_mail(LOGBOOK *lbs, char *mail_to, int message_id, char attrib[MAX_N_
                  char *mail_param, int old_mail)
 {
 int    i, j, n;
-char   str[256], mail_from[256], mail_text[TEXT_SIZE+1000], smtp_host[256], subject[256];
+char   str[NAME_LENGTH+100], mail_from[256], *mail_text, smtp_host[256], subject[256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
 char   list[MAX_PARAM][NAME_LENGTH];
 
@@ -8544,6 +8542,8 @@ char   list[MAX_PARAM][NAME_LENGTH];
     }
   else
     sprintf(mail_from, "ELog@%s", host_name);
+
+  mail_text = malloc(TEXT_SIZE+1000);
 
   if (old_mail)
     sprintf(mail_text, loc("A old entry has been updated on %s"), host_name);
@@ -8629,6 +8629,8 @@ char   list[MAX_PARAM][NAME_LENGTH];
       }
     }
 
+  free(mail_text);
+
   return 1;
 }
 
@@ -8636,9 +8638,9 @@ char   list[MAX_PARAM][NAME_LENGTH];
 
 void submit_elog(LOGBOOK *lbs)
 {
-char   str[256], file_name[256], error[1000], date[80],
+char   str[1000], file_name[256], error[1000], date[80],
        mail_list[MAX_N_LIST][NAME_LENGTH], list[10000],
-       attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[256], in_reply_to[80],
+       attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[MAX_PATH_LENGTH], in_reply_to[80],
        reply_to[256], user[256], user_email[256], email_notify[256];
 char   mail_param[1000], *mail_to;
 char   att_file[MAX_ATTACHMENTS][256];
@@ -8919,9 +8921,9 @@ int    i, j, n, missing, first, index, suppress, message_id, resubmit_orig, mail
 void copy_to(LOGBOOK *lbs, int src_id, char *dest_logbook, int move)
 {
 int     size, i, n, n_done, index, status, fh, source_id, message_id;
-char    str[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
+char    str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 char    date[80], text[TEXT_SIZE], msg_str[32], in_reply_to[80], reply_to[256],
-        attachment[MAX_ATTACHMENTS][256], encoding[80], *buffer;
+        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], *buffer;
 LOGBOOK *lbs_dest;
 
   for (i=0 ; lb_list[i].name[0] ; i++)
@@ -9086,7 +9088,7 @@ int    size, i, j, n, n_log, status, fh, length, message_error, index;
 int    message_id, orig_message_id;
 char   str[1000], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char   date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], cmd_enc[256],
-       orig_tag[80], reply_tag[256], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
+       orig_tag[80], reply_tag[256], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], att[256], lattr[256];
 char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80], admin_user[80],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH], *p;
 char   lbk_list[MAX_N_LIST][NAME_LENGTH];
@@ -10178,7 +10180,7 @@ void interprete(char *lbook, char *path)
 {
 int     i, j, n, index, lb_index, message_id;
 char    exp[80];
-char    str[256], enc_pwd[80], file_name[256], command[80], ref[256];
+char    str[NAME_LENGTH], enc_pwd[80], file_name[256], command[80], ref[256];
 char    enc_path[256], dec_path[256], logbook[256], logbook_enc[256];
 char    *experiment, *value, *group, css[256];
 BOOL    global;
@@ -10935,7 +10937,8 @@ char *p, *pitem;
 void decode_post(LOGBOOK *lbs, char *string, char *boundary, int length)
 {
 int  n_att;
-char *pinit, *p, *ptmp, file_name[256], full_name[256], str[256], line[256], item[256];
+char *pinit, *p, *ptmp, file_name[256], full_name[256], 
+     str[NAME_LENGTH], line[NAME_LENGTH], item[NAME_LENGTH];
 
   n_att = 0;
 
