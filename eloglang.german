@@ -257,3 +257,4 @@ No Email address registered with user name <i>"%s"</i> = Für Benuter-Name <i>"%s
 Error sending Email = Fehler beim Versenden der Email
 A new password for user <i>"%s"</i> has been sent to %s = Ein neues Kennwort für Benutzer <i>"%s"</i> wurde and %s geschickt
 Forgot = vergessen
+User "%s" registered on host "%s" = Benutzer "%s" auf Computer "%s" registriert

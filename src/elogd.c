@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.73  2003/04/08 08:01:53  midas
+  Fixed problem with global self registering
+
   Revision 1.72  2003/04/07 20:38:50  midas
   Fixed problem with 'Forgot'
 
@@ -6066,13 +6069,17 @@ int    i, fh, size, self_register;
         line[i] = pl[i];
       line[i] = 0;
 
-      if (line[0] == ';' || line[0] == '#' || line[0] == 0)
+      /* skip outcommented lines */
+      if (line[0] == ';' || line[0] == '#')
         {
         pl += strlen(line);
         while (*pl && (*pl == '\r' || *pl == '\n'))
           pl++;
         continue;
         }
+
+      if (line[0] == 0)
+        break;
 
       strcpy(str, line);
       if (strchr(str, ':'))
@@ -6100,7 +6107,7 @@ int    i, fh, size, self_register;
       lseek(fh, 0, SEEK_END);
       if (strlen(buf) != 0 &&
           (buf[strlen(buf)-1] != '\r' && buf[strlen(buf)-1] != '\n'))
-        write(fh, "\n", 2);
+        write(fh, "\n", 1);
 
       if (activate)
         sprintf(str, "%s:%s:%s:%s:%s\n", getparam("new_user_name"), getparam("encpwd"), 
@@ -6198,13 +6205,21 @@ int    i, fh, size, self_register;
               }
             else
               {
-              sprintf(subject, loc("User \"%s\" registered on logbook \"%s\""), getparam("new_user_name"), lbs->name);
+              if (lbs)
+                sprintf(subject, loc("User \"%s\" registered on logbook \"%s\""), getparam("new_user_name"), lbs->name);
+              else
+                sprintf(subject, loc("User \"%s\" registered on host \"%s\""), getparam("new_user_name"), host_name);
+
               sprintf(mail_text, loc("A new ELOG user has been registered on %s"), host_name);
               }
 
             sprintf(mail_text+strlen(mail_text), "\r\n\r\n");
 
-            sprintf(mail_text+strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), lbs->name);
+            if (lbs)
+              sprintf(mail_text+strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), lbs->name);
+            else
+              sprintf(mail_text+strlen(mail_text), "%s                : %s\r\n", loc("Host"), host_name);
+
             sprintf(mail_text+strlen(mail_text), "%s          : %s\r\n", loc("Login name"), getparam("new_user_name"));
             sprintf(mail_text+strlen(mail_text), "%s           : %s\r\n", loc("Full name"), getparam("new_full_name"));
             sprintf(mail_text+strlen(mail_text), "%s               : %s\r\n", loc("Email"), getparam("new_user_email"));
@@ -6354,8 +6369,13 @@ int    i, fh, size;
 
 void show_config_page(LOGBOOK *lbs)
 {
-char str[256], user[80], password[80], full_name[80], user_email[80], email_notify[256];
+char str[256], user[80], password[80], full_name[80], user_email[80], email_notify[256], logbook[256];
 int  i;
+
+  if (lbs)
+    strcpy(logbook, lbs->name);
+  else
+    strcpy(logbook, "global");
 
   /*---- header ----*/
 
@@ -6363,7 +6383,7 @@ int  i;
 
   /*---- title ----*/
 
-  show_standard_title(lbs->name, "", 0);
+  show_standard_title(logbook, "", 0);
 
   /* get user */
   strcpy(user, getparam("unm"));
@@ -6387,7 +6407,7 @@ int  i;
 
   /*---- if admin user, show user list ----*/
 
-  if (getcfg(lbs->name, "Admin user", str) && 
+  if (getcfg(logbook, "Admin user", str) && 
       strstr(str, getparam("unm")) != 0)
     {
     rsprintf("<input type=hidden name=admin value=1>\n");
@@ -6416,7 +6436,7 @@ int  i;
 
   rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Login name"));
 
-  if (get_user_line(lbs->name, user, password, full_name, user_email, email_notify) != 1)
+  if (get_user_line(logbook, user, password, full_name, user_email, email_notify) != 1)
     sprintf(str, loc("User [%s] has been deleted"), user);
   else
     strcpy(str, user);
@@ -6444,8 +6464,8 @@ int  i;
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change password"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Remove user"));
 
-  if (!getcfg(lbs->name, "Admin user", str) || 
-      (getcfg(lbs->name, "Admin user", str) && strstr(str, getparam("unm")) != 0))
+  if (!getcfg(logbook, "Admin user", str) || 
+      (getcfg(logbook, "Admin user", str) && strstr(str, getparam("unm")) != 0))
     {
     rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("New user"));
     rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change elogd.cfg"));
@@ -10874,6 +10894,8 @@ int   i, n;
 
     rsprintf("</table>\n");
 
+    rsprintf("<center><a class=\"bottomlink\" href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></center>", VERSION);
+
     rsprintf("</body></html>\r\n");
 
     return FALSE;
@@ -10982,7 +11004,11 @@ char str[256];
     if (!save_user_config(lbs, getparam("new_user_name"), TRUE, FALSE))
       return 0;
 
-    sprintf(str, "../%s/", lbs->name_enc);
+    if (lbs)
+      sprintf(str, "../%s/", lbs->name_enc);
+    else
+      sprintf(str, ".");
+
     redirect(lbs, str);
     return 0;
     }
@@ -11109,6 +11135,17 @@ FILE    *f;
           {
           if (!do_self_register(NULL, command))
             return;
+          }
+
+        /* check for activate */
+        if (equal_ustring(command, "Activate"))
+          {
+          if (!save_user_config(NULL, getparam("new_user_name"), TRUE, TRUE))
+            return;
+
+          setparam("cfg_user", getparam("new_user_name"));
+          show_config_page(NULL);
+          return;
           }
 
         /* check for password recovery */
