@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.130  2003/07/06 13:28:55  midas
+  Added shell execution facility
+
   Revision 1.129  2003/07/04 18:13:42  midas
   Fixed small bug
 
@@ -1182,6 +1185,7 @@ void show_error(char *error);
 BOOL enum_user_line(LOGBOOK *lbs, int n, char *user);
 int  get_user_line(char *logbook_name, char *user, char *password, char *full_name, char *email, char *email_notify);
 int strbreak(char *str, char list[][NAME_LENGTH], int size);
+int execute_shell(LOGBOOK *lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], char *sh_cmd);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -3777,6 +3781,10 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
       } while(*p);
     }
 
+  /* execute shell if requested */
+  if (getcfg(lbs->name, "Execute delete", str))
+    execute_shell(lbs, message_id, NULL, str);
+
   return EL_SUCCESS;
 }
 
@@ -6114,7 +6122,7 @@ char   fl[8][NAME_LENGTH];
       }
     }
 
-  /* Suppress check box */
+  /* Suppress email check box */
   if ( !(bedit && getcfg(lbs->name, "Suppress Email on edit", str) && atoi(str) == 1) )
     {
     if (getcfg(lbs->name, "Suppress default", str))
@@ -6137,9 +6145,54 @@ char   fl[8][NAME_LENGTH];
       }
     }
 
+  /* Suppress execute shell check box */
+  if ( !bedit && getcfg(lbs->name, "Execute new", str) )
+    {
+    if (getcfg(lbs->name, "Suppress execute default", str))
+      {
+      if (atoi(str) == 0)
+        {
+        rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
+        rsprintf("<input type=checkbox name=shell_suppress value=1>%s\n", loc("Suppress shell execution"));
+        }
+      else if (atoi(str) == 1)
+        {
+        rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
+        rsprintf("<input type=checkbox checked name=shell_suppress value=1>%s\n", loc("Suppress shell execution"));
+        }
+      }
+    else
+      {
+      rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
+      rsprintf("<input type=checkbox name=shell_suppress value=1>%s\n", loc("Suppress shell execution"));
+      }
+    }
+
+  if ( bedit && getcfg(lbs->name, "Execute edit", str) )
+    {
+    if (getcfg(lbs->name, "Suppress execute default", str))
+      {
+      if (atoi(str) == 0)
+        {
+        rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
+        rsprintf("<input type=checkbox name=shell_suppress value=1>%s\n", loc("Suppress shell execution"));
+        }
+      else if (atoi(str) == 1)
+        {
+        rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
+        rsprintf("<input type=checkbox checked name=shell_suppress value=1>%s\n", loc("Suppress shell execution"));
+        }
+      }
+    else
+      {
+      rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
+      rsprintf("<input type=checkbox name=shell_suppress value=1>%s\n", loc("Suppress shell execution"));
+      }
+    }
+
+  /* Resubmit check box */
   if (bedit)
     {
-    /* Resubmit check box */
     if (getcfg(lbs->name, "Resubmit default", str))
       {
       if (atoi(str) == 0)
@@ -10005,6 +10058,31 @@ char   list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
 
 /*------------------------------------------------------------------*/
 
+int execute_shell(LOGBOOK *lbs, int message_id, 
+                  char attrib[MAX_N_ATTR][NAME_LENGTH], char *sh_cmd)
+{
+int    i;
+char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
+char   shell_cmd[1000];
+
+  strlcpy(shell_cmd, sh_cmd, sizeof(shell_cmd));
+
+  i = build_subst_list(lbs, slist, svalue, attrib);
+  
+  /* add message id */
+  strcpy(slist[i], "Message ID");
+  sprintf(svalue[i++], "%d", message_id);
+
+  strsubst(shell_cmd, slist, svalue, i);
+
+  system(shell_cmd);
+
+  return SUCCESS;
+}
+
+
+/*------------------------------------------------------------------*/
+
 void submit_elog(LOGBOOK *lbs)
 {
 char   str[1000], str2[1000], file_name[256], error[1000], date[80],
@@ -10294,6 +10372,24 @@ int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_or
     }
 
   free(mail_to);
+
+  /*---- shell execution ----*/
+
+  if (!atoi(getparam("shell_suppress")))
+    {
+    if (!*getparam("edit_id"))
+      {
+      if (getcfg(lbs->name, "Execute new", str))
+        execute_shell(lbs, message_id, attrib, str);
+      }
+    else
+      {
+      if (getcfg(lbs->name, "Execute edit", str))
+        execute_shell(lbs, message_id, attrib, str);
+      }
+    }
+
+  /*---- custom submit page ----*/
 
   if (getcfg(lbs->name, "Submit page", str))
     {
