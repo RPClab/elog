@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.252  2004/02/17 08:14:43  midas
+   Redesigned date quick filter
+
    Revision 1.251  2004/02/16 20:27:28  midas
    Implemented numeric attributes
 
@@ -10903,7 +10906,6 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
                   rsprintf("<select name=\"%s\" onChange=\"document.form1.submit()\">\n",
                            list[index]);
 
-                  rsprintf("<option value=\"_all_\">%s\n", loc("All entries"));
                   i = atoi(getparam(list[index]));
 
                   rsprintf("<option %s value=364>%s %s\n", i == 364 ? "selected" : "",
@@ -10918,6 +10920,9 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
                            loc("Next"), loc("Week"));
                   rsprintf("<option %s value=1>%s %s\n", i == 1 ? "selected" : "",
                            loc("Next"), loc("Day"));
+
+                  rsprintf("<option %s value=\"_all_\">%s\n", i == 0 ? "selected" : "",
+                           loc("All entries"));
 
                   rsprintf("<option %s value=-1>%s %s\n", i == -1 ? "selected" : "",
                            loc("Last"), loc("Day"));
