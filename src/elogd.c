@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.551  2005/02/03 15:46:10  ritt
+   Fixed problem with conditional attributes in French
+
    Revision 1.550  2005/01/31 19:51:49  ritt
    Removed superfloous 'mailto:' in substitution
 
@@ -7758,7 +7761,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    if (breedit) {
       rsprintf("var modified = true;\n");
-      rsprintf("window.status = '%s';\n", loc("Entry has been modified"));
+      rsprintf("window.status = \"%s\";\n", loc("Entry has been modified"));
    } else
       rsprintf("var modified = false;\n");
 
@@ -7881,17 +7884,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("function unload()\n");
    rsprintf("{\n");
    rsprintf("  if (!submitted && modified) {\n");
-   rsprintf("    var subm = confirm('%s');\n", loc("Submit modified ELOG entry?"));
+   rsprintf("    var subm = confirm(\"%s\");\n", loc("Submit modified ELOG entry?"));
    rsprintf("    if (subm) {\n");
-   rsprintf("      document.form1.jcmd.value = '%s';\n", loc("Submit"));
+   rsprintf("      document.form1.jcmd.value = \"%s\";\n", loc("Submit"));
    rsprintf("      document.form1.submit();\n");
    rsprintf("    } else {\n");
-   rsprintf("      document.form1.jcmd.value = '%s';\n", loc("Back"));
+   rsprintf("      document.form1.jcmd.value = \"%s\";\n", loc("Back"));
    rsprintf("      document.form1.submit();\n");
    rsprintf("    }\n");
    rsprintf("  }\n");
    rsprintf("  if (!submitted && !modified) {\n");
-   rsprintf("    document.form1.jcmd.value = '%s';\n", loc("Back"));
+   rsprintf("    document.form1.jcmd.value = \"%s\";\n", loc("Back"));
    rsprintf("    document.form1.submit();\n");
    rsprintf("    }\n");
    rsprintf("}\n\n");
@@ -7900,7 +7903,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("function mod()\n");
    rsprintf("{\n");
    rsprintf("  modified = true;\n");
-   rsprintf("  window.status = '%s';\n", loc("Entry has been modified"));
+   rsprintf("  window.status = \"%s\";\n", loc("Entry has been modified"));
    rsprintf("}\n\n");
 
    rsprintf("//-->\n");
