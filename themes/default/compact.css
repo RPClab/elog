@@ -14,6 +14,7 @@ a:hover { color:#0000FF; text-decoration:underline }
 a:active { color:#0000FF; text-decoration:underline }
 a:focus { color:#0000FF; text-decoration:underline }
 
+/* standard table cell */
 td {
   color:black;
   font-family:sans-serif; 
@@ -141,7 +142,20 @@ td {
 .list2 {
   background-color:#FFFFB0;
   text-align:center;
+  font-size:10pt;
 }
+
+.list1 a:link { color:black; text-decoration:none }
+.list1 a:visited { color:black; text-decoration:none }
+.list1 a:hover { color:#0000FF; text-decoration:underline }
+.list1 a:active { color:black; text-decoration:underline }
+.list1 a:focus { color:#0000FF; text-decoration:underline }
+
+.list2 a:link { color:black; text-decoration:none }
+.list2 a:visited { color:black; text-decoration:none }
+.list2 a:hover { color:#0000FF; text-decoration:underline }
+.list2 a:active { color:black; text-decoration:underline }
+.list2 a:focus { color:#0000FF; text-decoration:underline }
 
 /* attachment line */
 
@@ -160,6 +174,18 @@ td {
   background-color:#FFFFB0;
   text-align:left;
 }
+
+.thread a:link { color:black; text-decoration:none }
+.thread a:visited { color:black; text-decoration:none }
+.thread a:hover { color:#0000FF; text-decoration:underline }
+.thread a:active { color:black; text-decoration:underline }
+.thread a:focus { color:#0000FF; text-decoration:underline }
+
+.threadreply a:link { color:black; text-decoration:none }
+.threadreply a:visited { color:black; text-decoration:none }
+.threadreply a:hover { color:#0000FF; text-decoration:underline }
+.threadreply a:active { color:black; text-decoration:underline }
+.threadreply a:focus { color:#0000FF; text-decoration:underline }
 
 /* attribute names and values on single message page */
 .attribname {
