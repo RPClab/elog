@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.68  2003/04/07 09:25:57  midas
+  Added button 'remember me'
+
   Revision 1.67  2003/04/04 20:50:15  midas
   Fixed bug in base64_encode
 
@@ -4494,7 +4497,13 @@ BOOL   global;
     strcpy(lb_name, "global");
 
   /* get optional expriation from configuration file */
-  getcfg(lb_name, "Login expiration", exp);
+  if (isparam("remember"))
+    {
+    if (!getcfg(lb_name, "Login expiration", exp))
+      strcpy(exp, "31*24"); /* one month by default */
+    }
+  else
+    exp[0] = 0;
 
   /* check if cookies should be global */
   global = getcfg("global", "Password file", str);
@@ -10642,19 +10651,26 @@ int   i, n;
     rsprintf("<tr><td colspan=2 class=\"dlgtitle\">%s</td></tr>\n", loc("Please login"));
 
     rsprintf("<tr><td align=right class=\"dlgform\">%s:</td>\n", loc("Username"));
-    
     rsprintf("<td align=left class=\"dlgform\"><input type=text name=uname value=\"%s\"></td></tr>\n",
              getparam("unm"));
 
     rsprintf("<tr><td align=right class=\"dlgform\">%s:</td>\n", loc("Password"));
-      
     rsprintf("<td align=left class=\"dlgform\"><input type=password name=upassword></td></tr>\n");
+
+    if (!getcfg(lbs->name, "Login expiration", str) || atoi(str) > 0)
+      {
+      rsprintf("<td align=center colspan=2 class=\"dlgform\"><input type=checkbox checked name=remember value=1>\n");
+      rsprintf("%s</td></tr>\n", loc("Remember me on this computer"));
+      }
+
+    rsprintf("<tr><td align=center colspan=2 class=\"dlgform\"><a href=\"?cmd=forgot\">%s</a>", 
+              loc("Forgot password?"));
 
     if (getcfg(lbs->name, "Self register", str) && atoi(str) > 0)
       {
       strcpy(str, loc("New user"));
       url_encode(str, sizeof(str));
-      rsprintf("<tr><td align=center colspan=2 class=\"dlgform\"><a href=\"?cmd=%s\">%s</td></tr>", 
+      rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"?cmd=%s\">%s</td></tr>", 
                 str, loc("Register as new user"));
       }
 

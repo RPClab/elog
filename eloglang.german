@@ -247,4 +247,10 @@ User <i>"%s"</i> has no access to logbook <i>"%s"</i> = Benutzer <i>"%s"</i> hat
 Date = Datum
 ID = ID
 Change elogd.cfg = elogd.cfg ändern
+Remember me on this computer = Auf diesem Computer eingeloggt bleiben
+Forgot password? = Kennwort vergessen?
+Enter your login name or email address = Bitte Benutzernamen oder Email-Adresse eingeben
+Login name not registered = Benutzername nicht registriert
+Email address not registered = Email-Adresse nicht registriert
+A new password for user %s is sent to %s = Ein neues Kennwort für Benutzer %s wurde and %s geschickt
 
