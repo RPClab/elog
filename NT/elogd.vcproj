@@ -168,7 +168,7 @@
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
-						PreprocessorDefinitions="STRLCPY_DEFINED"/>
+						PreprocessorDefinitions="HAVE_STRLCPY"/>
 				</FileConfiguration>
 			</File>
 			<File
