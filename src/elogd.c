@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.407  2004/07/28 10:05:07  midas
+   Fixed open anchor
+
    Revision 1.406  2004/07/27 20:48:49  midas
    Fixed compiler warnings
 
@@ -16726,7 +16729,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
                   if (strstr(att, ".GIF") || strstr(att, ".JPG") || strstr(att, ".JPEG")
                       || strstr(att, ".PNG")) {
                      rsprintf("<tr><td class=\"messageframe\">\n");
-                     rsprintf("<a name=\"att%d\">\n", index + 1);
+                     rsprintf("<a name=\"att%d\"></a>\n", index + 1);
                      rsprintf("<img src=\"%s\"></td></tr>", ref);
                      rsprintf("</td></tr>\n\n");
                   } else {
@@ -16736,7 +16739,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
                         rsprintf("<tr><td class=\"messageframe\">\n");
 
                         /* anchor for references */
-                        rsprintf("<a name=\"att%d\">\n", index + 1);
+                        rsprintf("<a name=\"att%d\"></a>\n", index + 1);
 
                         if (!strstr(att, ".HTML"))
                            rsprintf("<pre class=\"messagepre\">");
