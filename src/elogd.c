@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.192  2004/01/14 20:08:24  midas
+   Added 'expand all' facility
+
    Revision 1.191  2004/01/14 10:16:44  midas
    Added new translated strings
 
@@ -12298,7 +12301,8 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
       expand = 0;
       if (isparam("gexp")) {
          if (equal_ustring(plb->name, getparam("gexp")) ||
-             node_contains(plb, getparam("gexp")))
+             node_contains(plb, getparam("gexp")) ||
+             equal_ustring(getparam("gexp"), "all"))
             expand = 1;
       }
 
@@ -12404,7 +12408,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
 
 void show_selection_page()
 {
-   int i;
+   int i, j, show_title;
    char str[NAME_LENGTH], file_name[256];
    LBLIST phier;
 
@@ -12453,15 +12457,49 @@ void show_selection_page()
    }
 
    rsprintf("</td></tr>\n");
-   if (isparam("gexp")) {
+   
+   phier = get_logbook_hierarchy();
+   show_title = 0;
+
+   if (getcfg_topgroup()) {
+      for (i = 0; i < phier->n_members; i++)
+         if (equal_ustring(getcfg_topgroup(), phier->member[i]->name)) {
+            if (phier->member[i]->n_members == 0)
+               show_title = 1;
+            else 
+               for (j=0 ; j<phier->member[i]->n_members ; j++)
+                  if (phier->member[i]->member[j]->n_members == 0)
+                     show_title = 1;
+
+            break;
+         }
+   } else
+      for (i = 0; i < phier->n_members; i++) {
+         if (phier->member[i]->n_members == 0)
+            show_title = 1;
+         else
+            for (j=0 ; j<phier->member[i]->n_members ; j++)
+               if (phier->member[i]->member[j]->n_members == 0)
+                  show_title = 1;
+      }
+
+
+   if (isparam("gexp"))
+      show_title = 1;
+
+   if (show_title) {
       rsprintf("<tr>\n");
       rsprintf("<th colspan=10 class=\"seltitle\">%s</th>\n", loc("Logbook"));
       rsprintf("<th class=\"seltitle\">%s</th>\n", loc("Entries"));
       rsprintf("<th class=\"seltitle\">%s</th>\n", loc("Last submission"));
       rsprintf("</tr>\n");
+   }  else {
+      rsprintf("<tr>\n");
+      rsprintf("<td colspan=13 class=\"selexp\">\n");
+      rsprintf("<a href=\"?gexp=all\">%s</a></td>\n", loc("Expand all"));
+      rsprintf("</tr>\n");
    }
 
-   phier = get_logbook_hierarchy();
    if (getcfg_topgroup()) {
       for (i = 0; i < phier->n_members; i++)
          if (equal_ustring(getcfg_topgroup(), phier->member[i]->name)) {
@@ -12471,6 +12509,7 @@ void show_selection_page()
    } else
       for (i = 0; i < phier->n_members; i++)
          show_logbook_node(phier->member[i], NULL, 0, 0);
+   
    free_logbook_hierarchy(phier);
    rsprintf("</table></body>\n");
    rsprintf("</html>\r\n\r\n");
@@ -13197,8 +13236,9 @@ void interprete(char *lbook, char *path)
       else if (isparam("cfg_user"))
          sprintf(str + strlen(str), "?cmd=%s&cfg_user=%s", loc("Config"),
                  getparam("cfg_user"));
-      else
+      else if (getcfg(lbs->name, "password file", str))
          sprintf(str + strlen(str), "?cmd=%s", loc("Config"));
+
       redirect(lbs, str);
       return;
    }

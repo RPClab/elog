@@ -53,6 +53,16 @@ td {
   text-align:center;
 }
 
+.selexp {
+  border:1px solid #0000FF;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  background-color:#CCCCFF;
+  color:#486090;
+  text-align:left;
+  font-size:10pt;
+}
+
 .selspace {
   width:2%;
   border:1px solid #308000;
