@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.27  2002/06/20 09:19:10  midas
+  Fixed problems with find
+
   Revision 2.26  2002/06/19 10:58:57  midas
   Fixed bug that 'date format = %A...' always produced 'Sunday'
 
@@ -384,6 +387,7 @@ typedef struct {
   char   file_name[32];
   time_t file_time;
   int    offset;
+  BOOL   thread_head;
 } EL_INDEX;
 
 typedef struct {
@@ -1398,7 +1402,8 @@ int eli_compare(const void *e1, const void *e2)
 int el_build_index(LOGBOOK *lbs)
 /* scan all ??????a.log files and build an index table in eli[] */
 {
-char      *file_list, str[256], date[256], dir[256], file_name[256], *buffer, *p;
+char      *file_list, str[256], date[256], dir[256], file_name[256], *buffer, *p,
+          in_reply_to[80];
 int       index, n, length;
 int       i, fh;
 time_t    ltime;
@@ -1473,6 +1478,7 @@ struct tm tms;
           strcpy(lbs->el_index[lbs->n_el_index].file_name, str);
           
           el_decode(p, "Date: ", date);
+          el_decode(p, "In reply to: ", in_reply_to);
 
           memset(&tms, 0, sizeof(struct tm));
 
@@ -1481,11 +1487,12 @@ struct tm tms;
               break;
           tms.tm_mon = i;
 
-          tms.tm_mday = atoi(date+8);
-          tms.tm_hour = atoi(date+11);
-          tms.tm_min  = atoi(date+14);
-          tms.tm_sec  = atoi(date+17);
-          tms.tm_year = atoi(date+20)-1900;
+          tms.tm_mday  = atoi(date+8);
+          tms.tm_hour  = atoi(date+11);
+          tms.tm_min   = atoi(date+14);
+          tms.tm_sec   = atoi(date+17);
+          tms.tm_year  = atoi(date+20)-1900;
+          tms.tm_isdst = -1;
 
           if (tms.tm_year < 90)
             tms.tm_year += 100;
@@ -1495,13 +1502,15 @@ struct tm tms;
             
           lbs->el_index[lbs->n_el_index].message_id = atoi(p+8);
           lbs->el_index[lbs->n_el_index].offset = (int) p - (int) buffer;
+          lbs->el_index[lbs->n_el_index].thread_head = (in_reply_to[0] == 0);
 
           if (lbs->el_index[lbs->n_el_index].message_id > 0)
             {
             if (verbose)
-              printf("  ID %d in %s, offset %d\n", 
+              printf("  ID %3d in %s, offset %5d, %s\n", 
                 lbs->el_index[lbs->n_el_index].message_id, str, 
-                lbs->el_index[lbs->n_el_index].offset);
+                lbs->el_index[lbs->n_el_index].offset,
+                lbs->el_index[lbs->n_el_index].thread_head ? "thread head" : "reply");
 
             /* valid ID */
             lbs->n_el_index++;
@@ -1526,7 +1535,7 @@ struct tm tms;
     {
     printf("After sort:\n");
     for (i=0 ; i<lbs->n_el_index ; i++)
-      printf("  ID %d in %s, offset %d\n", 
+      printf("  ID %3d in %s, offset %5d\n", 
         lbs->el_index[i].message_id, lbs->el_index[i].file_name, 
         lbs->el_index[i].offset);
     }
@@ -1536,7 +1545,7 @@ struct tm tms;
 
 /*------------------------------------------------------------------*/
 
-int el_search_message(LOGBOOK *lbs, int mode, int message_id)
+int el_search_message(LOGBOOK *lbs, int mode, int message_id, BOOL head_only)
 /********************************************************************\
 
   Routine: el_search_message
@@ -1558,10 +1567,30 @@ int i;
     return 0;
 
   if (mode == EL_FIRST)
+    {
+    if (head_only)
+      {
+      for (i=0 ; i<lbs->n_el_index ; i++)
+        if (lbs->el_index[i].thread_head)
+          return lbs->el_index[i].message_id;
+
+      return 0;
+      }
     return lbs->el_index[0].message_id;
+    }
 
   if (mode == EL_LAST)
+    {
+    if (head_only)
+      {
+      for (i=lbs->n_el_index-1 ; i>0 ; i--)
+        if (lbs->el_index[i].thread_head)
+          return lbs->el_index[i].message_id;
+      
+      return 0;
+      }
     return lbs->el_index[lbs->n_el_index-1].message_id;
+    }
 
   if (mode == EL_NEXT)
     {
@@ -1574,6 +1603,15 @@ int i;
 
     if (i == lbs->n_el_index-1)
       return 0; // last message
+
+    if (head_only)
+      {
+      for (i++ ; i<lbs->n_el_index ; i++)
+        if (lbs->el_index[i].thread_head)
+          return lbs->el_index[i].message_id;
+      
+      return 0;
+      }
 
     return lbs->el_index[i+1].message_id;
     }
@@ -1589,6 +1627,15 @@ int i;
 
     if (i == 0)
       return 0; // first message
+
+    if (head_only)
+      {
+      for (i-- ; i>0 ; i--)
+        if (lbs->el_index[i].thread_head)
+          return lbs->el_index[i].message_id;
+      
+      return 0;
+      }
 
     return lbs->el_index[i-1].message_id;
     }
@@ -1643,7 +1690,7 @@ char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
 
   if (message_id == 0)
     /* open most recent message */
-    message_id = el_search_message(lbs, EL_LAST, 0);
+    message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
 
   if (message_id == 0)
     return EL_EMPTY;
@@ -2027,6 +2074,7 @@ BOOL    bedit;
     strcpy(lbs->el_index[lbs->n_el_index-1].file_name, file_name);
     lbs->el_index[lbs->n_el_index-1].file_time = ltime;
     lbs->el_index[lbs->n_el_index-1].offset = TELL(fh);
+    lbs->el_index[lbs->n_el_index-1].thread_head = (in_reply_to[0] == 0);
 
     /* if index not ordered, sort it */
     i = lbs->n_el_index;
@@ -3534,7 +3582,7 @@ char   str[80], date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
 
   str[0] = 0;
   n_attr = scan_attributes(lbs->name);
-  message_id = el_search_message(lbs, EL_LAST, 0);
+  message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
 
   el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
               NULL, 0, in_reply_to, reply_to, att, encoding);
@@ -3639,9 +3687,13 @@ time_t now;
       sprintf(str, "Subst on reply %s", attr_list[index]);
       if (getcfg(lbs->name, str, preset))
         {
-        i = build_subst_list(lbs, slist, svalue, attrib);
-        strsubst(preset, slist, svalue, i);
-        strcpy(attrib[index], preset);
+        /* check if already second reply */
+        if (orig_tag[0] == 0)
+          {
+          i = build_subst_list(lbs, slist, svalue, attrib);
+          strsubst(preset, slist, svalue, i);
+          strcpy(attrib[index], preset);
+          }
         }
       }
     }
@@ -5017,20 +5069,25 @@ FILE *f;
 void display_reply(LOGBOOK *lbs, int message_id, int printable, int n_attr_disp, 
                    char disp_attr[MAX_N_ATTR+4][NAME_LENGTH], int level)
 {
-char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
-       in_reply_to[80], reply_to[256], attachment[MAX_ATTACHMENTS][256], encoding[80];
+char   date[80], *text, in_reply_to[80], reply_to[256], encoding[80], 
+       attachment[MAX_ATTACHMENTS][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 int    status, n_attr, size;
 char   *p;
 
+  text = malloc(TEXT_SIZE);
+
   n_attr = scan_attributes(lbs->name);
   reply_to[0] = 0;
-  size = sizeof(text);
+  size = TEXT_SIZE;
   status = el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
                        text, &size, in_reply_to, reply_to,
                        attachment, encoding);
 
   if (status != EL_SUCCESS)
+    {
+    free(text);
     return;
+    }
 
   display_line(lbs, message_id, 0, "threaded", level, printable, 0,
                FALSE, date, reply_to, n_attr_disp, disp_attr, 
@@ -5049,6 +5106,8 @@ char   *p;
         p++;
       } while(*p);
     }
+
+  free(text);
 }
 
 /*------------------------------------------------------------------*/
@@ -5065,7 +5124,7 @@ char   str[256], col[80];
 char   mode[80];
 char   menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH];
 char   *p , *pt, *pt1, *pt2;
-BOOL   show_attachments;
+BOOL   show_attachments, threaded, only_message_heads;
 time_t ltime, ltime_start, ltime_end, ltime_current, now;
 struct tm tms, *ptms;
 
@@ -5116,6 +5175,9 @@ struct tm tms, *ptms;
     strcpy(mode, getparam("mode"));
     show_attachments = (*getparam("attach") > 0);
     }
+
+  threaded = equal_ustring(mode, "threaded");
+  only_message_heads = threaded;
 
   time(&now);
   ptms = localtime(&now);
@@ -5458,7 +5520,7 @@ struct tm tms, *ptms;
       }
     }
 
-  if (equal_ustring(mode, "threaded"))
+  if (threaded)
     {
     }
   else
@@ -5520,7 +5582,7 @@ struct tm tms, *ptms;
       {
       if (reverse)
         {
-        message_id = el_search_message(lbs, EL_LAST, 0);
+        message_id = el_search_message(lbs, EL_LAST, 0, threaded);
 
         time(&now);
         ltime_start = now-3600*24*past_n;
@@ -5541,14 +5603,14 @@ struct tm tms, *ptms;
       }
     else if (last_n)
       {
-      message_id = el_search_message(lbs, EL_LAST, 0);
+      message_id = el_search_message(lbs, EL_LAST, 0, threaded);
 
       if (!reverse)
         {
         for (i=1 ; i<last_n ; i++)
-          message_id = el_search_message(lbs, EL_PREV, message_id);
+          message_id = el_search_message(lbs, EL_PREV, message_id, threaded);
         if (message_id == 0)
-          message_id = el_search_message(lbs, EL_FIRST, 0);
+          message_id = el_search_message(lbs, EL_FIRST, 0, threaded);
         }
       }
     else
@@ -5560,7 +5622,7 @@ struct tm tms, *ptms;
         if (!*getparam("y2") && !*getparam("m2") && !*getparam("d2"))
           {
           /* search last message */
-          message_id = el_search_message(lbs, EL_LAST, 0);
+          message_id = el_search_message(lbs, EL_LAST, 0, threaded);
           }
         else
           {
@@ -5578,7 +5640,7 @@ struct tm tms, *ptms;
         if (!*getparam("y1") && !*getparam("m1") && !*getparam("d1"))
           {
           /* search first message */
-          message_id = el_search_message(lbs, EL_FIRST, 0);
+          message_id = el_search_message(lbs, EL_FIRST, 0, threaded);
           }
         else
           {
@@ -5641,6 +5703,7 @@ struct tm tms, *ptms;
           {
           if (*getparam(attr_list[i]))
             {
+            only_message_heads = FALSE;
             strcpy(str, getparam(attr_list[i]));
             for (j=0 ; j<(int)strlen(str) ; j++)
               str[j] = toupper(str[j]);
@@ -5658,6 +5721,7 @@ struct tm tms, *ptms;
 
         if (*getparam("subtext"))
           {
+          only_message_heads = FALSE;
           strcpy(str, getparam("subtext"));
           for (i=0 ; i<(int)strlen(str) ; i++)
             str[i] = toupper(str[i]);
@@ -5717,7 +5781,7 @@ struct tm tms, *ptms;
           }
 
         /* check if reply */
-        if (equal_ustring(mode, "threaded") && in_reply_to[0])
+        if (only_message_heads && in_reply_to[0])
           goto skip;
 
         /*---- filter passed: display line ----*/
@@ -5728,7 +5792,7 @@ struct tm tms, *ptms;
                      show_attachments, date, reply_to, n_attr_disp, disp_attr, 
                      attrib, n_attr, text, attachment, encoding);
 
-        if (equal_ustring(mode, "threaded"))
+        if (threaded)
           {
           if (reply_to[0] && (!getcfg(lbs->name, "Top level only", str) || atoi(str) == 0))
             {
@@ -5753,9 +5817,9 @@ struct tm tms, *ptms;
 skip:
       /* get index of next message */
       if (reverse)
-        message_id = el_search_message(lbs, EL_PREV, message_id);
+        message_id = el_search_message(lbs, EL_PREV, message_id, only_message_heads);
       else
-        message_id = el_search_message(lbs, EL_NEXT, message_id);
+        message_id = el_search_message(lbs, EL_NEXT, message_id, only_message_heads);
 
       } while (message_id);
     } /* for () */
@@ -6205,11 +6269,11 @@ LOGBOOK *lbs_dest;
     el_delete_message(lbs, src_id, TRUE, NULL, TRUE);
 
     /* check if this was the last message */
-    src_id = el_search_message(lbs, EL_NEXT, src_id);
+    src_id = el_search_message(lbs, EL_NEXT, src_id, FALSE);
 
     /* if yes, force display of new last message */
     if (src_id <= 0)
-      src_id = el_search_message(lbs, EL_LAST, 0);
+      src_id = el_search_message(lbs, EL_LAST, 0, FALSE);
     }
 
   /* display status message */
@@ -6539,10 +6603,10 @@ BOOL   first;
     orig_message_id = message_id;
 
     if (equal_ustring(command, loc("Last")))
-      message_id = el_search_message(lbs, EL_LAST, 0);
+      message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
       
     if (equal_ustring(command, loc("First")))
-      message_id = el_search_message(lbs, EL_FIRST, 0);
+      message_id = el_search_message(lbs, EL_FIRST, 0, FALSE);
 
     if (!message_id)
       {
@@ -6554,19 +6618,19 @@ BOOL   first;
     do
       {
       if (equal_ustring(command, loc("Next")))
-        message_id = el_search_message(lbs, EL_NEXT, message_id);
+        message_id = el_search_message(lbs, EL_NEXT, message_id, FALSE);
 
       if (equal_ustring(command, loc("Previous")))
-        message_id = el_search_message(lbs, EL_PREV, message_id);
+        message_id = el_search_message(lbs, EL_PREV, message_id, FALSE);
 
       if (!first)
         {
         if (equal_ustring(command, loc("First")))
-          message_id = el_search_message(lbs, EL_NEXT, message_id);
+          message_id = el_search_message(lbs, EL_NEXT, message_id, FALSE);
 
       
         if (equal_ustring(command, loc("Last")))
-          message_id = el_search_message(lbs, EL_PREV, message_id);
+          message_id = el_search_message(lbs, EL_PREV, message_id, FALSE);
         }
       else
         first = FALSE;
@@ -6659,7 +6723,7 @@ BOOL   first;
   /*---- get current message ---------------------------------------*/
 
   if (message_id == 0)
-    message_id = el_search_message(lbs, EL_LAST, 0);
+    message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
 
   if (message_id)
     {
