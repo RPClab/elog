@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.31  2003/02/27 16:40:13  midas
+  Avoid cleartext password on URL if wrong username was supplied
+
   Revision 1.30  2003/02/26 21:20:35  midas
   Fixed bug that attributes in replies were not found in searches if display in threaded mode
 
@@ -10126,6 +10129,18 @@ char  status, str[256], upwd[256], full_name[256], email[256];
     if (isparam("wpwd"))
       rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n", loc("Wrong password"));
 
+    if (isparam("wusr"))
+      {
+      sprintf(str, loc("Invalid user name <b>%s</b>"), getparam("wusr"));
+      rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n", str);
+      }
+
+    if (isparam("wfil"))
+      {
+      sprintf(str, loc("Cannot open file <b>%s</b>"), getparam("wfil"));
+      rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n", str);
+      }
+
     rsprintf("<tr><td colspan=2 class=\"dlgtitle\">%s</td></tr>\n", loc("Please login"));
 
     rsprintf("<tr><td align=right class=\"dlgform\">%s:</td>\n", loc("Username"));
@@ -10157,13 +10172,16 @@ char  status, str[256], upwd[256], full_name[256], email[256];
   else
     {
     if (status == 2)
-      sprintf(full_name, loc("Invalid user name <b>%s</b>"), user);
+      {
+      sprintf(str, "?wusr=%s", user);
+      redirect(lbs, str);
+      }
     else
       {
-      getcfg(lbs->name, "Password file", str);
-      sprintf(full_name, loc("Cannot open file <b>%s</b>"), str);
+      getcfg(lbs->name, "Password file", full_name);
+      sprintf(str, "?wfil=%s", full_name);
+      redirect(lbs, str);
       }
-    show_error(full_name);
     return FALSE;
     }
 }
@@ -11331,8 +11349,8 @@ struct timeval       timeout;
   if (fd < 0)
     {
     perror("server_loop");
-    printf("Error created pid file \"PIDPATH\".\n");
-    exit(1);
+    printf("Error creating pid file \"%s\".\n", PIDPATH);
+    // exit(1);
     }
 
   memset(buf, 0, sizeof(buf));
@@ -11340,8 +11358,8 @@ struct timeval       timeout;
   if (write(fd, buf, strlen(buf)) == -1)
     {
     perror("server_loop");
-    printf("Error writing to pid file \"PIDPATH\".\n");
-    exit(1);
+    printf("Error writing to pid file \"%s\".\n", PIDPATH);
+    // exit(1);
     }
   close(fd);
   }
