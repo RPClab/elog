@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.464  2004/09/08 14:31:37  midas
+   Fixed bug that synchronization was not working together with 'menu commands'
+
    Revision 1.463  2004/09/08 12:06:18  midas
    Do not display *.ps and *.pdf files inline
 
@@ -13753,6 +13756,8 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 
       if (is_admin_user(lbs->name, getparam("unm"))) {
 
+         if (getcfg(lbs->name, "Mirror server", str, sizeof(str)))
+            strcat(menu_str, "Synchronize, ");
          strcat(menu_str, "Change config file, ");
          strcat(menu_str, "Delete this logbook, ");
          strcat(menu_str, "Rename this logbook, ");
