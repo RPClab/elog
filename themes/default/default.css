@@ -41,6 +41,7 @@ td {
   width:60%;
   background-color:#486090; 
   border:1px solid #486090;
+  font-size:12pt;
 }
 
 .seltitle {
@@ -52,14 +53,23 @@ td {
   text-align:center;
 }
 
+.selspace {
+  width:2%;
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  background-color:#EEEEEE;
+}
+
 .selgroup {
   border:1px solid #308000;
   border-top:1px solid white;
   border-left:1px solid white;
-  background-color:red;
+  background-color:#FFCCFF;
   padding:3px;
   text-align:left;
   font-weight:bold;
+  font-size:14pt;
 }
 
 .sellogbook {
