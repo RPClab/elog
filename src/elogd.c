@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.30  2003/02/26 21:20:35  midas
+  Fixed bug that attributes in replies were not found in searches if display in threaded mode
+
   Revision 1.29  2003/02/26 21:03:28  midas
   Fixed problem that entry date changed on upload
 
@@ -8019,7 +8022,7 @@ LOGBOOK *lbs_cur;
             msg_list[j].index == i)
           break;
 
-      if (i < index)
+      if (j < index)
         {
         msg_list[index].lbs = NULL; // delete current message
         continue;
