@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.496  2004/10/14 19:40:40  midas
+   Fixed 'append on edit' with uploads
+
    Revision 1.495  2004/10/13 22:21:21  midas
    Started implementation of regex
 
@@ -8217,12 +8220,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             /* otherwise some HTML statments would break the page syntax        */
             rsputs3(text);
 
-            if (getcfg(lbs->name, "Append on edit", str, sizeof(str))) {
-               strsubst(str, slist, svalue, j);
-               while (strstr(str, "\\n"))
-                  memcpy(strstr(str, "\\n"), "\r\n", 2);
-               rsputs3(str);
-            }
+            if (!bupload)
+               if (getcfg(lbs->name, "Append on edit", str, sizeof(str))) {
+                  strsubst(str, slist, svalue, j);
+                  while (strstr(str, "\\n"))
+                     memcpy(strstr(str, "\\n"), "\r\n", 2);
+                  rsputs3(str);
+               }
          }
       } else if (breply) {
          if (!getcfg(lbs->name, "Quote on reply", str, sizeof(str))
