@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.348  2004/06/18 19:09:24  midas
+   Made substituions work correctly with date attributes
+
    Revision 1.347  2004/06/17 15:16:34  midas
    Fixed bug with password recovery
 
@@ -5772,7 +5775,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
 {
    int i;
    char str[NAME_LENGTH], format[256];
-   time_t now;
+   time_t t;
    struct tm *ts;
 
    /* copy attribute list */
@@ -5780,9 +5783,19 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
    if (attrib != NULL)
       for (; i < lbs->n_attr; i++) {
          strcpy(list[i], attr_list[i]);
-         if (attrib)
-            strcpy(value[i], attrib[i]);
-         else
+         if (attrib) {
+            if ((attr_flags[i] & AF_DATE) && format_date) {
+
+               t = (time_t)atoi(attrib[i]);
+               ts = localtime(&t);
+               if (!getcfg(lbs->name, "Time format", format))
+                  strcpy(format, DEFAULT_TIME_FORMAT);
+
+               strftime(value[i], NAME_LENGTH, format, ts);
+
+            } else
+               strcpy(value[i], attrib[i]);
+         } else
             strcpy(value[i], getparam(attr_list[i]));
       }
 
@@ -5811,15 +5824,15 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
 
    /* add date */
    strcpy(list[i], "date");
-   time(&now);
+   time(&t);
    if (format_date) {
-      ts = localtime(&now);
+      ts = localtime(&t);
       if (!getcfg(lbs->name, "Time format", format))
          strcpy(format, DEFAULT_TIME_FORMAT);
 
       strftime(str, sizeof(str), format, ts);
    } else
-      sprintf(str, "%d", (int) now);
+      sprintf(str, "%d", (int) t);
 
    strcpy(value[i++], str);
 
