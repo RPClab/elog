@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.495  2004/10/13 22:21:21  midas
+   Started implementation of regex
+
    Revision 1.494  2004/10/13 20:15:06  midas
    Use rsputs3 for proper display of HTML logbook entries
 
@@ -695,6 +698,9 @@ uid_t orig_uid;                 /* Original effective UID before dropping privil
 char pidfile[256];              /* Pidfile name                                     */
 
 #endif                          /* OS_UNIX */
+
+/* local includes */
+#include "regex.h"
 
 BOOL running_as_daemon;         /* Running as a daemon/service? */
 int elog_tcp_port = (int) DEFAULT_PORT; /* Server's TCP port            */
@@ -14198,7 +14204,7 @@ time_t retrieve_date(char *index, BOOL bstart)
 
 void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *info)
 {
-   int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line;
+   int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line, flags;
    int current_year, current_month, current_day, printable, n_logbook,
        n_display, reverse, n_attr_disp, total_n_msg, n_msg, search_all, message_id,
        n_page, i_start, i_stop, in_reply_to_id;
@@ -14213,6 +14219,14 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
    LOGBOOK *lbs_cur;
+
+   /*
+   struct re_pattern_buffer re_buf;
+   struct re_registers re_regs;
+   char fastmap[(1 << 8)];
+   */
+   regex_t re_buf;
+   regmatch_t pmatch[10];
 
    /* redirect if enpty parameters */
    if (strstr(_cmdline, "=&")) {
@@ -14561,6 +14575,15 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    text1 = xmalloc(TEXT_SIZE);
    text2 = xmalloc(TEXT_SIZE);
 
+   /* prepare for regex search */
+   memset(&re_buf, 0, sizeof(re_buf));
+
+   if (*getparam("subtext")) {
+      strcpy(str, getparam("subtext"));
+      flags = isparam("icase") ? REG_ICASE : REG_EXTENDED;
+      regcomp(&re_buf, str, flags);
+   }
+
    /* do filtering */
    for (index = 0; index < n_msg; index++) {
       if (!msg_list[index].lbs)
@@ -14660,6 +14683,18 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
       if (*getparam("subtext")) {
          strcpy(str, getparam("subtext"));
+
+         /*
+         status = re_search(&re_buf, text, strlen(text), 0, strlen(text), &re_regs);
+         */
+
+         status = regexec(&re_buf, text, 10, pmatch, 0);
+         if (status == REG_NOMATCH) {
+            msg_list[index].lbs = NULL;
+            continue;
+         }
+
+         /* old search 
          for (i = 0; i < (int) strlen(str); i++)
             str[i] = toupper(str[i]);
          str[i] = 0;
@@ -14668,7 +14703,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          text1[i] = 0;
 
          if (atoi(getparam("sall")) && strstr(text1, str) == NULL) {
-            /* search text in attributes */
+            // search text in attributes
             for (i = 0; i < lbs->n_attr; i++) {
                for (j = 0; j < (int) strlen(attrib[i]); j++)
                   text1[j] = toupper(attrib[i][j]);
@@ -14686,6 +14721,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             msg_list[index].lbs = NULL;
             continue;
          }
+         old search */
       }
 
       /* in threaded mode, find message head */
@@ -14753,6 +14789,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       if (isparam("sort"))
          reverse = 0;
    }
+
+   regfree(&re_buf);
 
    /*---- remove duplicate messages ----*/
 
