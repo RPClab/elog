@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.41  2002/07/09 07:37:37  midas
+  Fixed bug that 'last xx entries?mode=threaded' was displayed
+
   Revision 2.40  2002/07/09 07:31:13  midas
   Removed alphasort() for Solaris compatibility
 
@@ -5353,7 +5356,6 @@ struct tm tms, *ptms;
             if (last_n)
               {
               sprintf(str, loc("Last %d entries"), last_n*2);
-              sprintf(str+strlen(str), "?mode=%s", mode);
               rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n*2, mode, str);
               }
             }
