@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.427  2004/08/04 09:24:17  midas
+   Removed user[0] in is_admin_user()
+
    Revision 1.426  2004/08/04 08:33:18  midas
    Use resource dir in GetPwdFile
 
@@ -17434,7 +17437,10 @@ BOOL is_admin_user(char *logbook, char *user)
    char str[1000];
    char list[MAX_N_LIST][NAME_LENGTH];
 
-   if (getcfg(logbook, "Admin user", str, sizeof(str)) && user[0]) {
+   /* Removed user[0] for cloning, have to check implications, same below.
+      if (getcfg(logbook, "Admin user", str, sizeof(str)) && user[0]) { */
+   
+   if (getcfg(logbook, "Admin user", str, sizeof(str))) {
       n = strbreak(str, list, MAX_N_LIST, ",");
       for (i = 0; i < n; i++)
          if (strcmp(user, list[i]) == 0)
@@ -17454,7 +17460,7 @@ BOOL is_admin_user_global(char *user)
    char str[1000];
    char list[MAX_N_LIST][NAME_LENGTH];
 
-   if (getcfg_simple("global", "Admin user", str, sizeof(str)) && user[0]) {
+   if (getcfg_simple("global", "Admin user", str, sizeof(str))) {
       n = strbreak(str, list, MAX_N_LIST, ",");
       for (i = 0; i < n; i++)
          if (strcmp(user, list[i]) == 0)
