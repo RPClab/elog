@@ -6,6 +6,9 @@
   Contents:     Conversion program for ELOG messages
 
   $Log$
+  Revision 1.2  2002/06/03 12:37:54  midas
+  Added thread evaluation
+
   Revision 1.1  2002/05/29 10:22:46  midas
   Initial revision
 
@@ -91,6 +94,13 @@ typedef int INT;
 char attr_list[MAX_N_ATTR][NAME_LENGTH];
 char data_dir[256];
 int  verbose;
+
+typedef struct {
+  char v1_tag[16];
+  int  message_id;
+  char in_reply_to[16];
+  char reply[16];
+} THREAD;
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -952,14 +962,17 @@ char    str[256];
 
 /*------------------------------------------------------------------*/
 
-void scan_message()
+void scan_messages()
 {
-int    size, status, fh, message_id;
-char   file_name[256], tag[256], str[256];
-char   message[TEXT_SIZE+1000]; 
+int         size, status, fh, message_id, i, n, n_messages;
+char        file_name[256], tag[256], str[256];
+char        message[TEXT_SIZE+1000]; 
+char        *ps, *pd, *file_list;
+THREAD      *thread_list;
 
   tag[0] = 0;
   message_id = 1;
+  thread_list = malloc(sizeof(THREAD));
 
   /* search first message */
   status = el_search_message(tag, NULL, TRUE, TRUE);
@@ -970,6 +983,66 @@ char   message[TEXT_SIZE+1000];
     return;
     }
 
+  /* delete previous files */
+  file_list = NULL;
+  getcwd(str, sizeof(str));
+  n = ss_file_find(str, "??????a.log", &file_list);
+  for (i=0 ; i<n ; i++)
+    unlink(file_list+i*MAX_PATH_LENGTH);
+  if (file_list)
+    free(file_list);
+
+  /* build thread_list */
+  do
+    {
+    size = sizeof(message);
+    status = el_get_v1(tag, message, &size);
+
+    if (verbose)
+      printf("Scan %s\n", tag);
+
+    if (status == EL_LAST_MSG)
+      break;
+
+    strcpy(thread_list[message_id-1].v1_tag, tag);
+    thread_list[message_id-1].message_id = message_id;
+
+    /* extract thread */
+    if (strstr(message, "Thread:"))
+      {
+      ps = strstr(message, "Thread:")+7;
+      while (*ps && !isdigit(*ps))
+        ps++;
+
+      pd = thread_list[message_id-1].in_reply_to;
+      while (isdigit(*ps) || ispunct(*ps))
+        *pd++ = *ps++;
+      *pd = 0;
+
+      while (*ps && !isdigit(*ps))
+        ps++;
+
+      pd = thread_list[message_id-1].reply;
+      while (isdigit(*ps) || ispunct(*ps))
+        *pd++ = *ps++;
+      *pd = 0;
+      }
+
+    message_id++;
+    strcat(tag, "+1");
+    
+    } while (1);
+
+  n_messages = message_id;
+
+  /* convert messages */
+
+  tag[0] = 0;
+  message_id = 1;
+
+  /* search first message */
+  status = el_search_message(tag, NULL, TRUE, TRUE);
+
   do
     {
     size = sizeof(message);
@@ -977,13 +1050,13 @@ char   message[TEXT_SIZE+1000];
 
     if (status == EL_LAST_MSG)
       break;
-    
-    if (verbose)
-      printf("Converting %s\n", tag);
 
     strcpy(str, tag);
     str[6] = 0;
     sprintf(file_name, "%s%sa.log", data_dir, str);
+
+    if (verbose)
+      printf("Converting %s -> %s, ID %d\n", tag, str, message_id);
 
     fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
     if (fh < 0)
@@ -997,6 +1070,35 @@ char   message[TEXT_SIZE+1000];
     /* write new message header */
     sprintf(str, "$@MID@$: %d\n", message_id);
     write(fh, str, strlen(str));
+
+    /* write reply-to and in-reply-to */
+    if (atoi(thread_list[message_id-1].reply) > 0)
+      {
+      /* search id for reply */
+      for (i=0 ; i<n_messages ; i++)
+        if (strstr(thread_list[i].v1_tag, thread_list[message_id-1].reply))
+          break;
+
+      if (i < n_messages)
+        {
+        sprintf(str, "Reply to: %d\n", thread_list[i].message_id);
+        write(fh, str, strlen(str));
+        }
+      }
+
+    if (atoi(thread_list[message_id-1].in_reply_to) > 0)
+      {
+      /* search id for reply */
+      for (i=0 ; i<n_messages ; i++)
+        if (strstr(thread_list[i].v1_tag, thread_list[message_id-1].in_reply_to))
+          break;
+
+      if (i < n_messages)
+        {
+        sprintf(str, "In reply to: %d\n", thread_list[i].message_id);
+        write(fh, str, strlen(str));
+        }
+      }
 
     /* strip $end$ */
     if (strstr(message, "$End$"))
@@ -1044,7 +1146,7 @@ usage:
   getcwd(data_dir, sizeof(data_dir));
   strcat(data_dir, DIR_SEPARATOR_STR);
 
-  scan_message();
+  scan_messages();
 
   return 0;
 }
