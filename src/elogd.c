@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.423  2004/08/04 07:47:56  midas
+   Added \n to error display during cloning
+
    Revision 1.422  2004/08/03 14:16:11  midas
    Fixed problem with {..} in attributes
 
@@ -538,7 +541,7 @@ char http_host[256];
 #define TEXT_SIZE    250000
 #define MAX_PATH_LENGTH 256
 
-#define MAX_CONTENT_LENGTH 10000000
+#define MAX_CONTENT_LENGTH 10*1024*1024
 
 char _param[MAX_PARAM][NAME_LENGTH];
 char _value[MAX_PARAM][NAME_LENGTH];
@@ -804,59 +807,59 @@ static int int_vasprintf(char **result, const char *format, va_list args)
 
    while (*p != '\0') {
       if (*p++ == '%') {
-	 while (strchr("-+ #0", *p))
-	    ++p;
-	 if (*p == '*') {
-	    ++p;
-	    total_width += abs(va_arg(ap, int));
-	 } else
-	    total_width += strtoul(p, (char **) &p, 10);
-	 if (*p == '.') {
-	    ++p;
-	    if (*p == '*') {
-	       ++p;
-	       total_width += abs(va_arg(ap, int));
-	    } else
-	       total_width += strtoul(p, (char **) &p, 10);
-	 }
-	 while (strchr("hlL", *p))
-	    ++p;
-	 /*
-	  * Should be big enough for any format specifier
-	  * except %s and floats.
-	  */
-	 total_width += 30;
-	 switch (*p) {
-	 case 'd':
-	 case 'i':
-	 case 'o':
-	 case 'u':
-	 case 'x':
-	 case 'X':
-	 case 'c':
-	    (void) va_arg(ap, int);
-	    break;
-	 case 'f':
-	 case 'e':
-	 case 'E':
-	 case 'g':
-	 case 'G':
-	    (void) va_arg(ap, double);
-	    /*
-	     * Since an ieee double can have an exponent of 307, we'll
-	     * make the buffer wide enough to cover the gross case.
-	     */
-	    total_width += 307;
-	    break;
-	 case 's':
-	    total_width += strlen(va_arg(ap, char *));
-	    break;
-	 case 'p':
-	 case 'n':
-	    (void) va_arg(ap, char *);
-	    break;
-	 }
-	 p++;
+         while (strchr("-+ #0", *p))
+            ++p;
+         if (*p == '*') {
+            ++p;
+            total_width += abs(va_arg(ap, int));
+         } else
+            total_width += strtoul(p, (char **) &p, 10);
+         if (*p == '.') {
+            ++p;
+            if (*p == '*') {
+               ++p;
+               total_width += abs(va_arg(ap, int));
+            } else
+               total_width += strtoul(p, (char **) &p, 10);
+         }
+         while (strchr("hlL", *p))
+            ++p;
+         /*
+          * Should be big enough for any format specifier
+          * except %s and floats.
+          */
+         total_width += 30;
+         switch (*p) {
+         case 'd':
+         case 'i':
+         case 'o':
+         case 'u':
+         case 'x':
+         case 'X':
+         case 'c':
+            (void) va_arg(ap, int);
+            break;
+         case 'f':
+         case 'e':
+         case 'E':
+         case 'g':
+         case 'G':
+            (void) va_arg(ap, double);
+            /*
+             * Since an ieee double can have an exponent of 307, we'll
+             * make the buffer wide enough to cover the gross case.
+             */
+            total_width += 307;
+            break;
+         case 's':
+            total_width += strlen(va_arg(ap, char *));
+            break;
+         case 'p':
+         case 'n':
+            (void) va_arg(ap, char *);
+            break;
+         }
+         p++;
       }
    }
 #ifdef va_copy
@@ -877,7 +880,7 @@ int vasprintf(char **result, const char *format, va_list args)
 {
    return int_vasprintf(result, format, args);
 }
-#endif				/* ! HAVE_VASPRINTF */
+#endif                          /* ! HAVE_VASPRINTF */
 
 /* Safe replacement for vasprintf (adapted code from Samba) */
 int xvasprintf(char **ptr, const char *format, va_list ap)
@@ -7944,7 +7947,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                            loc("Submit as HTML text"));
                else
                   rsprintf("<input type=checkbox name=html value=1>%s\n",
-                           loc("Submit as HTML text"));                                     \
+                           loc("Submit as HTML text"));
             } else if (atoi(str) == 3) {
                rsprintf("<input type=hidden name=html value=1>\n");
             }
@@ -11423,11 +11426,12 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
          if (verbose)
             puts(buffer);
 
-         strlcpy(str, p+10, 10);
+         strlcpy(str, p + 10, 10);
          if (strchr(str, '\r'))
             *strchr(str, '\r') = 0;
 
-         sprintf(error_str, "Incorrect remote ELOG server version %s, must be 2.5.4 or later", str);
+         sprintf(error_str,
+                 "Incorrect remote ELOG server version %s, must be 2.5.4 or later", str);
          free(buffer);
          return;
       }
@@ -11590,7 +11594,7 @@ int adjust_config(char *url)
 
 /*------------------------------------------------------------------*/
 
-void receive_pwdfile(LOGBOOK *lbs, char *server, char *error_str)
+void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
 {
    char str[256], pwd[256], url[256], *buffer, *p;
    int i, status, version, fh;
@@ -11601,7 +11605,7 @@ void receive_pwdfile(LOGBOOK *lbs, char *server, char *error_str)
 
       combine_url(lbs, server, "", url, sizeof(url));
       strcpy(str, url);
-      strcat(str, "?cmd=GetPwdFile"); // request password file
+      strcat(str, "?cmd=GetPwdFile");   // request password file
 
       if (retrieve_url(str, &buffer, pwd) < 0) {
          *strchr(str, '?') = 0;
@@ -11618,11 +11622,12 @@ void receive_pwdfile(LOGBOOK *lbs, char *server, char *error_str)
       }
       version = atoi(p + 10) * 100 + atoi(p + 12) * 10 + atoi(p + 14);
       if (version < 254) {
-         strlcpy(str, p+10, 10);
+         strlcpy(str, p + 10, 10);
          if (strchr(str, '\r'))
             *strchr(str, '\r') = 0;
 
-         sprintf(error_str, "Incorrect remote ELOG server version %s, must be 2.5.4 or later", str);
+         sprintf(error_str,
+                 "Incorrect remote ELOG server version %s, must be 2.5.4 or later", str);
          free(buffer);
          return;
       }
@@ -11668,7 +11673,8 @@ void receive_pwdfile(LOGBOOK *lbs, char *server, char *error_str)
             eprintf("\nInvalid username or password.");
 
          if (strstr(p, loc("Please login")) == NULL && strstr(p, "GetPwdFile"))
-            eprintf("\nUser \"%s\" has no admin rights on remote server.", getparam("unm"));
+            eprintf("\nUser \"%s\" has no admin rights on remote server.",
+                    getparam("unm"));
 
          /* ask for username and password */
          eprintf("\nPlease enter admin username to access\n%s: ", url);
@@ -11698,7 +11704,6 @@ void receive_pwdfile(LOGBOOK *lbs, char *server, char *error_str)
       strcat(error_str, strerror(errno));
       return;
    }
-
 #ifdef OS_UNIX
    /* under unix, convert CRLF to CR */
    remove_crlf(buffer);
@@ -11908,10 +11913,10 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
          if (n_remote <= 0) {
 
             if ((n_remote == -2 || n_remote == -3) && mode == SYNC_CLONE) {
-               
+
                if (n_remote == -3)
                   eprintf("\nInvalid username or password.");
-               
+
                combine_url(lbs, list[index], "", url, sizeof(url));
                /* ask for username and password */
                eprintf("\nPlease enter username to access\n%s: ", url);
@@ -11987,7 +11992,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                /* submit configuration section */
                if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                  || atoi(str) == 0) {
+                   || atoi(str) == 0) {
                   submit_config(lbs, list[index], buffer, error_str);
 
                   if (error_str[0])
@@ -12008,7 +12013,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                   logf(lbs, "MIRROR receive config");
 
                if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                  || atoi(str) == 0) {
+                   || atoi(str) == 0) {
                   receive_config(lbs, list[index], error_str);
 
                   if (error_str[0])
@@ -12098,18 +12103,21 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                   /* submit local message */
                   if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                     || atoi(str) == 0) {
+                      || atoi(str) == 0) {
                      submit_message(lbs, list[index], message_id, error_str);
 
                      /* not that submit_message() may have changed attr_list !!! */
 
                      if (error_str[0])
-                        sprintf(str, "%s: %s", loc("Error sending local entry"), error_str);
+                        sprintf(str, "%s: %s", loc("Error sending local entry"),
+                                error_str);
                      else
-                        sprintf(str, "ID%d:\t%s", message_id, loc("Local entry submitted"));
+                        sprintf(str, "ID%d:\t%s", message_id,
+                                loc("Local entry submitted"));
                      mprint(lbs, mode, str);
                   } else {
-                     sprintf(str, "ID%d:\t%s", message_id, loc("Local entry should be submitted"));
+                     sprintf(str, "ID%d:\t%s", message_id,
+                             loc("Local entry should be submitted"));
                      mprint(lbs, mode, str);
                   }
 
@@ -12142,7 +12150,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                   logf(lbs, "MIRROR receive entry #%d", message_id);
 
                if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                  || atoi(str) == 0) {
+                   || atoi(str) == 0) {
                   receive_message(lbs, list[index], message_id, error_str, FALSE);
 
                   if (error_str[0]) {
@@ -12159,7 +12167,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                      mprint(lbs, mode, str);
                   }
                } else {
-                  sprintf(str, "ID%d:\t%s", message_id, loc("Remote entry should be received"));
+                  sprintf(str, "ID%d:\t%s", message_id,
+                          loc("Remote entry should be received"));
                   mprint(lbs, mode, str);
                }
 
@@ -12235,7 +12244,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                   /* submit local message */
                   if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                     || atoi(str) == 0) {
+                      || atoi(str) == 0) {
                      submit_message(lbs, list[index], message_id, error_str);
 
                      /* not that submit_message() may have changed attr_list !!! */
@@ -12244,10 +12253,12 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                         sprintf(str, "%s: %s", loc("Error sending local message"),
                                 error_str);
                      else
-                        sprintf(str, "ID%d:\t%s", message_id, loc("Local entry submitted"));
+                        sprintf(str, "ID%d:\t%s", message_id,
+                                loc("Local entry submitted"));
                      mprint(lbs, mode, str);
                   } else {
-                     sprintf(str, "ID%d:\t%s", message_id, loc("Local entry should be submitted"));
+                     sprintf(str, "ID%d:\t%s", message_id,
+                             loc("Local entry should be submitted"));
                      mprint(lbs, mode, str);
                   }
 
@@ -12267,7 +12278,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                      sprintf(loc_ref, "<a href=\"../%s/%d\">%s</a>", lbs->name_enc,
                              message_id, loc("local"));
                   else
-                     sprintf(loc_ref, "<a href=\"%d\">%s</a>", message_id, loc("Local entry"));
+                     sprintf(loc_ref, "<a href=\"%d\">%s</a>", message_id,
+                             loc("Local entry"));
 
                   sprintf(str, loc("%s should be deleted"), loc_ref);
                   rsprintf("ID%d:\t%s\n", message_id, str);
@@ -12281,7 +12293,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                      logf(lbs, "MIRROR delete local entry #%d", message_id);
 
                   if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                     || atoi(str) == 0) {
+                      || atoi(str) == 0) {
                      el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
 
                      sprintf(str, "ID%d:\t%s", message_id, loc("Entry deleted locally"));
@@ -12290,7 +12302,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                      /* message got deleted from local message list, so redo current index */
                      i_msg--;
                   } else {
-                     sprintf(str, "ID%d:\t%s", message_id, loc("Entry should be deleted locally"));
+                     sprintf(str, "ID%d:\t%s", message_id,
+                             loc("Entry should be deleted locally"));
                      mprint(lbs, mode, str);
                   }
 
@@ -12319,7 +12332,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                remote_id = 0;
                if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                  || atoi(str) == 0) {
+                   || atoi(str) == 0) {
                   remote_id = submit_message(lbs, list[index], message_id, error_str);
 
                   if (error_str[0])
@@ -12332,7 +12345,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                      sprintf(str, "ID%d:\t%s", message_id, loc("Local entry submitted"));
                   mprint(lbs, mode, str);
                } else {
-                  sprintf(str, "ID%d:\t%s", message_id, loc("Local entry should be submitted"));
+                  sprintf(str, "ID%d:\t%s", message_id,
+                          loc("Local entry should be submitted"));
                   mprint(lbs, mode, str);
                }
             }
@@ -12370,7 +12384,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                /* rearrange local message not to conflict with remote message */
                if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                  || atoi(str) == 0) {
+                   || atoi(str) == 0) {
                   el_move_message(lbs, message_id, max_id + 1);
 
                   sprintf(str, "ID%d:\t", message_id);
@@ -12382,8 +12396,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                   i_msg--;
                } else {
                   sprintf(str, "ID%d:\t", message_id);
-                  sprintf(str + strlen(str), loc("Local entry ID should be changed to %d"),
-                          max_id + 1);
+                  sprintf(str + strlen(str),
+                          loc("Local entry ID should be changed to %d"), max_id + 1);
                   mprint(lbs, mode, str);
                }
             }
@@ -12427,7 +12441,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                   /* if message does not exist locally and in cache, it is new, so retrieve it */
                   if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                     || atoi(str) == 0) {
+                      || atoi(str) == 0) {
                      receive_message(lbs, list[index], message_id, error_str, TRUE);
 
                      if (error_str[0]) {
@@ -12438,11 +12452,13 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                      } else if (mode == SYNC_CLONE) {
                         eprintf("%s\n", loc("Remote entry received"));
                      } else {
-                        sprintf(str, "ID%d:\t%s", message_id, loc("Remote entry received"));
+                        sprintf(str, "ID%d:\t%s", message_id,
+                                loc("Remote entry received"));
                         mprint(lbs, mode, str);
                      }
                   } else {
-                     sprintf(str, "ID%d:\t%s", message_id, loc("Remote entry should be received"));
+                     sprintf(str, "ID%d:\t%s", message_id,
+                             loc("Remote entry should be received"));
                      mprint(lbs, mode, str);
                   }
 
@@ -12455,7 +12471,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                      /* if message has changed remotely, receive it */
                      if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                        || atoi(str) == 0) {
+                         || atoi(str) == 0) {
                         receive_message(lbs, list[index], message_id, error_str, TRUE);
 
                         if (error_str[0]) {
@@ -12473,7 +12489,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                            rsprintf("%s\n", loc("Remote entry received"));
                         }
                      } else {
-                        sprintf(str, "ID%d:\t%s", message_id, loc("Remote entry should be received"));
+                        sprintf(str, "ID%d:\t%s", message_id,
+                                loc("Remote entry should be received"));
                         mprint(lbs, mode, str);
                      }
 
@@ -12524,7 +12541,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                               free(buffer);
                            } else {
-                              sprintf(str, "ID%d:\t%s", message_id, loc("Entry should be deleted remotely"));
+                              sprintf(str, "ID%d:\t%s", message_id,
+                                      loc("Entry should be deleted remotely"));
                               mprint(lbs, mode, str);
                            }
 
@@ -12573,12 +12591,15 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
       if (mode == SYNC_HTML && n_delete) {
 
          if (getcfg_topgroup())
-            rsprintf("<br><b><a href=\"../%s/?cmd=Synchronize&confirm=1\">", lbs->name_enc);
+            rsprintf("<br><b><a href=\"../%s/?cmd=Synchronize&confirm=1\">",
+                     lbs->name_enc);
          else {
             if (sync_all)
-               rsprintf("<br><b><a href=\"%s/?cmd=Synchronize&confirm=1\">", lbs->name_enc);
+               rsprintf("<br><b><a href=\"%s/?cmd=Synchronize&confirm=1\">",
+                        lbs->name_enc);
             else
-               rsprintf("<br><b><a href=\"../%s/?cmd=Synchronize&confirm=1\">", lbs->name_enc);
+               rsprintf("<br><b><a href=\"../%s/?cmd=Synchronize&confirm=1\">",
+                        lbs->name_enc);
          }
 
          if (n_delete > 1)
@@ -15855,7 +15876,7 @@ void submit_elog(LOGBOOK * lbs)
          }
       } else if (attr_flags[i] & AF_DATE) {
 
-         if (isparam(ua)) // from edit/reply of fixed attributes
+         if (isparam(ua))       // from edit/reply of fixed attributes
             strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
          else {
 
@@ -17554,7 +17575,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
 
       if (!getcfg(lbs->name, "Login expiration", str, sizeof(str)) || atoi(str) > 0) {
          rsprintf("<td align=center colspan=2 class=\"dlgform\">");
-         
+
          if (isparam("urem") && atoi(getparam("urem")) == 0)
             rsprintf("<input type=checkbox name=remember value=1>\n");
          else
@@ -19394,7 +19415,6 @@ void server_loop(int tcp_port)
       eprintf("Resource dir : %s\n", resource_dir[0] ? resource_dir : "current dir");
       eprintf("Logbook dir  : %s\n", logbook_dir[0] ? logbook_dir : "current dir");
    }
-
 #ifdef OS_UNIX
    /* create PID file if given as command line parameter or if running under root */
 
@@ -20380,14 +20400,14 @@ int read_password(char *pwd, int size)
             eprintf("*");
          }
 #ifdef OS_WINNT
-      Sleep(10);
+         Sleep(10);
 #endif
       }
 
    } while (1);
    str[n] = 0;
 
-   ss_getchar(1); // reset
+   ss_getchar(1);               // reset
 
    strlcpy(pwd, str, size);
    return n;
@@ -20918,7 +20938,7 @@ int main(int argc, char *argv[])
       /* contact remote server */
       receive_config(NULL, clone_url, error_str);
       if (error_str[0]) {
-         eprintf(error_str);
+         eputs(error_str);
          exit(EXIT_FAILURE);
       } else {
          printf("\nRemote configuration successfully received.\n\n");
@@ -20981,7 +21001,8 @@ int main(int argc, char *argv[])
 #endif
          eprintf("Logbook directory \"%s\" successfully created.\n", logbook_dir);
       else {
-         eprintf("Cannot create logbook directory \"%s\":%s.\n", logbook_dir, strerror(errno));
+         eprintf("Cannot create logbook directory \"%s\":%s.\n", logbook_dir,
+                 strerror(errno));
          exit(EXIT_FAILURE);
       }
    }
@@ -21012,7 +21033,7 @@ int main(int argc, char *argv[])
          synchronize(NULL, SYNC_CLONE);
 
       /* check for retrieving password files */
-      for (i = n = 0; lb_list[i].name[0] ; i++)
+      for (i = n = 0; lb_list[i].name[0]; i++)
          if (getcfg(lb_list[i].name, "Password file", str, sizeof(str)))
             n++;
 
@@ -21020,21 +21041,21 @@ int main(int argc, char *argv[])
          eprintf("\nRetrieve remote password files? [y]/n:  ");
          fgets(str, sizeof(str), stdin);
          if (str[0] != 'n' && str[0] != 'N') {
-            for (i = n = 0; lb_list[i].name[0] ; i++)
+            for (i = n = 0; lb_list[i].name[0]; i++)
                if (getcfg(lb_list[i].name, "Password file", file_name, sizeof(file_name))) {
-                  
+
                   /* check if this file has not already been retrieved */
-                  for (j=0 ; j<i; j++)
+                  for (j = 0; j < i; j++)
                      if (getcfg(lb_list[j].name, "Password file", str, sizeof(str)) &&
                          stricmp(file_name, str) == 0)
-                         break;
+                        break;
 
                   if (j == i) {
                      receive_pwdfile(&lb_list[i], clone_url, error_str);
                      if (error_str[0]) {
-                        eprintf(error_str);
+                        eputs(error_str);
                         exit(EXIT_FAILURE);
-                     } else 
+                     } else
                         eprintf("File \"%s\" received successfully.\n", file_name);
                   }
                }
