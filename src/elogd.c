@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.189  2004/01/14 10:04:17  midas
+   Fixed bug of disappearing icons
+
    Revision 1.188  2004/01/13 21:24:42  midas
    Added 'extendable options'
 
@@ -1818,7 +1821,7 @@ char *find_param(char *buf, char *group, char *param)
 
 /*-------------------------------------------------------------------*/
 
-int isgroup(char *group)
+int is_group(char *group)
 {
    char *str, *p, *pstr;
 
@@ -6661,14 +6664,19 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
    if (lbs->top_group[0] && (!top_group || equal_ustring(top_group, "global"))) {
       if (!getcfg("global", "Admin user", str) || strstr(str, getparam("unm")) != 0) {
          if (lbs->top_group[0]) {
-            sprintf(grp, "[global %s]", lbs->top_group);
-            sprintf(str, loc("Change %s"), grp);
-            rsprintf("<input type=submit name=cmd value=\"%s\">\n", str);
+
+            sprintf(str, "global %s", lbs->top_group);
+
+            if (is_group(str)) {
+               sprintf(grp, "[global %s]", lbs->top_group);
+               sprintf(str, loc("Change %s"), grp);
+               rsprintf("<input type=submit name=cmd value=\"%s\">\n", str);
+            }
          }
       }
    }
 
-   if (isgroup("global") && !equal_ustring(top_group, "global")) {
+   if (is_group("global") && !equal_ustring(top_group, "global")) {
       if (!getcfg_simple("global", "Admin user", str)
           || strstr(str, getparam("unm")) != 0) {
          sprintf(str, loc("Change %s"), "[global]");
@@ -12905,9 +12913,9 @@ void interprete(char *lbook, char *path)
 
    /*---- check if file requested -----------------------------------*/
 
-   /* stop elog message id in front of possible attachment */
+   /* skip elog message id in front of possible attachment */
    pfile = dec_path;
-   if (strchr(pfile, '/') && pfile[13] != '/')
+   if (strchr(pfile, '/') && pfile[13] != '/' && isdigit(pfile[0]))
       pfile = strchr(pfile, '/')+1;
 
    if ((strlen(pfile) > 13 && pfile[6] == '_' && pfile[13] == '_')
