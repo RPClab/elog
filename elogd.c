@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.85  2002/09/26 06:57:14  midas
+  Check reverse sort box if 'reverse sort = 1'
+
   Revision 2.84  2002/09/25 15:00:31  midas
   Fixed HTML bug
 
@@ -4740,7 +4743,11 @@ char   str[256], mode[256];
   rsprintf("<input type=checkbox name=printable value=1>%s</td></tr>\n", loc("Printable output"));
 
   rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
-  rsprintf("<input type=checkbox name=reverse value=1>%s</td></tr>\n", loc("Sort in reverse order"));
+
+  if (getcfg(lbs->name, "Reverse sort", str) && atoi(str) == 1)
+    rsprintf("<input type=checkbox checked name=reverse value=1>%s</td></tr>\n", loc("Sort in reverse order"));
+  else
+    rsprintf("<input type=checkbox name=reverse value=1>%s</td></tr>\n", loc("Sort in reverse order"));
 
   /* count logbooks */
   for (i=0 ;  ; i++)
