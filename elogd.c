@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.29  2002/06/20 14:53:33  midas
+  Synchronize indices if several logbooks share the same data directory
+
   Revision 2.28  2002/06/20 09:41:11  midas
   Added syntax help link to configuration page
 
@@ -398,7 +401,7 @@ typedef struct {
   char      name_enc[256];
   char      data_dir[256];
   EL_INDEX  *el_index;
-  int       n_el_index;
+  int       *n_el_index;
 } LOGBOOK;
 
 LOGBOOK *lb_list = NULL;
@@ -756,7 +759,7 @@ char *cfgbuffer;
 
 int getcfg(char *group, char *param, char *value)
 {
-char str[10000], *p, *pstr;
+char *str, *p, *pstr;
 int  length;
 int  fh;
 
@@ -782,6 +785,7 @@ int  fh;
     }
 
   /* search group */
+  str = malloc(10000);
   p = cfgbuffer;
   do
     {
@@ -822,6 +826,7 @@ int  fh;
                 *pstr-- = 0;
 
               strcpy(value, str);
+              free(str);
               return 1;
               }
             }
@@ -838,6 +843,9 @@ int  fh;
     if (p)
       p++;
     } while (p);
+
+
+  free(str);
 
   /* if parameter not found in logbook, look in [global] section */
   if (!equal_ustring(group, "global"))
@@ -1402,7 +1410,7 @@ int eli_compare(const void *e1, const void *e2)
 
 /*------------------------------------------------------------------*/
 
-int el_build_index(LOGBOOK *lbs)
+int el_build_index(LOGBOOK *lbs, BOOL rebuild)
 /* scan all ??????a.log files and build an index table in eli[] */
 {
 char      *file_list, str[256], date[256], dir[256], file_name[256], *buffer, *p,
@@ -1412,7 +1420,29 @@ int       i, fh;
 time_t    ltime;
 struct tm tms;
 
-  lbs->n_el_index = 0;
+  if (rebuild)
+    {
+    free(lbs->el_index);
+    free(lbs->n_el_index);
+    }
+
+  /* check if this logbook has same data dir as previous */
+  for (i=0 ; lb_list[i].name[0] && &lb_list[i] != lbs; i++)
+    if (equal_ustring(lb_list[i].data_dir, lbs->data_dir))
+      break;
+
+  if (equal_ustring(lb_list[i].data_dir, lbs->data_dir) && &lb_list[i] != lbs)
+    {
+    if (verbose)
+      printf("  Same index as logbook %s\n", lb_list[i].name);
+
+    lbs->el_index = lb_list[i].el_index;
+    lbs->n_el_index = lb_list[i].n_el_index;
+    return EL_SUCCESS;
+    }
+
+  lbs->n_el_index = malloc(sizeof(int));
+  *lbs->n_el_index = 0;
   lbs->el_index = malloc(0);
 
   /* get data directory */
@@ -1470,7 +1500,7 @@ struct tm tms;
 
         if (p)
           {
-          lbs->el_index = realloc(lbs->el_index, sizeof(EL_INDEX)*(lbs->n_el_index+1));
+          lbs->el_index = realloc(lbs->el_index, sizeof(EL_INDEX)*(*lbs->n_el_index+1));
           if (lbs->el_index == NULL)
             {
             printf("Not enough memory to allocate message index\n");
@@ -1478,7 +1508,7 @@ struct tm tms;
             }
 
           strcpy(str, file_list+index*MAX_PATH_LENGTH);
-          strcpy(lbs->el_index[lbs->n_el_index].file_name, str);
+          strcpy(lbs->el_index[*lbs->n_el_index].file_name, str);
           
           el_decode(p, "Date: ", date);
           el_decode(p, "In reply to: ", in_reply_to);
@@ -1501,22 +1531,22 @@ struct tm tms;
             tms.tm_year += 100;
           ltime = mktime(&tms);
 
-          lbs->el_index[lbs->n_el_index].file_time = ltime;
+          lbs->el_index[*lbs->n_el_index].file_time = ltime;
             
-          lbs->el_index[lbs->n_el_index].message_id = atoi(p+8);
-          lbs->el_index[lbs->n_el_index].offset = (int) p - (int) buffer;
-          lbs->el_index[lbs->n_el_index].thread_head = (in_reply_to[0] == 0);
+          lbs->el_index[*lbs->n_el_index].message_id = atoi(p+8);
+          lbs->el_index[*lbs->n_el_index].offset = (int) p - (int) buffer;
+          lbs->el_index[*lbs->n_el_index].thread_head = (in_reply_to[0] == 0);
 
-          if (lbs->el_index[lbs->n_el_index].message_id > 0)
+          if (lbs->el_index[*lbs->n_el_index].message_id > 0)
             {
             if (verbose)
               printf("  ID %3d in %s, offset %5d, %s\n", 
-                lbs->el_index[lbs->n_el_index].message_id, str, 
-                lbs->el_index[lbs->n_el_index].offset,
-                lbs->el_index[lbs->n_el_index].thread_head ? "thread head" : "reply");
+                lbs->el_index[*lbs->n_el_index].message_id, str, 
+                lbs->el_index[*lbs->n_el_index].offset,
+                lbs->el_index[*lbs->n_el_index].thread_head ? "thread head" : "reply");
 
             /* valid ID */
-            lbs->n_el_index++;
+            (*lbs->n_el_index)++;
             }
 
           p += 8;
@@ -1532,12 +1562,12 @@ struct tm tms;
   free(file_list);
 
   /* sort entries according to date */
-  qsort(lbs->el_index, lbs->n_el_index, sizeof(EL_INDEX), eli_compare);
+  qsort(lbs->el_index, *lbs->n_el_index, sizeof(EL_INDEX), eli_compare);
 
   if (verbose)
     {
     printf("After sort:\n");
-    for (i=0 ; i<lbs->n_el_index ; i++)
+    for (i=0 ; i<*lbs->n_el_index ; i++)
       printf("  ID %3d in %s, offset %5d\n", 
         lbs->el_index[i].message_id, lbs->el_index[i].file_name, 
         lbs->el_index[i].offset);
@@ -1573,7 +1603,7 @@ int i;
     {
     if (head_only)
       {
-      for (i=0 ; i<lbs->n_el_index ; i++)
+      for (i=0 ; i<*lbs->n_el_index ; i++)
         if (lbs->el_index[i].thread_head)
           return lbs->el_index[i].message_id;
 
@@ -1586,30 +1616,30 @@ int i;
     {
     if (head_only)
       {
-      for (i=lbs->n_el_index-1 ; i>0 ; i--)
+      for (i=*lbs->n_el_index-1 ; i>0 ; i--)
         if (lbs->el_index[i].thread_head)
           return lbs->el_index[i].message_id;
       
       return 0;
       }
-    return lbs->el_index[lbs->n_el_index-1].message_id;
+    return lbs->el_index[*lbs->n_el_index-1].message_id;
     }
 
   if (mode == EL_NEXT)
     {
-    for (i=0 ; i<lbs->n_el_index ; i++)
+    for (i=0 ; i<*lbs->n_el_index ; i++)
       if (lbs->el_index[i].message_id == message_id)
         break;
 
-    if (i == lbs->n_el_index)
+    if (i == *lbs->n_el_index)
       return 0; // message not found
 
-    if (i == lbs->n_el_index-1)
+    if (i == *lbs->n_el_index-1)
       return 0; // last message
 
     if (head_only)
       {
-      for (i++ ; i<lbs->n_el_index ; i++)
+      for (i++ ; i<*lbs->n_el_index ; i++)
         if (lbs->el_index[i].thread_head)
           return lbs->el_index[i].message_id;
       
@@ -1621,11 +1651,11 @@ int i;
 
   if (mode == EL_PREV)
     {
-    for (i=0 ; i<lbs->n_el_index ; i++)
+    for (i=0 ; i<*lbs->n_el_index ; i++)
       if (lbs->el_index[i].message_id == message_id)
         break;
 
-    if (i == lbs->n_el_index)
+    if (i == *lbs->n_el_index)
       return 0; // message not found
 
     if (i == 0)
@@ -1698,11 +1728,11 @@ char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
   if (message_id == 0)
     return EL_EMPTY;
 
-  for (index = 0 ; index < lbs->n_el_index ; index++)
+  for (index = 0 ; index < *lbs->n_el_index ; index++)
     if (lbs->el_index[index].message_id == message_id)
       break;
 
-  if (index == lbs->n_el_index)
+  if (index == *lbs->n_el_index)
     return EL_NO_MSG;
 
   sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
@@ -1710,8 +1740,7 @@ char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
   if (fh < 0)
     {
     /* file might have been deleted, rebuild index */
-    free(lbs->el_index);
-    el_build_index(lbs);
+    el_build_index(lbs, TRUE);
     return el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr, text, 
                        textsize, in_reply_to, reply_to, attachment, encoding);
     }
@@ -1730,8 +1759,7 @@ char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
   if (strncmp(message, "$@MID@$:", 8) != 0)
     {
     /* file might have been edited, rebuild index */
-    free(lbs->el_index);
-    el_build_index(lbs);
+    el_build_index(lbs, TRUE);
     return el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr, text, 
                        textsize, in_reply_to, reply_to, attachment, encoding);
     }
@@ -1957,11 +1985,11 @@ BOOL    bedit;
   if (bedit)
     {
     /* edit existing message */
-    for (index=0 ; index<lbs->n_el_index ; index++)
+    for (index=0 ; index<*lbs->n_el_index ; index++)
       if (lbs->el_index[index].message_id == message_id)
         break;
 
-    if (index == lbs->n_el_index)
+    if (index == *lbs->n_el_index)
       return -1;
 
     sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
@@ -1979,8 +2007,7 @@ BOOL    bedit;
       close(fh);
 
       /* file might have been edited, rebuild index */
-      free(lbs->el_index);
-      el_build_index(lbs);
+      el_build_index(lbs, TRUE);
       return el_submit(lbs, message_id, date, attr_name, attr_value, n_attr, text, 
                        in_reply_to, reply_to, encoding, afilename, buffer, buffer_size);
       }
@@ -2066,23 +2093,28 @@ BOOL    bedit;
 
     /* new message id is old plus one */
     message_id = 1;
-    for (i= 0 ; i<lbs->n_el_index ; i++)
+    for (i= 0 ; i<*lbs->n_el_index ; i++)
       if (lbs->el_index[i].message_id >= message_id)
         message_id = lbs->el_index[i].message_id + 1;
 
     /* enter message in index */
-    lbs->n_el_index++;
-    lbs->el_index = realloc(lbs->el_index, sizeof(EL_INDEX)*lbs->n_el_index);
-    lbs->el_index[lbs->n_el_index-1].message_id = message_id;
-    strcpy(lbs->el_index[lbs->n_el_index-1].file_name, file_name);
-    lbs->el_index[lbs->n_el_index-1].file_time = ltime;
-    lbs->el_index[lbs->n_el_index-1].offset = TELL(fh);
-    lbs->el_index[lbs->n_el_index-1].thread_head = (in_reply_to[0] == 0);
+    (*lbs->n_el_index)++;
+    lbs->el_index = realloc(lbs->el_index, sizeof(EL_INDEX)*(*lbs->n_el_index));
+    lbs->el_index[*lbs->n_el_index-1].message_id = message_id;
+    strcpy(lbs->el_index[*lbs->n_el_index-1].file_name, file_name);
+    lbs->el_index[*lbs->n_el_index-1].file_time = ltime;
+    lbs->el_index[*lbs->n_el_index-1].offset = TELL(fh);
+    lbs->el_index[*lbs->n_el_index-1].thread_head = (in_reply_to[0] == 0);
 
     /* if index not ordered, sort it */
-    i = lbs->n_el_index;
+    i = *lbs->n_el_index;
     if (i > 1 && lbs->el_index[i-1].file_time < lbs->el_index[i-2].file_time)
       qsort(lbs->el_index, i, sizeof(EL_INDEX), eli_compare);
+
+    /* if other logbook has same index, update pointers */
+    for (i=0 ; lb_list[i].name[0] ; i++)
+      if (&lb_list[i] != lbs && lb_list[i].n_el_index == lbs->n_el_index)
+        lb_list[i].el_index = lbs->el_index;
     }
 
   /* compose message */
@@ -2169,11 +2201,11 @@ BOOL    bedit;
       /* correct offsets for remaining messages in same file */
       delta = strlen(message) - orig_size;
 
-      for (i=0 ; i<lbs->n_el_index ; i++)
+      for (i=0 ; i<*lbs->n_el_index ; i++)
         if (lbs->el_index[i].message_id == message_id)
           break;
 
-      for (j = i+1 ; j<lbs->n_el_index && 
+      for (j = i+1 ; j<*lbs->n_el_index && 
            equal_ustring(lbs->el_index[i].file_name, lbs->el_index[j].file_name); j++)
         lbs->el_index[j].offset += delta;
       }
@@ -2297,11 +2329,11 @@ char str[256], file_name[256], reply_to[80], in_reply_to[256];
 char *buffer, *p;
 char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
 
-  for (index = 0 ; index < lbs->n_el_index ; index++)
+  for (index = 0 ; index < *lbs->n_el_index ; index++)
     if (lbs->el_index[index].message_id == message_id)
       break;
 
-  if (index == lbs->n_el_index)
+  if (index == *lbs->n_el_index)
     return -1;
 
   sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
@@ -2324,8 +2356,7 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
     close(fh);
     
     /* file might have been edited, rebuild index */
-    free(lbs->el_index);
-    el_build_index(lbs);
+    el_build_index(lbs, TRUE);
     return el_delete_message(lbs, message_id, delete_attachments,
                              attachment, delete_bw_ref);
     }
@@ -2423,14 +2454,19 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
 
   /* remove message from index */
   strcpy(str, lbs->el_index[index].file_name);
-  for (i=index ; i<lbs->n_el_index-1 ; i++)
+  for (i=index ; i<*lbs->n_el_index-1 ; i++)
     {
     memcpy(&lbs->el_index[i], &lbs->el_index[i+1], sizeof(EL_INDEX));
     if (equal_ustring(lbs->el_index[i].file_name, str))
       lbs->el_index[i].offset -= size;
     }
-  lbs->n_el_index--;
-  lbs->el_index = realloc(lbs->el_index, sizeof(EL_INDEX)*lbs->n_el_index);
+  (*lbs->n_el_index)--;
+  lbs->el_index = realloc(lbs->el_index, sizeof(EL_INDEX)*(*lbs->n_el_index));
+
+  /* if other logbook has same index, update pointers */
+  for (i=0 ; lb_list[i].name[0] ; i++)
+    if (&lb_list[i] != lbs && lb_list[i].n_el_index == lbs->n_el_index)
+      lb_list[i].el_index = lbs->el_index;
 
   /* delete also replies to this message */
   if (reply_to[0])
@@ -4551,11 +4587,11 @@ struct tm *gmt;
 
   message_id = atoi(path);
 
-  for (index = 0 ; index < lbs->n_el_index ; index++)
+  for (index = 0 ; index < *lbs->n_el_index ; index++)
     if (lbs->el_index[index].message_id == message_id)
       break;
 
-  if (index == lbs->n_el_index)
+  if (index == *lbs->n_el_index)
     return EL_NO_MSG;
 
   sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
@@ -5598,10 +5634,10 @@ struct tm tms, *ptms;
         time(&now);
         ltime_start = now-3600*24*past_n;
 
-        for (i=0 ; i<lbs->n_el_index ; i++)
+        for (i=0 ; i<*lbs->n_el_index ; i++)
           if (lbs->el_index[i].file_time >= ltime_start)
             break;
-        if (i == lbs->n_el_index)
+        if (i == *lbs->n_el_index)
           message_id = 0;
         else
           message_id = lbs->el_index[i].message_id;
@@ -5632,7 +5668,7 @@ struct tm tms, *ptms;
           }
         else
           {
-          for (i=lbs->n_el_index-1 ; i>=0 ; i--)
+          for (i=*lbs->n_el_index-1 ; i>=0 ; i--)
             if (lbs->el_index[i].file_time <= ltime_end)
               break;
           if (i<0)
@@ -5650,7 +5686,7 @@ struct tm tms, *ptms;
           }
         else
           {
-          for (i=0 ; i<lbs->n_el_index ; i++)
+          for (i=0 ; i<*lbs->n_el_index ; i++)
             if (lbs->el_index[i].file_time >= ltime_start)
               break;
           message_id = lbs->el_index[i].message_id;
@@ -5669,7 +5705,7 @@ struct tm tms, *ptms;
       if (status != EL_SUCCESS)
         break;
 
-      for (i=0 ; i<lbs->n_el_index ; i++)
+      for (i=0 ; i<*lbs->n_el_index ; i++)
         if (lbs->el_index[i].message_id == message_id)
           break;
       ltime_current = lbs->el_index[i].file_time;
@@ -9315,7 +9351,7 @@ usage:
     lb_list[n].el_index = NULL;
 
     printf("Indexing logbook \"%s\"...\n", logbook);
-    status = el_build_index(&lb_list[n]);
+    status = el_build_index(&lb_list[n], FALSE);
     
     if (status == EL_EMPTY)
       printf("Found empty logbook \"%s\"\n", logbook);
