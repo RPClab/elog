@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.53  2002/07/31 11:48:08  midas
+  Added page wise display
+
   Revision 2.52  2002/07/30 12:44:54  midas
   Added sortable columns
 
@@ -5269,11 +5272,64 @@ int msg_compare_reverse(const void *m1, const void *m2)
   return strcmp(((MSG_LIST *)m2)->string, ((MSG_LIST *)m1)->string);
 }
 
-void show_elog_submit_find(LOGBOOK *lbs, INT past_n, INT last_n, INT list_n)
+void show_page_navigation(int n_msg, int page_n, int n_page)
+{
+int i;
+char ref[256];
+
+  rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1>\n",
+            gt("Border width"), gt("Categories cellpadding"));
+  rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
+
+  rsprintf("<font size=1 face=verdana,arial,helvetica,sans-serif><b>");
+
+  if (n_msg > n_page)
+    rsprintf("Goto page \n");
+
+  if (page_n > 1)
+    {
+    sprintf(ref, "page%d", page_n - 1);
+    if (strchr(getparam("cmdline"), '?'))
+      strcat(ref, strchr(getparam("cmdline"), '?'));
+    rsprintf("<a href=\"%s\">Previous</a>&nbsp;&nbsp;", ref);
+    }
+
+  for (i=0 ; i<n_msg/n_page+1 ; i++)
+    {
+    sprintf(ref, "page%d", i+1);
+    if (strchr(getparam("cmdline"), '?'))
+      strcat(ref, strchr(getparam("cmdline"), '?'));
+
+    if (page_n == i+1)
+      rsprintf("%d, ", i+1);
+    else
+      rsprintf("<a href=\"%s\">%d</a>, ", ref, i+1);
+    }
+
+  if (page_n != -1 && page_n * n_page < n_msg)
+    {
+    sprintf(ref, "page%d", page_n + 1);
+    if (strchr(getparam("cmdline"), '?'))
+      strcat(ref, strchr(getparam("cmdline"), '?'));
+    rsprintf("<a href=\"%s\">Next</a>&nbsp;&nbsp;", ref);
+    }
+
+  if (page_n != -1 && n_page < n_msg)
+    {
+    sprintf(ref, "page");
+    if (strchr(getparam("cmdline"), '?'))
+      strcat(ref, strchr(getparam("cmdline"), '?'));
+    rsprintf("<a href=\"%s\">All</a>\n", ref);
+    }
+
+  rsprintf("</b></font></td></tr></table></td></tr>\n\n");
+}
+
+void show_elog_submit_find(LOGBOOK *lbs, INT past_n, INT last_n, INT page_n)
 {
 int    i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line;
 int    current_year, current_month, current_day, printable, n_logbook,
-       reverse, n_attr_disp, n_msg, search_all, message_id;
+       reverse, n_attr_disp, n_msg, search_all, message_id, n_page, i_start, i_stop;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR+4][NAME_LENGTH],
        list[10000], text[TEXT_SIZE], text1[TEXT_SIZE], text2[TEXT_SIZE],
        in_reply_to[80], reply_to[256], attachment[MAX_ATTACHMENTS][256], encoding[80];
@@ -5300,7 +5356,7 @@ MSG_LIST *msg_list;
   /* get mode */
   strcpy(mode, "Full");
 
-  if (past_n || last_n || list_n)
+  if (past_n || last_n || page_n)
     {
     if (getcfg(lbs->name, "Display Mode", str))
       strcpy(mode, str);
@@ -5628,9 +5684,30 @@ MSG_LIST *msg_list;
       memcpy(&msg_list[j++], &msg_list[i], sizeof(MSG_LIST));
   n_msg = j;
 
+  /*---- number of messages per page ----*/
+
+  n_page = 1000000;
+  i_start = 0;
+  i_stop = n_msg-1;
+  if (page_n)
+    {
+    if (getcfg(lbs->name, "Messages per page", str))
+      n_page = atoi(str);
+    else
+      n_page = 20;
+
+    if (page_n != -1)
+      {
+      i_start = (page_n - 1) * n_page;
+      i_stop  = i_start + n_page - 1;
+      if (i_stop >= n_msg)
+        i_stop = n_msg-1;
+      }
+    }
+  
   /*---- sort messasges ----*/
 
-  qsort(msg_list, n_msg, sizeof(MSG_LIST), reverse ? msg_compare_reverse : msg_compare);
+  qsort(&msg_list[i_start], i_stop-i_start+1, sizeof(MSG_LIST), reverse ? msg_compare_reverse : msg_compare);
 
   /*---- header ----*/
 
@@ -5645,8 +5722,10 @@ MSG_LIST *msg_list;
     sprintf(str+strlen(str), loc("Last %d days"), past_n);
   else if (last_n)
     sprintf(str+strlen(str), loc("Last %d entries"), last_n);
-  else if (list_n)
-    sprintf(str+strlen(str), loc("Page %d of %d"), list_n, 0);
+  else if (page_n == -1)
+    sprintf(str+strlen(str), loc("all entries"));
+  else if (page_n)
+    sprintf(str+strlen(str), loc("Page %d of %d"), page_n, n_msg/n_page+1);
   if (strlen(str) == 2)
     str[0] = 0;
 
@@ -5827,6 +5906,10 @@ MSG_LIST *msg_list;
   if (getcfg(lbs->name, "Summary lines", str))
     n_line = atoi(str);
 
+  /*---- page navigation ----*/
+
+  if (!printable && page_n)
+    show_page_navigation(n_msg, page_n, n_page);
 
   /*---- table titles ----*/
 
@@ -5912,7 +5995,7 @@ MSG_LIST *msg_list;
 
   /*---- display message list ----*/
 
-  for (index=0 ; index<n_msg ; index++)
+  for (index=i_start ; index<=i_stop ; index++)
     {
     size = sizeof(text);
     message_id = msg_list[index].lbs->el_index[msg_list[index].index].message_id;
@@ -6009,288 +6092,6 @@ MSG_LIST *msg_list;
       }
     }
 
-
-
-
-
-
-#ifdef JUNK /*#################################################*/
-  n_found = 0;
-
-  if (search_all)
-    {
-    /* count logbooks */
-    for (n_logbook=0 ;  ; n_logbook++)
-      {
-      if (!lb_list[n_logbook].name[0])
-        break;
-      }
-    }
-  else
-    {
-    n_logbook = 1;
-    }
-
-  /* loop through all logbooks */
-  for (lindex=0 ; lindex<n_logbook ; lindex++)
-    {
-    if (n_logbook > 1)
-      lbs = &lb_list[lindex];
-
-    if (past_n)
-      {
-      if (reverse)
-        {
-        message_id = el_search_message(lbs, EL_LAST, 0, threaded);
-
-        time(&now);
-        ltime_start = now-3600*24*past_n;
-        }
-      else
-        {
-        time(&now);
-        ltime_start = now-3600*24*past_n;
-
-        for (i=0 ; i<*lbs->n_el_index ; i++)
-          if (lbs->el_index[i].file_time >= ltime_start)
-            break;
-        if (i == *lbs->n_el_index)
-          message_id = 0;
-        else
-          message_id = lbs->el_index[i].message_id;
-        }
-      }
-    else if (last_n)
-      {
-      message_id = el_search_message(lbs, EL_LAST, 0, threaded);
-
-      if (!reverse)
-        {
-        for (i=1 ; i<last_n ; i++)
-          message_id = el_search_message(lbs, EL_PREV, message_id, threaded);
-        if (message_id == 0)
-          message_id = el_search_message(lbs, EL_FIRST, 0, threaded);
-        }
-      }
-    else
-      {
-      /* do date-date find */
-
-      if (reverse)
-        {
-        if (!*getparam("y2") && !*getparam("m2") && !*getparam("d2"))
-          {
-          /* search last message */
-          message_id = el_search_message(lbs, EL_LAST, 0, threaded);
-          }
-        else
-          {
-          for (i=*lbs->n_el_index-1 ; i>=0 ; i--)
-            if (lbs->el_index[i].file_time <= ltime_end)
-              break;
-          if (i<0)
-            message_id = 0;
-          else
-            message_id = lbs->el_index[i].message_id;
-          }
-        }
-      else
-        {
-        if (!*getparam("y1") && !*getparam("m1") && !*getparam("d1"))
-          {
-          /* search first message */
-          message_id = el_search_message(lbs, EL_FIRST, 0, threaded);
-          }
-        else
-          {
-          for (i=0 ; i<*lbs->n_el_index ; i++)
-            if (lbs->el_index[i].file_time >= ltime_start)
-              break;
-          message_id = lbs->el_index[i].message_id;
-          }
-        }
-      }
-
-    do
-      {
-      printf("## %d\n", message_id);
-      size = sizeof(text);
-      status = el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
-                           text, &size, in_reply_to, reply_to,
-                           attachment,
-                           encoding);
-      if (status != EL_SUCCESS)
-        break;
-
-      for (i=0 ; i<*lbs->n_el_index ; i++)
-        if (lbs->el_index[i].message_id == message_id)
-          break;
-      ltime_current = lbs->el_index[i].file_time;
-
-      if (reverse)
-        {
-        /* check for start date */
-        if (ltime_start > 0)
-          if (ltime_current < ltime_start)
-            break;
-
-        /* check for end date */
-        if (ltime_end > 0)
-          {
-          if (ltime_current > ltime_end)
-            goto skip;
-          }
-        }
-      else
-        {
-        /* check for start date */
-        if (ltime_start > 0)
-          if (ltime_current < ltime_start)
-            goto skip;
-
-        /* check for end date */
-        if (ltime_end > 0)
-          {
-          if (ltime_current >= ltime_end)
-            break;
-          }
-        }
-
-      if (status == EL_SUCCESS)
-        {
-        /* do filtering */
-        for (i=0 ; i<lbs->n_attr ; i++)
-          {
-          if (*getparam(attr_list[i]))
-            {
-            only_message_heads = FALSE;
-            strcpy(str, getparam(attr_list[i]));
-            for (j=0 ; j<(int)strlen(str) ; j++)
-              str[j] = toupper(str[j]);
-            str[j] = 0;
-            for (j=0 ; j<(int)strlen(attrib[i]) ; j++)
-              text1[j] = toupper(attrib[i][j]);
-            text1[j] = 0;
-
-            if (strstr(text1, str) == NULL)
-              break;
-            }
-          }
-        if (i < lbs->n_attr)
-          goto skip;
-
-        if (*getparam("subtext"))
-          {
-          only_message_heads = FALSE;
-          strcpy(str, getparam("subtext"));
-          for (i=0 ; i<(int)strlen(str) ; i++)
-            str[i] = toupper(str[i]);
-          str[i] = 0;
-          for (i=0 ; i<(int)strlen(text) ; i++)
-            text1[i] = toupper(text[i]);
-          text1[i] = 0;
-
-          if (strstr(text1, str) == NULL)
-            goto skip;
-
-          text2[0] = 0;
-          pt = text;   /* original text */
-          pt1 = text1; /* upper-case text */
-          pt2 = text2; /* text with inserted coloring */
-          do
-            {
-            p = strstr(pt1, str);
-            size = (int)(p - pt1);
-            if (p != NULL)
-              {
-              pt1 = p+strlen(str);
-
-              /* copy first part original text */
-              memcpy(pt2, pt, size);
-              pt2 += size;
-              pt += size;
-
-              /* add coloring 1st part */
-
-              /* here: \001='<', \002='>', /003='"', and \004=' ' */
-              /* see also rsputs2(char* ) */
-
-              if (equal_ustring(encoding, "plain") || !equal_ustring(mode, "Full"))
-                strcpy(pt2, "\001B\004style=\003color:black;background-color:#ffff66\003\002");
-              else
-                strcpy(pt2, "<B style=\"color:black;background-color:#ffff66\">");
-
-              pt2 += strlen(pt2);
-
-              /* copy origial search text */
-              memcpy(pt2, pt, strlen(str));
-              pt2 += strlen(str);
-              pt += strlen(str);
-
-              /* add coloring 2nd part */
-              if (equal_ustring(encoding, "plain") || !equal_ustring(mode, "Full"))
-                strcpy(pt2, "\001/B\002");
-              else
-                strcpy(pt2, "</B>");
-              pt2 += strlen(pt2);
-              }
-            } while (p != NULL);
-
-          strcpy(pt2, pt);
-          strcpy(text, text2);
-          }
-
-        /* check if reply */
-        if (only_message_heads && in_reply_to[0])
-          goto skip;
-
-        /*---- filter passed: display line ----*/
-
-        n_found++;
-
-        display_line(lbs, message_id, n_found, mode, 0, printable, n_line,
-                     show_attachments, date, reply_to, n_attr_disp, disp_attr,
-                     attrib, lbs->n_attr, text, attachment, encoding);
-
-        if (threaded)
-          {
-          if (reply_to[0] && (!getcfg(lbs->name, "Top level only", str) || atoi(str) == 0))
-            {
-            p = reply_to;
-            do
-              {
-              display_reply(lbs, atoi(p), printable, n_attr_disp, disp_attr, 1);
-
-              while (*p && isdigit(*p))
-                p++;
-              while (*p && (*p == ',' || *p == ' '))
-                p++;
-              } while(*p);
-            }
-          }
-        }
-
-      /* stop after all found (needed for reverse search) */
-      if (last_n && n_found >= last_n)
-        break;
-
-skip:
-      /* get index of next message */
-      if (reverse)
-        message_id = el_search_message(lbs, EL_PREV, message_id, only_message_heads);
-      else
-        message_id = el_search_message(lbs, EL_NEXT, message_id, only_message_heads);
-
-      } while (message_id);
-    } /* for () */
-
-#endif // JUNK ###########################################
-
-
-
-
-
-
   rsprintf("</table></td></tr>\n");
 
   if (n_msg == 0)
@@ -6303,8 +6104,16 @@ skip:
     rsprintf("</td></tr></table>\n");
     }
 
+  /*---- page navigation ----*/
+
+  if (!printable && page_n)
+    show_page_navigation(n_msg, page_n, n_page);
+
+  
   rsprintf("</table>\n");
 
+  /*---- bottom text ----*/
+  
   if (getcfg(lbs->name, "bottom text", str))
     {
     FILE *f;
@@ -8399,10 +8208,13 @@ LOGBOOK *cur_lb;
     return;
     }
 
-  if (strncmp(path, "list", 4) == 0 &&
+  if (strncmp(path, "page", 4) == 0 &&
       *getparam("cmd") == 0)
     {
-    show_elog_submit_find(cur_lb, 0, 0, atoi(path+4));
+    if (!path[4])
+      show_elog_submit_find(cur_lb, 0, 0, -1);
+    else
+      show_elog_submit_find(cur_lb, 0, 0, atoi(path+4));
     return;
     }
 
