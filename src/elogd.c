@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.96  2003/05/01 08:17:45  midas
+  Removed deleting cookies again (was Apache problem)
+
   Revision 1.95  2003/05/01 07:00:36  midas
   Delete old cookies on login
 
@@ -4586,8 +4589,8 @@ BOOL   global;
   global = getcfg("global", "Password file", str);
 
   /* two cookies for password and user name */
-  set_cookie(lbs, "upwd", enc_pwd, global, exp);
   set_cookie(lbs, "unm", user, global, exp);
+  set_cookie(lbs, "upwd", enc_pwd, global, exp);
 
   set_redir(lbs, getparam("redir"));
 }
@@ -10872,8 +10875,8 @@ int   i;
 BOOL check_user_password(LOGBOOK *lbs, char *user, char *password, char *redir)
 {
 char  status, str[1000], upwd[256], full_name[256], email[256];
-char  list[MAX_N_LIST][NAME_LENGTH], css[256];
-int   i, n, global;
+char  list[MAX_N_LIST][NAME_LENGTH];
+int   i, n;
 
   if (lbs == NULL)
     status = get_user_line("global", user, upwd, full_name, email, NULL);
@@ -10951,32 +10954,8 @@ int   i, n, global;
       }
 
     /* show login password page */
-    //show_html_header(lbs, TRUE, "ELOG login");
-    rsprintf("HTTP/1.1 200 Document follows\r\n");
-    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-    if (getcfg("global", "charset", str))
-      rsprintf("Content-Type: text/html;charset=%s\r\n", str);
-    else
-      rsprintf("Content-Type: text/html;charset=iso-8859-1\r\n");
-    rsprintf("Pragma: no-cache\r\n");
-    rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
-
-    /* delete any remaining cookie */
-    global = getcfg("global", "Password file", str);
-    set_cookie(lbs, "upwd", "", global, "");
-    set_cookie(lbs, "unm", "", global, "");
-    rsprintf("\r\n");
-
-    /* HTML header */
-    rsprintf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n"); 
-    rsprintf("<html><head><title>ELOG %s</title>\n", loc("login"));
-    strlcpy(css, "default.css", sizeof(css));
-    if (lbs != NULL && getcfg(lbs->name, "CSS", str))
-      strlcpy(css, str, sizeof(css));
-    else if (lbs == NULL && getcfg("global", "CSS", str))
-      strlcpy(css, str, sizeof(css));
-    rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">", css);
-    rsprintf("</head>\n");
+    sprintf(str, "ELOG %s", loc("login"));
+    show_html_header(lbs, TRUE, str);
 
     /* set focus on name field */
     rsprintf("<body OnLoad=\"document.form1.uname.focus();\">\n");
