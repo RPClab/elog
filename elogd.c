@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.21  2002/05/03 07:39:16  midas
+  Fixed bug with "Content-Length"
+
   Revision 1.20  2002/05/02 15:42:06  midas
   Removed lingering and do a REUSEADDR by default
 
@@ -8008,7 +8011,9 @@ struct timeval       timeout;
         if (return_length == 0)
           return_length = strlen_retbuf+1;
 
-        if (keep_alive && strstr(return_buffer, "Content-Length") == NULL)
+        if (keep_alive && strstr(return_buffer, "Content-Length") == NULL ||
+            strstr(return_buffer, "Content-Length") > 
+            strstr(return_buffer, "\r\n\r\n"))
           {
           /*---- add content-length ----*/
 
