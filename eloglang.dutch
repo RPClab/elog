@@ -83,8 +83,10 @@ New message cannot be written to directory "%s" = Nieuw bericht kan niet naar ma
 Please check that it exists and elogd has write access = Controleer of het bestaat en of elog schrijfrechten heeft
 Error: Attribute <b>%s</b> not supplied = Fout: Attribuut <b>%s</b> niet ingevuld
 Please go back and enter the <b>%s</b> field = Ga terug en vul het veld <b>%s</b> in
+Please use your browser's back button to go back = Gebruik de terug-knop van je browser om terug te gaan
 Original attachment = Oude bijlage
 New attachment = Nieuwe bijlage
+Only user <i>%s</i> can edit this entry = Alleen de gebruiker <i>%s</i> kan dit item wijzigen
 
 #
 # Find display
