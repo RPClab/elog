@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.154  2003/11/19 14:11:38  midas
+  Added MAX_REPLY_TO
+
   Revision 1.153  2003/11/11 12:21:33  midas
   Fixed bug with \r and \n in header
 
@@ -175,6 +178,7 @@ char theme_name[80];
 #define MAX_ATTACHMENTS  50
 #define MAX_N_LIST      100
 #define MAX_N_ATTR       50
+#define MAX_REPLY_TO    100
 #define CMD_SIZE      10000
 #define TEXT_SIZE    250000
 #define MAX_PATH_LENGTH 256
@@ -3071,7 +3075,7 @@ char    attachment_all[64*MAX_ATTACHMENTS];
   if (mark_original && in_reply_to[0] && !bedit && atoi(in_reply_to) > 0)
     {
     char date[80], attr[MAX_N_ATTR][NAME_LENGTH], enc[80],
-         att[MAX_ATTACHMENTS][256], reply_to[256], lock[256];
+         att[MAX_ATTACHMENTS][256], reply_to[MAX_REPLY_TO*10], lock[256];
 
     reply_id = atoi(in_reply_to);
 
@@ -3096,7 +3100,7 @@ char    attachment_all[64*MAX_ATTACHMENTS];
 
 void remove_reference(LOGBOOK *lbs, int message_id, int remove_id, BOOL reply_to_flag)
 {
-char date[80], attr[MAX_N_ATTR][NAME_LENGTH], enc[80], in_reply_to[80], reply_to[256],
+char date[80], attr[MAX_N_ATTR][NAME_LENGTH], enc[80], in_reply_to[80], reply_to[MAX_REPLY_TO*10],
      att[MAX_ATTACHMENTS][256], lock[256];
 char *p, *ps, message[TEXT_SIZE+1000];
 int  size, status;
@@ -3165,7 +3169,7 @@ INT el_delete_message(LOGBOOK *lbs, int message_id, BOOL delete_attachments,
 \********************************************************************/
 {
 INT  i, index, n, size, fh, tail_size;
-char str[MAX_PATH_LENGTH], file_name[MAX_PATH_LENGTH], reply_to[80], in_reply_to[256];
+char str[MAX_PATH_LENGTH], file_name[MAX_PATH_LENGTH], reply_to[MAX_REPLY_TO*10], in_reply_to[256];
 char *buffer, *p;
 char *message, attachment_all[64*MAX_ATTACHMENTS];
 
@@ -3366,7 +3370,7 @@ int el_correct_links(LOGBOOK *lbs, int old_id, int new_id)
 {
 int    i, i1, n, n1, size;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
-       in_reply_to[80], reply_to[256], encoding[80], locked_by[256];
+       in_reply_to[80], reply_to[MAX_REPLY_TO*10], encoding[80], locked_by[256];
 char   list[MAX_N_ATTR][NAME_LENGTH], list1[MAX_N_ATTR][NAME_LENGTH];
 char   att_file[MAX_ATTACHMENTS][256];
 
@@ -3437,7 +3441,7 @@ int el_move_message_thread(LOGBOOK *lbs, int message_id)
 {
 int    i, n, size, new_id;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
-       in_reply_to[80], reply_to[256], encoding[80], locked_by[256];
+       in_reply_to[80], reply_to[MAX_REPLY_TO*10], encoding[80], locked_by[256];
 char   list[MAX_N_ATTR][NAME_LENGTH], str[256];
 char   att_file[MAX_ATTACHMENTS][256];
 
@@ -3478,7 +3482,7 @@ int el_lock_message(LOGBOOK *lbs, int message_id, char *user)
 {
 int    size;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
-       in_reply_to[80], reply_to[256], encoding[80], locked_by[256];
+       in_reply_to[80], reply_to[MAX_REPLY_TO*10], encoding[80], locked_by[256];
 char   att_file[MAX_ATTACHMENTS][256];
 
   /* retrieve message */
@@ -5112,7 +5116,7 @@ int    i, j, n, index, size, width, height, fh, length, first, input_size, input
 char   str[1000], preset[1000], *p, *pend, star[80], comment[10000], reply_string[256];
 char   list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256];
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
-       orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80],
+       orig_tag[80], reply_tag[MAX_REPLY_TO*10], att[MAX_ATTACHMENTS][256], encoding[80],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH],
        owner[256], locked_by[256], class_value[80], class_name[80];
 time_t now;
@@ -5214,6 +5218,25 @@ char   fl[8][NAME_LENGTH];
         sprintf(str, "p%s", attr_list[i]);
         strcpy(attrib[i], getparam(str));
         }
+      }
+    }
+
+  /* check for maximum number of replies */
+  if (breply)
+    {
+    i = 0;
+    p = strtok(reply_tag, ",");
+    while (p)
+      {
+      i++;
+      p = strtok(NULL, ",");
+      }
+
+    if (i >= MAX_REPLY_TO)
+      {
+      sprintf(str, loc("Maximum number of replies (%d) exceeded"), MAX_REPLY_TO);
+      show_error(str);
+      return;
       }
     }
 
@@ -6940,7 +6963,7 @@ void show_new_user_page(LOGBOOK *lbs)
 void show_elog_delete(LOGBOOK *lbs, int message_id)
 {
 int    i, status, reply, next;
-char   str[256], in_reply_to[80], reply_to[256], owner[256];
+char   str[256], in_reply_to[80], reply_to[MAX_REPLY_TO*10], owner[256];
 char   attrib[MAX_N_ATTR][NAME_LENGTH];
 
   /* redirect if confirm = NO */
@@ -7286,7 +7309,7 @@ int submit_message(LOGBOOK *lbs, char *url, int message_id, char *error_str)
 int     size, i, n, status, fh, port, sock, content_length, header_length;
 char    str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 char    host_name[256], subdir[256], local_host_name[256];
-char    date[80], *text, in_reply_to[80], reply_to[256],
+char    date[80], *text, in_reply_to[80], reply_to[MAX_REPLY_TO*10],
         attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
         *buffer;
 char    *content, *p, boundary[80], request[10000], response[10000];
@@ -8874,7 +8897,7 @@ int    current_year, current_month, current_day, printable, n_logbook, n_display
        in_reply_to_id;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR+4][NAME_LENGTH],
        list[10000], *text, *text1, *text2,
-       in_reply_to[80], reply_to[256], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
+       in_reply_to[80], reply_to[MAX_REPLY_TO*10], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
        encoding[80], locked_by[256];
 char   str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH];
 char   mode[80];
@@ -10229,7 +10252,7 @@ void submit_elog(LOGBOOK *lbs)
 char   str[1000], str2[1000], file_name[256], error[1000], date[80],
        mail_list[MAX_N_LIST][NAME_LENGTH], list[10000],
        attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[MAX_PATH_LENGTH], in_reply_to[80],
-       reply_to[256], user[256], user_email[256], email_notify[256];
+       reply_to[MAX_REPLY_TO*10], user[256], user_email[256], email_notify[256];
 char   mail_param[1000], *mail_to;
 char   att_file[MAX_ATTACHMENTS][256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
@@ -10553,7 +10576,7 @@ void copy_to(LOGBOOK *lbs, int src_id, char *dest_logbook, int move, int orig_id
 {
 int     size, i, n, n_done, n_done_reply, n_reply, index, status, fh, source_id, message_id;
 char    str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
-char    date[80], *text, msg_str[32], in_reply_to[80], reply_to[256],
+char    date[80], *text, msg_str[32], in_reply_to[80], reply_to[MAX_REPLY_TO*10],
         attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
         *buffer, list[MAX_N_ATTR][NAME_LENGTH];
 LOGBOOK *lbs_dest;
@@ -10775,7 +10798,7 @@ int    size, i, j, n, n_log, status, fh, length, message_error, index;
 int    message_id, orig_message_id, format_flags[MAX_N_ATTR];
 char   str[1000], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char   date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], cmd_enc[256],
-       orig_tag[80], reply_tag[256], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
+       orig_tag[80], reply_tag[MAX_REPLY_TO*10], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
        encoding[80], locked_by[256], att[256], lattr[256];
 char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80], admin_user[80],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH], *p;
@@ -11198,7 +11221,7 @@ BOOL   first;
       rsprintf("%s</td></tr>\n", str);
       }
 
-    rsprintf("<tr><td nowrap class=\"attribhead\">\n");
+    rsprintf("<tr><td class=\"attribhead\">\n");
 
     for (i=0 ; i<lbs->n_attr ; i++)
       rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", attr_list[i], attrib[i]);
@@ -11261,7 +11284,7 @@ BOOL   first;
           p = strtok(NULL, ",");
 
           if (p)
-            rsprintf("&nbsp&nbsp\n");
+            rsprintf("&nbsp; \n");
 
           } while (p);
 
@@ -11399,7 +11422,7 @@ BOOL   first;
 
     for (index = 0 ; index < MAX_ATTACHMENTS ; index++)
       {
-      if (attachment[index][0])
+      if (attachment[index][0] && strlen(attachment[index])>14)
         {
         for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
           att[i] = toupper(attachment[index][i]);
