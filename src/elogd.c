@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.61  2003/03/31 12:30:15  midas
+  Added notification about invalid user
+
   Revision 1.60  2003/03/31 08:52:13  midas
   Added option 'Login user'
 
@@ -10524,6 +10527,35 @@ int   i, n;
   else
     status = get_user_line(lbs->name, user, upwd, full_name, email, NULL);
 
+  /* check for logout */
+  if (isparam("LO"))
+    {
+    /* remove cookies */
+    set_login_cookies(lbs, "", "");
+    return FALSE;
+    }
+
+  /* display error message for invalid user */
+  if (isparam("iusr"))
+    {
+    /* header */
+    show_html_header(NULL, FALSE, "ELOG error");
+
+    rsprintf("<body><center>\n");
+    rsprintf("<table class=\"dlgframe\" width=50%% cellpadding=1 cellspacing=0");
+    sprintf(str, "User <i>\"%s\"</i> has no access to logbook <i>\"%s\"</i>", getparam("iusr"), lbs->name);
+    rsprintf("<tr><td class=\"errormsg\">%s</td></tr>\n", str);
+
+    rsprintf("<tr><td class=\"errormsg\">");
+
+    rsprintf("<a href=\"?LO=1\">Login as different user</a>", str);
+
+    rsprintf("</td></tr>\n</table>\n");
+    rsprintf("</center></body></html>\n");
+
+    return FALSE;
+    }
+
   if (getcfg(lbs->name, "Login user", str) && user[0])
     {
     n = strbreak(str, list, MAX_N_LIST);
@@ -10533,7 +10565,12 @@ int   i, n;
 
     /* invalid user if name not in list */
     if (i == n)
-      status = 2;
+      {
+      sprintf(str, "?iusr=%s", user);
+
+      redirect(lbs, str);
+      return FALSE;
+      }
     }
 
   if (status == 1)
