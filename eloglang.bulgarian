@@ -340,8 +340,6 @@ Previous Year = Предишна година
 Next Year = Следваща година
 Error: Command "<b>%s</b>" not allowed = Грешка: Командата "<b>%s</b>" не е позволена
 Attachment file <b>"%s"</b> empty or not found = Прикаченият файл <b>"%s"</b> е празен или не е намерен
-Please increase <b>"Max content length"</b> in config file = Моля, увеличете <b>"Max content length"</b> във файла с настройки
-
 #
 #---- please translate following items and then remove this comment ----#
 #

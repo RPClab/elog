@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.546  2005/01/25 21:06:56  ritt
+   Version 2.5.6-1
+
    Revision 1.545  2005/01/25 20:49:18  ritt
    Implemented 'Mirror exclude'
 
@@ -746,7 +749,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.5-4"
+#define VERSION "2.5.6-1"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -874,7 +877,7 @@ typedef int INT;
 
 #define DEFAULT_TIME_FORMAT "%c"
 #define DEFAULT_DATE_FORMAT "%x"
-    
+
 #define DEFAULT_HTTP_CHARSET "ISO-8859-1"
 
 #define SUCCESS        1
@@ -3454,7 +3457,7 @@ void check_config()
 void retrieve_email_from(LOGBOOK * lbs, char *ret, char attrib[MAX_N_ATTR][NAME_LENGTH])
 {
    char str[256];
-   char slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
+   char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
    int i;
 
    if (!getcfg(lbs->name, "Use Email from", str, sizeof(str))) {
@@ -4207,7 +4210,7 @@ INT el_retrieve(LOGBOOK * lbs,
    close(fh);
 
    if (strncmp(message, "$@MID@$:", 8) != 0) {
-      free(message);    
+      free(message);
       /* file might have been edited, rebuild index */
       el_build_index(lbs, TRUE);
       return el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
@@ -6376,9 +6379,9 @@ LBLIST get_logbook_hierarchy(void)
 
          for (j = 0; j < root->n_members; j++) {
             if (i != j && root->member[j] != NULL &&
-               (pgrp = get_subgroup(root->member[j], root->member[i]->name)) != NULL) {
+                (pgrp = get_subgroup(root->member[j], root->member[i]->name)) != NULL) {
 
-               /* node is allocated twice, so free one...*/
+               /* node is allocated twice, so free one... */
                xfree(*pgrp);
 
                /* ... and reference the other */
@@ -6808,7 +6811,7 @@ void set_login_cookies(LOGBOOK * lbs, char *user, char *enc_pwd)
    if (getcfg(lbs->name, "Login expiration", str, sizeof(str)) || atof(str) > 0)
       strcpy(exp, str);
    else if (isparam("remember")) {
-      strcpy(exp, "744");    /* one month by default = 31*24 */
+      strcpy(exp, "744");       /* one month by default = 31*24 */
    } else
       exp[0] = 0;
 
@@ -7966,7 +7969,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Entry time"));
    rsprintf("<td class=\"attribvalue\">%s\n", str);
    rsprintf("<input type=hidden name=entry_date value=\"%s\"></td></tr>\n", date);
-  
+
    if (condition[0])
       rsprintf("<input type=hidden name=condition value=\"%s\"></td></tr>\n", condition);
 
@@ -7986,17 +7989,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* generate list of attributes to show */
    if (getcfg(lbs->name, "Show attributes", str, sizeof(str))) {
       n_disp_attr = strbreak(str, list, MAX_N_ATTR, ",");
-      for (i=0 ; i<n_disp_attr ; i++) {
-         for (j=0 ; j<n_attr ; j++)
+      for (i = 0; i < n_disp_attr; i++) {
+         for (j = 0; j < n_attr; j++)
             if (strieq(attr_list[j], list[i]))
                break;
-         if (!strieq(attr_list[j], list[i]))  
+         if (!strieq(attr_list[j], list[i]))
             /* attribute not found */
-            j = 0; 
+            j = 0;
          attr_index[i] = j;
       }
    } else {
-      for (i=0 ; i<n_attr ; i++)
+      for (i = 0; i < n_attr; i++)
          attr_index[i] = i;
       n_disp_attr = n_attr;
    }
@@ -8178,7 +8181,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf("</td>\n");
 
             } else if (attr_flags[index] & AF_USERLIST) {
-               
+
                rsprintf("<td%s class=\"attribvalue\">\n", title);
 
                /* display drop-down box with list of users */
@@ -8188,7 +8191,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                /* display emtpy option */
                rsprintf("<option value=\"\">- %s -\n", loc("please select"));
 
-               for (i = 0; ; i++) {
+               for (i = 0;; i++) {
                   if (!enum_user_line(lbs, i, login_name))
                      break;
                   get_user_line(lbs->name, login_name, NULL, str, NULL, NULL);
@@ -8239,12 +8242,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                   if (attr_flags[index] & AF_MULTI)
                      rsprintf
-                        ("<input type=\"text\" size=20 maxlength=%d name=\"%s_0\" value=\"%s\" onChange=\"mod();\">\n",
-                        input_maxlen, ua, attrib[index]);
+                         ("<input type=\"text\" size=20 maxlength=%d name=\"%s_0\" value=\"%s\" onChange=\"mod();\">\n",
+                          input_maxlen, ua, attrib[index]);
                   else
                      rsprintf
-                        ("<input type=\"text\" size=20 maxlength=%d name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
-                        input_maxlen, ua, attrib[index]);
+                         ("<input type=\"text\" size=20 maxlength=%d name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
+                          input_maxlen, ua, attrib[index]);
 
                   rsprintf("</td>\n");
 
@@ -13291,7 +13294,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       if (highlight != message_id)
          rsprintf("<a href=\"%s\">", ref);
 
-      if (attr_icon[0]) 
+      if (attr_icon[0])
          rsprintf("<img border=0 src=\"icons/%s\"></a>&nbsp;", attr_icon);
       else {
          /* if top level only, display reply icon if message has a reply */
@@ -13706,8 +13709,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
 void display_reply(LOGBOOK * lbs, int message_id, int printable,
                    int expand, int n_line, int n_attr_disp,
-                   char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], 
-                   BOOL show_text, int level, int highlight)
+                   char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], BOOL show_text, int level, int highlight)
 {
    char *date, *text, *in_reply_to, *reply_to, *encoding, *locked_by, *attachment, *attrib, *p;
    int status, size;
@@ -13744,13 +13746,13 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable,
 
    display_line(lbs, message_id, 0, "threaded", expand, level, printable,
                 n_line, FALSE, date, in_reply_to, reply_to, n_attr_disp,
-                disp_attr, (void *) attrib, lbs->n_attr, text, show_text, 
+                disp_attr, (void *) attrib, lbs->n_attr, text, show_text,
                 NULL, encoding, 0, NULL, locked_by, highlight);
 
    if (reply_to[0]) {
       p = reply_to;
       do {
-         display_reply(lbs, atoi(p), printable, expand, n_line, n_attr_disp, 
+         display_reply(lbs, atoi(p), printable, expand, n_line, n_attr_disp,
                        disp_attr, show_text, level + 1, highlight);
 
          while (*p && isdigit(*p))
@@ -14687,8 +14689,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
        menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH], format[80],
        sort_attr[MAX_N_ATTR + 4][NAME_LENGTH];
    char *p, *pt, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
-   BOOL show_attachments, threaded, csv, xml, mode_commands, expand, filtering, disp_filter, 
-      show_text, searched, found;
+   BOOL show_attachments, threaded, csv, xml, mode_commands, expand, filtering, disp_filter,
+       show_text, searched, found;
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2;
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
@@ -15036,8 +15038,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             }
          }
       }
-         
-         
+
+
       /* check if sort by attribute */
       if (strieq(getparam("sort"), attr_list[i])
           || strieq(getparam("rsort"), attr_list[i]))
@@ -15114,7 +15116,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          /* apply filter for AF_MULTI attributes */
          for (i = 0; i < lbs->n_attr; i++) {
             if (attr_flags[i] & AF_MULTI) {
-            
+
                /* OR of any of the values */
                searched = found = FALSE;
                for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
@@ -15145,7 +15147,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          searched = found = FALSE;
 
          for (i = 0; i < lbs->n_attr; i++) {
-            
+
             if (*getparam(attr_list[i])) {
 
                /* check non-multi attributes */
@@ -15223,8 +15225,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                continue;
             }
          }
-      }  /* if (filtering) */
+      }
 
+      /* if (filtering) */
       /* in threaded mode, find message head */
       if (threaded && in_reply_to_id) {
          do {
@@ -16067,9 +16070,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 void show_elog_thread(LOGBOOK * lbs, int message_id)
 {
    int i, size, status, in_reply_to_id, head_id, n_display, n_attr_disp;
-   char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], *text, in_reply_to[80], 
-      reply_to[MAX_REPLY_TO * 10], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], 
-      encoding[80], locked_by[256], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH];
+   char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], *text, in_reply_to[80],
+       reply_to[MAX_REPLY_TO * 10], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
+       encoding[80], locked_by[256], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH];
    char *p;
 
    text = xmalloc(TEXT_SIZE);
@@ -16077,11 +16080,11 @@ void show_elog_thread(LOGBOOK * lbs, int message_id)
    /* retrieve message */
    size = TEXT_SIZE;
    status =
-         el_retrieve(lbs, message_id, date, attr_list, attrib,
-                     lbs->n_attr, text, &size, in_reply_to, reply_to, attachment, encoding, locked_by);
+       el_retrieve(lbs, message_id, date, attr_list, attrib,
+                   lbs->n_attr, text, &size, in_reply_to, reply_to, attachment, encoding, locked_by);
 
    in_reply_to_id = atoi(in_reply_to);
-   
+
    /* find message head */
    head_id = message_id;
    if (in_reply_to_id) {
@@ -16109,8 +16112,8 @@ void show_elog_thread(LOGBOOK * lbs, int message_id)
 
    size = TEXT_SIZE;
    status =
-         el_retrieve(lbs, head_id, date, attr_list, attrib,
-                     lbs->n_attr, text, &size, in_reply_to, reply_to, attachment, encoding, locked_by);
+       el_retrieve(lbs, head_id, date, attr_list, attrib,
+                   lbs->n_attr, text, &size, in_reply_to, reply_to, attachment, encoding, locked_by);
 
    rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=0>\n");
 
@@ -16606,12 +16609,12 @@ void submit_elog(LOGBOOK * lbs)
    /* check for extended attributs */
    if (isparam("condition")) {
       set_condition(getparam("condition"));
-      
+
       /* rescan attributes */
       n_attr = scan_attributes(lbs->name);
    } else
       n_attr = lbs->n_attr;
-      
+
    for (i = 0; i < n_attr; i++) {
       strcpy(ua, attr_list[i]);
       btou(ua);
@@ -20120,7 +20123,7 @@ void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
          while (*string == '-' || *string == '\n' || *string == '\r')
             string++;
       } else
-         return; /* invalid request */
+         return;                /* invalid request */
 
    } while ((int) (string - pinit) < length);
    interprete(lbs->name, "");
@@ -20636,7 +20639,9 @@ void server_loop(void)
                                 ("Error: Content length (%d) larger than maximum content length (%d)"),
                                 content_length, _max_content_length);
                         strcat(str, "<br>");
-                        strcat(str, loc("Please increase <b>\"Max content length\"</b> in [global] part of config file and restart elogd"));
+                        strcat(str,
+                               loc
+                               ("Please increase <b>\"Max content length\"</b> in [global] part of config file and restart elogd"));
                         keep_alive = FALSE;
                         show_error(str);
                         goto redir;

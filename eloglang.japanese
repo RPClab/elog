@@ -337,7 +337,6 @@ Hide all =
 Show all = 
 This logbook requires authentication = 
 Attachment file <b>"%s"</b> empty or not found = 
-Please increase <b>"Max content length"</b> in config file = 
 Text fields may contain regular expressions = 
 Case sensitive = 
 List = 

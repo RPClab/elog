@@ -1,3 +1,32 @@
+Version 2.5.6, released Januar 25th, 2005
+=========================================
+
+- Implemented 'Mirror exclude'
+- Switched from GIF to PNG
+- Remove any CR/LF from attributes submitted from browser
+- Implemented OR'ing of MOptions values in find page
+- Display thread in single entry page if present
+- Implemented 'show attributes'
+- Made extendable attributes work with MOptions
+- Added message_id and date to CSV export
+- Made extendable attributes work with conditional attributes
+- Logbook hierarchy can now be deeper than two levels
+- Cancel button on 'create new logbook' now also works without password files
+- Fixed non-functioning Cancel button in 'create new logbook'
+- Changed date format to RFC-822 in RSS feed
+- Fixed endless loop with handcrafted POST header
+- Changed locale to 'C' for email header date
+- Use hostname from -n parameter for redirection if given
+- Fixed attribute substitutions in 'use email from'
+- Fixed problem with invalid RFC2822 date in email header for different locale
+- Implemented 'sort attribute'
+- Look for parameters first under conditions, then unconditional if not found
+- Fixed bug in XML export
+- Implemented USERLIST as attribute type
+- Increased NAME_LENGTH to 1500, requires a stack size of 4MB
+- Changed charset for RSS feeds
+- Fixed wrong link if last entry in logbook has been moved
+
 Version 2.5.5, released November 3rd, 2004
 ==========================================
 

@@ -334,7 +334,6 @@ Hide all = Alle verstecken
 Show all = Alle anzeigen
 This logbook requires authentication = Dieses Logbuch erfordert Authentifizierung
 Attachment file <b>"%s"</b> empty or not found = Datei <b>"%s"</b> ist leer oder nicht vorhanden
-Please increase <b>"Max content length"</b> in config file = Bitte <b>"Max content length"</b> in Konfigurationsdatei erhöhen
 Text fields may contain regular expressions = Texteingabefelder können Reguläre Ausdrücke enthalten
 Case sensitive = Großschrteibung beachten
 List = Liste

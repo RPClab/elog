@@ -331,8 +331,6 @@ Hide all = Esconder todo
 Show all = Mostrar todo
 This logbook requires authentication = Este libro de anotaciones requiere autenticación 
 Attachment file <b>"%s"</b> empty or not found = Archivo adjunto <b>"%s"</b> está vacio o no se encontró
-Please increase <b>"Max content length"</b> in config file = Por favor aumente <b>"Max content length"</b> en el archivo de configuración
-
 #
 #---- please translate following items and then remove this comment ----#
 #
