@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.177  2004/01/09 14:21:56  midas
+  Evaluate 'preset xxx' on re-edit
+
   Revision 1.176  2004/01/09 14:09:41  midas
   Added 'last submission' option
 
@@ -1700,11 +1703,11 @@ int getcfg_cond(char *group, char *condition, char *param, char *value)
 
    sprintf(str, "{%s}%s", condition, param);
    if (getcfg(group, str, value))
-      return 1;
+      return 2;
 
    sprintf(str, "{%s} %s", condition, param);
    if (getcfg(group, str, value))
-      return 1;
+      return 2;
 
    return getcfg(group, param, value);
 }
@@ -5499,8 +5502,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       /* check for preset string */
       sprintf(str, "Preset %s", attr_list[index]);
-      if (getcfg_cond(lbs->name, condition, str, preset)) {
-         if (!bedit) {
+      if ((i = getcfg_cond(lbs->name, condition, str, preset)) > 0) {
+
+         if (!bedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
+
             i = build_subst_list(lbs, slist, svalue, NULL);
             strsubst(preset, slist, svalue, i);
 
