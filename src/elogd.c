@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.65  2003/04/04 10:24:27  midas
+  Translate 'Date' and changed '#' to 'ID'
+
   Revision 1.64  2003/04/03 08:08:50  midas
   Added option 'Summary page title'
 
@@ -6849,7 +6852,7 @@ FILE *f;
 
     for (index=0 ; index<n_attr_disp ; index++)
       {
-      if (equal_ustring(disp_attr[index], "#"))
+      if (equal_ustring(disp_attr[index], loc("ID")))
         {
         if (equal_ustring(mode, "Threaded"))
           {
@@ -6882,7 +6885,7 @@ FILE *f;
           rsprintf("<td class=\"%s\" %s><a href=\"%s\">%s</a></td>", sclass, nowrap, ref, lbs->name);
         }
 
-      if (equal_ustring(disp_attr[index], "Date"))
+      if (equal_ustring(disp_attr[index], loc("Date")))
         {
         if (getcfg(lbs->name, "Date format", format))
           {
@@ -7592,7 +7595,7 @@ char list[MAX_N_LIST][NAME_LENGTH];
 
     for (index=0 ; index < n ; index++)
       {
-      if (equal_ustring(list[index], "date"))
+      if (equal_ustring(list[index], loc("Date")))
         {
         i = atoi(getparam("last"));
 
@@ -8391,8 +8394,8 @@ LOGBOOK *lbs_cur;
         strlcpy(msg_list[index].string, attrib[i], 256);
         }
 
-      if (equal_ustring(getparam("sort"), "#") ||
-          equal_ustring(getparam("rsort"), "#"))
+      if (equal_ustring(getparam("sort"), loc("ID")) ||
+          equal_ustring(getparam("rsort"), loc("ID")))
         {
         sprintf(msg_list[index].string, "%08d", message_id);
         }
@@ -8740,17 +8743,17 @@ LOGBOOK *lbs_cur;
       {
       n_attr_disp = lbs->n_attr + 3;
 
-      strcpy(disp_attr[0], "#");
-      strcpy(disp_attr[1], "Logbook");
-      strcpy(disp_attr[2], "Date");
+      strcpy(disp_attr[0], loc("ID"));
+      strcpy(disp_attr[1], loc("Logbook"));
+      strcpy(disp_attr[2], loc("Date"));
       memcpy(disp_attr+3, attr_list, sizeof(attr_list));
       }
     else
       {
       n_attr_disp = lbs->n_attr + 2;
 
-      strcpy(disp_attr[0], "#");
-      strcpy(disp_attr[1], "Date");
+      strcpy(disp_attr[0], loc("ID"));
+      strcpy(disp_attr[1], loc("Date"));
       memcpy(disp_attr+2, attr_list, sizeof(attr_list));
       }
     }
