@@ -70,6 +70,9 @@ To start the daemon automatically, enter:
 
 which will start the daemon on run levels 3,4 and 5 after the next reboot.
 <p>
+Note that the RPM installation creates a user and group <b><code>elog</code></b>, under
+which the daemon runs.
+<p>
 
 <h3><hr><i>Installation from the tarball</i>:</h3>
 
@@ -92,8 +95,21 @@ The <code><b>elogd</b></code> executable can be started manually for testing wit
 <p>
 where the <b>-p</b> flag specifies the port. Without the <b>-p</b> flag,
 the server uses the standard WWW port 80. Note that ports below 1024 can
-only be used if <code><b>elogd</b></code> is started a root, or the "<I>sticky bit</I>" is set on
+only be used if <code><b>elogd</b></code> is started under root, or the "<I>sticky bit</I>" is set on
 the executable.
+<p>
+When <b><code>elogd</code></b> is started under root, it attaches to the specified port
+and tries to fall-back to a non-root account. This is necessary to avoid security problems.
+It looks in the configuration file for the statements <b><code>Usr</code></b> and
+<b><code>Grp.</code></b>. If found, <b><code>elogd</code></b> uses that user and goupe
+name to run under. The names must of course be present on the system (usually
+<b><code>/etc/passwd</b></code> and <b><code>/etc/group</b></code>). If the statements
+<b><code>Usr</code></b> and <b><code>Grp.</code></b> are not present, <b><code>elogd</code></b>
+tries user and group <b><code>elog</code></b>, then the default user and group (normally
+<b><code>nogroup</code></b> and <b><code>nobody</code></b>). Care has to be taken
+that <b><code>elogd</code></b>, when running under the specific user and group account,
+has read and write access to the configuration file and logbook directories. Note that the
+RPM installation automatically creates a user and group <b><code>elog</code></b>.
 <p>
 If the program complains with something like "<I>cannot bind to port</I>...", it
 could be that the network is not started on the Linux box. This can be
