@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.38  2002/07/08 08:39:18  midas
+  Fixed various small bugs
+
   Revision 2.37  2002/07/02 07:33:48  midas
   Added attribute lists with commas
 
@@ -215,7 +218,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.0.3"
+#define VERSION "2.0.4"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -1691,7 +1694,7 @@ int i;
 
     if (head_only)
       {
-      for (i-- ; i>0 ; i--)
+      for (i-- ; i>=0 ; i--)
         if (lbs->el_index[i].thread_head)
           return lbs->el_index[i].message_id;
       
@@ -2108,6 +2111,9 @@ BOOL    bedit;
     if (tms.tm_year < 90)
       tms.tm_year += 100;
     ltime = mktime(&tms);
+
+    if (date[8] == ' ')
+      date[8] = '0';
 
     sprintf(file_name, "%c%c%02d%c%ca.log",
             date[22], date[23], i+1, date[8], date[9]);
@@ -4057,9 +4063,9 @@ time_t now;
         p = text;
         do
           {
-          if (strchr(p, '\r'))
+          if (strchr(p, '\n'))
             {
-            *strchr(p, '\r') = 0;
+            *strchr(p, '\n') = 0;
 
             if (encoding[0] == 'H')
               rsprintf("&gt; %s<br>\n", p);
@@ -5241,6 +5247,7 @@ struct tm tms, *ptms;
 
   /*---- title ----*/
 
+  str[0] = 0;
   if (past_n == 1)
     strcat(str, loc(", Last day"));
   else if (past_n > 1)
