@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.323  2004/05/10 09:34:27  midas
+   Fixed compiler warning
+
    Revision 1.322  2004/05/08 15:02:01  midas
    Fixed bug with remove _all_ leading to infinite page forwarding
 
@@ -4900,7 +4903,7 @@ void set_location(LOGBOOK * lbs, char *rel_path)
       /* if HTTP request comes from localhost, use localhost as
          absolute link (needed if running on DSL at home */
       if (!str[0] && strstr(http_host, "localhost")) {
-         sprintf(str, "http://localhost", host_name);
+         strcpy(str, "http://localhost");
          if (tcp_port != 80)
             sprintf(str+strlen(str), ":%d", tcp_port);
          strcat(str, "/");
