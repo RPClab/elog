@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.80  2003/04/09 11:55:39  midas
+  Fixed bug with 'summary page title'
+
   Revision 1.79  2003/04/08 11:28:03  midas
   Increased TEXT_SIZE to 250000
 
@@ -8735,9 +8738,8 @@ LOGBOOK *lbs_cur;
     strsubst(str, slist, svalue, i);
     }
   else
-    strcpy(str, "ELOG");
+    sprintf(str, "ELOG %s", lbs->name);
 
-  sprintf(str, "ELOG %s", lbs->name);
   show_standard_header(lbs, TRUE, str, NULL);
 
   /*---- title ----*/
