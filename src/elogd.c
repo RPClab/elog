@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.203  2004/01/20 16:25:57  midas
+   Remove last CR in receive_message()
+
    Revision 1.202  2004/01/20 15:50:06  midas
    Changed error return from receive_message()
 
@@ -8271,6 +8274,8 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        attachment_all[64 * MAX_ATTACHMENTS];
 
+   error_str[0] = 0;
+
    strlcpy(str, url, sizeof(str));
    if (str[strlen(str) - 1] != '/')
       strlcat(str, "/", sizeof(str));
@@ -8336,6 +8341,10 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
 
    if (p != NULL) {
       p += 41;
+
+      /* remove last CR */
+      if (p[strlen(p)-1] == '\n')
+         p[strlen(p)-1] = 0;
 
       status = el_submit(lbs, message_id, !bnew, date, attr_list,
                          attrib, lbs->n_attr, p, in_reply_to, reply_to,
@@ -8479,7 +8488,7 @@ BOOL equal_md5(unsigned char m1[16], unsigned char m2[16])
 
 void synchronize(LOGBOOK * lbs, char *path)
 {
-   int index, i, i_msg, i_remote, i_cache, n_remote, n_cache, nserver,
+   int index, i, j, i_msg, i_remote, i_cache, n_remote, n_cache, nserver,
        remote_id, exist_remote, exist_cache, message_id;
    int priority_remote = 0;
    char str[2000];
@@ -8548,6 +8557,18 @@ void synchronize(LOGBOOK * lbs, char *path)
 
          /* if message exists in both lists, compare MD5s */
          if (exist_remote && exist_cache) {
+
+            //##
+            printf("ID%02d:   ", message_id);
+            for (j=0 ; j<16 ; j++)
+               printf("%02X", lbs->el_index[i_msg].md5_digest[j]);
+            printf("\nCache : ");
+            for (j=0 ; j<16 ; j++)
+               printf("%02X", md5_cache[i_cache].md5_digest[j]);
+            printf("\nRemote: ");
+            for (j=0 ; j<16 ; j++)
+               printf("%02X", md5_remote[i_remote].md5_digest[j]);
+            printf("\n\n");
 
             /* if message has been changed on this server, but not remotely, send it */
             if (!equal_md5(md5_cache[i_cache].md5_digest, lbs->el_index[i_msg].md5_digest)
