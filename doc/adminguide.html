@@ -207,63 +207,26 @@ the default stack size. The command <i><b>limit stacksize unlimited</b></i> (for
 Read the according <a href="http://midas.psi.ch/elogs/Forum/379">thread</a> in the forum.
 <p>
 
-<hr><a name="windows">
-<div class=section>&nbsp; Installing and running in Windows &nbsp;</div>
+<hr><a name="windows"> <div class=section>&nbsp; Installing and running in Windows &nbsp;</div> <p> <b>
+ELOG</b> is distributed in binary (executable) form for Windows platforms. It will run happily in <I>
+console mode</I> (or "<I>DOS box</I>") under Windows 9x and ME. Under Windows NT and 2000 it is also
+possible to run it as a <I>service</I> (the Windows equivalent of a UNIX <I>daemon</I>).
 <p>
- <b>ELOG</b> is distributed in binary (executable) form for Windows platforms. It will run happily in <I>console mode</I> (or "<I>DOS box</I>") under Windows 9x and ME. Under Windows NT and 2000 it is also possible to run it as a <I>service</I> (the Windows equivalent of a UNIX <I>daemon</I>).
-<p>
-<a href="http://midas.psi.ch/elog/download/">Download</a> the latest <code><b>elogxxx.exe</b></code> file and execute it. The installer puts the <b>ELOG</b> system into a directory you specify and adds some menu
-shortcuts. With these shortcuts, the daemon <code>elogd.exe</code> can be started directly and the demo logbook can be accessed with the browser. Under Windows, the ports below 1024 can be used without restriction. So if no web server is running on the same PC the <b>ELOG</b> daemon listens under the standard
-Web port 80.
-<p>
-The "<B>-D</B>" (<I>daemon</I>) command line option only works under UNIX. To start
-<code><b>elogd</b></code> as a service under Windows NT/2000, you can do one of the following :
-<p>
-<ul>
-<li>use the <code><b>srvany.exe</b></code> and <code><b>instsrv.exe</b></code> from the Windows
-Resource Kit. If you don't have the Resource Kit, these programs can probably
-be downloaded from various places like <a href="srvany.zip">this one</a>. Then follow these steps:
-<p>
-<OL>
-<LI>Copy SRVANY.EXE to %window%\system32\.
 
-<LI>Use INSTSRV to install SRVANY.EXE as a service named "<I>elogd</I>":<P>
-<pre>INSTSRV ELogd %windir%\system32\srvany.exe</pre>
+<a href="http://midas.psi.ch/elog/download/windows">Download</a> the latest <code><b>elogxxx.exe</b></code>
+file and execute it. The installer puts the <b>ELOG</b> system into a directory you specify and adds
+some menu shortcuts. With these shortcuts, the daemon <code>elogd.exe</code> can be started directly and
+the demo logbook can be accessed with the browser. Alternatively, the <code>elogd.exe</code> daemon can
+be registered as a service under Windows NT/2000/XP, so it gets started automatically when windows boots.
+This can be selected during installation or be done manually with the start menu shortcuts.<p>
 
-<LI>Run REGEDIT and find "My Computer\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\elogd".
+While the pre-2.5.3 methods of installing elogd.exe as a daemon (namely FireDaemon and srvany.exe)
+are still possible, they are not recommended any more.<p>
 
-<LI>Under the <i>Elogd</i> registry key, create a new key called <i>Parameters</i> via <i>Edit/New/Key</i>.
-<LI>Under the new key <i>Parameters</i>, create the following three STRING values:
-  <UL>
-  <LI><i>Application</i> set to "c:\elog\elogd.exe" (or wherever you installed the elogd program)
-  <LI><i>AppDirectory</i> set to "c:\elog" (or wherever you installed the <code><b>elogd</b></code> file)
-  <LI><i>AppParameters</i> set to "-p 8080" (or any other port which you would like to use,
-         put an empty string for port 80)
-  </UL>
-
-<LI>Under NT4, open the <i>Services</i> entry in the control panel, under Windows 2000 and XP right-click
-    on "My Computer", click to "Manage", select "Services and Applications", expand it and select
-    "Services". On the right panel, double-click "ELogd". Then start the service manually and
-    change the startup type to "Automatic". This way the <code><b>elogd</b></code> program gets started automatically
-    on every reboot. You might have to change the account under the "Log On" tab to your account (NOT local system
-	account), and enter your password twice.
-</OL>
-<p>
-<li>better still, use the free <a href="http://www.firedaemon.com">FireDaemon</a> utility. Make sure <code><b>elogd</b></code> is not running, then start the FireDaemonUI application, and enter the following fields:
-<P>
-<pre>
-Service name: ELogd
-Service description: "Electronic Logbook Daemon"
-Startup type: Automatic
-Interact with desktop: off
-Start immediately: on
-Auto restart application: off
-Application working directory: c:\program files\elog\ (or wherever you installed elog)
-Application executable: c:\program files\elog\elogd.exe (or wherever you installed elogd.exe)
-</pre>
-and keep the other options as they are. After pressing "OK" the daemon should be started immediately.
-</ul>
-<p>
+Under Windows, the ports below 1024 can be used
+without restriction. So if no web server is running on the same PC the <b>ELOG</b> daemon can
+be started under the standard Web port 80. This is achieved by changing the <code><b>port=8080</b></code>
+option in <code>elogd.cfg</code> to <code><b>port=80</code></b> and restarting elogd.<p>
 
 <hr><a name="config">
 <div class=section>&nbsp; Server Configuration &nbsp;</div>
