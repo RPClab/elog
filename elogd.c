@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.8  2002/01/29 10:06:23  midas
+  Fixed various bugs with fixed attributes
+
   Revision 1.7  2002/01/23 08:41:42  midas
   Added "Search all logbooks" flag
 
@@ -3387,67 +3390,81 @@ time_t now;
         }
       }
 
-    if (attr_options[index][0][0] == 0)
-      {
-      /* display text box */
-      rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td>", gt("Categories bgcolor1"), attr_list[index], star);
+    /* display text box */
+    rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td>", gt("Categories bgcolor1"), attr_list[index], star);
 
-      if (attr_flags[index] & AF_LOCKED)
+    /* if attribute cannot be changed, just display text */
+    if ((attr_flags[index] & AF_LOCKED) || (bedit && (attr_flags[index] & AF_FIXED)))
+      {
+      rsprintf("<td bgcolor=%s>%s\n", gt("Categories bgcolor2"), attrib[index]);
+
+      if (attr_flags[index] & AF_MULTI)
         {
-        rsprintf("<td bgcolor=%s>%s\n", gt("Categories bgcolor2"), attrib[index]);
-        rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\"></td></tr>\n",
-                  attr_list[index], attrib[index]);
+        for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
+          {
+          sprintf(str, "%s%d", attr_list[index], i);
+
+          if (strstr(attrib[index], attr_options[index][i]))
+            rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", str, attr_options[index][i]);
+          }
         }
       else
-        rsprintf("<td bgcolor=%s><input type=\"text\" size=80 maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n",
-                  gt("Categories bgcolor2"), NAME_LENGTH, attr_list[index], attrib[index]);
+        rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\"></td></tr>\n",
+                 attr_list[index], attrib[index]);
       }
     else
       {
-      if (equal_ustring(attr_options[index][0], "boolean"))
+      if (attr_options[index][0][0] == 0)
         {
-        /* display checkbox */
-        rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td><td bgcolor=%s><input type=checkbox name=\"%s\" value=1>\n",
-                 gt("Categories bgcolor1"), attr_list[index], star, gt("Categories bgcolor2"), attr_list[index]);
+        rsprintf("<td bgcolor=%s><input type=\"text\" size=80 maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n",
+                  gt("Categories bgcolor2"), NAME_LENGTH, attr_list[index], attrib[index]);
         }
       else
         {
-        if (attr_flags[index] & AF_MULTI)
+        if (equal_ustring(attr_options[index][0], "boolean"))
           {
-          /* display multiple check boxes */
-          rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td><td bgcolor=%s>\n",
-                   gt("Categories bgcolor1"), attr_list[index], star, gt("Categories bgcolor2"));
-
-          for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
-            {
-            sprintf(str, "%s%d", attr_list[index], i);
-
-            if (strstr(attrib[index], attr_options[index][i]))
-              rsprintf("<input type=checkbox checked name=\"%s\" value=\"%s\">%s&nbsp;\n", str, attr_options[index][i], attr_options[index][i]);
-            else
-              rsprintf("<input type=checkbox name=\"%s\" value=\"%s\">%s&nbsp;\n", str, attr_options[index][i], attr_options[index][i]);
-            }
-
-          rsprintf("</td></tr>\n");
+          /* display checkbox */
+          rsprintf("<td bgcolor=%s><input type=checkbox name=\"%s\" value=1>\n",
+                   gt("Categories bgcolor2"), attr_list[index]);
           }
         else
           {
-          /* display drop-down box */
-          rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td><td bgcolor=%s><select name=\"%s\">\n",
-                   gt("Categories bgcolor1"), attr_list[index], star, gt("Categories bgcolor2"), attr_list[index]);
-
-          /* display emtpy option */
-          rsprintf("<option value=\"\">- %s -\n", loc("please select"));
-
-          for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
+          if (attr_flags[index] & AF_MULTI)
             {
-            if (equal_ustring(attr_options[index][i], attrib[index]))
-              rsprintf("<option selected value=\"%s\">%s\n", attr_options[index][i], attr_options[index][i]);
-            else
-              rsprintf("<option value=\"%s\">%s\n", attr_options[index][i], attr_options[index][i]);
-            }
+            /* display multiple check boxes */
+            rsprintf("<td bgcolor=%s>\n", gt("Categories bgcolor2"));
 
-          rsprintf("</select></td></tr>\n");
+            for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
+              {
+              sprintf(str, "%s%d", attr_list[index], i);
+
+              if (strstr(attrib[index], attr_options[index][i]))
+                rsprintf("<input type=checkbox checked name=\"%s\" value=\"%s\">%s&nbsp;\n", str, attr_options[index][i], attr_options[index][i]);
+              else
+                rsprintf("<input type=checkbox name=\"%s\" value=\"%s\">%s&nbsp;\n", str, attr_options[index][i], attr_options[index][i]);
+              }
+
+            rsprintf("</td></tr>\n");
+            }
+          else
+            {
+            /* display drop-down box */
+            rsprintf("<td bgcolor=%s><select name=\"%s\">\n",
+                     gt("Categories bgcolor2"), attr_list[index]);
+
+            /* display emtpy option */
+            rsprintf("<option value=\"\">- %s -\n", loc("please select"));
+
+            for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
+              {
+              if (equal_ustring(attr_options[index][i], attrib[index]))
+                rsprintf("<option selected value=\"%s\">%s\n", attr_options[index][i], attr_options[index][i]);
+              else
+                rsprintf("<option value=\"%s\">%s\n", attr_options[index][i], attr_options[index][i]);
+              }
+
+            rsprintf("</select></td></tr>\n");
+            }
           }
         }
       }
