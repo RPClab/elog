@@ -1,11 +1,9 @@
 # OpenSSH privilege separation requires a user & group ID
-%define elog_uid    105
-%define elog_gid    105
 
 Name:       elog
 Summary:    elog is a standalone electronic web logbook
-Version:    2.5.4
-Release:    6
+Version:    2.5.5
+Release:    3
 Copyright:  GPL
 Group:      Applications/Networking
 Source:     http://midas.psi.ch/elog/download/elog-%{version}.tar.gz
@@ -62,8 +60,8 @@ each weblog can be totally different from the rest.
 %setup -q
 
 %pre
-%{_sbindir}/groupadd -r -g %{elog_gid} elog 2>/dev/null || :
-%{_sbindir}/useradd -d /no/such/path -s /bin/false -u %{elog_uid} \
+%{_sbindir}/groupadd -r elog 2>/dev/null || :
+%{_sbindir}/useradd -d /no/such/path -s /bin/false \
    -g elog -M -r elog 2>/dev/null || :
 
 %build
