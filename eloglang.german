@@ -198,6 +198,7 @@ All = Alle
 Display = Zeige
 entries per page = Einträge pro Seite
 Toggle all = Alle umschalten
+Selected entries = Ausgewählte Einträge
 Automatic email notifications = Automatische Email Benachrichtigung
 
 #
@@ -208,3 +209,6 @@ A old entry has been updated on %s = Ein alter Eintrag wurde von %s geändert
 # New strings for V2.2.4
 Collapse = Zusammenfassen
 Expand = Erweitern
+Full = Ausfühlich
+Summary = Zusammenfassung
+Threaded = Antwortkette

@@ -1,4 +1,4 @@
-Version 2.2.4, released Nobember xxth, 2002
+Version 2.2.4, released December 12th, 2002
 ===========================================
 
 - Added option "Menu text = xxxx" and "Find Menu text = xxxx"
@@ -10,6 +10,7 @@ Version 2.2.4, released Nobember xxth, 2002
 - Implemented "Line as link" option
 - Implemented collapse/expand of threaded display
 - Do not display password in URL if wrong password
+- Added "Quick filter" option
 
 Version 2.2.3, released Nobember 20th, 2002
 ===========================================
