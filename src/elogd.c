@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.420  2004/08/03 09:49:04  midas
+   Added verbose output to cloning
+
    Revision 1.419  2004/07/30 22:45:38  midas
    Retrieve password files during cloning
 
@@ -9046,7 +9049,7 @@ int save_config(char *buffer, char *error)
 
    error[0] = 0;
 
-   fh = open(config_file, O_RDWR | O_BINARY, 644);
+   fh = open(config_file, O_RDWR | O_BINARY | O_CREAT, 644);
    if (fh < 0) {
       sprintf(error, loc("Cannot open file <b>%s</b>"), config_file);
       strcat(error, ": ");
@@ -11403,12 +11406,17 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
       /* check version */
       p = strstr(buffer, "ELOG HTTP ");
       if (!p) {
+         if (verbose)
+            puts(buffer);
          sprintf(error_str, "Remote server is not an ELOG server");
          free(buffer);
          return;
       }
       version = atoi(p + 10) * 100 + atoi(p + 12) * 10 + atoi(p + 14);
       if (version < 254) {
+         if (verbose)
+            puts(buffer);
+
          strlcpy(str, p+10, 10);
          if (strchr(str, '\r'))
             *strchr(str, '\r') = 0;
@@ -11421,6 +11429,8 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
       /* evaluate status */
       p = strchr(buffer, ' ');
       if (p == NULL) {
+         if (verbose)
+            puts(buffer);
          free(buffer);
          *strchr(str, '?') = 0;
          sprintf(error_str, "Received invalid response from elogd server at http://%s",
@@ -11431,12 +11441,16 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
       p++;
       status = atoi(p);
       if (status == 401) {
+         if (verbose)
+            puts(buffer);
          free(buffer);
          eprintf("Please enter password to access remote elogd server: ");
          fgets(pwd, sizeof(pwd), stdin);
          while (pwd[strlen(pwd) - 1] == '\n' || pwd[strlen(pwd) - 1] == '\r')
             pwd[strlen(pwd) - 1] = 0;
       } else if (status != 200) {
+         if (verbose)
+            puts(buffer);
          free(buffer);
          *strchr(str, '?') = 0;
          sprintf(error_str, "Received invalid response from elogd server at http://%s",
@@ -11448,6 +11462,8 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
 
    p = strstr(buffer, "\r\n\r\n");
    if (p == NULL) {
+      if (verbose)
+         puts(buffer);
       free(buffer);
       sprintf(error_str, loc("Cannot receive \"%s\""), str);
       return;
@@ -20951,8 +20967,13 @@ int main(int argc, char *argv[])
 
    /* check for directories */
    if (logbook_dir[0] && stat(logbook_dir, &finfo) < 0) {
-      eprintf("Logbook directory \"%s\" not found.\n", logbook_dir);
-      exit(EXIT_FAILURE);
+
+      if (mkdir(logbook_dir) == 0)
+         eprintf("Logbook directory \"%s\" successfully created.\n", logbook_dir);
+      else {
+         eprintf("Cannot create logbook directory \"%s\":%s.\n", logbook_dir, strerror(errno));
+         exit(EXIT_FAILURE);
+      }
    }
 
    if (resource_dir[0] && stat(resource_dir, &finfo) < 0) {
