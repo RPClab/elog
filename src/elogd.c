@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.181  2004/01/12 08:37:17  midas
+   Fixed bug that text disappeared upon upload
+
    Revision 1.180  2004/01/09 22:56:00  midas
    Implemented expansion in logbook selection page
 
@@ -5219,7 +5222,7 @@ BOOL is_cond_attr(index)
 
 /*------------------------------------------------------------------*/
 
-void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL breedit)
+void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload, BOOL breedit)
 {
    int i, j, n, index, size, width, height, fh, length, first, input_size, input_maxlen,
        format_flags;
@@ -5243,7 +5246,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    text[0] = 0;
 
-   if (breedit) {
+   if (breedit || bupload) {
       /* get date from parameter */
       if (*getparam("entry_date"))
          strcpy(date, getparam("entry_date"));
@@ -5401,7 +5404,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* subst attributes for edits */
-   if (message_id && bedit && !breedit) {
+   if (message_id && bedit && !breedit && !bupload) {
       for (index = 0; index < lbs->n_attr; index++) {
          sprintf(str, "Subst on edit %s", attr_list[index]);
          if (getcfg_cond(lbs->name, condition, str, preset)) {
@@ -5774,7 +5777,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       /* hidden text for original message */
       rsprintf("<input type=hidden name=reply_to value=\"%d\">\n", message_id);
 
-   if (breedit)
+   if (breedit || bupload)
       /* hidden text for original message */
       rsprintf("<input type=hidden name=reply_to value=\"%s\">\n", getparam("reply_to"));
 
@@ -5793,7 +5796,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       if (text[0]) {
          if (bedit) {
-            if (!breedit && !getcfg_cond(lbs->name, condition, "Preset text", str))
+            if (bupload || (breedit && !getcfg_cond(lbs->name, condition, "Preset text", str)))
                rsputs(text);
          } else {
             if (!getcfg_cond(lbs->name, condition, "Quote on reply", str)
@@ -12255,6 +12258,8 @@ void interprete(char *lbook, char *path)
 
          if (!equal_ustring(str, "top group"))
             show_selection_page(NULL);
+
+         /* top group present and no top group in URL -> abort connection */
          return;
       }
 
@@ -12569,13 +12574,13 @@ void interprete(char *lbook, char *path)
    }
 
    if (equal_ustring(command, loc("New"))) {
-      show_edit_form(lbs, 0, FALSE, FALSE, FALSE);
+      show_edit_form(lbs, 0, FALSE, FALSE, FALSE, FALSE);
       return;
    }
 
    message_id = atoi(dec_path);
    if (equal_ustring(command, loc("Upload"))) {
-      show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE);
+      show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE, FALSE);
       return;
    }
 
@@ -12600,25 +12605,25 @@ void interprete(char *lbook, char *path)
                unsetparam(str);
          }
 
-         show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE);
+         show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE, FALSE);
          return;
       }
    }
 
    if (equal_ustring(command, loc("Edit"))) {
       if (message_id) {
-         show_edit_form(lbs, message_id, FALSE, TRUE, FALSE);
+         show_edit_form(lbs, message_id, FALSE, TRUE, FALSE, FALSE);
          return;
       }
    }
 
    if (equal_ustring(command, loc("Reply"))) {
-      show_edit_form(lbs, message_id, TRUE, FALSE, FALSE);
+      show_edit_form(lbs, message_id, TRUE, FALSE, FALSE, FALSE);
       return;
    }
 
    if (equal_ustring(command, loc("Update"))) {
-      show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE);
+      show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, FALSE, TRUE);
       return;
    }
 
