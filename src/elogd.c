@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.3  2003/01/31 11:57:16  midas
+  Do not allow commands which are not present in menu list
+
   Revision 1.2  2003/01/30 14:52:41  midas
   Change USE_CRYPT to HAVE_CRYPT
 
@@ -524,7 +527,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.2.6"
+#define VERSION "2.3.0"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -4440,58 +4443,6 @@ int    i, fh, wrong_pwd, size;
 
 /*------------------------------------------------------------------*/
 
-BOOL allow_user(LOGBOOK *lbs, char *command)
-{
-char str[1000], users[2000];
-char list[MAX_N_LIST][NAME_LENGTH];
-int  i, n;
-
-  /* check for user level access */
-  if (!getcfg(lbs->name, "Password file", str))
-    return TRUE;
-
-  /* check for deny */
-  sprintf(str, "Deny %s", command);
-  if (getcfg(lbs->name, str, users))
-    {
-    /* check if current user in list */
-    n = strbreak(users, list, MAX_N_LIST);
-    for (i=0 ; i<n ; i++)
-      if (equal_ustring(list[i], getparam("unm")))
-        break;
-
-    if (i<n)
-      return FALSE;
-    }
-
-  /* check admin command */
-  if (equal_ustring(command, "Admin"))
-    {
-    if (getcfg(lbs->name, "Admin user", str))
-      {
-      if (strstr(str, getparam("unm")) != 0)
-        return TRUE;
-      else
-        return FALSE;
-      }
-    }
-
-  /* check for allow */
-  sprintf(str, "Allow %s", unloc(command));
-  if (!getcfg(lbs->name, str, users))
-    return TRUE;
-
-  /* check if current user in list */
-  n = strbreak(users, list, MAX_N_LIST);
-  for (i=0 ; i<n ; i++)
-    if (equal_ustring(list[i], getparam("unm")))
-      return TRUE;
-
-  return FALSE;
-}
-
-/*------------------------------------------------------------------*/
-
 int get_last_index(LOGBOOK *lbs, int index)
 /* return value of specific attribute of last entry, can be used to 
    auto-increment tags */
@@ -6759,6 +6710,177 @@ char *p1, *p2, *s;
 
 /*------------------------------------------------------------------*/
 
+BOOL is_user_allowed(LOGBOOK *lbs, char *command)
+{
+char str[1000], users[2000];
+char list[MAX_N_LIST][NAME_LENGTH];
+int  i, n;
+
+  /* check for user level access */
+  if (!getcfg(lbs->name, "Password file", str))
+    return TRUE;
+
+  /* check for deny */
+  sprintf(str, "Deny %s", command);
+  if (getcfg(lbs->name, str, users))
+    {
+    /* check if current user in list */
+    n = strbreak(users, list, MAX_N_LIST);
+    for (i=0 ; i<n ; i++)
+      if (equal_ustring(list[i], getparam("unm")))
+        break;
+
+    if (i<n)
+      return FALSE;
+    }
+
+  /* check admin command */
+  if (equal_ustring(command, "Admin"))
+    {
+    if (getcfg(lbs->name, "Admin user", str))
+      {
+      if (strstr(str, getparam("unm")) != 0)
+        return TRUE;
+      else
+        return FALSE;
+      }
+    }
+
+  /* check for allow */
+  sprintf(str, "Allow %s", unloc(command));
+  if (!getcfg(lbs->name, str, users))
+    return TRUE;
+
+  /* check if current user in list */
+  n = strbreak(users, list, MAX_N_LIST);
+  for (i=0 ; i<n ; i++)
+    if (equal_ustring(list[i], getparam("unm")))
+      return TRUE;
+
+  return FALSE;
+}
+
+/*------------------------------------------------------------------*/
+
+BOOL is_command_allowed(LOGBOOK *lbs, char *command)
+{
+char str[1000], menu_str[1000], other_str[1000];
+char menu_item[MAX_N_LIST][NAME_LENGTH], admin_user[80];
+int  i, n;
+
+  if (command[0] == 0)
+    return TRUE;
+
+  /* check for guest access */
+  if (!getcfg(lbs->name, "Guest Menu commands", menu_str) ||
+      *getparam("unm") != 0)
+    getcfg(lbs->name, "Menu commands", menu_str);
+
+  /* default menu commands */
+  if (menu_str[0] == 0)
+    {
+    strcpy(menu_str, "Back, New, Edit, Delete, Reply, Find, ");
+
+    if (getcfg(lbs->name, "Password file", str))
+      {
+      if (getcfg(lbs->name, "Admin user", str) && 
+          strstr(str, getparam("unm")) != 0)
+        {
+        strcat(menu_str, "Admin, ");
+        }
+      strcat(menu_str, "Config, Logout, ");
+      }
+    else
+      {
+      strcat(menu_str, "Config, ");
+      }
+
+    strcat(menu_str, "Help, ");
+    }
+  else
+    {
+    /* check for admin command */
+    n = strbreak(menu_str, menu_item, MAX_N_LIST);
+    menu_str[0] = 0;
+    admin_user[0] = 0;
+    getcfg(lbs->name, "Admin user", admin_user);
+    for (i=0 ; i<n ; i++)
+      {
+      if (strcmp(menu_item[i], "Admin") == 0)
+        {
+        if (strstr(admin_user, getparam("unm")) == NULL)
+          continue;
+        }
+      strcat(menu_str, menu_item[i]);
+      strcat(menu_str, ", ");
+      }
+    }
+
+  /* check find menu commands */
+  str[0] = 0;
+  if (!getcfg(lbs->name, "Guest Find Menu commands", str) ||
+      *getparam("unm") != 0)
+    getcfg(lbs->name, "Find Menu commands", str);
+
+  if (str[0])
+    strlcat(menu_str, str, sizeof(menu_str));
+  else
+    {
+    strlcat(menu_str, "New, Find, Select, Last x, Help, ", sizeof(menu_str));
+
+    if (getcfg(lbs->name, "Password file", str))
+      strlcat(menu_str, "Admin, Config, Logout, ", sizeof(menu_str));
+    else
+      strlcat(menu_str, "Config, ", sizeof(menu_str));
+    }
+
+  strcpy(other_str, "Submit, Back, Search, Save, Download, Cancel, First, Last, Previous, Next, ");
+
+  /* admin commands */
+  if (getcfg(lbs->name, "Admin user", str) && 
+      *getparam("unm") &&
+      strstr(str, getparam("unm")) != 0)
+    {
+    strcat(other_str, "Remove user, New user, Activate, ");
+    }
+  else
+    if (getcfg(lbs->name, "Self register", str) &&
+        atoi(str) > 0)
+      {
+      strcat(other_str, "Remove user, New user, ");
+      }
+
+  /* allow change password if "config" possible */
+  if (equal_ustring(command, loc("Change password")) &&
+      strstr(menu_str, "Config"))
+    {
+    return TRUE;
+    }
+  /* check if command is present in the menu list, exclude non-localized submit for elog */
+  else if (command[0] && !equal_ustring(command, "Submit"))
+    {
+    n = strbreak(menu_str, menu_item, MAX_N_LIST);
+    for (i=0 ; i<n ; i++)
+      if (equal_ustring(command, loc(menu_item[i])))
+        break;
+
+    if (i==n)
+      {
+      n = strbreak(other_str, menu_item, MAX_N_LIST);
+      for (i=0 ; i<n ; i++)
+        if (equal_ustring(command, loc(menu_item[i])))
+          break;
+    
+      if (i==n)
+        return FALSE;
+      }
+    }
+
+  return TRUE;
+}
+
+/*------------------------------------------------------------------*/
+
 void build_ref(char *ref, int size, char *mode, char *expand)
 {
   if (strchr(getparam("cmdline"), '?'))
@@ -7747,7 +7869,7 @@ LOGBOOK *lbs_cur;
 
     for (i=0 ; i<n ; i++)
       {
-      if (allow_user(lbs, menu_item[i]))
+      if (is_user_allowed(lbs, menu_item[i]))
         {
         if (equal_ustring(menu_item[i], "Last x"))
           {
@@ -8783,7 +8905,7 @@ void show_elog_message(LOGBOOK *lbs, char *dec_path, char *command)
 int    size, i, j, n, n_log, status, fh, length, message_error, index;
 int    message_id, orig_message_id;
 char   str[1000], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
-char   date[80], text[TEXT_SIZE], menu_str[1000], other_str[1000], cmd[256],
+char   date[80], text[TEXT_SIZE], menu_str[1000], cmd[256],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
 char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80], admin_user[80],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH], *p;
@@ -8837,51 +8959,6 @@ BOOL   first;
       strcat(menu_str, menu_item[i]);
       if (i<n-1)
         strcat(menu_str, ", ");
-      }
-    }
-
-  strcpy(other_str, "Submit, Back, Search, Save, Download, Cancel, First, Last, Previous, Next, Select, ");
-
-  /* admin commands */
-  if (getcfg(lbs->name, "Admin user", str) && 
-      *getparam("unm") &&
-      strstr(str, getparam("unm")) != 0)
-    {
-    strcat(other_str, "Remove user, New user, Activate, ");
-    }
-  else
-    if (getcfg(lbs->name, "Self register", str) &&
-        atoi(str) > 0)
-      {
-      strcat(other_str, "Remove user, New user, ");
-      }
-
-  /* allow change password if "config" possible */
-  if (equal_ustring(command, loc("Change password")) &&
-      strstr(menu_str, "Config"))
-    {
-    }
-  /* check if command is present in the menu list, exclude non-localized submit for elog */
-  else if (command[0] && !equal_ustring(command, "Submit"))
-    {
-    n = strbreak(menu_str, menu_item, MAX_N_LIST);
-    for (i=0 ; i<n ; i++)
-      if (equal_ustring(command, loc(menu_item[i])))
-        break;
-
-    if (i==n)
-      {
-      n = strbreak(other_str, menu_item, MAX_N_LIST);
-      for (i=0 ; i<n ; i++)
-        if (equal_ustring(command, loc(menu_item[i])))
-          break;
-    
-      if (i==n)
-        {
-        sprintf(str, loc("Error: Command \"<b>%s</b>\" not allowed"), command);
-        show_error(str);
-        return;
-        }
       }
     }
 
@@ -9217,7 +9294,7 @@ BOOL   first;
           {
           if (i==0)
             rsprintf("<tr><td class=\"notifymsg\" colspan=2>");
-          rsprintf("%s <b>%s</b><br>\n", loc("EMail sent to"), getparam(str));
+          rsprintf("%s <b>%s</b><br>\n", loc("Email sent to"), getparam(str));
           }
         else
           break;
@@ -10365,10 +10442,18 @@ FILE    *f;
     strcpy(command, loc("Last"));
 
   /* check if command allowed for current user */
-  if (!allow_user(lbs, command))
+  if (!is_user_allowed(lbs, command))
     {
     sprintf(str, loc("Error: Command \"<b>%s</b>\" is not allowed for user \"<b>%s</b>\""),
             command, getparam("full_name"));
+    show_error(str);
+    return;
+    }
+
+  /* check if command in menu list */
+  if (!is_command_allowed(lbs, command))
+    {
+    sprintf(str, loc("Error: Command \"<b>%s</b>\" not allowed"), command);
     show_error(str);
     return;
     }
