@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.351  2004/06/18 20:44:37  midas
+   Implemented deletion of logbooks through web interface
+
    Revision 1.350  2004/06/18 19:26:33  midas
    Fixed typo
 
@@ -5316,8 +5319,8 @@ void show_standard_title(char *logbook, char *text, int printable)
    pnode = phier;               /* start at root of tree */
    pnext = NULL;
 
-   if (!printable && getcfg(logbook, "logbook tabs", str)
-       && atoi(str) == 1) {
+   if (!printable && (!getcfg(logbook, "logbook tabs", str)
+       || atoi(str) == 1)) {
 
       for (level = 0;; level++) {
          rsprintf("<tr><td class=\"tabs\">\n");
@@ -7747,6 +7750,14 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
       rsprintf("<br><center><b>%s</b></center>", str);
    }
 
+   if (is_group("global") && !strieq(top_group, "global")) {
+      if (is_admin_user("global", getparam("unm"))) {
+         rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Delete this logbook"));
+         rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Rename this logbook"));
+         rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Create new logbook"));
+      }
+   }
+
    rsprintf("</span></td></tr>\n\n");
 
    /*---- entry form ----*/
@@ -7899,6 +7910,67 @@ int save_admin_config(char *section, char *buffer, char *error)
    /* force re-read of config file */
    check_config();
 
+   return 1;
+}
+
+/*------------------------------------------------------------------*/
+
+int delete_logbook(char *logbook, char *error)
+{
+   int fh, i, length;
+   char *buf, *p1, *p2;
+
+   error[0] = 0;
+
+   fh = open(config_file, O_RDWR | O_BINARY, 644);
+   if (fh < 0) {
+      sprintf(error, loc("Cannot open file <b>%s</b>"), config_file);
+      strcat(error, ": ");
+      strcat(error, strerror(errno));
+      return 0;
+   }
+
+   /* read previous contents */
+   length = lseek(fh, 0, SEEK_END);
+   lseek(fh, 0, SEEK_SET);
+   buf = malloc(length + 1);
+   assert(buf);
+   read(fh, buf, length);
+   buf[length] = 0;
+
+   /* find logbook config */
+   p1 = (char *) find_section(buf, logbook);
+   p2 = (char *) find_next_section(p1 + 1);
+
+   if (p2)
+      strlcpy(p1, p2, strlen(p2) + 1);
+   else
+      *p1 = 0;
+
+   lseek(fh, 0, SEEK_SET);
+   i = write(fh, buf, strlen(buf));
+   if (i < (int) strlen(buf)) {
+      sprintf(error, loc("Cannot write to <b>%s</b>"), config_file);
+      strcat(error, ": ");
+      strcat(error, strerror(errno));
+      close(fh);
+      free(buf);
+      return 0;
+   }
+
+#ifdef _MSC_VER
+   chsize(fh, TELL(fh));
+#else
+   ftruncate(fh, TELL(fh));
+#endif
+
+   close(fh);
+   free(buf);
+
+   /* force re-read of config file */
+   check_config();
+   el_index_logbooks(TRUE);
+   
    return 1;
 }
 
@@ -8809,6 +8881,63 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
 
          rsprintf("<input type=hidden name=nextmsg value=%d>\n", next);
       }
+
+      rsprintf
+          ("<tr><td align=center class=\"dlgform\"><input type=submit name=confirm value=\"%s\">\n",
+           loc("Yes"));
+      rsprintf("<input type=submit name=confirm value=\"%s\">\n", loc("No"));
+      rsprintf("</td></tr>\n\n");
+   }
+
+   rsprintf("</table>\n");
+   show_bottom_text(lbs);
+   rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void show_logbook_delete(LOGBOOK * lbs)
+{
+   char str[256];
+   
+   /* redirect if confirm = NO */
+   if (getparam("confirm") && *getparam("confirm")
+       && strcmp(getparam("confirm"), loc("No")) == 0) {
+
+      redirect(lbs, "?cmd=Config");
+      return;
+   }
+
+   if (getparam("confirm") && *getparam("confirm")) {
+      if (strcmp(getparam("confirm"), loc("Yes")) == 0) {
+
+         /* delete logbook */
+         str[0] = 0;
+         delete_logbook(lbs->name, str);
+         if (str[0])
+            show_error(str);
+         else
+            redirect(NULL, "../");
+         return;
+      }
+
+   } else {
+
+ 
+      show_standard_header(lbs, TRUE, "Delete Logbook", "");
+
+      rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
+      rsprintf("<tr><td class=\"dlgtitle\">\n");
+
+      /* define hidden field for command */
+      rsprintf("<input type=hidden name=cmd value=\"%s\">\n", loc("Delete this logbook"));
+
+      sprintf(str, loc("Are you sure to delete logbook \"%s\"?"), lbs->name);
+      rsprintf("%s</td></tr>\n", str);
+
+      rsprintf("<tr><td align=center class=\"dlgform\">\n");
+
+      rsprintf("</td></tr>\n");
 
       rsprintf
           ("<tr><td align=center class=\"dlgform\"><input type=submit name=confirm value=\"%s\">\n",
@@ -11595,6 +11724,10 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 
             strcat(menu_str, "Admin, ");
             strcat(menu_str, "Change elogd.cfg, ");
+            strcat(menu_str, "Delete this logbook, ");
+            strcat(menu_str, "Rename this logbook, ");
+            strcat(menu_str, "Create new logbook, ");
+
 
             if (getcfg(lbs->name, "Mirror server", str))
                strcat(menu_str, "Synchronize, ");
@@ -11619,8 +11752,10 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          if (getcfg(lbs->name, "Mirror server", str))
             strcat(menu_str, "Synchronize, ");
          strcat(menu_str, "Config, ");
-         strcat(menu_str, "Change [global]");
-         strcat(menu_str, ", ");
+         strcat(menu_str, "Change [global], ");
+         strcat(menu_str, "Delete this logbook, ");
+         strcat(menu_str, "Rename this logbook, ");
+         strcat(menu_str, "Create new logbook, ");
       }
 
       strcat(menu_str, "Help, ");
@@ -11640,6 +11775,9 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
       if (is_admin_user(lbs->name, getparam("unm"))) {
 
          strcat(menu_str, "Change elogd.cfg, ");
+         strcat(menu_str, "Delete this logbook, ");
+         strcat(menu_str, "Rename this logbook, ");
+         strcat(menu_str, "Create new logwook, ");
 
          if (is_admin_user("global", getparam("unm"))) {
 
@@ -15886,6 +16024,22 @@ void show_selection_page()
    char str[NAME_LENGTH], file_name[256];
    LBLIST phier;
 
+   /* check if at least one logbook define */
+   if (!lb_list[0].name[0]) {
+      show_standard_header(NULL, FALSE, "ELOG", "");
+
+      rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
+      rsprintf("<tr><td class=\"dlgtitle\">\n");
+      rsprintf(loc("No logbook defined on this server"));
+      rsprintf("</td></tr>\n");
+
+      rsprintf("<tr><td align=center class=\"dlgform\">\n");
+      rsprintf("<a href=\"?cmd=%s\">%s</a>", loc("Create new logbook"), loc("Create new logbook")),
+      rsprintf("</td></tr></table>\n");
+      rsprintf("</body></html>\n");
+      return;
+   }
+
    /* check for Guest Selection Page */
    if (getcfg("global", "Guest Selection Page", str)
        && !(isparam("unm") && isparam("upwd"))) {
@@ -16842,6 +16996,21 @@ void interprete(char *lbook, char *path)
    sprintf(str, loc("Change %s"), str2);
    if (strieq(command, str)) {
       show_admin_page(lbs, lbs->top_group);
+      return;
+   }
+
+   if (strieq(command, loc("Delete this logbook"))) {
+      show_logbook_delete(lbs);
+      return;
+   }
+
+   if (strieq(command, loc("Rename this logbook"))) {
+      show_error("This functionality is not yet implemented");
+      return;
+   }
+
+   if (strieq(command, loc("Create new logbook"))) {
+      show_error("This functionality is not yet implemented");
       return;
    }
 
@@ -18098,6 +18267,11 @@ void server_loop(int tcp_port, int daemon)
                  download_config();
                  goto redir;
                } 
+
+               if (stricmp(global_cmd, loc("Create new logbook"))) {
+                  show_error("This functionality is not yet implemented");
+                  goto redir;
+               }
             } else if (strncmp(net_buffer, "GET", 3) == 0) {
                /* extract path and commands */
                *strchr(net_buffer, '\r') = 0;
