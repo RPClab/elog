@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.396  2004/07/23 07:30:26  midas
+   Fixed compiler warnings
+
    Revision 1.395  2004/07/23 06:59:06  midas
    Fixed missing argument to getcfg() under linux
 
@@ -352,7 +355,9 @@ static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
 #define PIDFILE "/var/run/elogd.pid"
 #endif
 
+#ifndef __USE_XOPEN
 #define __USE_XOPEN             /* needed for crypt() */
+#endif
 
 typedef int BOOL;
 
@@ -1052,7 +1057,14 @@ void base64_decode(char *s, char *d)
    unsigned int t;
 
    while (*s) {
-      t = (cind(*s++) << 18) | (cind(*s++) << 12) | (cind(*s++) << 6) | (cind(*s++) << 0);
+      t =   (cind(*s) << 18;
+      s++;
+      t |=  (cind(*s) << 12; 
+      s++;
+      t |=  (cind(*s) << 6; 
+      s++;
+      t |=  (cind(*s) << 0;
+      s++;
 
       *(d + 2) = (char) (t & 0xFF);
       t >>= 8;
