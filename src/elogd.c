@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.127  2003/07/04 16:06:50  midas
+  Removed width from attrname cells (should be in CSS now)
+
   Revision 1.126  2003/07/04 15:28:29  midas
   Implemented attribute formats
 
@@ -10950,7 +10953,7 @@ BOOL   first;
       rsprintf("%s</td></tr>\n", str);
       }
 
-    rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribhead\">\n");
+    rsprintf("<tr><td nowrap class=\"attribhead\">\n");
 
     for (i=0 ; i<lbs->n_attr ; i++)
       rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", attr_list[i], attrib[i]);
@@ -11057,7 +11060,7 @@ BOOL   first;
         rsprintf("<table width=100%% cellpadding=0 cellspacing=0><tr>");
 
       sprintf(lattr, "l%s", attr_list[i]);
-      rsprintf("<td nowrap width=\"10%%\" class=\"%s\">", class_name);
+      rsprintf("<td nowrap class=\"%s\">", class_name);
 
       if (getcfg(lbs->name, "Filtered browsing", str) &&
           atoi(str) == 1)
@@ -11127,7 +11130,7 @@ BOOL   first;
         rsprintf("</tr></table>\n");
       }
 
-    rsputs("</table></td></tr>\n");
+    rsputs("</td></tr>\n");
 
     /*---- message text ----*/
 
