@@ -1622,17 +1622,22 @@ the <i>Edit</i> command). A locked message gets displayed with a little red sign
 that the message is currently edited by someone and should not be touched. This can be
 helpful in installations where several people can edit messages. Without locking, the second
 submission of an edited message overwrites the first submission without notice. Although
-the sign gets displayed, the message can still be edited, but it's the user's response to
-avoid any conflict.<br><br>
+the sign gets displayed, the message can still be edited (the lock can be "stolen"),
+but it's the user's response to avoid any conflict.<br><br>
 
 Since elog cannot determine if someone keeps a message very long for editing or if only the
 browser got closed, the locking can show up even if the message is not kept for editing any more.
-In that case, the message has to be edited again and submitted, to remove the origial lock.
-Alternatively, the admin user can issue the <i>Unlock</i> command.<br><br>
+In that case, the message has to be edited again and submitted, to remove the origial lock.<br><br>
 
 Note that logbooks accessible from the internet usually get scanned by search engines. This
 can lead to situations where the <i>Edit</i> link of each message is "followed" by a bot,
 resulting in all messages being locked. In those cases locking has to be turned off.<br><br>
+
+Since release 2.5.4, some Javascript code has been added to avoid unwanted locks. If someone
+edits an entry, but then goes away from that page or closes the browser without submitting
+the changes, a pop-up window appears asking the user to submit the changed entry. Although
+this works for most browsers in most cases, it could be that Javascript has been turned off
+in a browser, in which case the stale locks still might appear.<br><br>
 
 Default for "Use Lock" is <b>0</b>.<p>
 
