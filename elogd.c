@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.30  2002/06/03 09:37:47  midas
+  Fixed bug with MOptions in Email notification
+
   Revision 1.29  2002/06/03 08:30:44  midas
   Add <br> for replies in HTML format
 
@@ -5487,7 +5490,7 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
             {
             strcpy(str, "                                    ");
             memcpy(str, attr_list[j], strlen(attr_list[j]));
-            sprintf(str+20, ": %s\r\n", getparam(attr_list[j]));
+            sprintf(str+20, ": %s\r\n", attrib[j]);
 
             strcpy(mail_text+strlen(mail_text), str);
             }
