@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.178  2004/01/09 14:34:58  midas
+  Fixed bug in free_logbook_hierarchy()
+
   Revision 1.177  2004/01/09 14:21:56  midas
   Evaluate 'preset xxx' on re-edit
 
@@ -4456,12 +4459,15 @@ void free_logbook_hierarchy(LBLIST root)
    int i;
 
    for (i = 0; i < root->n_members; i++) {
-      if (root->member[i] != NULL)
+      if (root->member[i] != NULL) {
          free_logbook_hierarchy(root->member[i]);
+      }
 
-      free(root->member);
-      free(root);
    }
+
+   printf("Free %s\n", root->name);
+   free(root->member);
+   free(root);
 }
 
 /*------------------------------------------------------------------*/
