@@ -29,24 +29,17 @@
 
 <LI><b>How does one configure elog to display a listing of all messages by default instead the last message</b>
 <p>
-This can be done with the <b><code>Start page</code></b> option. The entry:<p>
+Starting from version 2.2.0 on, a page with the last messages is displayed by default. To display
+something else, one can use the <b><code>Start page</code></b> option in elogd. The entry:<p>
 <code>
-Start page = last10
+Start page = 0?cmd=last
 </code><p>
-shows the last 10 entries as the default. To show all messages, one can use:
+shows the last entry by default (pre-2.2.0 behaviour). To show all messages, one can use:
 <code><p>
 Start page = ?cmd=Search&mode=summary&all=1<p>
 </code><p>
-This shows all messages from all logbooks (<i>all=1</i>). It is a good idea to have logbook tabs one
-here in the elogd.cfg configuration file:<p>
-<code><p>
-Logbook tabs = 1
-</code><p>
-and to have additional menu command in the search page like:<p>
-<code><p>
-Find menu commands = New, Find, Last x, Last day, Last 10, Config, Help
-</code><p>
-To have the described behaviour for all logbooks, the above statements can be placed in the <b><code>[global]</code></b> section.
+This shows all messages from all logbooks (<i>all=1</i>). To have the described behaviour for
+all logbooks, the above statements can be placed in the <b><code>[global]</code></b> section.
 <p>
 
 
@@ -57,15 +50,23 @@ No. The idea behind <b>ELOG</b> is that it is a <I>simple to use, simple to inst
 
 <LI><b>Can I run the ELOG daemon from inside Apache or any other Web server?</b>
 <p>
-No. The <b>ELOG</b> daemon was designed as a standalone server and it will stay like that in the future. The reason for that is that <code><b>elogd</b></code> should not rely on any other software. This is for example important for many people running <code><b>elogd</b></code> under Windows, and they have no clue how to install Apache for Windows. The installation and maintenance for <code><b>elogd</b></code> therefore becomes much simpler. The disadvantage of this solution is that <code><b>elogd</b></code> needs to run on a different port than 80 in case it runs in parallel with a Web server.
-<p>
+No. The <b>ELOG</b> daemon was designed as a standalone server and it will stay like that in the future.
+The reason for that is that <code><b>elogd</b></code> should not rely on any other software. This is for
+example important for many people running <code><b>elogd</b></code> under Windows, and they have no clue
+how to install Apache for Windows. The installation and maintenance for <code><b>elogd</b></code>
+therefore becomes much simpler. To run <code><b>elogd</b></code> in parallel to an Apache server on
+port 80, use Apache as a proxy, following the instruction on the installation page
+("Running elogd under Apache").<p>
 
 <LI><b>I can access my logbook without any password, isn't that a security problem?</b>
-<p>
-By default, no password is used in <b>ELOG</b>. This can be useful for public directories etc. that anybody should be able to read. To add password security, read the documentation under <a href="config.html#access">Access control</a>.
-<p>
-Note that passwords are transferred over the network in plain text and therefore not secure. If this is a problem, a <a href="adminguide.html#secure">secure</a> network connection should be used.
-<p>
+
+<p> By default, no password is used in <b>ELOG</b>. This can be useful for public directories etc. that
+anybody should be able to read. To add password security, read the documentation under <a href=
+"config.html#access">Access control</a>. The recommended setup is password file security with
+guest access.
+
+<p> Note that passwords are transferred over the network in plain text and therefore not secure. If this
+is a problem, a <a href="adminguide.html#secure">secure</a> network connection should be used. <p>
 
 <LI><b>I want a bookmark pointing to the last page where an attribute has a certain value</b>
 <p>
