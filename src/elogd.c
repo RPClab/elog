@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.247  2004/02/16 15:04:32  midas
+   Fixed compiler warnings
+
    Revision 1.246  2004/02/16 14:27:03  midas
    Place calendar in middle of screen
 
@@ -419,8 +422,8 @@ typedef int INT;
 
 #define NAME_LENGTH  500
 
-#define DEFAULT_TIME_FORMAT "%#c"
-#define DEFAULT_DATE_FORMAT "%#x"
+#define DEFAULT_TIME_FORMAT "%c"
+#define DEFAULT_DATE_FORMAT "%x"
 
 #define SUCCESS        1
 
@@ -556,24 +559,23 @@ struct {
    char type[32];
 } filetype[] = {
 
-   {
-   ".CSS", "text/css"}, {
-   ".JPG", "image/jpeg"}, {
-   ".JPEG", "image/jpeg"}, {
-   ".GIF", "image/gif"}, {
-   ".PNG", "image/png"}, {
-   ".PS", "application/postscript"}, {
-   ".EPS", "application/postscript"}, {
-   ".HTML", "text/html"}, {
-   ".HTM", "text/html"}, {
-   ".XLS", "application/x-msexcel"}, {
-   ".DOC", "application/msword"}, {
-   ".PDF", "application/pdf"}, {
-   ".JS", "application/x-javascript"}, {
-   ".TXT", "text/plain"}, {
-   ".ASC", "text/plain"}, {
-   ".ZIP", "application/x-zip-compressed"}, {
-""},};
+   {".CSS", "text/css"}, 
+   {".JPG", "image/jpeg"}, 
+   {".JPEG", "image/jpeg"}, 
+   {".GIF", "image/gif"}, 
+   {".PNG", "image/png"}, 
+   {".PS", "application/postscript"}, 
+   {".EPS", "application/postscript"}, 
+   {".HTML", "text/html"}, 
+   {".HTM", "text/html"}, 
+   {".XLS", "application/x-msexcel"}, 
+   {".DOC", "application/msword"}, 
+   {".PDF", "application/pdf"}, 
+   {".JS", "application/x-javascript"}, 
+   {".TXT", "text/plain"}, 
+   {".ASC", "text/plain"}, 
+   {".ZIP", "application/x-zip-compressed"}, 
+   {"",""},};
 
 typedef struct {
    int message_id;
@@ -3456,6 +3458,8 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
    char *message, *p, *buffer;
    char attachment_all[64 * MAX_ATTACHMENTS];
 
+   tail_size = orig_size = 0;
+   buffer = NULL;
    message = malloc(TEXT_SIZE + 100);
    assert(message);
 
@@ -3873,6 +3877,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
    lseek(fh, 0, SEEK_END);
    tail_size = TELL(fh) - (lbs->el_index[index].offset + size);
 
+   buffer = NULL;
    if (tail_size > 0) {
       buffer = malloc(tail_size);
       if (buffer == NULL) {
@@ -5922,7 +5927,7 @@ BOOL is_author(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], char *owner)
 
 /*------------------------------------------------------------------*/
 
-BOOL is_cond_attr(index)
+BOOL is_cond_attr(int index)
 {
    int i;
 
@@ -6059,7 +6064,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             ts.tm_hour = 12;
 
             ltime = mktime(&ts);
-            sprintf(attrib[i], "%d", ltime);
+            sprintf(attrib[i], "%d", (int)ltime);
 
          } else {
             strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
@@ -7452,7 +7457,7 @@ void remove_crlf(char *buffer)
 
 /*------------------------------------------------------------------*/
 
-int save_admin_config(LOGBOOK * lbs, char *section, char *buffer, char *error)
+int save_admin_config(char *section, char *buffer, char *error)
 {
    int fh, i, length;
    char *buf, *buf2, *p1, *p2;
@@ -7486,6 +7491,7 @@ int save_admin_config(LOGBOOK * lbs, char *section, char *buffer, char *error)
    p2 = (char *) find_next_section(p1 + 1);
 
    /* save tail */
+   buf2 = NULL;
    if (p2) {
       buf2 = malloc(strlen(p2) + 1);
       assert(buf2);
@@ -9262,7 +9268,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
    }
    p += 4;
 
-   if (!save_admin_config(lbs, lbs->name, p, str))
+   if (!save_admin_config(lbs->name, p, str))
       rsprintf(str);
 
    free(buffer);
@@ -9388,7 +9394,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 {
    int index, i, j, i_msg, i_remote, i_cache, n_remote, n_cache, nserver,
        remote_id, exist_remote, exist_cache, message_id, max_id;
-   int priority_remote = 0, all_identical;
+   int all_identical;
    char str[2000], url[256], loc_ref[256], rem_ref[256];
    MD5_INDEX *md5_remote, *md5_cache;
    char list[MAX_N_LIST][NAME_LENGTH], error_str[256], *buffer;
@@ -9693,6 +9699,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
             if (_logging_level > 1)
                logf(lbs, "MIRROR send entry #%d", message_id);
 
+            remote_id = 0;
             if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
                remote_id = submit_message(lbs, list[index], message_id, error_str);
             all_identical = FALSE;
@@ -10213,7 +10220,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       rsprintf("<tr><td class=\"summary\">");
 
       if (expand == 2) {
-         for (i = i_line = 0; i < sizeof(str) - 1; i++) {
+         for (i = i_line = 0; i < (int)sizeof(str) - 1; i++) {
             str[i] = text[i];
             if (str[i] == '\n')
                i_line++;
@@ -10242,7 +10249,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
    if ((strieq(mode, "Summary") && n_line > 0)) {
       rsprintf("<td class=\"summary\">");
-      for (i = i_line = 0; i < sizeof(str) - 1; i++) {
+      for (i = i_line = 0; i < (int)sizeof(str) - 1; i++) {
          str[i] = text[i];
          if (str[i] == '\n')
             i_line++;
@@ -10746,8 +10753,7 @@ void build_ref(char *ref, int size, char *mode, char *expand)
 
 /*------------------------------------------------------------------*/
 
-void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, int n_page, BOOL top,
-                       BOOL mode_commands, BOOL threaded)
+void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands, BOOL threaded)
 {
    int cur_exp, n, i, j, index;
    char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH],
@@ -10923,8 +10929,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, int n_page, BOOL to
 
 /*------------------------------------------------------------------*/
 
-void show_page_navigation(LOGBOOK * lbs, int n_msg, int page_n, int n_page, BOOL top,
-                          BOOL mode_commands, BOOL threaded)
+void show_page_navigation(int n_msg, int page_n, int n_page)
 {
    int i, num_pages, skip;
    char ref[256];
@@ -11194,7 +11199,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
    /* redirect if enpty parameters */
    if (strstr(_cmdline, "=&")) {
-      while (pt1 = strstr(_cmdline, "=&")) {
+      while ((pt1 = strstr(_cmdline, "=&")) != NULL) {
          pt2 = pt1 + 2;
          while (*pt1 != '&' && *pt1 != '?')
             pt1--;
@@ -11263,7 +11268,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       }
 
    printable = atoi(getparam("Printable"));
-
+   
    /* in printable mode, display all pages */
    if (printable)
       page_n = -1;
@@ -11314,6 +11319,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    current_day = ptms->tm_mday;
 
    ltime_end = ltime_start = 0;
+
+   d1 = m1 = y1 = d2 = m2 = y2 = 0;
 
    if (!past_n && !last_n) {
 
@@ -11399,7 +11406,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       for (j = 0; j < *lbs_cur->n_el_index; j++) {
          msg_list[n].lbs = lbs_cur;
          msg_list[n].index = j;
-         sprintf(msg_list[n].string, "%010d", lbs_cur->el_index[j].file_time);
+         sprintf(msg_list[n].string, "%010d", (int)lbs_cur->el_index[j].file_time);
          msg_list[n].in_reply_to = lbs_cur->el_index[j].in_reply_to;
          n++;
       }
@@ -11690,6 +11697,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
    /*---- number of messages per page ----*/
 
+   n_attr_disp = n_line = 0;
    n_page = 1000000;
    i_start = 0;
    i_stop = n_msg - 1;
@@ -11930,7 +11938,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
             if (tms.tm_year < 90)
                tms.tm_year += 100;
             mktime(&tms);
-            strftime(str, sizeof(str), "%#x", &tms);
+            strftime(str, sizeof(str), "%x", &tms);
 
             rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>",
                      loc("Start date"));
@@ -11949,7 +11957,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
             ltime = mktime(&tms);
             ltime -= 3600 * 24;
             memcpy(&tms, localtime(&ltime), sizeof(struct tm));
-            strftime(str, sizeof(str), "%#x", &tms);
+            strftime(str, sizeof(str), "%x", &tms);
 
             rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>",
                      loc("End date"));
@@ -11971,7 +11979,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                   rsprintf("<td class=\"attribvalue\">");
                   if (ltime1) {
                      memcpy(&tms, localtime(&ltime1), sizeof(struct tm));
-                     strftime(str, sizeof(str), "%#x", &tms);
+                     strftime(str, sizeof(str), "%x", &tms);
                      if (ltime2 > 0)
                         rsprintf("%s %s", loc("From"), str);
                      else
@@ -11979,7 +11987,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                   }
                   if (ltime2) {
                      memcpy(&tms, localtime(&ltime2), sizeof(struct tm));
-                     strftime(str, sizeof(str), "%#x", &tms);
+                     strftime(str, sizeof(str), "%x", &tms);
                      if (ltime1 > 0)
                         rsprintf(" %s %s", loc("to"), str);
                      else
@@ -12028,8 +12036,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       /*---- page navigation ----*/
 
       if (!printable) {
-         show_page_filters(lbs, n_msg, page_n, n_page, TRUE, mode_commands, threaded);
-         show_page_navigation(lbs, n_msg, page_n, n_page, TRUE, mode_commands, threaded);
+         show_page_filters(lbs, n_msg, page_n, mode_commands, threaded);
+         show_page_navigation(n_msg, page_n, n_page);
       }
 
       /*---- select navigation ----*/
@@ -12268,7 +12276,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       /*---- page navigation ----*/
 
       if (!printable)
-         show_page_navigation(lbs, n_msg, page_n, n_page, FALSE, FALSE, threaded);
+         show_page_navigation(n_msg, page_n, n_page);
 
       rsprintf("</table>\n");
       show_bottom_text(lbs);
@@ -12525,6 +12533,7 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue)
       p2--;
 
    /* save tail */
+   buf2 = NULL;
    if (p2) {
       buf2 = malloc(strlen(p2) + 1);
       assert(buf2);
@@ -13070,7 +13079,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
    text = malloc(TEXT_SIZE);
 
-   n_done = n_done_reply = 0;
+   n_done = n_done_reply = source_id = status = 0;
    for (index = 0; index < n; index++) {
       if (src_id)
          source_id = src_id;
@@ -13419,6 +13428,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
    if (message_id == 0)
       message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
 
+   status = 0;
    if (message_id) {
       size = sizeof(text);
       status =
@@ -15460,7 +15470,7 @@ void interprete(char *lbook, char *path)
          } else
             strlcpy(section, lbs->name, sizeof(section));
 
-         if (!save_admin_config(lbs, section, _mtext, str)) {   /* save cfg file */
+         if (!save_admin_config(section, _mtext, str)) {   /* save cfg file */
             show_error(str);
             return;
          }
@@ -15886,6 +15896,7 @@ void server_loop(int tcp_port, int daemon)
    char *net_buffer = NULL;
    int net_buffer_size;
 
+   i_conn = content_length = 0;
    net_buffer_size = 100000;
    net_buffer = malloc(net_buffer_size);
    return_buffer_size = 100000;
@@ -16630,10 +16641,10 @@ void server_loop(int tcp_port, int daemon)
          if (return_length != -1) {
             if (return_length == 0)
                return_length = strlen_retbuf;
-            if (keep_alive
-                && strstr(return_buffer, "Content-Length") == NULL
-                || strstr(return_buffer, "Content-Length") > strstr(return_buffer,
-                                                                    "\r\n\r\n")) {
+            if ((keep_alive
+                && strstr(return_buffer, "Content-Length") == NULL)
+                || strstr(return_buffer, "Content-Length") > 
+                   strstr(return_buffer, "\r\n\r\n")) {
                /*---- add content-length ----*/
 
                p = strstr(return_buffer, "\r\n\r\n");
