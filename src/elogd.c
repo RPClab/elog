@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.72  2003/04/07 20:38:50  midas
+  Fixed problem with 'Forgot'
+
   Revision 1.71  2003/04/07 15:44:58  midas
   Added 'Forgot' to allowed commands list
 
@@ -6587,7 +6590,7 @@ char str[1000], login_name[256], full_name[256], user_email[256], name[256], pwd
 
 
     rsprintf("<tr><td align=center class=\"dlgform\">\n");
-    rsprintf("<input type=hidden name=cmd value=forgot>\n");
+    rsprintf("<input type=hidden name=cmd value=%s>\n", loc("Forgot"));
     rsprintf("<input type=text size=40 name=login_name></td></tr>\n");
 
     rsprintf("<tr><td align=center class=\"dlgform\"><input type=submit value=\"%s\">\n", loc("Submit"));
@@ -7644,7 +7647,7 @@ int  i, n;
       strlcat(menu_str, "Config, ", sizeof(menu_str));
     }
 
-  strcpy(other_str, "Upload, Submit, Back, Search, Save, Download, Cancel, First, Last, Previous, Next, Requested, Forgot");
+  strcpy(other_str, "Upload, Submit, Back, Search, Save, Download, Cancel, First, Last, Previous, Next, Requested, Forgot, ");
 
   /* admin commands */
   if (getcfg(lbs->name, "Admin user", str) && 
@@ -10762,7 +10765,7 @@ int   i, n;
     }
 
   /* check for "forgot password" */
-  if (isparam("cmd") && strcmp(getparam("cmd"), "forgot") == 0)
+  if (isparam("cmd") && strcmp(getparam("cmd"), loc("Forgot")) == 0)
     {
     show_forgot_pwd_page(lbs);
     return FALSE;
@@ -10855,8 +10858,8 @@ int   i, n;
       rsprintf("%s</td></tr>\n", loc("Remember me on this computer"));
       }
 
-    rsprintf("<tr><td align=center colspan=2 class=\"dlgform\"><a href=\"?cmd=Forgot\">%s</a>", 
-              loc("Forgot password?"));
+    rsprintf("<tr><td align=center colspan=2 class=\"dlgform\"><a href=\"?cmd=%s\">%s</a>", 
+              loc("Forgot"), loc("Forgot password?"));
 
     if (getcfg(lbs->name, "Self register", str) && atoi(str) > 0)
       {

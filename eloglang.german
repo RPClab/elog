@@ -144,11 +144,11 @@ Message ID = Eintrag-ID
 #
 # New strings for V2.1.0
 Not logged in = Nicht eingeloggt
-Login = Einloggen
+Login = Anmelden
 Page %d of %d = Seite %d von %d
 all entries = alle Einträge
 %d entries = %d Einträge
-Login name = Name zum Einloggen
+Login name = Name zum Anmelden
 Full name = Benutzername
 ELOG user config = ELOG Benutzerkonfiguration
 ELOG new user = Neuer ELOG-Benutzer
@@ -256,3 +256,4 @@ ELOG password recovery = ELOG Kennwort Wiederherstellung
 No Email address registered with user name <i>"%s"</i> = Für Benuter-Name <i>"%s"</i> wurde keine Email-Adresse registriert
 Error sending Email = Fehler beim Versenden der Email
 A new password for user <i>"%s"</i> has been sent to %s = Ein neues Kennwort für Benutzer <i>"%s"</i> wurde and %s geschickt
+Forgot = vergessen
