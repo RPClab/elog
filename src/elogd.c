@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.39  2003/03/05 20:29:21  midas
+  Fixed status message for copy/move
+
   Revision 1.38  2003/03/05 07:39:26  midas
   Only re-read elogd.cfg if changed, using stat()
 
@@ -8150,7 +8153,7 @@ LOGBOOK *lbs_cur;
   
   /*---- header ----*/
 
-  show_standard_header(lbs, FALSE, loc("ELOG Entries"), NULL);
+  show_standard_header(lbs, TRUE, loc("ELOG Entries"), NULL);
 
   /*---- title ----*/
 
@@ -8611,11 +8614,6 @@ LOGBOOK *lbs_cur;
 
   if (n_msg == 0)
     rsprintf("<tr><td class=\"errormsg\">%s</td></tr>", loc("No entries found"));
-
-  /*---- select navigation ----*/
-
-  if (atoi(getparam("select")) == 1)
-    show_select_navigation(lbs);
 
   /*---- page navigation ----*/
 
@@ -9080,7 +9078,7 @@ int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_or
 
 void copy_to(LOGBOOK *lbs, int src_id, char *dest_logbook, int move, int orig_id)
 {
-int     size, i, n, n_done, n_reply, index, status, fh, source_id, message_id;
+int     size, i, n, n_done, n_done_reply, n_reply, index, status, fh, source_id, message_id;
 char    str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 char    date[80], text[TEXT_SIZE], msg_str[32], in_reply_to[80], reply_to[256],
         attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], *buffer,
@@ -9099,7 +9097,7 @@ LOGBOOK *lbs_dest;
   else
     n = atoi(getparam("nsel"));
 
-  n_done = 0;
+  n_done = n_done_reply = 0;
   for (index=0 ; index<n ; index++)
     {
     if (src_id)
@@ -9215,6 +9213,8 @@ LOGBOOK *lbs_dest;
       copy_to(lbs, atoi(list[i]), dest_logbook, move, message_id);
       }
 
+    n_done_reply += n_reply;
+
     /* delete original message for move */
     if (move && orig_id == 0)
       {
@@ -9239,21 +9239,31 @@ LOGBOOK *lbs_dest;
   rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
   rsprintf("<tr><td colspan=2 class=\"dlgtitle\">\n");
 
-  if (n>1)
+  if (n_done == 0)
+    rsprintf(loc("No message selected"));
+  else 
     {
-    if (n_done == 0)
-      rsprintf(loc("No message selected"));
-    else if (move)
-      rsprintf(loc("%d messages moved successfully from \"%s\" to \"%s\""), n_done, lbs->name, lbs_dest->name);
+    if (n_done == 1)
+      rsprintf(loc("One message"));
     else
-      rsprintf(loc("%d messages copied successfully from \"%s\" to \"%s\""), n_done, lbs->name, lbs_dest->name);
-    }
-  else
-    {
+      rsprintf(loc("%d messages"), n_done);
+
+    if (n_done_reply)
+      {
+      rsprintf(" ");
+
+      if (n_done == 1)
+        rsprintf(loc("and its replies"));
+      else
+        rsprintf(loc("and their replies"));
+      }
+
+    rsprintf(" ");
+
     if (move)
-      rsprintf(loc("Message moved successfully from \"%s\" to \"%s\""), lbs->name, lbs_dest->name);
+      rsprintf(loc("moved successfully from \"%s\" to \"%s\""), lbs->name, lbs_dest->name);
     else
-      rsprintf(loc("Message copied successfully from \"%s\" to \"%s\""), lbs->name, lbs_dest->name);
+      rsprintf(loc("copied successfully from \"%s\" to \"%s\""), lbs->name, lbs_dest->name);
     }
 
   rsprintf("</b></tr>\n");
