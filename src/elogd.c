@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.240  2004/02/06 14:34:11  midas
+   Sorting now also works for logbooks
+
    Revision 1.239  2004/02/05 07:58:38  midas
    Use send_tcp for large buffers
 
@@ -8530,7 +8533,7 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
 
 /*------------------------------------------------------------------*/
 
-INT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags)
+INT send_tcp(int sock, char *buffer, unsigned int buffer_size, INT flags)
 /********************************************************************\
   
     Send network data over TCP port. Break buffer in smaller
@@ -8542,8 +8545,8 @@ INT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags)
 #define NET_TCP_SIZE 65536
 #endif
 
-   DWORD count;
-   INT status;
+   unsigned int count;
+   int status;
 
    /* transfer fragments until complete buffer is transferred */
 
@@ -10290,12 +10293,12 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable,
 
 int msg_compare(const void *m1, const void *m2)
 {
-   return stricmp(((MSG_LIST *) m1)->string, ((MSG_LIST *) m2)->string);
+   return strcoll(((MSG_LIST *) m1)->string, ((MSG_LIST *) m2)->string);
 }
 
 int msg_compare_reverse(const void *m1, const void *m2)
 {
-   return stricmp(((MSG_LIST *) m2)->string, ((MSG_LIST *) m1)->string);
+   return strcoll(((MSG_LIST *) m2)->string, ((MSG_LIST *) m1)->string);
 }
 
 /*------------------------------------------------------------------*/
@@ -11433,6 +11436,11 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          if (equal_ustring(getparam("sort"), loc("ID"))
              || equal_ustring(getparam("rsort"), loc("ID"))) {
             sprintf(msg_list[index].string, "%08d", message_id);
+         }
+
+         if (equal_ustring(getparam("sort"), loc("Logbook"))
+             || equal_ustring(getparam("rsort"), loc("Logbook"))) {
+            strlcpy(msg_list[index].string, msg_list[index].lbs->name, 256);
          }
       }
 
