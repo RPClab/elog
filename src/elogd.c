@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.236  2004/02/04 11:55:21  midas
+   Display logbook in 'search all' even if 'list display' is present
+
    Revision 1.235  2004/02/04 10:39:22  midas
    Added 'js=xxx.js' support
 
@@ -11716,14 +11719,20 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       if (!getcfg(lbs->name, "List display", list))     /* new 2.3.10 format */
          getcfg(lbs->name, "Display search", list);     /* old 2.3.9  format */
 
-      if (list[0])
+      if (list[0]) {
          n_attr_disp = strbreak(list, disp_attr, MAX_N_ATTR);
-      else {
+         if (search_all) {
+            for (i = n_attr_disp - 1; i > 0; i--)
+               strcpy(disp_attr[i + 1], disp_attr[i]);
+            strcpy(disp_attr[0], loc("Logbook"));
+            n_attr_disp++;
+         }
+      } else {
          if (search_all) {
             n_attr_disp = lbs->n_attr + 3;
 
-            strcpy(disp_attr[0], loc("ID"));
-            strcpy(disp_attr[1], loc("Logbook"));
+            strcpy(disp_attr[0], loc("Logbook"));
+            strcpy(disp_attr[1], loc("ID"));
             strcpy(disp_attr[2], loc("Date"));
             memcpy(disp_attr + 3, attr_list, sizeof(attr_list));
          } else {
