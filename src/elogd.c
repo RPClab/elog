@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.109  2003/05/15 11:34:42  midas
+  Fixed stricmp under linux
+
   Revision 1.108  2003/05/15 11:22:10  midas
   Get remote host from X-Forwarded-For:
 
@@ -917,6 +920,8 @@
   #ifndef O_BINARY
   #define O_BINARY 0
   #endif
+
+  #define stricmp(s1, s2) strcasecmp(s1, s2)
 
   gid_t orig_gid;      /* Original effective GID before dropping privilege */
   uid_t orig_uid;      /* Original effective UID before dropping privilege */
@@ -12804,7 +12809,11 @@ int                  net_buffer_size;
         if (strchr(str, '\r'))
           *strchr(str, '\r') = 0;
 
+#ifdef _MSC_VER
         rem_addr.S_un.S_addr = inet_addr(str);
+#else
+        rem_addr.s_addr = inet_addr(str);
+#endif
         phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
         if (phe != NULL)
           {
