@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.542  2005/01/21 22:21:24  ritt
+   Fixed compiler warning
+
    Revision 1.541  2005/01/21 22:06:02  ritt
    Implemented OR'ing of MOptions values in find page
 
@@ -14987,6 +14990,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
    filtering = FALSE;
    show_text = TRUE;
+   searched = found = FALSE;
 
    for (i = 0; i < lbs->n_attr; i++) {
       /* check if attribute filter */
@@ -15117,8 +15121,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             break;
          }
 
-
-         searched = found = 0;
+         searched = found = FALSE;
 
          for (i = 0; i < lbs->n_attr; i++) {
             
