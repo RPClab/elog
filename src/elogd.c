@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.457  2004/08/10 07:51:08  midas
+   Fixed bug in error display on too long content length
+
    Revision 1.456  2004/08/09 18:19:27  midas
    Added better error reporting
 
@@ -19983,6 +19986,10 @@ void server_loop(void)
                      } while (i > 0);
 
                      /* return error */
+                     memset(return_buffer, 0, return_buffer_size);
+                     strlen_retbuf = 0;
+                     return_length = 0;
+
                      sprintf(str,
                              loc
                              ("Error: Content length (%d) larger than maximum content length (%d)"),
