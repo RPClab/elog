@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.342  2004/06/14 11:59:28  midas
+   Added support for read password during cloning
+
    Revision 1.341  2004/06/14 11:13:19  midas
    Added error handling for cloning
 
@@ -1528,11 +1531,11 @@ void split_url(char *url, char *host, int *port, char *subdir, char *param)
 
 /*-------------------------------------------------------------------*/
 
-int retrieve_url(char *url, char **buffer)
+int retrieve_url(char *url, char **buffer, char *rpwd)
 {
    struct sockaddr_in bind_addr;
    struct hostent *phe;
-   char str[256], host[256], subdir[256], param[256];
+   char str[256], host[256], subdir[256], param[256], auth[256], pwd_enc[256];
    int port, sock, bufsize;
    INT i, n;
    fd_set readfds;
@@ -1568,6 +1571,12 @@ int retrieve_url(char *url, char **buffer)
    if (isparam("unm"))
       sprintf(str + strlen(str), "Cookie: unm=%s; upwd=%s\r\n", getparam("unm"),
               getparam("upwd"));
+
+   if (rpwd && rpwd[0]) {
+      sprintf(auth, "anybody:%s", rpwd);
+      base64_encode(auth, pwd_enc);
+      sprintf(str + strlen(str), "Authorization: Basic %s\r\n", pwd_enc);
+   }
 
    /* add host (RFC2616, Sec. 14) */
    sprintf(str + strlen(str), "Host: %s:%d\r\n", host, port);
@@ -9274,7 +9283,7 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
 
    text = NULL;
    error_str[0] = 0;
-   if (retrieve_url(url, &text) < 0) {
+   if (retrieve_url(url, &text, NULL) < 0) {
       sprintf(error_str, loc("Cannot connect to remote server \"%s\""), host);
       return -1;
    }
@@ -9704,7 +9713,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
    combine_url(lbs, url, "", str, sizeof(str));
    sprintf(str + strlen(str), "%d?cmd=%s", message_id, loc("Download"));
 
-   retrieve_url(str, &message);
+   retrieve_url(str, &message, NULL);
    p = strstr(message, "\r\n\r\n");
    if (p == NULL) {
       if (isparam("debug"))
@@ -9795,7 +9804,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
             str2[13] = '/';
             strlcat(str, str2, sizeof(str));
 
-            size = retrieve_url(str, &message);
+            size = retrieve_url(str, &message, NULL);
             p = strstr(message, "\r\n\r\n");
             if (p == NULL) {
                free(message);
@@ -9970,20 +9979,49 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
 
 void receive_config(LOGBOOK * lbs, char *server, char *error_str)
 {
-   char str[256], *buffer, *p;
+   char str[256], pwd[256], *buffer, *p;
+   int status;
 
-   error_str[0] = 0;
+   error_str[0] = pwd[0] = 0;
 
-   combine_url(lbs, server, "", str, sizeof(str));
-   if (lbs == NULL)
-      strcat(str, "?cmd=GetConfig"); // request complete config file
-   else
-      strcat(str, "?cmd=Download");  // request config section of logbook
-   if (retrieve_url(str, &buffer) < 0) {
-      *strchr(str, '?') = 0;
-      sprintf(error_str, "Cannot contact elogd server at http://%s", str);
-      return;
-   }
+   do {
+
+      combine_url(lbs, server, "", str, sizeof(str));
+      if (lbs == NULL)
+         strcat(str, "?cmd=GetConfig"); // request complete config file
+      else
+         strcat(str, "?cmd=Download");  // request config section of logbook
+      
+      if (retrieve_url(str, &buffer, pwd) < 0) {
+         *strchr(str, '?') = 0;
+         sprintf(error_str, "Cannot contact elogd server at http://%s", str);
+         return;
+      }
+
+      /* evaluate status */
+      p = strchr(buffer, ' ');
+      if (p == NULL) {
+         free(buffer);
+         *strchr(str, '?') = 0;
+         sprintf(error_str, "Received invalid response from elogd server at http://%s", str);
+         return;
+      }
+      p++;
+      status = atoi(p);
+      if (status == 401) {
+         free(buffer);
+         printf("Please enter password to access remote elogd server: ");
+         fgets(pwd, sizeof(pwd), stdin);
+         while (pwd[strlen(pwd)-1] == '\n' || pwd[strlen(pwd)-1] == '\r')
+            pwd[strlen(pwd)-1] = 0;
+      } else if (status != 200) {
+         free(buffer);
+         *strchr(str, '?') = 0;
+         sprintf(error_str, "Received invalid response from elogd server at http://%s", str);
+         return;
+      }
+
+   } while (status != 200);
 
    p = strstr(buffer, "\r\n\r\n");
    if (p == NULL) {
@@ -10606,7 +10644,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 
                      all_identical = FALSE;
                      if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0) {
-                        retrieve_url(url, &buffer);
+                        retrieve_url(url, &buffer, NULL);
 
                         if (strstr(buffer, "Location: ")) {
                            if (!bcron)
