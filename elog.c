@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.9  2002/08/02 11:01:34  midas
+  Added -r for replies
+
   Revision 1.8  2002/07/23 11:31:08  midas
   Fixed problems with password cookie
 
@@ -114,6 +117,7 @@ char request[600000], response[10000], content[600000];
 INT submit_elog(char *host, int port, char *subdir, char *experiment, 
                 char *passwd,
                 char *uname, char *upwd,
+                int  reply,
                 char attrib_name[MAX_N_ATTR][NAME_LENGTH],
                 char attrib[MAX_N_ATTR][NAME_LENGTH],
                 int  n_attr,
@@ -134,7 +138,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
     char   *passwd          Write password
     char   *uname           User name
     char   *upwd            User password
-    int    run              Run number
+    int    reply            Reply to existing message
     char   *attrib_name     Attribute names
     char   *attrib          Attribute values
     char   *text            Message text
@@ -235,6 +239,10 @@ char                 host_name[256], boundary[80], str[80], *p;
     sprintf(content+strlen(content), 
             "%s\r\nContent-Disposition: form-data; name=\"exp\"\r\n\r\n%s\r\n", boundary, experiment);
   
+  if (reply)
+    sprintf(content+strlen(content), 
+            "%s\r\nContent-Disposition: form-data; name=\"orig\"\r\n\r\n%d\r\n", boundary, reply);
+
   for (i=0 ; i<n_attr ; i++)
     sprintf(content+strlen(content), 
             "%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n", boundary, attrib_name[i], attrib[i]);
@@ -332,13 +340,35 @@ char                 host_name[256], boundary[80], str[80], *p;
 
   /* check response status */
   if (strstr(response, "302 Found"))
-    printf("Message successfully transmitted\n");
+    {
+    if (strstr(response, "Location:"))
+      {
+      strncpy(str, strstr(response, "Location:")+10, sizeof(str));
+      if (strchr(str, '?'))
+        *strchr(str, '?') = 0;
+      if (strchr(str, '\n'))
+        *strchr(str, '\n') = 0;
+      if (strchr(str, '\r'))
+        *strchr(str, '\r') = 0;
+
+      printf("Message successfully transmitted, ID=%s\n", str);
+      }  
+    else
+      printf("Message successfully transmitted\n");
+    }
   else if (strstr(response, "Logbook Selection"))
-    printf("No logbook specified\n\n");
+    printf("No logbook specified\n");
   else if (strstr(response, "enter password"))
     printf("Missing or invalid password\n");
   else if (strstr(response, "login"))
     printf("Missing or invalid user name/password\n");
+  else if (strstr(response, "Error: Attribute"))
+    {
+    strncpy(str, strstr(response, "Error: Attribute")+20, sizeof(str));
+    if (strchr(str, '<'))
+      *strchr(str, '<') = 0;
+    printf("Missing required attribute \"%s\"\n", str);
+    }
   else
     printf("Error transmitting message\n");
 
@@ -353,11 +383,11 @@ char      str[1000], text[TEXT_SIZE], uname[80], upwd[80];
 char      host_name[256], logbook[32], textfile[256], password[80], subdir[256];
 char      *buffer[MAX_ATTACHMENTS], attachment[MAX_ATTACHMENTS][256];
 INT       att_size[MAX_ATTACHMENTS];
-INT       i, n, fh, n_att, n_attr, size, port;
+INT       i, n, fh, n_att, n_attr, size, port, reply;
 char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH]; 
 
   text[0] = textfile[0] = uname[0] = upwd[0] = 0;
-  host_name[0] = logbook[0] = password[0] = subdir[0] = n_att = n_attr = 0;
+  host_name[0] = logbook[0] = password[0] = subdir[0] = n_att = n_attr = reply = 0;
   port = 80;
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     {
@@ -410,6 +440,8 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
           }
         else if (argv[i][1] == 'f')
           strcpy(attachment[n_att++], argv[++i]);
+        else if (argv[i][1] == 'r')
+          reply = atoi(argv[++i]);
         else if (argv[i][1] == 'm')
           strcpy(textfile, argv[++i]);
         else
@@ -423,6 +455,7 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
           printf("           [-u username password]   user name and password\n");
           printf("           [-f <attachment>]        (up to %d times)\n", MAX_ATTACHMENTS);
           printf("           -a <attribute>=<value>   (up to %d times)\n", MAX_N_ATTR);
+          printf("           [-r <id>]                Reply to existing message\n");
           printf("           -m <textfile>] | <text>\n");
           printf("\nArguments with blanks must be enclosed in quotes\n");
           printf("The elog message can either be submitted on the command line\n");
@@ -527,7 +560,7 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 
   /* now submit message */
   submit_elog(host_name, port, subdir, logbook, password, 
-              uname, upwd,
+              uname, upwd, reply,
               attr_name, attrib, n_attr, text,
               attachment, buffer, att_size); 
 
