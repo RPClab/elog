@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.81  2002/09/24 14:28:11  midas
+  'Show last xxx' finished
+
   Revision 2.80  2002/09/23 07:18:05  midas
   'Show last' xxx half finished
 
@@ -707,7 +710,7 @@ char *pd, *p, str[256];
   p  = ps;
   while (*p)
     {
-    if (strchr(" %&=#", *p))
+    if (strchr(" %&=#?", *p))
       {
       sprintf(pd, "%%%02X", *p);
       pd += 3;
@@ -1329,7 +1332,7 @@ static char old_language[256];
       return orig;
       }
 
-  printf("Language error: string \"%s\" not found in \"%s\'\n", orig, file_name);
+  printf("Language error: string \"%s\" not found for language \"%s\"\n", orig, language);
 
   return orig;
 }
@@ -3008,6 +3011,7 @@ void initparam()
   memset(_param, 0, sizeof(_param));
   memset(_value, 0, sizeof(_value));
   _text[0] = 0;
+  _cmdline[0] = 0;
 }
 
 int setparam(char *param, char *value)
@@ -4680,7 +4684,7 @@ char   str[256], mode[256];
 
   rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
 
-  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Search"));
+  rsprintf("<input type=submit value=\"%s\">\n", loc("Search"));
   rsprintf("<input type=reset value=\"%s\">\n", loc("Reset Form"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
   rsprintf("</td></tr></table></td></tr>\n\n");
@@ -5402,7 +5406,7 @@ int  i;
     rsprintf("<input type=checkbox name=email_notify value=all></td></tr>\n");
 
   rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
-  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change Password"));
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change password"));
 
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Remove user"));
 
@@ -5489,8 +5493,17 @@ char   str[256], in_reply_to[80], reply_to[256];
   if (getparam("confirm") && *getparam("confirm") &&
       strcmp(getparam("confirm"), loc("No")) == 0)
     {
-    sprintf(str, "%d", message_id);
-    redirect(str);
+    if (message_id)
+      {
+      sprintf(str, "%d", message_id);
+      redirect(str);
+      }
+    else
+      {
+      strcpy(str, getparam("lastcmd"));
+      url_decode(str);
+      redirect(str);
+      }
     return;
     }
 
@@ -5537,6 +5550,22 @@ char   str[256], in_reply_to[80], reply_to[256];
     }
   else
     {
+    /* check if at least one message is selected */
+    if (!message_id)
+      {
+      for (i=0 ; i<atoi(getparam("nsel")) ; i++)
+        {
+        sprintf(str, "s%d", i);
+        if (isparam(str))
+          break;
+        }
+      if (i == atoi(getparam("nsel")))
+        {
+        show_error(loc("No message selected for deletion"));
+        return;
+        }
+      }
+
     /* header */
     sprintf(str, "%d", message_id);
     show_standard_header("Delete ELog entry", str);
@@ -5558,8 +5587,11 @@ char   str[256], in_reply_to[80], reply_to[256];
       rsprintf("<tr><td bgcolor=%s align=center>\n", gt("Cell BGColor"));
       rsprintf("<input type=hidden name=nsel value=%s>\n", getparam("nsel"));
 
-      strcpy(str, getparam("cmdline"));
-      rsprintf("<input type=hidden name=lastcmd value=%s>\n", str);
+      if (isparam("lastcmd"))
+        {
+        strcpy(str, getparam("lastcmd"));
+        rsprintf("<input type=hidden name=lastcmd value=\"%s\">\n", str);
+        }
 
       for (i=reply=0 ; i<atoi(getparam("nsel")) ; i++)
         {
@@ -6295,14 +6327,14 @@ char ref[256];
   rsprintf("<font size=1 face=verdana,arial,helvetica,sans-serif><b>");
 
   if (n_msg > n_page)
-    rsprintf("Goto page \n");
+    rsprintf("%s \n", loc("Goto page"));
 
   if (page_n > 1)
     {
     sprintf(ref, "page%d", page_n - 1);
     build_ref(ref);
 
-    rsprintf("<a href=\"%s\">Previous</a>&nbsp;&nbsp;", ref);
+    rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;", ref, loc("Previous"));
     }
 
   if (page_n && n_msg > n_page)
@@ -6334,7 +6366,7 @@ char ref[256];
     sprintf(ref, "page%d", page_n + 1);
     build_ref(ref);
 
-    rsprintf("<a href=\"%s\">Next</a>&nbsp;&nbsp;", ref);
+    rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;", ref, loc("Next"));
     }
 
   if (page_n != -1 && n_page < n_msg)
@@ -6342,7 +6374,7 @@ char ref[256];
     sprintf(ref, "page");
     build_ref(ref);
 
-    rsprintf("<a href=\"%s\">All</a>\n", ref);
+    rsprintf("<a href=\"%s\">%s</a>\n", ref, loc("All"));
     }
 
   rsprintf("</td><td bgcolor=%s align=right>\n", gt("Menu1 BGColor"));
@@ -6351,7 +6383,7 @@ char ref[256];
     {
     i = atoi(getparam("last"));
 
-    rsprintf("<b>%s</b>&nbsp;\n", loc("Show last"));
+    rsprintf("<input type=submit value=\"%s\">&nbsp;\n", loc("Show last"));
 
     rsprintf("<select name=last onChange=\"document.form1.submit()\">\n");
 
@@ -6383,8 +6415,6 @@ char ref[256];
       rsprintf("<option value=364>%s\n", loc("Year"));
     
     rsprintf("</select>\n");
-
-    rsprintf("<input type=submit value=%s>\n", loc("Go"));
     }
 
   rsprintf("</b></font></td></tr></table></td></tr></table></td></tr>\n\n");
@@ -6424,7 +6454,7 @@ char lbk_list[MAX_N_LIST][NAME_LENGTH];
   if (!getcfg(lbs->name, "Menu commands", str) ||
       strstr(str, loc("Delete")))
     {
-    rsprintf("<input type=submit name=cmd value=\"Delete\">\n");
+    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Delete"));
     }
 
   if (getcfg(lbs->name, "Menu commands", str) &&
@@ -6532,6 +6562,25 @@ MSG_LIST *msg_list;
       *pt1 = 0;
       }
     redirect(_cmdline);
+    return;
+    }
+
+  /* redirect go command */
+  if (isparam("lastcmd"))  //## and not copy to / move to / delete ...
+    {
+    strcpy(str, getparam("lastcmd"));
+    url_decode(str);
+
+    /* strip previous "last" */
+    if (strstr(str, "last="))
+      *(strstr(str, "last=")-1) = 0;
+    
+    /* add new "last" */
+    if (strchr(str, '?'))
+      sprintf(str+strlen(str), "&last=%s", getparam("last"));
+    else
+      sprintf(str+strlen(str), "?last=%s", getparam("last"));
+    redirect(str);
     return;
     }
 
@@ -6975,7 +7024,10 @@ MSG_LIST *msg_list;
 
     /* store current command line as hidden parameter for page navigation */
     if (str[0])
-      rsprintf("<input type=hidden name=cmdline value=\"%s\">\n", str);
+      {
+      url_encode(str);
+      rsprintf("<input type=hidden name=lastcmd value=\"%s\">\n", str);
+      }
 
     if (!getcfg(lbs->name, "Guest Find menu commands", menu_str) ||
         *getparam("unm") != 0)
@@ -6984,35 +7036,24 @@ MSG_LIST *msg_list;
     /* default menu commands */
     if (menu_str[0] == 0)
       {
-      strcpy(menu_str, loc("New"));
-      strcat(menu_str, ", ");
-      strcat(menu_str, loc("Find"));
-      strcat(menu_str, ", ");
-      strcat(menu_str, loc("Select"));
-      strcat(menu_str, ", ");
+      strcpy(menu_str, "New, Find, Select, ");
 
       if (getcfg(lbs->name, "Password file", str))
         {
         if (getcfg(lbs->name, "Admin user", str) && 
             strstr(str, getparam("unm")) != 0)
           {
-          strcat(menu_str, loc("Admin"));
+          strcat(menu_str, "Admin");
           strcat(menu_str, ", ");
           }
-        strcat(menu_str, loc("Config"));
-        strcat(menu_str, ", ");
-        strcat(menu_str, loc("Logout"));
-        strcat(menu_str, ", ");
+        strcat(menu_str, "Config, Logout, ");
         }
       else
         {
-        strcat(menu_str, loc("Config"));
-        strcat(menu_str, ", ");
+        strcat(menu_str, "Config, ");
         }
       
-      strcat(menu_str, loc("Last x"));
-      strcat(menu_str, ", ");
-      strcat(menu_str, loc("Help"));
+      strcat(menu_str, "Last x, Help");
       }
 
     n = strbreak(menu_str, menu_item, MAX_N_LIST);
@@ -7061,7 +7102,7 @@ MSG_LIST *msg_list;
             rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n*2, mode, str);
             }
           }
-        else if (equal_ustring(menu_item[i], loc("Select")))
+        else if (equal_ustring(menu_item[i], "Select"))
           {
           strcpy(str, getparam("cmdline"));
           if (atoi(getparam("select")) == 1)
@@ -7893,7 +7934,9 @@ LOGBOOK *lbs_dest;
   rsprintf("<tr><td bgcolor=#80FF80 align=center><b>");
   if (n>1)
     {
-    if (move)
+    if (n_done == 0)
+      rsprintf(loc("No message selected"));
+    else if (move)
       rsprintf(loc("%d messages moved successfully from \"%s\" to \"%s\""), n_done, lbs->name, lbs_dest->name);
     else
       rsprintf(loc("%d messages copied successfully from \"%s\" to \"%s\""), n_done, lbs->name, lbs_dest->name);
@@ -7911,8 +7954,13 @@ LOGBOOK *lbs_dest;
     rsprintf("<tr><td bgcolor=%s align=center>%s <a href=\"../%s/%d\">%s</td></tr>\n",
               gt("Cell BGColor"), loc("Go to"), lbs->name, source_id, lbs->name);
   else
+    {
+    strcpy(str, getparam("lastcmd"));
+    url_decode(str);
+
     rsprintf("<tr><td bgcolor=%s align=center>%s <a href=\"../%s/%s\">%s</td></tr>\n",
-              gt("Cell BGColor"), loc("Go to"), lbs->name, getparam("cmdline"), lbs->name);
+              gt("Cell BGColor"), loc("Go to"), lbs->name, str, lbs->name);
+    }
 
   rsprintf("<tr><td bgcolor=%s align=center>%s <a href=\"../%s/\">%s</td></tr>\n",
             gt("Cell BGColor"), loc("Go to"), lbs_dest->name, lbs_dest->name);
@@ -7927,7 +7975,7 @@ LOGBOOK *lbs_dest;
 
 void show_elog_page(LOGBOOK *lbs, char *dec_path, char *command)
 {
-int    size, i, j, len, n, n_log, status, fh, length, message_error, index;
+int    size, i, j, n, n_log, status, fh, length, message_error, index;
 int    message_id, orig_message_id;
 char   str[1000], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char   date[80], text[TEXT_SIZE], menu_str[1000], other_str[1000], cmd[256],
@@ -7949,120 +7997,87 @@ BOOL   first;
   /* default menu commands */
   if (menu_str[0] == 0)
     {
-    strcpy(menu_str, loc("Back"));
-    strcat(menu_str, ", ");
-    strcat(menu_str, loc("New"));
-    strcat(menu_str, ", ");
-    strcat(menu_str, loc("Edit"));
-    strcat(menu_str, ", ");
-    strcat(menu_str, loc("Delete"));
-    strcat(menu_str, ", ");
-    strcat(menu_str, loc("Reply"));
-    strcat(menu_str, ", ");
-    strcat(menu_str, loc("Find"));
-    strcat(menu_str, ", ");
+    strcpy(menu_str, "Back, New, Edit, Delete, Reply, Find, ");
 
     if (getcfg(lbs->name, "Password file", str))
       {
       if (getcfg(lbs->name, "Admin user", str) && 
           strstr(str, getparam("unm")) != 0)
         {
-        strcat(menu_str, loc("Admin"));
-        strcat(menu_str, ", ");
+        strcat(menu_str, "Admin, ");
         }
-      strcat(menu_str, loc("Config"));
-      strcat(menu_str, ", ");
-      strcat(menu_str, loc("Logout"));
-      strcat(menu_str, ", ");
+      strcat(menu_str, "Config, Logout, ");
       }
     else
       {
-      strcat(menu_str, loc("Config"));
-      strcat(menu_str, ", ");
+      strcat(menu_str, "Config, ");
       }
 
-    strcat(menu_str, loc("Help"));
+    strcat(menu_str, "Help");
     }
   else
     {
-    /* localize menu commands */
+    /* check for admin command */
     n = strbreak(menu_str, menu_item, MAX_N_LIST);
     menu_str[0] = 0;
     admin_user[0] = 0;
     getcfg(lbs->name, "Admin user", admin_user);
     for (i=0 ; i<n ; i++)
       {
-      if (strcmp(menu_item[i], loc("Admin")) == 0)
+      if (strcmp(menu_item[i], "Admin") == 0)
         {
         if (strstr(admin_user, getparam("unm")) == NULL)
           continue;
         }
-      strcat(menu_str, loc(menu_item[i]));
+      strcat(menu_str, menu_item[i]);
       if (i<n-1)
         strcat(menu_str, ", ");
       }
     }
 
-  strcpy(other_str, loc("Submit"));
-  strcat(other_str, " ");
-  strcat(other_str, loc("Back"));
-  strcat(other_str, " ");
-  strcat(other_str, loc("Search"));
-  strcat(other_str, " ");
-  strcat(other_str, loc("Save"));
-  strcat(other_str, " ");
-  strcat(other_str, loc("Download"));
-  strcat(other_str, " ");
-  strcat(other_str, loc("Cancel"));
-  strcat(other_str, " ");
-  strcat(other_str, loc("First"));
-  strcat(other_str, " ");
-  strcat(other_str, loc("Last"));
-  strcat(other_str, " ");
-  strcat(other_str, loc("Previous"));
-  strcat(other_str, " ");
-  strcat(other_str, loc("Next"));
-  strcat(other_str, " ");
-  strcat(other_str, loc("Select"));
-
-  /* add non-localized submit for elog utility */
-  strcat(other_str, " ");
-  strcat(other_str, "Submit");
+  strcpy(other_str, "Submit, Back, Search, Save, Download, Cancel, First, Last, Previous, Next, Select, ");
 
   /* admin commands */
   if (getcfg(lbs->name, "Admin user", str) && 
       *getparam("unm") &&
       strstr(str, getparam("unm")) != 0)
     {
-    strcat(other_str, loc("Remove user"));
-    strcat(other_str, " ");
-    strcat(other_str, loc("New user"));
-    strcat(other_str, " ");
-    strcat(other_str, "Activate");
-    strcat(other_str, " ");
+    strcat(other_str, "Remove user, New user, Activate, ");
     }
   else
     if (getcfg(lbs->name, "Self register", str) &&
         atoi(str) > 0)
       {
-      strcat(other_str, loc("Remove user"));
-      strcat(other_str, " ");
-      strcat(other_str, loc("New user"));
-      strcat(other_str, " ");
+      strcat(other_str, "Remove user, New user, ");
       }
 
   /* allow change password if "config" possible */
   if (equal_ustring(command, loc("Change password")) &&
-      strstr(menu_str, loc("Config")))
+      strstr(menu_str, "Config"))
     {
     }
-  /* check if command is present in the menu list */
-  else if (command[0] && strstr(menu_str, command) == NULL &&
-      strstr(other_str, command) == NULL)
+  /* check if command is present in the menu list, exclude non-localized submit for elog */
+  else if (command[0] && !equal_ustring(command, "Submit"))
     {
-    sprintf(str, loc("Error: Command \"<b>%s</b>\" not allowed"), command);
-    show_error(str);
-    return;
+    n = strbreak(menu_str, menu_item, MAX_N_LIST);
+    for (i=0 ; i<n ; i++)
+      if (equal_ustring(command, loc(menu_item[i])))
+        break;
+
+    if (i==n)
+      {
+      n = strbreak(other_str, menu_item, MAX_N_LIST);
+      for (i=0 ; i<n ; i++)
+        if (equal_ustring(command, loc(menu_item[i])))
+          break;
+    
+      if (i==n)
+        {
+        sprintf(str, loc("Error: Command \"<b>%s</b>\" not allowed"), command);
+        show_error(str);
+        return;
+        }
+      }
     }
 
   /*---- check next/previous message -------------------------------*/
@@ -8232,7 +8247,7 @@ BOOL   first;
     for (i=0 ; i<n ; i++)
       {
       /* strip "logbook" from "move to / copy to" commands */
-      strcpy(cmd, menu_item[i]);
+      strcpy(cmd, loc(menu_item[i]));
       if (strchr(cmd, '\"'))
         *strchr(cmd, '\"') = 0;
 
@@ -8292,43 +8307,27 @@ BOOL   first;
     for (i=0 ; i<n ; i++)
       {
       /* display menu item */
+      strcpy(cmd, menu_item[i]);
 
-      /* strip "logbook" from "move to / copy to" commands */
-      strcpy(cmd, loc(menu_item[i]));
-      if (strchr(cmd, '\"'))
-        *strchr(cmd, '\"') = 0;
-
-      /* strip trailing blanks */
-      while (cmd[strlen(cmd)-1] == ' ')
-        cmd[strlen(cmd)-1] = 0;
-
-      if (equal_ustring(cmd, loc("Copy to")) ||
-          equal_ustring(cmd, loc("Move to")))
+      if (equal_ustring(cmd, "Copy to") ||
+          equal_ustring(cmd, "Move to"))
         {
-        if (equal_ustring(cmd, loc("Copy to")))
-          len = strlen(loc("Copy to"));
-        else
-          len = strlen(loc("Move to"));
-
-        /* if logbook supplied, put a link to that logbook */
-        if ((int)strlen(menu_item[i]) > len)
+        if (getcfg(lbs->name, cmd, str))
           {
-          /* extract logbook */
-          if (menu_item[i][len+1] == '"')
-            strcpy(ref, menu_item[i]+len+2);
-          else
-            strcpy(ref, menu_item[i]+len+1);
-          if (strchr(ref, '"'))
-            *strchr(ref, '"') = 0;
+          n_log = strbreak(str, lbk_list, MAX_N_LIST);
 
-          url_encode(ref);
+          for (j=0 ; j<n_log ; j++)
+            {
+            strcpy(ref, lbk_list[j]);
+            url_encode(ref);
 
-          if (equal_ustring(cmd, loc("Copy to")))
-            rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&destc=%s\">%s</a>&nbsp|\n",
-                      lbs->name_enc, message_id, loc("Copy to"), ref, menu_item[i]);
-          else
-            rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&destm=%s\">%s</a>&nbsp|\n",
-                      lbs->name_enc, message_id, loc("Move to"), ref, menu_item[i]);
+            if (equal_ustring(cmd, loc("Copy to")))
+              rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&destc=%s\">%s \"%s\"</a>&nbsp|\n",
+                        lbs->name_enc, message_id, loc(cmd), ref, loc(cmd), lbk_list[j]);
+            else
+              rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&destm=%s\">%s \"%s\"</a>&nbsp|\n",
+                        lbs->name_enc, message_id, loc(cmd), ref, loc(cmd), lbk_list[j]);
+            }
           }
         else
           {
@@ -8346,24 +8345,24 @@ BOOL   first;
 
             strcpy(ref, str);
             url_encode(ref);
-            if (equal_ustring(menu_item[i], loc("Copy to")))
+            if (equal_ustring(cmd, "Copy to"))
               rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&destc=%s\">%s \"%s\"</a>&nbsp|\n",
-                        lbs->name_enc, message_id, loc("Copy to"), ref, loc("Copy to"), str);
+                        lbs->name_enc, message_id, loc(cmd), ref, loc(cmd), str);
             else
               rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&destm=%s\">%s \"%s\"</a>&nbsp|\n",
-                        lbs->name_enc, message_id, loc("Move to"), ref, loc("Move to"), str);
+                        lbs->name_enc, message_id, loc(cmd), ref, loc(cmd), str);
             }
           }
         }
       else
         {
-        strcpy(str, menu_item[i]);
+        strcpy(str, loc(menu_item[i]));
         url_encode(str);
 
         if (i < n-1)
-          rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;|\n", message_id, str, menu_item[i]);
+          rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;|\n", message_id, str, loc(menu_item[i]));
         else
-          rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;\n", message_id, str, menu_item[i]);
+          rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;\n", message_id, str, loc(menu_item[i]));
         }
       }
 
@@ -9665,6 +9664,13 @@ FILE    *f;
 
   if (equal_ustring(command, loc("Find")))
     {
+    /* stip message id */
+    if (dec_path[0])
+      {
+      sprintf(str, "../%s/?cmd=%s", lbs->name_enc, loc("Find"));
+      redirect(str);
+      return;
+      }
     show_elog_find(lbs);
     return;
     }
@@ -9712,7 +9718,7 @@ FILE    *f;
     return;
     }
 
-  if (equal_ustring(command, loc("Change Password")) ||
+  if (equal_ustring(command, loc("Change password")) ||
       (isparam("newpwd") && !equal_ustring(command, loc("Cancel")) && !equal_ustring(command, loc("Save"))))
     {
     show_change_pwd_page(lbs);
@@ -9741,7 +9747,7 @@ FILE    *f;
     return;
     }
 
-  if (equal_ustring(command, loc("Activate")))
+  if (equal_ustring(command, "Activate"))
     {
     if (!save_user_config(lbs, getparam("new_user_name"), TRUE, TRUE))
       return;
