@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.60  2002/08/06 10:50:53  midas
+  Added 'guest find menu commands'
+
   Revision 2.59  2002/08/06 10:23:11  midas
   Added 'entry date' to substitution list
 
@@ -281,7 +284,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.0.6"
+#define VERSION "2.1.0"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -6296,113 +6299,82 @@ MSG_LIST *msg_list;
 
     rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
 
-    if (getcfg(lbs->name, "Find menu commands", menu_str))
+    if (!getcfg(lbs->name, "Guest Find menu commands", menu_str) ||
+        *getparam("unm") != 0)
+      getcfg(lbs->name, "Find menu commands", menu_str);
+
+    /* default menu commands */
+    if (menu_str[0] == 0)
       {
-      n = strbreak(menu_str, menu_item, MAX_N_LIST);
+      strcpy(menu_str, loc("Last x"));
+      strcat(menu_str, ", ");
+      strcat(menu_str, loc("Find"));
+      strcat(menu_str, ", ");
+      strcat(menu_str, loc("Back"));
+      strcat(menu_str, ", ");
+      strcat(menu_str, loc("Help"));
+      }
 
-      if (atoi(gt("Use buttons")) == 1)
+    n = strbreak(menu_str, menu_item, MAX_N_LIST);
+
+    if (atoi(gt("Use buttons")) == 1)
+      {
+      for (i=0 ; i<n ; i++)
         {
-        for (i=0 ; i<n ; i++)
+        if (equal_ustring(menu_item[i], "Last x"))
           {
-          if (equal_ustring(menu_item[i], "Last x"))
+          rsprintf("<input type=hidden name=mode value=\"%s\">\n", mode);
+
+          if (past_n)
             {
-            rsprintf("<input type=hidden name=mode value=\"%s\">\n", mode);
-
-            if (past_n)
-              {
-              sprintf(str, loc("Last %d days"), past_n*2);
-              rsprintf("<input type=submit name=past value=\"%s\">\n", str);
-              }
-
-            if (last_n)
-              {
-              sprintf(str, loc("Last %d entries"), last_n*2);
-              rsprintf("<input type=submit name=last value=\"%s\">\n", str);
-              }
-
+            sprintf(str, loc("Last %d days"), past_n*2);
+            rsprintf("<input type=submit name=past value=\"%s\">\n", str);
             }
-          else
-            rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc(menu_item[i]));
+
+          if (last_n)
+            {
+            sprintf(str, loc("Last %d entries"), last_n*2);
+            rsprintf("<input type=submit name=last value=\"%s\">\n", str);
+            }
+
           }
-        }
-      else
-        {
-        rsprintf("<small>\n");
-
-        for (i=0 ; i<n ; i++)
-          {
-          if (equal_ustring(menu_item[i], "Last x"))
-            {
-            if (past_n)
-              {
-              sprintf(str, loc("Last %d days"), past_n*2);
-              rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n*2, mode, str);
-              }
-
-            if (last_n)
-              {
-              sprintf(str, loc("Last %d entries"), last_n*2);
-              rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n*2, mode, str);
-              }
-            }
-          else
-            {
-            strcpy(str, loc(menu_item[i]));
-            url_encode(str);
-
-            if (i < n-1)
-              rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;|\n", str, loc(menu_item[i]));
-            else
-              rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;\n", str, loc(menu_item[i]));
-            }
-          }
-
-        rsprintf("</small>\n");
+        else
+          rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc(menu_item[i]));
         }
       }
     else
       {
-      if (atoi(gt("Use buttons")) == 1)
+      rsprintf("<small>\n");
+
+      for (i=0 ; i<n ; i++)
         {
-        rsprintf("<input type=hidden name=mode value=\"%s\">\n", mode);
-
-        if (past_n)
+        if (equal_ustring(menu_item[i], "Last x"))
           {
-          sprintf(str, loc("Last %d days"), past_n*2);
-          rsprintf("<input type=submit name=past value=\"%s\">\n", str);
-          }
+          if (past_n)
+            {
+            sprintf(str, loc("Last %d days"), past_n*2);
+            rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n*2, mode, str);
+            }
 
-        if (last_n)
+          if (last_n)
+            {
+            sprintf(str, loc("Last %d entries"), last_n*2);
+            rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n*2, mode, str);
+            }
+          }
+        else
           {
-          sprintf(str, loc("Last %d entries"), last_n*2);
-          rsprintf("<input type=submit name=last value=\"%s\">\n", str);
+          strcpy(str, loc(menu_item[i]));
+          url_encode(str);
+
+          if (i < n-1)
+            rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;|\n", str, loc(menu_item[i]));
+          else
+            rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;\n", str, loc(menu_item[i]));
           }
-
-        rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Find"));
-        rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
-        }
-      else
-        {
-        rsprintf("<small>\n");
-
-        if (past_n)
-          {
-          sprintf(str, loc("Last %d days"), past_n*2);
-          rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n*2, mode, str);
-          }
-
-        if (last_n)
-          {
-          sprintf(str, loc("Last %d entries"), last_n*2);
-          rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n*2, mode, str);
-          }
-
-        rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;|\n", loc("Find"), loc("Find"));
-        rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;\n", loc("Back"), loc("Back"));
-
-        rsprintf("</small>\n");
         }
 
+      rsprintf("</small>\n");
       }
 
     rsprintf("</td></tr></table></td></tr>\n\n");
