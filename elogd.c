@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.86  2002/09/30 07:07:02  midas
+  Fixed typo
+
   Revision 2.85  2002/09/26 06:57:14  midas
   Check reverse sort box if 'reverse sort = 1'
 
@@ -6424,9 +6427,9 @@ char ref[256];
     else
       rsprintf("<option value=92>3 %s\n", loc("Months"));
     if (i == 182)
-      rsprintf("<option selected value=182>6 %s\n", loc("Month"));
+      rsprintf("<option selected value=182>6 %s\n", loc("Months"));
     else
-      rsprintf("<option value=182>6 %s\n", loc("Month"));
+      rsprintf("<option value=182>6 %s\n", loc("Months"));
     if (i == 364)
       rsprintf("<option selected value=364>%s\n", loc("Year"));
     else
