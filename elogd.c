@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.46  2002/07/23 13:50:11  midas
+  Improved speed for threaded display
+
   Revision 2.45  2002/07/23 11:31:33  midas
   Store encoded user name in 'new' page for expired cookies
 
@@ -347,6 +350,7 @@ char _text[TEXT_SIZE];
 char *_attachment_buffer[MAX_ATTACHMENTS];
 INT  _attachment_size[MAX_ATTACHMENTS];
 struct in_addr rem_addr;
+char rem_host[256];
 INT  _sock;
 BOOL verbose, use_keepalive;
 
@@ -450,11 +454,11 @@ typedef struct {
   char      data_dir[256];
   EL_INDEX  *el_index;
   int       *n_el_index;
+  int       n_attr;
 } LOGBOOK;
 
 LOGBOOK *lb_list = NULL;
 
-int scan_attributes(char *logbook);
 void show_error(char *error);
 void show_http_header();
 
@@ -2311,15 +2315,11 @@ void remove_reference(LOGBOOK *lbs, int message_id, int remove_id, BOOL reply_to
 char date[80], attr[MAX_N_ATTR][NAME_LENGTH], enc[80], in_reply_to[80], reply_to[256],
      att[MAX_ATTACHMENTS][256];
 char *p, *ps, message[TEXT_SIZE+1000];
-int  size, n_attr, status;
-
-  printf("##Remove %d in %s from %d\n", remove_id, reply_to_flag ? "reply_to" : "in_reply_to", message_id);
-
-  n_attr = scan_attributes(lbs->name);
+int  size, status;
 
   /* retrieve original message */
   size = sizeof(message);
-  status = el_retrieve(lbs, message_id, date, attr_list, attr, n_attr,
+  status = el_retrieve(lbs, message_id, date, attr_list, attr, lbs->n_attr,
                        message, &size, in_reply_to, reply_to, att, enc);
   if (status != EL_SUCCESS)
     return;
@@ -2352,7 +2352,7 @@ int  size, n_attr, status;
   memset(att, 0, sizeof(att));
 
   /* write modified message */
-  el_submit(lbs, message_id, date, attr_list, attr, n_attr,
+  el_submit(lbs, message_id, date, attr_list, attr, lbs->n_attr,
             message, in_reply_to, reply_to, enc, att, NULL, NULL);
 }
 
@@ -3436,10 +3436,9 @@ int            i;
 char           str[256], format[256];
 time_t         now;
 struct tm      *ts;
-struct hostent *phe;
 
   /* copy attribute list */
-  for (i=0 ; i<scan_attributes(lbs->name) ; i++)
+  for (i=0 ; i<lbs->n_attr ; i++)
     {
     strcpy(list[i], attr_list[i]);
     if (attrib)
@@ -3450,14 +3449,7 @@ struct hostent *phe;
 
   /* add remote host */
   strcpy(list[i], "remote_host");
-
-  phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
-  if (phe != NULL)
-    strcpy(str, phe->h_name);
-  else
-    strcpy(str, (char *)inet_ntoa(rem_addr));
-
-  strcpy(value[i++], str);
+  strcpy(value[i++], rem_host);
 
   /* add local host */
   strcpy(list[i], "host");
@@ -3694,15 +3686,14 @@ int  i, n;
 
 int get_last_index(LOGBOOK *lbs, int index)
 {
-int    i, n_attr, message_id;
+int    i, message_id;
 char   str[80], date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
        in_reply_to[80], reply_to[256], att[MAX_ATTACHMENTS][256], encoding[80];
 
   str[0] = 0;
-  n_attr = scan_attributes(lbs->name);
   message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
 
-  el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
+  el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
               NULL, 0, in_reply_to, reply_to, att, encoding);
 
   strcpy(str, attrib[index]);
@@ -3719,7 +3710,7 @@ char   str[80], date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
 
 void show_elog_new(LOGBOOK *lbs, int message_id, BOOL bedit)
 {
-int    i, j, n, n_attr, index, size, width, fh, length;
+int    i, j, n, index, size, width, fh, length;
 char   str[1000], preset[1000], *p, star[80], comment[10000];
 char   list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256];
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
@@ -3727,12 +3718,10 @@ char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
 time_t now;
 
-  n_attr = scan_attributes(lbs->name);
-
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     att[i][0] = 0;
 
-  for (i=0 ; i<n_attr ; i++)
+  for (i=0 ; i<lbs->n_attr ; i++)
     attrib[i][0] = 0;
 
   if (message_id)
@@ -3740,13 +3729,13 @@ time_t now;
     /* get message for reply */
 
     size = sizeof(text);
-    el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
+    el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
                 text, &size, orig_tag, reply_tag, att, encoding);
     }
   else
     {
     /* get preset attributes */
-    for (i=0 ; i<n_attr ; i++)
+    for (i=0 ; i<lbs->n_attr ; i++)
       {
       sprintf(str, "p%s", attr_list[i]);
       strcpy(attrib[i], getparam(str));
@@ -3757,7 +3746,7 @@ time_t now;
   if (bedit && getcfg(lbs->name, "Restrict edit", str) && atoi(str) == 1)
     {
     /* search attribute which contains author */
-    for (i=0 ; i<n_attr ; i++)
+    for (i=0 ; i<lbs->n_attr ; i++)
       {
       sprintf(str, "Preset %s", attr_list[i]);
       if (getcfg(lbs->name, str, preset))
@@ -3790,7 +3779,7 @@ time_t now;
     getcfg(lbs->name, "Remove on reply", str);
     n = strbreak(str, list, MAX_N_ATTR);
     for (i=0 ; i<n ; i++)
-      for (j=0 ; j<n_attr ; j++)
+      for (j=0 ; j<lbs->n_attr ; j++)
         {
         if (equal_ustring(attr_list[j], list[i]))
           attrib[j][0] = 0;
@@ -3800,7 +3789,7 @@ time_t now;
   /* subst attributes for replies */
   if (message_id && !bedit)
     {
-    for (index = 0 ; index < n_attr ; index++)
+    for (index = 0 ; index < lbs->n_attr ; index++)
       {
       sprintf(str, "Subst on reply %s", attr_list[index]);
       if (getcfg(lbs->name, str, preset))
@@ -3855,7 +3844,7 @@ time_t now;
            gt("Categories border"), gt("Categories cellpadding"), gt("Frame color"));
 
   /* print required message if one of the attributes has it set */
-  for (i= 0 ; i < n_attr ; i++)
+  for (i= 0 ; i < lbs->n_attr ; i++)
     {
     if (attr_flags[i] & AF_REQUIRED)
       {
@@ -3907,7 +3896,7 @@ time_t now;
     }
 
   /* display attributes */
-  for (index = 0 ; index < n_attr ; index++)
+  for (index = 0 ; index < lbs->n_attr ; index++)
     {
     strcpy(star, (attr_flags[index] & AF_REQUIRED) ? "<font color=red>*</font>" : "");
 
@@ -4294,10 +4283,8 @@ time_t now;
 
 void show_elog_find(LOGBOOK *lbs)
 {
-int    i, j, n_attr;
+int    i, j;
 char   str[256], mode[256];
-
-  n_attr = scan_attributes(lbs->name);
 
   /*---- header ----*/
 
@@ -4418,7 +4405,7 @@ char   str[256], mode[256];
 
   rsprintf("</td></tr>\n");
 
-  for (i=0 ; i<n_attr ; i++)
+  for (i=0 ; i<lbs->n_attr ; i++)
     {
     rsprintf("<tr><td nowrap bgcolor=%s>%s:</td>", gt("Categories bgcolor1"), attr_list[i]);
     rsprintf("<td bgcolor=%s>", gt("Categories bgcolor2"));
@@ -5193,15 +5180,14 @@ void display_reply(LOGBOOK *lbs, int message_id, int printable, int n_attr_disp,
 {
 char   date[80], *text, in_reply_to[80], reply_to[256], encoding[80], 
        attachment[MAX_ATTACHMENTS][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
-int    status, n_attr, size;
+int    status, size;
 char   *p;
 
   text = malloc(TEXT_SIZE);
 
-  n_attr = scan_attributes(lbs->name);
   reply_to[0] = 0;
   size = TEXT_SIZE;
-  status = el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
+  status = el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
                        text, &size, in_reply_to, reply_to,
                        attachment, encoding);
 
@@ -5213,7 +5199,7 @@ char   *p;
 
   display_line(lbs, message_id, 0, "threaded", level, printable, 0,
                FALSE, date, reply_to, n_attr_disp, disp_attr, 
-               attrib, n_attr, NULL, NULL, encoding);
+               attrib, lbs->n_attr, NULL, NULL, encoding);
 
   if (reply_to[0])
     {
@@ -5237,7 +5223,7 @@ char   *p;
 void show_elog_submit_find(LOGBOOK *lbs, INT past_n, INT last_n)
 {
 int    i, j, n, size, status, d1, m1, y1, d2, m2, y2, n_line;
-int    current_year, current_month, current_day, printable, n_logbook, lindex, n_attr,
+int    current_year, current_month, current_day, printable, n_logbook, lindex,
        reverse, n_attr_disp, n_found, search_all, message_id;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR+4][NAME_LENGTH],
        list[10000], text[TEXT_SIZE], text1[TEXT_SIZE], text2[TEXT_SIZE],
@@ -5249,8 +5235,6 @@ char   *p , *pt, *pt1, *pt2;
 BOOL   show_attachments, threaded, only_message_heads;
 time_t ltime, ltime_start, ltime_end, ltime_current, now;
 struct tm tms, *ptms;
-
-  n_attr = scan_attributes(lbs->name);
 
   printable = atoi(getparam("Printable"));
 
@@ -5591,7 +5575,7 @@ struct tm tms, *ptms;
               mname[tms.tm_mon], tms.tm_mday, tms.tm_year + 1900);
     }
 
-  for (i=0 ; i<n_attr ; i++)
+  for (i=0 ; i<lbs->n_attr ; i++)
     {
     if (*getparam(attr_list[i]))
       rsprintf("<tr><td nowrap width=10%% bgcolor=%s><b>%s:</b></td><td bgcolor=%s>%s</td></tr>",
@@ -5633,7 +5617,7 @@ struct tm tms, *ptms;
     {
     if (search_all)
       {
-      n_attr_disp = n_attr + 3;
+      n_attr_disp = lbs->n_attr + 3;
 
       strcpy(disp_attr[0], "#");
       strcpy(disp_attr[1], "Logbook");
@@ -5642,7 +5626,7 @@ struct tm tms, *ptms;
       }
     else
       {
-      n_attr_disp = n_attr + 2;
+      n_attr_disp = lbs->n_attr + 2;
 
       strcpy(disp_attr[0], "#");
       strcpy(disp_attr[1], "Date");
@@ -5671,7 +5655,7 @@ struct tm tms, *ptms;
         rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Date</b></td>", 
                  col, size);
 
-      for (j=0 ; j<n_attr ; j++)
+      for (j=0 ; j<lbs->n_attr ; j++)
         if (equal_ustring(disp_attr[i], attr_list[j]))
           rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>%s</b></td>",
                     col, size, attr_list[j]);
@@ -5784,9 +5768,9 @@ struct tm tms, *ptms;
 
     do
       {
-      //printf("## %d\n", message_id);
+      printf("## %d\n", message_id);
       size = sizeof(text);
-      status = el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
+      status = el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
                            text, &size, in_reply_to, reply_to,
                            attachment,
                            encoding);
@@ -5830,7 +5814,7 @@ struct tm tms, *ptms;
       if (status == EL_SUCCESS)
         {
         /* do filtering */
-        for (i=0 ; i<n_attr ; i++)
+        for (i=0 ; i<lbs->n_attr ; i++)
           {
           if (*getparam(attr_list[i]))
             {
@@ -5847,7 +5831,7 @@ struct tm tms, *ptms;
               break;
             }
           }
-        if (i < n_attr)
+        if (i < lbs->n_attr)
           goto skip;
 
         if (*getparam("subtext"))
@@ -5921,7 +5905,7 @@ struct tm tms, *ptms;
 
         display_line(lbs, message_id, n_found, mode, 0, printable, n_line,
                      show_attachments, date, reply_to, n_attr_disp, disp_attr, 
-                     attrib, n_attr, text, attachment, encoding);
+                     attrib, lbs->n_attr, text, attachment, encoding);
 
         if (threaded)
           {
@@ -6010,13 +5994,11 @@ char   str[256], mail_to[256], mail_from[256], file_name[256], error[1000], date
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
 char   att_file[MAX_ATTACHMENTS][256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
-int    i, j, n, missing, first, index, n_attr, n_mail, suppress, message_id;
-
-  n_attr = scan_attributes(lbs->name);
+int    i, j, n, missing, first, index, n_mail, suppress, message_id;
 
   /* check for required attributs */
   missing = 0;
-  for (i=0 ; i<n_attr ; i++)
+  for (i=0 ; i<lbs->n_attr ; i++)
     if (attr_flags[i] & AF_REQUIRED)
       {
       if ((attr_flags[i] & AF_MULTI) == 0 && *getparam(attr_list[i]) == 0)
@@ -6071,7 +6053,7 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, message_id;
   n = build_subst_list(lbs, slist, svalue, NULL);
 
   /* retrieve attributes */
-  for (i=0 ; i<n_attr ; i++)
+  for (i=0 ; i<lbs->n_attr ; i++)
     {
     if (attr_flags[i] & AF_MULTI)
       {
@@ -6144,7 +6126,7 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, message_id;
       strcpy(in_reply_to, getparam("orig"));
     }
 
-  message_id = el_submit(lbs, message_id, date, attr_list, attrib, n_attr, getparam("text"),
+  message_id = el_submit(lbs, message_id, date, attr_list, attrib, lbs->n_attr, getparam("text"),
                      in_reply_to, reply_to, *getparam("html") ? "HTML" : "plain",
                      att_file,
                      _attachment_buffer,
@@ -6171,9 +6153,9 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, message_id;
     }
   else
     {
-    for (index=0 ; index <= n_attr ; index++)
+    for (index=0 ; index <= lbs->n_attr ; index++)
       {
-      if (index < n_attr)
+      if (index < lbs->n_attr)
         {
         strcpy(str, "Email ");
         if (strchr(attr_list[index], ' '))
@@ -6221,7 +6203,7 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, message_id;
 
           sprintf(mail_text+strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), lbs->name);
 
-          for (j=0 ; j<n_attr ; j++)
+          for (j=0 ; j<lbs->n_attr ; j++)
             {
             strcpy(str, "                                    ");
             memcpy(str, attr_list[j], strlen(attr_list[j]));
@@ -6317,13 +6299,11 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, message_id;
 
 void copy_to(LOGBOOK *lbs, int src_id, char *dest_logbook, int move)
 {
-int     size, i, status, fh, n_attr, message_id;
+int     size, i, status, fh, message_id;
 char    str[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char    date[80], text[TEXT_SIZE], msg_str[32], in_reply_to[80], reply_to[256], 
         attachment[MAX_ATTACHMENTS][256], encoding[80];
 LOGBOOK *lbs_dest;
-
-  n_attr = scan_attributes(lbs->name);
 
   for (i=0 ; lb_list[i].name[0] ; i++)
     if (equal_ustring(lb_list[i].name, dest_logbook))
@@ -6334,7 +6314,7 @@ LOGBOOK *lbs_dest;
 
   /* get message */
   size = sizeof(text);
-  status = el_retrieve(lbs, src_id, date, attr_list, attrib, n_attr,
+  status = el_retrieve(lbs, src_id, date, attr_list, attrib, lbs->n_attr,
                        text, &size, in_reply_to, reply_to,
                        attachment, encoding);
 
@@ -6375,7 +6355,7 @@ LOGBOOK *lbs_dest;
 
   /* submit in destination logbook without links */
 
-  message_id = el_submit(lbs_dest, 0, date, attr_list, attrib, n_attr, text,
+  message_id = el_submit(lbs_dest, 0, date, attr_list, attrib, lbs_dest->n_attr, text,
                      "", "", encoding,
                      attachment,
                      _attachment_buffer,
@@ -6437,7 +6417,7 @@ LOGBOOK *lbs_dest;
 
 void show_elog_page(LOGBOOK *lbs, char *dec_path)
 {
-int    size, i, j, len, n, status, fh, length, message_error, index, n_attr;
+int    size, i, j, len, n, status, fh, length, message_error, index;
 int    message_id, orig_message_id;
 char   str[256], command[80], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char   date[80], text[TEXT_SIZE], menu_str[1000], other_str[1000], cmd[256],
@@ -6448,8 +6428,6 @@ FILE   *f;
 BOOL   first;
 
   message_id = atoi(dec_path);
-
-  n_attr = scan_attributes(lbs->name);
 
   if (getcfg(lbs->name, "Types", str))
     {
@@ -6778,35 +6756,35 @@ BOOL   first;
         }
 
       size = sizeof(text);
-      el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
+      el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
                   text, &size, orig_tag, reply_tag,
                   attachment, encoding);
 
       /* check for locked attributes */
-      for (i=0 ; i<n_attr ; i++)
+      for (i=0 ; i<lbs->n_attr ; i++)
         {
         sprintf(lattr, "l%s", attr_list[i]);
         if (*getparam(lattr) == '1' && !equal_ustring(getparam(attr_list[i]), attrib[i]))
           break;
         }
-      if (i < n_attr)
+      if (i < lbs->n_attr)
         continue;
 
       /* check for attribute filter if not browsing */
       if (!*getparam("browsing"))
         {
-        for (i=0 ; i<n_attr ; i++)
+        for (i=0 ; i<lbs->n_attr ; i++)
           {
           if (*getparam(attr_list[i]) && !equal_ustring(getparam(attr_list[i]), attrib[i]))
             break;
           }
-        if (i < n_attr)
+        if (i < lbs->n_attr)
           continue;
         }
 
       sprintf(str, "%d", message_id);
 
-      for (i=0 ; i<n_attr ; i++)
+      for (i=0 ; i<lbs->n_attr ; i++)
         {
         sprintf(lattr, "l%s", attr_list[i]);
         if (*getparam(lattr) == '1')
@@ -6859,7 +6837,7 @@ BOOL   first;
   if (message_id)
     {
     size = sizeof(text);
-    status = el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
+    status = el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
                              text, &size, orig_tag, reply_tag,
                              attachment, encoding);
 
@@ -7092,13 +7070,13 @@ BOOL   first;
   else
     {
     /* check for locked attributes */
-    for (i=0 ; i<n_attr ; i++)
+    for (i=0 ; i<lbs->n_attr ; i++)
       {
       sprintf(lattr, "l%s", attr_list[i]);
       if (*getparam(lattr) == '1')
         break;
       }
-    if (i < n_attr)
+    if (i < lbs->n_attr)
       sprintf(str, " %s <i>\"%s = %s\"</i>", loc("with"), attr_list[i], getparam(attr_list[i]));
     else
       str[0] = 0;
@@ -7174,7 +7152,7 @@ BOOL   first;
       rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>%s:</b></td><td bgcolor=%s>%s\n\n",
                gt("Categories bgcolor1"), loc("Entry date"), gt("Categories bgcolor2"), date);
 
-    for (i=0 ; i<n_attr ; i++)
+    for (i=0 ; i<lbs->n_attr ; i++)
       rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", attr_list[i], attrib[i]);
 
     /* browsing flag to distinguish "/../<attr>=<value>" from browsing */
@@ -7217,7 +7195,7 @@ BOOL   first;
 
     /*---- display attributes ----*/
 
-    for (i=0 ; i<n_attr ; i++)
+    for (i=0 ; i<lbs->n_attr ; i++)
       {
       sprintf(lattr, "l%s", attr_list[i]);
       rsprintf("<tr><td nowrap width=10%% bgcolor=%s>", gt("Categories bgcolor1"));
@@ -7792,6 +7770,7 @@ LOGBOOK *cur_lb;
     }
   lb_index = i;
   cur_lb = lb_list+i;
+  cur_lb->n_attr = scan_attributes(cur_lb->name);
 
   if (*getparam("wpassword"))
     {
@@ -8289,6 +8268,7 @@ char net_buffer[WEB_BUFFER_SIZE];
 int ka_sock[N_MAX_CONNECTION];
 int ka_time[N_MAX_CONNECTION];
 struct in_addr remote_addr[N_MAX_CONNECTION];
+char remote_host[N_MAX_CONNECTION][256];
 
 void server_loop(int tcp_port, int daemon)
 {
@@ -8296,7 +8276,7 @@ int                  status, i, n, n_error, authorized, min, i_min, i_conn, leng
 struct sockaddr_in   serv_addr, acc_addr;
 char                 pwd[256], str[256], url[256], cl_pwd[256], *p, *pd;
 char                 cookie[256], boundary[256], list[1000],
-                     host_list[MAX_N_LIST][NAME_LENGTH], rem_host_name[256],
+                     host_list[MAX_N_LIST][NAME_LENGTH],
                      rem_host_ip[256], logbook[256], logbook_enc[256];
 int                  lsock, len, flag, content_length, header_length;
 struct hostent       *phe;
@@ -8496,6 +8476,12 @@ struct timeval       timeout;
       memcpy(&remote_addr[i_conn], &(acc_addr.sin_addr), sizeof(rem_addr));
       memcpy(&rem_addr, &(acc_addr.sin_addr), sizeof(rem_addr));
 
+      phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
+      if (phe != NULL)
+        strcpy(remote_host[i_conn], phe->h_name);
+      else
+        strcpy(remote_host[i_conn], (char *)inet_ntoa(rem_addr));
+
 #ifdef DEBUG_CONN
       printf("## open new connection %d\n", i_conn);
 #endif
@@ -8518,6 +8504,7 @@ struct timeval       timeout;
         _sock = ka_sock[i_conn];
         ka_time[i_conn] = (int) time(NULL);
         memcpy(&rem_addr, &remote_addr[i_conn], sizeof(rem_addr));
+        strcpy(rem_host, remote_host[i_conn]);
 
 #ifdef DEBUG_CONN
         printf("## received request on connection %d\n", i_conn);
@@ -8885,12 +8872,6 @@ struct timeval       timeout;
       authorized = 1;
       if (getcfg(logbook, "Hosts deny", list))
         {
-        phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
-        if (phe != NULL)
-          strcpy(rem_host_name, phe->h_name);
-        else
-          strcpy(rem_host_name, "");
-
         strcpy(rem_host_ip, (char *)inet_ntoa(rem_addr));
 
         n = strbreak(list, host_list, MAX_N_LIST);
@@ -8898,25 +8879,25 @@ struct timeval       timeout;
         /* check if current connection matches anyone on the list */
         for (i=0 ; i<n ; i++)
           {
-          if (equal_ustring(rem_host_name, host_list[i]) ||
+          if (equal_ustring(rem_host, host_list[i]) ||
               equal_ustring(rem_host_ip, host_list[i]) ||
               equal_ustring(host_list[i], "all"))
             {
             if (verbose)
               printf("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n",
-                      equal_ustring(rem_host_ip, host_list[i]) ? rem_host_ip : rem_host_name,
+                      equal_ustring(rem_host_ip, host_list[i]) ? rem_host_ip : rem_host,
                       host_list[i]);
             authorized = 0;
             break;
             }
           if (host_list[i][0] == '.')
             {
-            if (strlen(rem_host_name) > strlen(host_list[i]) &&
-                equal_ustring(host_list[i], rem_host_name+strlen(rem_host_name)-strlen(host_list[i])))
+            if (strlen(rem_host) > strlen(host_list[i]) &&
+                equal_ustring(host_list[i], rem_host+strlen(rem_host)-strlen(host_list[i])))
               {
               if (verbose)
                 printf("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n",
-                        rem_host_name, host_list[i]);
+                        rem_host, host_list[i]);
               authorized = 0;
               break;
               }
@@ -8943,12 +8924,6 @@ struct timeval       timeout;
 
       if (getcfg(logbook, "Hosts allow", list))
         {
-        phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
-        if (phe != NULL)
-          strcpy(rem_host_name, phe->h_name);
-        else
-          strcpy(rem_host_name, "");
-
         strcpy(rem_host_ip, (char *)inet_ntoa(acc_addr.sin_addr));
 
         n = strbreak(list, host_list, MAX_N_LIST);
@@ -8956,25 +8931,25 @@ struct timeval       timeout;
         /* check if current connection matches anyone on the list */
         for (i=0 ; i<n ; i++)
           {
-          if (equal_ustring(rem_host_name, host_list[i]) ||
+          if (equal_ustring(rem_host, host_list[i]) ||
               equal_ustring(rem_host_ip, host_list[i]) ||
               equal_ustring(host_list[i], "all"))
             {
             if (verbose)
               printf("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
-                      equal_ustring(rem_host_ip, host_list[i]) ? rem_host_ip : rem_host_name,
+                      equal_ustring(rem_host_ip, host_list[i]) ? rem_host_ip : rem_host,
                       host_list[i]);
             authorized = 1;
             break;
             }
           if (host_list[i][0] == '.')
             {
-            if (strlen(rem_host_name) > strlen(host_list[i]) &&
-                equal_ustring(host_list[i], rem_host_name+strlen(rem_host_name)-strlen(host_list[i])))
+            if (strlen(rem_host) > strlen(host_list[i]) &&
+                equal_ustring(host_list[i], rem_host+strlen(rem_host)-strlen(host_list[i])))
               {
               if (verbose)
                 printf("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
-                        rem_host_name, host_list[i]);
+                        rem_host, host_list[i]);
               authorized = 1;
               break;
               }
