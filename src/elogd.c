@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.400  2004/07/23 19:23:51  midas
+   Supply full path to elogd.cfg when running elogd as windows service
+
    Revision 1.399  2004/07/23 09:42:39  midas
    Use onUnload only if locking enabled
 
@@ -311,7 +314,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.3"
+#define VERSION "2.5.4"
 
 /* ELOG identification */
 static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
@@ -19711,7 +19714,7 @@ SERVICE_STATUS_HANDLE serviceStatusHandle = 0;
 int install_service(void)
 {
    OSVERSIONINFO vi;
-   char path[2048], cmd[2080];
+   char path[2048], dir[2048], cmd[2080];
    SC_HANDLE hservice;
    SC_HANDLE hsrvmanager;
 
@@ -19729,7 +19732,11 @@ int install_service(void)
       return -1;
    }
 
-   sprintf(cmd, "\"%s\" -D", path);
+   strcpy(dir, path);
+   if (strrchr(dir, '\\'))
+      *(strrchr(dir, '\\')+1) = 0;
+
+   sprintf(cmd, "\"%s\" -D -c \"%selogd.cfg\"", path, dir);
 
    /* Open the default, local Service Control Manager database */
    hsrvmanager = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
@@ -20069,6 +20076,16 @@ int main(int argc, char *argv[])
          fgets(clone_url, sizeof(clone_url), stdin);
       }
 
+      /* check if local elogd.cfg exists */
+      fh = open(config_file, O_RDONLY | O_BINARY);
+      if (fh > 0) {
+         close(fh);
+         eprintf("Overwrite local \"elogd.cfg\"? [y]/n:  ");
+         fgets(str, sizeof(str), stdin);
+         if (str[0] == 'n' || str[0] == 'N')
+            exit(EXIT_FAILURE);
+      }
+
       /* contact remote server */
       receive_config(NULL, clone_url, error_str);
       if (error_str[0]) {
@@ -20085,12 +20102,15 @@ int main(int argc, char *argv[])
    }
 
    /* check for configuration file */
-   fh = open(config_file, O_RDONLY | O_BINARY);
-   if (fh < 0) {
-      eprintf("Configuration file \"%s\" not found.\n", config_file);
-      exit(EXIT_FAILURE);
+   if (!clone_url[0]) {
+
+      fh = open(config_file, O_RDONLY | O_BINARY);
+      if (fh < 0) {
+         eprintf("Configuration file \"%s\" not found.\n", config_file);
+         exit(EXIT_FAILURE);
+      }
+      close(fh);
    }
-   close(fh);
 
    /* evaluate directories from config file */
    if (getcfg("global", "Resource Dir", str, sizeof(str)))
