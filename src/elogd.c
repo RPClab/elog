@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.246  2004/02/16 14:27:03  midas
+   Place calendar in middle of screen
+
    Revision 1.245  2004/02/15 14:06:09  midas
    Implemented search functionality for AF_DATE
 
@@ -5967,11 +5970,11 @@ void show_date_selector(int day, int month, int year, char *index)
    rsprintf("function opencal(i)\n");
    rsprintf("{\n");
    rsprintf("  window.open(\"cal.html?i=\"+i, \"\",\n");
-   rsprintf
-       ("  \"width=300,height=195,dependent=yes,menubar=no,scrollbars=no,location=no,resizable=yes\");\n");
+   rsprintf("  \"top=280,left=350,width=300,height=195,dependent=yes,menubar=no,");
+   rsprintf("scrollbars=no,location=no,resizable=yes\");\n");
    rsprintf("}\n\n");
 
-   rsprintf("if (navigator.javaEnabled()) {\n");
+   rsprintf("if (navigator.javaEnabled()) {  \n");
    rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
    rsprintf("  document.write(\"<a href=\\\"javascript:opencal('%s')\\\">\");\n", index);
    rsprintf
@@ -14721,13 +14724,17 @@ void show_calendar(LOGBOOK * lbs)
 
    /* link to previous year */
    rsprintf("&nbsp;&nbsp;");
-   rsprintf("<a href=\"?i=%s&m=%d&y=%d\">&lt;</a>", index, cur_mon, cur_year - 1);
+   rsprintf("<a href=\"?i=%s&m=%d&y=%d\">", index, cur_mon, cur_year - 1);
+   rsprintf("<img border=0 align=\"absmiddle\" src=\"cal_prev.gif\" alt=\"%s\"></a>", 
+             loc("Previous Year"));
 
    /* current year */
    rsprintf("&nbsp;%d&nbsp;", cur_year);
 
    /* link to next year */
-   rsprintf("<a href=\"?i=%s&m=%d&y=%d\">&gt;</a>", index, cur_mon, cur_year + 1);
+   rsprintf("<a href=\"?i=%s&m=%d&y=%d\">", index, cur_mon, cur_year + 1);
+   rsprintf("<img border=0 align=\"absmiddle\" src=\"cal_next.gif\" alt=\"%s\"></a>", 
+             loc("Next Year"));
 
    /* go to first day of month */
    ts->tm_mday = 1;
