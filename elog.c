@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.8  2002/07/23 11:31:08  midas
+  Fixed problems with password cookie
+
   Revision 1.7  2002/07/08 08:39:38  midas
   Fixed return code
 
@@ -275,7 +278,7 @@ char                 host_name[256], boundary[80], str[80], *p;
   if (passwd[0])
     {
     base64_encode(passwd, str);
-    sprintf(request+strlen(request), "Cookie: elog_wpwd=%s\r\n", str);
+    sprintf(request+strlen(request), "Cookie: wpwd=%s\r\n", str);
     }
 
   strcat(request, "\r\n");
@@ -332,7 +335,7 @@ char                 host_name[256], boundary[80], str[80], *p;
     printf("Message successfully transmitted\n");
   else if (strstr(response, "Logbook Selection"))
     printf("No logbook specified\n\n");
-  else if (strstr(response, "Enter password"))
+  else if (strstr(response, "enter password"))
     printf("Missing or invalid password\n");
   else if (strstr(response, "login"))
     printf("Missing or invalid user name/password\n");
