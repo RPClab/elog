@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.349  2004/06/18 19:19:44  midas
+   Fixed typo
+
    Revision 1.348  2004/06/18 19:09:24  midas
    Made substituions work correctly with date attributes
 
@@ -5789,7 +5792,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
                t = (time_t)atoi(attrib[i]);
                ts = localtime(&t);
                if (!getcfg(lbs->name, "Time format", format))
-                  strcpy(format, DEFAULT_TIME_FORMAT);
+                  strcpy(format, DEFAULT_DATE_FORMAT);
 
                strftime(value[i], NAME_LENGTH, format, ts);
 
