@@ -3,7 +3,6 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="elogd"
-	ProjectGUID="{9DB74177-8289-40D0-877C-7300D387F7C0}"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>

@@ -3,7 +3,6 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="locext"
-	ProjectGUID="{D17356E6-AC1F-4D73-875B-4310D854BD22}"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>

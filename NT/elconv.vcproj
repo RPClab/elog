@@ -3,7 +3,6 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="elconv"
-	ProjectGUID="{865838BF-7A30-4603-B694-3FED55267AB9}"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>
