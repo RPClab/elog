@@ -270,3 +270,10 @@ Your ELOG account has been activated = Ihr ELOG Konto wurde aktiviert
 Activate = Aktivieren
 Maximum number of attachments reached = Maximale Anzahl von Anhängen erreicht
 Invalid user name <i>"%s"</i> = Falscher Benutzer-Name <i>"%s"</i>
+
+#
+# New string for V2.3.7
+User = Benutzer
+on = auf
+computer = Computer
+Entry is currently edited by = Eintrag wird momentan bearbeitet von
