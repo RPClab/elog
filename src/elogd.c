@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.238  2004/02/05 07:47:27  midas
+   Fixed bug in search display for all logbooks
+
    Revision 1.237  2004/02/04 15:25:14  midas
    Fixed stack overflow in conjunction with 'use lock'
 
@@ -11741,7 +11744,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       if (list[0]) {
          n_attr_disp = strbreak(list, disp_attr, MAX_N_ATTR);
          if (search_all) {
-            for (i = n_attr_disp - 1; i > 0; i--)
+            for (i = n_attr_disp - 1; i >= 0; i--)
                strcpy(disp_attr[i + 1], disp_attr[i]);
             strcpy(disp_attr[0], loc("Logbook"));
             n_attr_disp++;
