@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.357  2004/06/23 08:04:10  midas
+   Fixed small bug with 'X-Forwarded-Host:'
+
    Revision 1.356  2004/06/23 08:00:26  midas
    Extract and use 'X-Forwarded-Host:'
 
@@ -17996,7 +17999,7 @@ void server_loop(int tcp_port, int daemon)
 
          /* extract X-Forwarded-Host, overwrite "Host:" if found */
          if ((p = strstr(net_buffer, "X-Forwarded-Host:")) != NULL) {
-            p += 5;
+            p += 17;
             while (*p && *p == ' ')
                p++;
             strlcpy(http_host, p, sizeof(http_host));
