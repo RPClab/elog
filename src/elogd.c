@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.143  2003/09/05 15:16:21  midas
+  Changed search for '\r' to '\n' in determination of reply line length
+
   Revision 1.142  2003/07/29 20:25:47  midas
   Fixed display of text attachments
 
@@ -6324,7 +6327,7 @@ char   fl[8][NAME_LENGTH];
     p = text;
     do
       {
-      pend = strchr(p, '\r');
+      pend = strchr(p, '\n');
       if (pend == NULL)
         pend = p+strlen(p);
 
