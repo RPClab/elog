@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.439  2004/08/05 08:08:42  midas
+   Fixed bug with displaying attachments
+
    Revision 1.438  2004/08/05 08:04:58  midas
    Added .cfg and .conf to class of text files
 
@@ -17242,7 +17245,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
                      rsprintf("<img src=\"%s\"></td></tr>", ref);
                      rsprintf("</td></tr>\n\n");
                   } else {
-                     if (strstr(str, ".TXT") || strstr(str, ".ASC") || strstr(str, ".CFG") || strstr(str, ".CONF")
+                     if (strstr(att, ".TXT") || strstr(att, ".ASC") || strstr(att, ".CFG") || strstr(att, ".CONF")
                          || strchr(att, '.') == NULL) {
                         /* display attachment */
                         rsprintf("<tr><td class=\"messageframe\">\n");
