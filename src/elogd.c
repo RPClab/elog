@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.9  2003/02/14 19:17:36  midas
+  Implemented quick filters for free-form attributes (without an options list)
+
   Revision 1.8  2003/02/14 15:35:38  midas
   Revised cookie handling and absolute paths
 
@@ -7169,26 +7172,35 @@ char list[MAX_N_LIST][NAME_LENGTH];
         {
         rsprintf("<input type=submit value=\"%s:\">&nbsp;\n", list[index]);
 
-        rsprintf("<select name=%s onChange=\"document.form1.submit()\">\n", list[index]);
-
-        rsprintf("<option value=\"_all_\">%s\n", loc("All entries"));
-
         for (i=0 ; i<MAX_N_ATTR ; i++)
           if (equal_ustring(attr_list[i], list[index]))
             break;
 
-        if (i < MAX_N_ATTR)
+        
+        if (attr_options[i][0][0] == 0)
           {
-          for (j=0 ; j<MAX_N_LIST && attr_options[i][j][0] ; j++)
-            {
-            if (isparam(attr_list[i]) && equal_ustring(attr_options[i][j], getparam(attr_list[i])))
-              rsprintf("<option selected value=\"%s\">%s\n", attr_options[i][j], attr_options[i][j]);
-            else
-              rsprintf("<option value=\"%s\">%s\n", attr_options[i][j], attr_options[i][j]);
-            }
+          rsprintf("<input type=text onChange=\"document.form1.submit()\" name=%s value=%s>\n",
+                    list[index], getparam(list[index]));
           }
+        else
+          {
+          rsprintf("<select name=%s onChange=\"document.form1.submit()\">\n", list[index]);
 
-        rsprintf("</select> \n");
+          rsprintf("<option value=\"_all_\">%s\n", loc("All entries"));
+
+          if (i < MAX_N_ATTR)
+            {
+            for (j=0 ; j<MAX_N_LIST && attr_options[i][j][0] ; j++)
+              {
+              if (isparam(attr_list[i]) && equal_ustring(attr_options[i][j], getparam(attr_list[i])))
+                rsprintf("<option selected value=\"%s\">%s\n", attr_options[i][j], attr_options[i][j]);
+              else
+                rsprintf("<option value=\"%s\">%s\n", attr_options[i][j], attr_options[i][j]);
+              }
+            }
+
+          rsprintf("</select> \n");
+          }
         }
       }
 
