@@ -23,6 +23,15 @@ ComponentText "This will install the ELOG electronic logbook server on your comp
 ; The text to prompt the user to enter a directory
 DirText "Choose a directory to install in to:"
 
+; Pages
+Page components
+Page directory
+Page instfiles
+
+UninstPage uninstConfirm
+UninstPage instfiles
+
+;----------------------------------------------
 ; Main system
 Section "ELOG system (required)"
 
@@ -80,6 +89,9 @@ Section "ELOG system (required)"
   ; Write the uninstall keys for Windows
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\ELOG" "DisplayName" "ELOG electronic logbook (remove only)"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\ELOG" "UninstallString" '"$INSTDIR\uninst_elog.exe"'
+  
+  WriteUninstaller "uninst_elog.exe"
+  
 SectionEnd
 
 ; optional section
@@ -119,10 +131,10 @@ FunctionEnd
 ; uninstall stuff
 
 UninstallText "This will uninstall ELOG."
-UninstallExeName "uninst_elog.exe"
 
 ; special uninstall section.
 Section "Uninstall"
+  
   ; remove registry keys
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\ELOG"
   DeleteRegKey HKLM SOFTWARE\ELOG
