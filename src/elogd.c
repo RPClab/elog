@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.232  2004/02/03 12:31:57  midas
+   Changed typo
+
    Revision 1.231  2004/02/03 12:30:40  midas
    Changed typo
 
@@ -7328,9 +7331,9 @@ int save_admin_config(LOGBOOK * lbs, char *section, char *buffer, char *error)
 
    /* combine old and new config */
 #ifdef OS_UNIX
-   sprintf(p1, "[%s]\r", section);
+   sprintf(p1, "[%s]\n", section);
    strcat(p1, buffer);
-   strcat(p1, "\r\r");
+   strcat(p1, "\n\n");
 #else
    sprintf(p1, "[%s]\r\n", section);
    strcat(p1, buffer);
