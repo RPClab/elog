@@ -6,6 +6,11 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.6  2002/01/15 10:23:59  midas
+  - Remove "back" button from error display (NS4.7 does not support it)
+  - Fixed wrong URL in email notification
+  - Submission of new messages possible even if cookie expired during editing
+
   Revision 1.5  2002/01/14 13:05:41  midas
   - Check for JavaScript in error display
   - Improved decoding of POST message (needed for lynx)
@@ -2791,6 +2796,7 @@ void show_error(char *error)
 
   rsprintf("<tr><td bgcolor=%s align=center>", gt("Cell BGColor"));
 
+  /*
   rsprintf("<script language=\"javascript\" type=\"text/javascript\">\n");
   rsprintf("if (!navigator.javaEnabled()) {\n");
   rsprintf("  document.write(\"%s\")\n", loc("Please use your browser's back button to go back"));
@@ -2800,15 +2806,12 @@ void show_error(char *error)
   rsprintf("</script>\n");
 
   rsprintf("<noscript>\n");
-  rsprintf("%s\n", loc("Please use your browser's back button to go back"));
-  rsprintf("</noscript>\n");
-
-  /*
-  rsprintf("<button type=button onClick=history.back()>%s</button>\n", loc("Back"));
   */
 
+  rsprintf("%s\n", loc("Please use your browser's back button to go back"));
+  
   /*
-  rsprintf("<input type=submit value=\"%s\">", loc("Back"));
+  rsprintf("</noscript>\n");
   */
 
   rsprintf("</td></tr>\n</table></td></tr></table>\n");
@@ -5190,7 +5193,7 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
             strcpy(subject, "New ELOG entry");
 
           sprintf(mail_text+strlen(mail_text), "\r\n%s URL         : %s%s/%s\r\n", 
-                  elogd_full_url, loc("Logbook"), logbook_enc, tag);
+                  loc("Logbook"), elogd_full_url, logbook_enc, tag);
 
           if (getcfg(logbook, "Email message body", str) &&
               atoi(str) == 1)
@@ -6752,16 +6755,18 @@ struct tm *gmt;
 
   /*---- show ELog page --------------------------------------------*/
 
+  /* if password file given, check password and user name */
   if (getcfg(logbook, "Password file", str))
     {
-    if (!check_user_password(logbook, getparam("unm"), getparam("upwd"), path))
-      return;
+    /* don't check password for submit, since cookie might have been expired during editing */
+    if (!equal_ustring(command, loc("Submit")))
+      if (!check_user_password(logbook, getparam("unm"), getparam("upwd"), path))
+        return;
     }
 
   if (equal_ustring(command, loc("New")) ||
       equal_ustring(command, loc("Edit")) ||
       equal_ustring(command, loc("Reply")) ||
-      equal_ustring(command, loc("Submit")) ||
       equal_ustring(command, loc("Delete")))
     {
     sprintf(str, "%s?cmd=%s", path, command);
