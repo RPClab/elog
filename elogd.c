@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.52  2002/07/30 12:44:54  midas
+  Added sortable columns
+
   Revision 2.51  2002/07/27 14:09:24  midas
   Fixed processing of password file
 
@@ -471,6 +474,12 @@ typedef struct {
   int       *n_el_index;
   int       n_attr;
 } LOGBOOK;
+
+typedef struct {
+  LOGBOOK   *lbs;
+  int       index;
+  char      string[256];
+} MSG_LIST;
 
 LOGBOOK *lb_list = NULL;
 
@@ -2898,7 +2907,7 @@ char *pd, *p, str[256];
   p  = ps;
   while (*p)
     {
-    if (strchr(" %&=", *p))
+    if (strchr(" %&=#", *p))
       {
       sprintf(pd, "%%%02X", *p);
       pd += 3;
@@ -5250,21 +5259,32 @@ char   *p;
 
 /*------------------------------------------------------------------*/
 
-void show_elog_submit_find(LOGBOOK *lbs, INT past_n, INT last_n)
+int msg_compare(const void *m1, const void *m2)
 {
-int    i, j, n, size, status, d1, m1, y1, d2, m2, y2, n_line;
-int    current_year, current_month, current_day, printable, n_logbook, lindex,
-       reverse, n_attr_disp, n_found, search_all, message_id;
+  return strcmp(((MSG_LIST *)m1)->string, ((MSG_LIST *)m2)->string);
+}
+
+int msg_compare_reverse(const void *m1, const void *m2)
+{
+  return strcmp(((MSG_LIST *)m2)->string, ((MSG_LIST *)m1)->string);
+}
+
+void show_elog_submit_find(LOGBOOK *lbs, INT past_n, INT last_n, INT list_n)
+{
+int    i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line;
+int    current_year, current_month, current_day, printable, n_logbook,
+       reverse, n_attr_disp, n_msg, search_all, message_id;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR+4][NAME_LENGTH],
        list[10000], text[TEXT_SIZE], text1[TEXT_SIZE], text2[TEXT_SIZE],
        in_reply_to[80], reply_to[256], attachment[MAX_ATTACHMENTS][256], encoding[80];
-char   str[256], col[80];
+char   str[256], col[80], ref[256], img[80];
 char   mode[80];
 char   menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH];
 char   *p , *pt, *pt1, *pt2;
 BOOL   show_attachments, threaded, only_message_heads;
-time_t ltime, ltime_start, ltime_end, ltime_current, now;
+time_t ltime, ltime_start, ltime_end, now;
 struct tm tms, *ptms;
+MSG_LIST *msg_list;
 
   printable = atoi(getparam("Printable"));
 
@@ -5277,29 +5297,10 @@ struct tm tms, *ptms;
       reverse = atoi(str);
     }
 
-  /*---- header ----*/
-
-  show_standard_header(loc("ELOG search result"), NULL);
-
-  /*---- title ----*/
-
-  str[0] = 0;
-  if (past_n == 1)
-    strcat(str, loc(", Last day"));
-  else if (past_n > 1)
-    sprintf(str+strlen(str), loc(", Last %d days"), past_n);
-  else if (last_n)
-    sprintf(str+strlen(str), loc(", Last %d entries"), last_n);
-
-  if (printable)
-    show_standard_title(lbs->name, str, 1);
-  else
-    show_standard_title(lbs->name, str, 0);
-
   /* get mode */
   strcpy(mode, "Full");
 
-  if (past_n || last_n)
+  if (past_n || last_n || list_n)
     {
     if (getcfg(lbs->name, "Display Mode", str))
       strcpy(mode, str);
@@ -5319,133 +5320,13 @@ struct tm tms, *ptms;
   threaded = equal_ustring(mode, "threaded");
   only_message_heads = threaded;
 
+  /*---- convert dates to ltime ----*/
+
   time(&now);
   ptms = localtime(&now);
   current_year  = ptms->tm_year+1900;
   current_month = ptms->tm_mon+1;
   current_day   = ptms->tm_mday;
-
-  /*---- menu buttons ----*/
-
-  if (!printable)
-    {
-    rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=1 bgcolor=%s>\n",
-             gt("Menu1 cellpadding"), gt("Frame color"));
-
-    rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
-
-    if (getcfg(lbs->name, "Find menu commands", menu_str))
-      {
-      n = strbreak(menu_str, menu_item, MAX_N_LIST);
-
-      if (atoi(gt("Use buttons")) == 1)
-        {
-        for (i=0 ; i<n ; i++)
-          {
-          if (equal_ustring(menu_item[i], "Last x"))
-            {
-            rsprintf("<input type=hidden name=mode value=\"%s\">\n", mode);
-
-            if (past_n)
-              {
-              sprintf(str, loc("Last %d days"), past_n*2);
-              rsprintf("<input type=submit name=past value=\"%s\">\n", str);
-              }
-
-            if (last_n)
-              {
-              sprintf(str, loc("Last %d entries"), last_n*2);
-              rsprintf("<input type=submit name=last value=\"%s\">\n", str);
-              }
-            }
-          else
-            rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc(menu_item[i]));
-          }
-        }
-      else
-        {
-        rsprintf("<small>\n");
-
-        for (i=0 ; i<n ; i++)
-          {
-          if (equal_ustring(menu_item[i], "Last x"))
-            {
-            if (past_n)
-              {
-              sprintf(str, loc("Last %d days"), past_n*2);
-              rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n*2, mode, str);
-              }
-
-            if (last_n)
-              {
-              sprintf(str, loc("Last %d entries"), last_n*2);
-              rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n*2, mode, str);
-              }
-            }
-          else
-            {
-            strcpy(str, loc(menu_item[i]));
-            url_encode(str);
-
-            if (i < n-1)
-              rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;|\n", str, loc(menu_item[i]));
-            else
-              rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;\n", str, loc(menu_item[i]));
-            }
-          }
-
-        rsprintf("</small>\n");
-        }
-      }
-    else
-      {
-      if (atoi(gt("Use buttons")) == 1)
-        {
-        rsprintf("<input type=hidden name=mode value=\"%s\">\n", mode);
-
-        if (past_n)
-          {
-          sprintf(str, loc("Last %d days"), past_n*2);
-          rsprintf("<input type=submit name=past value=\"%s\">\n", str);
-          }
-
-        if (last_n)
-          {
-          sprintf(str, loc("Last %d entries"), last_n*2);
-          rsprintf("<input type=submit name=last value=\"%s\">\n", str);
-          }
-
-        rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Find"));
-        rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
-        }
-      else
-        {
-        rsprintf("<small>\n");
-
-        if (past_n)
-          {
-          sprintf(str, loc("Last %d days"), past_n*2);
-          rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n*2, mode, str);
-          }
-
-        if (last_n)
-          {
-          sprintf(str, loc("Last %d entries"), last_n*2);
-          rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n*2, mode, str);
-          }
-
-        rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;|\n", loc("Find"), loc("Find"));
-        rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;\n", loc("Back"), loc("Back"));
-
-        rsprintf("</small>\n");
-        }
-
-      }
-
-    rsprintf("</td></tr></table></td></tr>\n\n");
-    }
-
-  /*---- convert end date to ltime ----*/
 
   ltime_end = ltime_start = 0;
 
@@ -5576,6 +5457,326 @@ struct tm tms, *ptms;
     return;
     }
 
+  /*---- assemble message list ----*/
+
+  /* check for search all */
+  search_all = atoi(getparam("all"));
+
+  if (getcfg(lbs->name, "Search all logbooks", str) && atoi(str) == 0)
+    search_all = 0;
+
+  n_msg = 0;
+  if (search_all)
+    {
+    /* count logbooks */
+    for (n_logbook=0 ;  ; n_logbook++)
+      {
+      if (!lb_list[n_logbook].name[0])
+        break;
+      n_msg += *lb_list[n_logbook].n_el_index;
+      }
+    }
+  else
+    {
+    n_logbook = 1;
+    n_msg = *lbs->n_el_index;
+    }
+
+  msg_list = malloc(sizeof(MSG_LIST)*n_msg);
+
+  for (i=n=0 ; i<n_logbook ; i++)
+    {
+    if (search_all)
+      lbs = &lb_list[i];
+
+    for (j=0 ; j<*lbs->n_el_index ; j++)
+      {
+      msg_list[n].lbs = lbs;
+      msg_list[n].index = j;
+      itoa(lbs->el_index[j].file_time, msg_list[n].string, 10);
+      n++;
+      }
+    }
+
+  /*---- apply start/end date cut ----*/
+
+  if (past_n)
+    ltime_start = now-3600*24*past_n;
+
+  if (last_n && last_n < n_msg)
+    {
+    for (i=n_msg-last_n-1 ; i>=0 ; i--)
+      msg_list[i].lbs = NULL;
+    }
+  
+  if (ltime_start)
+    {
+    for (i=0 ; i<n_msg ; i++)
+      if (msg_list[i].lbs &&
+          msg_list[i].lbs->el_index[msg_list[i].index].file_time < ltime_start)
+        msg_list[i].lbs = NULL;
+    }
+
+  if (ltime_end)
+    {
+    for (i=0 ; i<n_msg ; i++)
+      if (msg_list[i].lbs &&
+          msg_list[i].lbs->el_index[msg_list[i].index].file_time > ltime_end)
+        msg_list[i].lbs = NULL;
+    }
+
+  /*---- filter message list ----*/
+
+  for (i=0 ; i<lbs->n_attr ; i++)
+    if (*getparam(attr_list[i]))
+      break;
+
+  /* do filtering */
+  for (index=0 ; index<n_msg ; index++)
+    {
+    if (!msg_list[index].lbs)
+      continue;
+
+    /* retrieve message */
+    size = sizeof(text);
+    message_id = msg_list[index].lbs->el_index[msg_list[index].index].message_id;
+
+    status = el_retrieve(msg_list[index].lbs, message_id, 
+                         date, attr_list, attrib, lbs->n_attr,
+                         text, &size, in_reply_to, reply_to,
+                         attachment,
+                         encoding);
+    if (status != EL_SUCCESS)
+      break;
+
+    for (i=0 ; i<lbs->n_attr ; i++)
+      {
+      if (*getparam(attr_list[i]))
+        {
+        only_message_heads = FALSE;
+        strcpy(str, getparam(attr_list[i]));
+        for (j=0 ; j<(int)strlen(str) ; j++)
+          str[j] = toupper(str[j]);
+        str[j] = 0;
+        for (j=0 ; j<(int)strlen(attrib[i]) ; j++)
+          text1[j] = toupper(attrib[i][j]);
+        text1[j] = 0;
+
+        if (strstr(text1, str) == NULL)
+          break;
+        }
+      }
+    if (i < lbs->n_attr)
+      {
+      msg_list[index].lbs = NULL;
+      continue;
+      }
+
+    if (*getparam("subtext"))
+      {
+      only_message_heads = FALSE;
+      strcpy(str, getparam("subtext"));
+      for (i=0 ; i<(int)strlen(str) ; i++)
+        str[i] = toupper(str[i]);
+      str[i] = 0;
+      for (i=0 ; i<(int)strlen(text) ; i++)
+        text1[i] = toupper(text[i]);
+      text1[i] = 0;
+
+      if (strstr(text1, str) == NULL)
+        {
+        msg_list[index].lbs = NULL;
+        continue;
+        }
+      }
+
+    /* check if reply */
+    if (only_message_heads && in_reply_to[0])
+      {
+      msg_list[index].lbs = NULL;
+      continue;
+      }
+
+    /* add attribute for sorting */
+    for (i=0 ; i<lbs->n_attr ; i++)
+      {
+      if (equal_ustring(getparam("sort"), attr_list[i]) ||
+          equal_ustring(getparam("rsort"), attr_list[i]))
+        {
+        strncpy(msg_list[index].string, attrib[i], 255);
+        msg_list[index].string[255] = 0;
+        }
+
+      if (equal_ustring(getparam("sort"), "#") ||
+          equal_ustring(getparam("rsort"), "#"))
+        {
+        sprintf(msg_list[index].string, "%08d", message_id);
+        }
+      }
+
+    if (isparam("rsort"))
+      reverse = 1;
+
+    if (isparam("sort"))
+      reverse = 0;
+    }
+
+  /*---- compact messasges ----*/
+
+  for (i=j=0 ; i<n_msg ; i++)
+    if (msg_list[i].lbs)
+      memcpy(&msg_list[j++], &msg_list[i], sizeof(MSG_LIST));
+  n_msg = j;
+
+  /*---- sort messasges ----*/
+
+  qsort(msg_list, n_msg, sizeof(MSG_LIST), reverse ? msg_compare_reverse : msg_compare);
+
+  /*---- header ----*/
+
+  show_standard_header(loc("ELOG search result"), NULL);
+
+  /*---- title ----*/
+
+  strcpy(str, ", ");
+  if (past_n == 1)
+    strcat(str, loc("Last day"));
+  else if (past_n > 1)
+    sprintf(str+strlen(str), loc("Last %d days"), past_n);
+  else if (last_n)
+    sprintf(str+strlen(str), loc("Last %d entries"), last_n);
+  else if (list_n)
+    sprintf(str+strlen(str), loc("Page %d of %d"), list_n, 0);
+  if (strlen(str) == 2)
+    str[0] = 0;
+
+  if (printable)
+    show_standard_title(lbs->name, str, 1);
+  else
+    show_standard_title(lbs->name, str, 0);
+
+  /*---- menu buttons ----*/
+
+  if (!printable)
+    {
+    rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=1 bgcolor=%s>\n",
+             gt("Menu1 cellpadding"), gt("Frame color"));
+
+    rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
+
+    if (getcfg(lbs->name, "Find menu commands", menu_str))
+      {
+      n = strbreak(menu_str, menu_item, MAX_N_LIST);
+
+      if (atoi(gt("Use buttons")) == 1)
+        {
+        for (i=0 ; i<n ; i++)
+          {
+          if (equal_ustring(menu_item[i], "Last x"))
+            {
+            rsprintf("<input type=hidden name=mode value=\"%s\">\n", mode);
+
+            if (past_n)
+              {
+              sprintf(str, loc("Last %d days"), past_n*2);
+              rsprintf("<input type=submit name=past value=\"%s\">\n", str);
+              }
+
+            if (last_n)
+              {
+              sprintf(str, loc("Last %d entries"), last_n*2);
+              rsprintf("<input type=submit name=last value=\"%s\">\n", str);
+              }
+
+            }
+          else
+            rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc(menu_item[i]));
+          }
+        }
+      else
+        {
+        rsprintf("<small>\n");
+
+        for (i=0 ; i<n ; i++)
+          {
+          if (equal_ustring(menu_item[i], "Last x"))
+            {
+            if (past_n)
+              {
+              sprintf(str, loc("Last %d days"), past_n*2);
+              rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n*2, mode, str);
+              }
+
+            if (last_n)
+              {
+              sprintf(str, loc("Last %d entries"), last_n*2);
+              rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n*2, mode, str);
+              }
+            }
+          else
+            {
+            strcpy(str, loc(menu_item[i]));
+            url_encode(str);
+
+            if (i < n-1)
+              rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;|\n", str, loc(menu_item[i]));
+            else
+              rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;\n", str, loc(menu_item[i]));
+            }
+          }
+
+        rsprintf("</small>\n");
+        }
+      }
+    else
+      {
+      if (atoi(gt("Use buttons")) == 1)
+        {
+        rsprintf("<input type=hidden name=mode value=\"%s\">\n", mode);
+
+        if (past_n)
+          {
+          sprintf(str, loc("Last %d days"), past_n*2);
+          rsprintf("<input type=submit name=past value=\"%s\">\n", str);
+          }
+
+        if (last_n)
+          {
+          sprintf(str, loc("Last %d entries"), last_n*2);
+          rsprintf("<input type=submit name=last value=\"%s\">\n", str);
+          }
+
+        rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Find"));
+        rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
+        }
+      else
+        {
+        rsprintf("<small>\n");
+
+        if (past_n)
+          {
+          sprintf(str, loc("Last %d days"), past_n*2);
+          rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n*2, mode, str);
+          }
+
+        if (last_n)
+          {
+          sprintf(str, loc("Last %d entries"), last_n*2);
+          rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n*2, mode, str);
+          }
+
+        rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;|\n", loc("Find"), loc("Find"));
+        rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;\n", loc("Back"), loc("Back"));
+
+        rsprintf("</small>\n");
+        }
+
+      }
+
+    rsprintf("</td></tr></table></td></tr>\n\n");
+    }
+
+
   /*---- display filters ----*/
 
   rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1>\n",
@@ -5626,11 +5827,6 @@ struct tm tms, *ptms;
   if (getcfg(lbs->name, "Summary lines", str))
     n_line = atoi(str);
 
-  /* check for search all */
-  search_all = atoi(getparam("all"));
-
-  if (getcfg(lbs->name, "Search all logbooks", str) && atoi(str) == 0)
-    search_all = 0;
 
   /*---- table titles ----*/
 
@@ -5673,33 +5869,152 @@ struct tm tms, *ptms;
 
     for (i=0 ; i<n_attr_disp ; i++)
       {
-      if (equal_ustring(disp_attr[i], "#"))
-        rsprintf("<td width=10%% align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>#</b></td>",
-                 col, size);
+      /* assemble current command line, replace sort statements */
+      strcpy(ref, getparam("cmdline"));
+      if (strstr(ref, "&sort="))
+        {
+        p = strstr(ref, "&sort=")+1;
+        while (*p && *p != '&')
+          p++;
+        strcpy(strstr(ref, "&sort="), p);
+        }
+      if (strstr(ref, "&rsort="))
+        {
+        p = strstr(ref, "&rsort=")+1;
+        while (*p && *p != '&')
+          p++;
+        strcpy(strstr(ref, "&rsort="), p);
+        }
 
-      if (equal_ustring(disp_attr[i], "Logbook"))
-        rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Logbook</b></td>",
-                 col, size);
+      strcpy(str, disp_attr[i]);
+      url_encode(str);
+      if (strcmp(getparam("sort"), disp_attr[i]) == 0)
+        sprintf(ref+strlen(ref), "&rsort=%s", str);
+      else
+        sprintf(ref+strlen(ref), "&sort=%s", str);
+      
+      img[0] = 0;
+      if (strcmp(getparam("sort"), disp_attr[i]) == 0)
+        strcpy(img, "<img align=top src=\"down.gif\">");
+      else if (strcmp(getparam("rsort"), disp_attr[i]) == 0)
+        strcpy(img, "<img align=top src=\"up.gif\">");
 
-      if (equal_ustring(disp_attr[i], "Date"))
-        rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Date</b></td>",
-                 col, size);
-
-      for (j=0 ; j<lbs->n_attr ; j++)
-        if (equal_ustring(disp_attr[i], attr_list[j]))
-          rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>%s</b></td>",
-                    col, size, attr_list[j]);
+      rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b><a href=\"%s\">%s</a></b>%s</td>\n",
+               col, size, ref, disp_attr[i], img);
       }
 
     if (!equal_ustring(mode, "Full") && n_line > 0)
-      rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Text</b></td>",
+      rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Text</b></td>\n",
                col, size);
 
     rsprintf("</tr>\n\n");
     }
 
-  /*---- do find ----*/
+  /*---- display message list ----*/
 
+  for (index=0 ; index<n_msg ; index++)
+    {
+    size = sizeof(text);
+    message_id = msg_list[index].lbs->el_index[msg_list[index].index].message_id;
+
+    status = el_retrieve(msg_list[index].lbs, message_id,
+                         date, attr_list, attrib, lbs->n_attr,
+                         text, &size, in_reply_to, reply_to,
+                         attachment,
+                         encoding);
+    if (status != EL_SUCCESS)
+      break;
+
+    /*---- add highlighting for searched subtext ----*/
+
+    if (*getparam("subtext"))
+      {
+      strcpy(str, getparam("subtext"));
+      for (i=0 ; i<(int)strlen(str) ; i++)
+        str[i] = toupper(str[i]);
+
+      for (i=0 ; i<(int)strlen(text) ; i++)
+        text1[i] = toupper(text[i]);
+      text1[i] = 0;
+
+      text2[0] = 0;
+      pt = text;   /* original text */
+      pt1 = text1; /* upper-case text */
+      pt2 = text2; /* text with inserted coloring */
+      do
+        {
+        p = strstr(pt1, str);
+        size = (int)(p - pt1);
+        if (p != NULL)
+          {
+          pt1 = p+strlen(str);
+
+          /* copy first part original text */
+          memcpy(pt2, pt, size);
+          pt2 += size;
+          pt += size;
+
+          /* add coloring 1st part */
+
+          /* here: \001='<', \002='>', /003='"', and \004=' ' */
+          /* see also rsputs2(char* ) */
+
+          if (equal_ustring(encoding, "plain") || !equal_ustring(mode, "Full"))
+            strcpy(pt2, "\001B\004style=\003color:black;background-color:#ffff66\003\002");
+          else
+            strcpy(pt2, "<B style=\"color:black;background-color:#ffff66\">");
+
+          pt2 += strlen(pt2);
+
+          /* copy origial search text */
+          memcpy(pt2, pt, strlen(str));
+          pt2 += strlen(str);
+          pt += strlen(str);
+
+          /* add coloring 2nd part */
+          if (equal_ustring(encoding, "plain") || !equal_ustring(mode, "Full"))
+            strcpy(pt2, "\001/B\002");
+          else
+            strcpy(pt2, "</B>");
+          pt2 += strlen(pt2);
+          }
+        } while (p != NULL);
+
+      strcpy(pt2, pt);
+      strcpy(text, text2);
+      }
+
+    /*---- display line ----*/
+
+    display_line(msg_list[index].lbs, message_id, 
+                 index, mode, 0, printable, n_line,
+                 show_attachments, date, reply_to, n_attr_disp, disp_attr,
+                 attrib, lbs->n_attr, text, attachment, encoding);
+
+    if (threaded)
+      {
+      if (reply_to[0] && (!getcfg(msg_list[index].lbs->name, "Top level only", str) || atoi(str) == 0))
+        {
+        p = reply_to;
+        do
+          {
+          display_reply(msg_list[index].lbs, atoi(p), printable, n_attr_disp, disp_attr, 1);
+
+          while (*p && isdigit(*p))
+            p++;
+          while (*p && (*p == ',' || *p == ' '))
+            p++;
+          } while(*p);
+        }
+      }
+    }
+
+
+
+
+
+
+#ifdef JUNK /*#################################################*/
   n_found = 0;
 
   if (search_all)
@@ -5969,9 +6284,16 @@ skip:
       } while (message_id);
     } /* for () */
 
+#endif // JUNK ###########################################
+
+
+
+
+
+
   rsprintf("</table></td></tr>\n");
 
-  if (n_found == 0)
+  if (n_msg == 0)
     {
     rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n",
            printable ? "1" : gt("Border width"), gt("Categories cellpadding"), gt("Frame color"));
@@ -6011,6 +6333,8 @@ skip:
     rsprintf("<center><font size=1 color=#A0A0A0><a href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></font></center>", VERSION);
 
   rsprintf("</body></html>\r\n");
+
+  free(msg_list);
 }
 
 /*------------------------------------------------------------------*/
@@ -6647,7 +6971,7 @@ BOOL   first;
       return;
       }
 
-    show_elog_submit_find(lbs, 0, 0);
+    show_elog_submit_find(lbs, 0, 0, 0);
     return;
     }
 
@@ -8060,18 +8384,25 @@ LOGBOOK *cur_lb;
     return;
     }
 
-  /* check for lastxx and pastxx */
+  /* check for lastxx and pastxx and listxx */
   if (strncmp(path, "past", 4) == 0 &&
       *getparam("cmd") == 0)
     {
-    show_elog_submit_find(cur_lb, atoi(path+4), 0);
+    show_elog_submit_find(cur_lb, atoi(path+4), 0, 0);
     return;
     }
 
   if (strncmp(path, "last", 4) == 0 && strstr(path, ".gif") == NULL &&
       !isparam("cmd") && !isparam("newpwd"))
     {
-    show_elog_submit_find(cur_lb, 0, atoi(path+4));
+    show_elog_submit_find(cur_lb, 0, atoi(path+4), 0);
+    return;
+    }
+
+  if (strncmp(path, "list", 4) == 0 &&
+      *getparam("cmd") == 0)
+    {
+    show_elog_submit_find(cur_lb, 0, 0, atoi(path+4));
     return;
     }
 
@@ -8122,6 +8453,8 @@ void decode_get(char *logbook, char *string)
 {
 char path[256];
 char *p, *pitem;
+
+  setparam("cmdline", string);
 
   strncpy(path, string, sizeof(path));
   path[255] = 0;
