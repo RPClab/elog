@@ -1,4 +1,5 @@
 #
+# Dutch messages by djek@xs4all.nl
 # $Revision$
 #
 
@@ -135,3 +136,11 @@ Cannot write to <b>%s</b> = Kan niet schrijven naar bestand <b>%s</b>
 No SMTP host defined in [global] section of configuration file = Geen SMTP Host vermeld in [global] van het configuratiebestand
 Messags %s cannot be read from logook "%s" = bericht %s kan niet uit "%s" worden gelezen
 New message cannot be written to directory "%s" = Nieuwe bericht kan niet naar map "%s" worden geschreven
+
+#
+# New strings for V2.0
+#
+Display full message =Toon volledig bericht
+Display threads = Toon draden
+Logbook is empty = logboek is leeg
+This message has been deleted = Het bericht is gewist
