@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.449  2004/08/08 14:55:09  midas
+   Removed all null pointer checking after xmalloc since this is now handled inside xmalloc
+
    Revision 1.448  2004/08/08 14:22:07  midas
    Fixed disappearing &nbsp; in replies
 
@@ -474,8 +477,14 @@ static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
 #include <assert.h>
 #include <locale.h>
 
+/* Default name of the configuration file. */
 #ifndef CFGFILE
 #define CFGFILE "elogd.cfg"
+#endif
+
+/* Default TCP port for server. */
+#ifndef DEFAULT_PORT
+#define DEFAULT_PORT 80
 #endif
 
 #ifdef _MSC_VER
@@ -547,18 +556,20 @@ typedef int BOOL;
 
 #define stricmp(s1, s2) strcasecmp(s1, s2)
 
-gid_t orig_gid;                 /* Original effective GID before dropping privilege */
-uid_t orig_uid;                 /* Original effective UID before dropping privilege */
-#endif
+gid_t orig_gid;           /* Original effective GID before dropping privilege */
+uid_t orig_uid;           /* Original effective UID before dropping privilege */
+char pidfile[256];        /* Pidfile name                                     */
 
-char pidfile[256];              /* Pidfile name */
-BOOL running_as_daemon;         /* Running as a daemon? */
+#endif /* OS_UNIX */
 
-static void (*printf_handler) (const char *);   /* Handler to printf for logging */
-static void (*fputs_handler) (const char *);    /* Handler to fputs for logging  */
-static FILE *current_output_stream = NULL;      /* Currently used output stream  */
+BOOL running_as_daemon;                      /* Running as a daemon/service? */
+int elog_tcp_port = DEFAULT_PORT;            /* Server's TCP port            */
 
-#define SYSLOG_PRIORITY LOG_NOTICE      /* Default priority for syslog facility */
+static void (*printf_handler) (const char *);/* Handler to printf for logging */
+static void (*fputs_handler) (const char *); /* Handler to fputs for logging  */
+static FILE *current_output_stream = NULL;   /* Currently used output stream  */
+
+#define SYSLOG_PRIORITY LOG_NOTICE       /* Default priority for syslog facility */
 
 typedef int INT;
 
@@ -606,7 +617,6 @@ char config_file[256];
 char resource_dir[256];
 char logbook_dir[256];
 char tcp_hostname[256];
-int tcp_port = 80;
 char theme_name[80];
 char http_host[256];
 
@@ -862,6 +872,67 @@ char *stristr(const char *str, const char *pattern)
    return NULL;
 }
 
+/*---- Safe malloc wrappers with out of memory checking from GNU ---*/
+
+static void memory_error_and_abort(char *func)
+{
+   extern void eprintf(const char *, ...);
+
+   eprintf("%s: not enough memory\n", func);
+   exit(EXIT_FAILURE);
+}
+
+/* Return a pointer to free()able block of memory large enough
+   to hold BYTES number of bytes.  If the memory cannot be allocated,
+   print an error message and abort. */
+void *xmalloc(size_t bytes)
+{
+   void *temp;
+
+   temp = malloc(bytes);
+   if (temp == 0)
+      memory_error_and_abort("xmalloc");
+   return (temp);
+}
+
+void *xcalloc(size_t count, size_t bytes)
+{
+   void *temp;
+
+   temp = calloc(count, bytes);
+   if (temp == 0)
+      memory_error_and_abort("xcalloc");
+   return (temp);
+}
+
+void *xrealloc(void *pointer, size_t bytes)
+{
+   void *temp;
+
+   temp = pointer ? realloc(pointer, bytes) : malloc(bytes);
+
+   if (temp == 0)
+      memory_error_and_abort("xrealloc");
+   return (temp);
+}
+
+void xfree(void *pointer)
+{
+   if (pointer)
+      free(pointer);
+}
+
+char *xstrdup(const char *string)
+{
+   char *s;
+
+   s = (char *) xmalloc(strlen(string) + 1);
+   strcpy(s, string);
+   return s;
+}
+
+/*------------------------------------------------------------------*/
+
 /*----------------------- Message handling -------------------------*/
 
 /* Have vasprintf? (seems that only libc6 based Linux has this) */
@@ -1015,14 +1086,13 @@ void eputs(const char *buf)
 {
    char *p;
 
-   p = malloc(strlen(buf)+2);
-   assert(p);
+   p = xmalloc(strlen(buf)+2);
    strcpy(p, buf);
    strcat(p, "\n");
 
    (*fputs_handler) (p);
 
-   free(p);
+   xfree(p);
 }
 
 /* Flush the current output stream */
@@ -1043,19 +1113,17 @@ void print_syslog(const char *msg)
    char *p;
 
    /* strip trailing \r and \n */
-   p = malloc(strlen(msg));
-   assert(p);
-   strcpy(p, msg);
+   p = xstrdup(msg);
    while (p[strlen(p)-1] == '\r' || p[strlen(p)-1] == '\n')
       p[strlen(p)-1] = 0;
 
 #ifdef OS_UNIX
-   syslog(SYSLOG_PRIORITY, "%s", msg);
+   syslog(SYSLOG_PRIORITY, "%s", p);
 #else
-   ReportEvent(hEventLog, EVENTLOG_INFORMATION_TYPE, 0, 0, NULL, 1, 0, &msg, NULL);
+   ReportEvent(hEventLog, EVENTLOG_INFORMATION_TYPE, 0, 0, NULL, 1, 0, &p, NULL);
 #endif
 
-   free(p);
+   xfree(p);
 }
 
 /* Print MSG to stderr */
@@ -1070,9 +1138,7 @@ void fputs_syslog(const char *buf)
    char *p;
 
    /* strip trailing \r and \n */
-   p = malloc(strlen(buf));
-   assert(p);
-   strcpy(p, buf);
+   p = xstrdup(buf);
    while (p[strlen(p)-1] == '\r' || p[strlen(p)-1] == '\n')
       p[strlen(p)-1] = 0;
 
@@ -1082,7 +1148,7 @@ void fputs_syslog(const char *buf)
    ReportEvent(hEventLog, EVENTLOG_INFORMATION_TYPE, 0, 0, NULL, 1, 0, &p, NULL);
 #endif
 
-   free(p);
+   xfree(p);
 }
 
 /* Dump BUF to stderr */
@@ -1841,7 +1907,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    }
 
    strsize = TEXT_SIZE + 1000;
-   str = malloc(strsize);
+   str = xmalloc(strsize);
 
    recv_string(s, str, strsize, 10000);
    if (verbose)
@@ -2115,7 +2181,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    logf(lbs, str);
 
    closesocket(s);
-   free(str);
+   xfree(str);
 
    return 1;
 }
@@ -2240,7 +2306,7 @@ int retrieve_url(char *url, char **buffer, char *rpwd)
    send(sock, str, strlen(str), 0);
 
    bufsize = TEXT_SIZE + 1000;
-   *buffer = malloc(bufsize);
+   *buffer = xmalloc(bufsize);
    memset(*buffer, 0, bufsize);
 
    n = 0;
@@ -2257,7 +2323,7 @@ int retrieve_url(char *url, char **buffer, char *rpwd)
       if (!FD_ISSET(sock, &readfds)) {
          closesocket(sock);
          sock = 0;
-         free(*buffer);
+         xfree(*buffer);
          *buffer = NULL;
          return -1;
       }
@@ -2272,7 +2338,7 @@ int retrieve_url(char *url, char **buffer, char *rpwd)
       if (n >= bufsize) {
          /* increase buffer size */
          bufsize += 10000;
-         *buffer = realloc(*buffer, bufsize);
+         *buffer = xrealloc(*buffer, bufsize);
          if (*buffer == NULL) {
             closesocket(sock);
             return -1;
@@ -2296,7 +2362,7 @@ INT ss_daemon_init()
    if ((pid = fork()) < 0)
       return FAILURE;
    else if (pid != 0)
-      exit(EXIT_SUCCESS);       /* parent finished */
+      _exit(EXIT_SUCCESS);      /* parent finished, exit without atexit hook */
 
    /* child continues here */
 
@@ -2341,7 +2407,7 @@ void check_config_file(BOOL force)
 
    if (force) {
       if (cfgbuffer) {
-         free(cfgbuffer);
+         xfree(cfgbuffer);
          cfgbuffer = NULL;
       }
       return;
@@ -2353,7 +2419,7 @@ void check_config_file(BOOL force)
          cfgfile_mtime = cfg_stat.st_mtime;
 
          if (cfgbuffer) {
-            free(cfgbuffer);
+            xfree(cfgbuffer);
             cfgbuffer = NULL;
          }
       }
@@ -2470,18 +2536,14 @@ int getcfg_simple(char *group, char *param, char *value, int vsize)
          return 0;
       length = lseek(fh, 0, SEEK_END);
       lseek(fh, 0, SEEK_SET);
-      cfgbuffer = malloc(length + 1);
-      if (cfgbuffer == NULL) {
-         close(fh);
-         return 0;
-      }
+      cfgbuffer = xmalloc(length + 1);
       read(fh, cfgbuffer, length);
       cfgbuffer[length] = 0;
       close(fh);
    }
 
    /* search group */
-   str = malloc(10000);
+   str = xmalloc(10000);
    p = cfgbuffer;
    do {
       if (*p == '[') {
@@ -2523,7 +2585,7 @@ int getcfg_simple(char *group, char *param, char *value, int vsize)
                      } else
                         strlcpy(value, str, vsize);
 
-                     free(str);
+                     xfree(str);
                      return status;
                   }
                }
@@ -2542,7 +2604,7 @@ int getcfg_simple(char *group, char *param, char *value, int vsize)
    } while (p);
 
 
-   free(str);
+   xfree(str);
 
    return 0;
 }
@@ -2592,7 +2654,7 @@ char *find_param(char *buf, char *group, char *param)
    char *str, *p, *pstr, *pstart;
 
    /* search group */
-   str = malloc(10000);
+   str = xmalloc(10000);
    p = buf;
    do {
       if (*p == '[') {
@@ -2616,7 +2678,7 @@ char *find_param(char *buf, char *group, char *param)
                   *pstr-- = 0;
 
                if (strieq(str, param)) {
-                  free(str);
+                  xfree(str);
                   return pstart;
                }
 
@@ -2633,7 +2695,7 @@ char *find_param(char *buf, char *group, char *param)
          p++;
    } while (p);
 
-   free(str);
+   xfree(str);
 
    /* now search if in [global] section */
    if (!strieq(group, "global"))
@@ -2649,7 +2711,7 @@ int is_group(char *group)
    char *str, *p, *pstr;
 
    /* search group */
-   str = malloc(10000);
+   str = xmalloc(10000);
    p = cfgbuffer;
    do {
       if (*p == '[') {
@@ -2659,7 +2721,7 @@ int is_group(char *group)
             *pstr++ = *p++;
          *pstr = 0;
          if (strieq(str, group)) {
-            free(str);
+            xfree(str);
             return 1;
          }
       }
@@ -2670,7 +2732,7 @@ int is_group(char *group)
    } while (p);
 
 
-   free(str);
+   xfree(str);
    return 0;
 }
 
@@ -2836,7 +2898,7 @@ int check_language()
          _locfile_mtime = cfg_stat.st_mtime;
 
          if (_locbuffer) {
-            free(_locbuffer);
+            xfree(_locbuffer);
             _locbuffer = NULL;
          }
       }
@@ -2844,7 +2906,7 @@ int check_language()
 
    if (strieq(language, "english") || language[0] == 0) {
       if (_locbuffer) {
-         free(_locbuffer);
+         xfree(_locbuffer);
          _locbuffer = NULL;
       }
    } else {
@@ -2855,11 +2917,7 @@ int check_language()
 
          length = lseek(fh, 0, SEEK_END);
          lseek(fh, 0, SEEK_SET);
-         _locbuffer = malloc(length + 1);
-         if (_locbuffer == NULL) {
-            close(fh);
-            return -1;
-         }
+         _locbuffer = xmalloc(length + 1);
          read(fh, _locbuffer, length);
          _locbuffer[length] = 0;
          close(fh);
@@ -2878,11 +2936,11 @@ int check_language()
             }
 
             if (n == 0) {
-               _porig = malloc(sizeof(char *) * 2);
-               _ptrans = malloc(sizeof(char *) * 2);
+               _porig = xmalloc(sizeof(char *) * 2);
+               _ptrans = xmalloc(sizeof(char *) * 2);
             } else {
-               _porig = realloc(_porig, sizeof(char *) * (n + 2));
-               _ptrans = realloc(_ptrans, sizeof(char *) * (n + 2));
+               _porig = xrealloc(_porig, sizeof(char *) * (n + 2));
+               _ptrans = xrealloc(_ptrans, sizeof(char *) * (n + 2));
             }
 
             _porig[n] = p;
@@ -3209,11 +3267,11 @@ INT ss_file_find(char *path, char *pattern, char **plist)
 
    if ((dir_pointer = opendir(path)) == NULL)
       return 0;
-   *plist = (char *) malloc(MAX_PATH_LENGTH);
+   *plist = (char *) xmalloc(MAX_PATH_LENGTH);
    i = 0;
    for (dp = readdir(dir_pointer); dp != NULL; dp = readdir(dir_pointer)) {
       if (fnmatch1(pattern, dp->d_name) == 0) {
-         *plist = (char *) realloc(*plist, (i + 1) * MAX_PATH_LENGTH);
+         *plist = (char *) xrealloc(*plist, (i + 1) * MAX_PATH_LENGTH);
          strncpy(*plist + (i * MAX_PATH_LENGTH), dp->d_name, strlen(dp->d_name));
          *(*plist + (i * MAX_PATH_LENGTH) + strlen(dp->d_name)) = '\0';
          i++;
@@ -3235,25 +3293,25 @@ INT ss_file_find(char *path, char *pattern, char **plist)
    strlcat(str, pattern, sizeof(str));
    first = 1;
    i = 0;
-   lpfdata = malloc(sizeof(WIN32_FIND_DATA));
-   *plist = (char *) malloc(MAX_PATH_LENGTH);
+   lpfdata = xmalloc(sizeof(WIN32_FIND_DATA));
+   *plist = (char *) xmalloc(MAX_PATH_LENGTH);
    pffile = FindFirstFile(str, lpfdata);
    if (pffile == INVALID_HANDLE_VALUE)
       return 0;
    first = 0;
-   *plist = (char *) realloc(*plist, (i + 1) * MAX_PATH_LENGTH);
+   *plist = (char *) xrealloc(*plist, (i + 1) * MAX_PATH_LENGTH);
    strncpy(*plist + (i * MAX_PATH_LENGTH), lpfdata->cFileName,
            strlen(lpfdata->cFileName));
    *(*plist + (i * MAX_PATH_LENGTH) + strlen(lpfdata->cFileName)) = '\0';
    i++;
    while (FindNextFile(pffile, lpfdata)) {
-      *plist = (char *) realloc(*plist, (i + 1) * MAX_PATH_LENGTH);
+      *plist = (char *) xrealloc(*plist, (i + 1) * MAX_PATH_LENGTH);
       strncpy(*plist + (i * MAX_PATH_LENGTH), lpfdata->cFileName,
               strlen(lpfdata->cFileName));
       *(*plist + (i * MAX_PATH_LENGTH) + strlen(lpfdata->cFileName)) = '\0';
       i++;
    }
-   free(lpfdata);
+   xfree(lpfdata);
    return i;
 #endif
 }
@@ -3281,8 +3339,8 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
    int i, fh, len;
 
    if (rebuild) {
-      free(lbs->el_index);
-      free(lbs->n_el_index);
+      xfree(lbs->el_index);
+      xfree(lbs->n_el_index);
    }
 
    /* check if this logbook has same data dir as previous */
@@ -3300,9 +3358,9 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
       return EL_SUCCESS;
    }
 
-   lbs->n_el_index = malloc(sizeof(int));
+   lbs->n_el_index = xmalloc(sizeof(int));
    *lbs->n_el_index = 0;
-   lbs->el_index = malloc(0);
+   lbs->el_index = xmalloc(0);
 
    /* get data directory */
    strcpy(dir, lbs->data_dir);
@@ -3311,7 +3369,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
    n = ss_file_find(dir, "??????a.log", &file_list);
    if (n == 0) {
       if (file_list)
-         free(file_list);
+         xfree(file_list);
       file_list = NULL;
 
       n = ss_file_find(dir, "??????.log", &file_list);
@@ -3338,12 +3396,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
       length = lseek(fh, 0, SEEK_END);
 
       if (length > 0) {
-         buffer = malloc(length + 1);
-         if (buffer == NULL) {
-            eprintf("Not enough memory to allocate file buffer (%d bytes)\n", length);
-            return EL_MEM_ERROR;
-         }
-
+         buffer = xmalloc(length + 1);
          lseek(fh, 0, SEEK_SET);
          read(fh, buffer, length);
          buffer[length] = 0;
@@ -3357,7 +3410,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
 
             if (p) {
                lbs->el_index =
-                   realloc(lbs->el_index, sizeof(EL_INDEX) * (*lbs->n_el_index + 1));
+                   xrealloc(lbs->el_index, sizeof(EL_INDEX) * (*lbs->n_el_index + 1));
                if (lbs->el_index == NULL) {
                   eprintf("Not enough memory to allocate entry index\n");
                   return EL_MEM_ERROR;
@@ -3408,12 +3461,12 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
 
          } while (p);
 
-         free(buffer);
+         xfree(buffer);
       }
 
    }
 
-   free(file_list);
+   xfree(file_list);
 
    /* sort entries according to date */
    qsort(lbs->el_index, *lbs->n_el_index, sizeof(EL_INDEX), eli_compare);
@@ -3438,8 +3491,8 @@ int el_index_logbooks()
    if (lb_list) {
       for (i = 0; lb_list[i].name[0]; i++) {
          if (lb_list[i].el_index != NULL) {
-            free(lb_list[i].el_index);
-            free(lb_list[i].n_el_index);
+            xfree(lb_list[i].el_index);
+            xfree(lb_list[i].n_el_index);
 
             /* check if other logbook uses same index */
             for (j = i + 1; lb_list[j].name[0]; j++) {
@@ -3449,7 +3502,7 @@ int el_index_logbooks()
             }
          }
       }
-      free(lb_list);
+      xfree(lb_list);
    }
 
    /* count logbooks */
@@ -3463,7 +3516,7 @@ int el_index_logbooks()
       n++;
    }
 
-   lb_list = calloc(sizeof(LOGBOOK), n + 1);
+   lb_list = xcalloc(sizeof(LOGBOOK), n + 1);
    for (i = n = 0;; i++) {
       if (!enumgrp(i, logbook))
          break;
@@ -4089,8 +4142,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
    tail_size = orig_size = 0;
 
    buffer = NULL;
-   message = malloc(TEXT_SIZE + 100);
-   assert(message);
+   message = xmalloc(TEXT_SIZE + 100);
 
    /* generate new file name YYMMDD.log in data directory */
    strcpy(dir, lbs->data_dir);
@@ -4102,14 +4154,14 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
             break;
 
       if (index == *lbs->n_el_index) {
-         free(message);
+         xfree(message);
          return -1;
       }
 
       sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
       fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
       if (fh < 0) {
-         free(message);
+         xfree(message);
          return -1;
       }
 
@@ -4120,7 +4172,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       /* check for valid message */
       if (strncmp(message, "$@MID@$:", 8) != 0) {
          close(fh);
-         free(message);
+         xfree(message);
 
          /* file might have been edited, rebuild index */
          el_build_index(lbs, TRUE);
@@ -4132,7 +4184,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       /* check for correct ID */
       if (atoi(message + 8) != message_id) {
          close(fh);
-         free(message);
+         xfree(message);
          return -1;
       }
 
@@ -4159,13 +4211,8 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       tail_size = TELL(fh) - (lbs->el_index[index].offset + size);
 
       if (tail_size > 0) {
-         buffer = malloc(tail_size);
-         if (buffer == NULL) {
-            close(fh);
-            free(message);
-            return -1;
-         }
-
+         buffer = xmalloc(tail_size);
+ 
          lseek(fh, lbs->el_index[index].offset + size, SEEK_SET);
          n = read(fh, buffer, tail_size);
       }
@@ -4193,7 +4240,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       sprintf(str, "%s%s", dir, file_name);
       fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
       if (fh < 0) {
-         free(message);
+         xfree(message);
          return -1;
       }
 
@@ -4211,7 +4258,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       index = *lbs->n_el_index;
 
       (*lbs->n_el_index)++;
-      lbs->el_index = realloc(lbs->el_index, sizeof(EL_INDEX) * (*lbs->n_el_index));
+      lbs->el_index = xrealloc(lbs->el_index, sizeof(EL_INDEX) * (*lbs->n_el_index));
       lbs->el_index[index].message_id = message_id;
       strcpy(lbs->el_index[index].file_name, file_name);
       lbs->el_index[index].file_time = ltime;
@@ -4275,7 +4322,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
    if (bedit) {
       if (tail_size > 0) {
          n = write(fh, buffer, tail_size);
-         free(buffer);
+         xfree(buffer);
 
          /* correct offsets for remaining messages in same file */
          delta = strlen(message) - orig_size;
@@ -4319,7 +4366,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
                 reply_to, enc, att, TRUE, lock);
    }
 
-   free(message);
+   xfree(message);
    return message_id;
 }
 
@@ -4334,7 +4381,7 @@ void remove_reference(LOGBOOK * lbs, int message_id, int remove_id, BOOL reply_t
 
    /* retrieve original message */
    size = TEXT_SIZE + 1000;
-   message = malloc(size);
+   message = xmalloc(size);
    status =
        el_retrieve(lbs, message_id, date, attr_list, attr, lbs->n_attr, message, &size,
                    in_reply_to, reply_to, att, enc, lock);
@@ -4368,7 +4415,7 @@ void remove_reference(LOGBOOK * lbs, int message_id, int remove_id, BOOL reply_t
    el_submit(lbs, message_id, TRUE, date, attr_list, attr, lbs->n_attr, message,
              in_reply_to, reply_to, enc, att, TRUE, lock);
 
-   free(message);
+   xfree(message);
 }
 
 /*------------------------------------------------------------------*/
@@ -4417,12 +4464,12 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
    if (fh < 0)
       return EL_FILE_ERROR;
 
-   message = malloc(TEXT_SIZE + 1000);
+   message = xmalloc(TEXT_SIZE + 1000);
 
    lseek(fh, lbs->el_index[index].offset, SEEK_SET);
    i = read(fh, message, TEXT_SIZE + 1000 - 1);
    if (i <= 0) {
-      free(message);
+      xfree(message);
       close(fh);
       return EL_FILE_ERROR;
    }
@@ -4434,7 +4481,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
 
    if (strncmp(message, "$@MID@$:", 8) != 0) {
       close(fh);
-      free(message);
+      xfree(message);
 
       /* file might have been edited, rebuild index */
       el_build_index(lbs, TRUE);
@@ -4445,7 +4492,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
    /* check for correct ID */
    if (atoi(message + 8) != message_id) {
       close(fh);
-      free(message);
+      xfree(message);
       return EL_FILE_ERROR;
    }
 
@@ -4497,12 +4544,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
 
    buffer = NULL;
    if (tail_size > 0) {
-      buffer = malloc(tail_size);
-      if (buffer == NULL) {
-         free(message);
-         close(fh);
-         return EL_FILE_ERROR;
-      }
+      buffer = xmalloc(tail_size);
 
       lseek(fh, lbs->el_index[index].offset + size, SEEK_SET);
       n = read(fh, buffer, tail_size);
@@ -4511,7 +4553,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
 
    if (tail_size > 0) {
       n = write(fh, buffer, tail_size);
-      free(buffer);
+      xfree(buffer);
    }
 
    /* truncate file here */
@@ -4520,7 +4562,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
    /* if file length gets zero, delete file */
    tail_size = lseek(fh, 0, SEEK_END);
    close(fh);
-   free(message);
+   xfree(message);
 
    if (tail_size == 0)
       remove(file_name);
@@ -4532,7 +4574,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
       memcpy(&lbs->el_index[i], &lbs->el_index[i + 1], sizeof(EL_INDEX));
    }
    (*lbs->n_el_index)--;
-   lbs->el_index = realloc(lbs->el_index, sizeof(EL_INDEX) * (*lbs->n_el_index));
+   lbs->el_index = xrealloc(lbs->el_index, sizeof(EL_INDEX) * (*lbs->n_el_index));
 
    /* correct all offsets after deleted message */
    for (i = 0; i < *lbs->n_el_index; i++)
@@ -4592,9 +4634,9 @@ This routine corrects that. */
    char list[MAX_N_ATTR][NAME_LENGTH], list1[MAX_N_ATTR][NAME_LENGTH];
    char *att_file;
 
-   attrib = malloc(MAX_N_ATTR * NAME_LENGTH);
-   text = malloc(TEXT_SIZE);
-   att_file = malloc(MAX_ATTACHMENTS * 256);
+   attrib = xmalloc(MAX_N_ATTR * NAME_LENGTH);
+   text = xmalloc(TEXT_SIZE);
+   att_file = xmalloc(MAX_ATTACHMENTS * 256);
 
    el_retrieve(lbs, new_id, date, attr_list, (void *) attrib, lbs->n_attr, NULL, 0,
                in_reply_to, reply_to, (void *) att_file, encoding, locked_by);
@@ -4654,9 +4696,9 @@ This routine corrects that. */
                 locked_by);
    }
 
-   free(text);
-   free(attrib);
-   free(att_file);
+   xfree(text);
+   xfree(attrib);
+   xfree(att_file);
 
    return EL_SUCCESS;
 }
@@ -4672,7 +4714,7 @@ int el_move_message_thread(LOGBOOK * lbs, int message_id)
    char att_file[MAX_ATTACHMENTS][256];
 
    /* retrieve message */
-   text = malloc(TEXT_SIZE);
+   text = xmalloc(TEXT_SIZE);
    size = TEXT_SIZE;
    el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
                text, &size, in_reply_to, reply_to, att_file, encoding, locked_by);
@@ -4682,7 +4724,7 @@ int el_move_message_thread(LOGBOOK * lbs, int message_id)
    new_id = el_submit(lbs, 0, FALSE, date, attr_list, attrib, lbs->n_attr, text,
                       in_reply_to, reply_to, encoding, att_file, FALSE, locked_by);
 
-   free(text);
+   xfree(text);
 
    /* correct links */
    el_correct_links(lbs, message_id, new_id);
@@ -4712,7 +4754,7 @@ int el_move_message(LOGBOOK * lbs, int old_id, int new_id)
        att_file[MAX_ATTACHMENTS][256];
 
    /* retrieve message */
-   text = malloc(TEXT_SIZE);
+   text = xmalloc(TEXT_SIZE);
    size = TEXT_SIZE;
    status = el_retrieve(lbs, old_id, date, attr_list, attrib, lbs->n_attr,
                         text, &size, in_reply_to, reply_to, att_file, encoding,
@@ -4724,7 +4766,7 @@ int el_move_message(LOGBOOK * lbs, int old_id, int new_id)
    status = el_submit(lbs, new_id, FALSE, date, attr_list, attrib, lbs->n_attr, text,
                       in_reply_to, reply_to, encoding, att_file, FALSE, locked_by);
 
-   free(text);
+   xfree(text);
 
    if (status != new_id)
       return 0;
@@ -4853,29 +4895,28 @@ int is_html(char *s)
    char *str;
    int i;
 
-   str = malloc(strlen(s) + 1);
-   assert(str);
+   str = xstrdup(s);
 
    for (i = 0; i < (int) strlen(s); i++)
       str[i] = toupper(s[i]);
    str[i] = 0;
 
    if (strstr(str, "<A HREF") && strchr(str, '>')) {
-      free(str);
+      xfree(str);
       return TRUE;
    }
 
    if (strstr(str, "<BR>")) {
-      free(str);
+      xfree(str);
       return TRUE;
    }
 
    if (strstr(str, "<HR>")) {
-      free(str);
+      xfree(str);
       return TRUE;
    }
 
-   free(str);
+   xfree(str);
    return FALSE;
 }
 
@@ -4931,7 +4972,7 @@ void insert_breaks(char *str, int n, int size)
 void rsputs(const char *str)
 {
    if (strlen_retbuf + (int) strlen(str) > return_buffer_size) {
-      return_buffer = realloc(return_buffer, return_buffer_size + 100000);
+      return_buffer = xrealloc(return_buffer, return_buffer_size + 100000);
       memset(return_buffer + return_buffer_size, 0, 100000);
       return_buffer_size += 100000;
    }
@@ -4950,7 +4991,7 @@ void rsputs2(const char *str)
    char *p, *pd, link[1000], link_text[1000], tmp[1000];
 
    if (strlen_retbuf + (int) strlen(str) > return_buffer_size) {
-      return_buffer = realloc(return_buffer, return_buffer_size + 100000);
+      return_buffer = xrealloc(return_buffer, return_buffer_size + 100000);
       memset(return_buffer + return_buffer_size, 0, 100000);
       return_buffer_size += 100000;
    }
@@ -5114,7 +5155,7 @@ void rsprintf(const char *format, ...)
    va_end(argptr);
 
    if (strlen_retbuf + (int) strlen(str) > return_buffer_size) {
-      return_buffer = realloc(return_buffer, return_buffer_size + 100000);
+      return_buffer = xrealloc(return_buffer, return_buffer_size + 100000);
       memset(return_buffer + return_buffer_size, 0, 100000);
       return_buffer_size += 100000;
    }
@@ -5349,16 +5390,16 @@ void set_location(LOGBOOK * lbs, char *rel_path)
          absolute link (needed if running on DSL at home */
       if (!str[0] && strstr(http_host, "localhost")) {
          strcpy(str, "http://localhost");
-         if (tcp_port != 80)
-            sprintf(str + strlen(str), ":%d", tcp_port);
+         if (elog_tcp_port != 80)
+            sprintf(str + strlen(str), ":%d", elog_tcp_port);
          strcat(str, "/");
       }
 
       if (!str[0]) {
          /* assemble absolute path from host name and port */
          sprintf(str, "http://%s", host_name);
-         if (tcp_port != 80)
-            sprintf(str + strlen(str), ":%d", tcp_port);
+         if (elog_tcp_port != 80)
+            sprintf(str + strlen(str), ":%d", elog_tcp_port);
          strcat(str, "/");
       }
 
@@ -5829,7 +5870,7 @@ LBLIST get_logbook_hierarchy(void)
    char grplist[MAX_N_LIST][NAME_LENGTH];
 
    /* allocate root node */
-   root = malloc(sizeof(LBNODE));
+   root = xmalloc(sizeof(LBNODE));
    memset(root, 0, sizeof(LBNODE));
 
    /* enumerate groups */
@@ -5850,10 +5891,10 @@ LBLIST get_logbook_hierarchy(void)
 
          /* allocate new node, increase member pointer array by one */
          if (n == 0)
-            root->member = malloc(sizeof(void *));
+            root->member = xmalloc(sizeof(void *));
          else
-            root->member = realloc(root->member, (n + 1) * sizeof(void *));
-         root->member[n] = malloc(sizeof(LBNODE));
+            root->member = xrealloc(root->member, (n + 1) * sizeof(void *));
+         root->member[n] = xmalloc(sizeof(LBNODE));
 
          if (strlen(grpname) < 7)
             strlcpy(root->member[n]->name, "Invalid group definition!", 256);
@@ -5865,10 +5906,10 @@ LBLIST get_logbook_hierarchy(void)
          m = strbreak(grpmembers, grplist, MAX_N_LIST, ",");
          root->member[n]->n_members = m;
 
-         root->member[n]->member = calloc(sizeof(void *), m);
+         root->member[n]->member = xcalloc(sizeof(void *), m);
          root->member[n]->n_members = m;
          for (j = 0; j < m; j++) {
-            root->member[n]->member[j] = calloc(sizeof(LBNODE), 1);
+            root->member[n]->member[j] = xcalloc(sizeof(LBNODE), 1);
             strlcpy(root->member[n]->member[j]->name, grplist[j], 256);
          }
 
@@ -5895,7 +5936,7 @@ LBLIST get_logbook_hierarchy(void)
                   if (strieq(root->member[i]->member[j]->name, root->member[k]->name)) {
 
                      /* node is allocated twice, so free one... */
-                     free(root->member[i]->member[j]);
+                     xfree(root->member[i]->member[j]);
 
                      /* ... and reference the other */
                      root->member[i]->member[j] = root->member[k];
@@ -5931,11 +5972,11 @@ LBLIST get_logbook_hierarchy(void)
       for (n = 0; lb_list[n].name[0]; n++);
 
       /* make simple list with logbooks */
-      root->member = calloc(n, sizeof(void *));
+      root->member = xcalloc(n, sizeof(void *));
       root->n_members = n;
 
       for (i = 0; i < n; i++) {
-         root->member[i] = calloc(1, sizeof(LBNODE));
+         root->member[i] = xcalloc(1, sizeof(LBNODE));
          strlcpy(root->member[i]->name, lb_list[i].name, 256);
       }
    }
@@ -5956,8 +5997,8 @@ void free_logbook_hierarchy(LBLIST root)
       }
    }
 
-   free(root->member);
-   free(root);
+   xfree(root->member);
+   xfree(root);
 }
 
 /*------------------------------------------------------------------*/
@@ -6223,7 +6264,7 @@ void show_top_text(LOGBOOK * lbs)
          size = TELL(fileno(f));
          fseek(f, 0, SEEK_SET);
 
-         buf = malloc(size + 1);
+         buf = xmalloc(size + 1);
          fread(buf, 1, size, f);
          buf[size] = 0;
          fclose(f);
@@ -6259,7 +6300,7 @@ void show_bottom_text(LOGBOOK * lbs)
          size = TELL(fileno(f));
          fseek(f, 0, SEEK_SET);
 
-         buf = malloc(size + 1);
+         buf = xmalloc(size + 1);
          fread(buf, 1, size, f);
          buf[size] = 0;
          fclose(f);
@@ -6426,7 +6467,7 @@ void send_file_direct(char *file_name)
       if (length > return_buffer_size - (int) strlen(return_buffer)) {
          delta = length - (return_buffer_size - strlen(return_buffer)) + 1000;
 
-         return_buffer = realloc(return_buffer, return_buffer_size + delta);
+         return_buffer = xrealloc(return_buffer, return_buffer_size + delta);
          memset(return_buffer + return_buffer_size, 0, delta);
          return_buffer_size += delta;
       }
@@ -6683,7 +6724,7 @@ BOOL change_pwd(LOGBOOK * lbs, char *user, char *pwd)
       size = TELL(fh);
       lseek(fh, 0, SEEK_SET);
 
-      buf = malloc(size + 1);
+      buf = xmalloc(size + 1);
       read(fh, buf, size);
       buf[size] = 0;
       pl = buf;
@@ -6713,7 +6754,7 @@ BOOL change_pwd(LOGBOOK * lbs, char *user, char *pwd)
 
       /* return if not found */
       if (pl >= buf + size) {
-         free(buf);
+         xfree(buf);
          close(fh);
          return FALSE;
       }
@@ -6739,7 +6780,7 @@ BOOL change_pwd(LOGBOOK * lbs, char *user, char *pwd)
 
       TRUNCATE(fh);
 
-      free(buf);
+      xfree(buf);
       close(fh);
 
       return TRUE;
@@ -7013,7 +7054,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    for (i = 0; i < lbs->n_attr; i++)
       attrib[i][0] = 0;
 
-   text = malloc(TEXT_SIZE);
+   text = xmalloc(TEXT_SIZE);
    text[0] = 0;
 
    if (breedit || bupload) {
@@ -7154,7 +7195,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       if (i >= MAX_REPLY_TO) {
          sprintf(str, loc("Maximum number of replies (%d) exceeded"), MAX_REPLY_TO);
          show_error(str);
-         free(text);
+         xfree(text);
          return;
       }
    }
@@ -7165,7 +7206,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       if (!is_author(lbs, attrib, owner)) {
          sprintf(str, loc("Only user <i>%s</i> can edit this entry"), owner);
          show_error(str);
-         free(text);
+         xfree(text);
          return;
       }
    }
@@ -7181,7 +7222,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          sprintf(str, loc("Entry can only be edited %1.2lg hours after creation"),
                  atof(str));
          show_error(str);
-         free(text);
+         xfree(text);
          return;
       }
    }
@@ -8041,12 +8082,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          if (fh > 0) {
             length = lseek(fh, 0, SEEK_END);
             lseek(fh, 0, SEEK_SET);
-            buffer = malloc(length + 1);
+            buffer = xmalloc(length + 1);
             read(fh, buffer, length);
             buffer[length] = 0;
             close(fh);
             rsputs(buffer);
-            free(buffer);
+            xfree(buffer);
          } else {
             j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
             strsubst(str, slist, svalue, j);
@@ -8242,7 +8283,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (condition[0])
       scan_attributes(lbs->name);
 
-   free(text);
+   xfree(text);
 }
 
 /*------------------------------------------------------------------*/
@@ -8546,12 +8587,7 @@ void load_config_section(char *section, char **buffer, char *error)
    }
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   *buffer = malloc(length + 1);
-   if (*buffer == NULL) {
-      close(fh);
-      strcpy(error, "Error: out of memory");
-      return;
-   }
+   *buffer = xmalloc(length + 1);
    read(fh, *buffer, length);
    (*buffer)[length] = 0;
    close(fh);
@@ -8690,7 +8726,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
    rsprintf("<textarea cols=%d rows=%d wrap=virtual name=Text>", cols, rows);
 
    rsputs2(buffer);
-   free(buffer);
+   xfree(buffer);
 
    rsprintf("</textarea>\n");
 
@@ -8745,8 +8781,7 @@ void adjust_crlf(char *buffer, int bufsize)
    char *tmpbuf;
 
    assert(bufsize);
-   tmpbuf = malloc(bufsize);
-   assert(tmpbuf);
+   tmpbuf = xmalloc(bufsize);
 
    /* convert \n -> \r\n */
    p = buffer;
@@ -8768,7 +8803,7 @@ void adjust_crlf(char *buffer, int bufsize)
       p++;
    }
 
-   free(tmpbuf);
+   xfree(tmpbuf);
 #endif
 }
 
@@ -8792,8 +8827,7 @@ int save_admin_config(char *section, char *buffer, char *error)
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   buf = malloc(length + strlen(buffer) + 10);
-   assert(buf);
+   buf = xmalloc(length + strlen(buffer) + 10);
    read(fh, buf, length);
    buf[length] = 0;
 
@@ -8804,12 +8838,9 @@ int save_admin_config(char *section, char *buffer, char *error)
    /* save tail */
    buf2 = NULL;
 
-   if (p2) {
-      buf2 = malloc(strlen(p2) + 1);
-      assert(buf2);
-      strlcpy(buf2, p2, strlen(p2) + 1);
-   }
-
+   if (p2)
+      buf2 = xstrdup(p2);
+   
    /* combine old and new config */
    sprintf(p1, "[%s]\r\n", section);
    strcat(p1, buffer);
@@ -8817,7 +8848,7 @@ int save_admin_config(char *section, char *buffer, char *error)
 
    if (p2) {
       strlcat(p1, buf2, length + strlen(buffer) + 1);
-      free(buf2);
+      xfree(buf2);
    }
 
    adjust_crlf(buf, length + strlen(buffer) + 10);
@@ -8829,14 +8860,14 @@ int save_admin_config(char *section, char *buffer, char *error)
       strcat(error, ": ");
       strcat(error, strerror(errno));
       close(fh);
-      free(buf);
+      xfree(buf);
       return 0;
    }
 
    TRUNCATE(fh);
 
    close(fh);
-   free(buf);
+   xfree(buf);
 
    /* force re-read of config file */
    check_config_file(TRUE);
@@ -8865,8 +8896,7 @@ int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_v
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
    bufsize = 2*(length + strlen(new_value) + 10);
-   buf = malloc(bufsize);
-   assert(buf);
+   buf = xmalloc(bufsize);
    read(fh, buf, length);
    buf[length] = 0;
 
@@ -8896,11 +8926,8 @@ int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_v
       p3--;
 
    buf2 = NULL;
-   if (p3) {
-      buf2 = malloc(strlen(p3) + 1);
-      assert(buf2);
-      strlcpy(buf2, p3, strlen(p3) + 1);
-   }
+   if (p3)
+      buf2 = xstrdup(p3);
 
    if (old_value[0]) {
       for (i = 0; i < n; i++) {
@@ -8933,7 +8960,7 @@ int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_v
    /* append tail */
    if (buf2) {
       strlcat(p2, buf2, length + strlen(new_value) + 10);
-      free(buf2);
+      xfree(buf2);
    }
 
    adjust_crlf(buf, bufsize);
@@ -8946,14 +8973,14 @@ int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_v
       strcat(str, strerror(errno));
       show_error(str);
       close(fh);
-      free(buf);
+      xfree(buf);
       return 0;
    }
 
    TRUNCATE(fh);
 
    close(fh);
-   free(buf);
+   xfree(buf);
 
    /* force re-read of config file */
    check_config_file(TRUE);
@@ -8984,8 +9011,7 @@ int delete_logbook(LOGBOOK * lbs, char *error)
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   buf = malloc(length + 1);
-   assert(buf);
+   buf = xmalloc(length + 1);
    read(fh, buf, length);
    buf[length] = 0;
 
@@ -9005,14 +9031,14 @@ int delete_logbook(LOGBOOK * lbs, char *error)
       strcat(error, ": ");
       strcat(error, strerror(errno));
       close(fh);
-      free(buf);
+      xfree(buf);
       return 0;
    }
 
    TRUNCATE(fh);
 
    close(fh);
-   free(buf);
+   xfree(buf);
 
    /* force re-read of config file */
    check_config_file(TRUE);
@@ -9056,8 +9082,7 @@ int rename_logbook(LOGBOOK * lbs, char *new_name)
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
    bufsize = 2*(length + strlen(new_name) + 10);
-   buf = malloc(bufsize);
-   assert(buf);
+   buf = xmalloc(bufsize);
    read(fh, buf, length);
    buf[length] = 0;
 
@@ -9066,22 +9091,20 @@ int rename_logbook(LOGBOOK * lbs, char *new_name)
    p2 = strchr(p1, ']');
    if (p2 == NULL) {
       close(fh);
-      free(buf);
+      xfree(buf);
       show_error(loc("Syntax error in config file"));
       return 0;
    }
    p2++;
 
    /* save tail */
-   buf2 = malloc(strlen(p2) + 1);
-   assert(buf2);
-   strlcpy(buf2, p2, strlen(p2) + 1);
+   buf2 = xstrdup(p2);
 
    /* replace logbook name */
    sprintf(p1, "[%s]", new_name);
 
    strlcat(p1, buf2, length + strlen(new_name) + 1);
-   free(buf2);
+   xfree(buf2);
 
    adjust_crlf(buf, bufsize);
 
@@ -9093,14 +9116,14 @@ int rename_logbook(LOGBOOK * lbs, char *new_name)
       strcat(str, strerror(errno));
       show_error(str);
       close(fh);
-      free(buf);
+      xfree(buf);
       return 0;
    }
 
    TRUNCATE(fh);
 
    close(fh);
-   free(buf);
+   xfree(buf);
 
    /* force re-read of config file */
    check_config_file(TRUE);
@@ -9132,8 +9155,7 @@ int create_logbook(LOGBOOK * oldlbs, char *logbook, char *templ)
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
    bufsize = 2*(2 * length + 1);
-   buf = malloc(bufsize);
-   assert(buf);
+   buf = xmalloc(bufsize);
    read(fh, buf, length);
    buf[length] = 0;
    templ_length = 0;
@@ -9187,14 +9209,14 @@ int create_logbook(LOGBOOK * oldlbs, char *logbook, char *templ)
       strcat(str, strerror(errno));
       show_error(str);
       close(fh);
-      free(buf);
+      xfree(buf);
       return 0;
    }
 
    TRUNCATE(fh);
 
    close(fh);
-   free(buf);
+   xfree(buf);
 
    /* force re-read of config file */
    check_config_file(TRUE);
@@ -9220,7 +9242,7 @@ int save_config(char *buffer, char *error)
       return 0;
    }
 
-   buf = malloc(strlen(buffer)*2);
+   buf = xmalloc(strlen(buffer)*2);
    strlcpy(buf, buffer, strlen(buffer)*2);
    adjust_crlf(buf, strlen(buffer)*2);
 
@@ -9312,7 +9334,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
       size = TELL(fh);
       lseek(fh, 0, SEEK_SET);
 
-      buf = malloc(size + 1);
+      buf = xmalloc(size + 1);
       read(fh, buf, size);
       buf[size] = 0;
       pl = buf;
@@ -9341,7 +9363,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
                sprintf(str, "%s \"%s\" %s", loc("Login name"), user,
                        loc("exists already"));
                show_error(str);
-               free(buf);
+               xfree(buf);
                close(fh);
                return 0;
             }
@@ -9387,7 +9409,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
          TRUNCATE(fh);
       }
 
-      free(buf);
+      xfree(buf);
       close(fh);
    }
 
@@ -9405,10 +9427,10 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
          if (referer[0])
             strcpy(url, referer);
          else {
-            if (tcp_port == 80)
+            if (elog_tcp_port == 80)
                sprintf(url, "http://%s/", host_name);
             else
-               sprintf(url, "http://%s:%d/", host_name, tcp_port);
+               sprintf(url, "http://%s:%d/", host_name, elog_tcp_port);
          }
       } else {
          if (url[strlen(url) - 1] != '/')
@@ -9558,7 +9580,7 @@ int remove_user(LOGBOOK * lbs, char *user)
    size = TELL(fh);
    lseek(fh, 0, SEEK_SET);
 
-   buf = malloc(size + 1);
+   buf = xmalloc(size + 1);
    read(fh, buf, size);
    buf[size] = 0;
    pl = buf;
@@ -9598,7 +9620,7 @@ int remove_user(LOGBOOK * lbs, char *user)
 
    TRUNCATE(fh);
 
-   free(buf);
+   xfree(buf);
    close(fh);
 
    return 1;
@@ -9667,9 +9689,9 @@ void show_config_page(LOGBOOK * lbs)
       }
 
       /* allocate list of users and populate it */
-      user_list = calloc(sizeof(char *), n);
+      user_list = xcalloc(sizeof(char *), n);
       for (i = 0; i < n; i++)
-         user_list[i] = calloc(NAME_LENGTH, 1);
+         user_list[i] = xcalloc(NAME_LENGTH, 1);
 
       for (i = 0; i < n; i++)
          enum_user_line(lbs, i, user_list[i]);
@@ -9685,8 +9707,8 @@ void show_config_page(LOGBOOK * lbs)
       }
 
       for (i = 0; i < n; i++)
-         free(user_list[i]);
-      free(user_list);
+         xfree(user_list[i]);
+      xfree(user_list);
 
       rsprintf("</select>\n");
 
@@ -9795,10 +9817,10 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
                if (referer[0])
                   strcpy(url, referer);
                else {
-                  if (tcp_port == 80)
+                  if (elog_tcp_port == 80)
                      sprintf(url, "http://%s/", host_name);
                   else
-                     sprintf(url, "http://%s:%d/", host_name, tcp_port);
+                     sprintf(url, "http://%s:%d/", host_name, elog_tcp_port);
                }
             } else {
                if (url[strlen(url) - 1] != '/')
@@ -10306,7 +10328,7 @@ int show_download_page(LOGBOOK * lbs, char *path)
 
       size = strlen(buffer);
       strlcpy(message, buffer, sizeof(message));
-      free(buffer);
+      xfree(buffer);
 
    } else {
 
@@ -10323,7 +10345,7 @@ int show_download_page(LOGBOOK * lbs, char *path)
 
          size = strlen(buffer);
          strlcpy(message, buffer, sizeof(message));
-         free(buffer);
+         xfree(buffer);
 
       } else {
 
@@ -10368,7 +10390,7 @@ int show_download_page(LOGBOOK * lbs, char *path)
    if (size > return_buffer_size - (int) strlen(return_buffer)) {
       delta = size - (return_buffer_size - strlen(return_buffer)) + 1000;
 
-      return_buffer = realloc(return_buffer, return_buffer_size + delta);
+      return_buffer = xrealloc(return_buffer, return_buffer_size + delta);
       memset(return_buffer + return_buffer_size, 0, delta);
       return_buffer_size += delta;
    }
@@ -10396,7 +10418,7 @@ int download_config()
 
    size = strlen(buffer);
    strlcpy(message, buffer, sizeof(message));
-   free(buffer);
+   xfree(buffer);
 
    show_plain_header(size, "export.txt");
 
@@ -10404,7 +10426,7 @@ int download_config()
    if (size > return_buffer_size - (int) strlen(return_buffer)) {
       delta = size - (return_buffer_size - strlen(return_buffer)) + 1000;
 
-      return_buffer = realloc(return_buffer, return_buffer_size + delta);
+      return_buffer = xrealloc(return_buffer, return_buffer_size + delta);
       memset(return_buffer + return_buffer_size, 0, delta);
       return_buffer_size += delta;
    }
@@ -10534,14 +10556,8 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
    int i, j, n, n_attr, iline, n_imported, textcol;
    BOOL first, in_quotes, filltext;
 
-   list = malloc(MAX_N_ATTR * NAME_LENGTH);
-   if (list == NULL)
-      return;
-   line = malloc(10000);
-   if (line == NULL) {
-      free(list);
-      return;
-   }
+   list = xmalloc(MAX_N_ATTR * NAME_LENGTH);
+   line = xmalloc(10000);
 
    first = TRUE;
    in_quotes = FALSE;
@@ -10745,8 +10761,8 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
 
    } while (*p);
 
-   free(line);
-   free(list);
+   xfree(line);
+   xfree(list);
 
    if (isparam("preview")) {
       rsprintf("</table></td></tr></table>\n");
@@ -10791,7 +10807,7 @@ int show_md5_page(LOGBOOK * lbs)
          rsprintf("%02X", digest[i]);
       rsprintf("\n");
    }
-   free(buffer);
+   xfree(buffer);
 
    /* show MD5's of logbook entries */
    for (i = 0; i < *lbs->n_el_index; i++) {
@@ -10857,7 +10873,7 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
       if (isparam("debug"))
          rsputs(text);
       sprintf(error_str, loc("Remote server is not an ELOG server"));
-      free(text);
+      xfree(text);
       return -1;
    }
    version = atoi(p + 10) * 100 + atoi(p + 12) * 10 + atoi(p + 14);
@@ -10867,7 +10883,7 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
       memset(str, 0, sizeof(str));
       strncpy(str, p + 10, 5);
       sprintf(error_str, loc("Incorrect remote ELOG server version %s"), str);
-      free(text);
+      xfree(text);
       return -1;
    }
 
@@ -10899,7 +10915,7 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
       if (isparam("debug"))
          rsputs(text);
       sprintf(error_str, loc("Invalid HTTP header"));
-      free(text);
+      xfree(text);
       return -1;
    }
 
@@ -10917,9 +10933,9 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
       p += 4;
 
       if (n == 0)
-         *md5_index = malloc(sizeof(MD5_INDEX));
+         *md5_index = xmalloc(sizeof(MD5_INDEX));
       else
-         *md5_index = realloc(*md5_index, (n + 1) * sizeof(MD5_INDEX));
+         *md5_index = xrealloc(*md5_index, (n + 1) * sizeof(MD5_INDEX));
 
       (*md5_index)[n].message_id = id;
 
@@ -10934,13 +10950,13 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
          rsputs(text);
       if (strstr(text, "Login")) {
          sprintf(error_str, loc("No user name supplied to access remote logbook"));
-         free(text);
+         xfree(text);
          return -2;
       } else
          sprintf(error_str, loc("Error accessing remote logbook"));
    }
 
-   free(text);
+   xfree(text);
 
    return n;
 }
@@ -11000,7 +11016,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    struct hostent *phe;
    struct sockaddr_in bind_addr;
 
-   text = malloc(TEXT_SIZE);
+   text = xmalloc(TEXT_SIZE);
    error_str[0] = 0;
 
    /* get message with attribute list devied from database */
@@ -11010,7 +11026,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
                    text, &size, in_reply_to, reply_to, attachment, encoding, locked_by);
 
    if (status != EL_SUCCESS) {
-      free(text);
+      xfree(text);
       strcpy(error_str, loc("Cannot read entry from local logbook"));
       return -1;
    }
@@ -11023,7 +11039,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 
    /* create socket */
    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-      free(text);
+      xfree(text);
       strcpy(error_str, loc("Cannot create socket"));
       return -1;
    }
@@ -11040,7 +11056,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    phe = gethostbyname(host_name);
    if (phe == NULL) {
       closesocket(sock);
-      free(text);
+      xfree(text);
       sprintf(error_str, loc("Cannot resolve host name \"%s\""), host_name);
       return -1;
    }
@@ -11050,7 +11066,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
    if (status != 0) {
       closesocket(sock);
-      free(text);
+      xfree(text);
       sprintf(error_str, loc("Cannot connect to host %s, port %d"), host_name, port);
       return -1;
    }
@@ -11072,13 +11088,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
          content_length += size;
       }
 
-   content = malloc(content_length);
-   if (content == NULL) {
-      closesocket(sock);
-      free(text);
-      strcpy(error_str, loc("Not enough memory"));
-      return -1;
-   }
+   content = xmalloc(content_length);
 
    /* compose content */
    srand((unsigned) time(NULL));
@@ -11141,18 +11151,8 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
             lseek(fh, 0, SEEK_END);
             size = TELL(fh);
             lseek(fh, 0, SEEK_SET);
-
-            buffer = malloc(size);
-
-            if (buffer == NULL) {
-               closesocket(sock);
-               free(text);
-               strcpy(error_str, loc("Not enough memory"));
-               return -1;
-            }
-
+            buffer = xmalloc(size);
             read(fh, buffer, size);
-
             close(fh);
 
             /* submit attachment */
@@ -11171,7 +11171,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
             content_length += size + strlen(p);
             p += strlen(p);
 
-            free(buffer);
+            xfree(buffer);
          }
       }
 
@@ -11209,7 +11209,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    i = recv(sock, response, 10000, 0);
    if (i < 0) {
       closesocket(sock);
-      free(text);
+      xfree(text);
       strcpy(error_str, "Cannot receive response");
       return -1;
    }
@@ -11262,7 +11262,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    if (error_str[0] && isparam("debug"))
       rsputs(response);
 
-   free(text);
+   xfree(text);
 
    if (error_str[0])
       return -1;
@@ -11294,7 +11294,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
    if (p == NULL) {
       if (isparam("debug"))
          rsputs(message);
-      free(message);
+      xfree(message);
       sprintf(error_str, loc("Cannot receive \"%s\""), str);
       return -1;
    }
@@ -11304,7 +11304,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
    if (atoi(p + 8) != message_id) {
       if (isparam("debug"))
          rsputs(message);
-      free(message);
+      xfree(message);
       sprintf(error_str, loc("Received wrong entry id \"%d\""), atoi(p + 8));
       return -1;
    }
@@ -11343,7 +11343,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
 
    el_decode(p, "Locked by: ", locked_by);
    if (locked_by[0]) {
-      free(message);
+      xfree(message);
       sprintf(error_str, loc("Entry #%d is locked on remote server"), message_id);
       return -1;
    }
@@ -11365,7 +11365,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
                          attrib, n_attr, p, in_reply_to, reply_to,
                          encoding, attachment, FALSE, "");
 
-      free(message);
+      xfree(message);
 
       if (status != message_id) {
          sprintf(error_str, loc("Cannot save remote entry locally"));
@@ -11383,18 +11383,18 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
             size = retrieve_url(str, &message, NULL);
             p = strstr(message, "\r\n\r\n");
             if (p == NULL) {
-               free(message);
+               xfree(message);
                sprintf(error_str, loc("Cannot receive \"%s\""), str);
                return -1;
             }
             p += 4;
 
             el_submit_attachment(lbs, attachment[i], p, size, NULL);
-            free(message);
+            xfree(message);
          }
       }
    } else {
-      free(message);
+      xfree(message);
       return -1;
    }
 
@@ -11449,12 +11449,7 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
    }
 
    content_length = 100000;
-   content = malloc(content_length);
-   if (content == NULL) {
-      closesocket(sock);
-      strcpy(error_str, loc("Not enough memory"));
-      return;
-   }
+   content = xmalloc(content_length);
 
    /* compose content */
    srand((unsigned) time(NULL));
@@ -11580,7 +11575,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
          if (verbose)
             puts(buffer);
          sprintf(error_str, "Remote server is not an ELOG server");
-         free(buffer);
+         xfree(buffer);
          return;
       }
       version = atoi(p + 10) * 100 + atoi(p + 12) * 10 + atoi(p + 14);
@@ -11594,7 +11589,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
 
          sprintf(error_str,
                  "Incorrect remote ELOG server version %s, must be 2.5.4 or later", str);
-         free(buffer);
+         xfree(buffer);
          return;
       }
 
@@ -11603,11 +11598,11 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
       if (p == NULL) {
          if (verbose)
             puts(buffer);
-         free(buffer);
+         xfree(buffer);
          *strchr(str, '?') = 0;
          sprintf(error_str, "Received invalid response from elogd server at http://%s",
                  str);
-         free(buffer);
+         xfree(buffer);
          return;
       }
       p++;
@@ -11615,7 +11610,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
       if (status == 401) {
          if (verbose)
             puts(buffer);
-         free(buffer);
+         xfree(buffer);
          eprintf("Please enter password to access remote elogd server: ");
          fgets(pwd, sizeof(pwd), stdin);
          while (pwd[strlen(pwd) - 1] == '\n' || pwd[strlen(pwd) - 1] == '\r')
@@ -11623,7 +11618,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
       } else if (status != 200) {
          if (verbose)
             puts(buffer);
-         free(buffer);
+         xfree(buffer);
          *strchr(str, '?') = 0;
          sprintf(error_str, "Received invalid response from elogd server at http://%s",
                  str);
@@ -11636,7 +11631,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
    if (p == NULL) {
       if (verbose)
          puts(buffer);
-      free(buffer);
+      xfree(buffer);
       sprintf(error_str, loc("Cannot receive \"%s\""), str);
       return;
    }
@@ -11650,7 +11645,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
          rsprintf(str);
    }
 
-   free(buffer);
+   xfree(buffer);
 }
 
 /*------------------------------------------------------------------*/
@@ -11673,8 +11668,7 @@ int adjust_config(char *url)
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   buf = malloc(2*length + 1000);
-   assert(buf);
+   buf = xmalloc(2*length + 1000);
    read(fh, buf, length);
    buf[length] = 0;
 
@@ -11699,15 +11693,12 @@ int adjust_config(char *url)
 
    /* save tail */
    buf2 = NULL;
-   if (p2) {
-      buf2 = malloc(strlen(p2) + 1);
-      assert(buf2);
-      strlcpy(buf2, p2, strlen(p2) + 1);
-   }
+   if (p2)
+      buf2 = xstrdup(p2);
 
    sprintf(p1, "Mirror server = %s\r\n", url);
    strlcat(p1, buf2, length + 1000);
-   free(buf2);
+   xfree(buf2);
    eprintf("Option \"Mirror server = %s\" added to config file.\n", url);
 
    /* outcomment "URL = xxx" */
@@ -11715,15 +11706,13 @@ int adjust_config(char *url)
    if (p1 != NULL) {
 
       /* save tail */
-      buf2 = malloc(strlen(p1) + 1);
-      assert(buf2);
-      strlcpy(buf2, p1, strlen(p1) + 1);
+      buf2 = xstrdup(p1);
 
       /* add comment */
       sprintf(p1, "; Following line has been outcommented after cloning\r\n");
       strlcat(p1, "; ", length + 1000);
       strlcat(p1, buf2, length + 1000);
-      free(buf2);
+      xfree(buf2);
 
       eputs("Option \"URL = xxx\" has been outcommented from config file.");
    }
@@ -11738,14 +11727,14 @@ int adjust_config(char *url)
       strcat(str, strerror(errno));
       eputs(str);
       close(fh);
-      free(buf);
+      xfree(buf);
       return 0;
    }
 
    TRUNCATE(fh);
 
    close(fh);
-   free(buf);
+   xfree(buf);
 
    return 1;
 }
@@ -11775,7 +11764,7 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
       p = strstr(buffer, "ELOG HTTP ");
       if (!p) {
          sprintf(error_str, "Remote server is not an ELOG server");
-         free(buffer);
+         xfree(buffer);
          return;
       }
       version = atoi(p + 10) * 100 + atoi(p + 12) * 10 + atoi(p + 14);
@@ -11786,30 +11775,30 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
 
          sprintf(error_str,
                  "Incorrect remote ELOG server version %s, must be 2.5.4 or later", str);
-         free(buffer);
+         xfree(buffer);
          return;
       }
 
       /* evaluate status */
       p = strchr(buffer, ' ');
       if (p == NULL) {
-         free(buffer);
+         xfree(buffer);
          *strchr(str, '?') = 0;
          sprintf(error_str, "Received invalid response from elogd server at http://%s",
                  str);
-         free(buffer);
+         xfree(buffer);
          return;
       }
       p++;
       status = atoi(p);
       if (status == 401) {
-         free(buffer);
+         xfree(buffer);
          eprintf("Please enter password to access remote elogd server: ");
          fgets(pwd, sizeof(pwd), stdin);
          while (pwd[strlen(pwd) - 1] == '\n' || pwd[strlen(pwd) - 1] == '\r')
             pwd[strlen(pwd) - 1] = 0;
       } else if (status != 200 && status != 302) {
-         free(buffer);
+         xfree(buffer);
          *strchr(str, '?') = 0;
          sprintf(error_str, "Received invalid response from elogd server at http://%s",
                  str);
@@ -11818,7 +11807,7 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
 
       p = strstr(buffer, "\r\n\r\n");
       if (p == NULL) {
-         free(buffer);
+         xfree(buffer);
          sprintf(error_str, loc("Cannot receive \"%s\""), str);
          return;
       }
@@ -11863,8 +11852,7 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
       return;
    }
 
-   buf = malloc(2*strlen(p));
-   assert(buf);
+   buf = xmalloc(2*strlen(p));
    strlcpy(buf, p, 2*strlen(p));
    adjust_crlf(buf, 2*strlen(p));
 
@@ -11874,8 +11862,8 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
       strcat(error_str, ": ");
       strcat(error_str, strerror(errno));
       close(fh);
-      free(buf);
-      free(buffer);
+      xfree(buf);
+      xfree(buffer);
       return;
    }
 
@@ -11883,8 +11871,8 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
 
    close(fh);
 
-   free(buf);
-   free(buffer);
+   xfree(buf);
+   xfree(buffer);
 }
 
 /*------------------------------------------------------------------*/
@@ -11971,9 +11959,9 @@ int load_md5(LOGBOOK * lbs, char *server, MD5_INDEX ** md5_index)
          break;
 
       if (i == 0)
-         *md5_index = calloc(sizeof(MD5_INDEX), 1);
+         *md5_index = xcalloc(sizeof(MD5_INDEX), 1);
       else
-         *md5_index = realloc(*md5_index, sizeof(MD5_INDEX) * (i + 1));
+         *md5_index = xrealloc(*md5_index, sizeof(MD5_INDEX) * (i + 1));
 
       p = str + 2;
 
@@ -12100,7 +12088,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                mprint(lbs, mode, error_str);
 
                if (md5_remote)
-                  free(md5_remote);
+                  xfree(md5_remote);
 
                if (mode == SYNC_HTML)
                   rsprintf("</pre>\n");
@@ -12220,7 +12208,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
          flush_return_buffer();
 
          if (buffer)
-            free(buffer);
+            xfree(buffer);
       }
 
       /*---- loop through logbook entries ----*/
@@ -12701,7 +12689,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                                  mprint(lbs, mode, loc("Error deleting remote entry"));
                               }
 
-                              free(buffer);
+                              xfree(buffer);
                            } else {
                               sprintf(str, "ID%d:\t%s", message_id,
                                       loc("Entry should be deleted remotely"));
@@ -12718,7 +12706,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
             flush_return_buffer();
          }
 
-      free(md5_remote);
+      xfree(md5_remote);
 
       /* save remote MD5s in file */
       if (!all_identical) {
@@ -12744,11 +12732,11 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
             save_md5(lbs, list[index], md5_remote, n_remote);
 
          if (md5_remote)
-            free(md5_remote);
+            xfree(md5_remote);
       }
 
       if (md5_cache)
-         free(md5_cache);
+         xfree(md5_cache);
 
       if (mode == SYNC_HTML && n_delete) {
 
@@ -12855,8 +12843,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    struct tm *pts;
    time_t ltime;
 
-   slist = malloc((MAX_N_ATTR + 10) * NAME_LENGTH);
-   svalue = malloc((MAX_N_ATTR + 10) * NAME_LENGTH);
+   slist = xmalloc((MAX_N_ATTR + 10) * NAME_LENGTH);
+   svalue = xmalloc((MAX_N_ATTR + 10) * NAME_LENGTH);
 
    sprintf(ref, "../%s/%d", lbs->name_enc, message_id);
 
@@ -13331,8 +13319,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          rsprintf("</td></tr>\n");
    }
 
-   free(slist);
-   free(svalue);
+   xfree(slist);
+   xfree(svalue);
 }
 
 /*------------------------------------------------------------------*/
@@ -13345,14 +13333,14 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable,
        *attrib, *p;
    int status, size;
 
-   text = malloc(TEXT_SIZE);
-   attachment = malloc(MAX_ATTACHMENTS * MAX_PATH_LENGTH);
-   attrib = malloc(MAX_N_ATTR * NAME_LENGTH);
-   date = malloc(80);
-   in_reply_to = malloc(80);
-   reply_to = malloc(256);
-   encoding = malloc(80);
-   locked_by = malloc(256);
+   text = xmalloc(TEXT_SIZE);
+   attachment = xmalloc(MAX_ATTACHMENTS * MAX_PATH_LENGTH);
+   attrib = xmalloc(MAX_N_ATTR * NAME_LENGTH);
+   date = xmalloc(80);
+   in_reply_to = xmalloc(80);
+   reply_to = xmalloc(256);
+   encoding = xmalloc(80);
+   locked_by = xmalloc(256);
 
    if (locked_by == NULL)
       return;
@@ -13365,14 +13353,14 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable,
                    encoding, locked_by);
 
    if (status != EL_SUCCESS) {
-      free(text);
-      free(attachment);
-      free(attrib);
-      free(date);
-      free(in_reply_to);
-      free(reply_to);
-      free(encoding);
-      free(locked_by);
+      xfree(text);
+      xfree(attachment);
+      xfree(attrib);
+      xfree(date);
+      xfree(in_reply_to);
+      xfree(reply_to);
+      xfree(encoding);
+      xfree(locked_by);
       return;
    }
 
@@ -13394,14 +13382,14 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable,
       } while (*p);
    }
 
-   free(text);
-   free(attachment);
-   free(attrib);
-   free(date);
-   free(in_reply_to);
-   free(reply_to);
-   free(encoding);
-   free(locked_by);
+   xfree(text);
+   xfree(attachment);
+   xfree(attrib);
+   xfree(date);
+   xfree(in_reply_to);
+   xfree(reply_to);
+   xfree(encoding);
+   xfree(locked_by);
 }
 
 /*------------------------------------------------------------------*/
@@ -13488,11 +13476,11 @@ void subst_param(char *str, int size, char *param, char *value)
       strlcpy(p1 + strlen(value), p2, size - ((int) p1 + strlen(value) - (int) str));
    } else {
       /* new value is longer than old one */
-      s = malloc(size);
+      s = xmalloc(size);
       strlcpy(s, p2, size);
       strlcpy(p1, value, size - ((int) p1 - (int) str));
       strlcat(p1, s, size - ((int) p1 + strlen(value) - (int) str));
-      free(s);
+      xfree(s);
    }
 
 }
@@ -14307,10 +14295,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       redirect(lbs, str);
    }
 
-   slist = malloc((MAX_N_ATTR + 10) * NAME_LENGTH);
-   svalue = malloc((MAX_N_ATTR + 10) * NAME_LENGTH);
-   gattr = malloc(MAX_N_ATTR * NAME_LENGTH);
-   list = malloc(10000);
+   slist = xmalloc((MAX_N_ATTR + 10) * NAME_LENGTH);
+   svalue = xmalloc((MAX_N_ATTR + 10) * NAME_LENGTH);
+   gattr = xmalloc(MAX_N_ATTR * NAME_LENGTH);
+   list = xmalloc(10000);
 
    printable = atoi(getparam("Printable"));
 
@@ -14372,10 +14360,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
       ltime_start = retrieve_date("a", TRUE);
       if (ltime_start < 0) {
-         free(slist);
-         free(svalue);
-         free(gattr);
-         free(list);
+         xfree(slist);
+         xfree(svalue);
+         xfree(gattr);
+         xfree(list);
          return;
       }
 
@@ -14388,10 +14376,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
       ltime_end = retrieve_date("b", FALSE);
       if (ltime_end < 0) {
-         free(slist);
-         free(svalue);
-         free(gattr);
-         free(list);
+         xfree(slist);
+         xfree(svalue);
+         xfree(gattr);
+         xfree(list);
          return;
       }
 
@@ -14400,10 +14388,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          if (ltime_end <= ltime_start) {
             sprintf(str, "Error: Start date after end date");
             show_error(str);
-            free(slist);
-            free(svalue);
-            free(gattr);
-            free(list);
+            xfree(slist);
+            xfree(svalue);
+            xfree(gattr);
+            xfree(list);
             return;
          }
 
@@ -14416,10 +14404,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
    if (ltime_start && ltime_end && ltime_start > ltime_end) {
       show_error(loc("Error: start date after end date"));
-      free(slist);
-      free(svalue);
-      free(gattr);
-      free(list);
+      xfree(slist);
+      xfree(svalue);
+      xfree(gattr);
+      xfree(list);
       return;
    }
 
@@ -14454,7 +14442,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       n_msg = *lbs->n_el_index;
    }
 
-   msg_list = malloc(sizeof(MSG_LIST) * n_msg);
+   msg_list = xmalloc(sizeof(MSG_LIST) * n_msg);
 
    lbs_cur = lbs;
    for (i = n = 0; i < n_logbook; i++) {
@@ -14544,17 +14532,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    if (*getparam("subtext"))
       filtering = TRUE;
 
-   text = malloc(TEXT_SIZE);
-   text1 = malloc(TEXT_SIZE);
-   text2 = malloc(TEXT_SIZE);
-   if (text2 == NULL) {
-      show_error("Out of memory");
-      free(slist);
-      free(svalue);
-      free(gattr);
-      free(list);
-      return;
-   }
+   text = xmalloc(TEXT_SIZE);
+   text1 = xmalloc(TEXT_SIZE);
+   text2 = xmalloc(TEXT_SIZE);
 
    /* do filtering */
    for (index = 0; index < n_msg; index++) {
@@ -14987,7 +14967,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             size = TELL(fileno(f));
             fseek(f, 0, SEEK_SET);
 
-            buf = malloc(size + 1);
+            buf = xmalloc(size + 1);
             fread(buf, 1, size, f);
             buf[size] = 0;
             fclose(f);
@@ -15450,14 +15430,14 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       rsputs("</ELOG_LIST>\n");
    }
 
-   free(slist);
-   free(svalue);
-   free(gattr);
-   free(list);
-   free(msg_list);
-   free(text);
-   free(text1);
-   free(text2);
+   xfree(slist);
+   xfree(svalue);
+   xfree(gattr);
+   xfree(list);
+   xfree(msg_list);
+   xfree(text);
+   xfree(text1);
+   xfree(text2);
 }
 
 /*------------------------------------------------------------------*/
@@ -15485,7 +15465,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
 
    retrieve_email_from(lbs, mail_from);
 
-   mail_text = malloc(TEXT_SIZE + 1000);
+   mail_text = xmalloc(TEXT_SIZE + 1000);
    mail_text[0] = 0;
 
    if (flags & 1) {
@@ -15576,10 +15556,10 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
       if (referer[0])
          strcpy(str, referer);
       else {
-         if (tcp_port == 80)
+         if (elog_tcp_port == 80)
             sprintf(str, "http://%s/", host_name);
          else
-            sprintf(str, "http://%s:%d/", host_name, tcp_port);
+            sprintf(str, "http://%s:%d/", host_name, elog_tcp_port);
          strcat(str, lbs->name);
          strcat(str, "/");
       }
@@ -15651,7 +15631,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
       }
    }
 
-   free(mail_text);
+   xfree(mail_text);
 
    return status;
 }
@@ -15703,8 +15683,7 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue)
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   buf = malloc(length + strlen(attrvalue) + 3);
-   assert(buf);
+   buf = xmalloc(length + strlen(attrvalue) + 3);
    read(fh, buf, length);
    buf[length] = 0;
 
@@ -15728,11 +15707,8 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue)
 
    /* save tail */
    buf2 = NULL;
-   if (p2) {
-      buf2 = malloc(strlen(p2) + 1);
-      assert(buf2);
-      strlcpy(buf2, p2, strlen(p2) + 1);
-   }
+   if (p2)
+      buf2 = xstrdup(p2);
 
    /* add option */
    p3 = strchr(p1, '\n');
@@ -15744,7 +15720,7 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue)
    sprintf(p3, ", %s", attrvalue);
    if (p2) {
       strlcat(buf, buf2, length + strlen(attrvalue) + 3);
-      free(buf2);
+      xfree(buf2);
    }
 
    lseek(fh, 0, SEEK_SET);
@@ -15755,14 +15731,14 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue)
       strcat(str, strerror(errno));
       show_error(str);
       close(fh);
-      free(buf);
+      xfree(buf);
       return 0;
    }
 
    TRUNCATE(fh);
 
    close(fh);
-   free(buf);
+   xfree(buf);
 
    /* force re-read of config file */
    check_config_file(TRUE);
@@ -15793,8 +15769,7 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   buf = malloc(length + size + 3);
-   assert(buf);
+   buf = xmalloc(length + size + 3);
    read(fh, buf, length);
    buf[length] = 0;
 
@@ -15812,11 +15787,8 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
 
    /* save tail */
    buf2 = NULL;
-   if (p2) {
-      buf2 = malloc(strlen(p2) + 1);
-      assert(buf2);
-      strlcpy(buf2, p2, strlen(p2) + 1);
-   }
+   if (p2)
+      buf2 = xstrdup(p2);
 
    /* add list */
    p3 = strchr(p1, '=');
@@ -15834,7 +15806,7 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
 
    if (p2) {
       strlcat(buf, buf2, length + size + 3);
-      free(buf2);
+      xfree(buf2);
    }
 
 
@@ -15846,14 +15818,14 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
       strcat(str, strerror(errno));
       show_error(str);
       close(fh);
-      free(buf);
+      xfree(buf);
       return 0;
    }
 
    TRUNCATE(fh);
 
    close(fh);
-   free(buf);
+   xfree(buf);
 
    /* force re-read of config file */
    check_config_file(TRUE);
@@ -16167,7 +16139,7 @@ void submit_elog(LOGBOOK * lbs)
 
    /* check for mail submissions */
    mail_param[0] = 0;
-   mail_to = malloc(256);
+   mail_to = xmalloc(256);
    mail_to[0] = 0;
    mail_to_size = 256;
 
@@ -16224,7 +16196,7 @@ void submit_elog(LOGBOOK * lbs)
 
                   if ((int) strlen(mail_to) + (int) strlen(mail_list[i]) >= mail_to_size) {
                      mail_to_size += 256;
-                     mail_to = realloc(mail_to, mail_to_size);
+                     mail_to = xrealloc(mail_to, mail_to_size);
                   }
                   strcat(mail_to, mail_list[i]);
                   strcat(mail_to, ",");
@@ -16248,7 +16220,7 @@ void submit_elog(LOGBOOK * lbs)
 
                   if ((int) strlen(mail_to) + (int) strlen(user_email) >= mail_to_size) {
                      mail_to_size += 256;
-                     mail_to = realloc(mail_to, mail_to_size);
+                     mail_to = xrealloc(mail_to, mail_to_size);
                   }
                   strcat(mail_to, user_email);
                   strcat(mail_to, ",");
@@ -16266,7 +16238,7 @@ void submit_elog(LOGBOOK * lbs)
          return;
    }
 
-   free(mail_to);
+   xfree(mail_to);
 
    /*---- shell execution ----*/
 
@@ -16404,7 +16376,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
    else
       n = atoi(getparam("nsel"));
 
-   text = malloc(TEXT_SIZE);
+   text = xmalloc(TEXT_SIZE);
 
    n_done = n_done_reply = source_id = status = 0;
    for (index = 0; index < n; index++) {
@@ -16430,7 +16402,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
          sprintf(str, loc("Entry %s cannot be read from logbook \"%s\""), msg_str,
                  lbs->name);
          show_error(str);
-         free(text);
+         xfree(text);
          return;
       }
 
@@ -16449,7 +16421,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
                sprintf(str, loc("Entry %s cannot be read from logbook \"%s\""), msg_str,
                        lbs->name);
                show_error(str);
-               free(text);
+               xfree(text);
                return;
             }
          }
@@ -16467,12 +16439,8 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
                lseek(fh, 0, SEEK_END);
                size = TELL(fh);
                lseek(fh, 0, SEEK_SET);
-
-               buffer = malloc(size);
-
-               if (buffer)
-                  read(fh, buffer, size);
-
+               buffer = xmalloc(size);
+               read(fh, buffer, size);
                close(fh);
 
                /* stip date/time from file name */
@@ -16481,7 +16449,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
                el_submit_attachment(lbs_dest, file_name, buffer, size, attachment[i]);
 
                if (buffer)
-                  free(buffer);
+                  xfree(buffer);
             } else
                /* attachment is invalid */
                attachment[i][0] = 0;
@@ -16505,7 +16473,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
          strcat(str, "\n<p>");
          strcat(str, loc("Please check that it exists and elogd has write access"));
          show_error(str);
-         free(text);
+         xfree(text);
          return;
       }
 
@@ -16532,7 +16500,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
       }
    }
 
-   free(text);
+   xfree(text);
 
    if (orig_id)
       return;
@@ -16917,7 +16885,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          size = TELL(fileno(f));
          fseek(f, 0, SEEK_SET);
 
-         buf = malloc(size + 1);
+         buf = xmalloc(size + 1);
          fread(buf, 1, size, f);
          buf[size] = 0;
          fclose(f);
@@ -19491,7 +19459,7 @@ int ka_time[N_MAX_CONNECTION];
 struct in_addr remote_addr[N_MAX_CONNECTION];
 char remote_host[N_MAX_CONNECTION][256];
 
-void server_loop(int tcp_port)
+void server_loop(void)
 {
    int status, i, n, n_error, authorized, min, i_min, i_conn, length;
    struct sockaddr_in serv_addr, acc_addr;
@@ -19508,9 +19476,9 @@ void server_loop(int tcp_port)
 
    i_conn = content_length = 0;
    net_buffer_size = 100000;
-   net_buffer = malloc(net_buffer_size);
+   net_buffer = xmalloc(net_buffer_size);
    return_buffer_size = 100000;
-   return_buffer = malloc(return_buffer_size);
+   return_buffer = xmalloc(return_buffer_size);
 
    /* create a new socket */
    lsock = socket(AF_INET, SOCK_STREAM, 0);
@@ -19540,7 +19508,7 @@ void server_loop(int tcp_port)
       memcpy(&serv_addr.sin_addr.s_addr, phe->h_addr_list[0], phe->h_length);
    }
 
-   serv_addr.sin_port = htons((short) tcp_port);
+   serv_addr.sin_port = htons((short) elog_tcp_port);
 
    /* switch on reuse of port */
    flag = 1;
@@ -19549,7 +19517,7 @@ void server_loop(int tcp_port)
    if (status < 0) {
       eprintf
           ("Cannot bind to port %d.\nPlease use the \"-p\" flag to specify a different port.\n",
-           tcp_port);
+           elog_tcp_port);
       exit(EXIT_FAILURE);
    }
 
@@ -19604,8 +19572,8 @@ void server_loop(int tcp_port)
       /* check if file exists */
       if (stat(pidfile, &finfo) >= 0) {
          eprintf("File \"%s\" exists, using \"%s.%d\" instead.\n", pidfile, pidfile,
-                 tcp_port);
-         sprintf(pidfile + strlen(pidfile), ".%d", tcp_port);
+                 elog_tcp_port);
+         sprintf(pidfile + strlen(pidfile), ".%d", elog_tcp_port);
 
          /* check again for the new name */
          if (stat(pidfile, &finfo) >= 0) {
@@ -19684,7 +19652,7 @@ void server_loop(int tcp_port)
       exit(EXIT_FAILURE);
    }
 
-   eprintf("Server listening on port %d ...\n", tcp_port);
+   eprintf("Server listening on port %d ...\n", elog_tcp_port);
    do {
       FD_ZERO(&readfds);
       FD_SET(lsock, &readfds);
@@ -19782,7 +19750,7 @@ void server_loop(int tcp_port)
                len += i;
             /* check if net_buffer needs to be increased */
             if (len == net_buffer_size) {
-               net_buffer = realloc(net_buffer, net_buffer_size + 100000);
+               net_buffer = xrealloc(net_buffer, net_buffer_size + 100000);
                if (net_buffer == NULL) {
                   sprintf(str,
                           "Error: Cannot increase net_buffer, out of memory, net_buffer_size = %d",
@@ -20614,11 +20582,7 @@ void create_password(char *logbook, char *name, char *pwd)
    /* read existing file and add password */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   cfgbuffer = malloc(length + 1);
-   if (cfgbuffer == NULL) {
-      close(fh);
-      return;
-   }
+   cfgbuffer = xmalloc(length + 1);
    length = read(fh, cfgbuffer, length);
    cfgbuffer[length] = 0;
    close(fh);
@@ -20646,7 +20610,7 @@ void create_password(char *logbook, char *name, char *pwd)
                p++;
             /* write remainder of file */
             write(fh, p, strlen(p));
-            free(cfgbuffer);
+            xfree(cfgbuffer);
             close(fh);
             return;
          }
@@ -20666,7 +20630,7 @@ void create_password(char *logbook, char *name, char *pwd)
          eprintf("Password added to logbook \"%s\".\n", logbook);
          /* write remainder of file */
          write(fh, p, strlen(p));
-         free(cfgbuffer);
+         xfree(cfgbuffer);
          close(fh);
          return;
       }
@@ -20678,7 +20642,7 @@ void create_password(char *logbook, char *name, char *pwd)
       eprintf("Password added to new logbook \"%s\".\n", logbook);
    }
 
-   free(cfgbuffer);
+   xfree(cfgbuffer);
    close(fh);
 }
 
@@ -20916,13 +20880,13 @@ void WINAPI ServiceMain(DWORD argc, LPSTR * argv)
       SetServiceStatus(serviceStatusHandle, &serviceStatus);
 
       /* avoid recursive calls to run_service */
-      running_as_daemon = 0;
+      running_as_daemon = FALSE;
 
       /* Redirect all messages handled with eprintf/efputs to syslog */
       redirect_to_syslog();
 
       /* start main server, exit with "_abort = TRUE" */
-      server_loop(tcp_port);
+      server_loop();
 
       // service was stopped
       serviceStatus.dwCurrentState = SERVICE_STOP_PENDING;
@@ -20966,6 +20930,7 @@ int main(int argc, char *argv[])
    /* save gid/uid to regain later */
    orig_gid = getegid();
    orig_uid = geteuid();
+   pidfile[0] = 0;
 #endif
 
    /* register cleanup function */
@@ -20975,7 +20940,7 @@ int main(int argc, char *argv[])
 
    /* initialize variables */
    read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = clone_url[0] = 0;
-   logbook_dir[0] = resource_dir[0] = logbook_dir[0] = pidfile[0] = 0;
+   logbook_dir[0] = resource_dir[0] = logbook_dir[0] = 0;
    silent = tcp_port_cl = 0;
    use_keepalive = TRUE;
    running_as_daemon = FALSE;
@@ -21068,8 +21033,10 @@ int main(int argc, char *argv[])
             strcpy(logbook, argv[++i]);
          else if (argv[i][1] == 'n')
             strlcpy(tcp_hostname, argv[++i], sizeof(tcp_hostname));
+#ifdef OS_UNIX
          else if (argv[i][1] == 'f')
             strlcpy(pidfile, argv[++i], sizeof(pidfile));
+#endif
          else {
           usage:
             printf("%s\n", ELOGID);
@@ -21081,7 +21048,9 @@ int main(int argc, char *argv[])
             printf("       -C <url> clone remote elogd configuration\n");
             printf("       -D become a daemon\n");
             printf("       -d <dir> specify logbook root directory\n");
+#ifdef OS_UNIX
             printf("       -f <file> PID file\n");
+#endif
             printf("       -h this help\n");
             printf("       -k do not use keep-alive\n");
             printf("       -l <logbook> specify logbook for -r and -w commands\n");
@@ -21314,17 +21283,17 @@ int main(int argc, char *argv[])
 
    /* get port from configuration file */
    if (tcp_port_cl != 0)
-      tcp_port = tcp_port_cl;
+      elog_tcp_port = tcp_port_cl;
    else {
       if (getcfg("global", "Port", str, sizeof(str)))
-         tcp_port = atoi(str);
+         elog_tcp_port = atoi(str);
    }
 
    /* get optional content length from configuration file */
    if (getcfg("global", "Max content length", str, sizeof(str)))
       _max_content_length = atoi(str);
 
-   server_loop(tcp_port);
+   server_loop();
 
    exit(EXIT_SUCCESS);
 }
