@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.190  2004/01/14 10:14:05  midas
+   Changed layout when adding new options
+
    Revision 1.189  2004/01/14 10:04:17  midas
    Fixed bug of disappearing icons
 
@@ -454,8 +457,8 @@ BOOL check_login_user(LOGBOOK * lbs, char *user);
 LBLIST get_logbook_hierarchy(void);
 int is_logbook_in_group(LBLIST pgrp, char *logbook);
 void free_logbook_hierarchy(LBLIST root);
-void show_top_text(LOGBOOK *lbs);
-void show_bottom_text(LOGBOOK *lbs);
+void show_top_text(LOGBOOK * lbs);
+void show_bottom_text(LOGBOOK * lbs);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -4205,7 +4208,7 @@ void set_redir(LOGBOOK * lbs, char *redir)
    else {
       if (lbs)
          sprintf(str, "../%s/", lbs->name_enc);
-      else  if (getcfg_topgroup())
+      else if (getcfg_topgroup())
          sprintf(str, ".");
    }
 
@@ -4631,7 +4634,8 @@ LBLIST get_logbook_hierarchy(void)
             /* check if node is subgroup of other node */
             if (!lb_list[k].name[0]) {
                for (k = 0; k < root->n_members; k++)
-                  if (equal_ustring(root->member[i]->member[j]->name, root->member[k]->name)) {
+                  if (equal_ustring
+                      (root->member[i]->member[j]->name, root->member[k]->name)) {
 
                      /* node is allocated twice, so free one... */
                      free(root->member[i]->member[j]);
@@ -4860,7 +4864,7 @@ void show_standard_title(char *logbook, char *text, int printable)
 
 /*------------------------------------------------------------------*/
 
-void show_top_text(LOGBOOK *lbs)
+void show_top_text(LOGBOOK * lbs)
 {
    char str[NAME_LENGTH];
    int size;
@@ -4896,7 +4900,7 @@ void show_top_text(LOGBOOK *lbs)
 
 /*------------------------------------------------------------------*/
 
-void show_bottom_text(LOGBOOK *lbs)
+void show_bottom_text(LOGBOOK * lbs)
 {
    char str[NAME_LENGTH];
    int size;
@@ -5971,13 +5975,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   sprintf(str, loc("Add %s"), attr_list[index]);
                   if (equal_ustring(getparam("extend"), str)) {
 
-                     rsprintf
-                         ("<input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\">\n",
-                          input_size, input_maxlen, attr_list[index], attrib[index]);
-
-                     rsprintf("&nbsp;<i>");
+                     rsprintf("<i>");
                      rsprintf(loc("Add new %s here"), attr_list[index]);
-                     rsprintf("</i>\n");
+                     rsprintf("&nbsp;:&nbsp;</i>\n");
+
+                     rsprintf
+                         ("<input type=\"text\" size=20 maxlength=%d name=\"%s\" value=\"%s\">\n",
+                          input_maxlen, attr_list[index], attrib[index]);
+
 
                   } else {
 
@@ -6098,8 +6103,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       if (text[0]) {
          if (bedit) {
-            if (bupload
-                || (!bupload && !breedit)
+            if (bupload || (!bupload && !breedit)
                 || (breedit && !getcfg_cond(lbs->name, condition, "Preset text", str)))
                rsputs(text);
          } else {
@@ -6583,7 +6587,7 @@ void show_find_form(LOGBOOK * lbs)
             loc("Search text also in attributes"));
 
    rsprintf("</table></td></tr></table>\n");
-   show_bottom_text(lbs);   
+   show_bottom_text(lbs);
    rsprintf("</form></body></html>\r\n");
 }
 
@@ -7230,7 +7234,7 @@ int remove_user(LOGBOOK * lbs, char *user)
 
 int ascii_compare(const void *s1, const void *s2)
 {
-   return stricmp(*(char **)s1, *(char **)s2);
+   return stricmp(*(char **) s1, *(char **) s2);
 }
 
 /*------------------------------------------------------------------*/
@@ -7284,29 +7288,29 @@ void show_config_page(LOGBOOK * lbs)
 
       /* count user list */
       for (n = 0;; n++) {
-         if (!enum_user_line(lbs, n, str)) 
+         if (!enum_user_line(lbs, n, str))
             break;
       }
 
       /* allocate list of users and populate it */
       user_list = calloc(sizeof(char *), n);
-      for (i=0 ; i<n ; i++)
+      for (i = 0; i < n; i++)
          user_list[i] = calloc(NAME_LENGTH, 1);
 
-      for (i = 0; i<n ; i++) 
+      for (i = 0; i < n; i++)
          enum_user_line(lbs, i, user_list[i]);
 
       /* sort list */
       qsort(user_list, n, sizeof(char *), ascii_compare);
 
-      for (i = 0; i<n; i++) {
+      for (i = 0; i < n; i++) {
          if (strcmp(user_list[i], user) == 0)
             rsprintf("<option selected value=\"%s\">%s\n", user_list[i], user_list[i]);
          else
             rsprintf("<option value=\"%s\">%s\n", user_list[i], user_list[i]);
       }
 
-      for (i=0 ; i<n ; i++)
+      for (i = 0; i < n; i++)
          free(user_list[i]);
       free(user_list);
 
@@ -10600,7 +10604,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
 
 /*------------------------------------------------------------------*/
 
-int add_attribute_option(LOGBOOK *lbs, char *attrname, char *attrvalue)
+int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue)
 {
    int fh, i, length;
    char str[NAME_LENGTH], *buf, *buf2, *p1, *p2, *p3;
@@ -10626,7 +10630,7 @@ int add_attribute_option(LOGBOOK *lbs, char *attrname, char *attrvalue)
    sprintf(str, "Options %s", attrname);
    p1 = (char *) find_param(buf, lbs->name, str);
    p2 = strchr(p1, '\n');
-   if (*(p2-1) == '\r')
+   if (*(p2 - 1) == '\r')
       p2--;
 
    /* save tail */
@@ -10639,8 +10643,8 @@ int add_attribute_option(LOGBOOK *lbs, char *attrname, char *attrvalue)
    /* add option */
    p3 = strchr(p1, '\n');
    if (p3 == NULL)
-      p3 = p1+strlen(p1);
-   while (*(p3-1) == '\n' || *(p3-1) == '\r' || *(p3-1) == ' ' || *(p3-1) == '\t')
+      p3 = p1 + strlen(p1);
+   while (*(p3 - 1) == '\n' || *(p3 - 1) == '\r' || *(p3 - 1) == ' ' || *(p3 - 1) == '\t')
       p3--;
 
    sprintf(p3, ", %s", attrvalue);
@@ -10730,7 +10734,7 @@ void submit_elog(LOGBOOK * lbs)
       if (isparam(attr_list[i]) && attr_options[i][0][0]) {
 
          /* check if option exists */
-         for (j=0 ; attr_options[i][j][0] ; j++)
+         for (j = 0; attr_options[i][j][0]; j++)
             if (equal_ustring(attr_options[i][j], getparam(attr_list[i])))
                break;
 
@@ -10740,7 +10744,7 @@ void submit_elog(LOGBOOK * lbs)
                   return;
             } else {
                sprintf(error, loc("Error: Attribute option <b>%s</b> not existing"),
-                  getparam(attr_list[i]));
+                       getparam(attr_list[i]));
                show_error(error);
                return;
             }
@@ -12916,7 +12920,7 @@ void interprete(char *lbook, char *path)
    /* skip elog message id in front of possible attachment */
    pfile = dec_path;
    if (strchr(pfile, '/') && pfile[13] != '/' && isdigit(pfile[0]))
-      pfile = strchr(pfile, '/')+1;
+      pfile = strchr(pfile, '/') + 1;
 
    if ((strlen(pfile) > 13 && pfile[6] == '_' && pfile[13] == '_')
        || (strlen(pfile) > 13 && pfile[6] == '_' && pfile[13] == '/')
@@ -12925,7 +12929,7 @@ void interprete(char *lbook, char *path)
        || strstr(pfile, ".png") || strstr(pfile, ".css")) {
       if ((strlen(pfile) > 13 && pfile[6] == '_'
            && pfile[13] == '_') || (strlen(pfile) > 13 && pfile[6] == '_'
-                                       && pfile[13] == '/')) {
+                                    && pfile[13] == '/')) {
          if (pfile[13] == '/')
             pfile[13] = '_';
          /* file from data directory requested */
