@@ -141,23 +141,22 @@ This causes the welcome page being redirected to <b>/logbook/last10</b>, where <
 /logbook?cmd=Search&amp;&lt;attrib&gt;=&lt;value&gt;    for a search with &lt;attrib&gt;=&lt;value&gt;
 </pre>
 
-<LI><b>I want to switch from full/summary/threaded display with a single button</b>
+<LI><b>I want to have additional command specific to my lookbook</b>
 <p>
-This can be achieved with the <b><code>Bottom text = bottom.html</b></code> option. Put
-following HTML code in your bottom.html:
+New commands can be added for example with the <b><code>"Bottom text = bottom.html"</b></code> option.
+To display all messages from last week and month of with "category = info", one can put
+following HTML code in bottom.html:
 
 <pre>
 &lt;center&gt;
-&lt;a href="?mode=summary"&gt;Summary&lt;/a&gt; |
-&lt;a href="?mode=full"&gt;Full&lt;/a&gt; |
-&lt;a href="?mode=threaded"&gt;Threaded&lt;/a&gt;
+&lt;a href="?last=7&Category=Info"&gt;Info from last week&lt;/a&gt; |
+&lt;a href="?last=31&Category=Info"&gt;Info from last month&lt;/a&gt; |
 &lt;/center>
 </pre>
 <p>
-This gives you three links with different display mode. You can also add filters there
-like<br>
-
-<b><code>&lt;a href="?mode=summary&Type=Routine"&gt;Routine entries&lt;/a&gt;</b></code>.<p>
+Note that the parameters <b><code>"last=7&Category=Info"</b></code> apply a filter on the display. You can learn
+how to make these filters by looking at the URL in your browser when you submit a find
+command with certain options.<p>
 
 <LI><b>How does one configure elog to disable editing of existing messages? I want a logbook where one
 can enter messages but not change them afterwards.</b>
