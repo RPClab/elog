@@ -15,7 +15,7 @@ Find = Zoek
 Last day = Laatste dag
 Last 10 = Laatste 10
 Config = Configuratie
-Change Password = Wachtwoord wijzigen
+Change password = Wachtwoord wijzigen
 Logout = Afmelden
 Help = Help
 Back = Terug
@@ -198,4 +198,6 @@ Display = Toon
 entries per page = berichten per pagina
 Toggle all = Toon alles
 Automatic email notifications=Automatisch e-mail aankondiging
-Change password=Wijzig wachtwoord
+
+# New strings for V2.2.2
+A old entry has been updated on %s = Een ouder bericht is op %s gewijzigd
