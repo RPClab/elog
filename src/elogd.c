@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.387  2004/07/15 09:55:03  midas
+   Use 'format <attrib> = 1' also in entry form
+
    Revision 1.386  2004/07/15 07:59:15  midas
    Apply tooltip title to whole attribute row
 
@@ -6445,14 +6448,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                     BOOL breedit)
 {
    int i, j, n, index, size, width, height, fh, length, first, input_size, input_maxlen,
-       format_flags, year, month, day;
+       format_flags[MAX_N_ATTR], year, month, day;
    char str[1000], preset[1000], *p, *pend, star[80], comment[10000], reply_string[256],
        list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80],
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80],
        reply_tag[MAX_REPLY_TO * 10], att[MAX_ATTACHMENTS][256], encoding[80],
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH],
        owner[256], locked_by[256], class_value[80], class_name[80], condition[256],
-       ua[NAME_LENGTH], mid[80];
+       ua[NAME_LENGTH], mid[80], title[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts, ts;
@@ -6895,7 +6898,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /*---- entry form ----*/
 
    /* table for two-column items */
-   rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>");
+   rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0 cellpadding=0>");
 
    /* print required message if one of the attributes has it set */
    for (i = 0; i < lbs->n_attr; i++) {
@@ -6929,21 +6932,29 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("<td class=\"attribvalue\">%s\n", str);
    rsprintf("<input type=hidden name=entry_date value=\"%s\"></td></tr>\n", date);
 
+   /* retrieve attribute flags */
+   for (i = 0; i < lbs->n_attr; i++) {
+      format_flags[i] = 0;
+      sprintf(str, "Format %s", attr_list[i]);
+      if (getcfg(lbs->name, str, format)) {
+         n = strbreak(format, fl, 8, ",");
+         if (n > 0)
+            format_flags[i] = atoi(fl[0]);
+      }
+   }
+
    /* display attributes */
    for (index = 0; index < lbs->n_attr; index++) {
       strcpy(class_name, "attribname");
       strcpy(class_value, "attribvalue");
       input_size = 80;
       input_maxlen = NAME_LENGTH;
-      format_flags = 0;
       strcpy(ua, attr_list[index]);
       btou(ua);
 
       sprintf(str, "Format %s", attr_list[index]);
       if (getcfg(lbs->name, str, format)) {
          n = strbreak(format, fl, 8, ",");
-         if (n > 0)
-            format_flags = atoi(fl[0]);
          if (n > 1)
             strlcpy(class_name, fl[1], sizeof(class_name));
          if (n > 2)
@@ -6953,6 +6964,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          if (n > 4 && atoi(fl[4]) > 0)
             input_maxlen = atoi(fl[4]);
       }
+
+      if ((format_flags[index] & AFF_SAME_LINE) == 0)
+         rsprintf("<tr><td colspan=2><table width=\"100%%\" cellpadding=0 cellspacing=0><tr>");
 
       strcpy(star, (attr_flags[index] & AF_REQUIRED) ? "<font color=red>*</font>" : "");
 
@@ -6984,10 +6998,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       /* display text box with optional tooltip */
       sprintf(str, "Tooltip %s", attr_list[index]);
+      title[0] = 0;
       if (getcfg(lbs->name, str, comment))
-         rsprintf("<tr title=\"%s\"><td nowrap class=\"attribname\">", comment);
-      else
-         rsprintf("<tr><td nowrap class=\"attribname\">");
+         sprintf(title, " title=\"%s\"", comment);
+         
+      rsprintf("<td%s nowrap class=\"attribname\">", title);
 
       /* display attribute name */
       rsprintf("%s%s:", attr_list[index], star);
@@ -7004,7 +7019,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
           (bedit && (attr_flags[index] & AF_FIXED_EDIT)) || (message_id && !bedit
                                                              && (attr_flags[index] &
                                                                  AF_FIXED_REPLY))) {
-         rsprintf("<td class=\"attribvalue\">\n");
+         rsprintf("<td%s class=\"attribvalue\">\n", title);
          rsputs2(attrib[index]);
          rsprintf("&nbsp;");
 
@@ -7051,22 +7066,22 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   day = pts->tm_mday;
                }
 
-               rsprintf("<td class=\"attribvalue\">");
+               rsprintf("<td%s class=\"attribvalue\">", title);
                sprintf(str, "%d", index);
                show_date_selector(day, month, year, str);
-               rsprintf("</td></tr>\n");
+               rsprintf("</td>\n");
 
             } else {
 
                /* show normal edit field */
-               rsprintf("<td class=\"attribvalue\">");
+               rsprintf("<td%s class=\"attribvalue\">", title);
 
                strencode2(str, attrib[index]);
                rsprintf
                    ("<input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
                     input_size, input_maxlen, ua, str);
 
-               rsprintf("</td></tr>\n");
+               rsprintf("</td>\n");
             }
 
          } else {
@@ -7074,18 +7089,18 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                /* display checkbox */
                if (atoi(attrib[index]) == 1)
                   rsprintf
-                      ("<td class=\"attribvalue\"><input type=checkbox checked name=\"%s\" value=1 onChange=\"mod();\">\n",
-                       ua);
+                      ("<td%s class=\"attribvalue\"><input type=checkbox checked name=\"%s\" value=1 onChange=\"mod();\">\n",
+                       title, ua);
                else
                   rsprintf
-                      ("<td class=\"attribvalue\"><input type=checkbox name=\"%s\" value=1 onChange=\"mod();\">\n",
-                       ua);
+                      ("<td%s class=\"attribvalue\"><input type=checkbox name=\"%s\" value=1 onChange=\"mod();\">\n",
+                       title, ua);
             } else {
 
                sprintf(str, loc("Add %s"), attr_list[index]);
                if (strieq(getparam("extend"), str)) {
 
-                  rsprintf("<td class=\"attribvalue\">\n");
+                  rsprintf("<td%s class=\"attribvalue\">\n", title);
                   rsprintf("<i>");
                   rsprintf(loc("Add new option here"), attr_list[index]);
                   rsprintf("&nbsp;:&nbsp;</i>\n");
@@ -7094,12 +7109,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                       ("<input type=\"text\" size=20 maxlength=%d name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
                        input_maxlen, ua, attrib[index]);
 
-                  rsprintf("</td></tr>\n");
+                  rsprintf("</td>\n");
 
                } else if (attr_flags[index] & AF_MULTI) {
 
                   /* display multiple check boxes */
-                  rsprintf("<td class=\"attribvalue\">\n");
+                  rsprintf("<td%s class=\"attribvalue\">\n", title);
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      sprintf(str, "%s_%d", ua, i);
@@ -7116,7 +7131,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      rsprintf("<label for=\"%s\">%s</label></nobr>\n",
                               str, attr_options[index][i]);
 
-                     if (format_flags & AFF_MULTI_LINE)
+                     if (format_flags[index] & AFF_MULTI_LINE)
                         rsprintf("<br>");
                   }
 
@@ -7125,11 +7140,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      rsprintf("<input type=submit name=extend value=\"%s\" onClick=\"return mark_submit();\">\n", str);
                   }
 
-                  rsprintf("</td></tr>\n");
+                  rsprintf("</td>\n");
 
                } else if (attr_flags[index] & AF_RADIO) {
                   /* display radio buttons */
-                  rsprintf("<td class=\"attribvalue\">\n");
+                  rsprintf("<td%s class=\"attribvalue\">\n", title);
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      if (strstr(attrib[index], attr_options[index][i]))
@@ -7144,7 +7159,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      rsprintf("<label for=\"%s\">%s</label></nobr>\n",
                               attr_options[index][i], attr_options[index][i]);
 
-                     if (format_flags & AFF_MULTI_LINE)
+                     if (format_flags[index] & AFF_MULTI_LINE)
                         rsprintf("<br>");
                   }
 
@@ -7153,11 +7168,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      rsprintf("<input type=submit name=extend value=\"%s\" onClick=\"return mark_submit();\">\n", str);
                   }
 
-                  rsprintf("</td></tr>\n");
+                  rsprintf("</td>\n");
 
                } else if (attr_flags[index] & AF_ICON) {
                   /* display icons */
-                  rsprintf("<td class=\"attribvalue\">\n");
+                  rsprintf("<td%s class=\"attribvalue\">\n", title);
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      if (strstr(attrib[index], attr_options[index][i]))
@@ -7178,15 +7193,15 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         rsprintf("<img src=\"icons/%s\"></nobr>\n",
                                  attr_options[index][i]);
 
-                     if (format_flags & AFF_MULTI_LINE)
+                     if (format_flags[index] & AFF_MULTI_LINE)
                         rsprintf("<br>");
                   }
 
-                  rsprintf("</td></tr>\n");
+                  rsprintf("</td>\n");
 
                } else {
 
-                  rsprintf("<td class=\"attribvalue\">\n");
+                  rsprintf("<td%s class=\"attribvalue\">\n", title);
 
                   /* display drop-down box */
                   rsprintf("<select name=\"%s\"", ua);
@@ -7225,11 +7240,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      rsprintf("<input type=submit name=extend value=\"%s\" onClick=\"return mark_submit();\">\n", str);
                   }
 
-                  rsprintf("</td></tr>\n");
+                  rsprintf("</td>\n");
                }
             }
          }
       }
+
+      if (index == lbs->n_attr - 1 || (format_flags[index + 1] & AFF_SAME_LINE) == 0)
+         rsprintf("</tr></table></td></tr>\n");
    }
 
    /* set textarea width */
