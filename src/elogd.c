@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.298  2004/03/16 15:39:53  midas
+   Fixed endless loop in strip_html
+
    Revision 1.297  2004/03/16 08:48:30  midas
    Fixed format compiler warnings
 
@@ -4445,6 +4448,8 @@ void strip_html(char *s)
    while ((p = strchr(s, '<')) != NULL) {
       if (strchr(p, '>'))
          strcpy(p, strchr(p, '>') + 1);
+      else
+         *p = 0;
    }
 }
 
