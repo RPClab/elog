@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.43  2003/03/09 19:57:53  midas
+  V2.3.2(beta)
+
   Revision 1.42  2003/03/09 19:48:24  midas
   Exchanged priviledge drop and directory creation (Recai Oktas)
 
@@ -644,7 +647,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.3.1"
+#define VERSION "2.3.2"
 
 #include <stdio.h>
 #include <sys/types.h>
