@@ -327,7 +327,6 @@ Goto ELOG home page = Aller à la page d'accueil ELOG
 Please enter "%s" = Veuillez saisir "%s"
 Change config file = Modifier le fichier de configuration
 Click here to delete %d entries = Cliquer ici pour supprimer %d entrées
->From = De
 Please check that it exists and elogd has write access and disk is not full = Veuillez vérifier qu'il existe, que elogd a les droits en écriture et que le disque n'est pas plein
 Show = Montrer
 Hide = Cacher
@@ -339,3 +338,9 @@ Please increase <b>"Max content length"</b> in config file = Veuiller augmenter 
 Text fields may contain regular expressions = Les champs "texte" peuvent contenir des expressions régulières
 Case sensitive = Tient compte de la casse
 List = Liste
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+From = 
+Date must be between 1970 and 2037 = 

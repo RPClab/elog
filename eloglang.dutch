@@ -343,5 +343,3 @@ Case sensitive = Hoofdlettergevoelig
 From = Van
 List = Lijst
 Date must be between 1970 and 2037 = Datum moet tussen 1970 en 2037 liggen
-GetPwdFile = Paswoordbestand ophalen
-

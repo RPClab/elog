@@ -340,3 +340,4 @@ Text fields may contain regular expressions =
 Case sensitive = 
 From = 
 List = 
+Date must be between 1970 and 2037 = 

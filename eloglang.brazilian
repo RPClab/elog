@@ -343,3 +343,4 @@ Please increase <b>"Max content length"</b> in config file =
 Text fields may contain regular expressions = 
 Case sensitive = 
 List = 
+Date must be between 1970 and 2037 = 
