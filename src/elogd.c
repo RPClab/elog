@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.105  2003/05/12 14:00:20  midas
+  Removed 'mailto:' in email notifications
+
   Revision 1.104  2003/05/08 19:57:59  midas
   Option 'selection page' can now contain absolute URL
 
@@ -9388,6 +9391,8 @@ char   list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
     {
     j = build_subst_list(lbs, slist, svalue, attrib);
     strsubst(mail_from, slist, svalue, j);
+    if (strncmp(mail_from, "mailto:", 7) == 0)
+      strcpy(mail_from, mail_from+7);
     }
   else
     sprintf(mail_from, "ELog@%s", host_name);
