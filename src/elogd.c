@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.341  2004/06/14 11:13:19  midas
+   Added error handling for cloning
+
    Revision 1.340  2004/06/14 10:59:13  midas
    Added server code for cloning
 
@@ -9965,7 +9968,7 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
 
 /*------------------------------------------------------------------*/
 
-int receive_config(LOGBOOK * lbs, char *server, char *error_str)
+void receive_config(LOGBOOK * lbs, char *server, char *error_str)
 {
    char str[256], *buffer, *p;
 
@@ -9976,14 +9979,17 @@ int receive_config(LOGBOOK * lbs, char *server, char *error_str)
       strcat(str, "?cmd=GetConfig"); // request complete config file
    else
       strcat(str, "?cmd=Download");  // request config section of logbook
-   if (retrieve_url(str, &buffer) < 0)
-      return 0;
+   if (retrieve_url(str, &buffer) < 0) {
+      *strchr(str, '?') = 0;
+      sprintf(error_str, "Cannot contact elogd server at http://%s", str);
+      return;
+   }
 
    p = strstr(buffer, "\r\n\r\n");
    if (p == NULL) {
       free(buffer);
       sprintf(error_str, loc("Cannot receive \"%s\""), str);
-      return 0;
+      return;
    }
    p += 4;
 
@@ -9996,7 +10002,6 @@ int receive_config(LOGBOOK * lbs, char *server, char *error_str)
    }
 
    free(buffer);
-   return 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -18547,6 +18552,13 @@ int main(int argc, char *argv[])
 
       /* contact remote server */
       receive_config(NULL, clone_url, error_str);
+      if (error_str[0]) {
+         printf(error_str);
+         exit(EXIT_FAILURE);
+      } else {
+         printf("Remote configuration successfully received.\n");
+         exit(EXIT_SUCCESS);
+      }
    }
 
    /* check for configuration file */
