@@ -7,6 +7,9 @@
                 them into eloglang.xxxx
 
   $Log$
+  Revision 1.4  2004/01/23 07:08:44  midas
+  Adjusted comments
+
   Revision 1.3  2004/01/21 16:24:34  midas
   Added removel of obsolete lines
 
@@ -116,8 +119,8 @@ int scan_file(char *infile, char *outfile)
             return 1;
          }
 
-         if (first) {
-            sprintf(line, "\r\n#\r\n#---------- please translate following items ----------#\r\n#\r\n");
+         if (first && !strstr(bufout, "please translate following")) {
+            sprintf(line, "\r\n#\r\n#---- please translate following items and then remove this comment ----#\r\n#\r\n");
             write(fho, line, strlen(line));
          
             first = FALSE;
