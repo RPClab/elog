@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.2  2003/01/30 14:52:41  midas
+  Change USE_CRYPT to HAVE_CRYPT
+
   Revision 1.1  2003/01/30 14:45:08  midas
   Moved files to src/ subdirectory
 
@@ -1051,7 +1054,7 @@ unsigned int t, pad;
 
 void do_crypt(char *s, char *d)
 {
-#ifdef USE_CRYPT
+#ifdef HAVE_CRYPT
   strcpy(d, crypt(s, "el"));
 #else
   base64_encode(s, d);
