@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.255  2004/02/17 10:21:46  midas
+   Translate 'entries'
+
    Revision 1.254  2004/02/17 09:52:04  midas
    Added 'x Months', needed for Japanese translation
 
@@ -10985,7 +10988,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
          }
       }
 
-      rsprintf("&nbsp;<b>%d Entries</b>", n_msg);
+      rsprintf("&nbsp;<b>%d %s</b>", n_msg, loc("Entries"));
 
       rsprintf("</td>\n");
    }
