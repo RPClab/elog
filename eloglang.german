@@ -246,4 +246,5 @@ User <i>"%s"</i> has no access to logbook <i>"%s"</i> = Benutzer <i>"%s"</i> hat
 # New strings for V2.3.5
 Date = Datum
 ID = ID
+Change elogd.cfg = elogd.cfg ändern
 

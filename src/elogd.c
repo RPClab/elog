@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.66  2003/04/04 11:00:22  midas
+  Removed 'admin' command, added link 'change elogd.cfg' on config page instead
+
   Revision 1.65  2003/04/04 10:24:27  midas
   Translate 'Date' and changed '#' to 'ID'
 
@@ -6382,10 +6385,11 @@ int  i;
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change password"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Remove user"));
 
-  if (getcfg(lbs->name, "Admin user", str) && 
-      strstr(str, getparam("unm")) != 0)
+  if (!getcfg(lbs->name, "Admin user", str) || 
+      (getcfg(lbs->name, "Admin user", str) && strstr(str, getparam("unm")) != 0))
     {
     rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("New user"));
+    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change elogd.cfg"));
     }
 
   /* hidden field for password */
@@ -7388,10 +7392,12 @@ int  i, n;
 
     if (getcfg(lbs->name, "Password file", str))
       {
-      if (getcfg(lbs->name, "Admin user", str) && 
-          strstr(str, getparam("unm")) != 0)
+      if (!getcfg(lbs->name, "Admin user", str) ||
+          (getcfg(lbs->name, "Admin user", str) && strstr(str, getparam("unm")) != 0))
         {
         strcat(menu_str, "Admin, ");
+        strcat(menu_str, loc("Change elogd.cfg"));
+        strcat(menu_str, ", ");
         }
       strcat(menu_str, "Config, Logout, ");
       }
@@ -8528,7 +8534,7 @@ LOGBOOK *lbs_cur;
       strcpy(menu_str, "New, Find, Select, ");
 
       if (getcfg(lbs->name, "Password file", str))
-        strcat(menu_str, "Admin, Config, Logout, ");
+        strcat(menu_str, "Config, Logout, ");
       else
         strcat(menu_str, "Config, ");
       
@@ -9662,11 +9668,6 @@ BOOL   first;
 
     if (getcfg(lbs->name, "Password file", str))
       {
-      if (getcfg(lbs->name, "Admin user", str) && 
-          strstr(str, getparam("unm")) != 0)
-        {
-        strcat(menu_str, "Admin, ");
-        }
       strcat(menu_str, "Config, Logout, ");
       }
     else
@@ -11392,7 +11393,8 @@ FILE    *f;
     return;
     }
 
-  if (equal_ustring(command, loc("Admin")))
+  if (equal_ustring(command, loc("Admin")) ||
+      equal_ustring(command, loc("Change elogd.cfg")))
     {
     show_admin_page(lbs);
     return;
