@@ -255,9 +255,8 @@ a valid user name / password pair must be specified with the <b><code>-u</code><
 <br><br>
 Multiple attributes can be specified as well as several attachments. If
 attributes with multiple possible values are defined in a logbook (via the
-<i>"MOptions"</i> keyword), they have to be specified with an index number
-like <code><b>-a &lt;attribute&gt;_0=&lt;value1&gt; -a &lt;attribute&gt;_1=&lt;value2&gt;</b></code>
-etc, even if only a single value is submitted.
+<i>"MOptions"</i> keyword), they can be separated with a "|",
+like <code><b>-a "&lt;attribute&gt;=&lt;value1&gt; | &lt;value2&gt;"</b></code>.
 The message text can be supplied directly at the command line or submitted
 from a file with the <b><code>-m</code></b> flag.
 <br><br>
