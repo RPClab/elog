@@ -16,6 +16,7 @@ Version 2.0.0, released June 12th, 2002
 - Added link display for "elog:<id>" string where <id> is the 
   ID of a logbook message
 - Added redirection if no '/' after logbook
+- Made ".../last10?mode=summary" work
 
 Version 1.3.6, released June 3rd, 2002
 ======================================
