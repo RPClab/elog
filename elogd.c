@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.62  2002/08/06 11:40:00  midas
+  Fixed problem with file truncate
+
   Revision 2.61  2002/08/06 11:06:48  midas
   Adjusted text box sized
 
@@ -3614,8 +3617,7 @@ void show_change_pwd_page(LOGBOOK *lbs)
 char   str[256], str2[256], file_name[256], line[256], *p, *pl, old_pwd[32], 
        new_pwd[32], new_pwd2[32], user[80];
 char   *buf;
-FILE   *f;
-int    i, wrong_pwd, size;
+int    i, fh, wrong_pwd, size;
 
   do_crypt(getparam("oldpwd"), old_pwd);
   do_crypt(getparam("newpwd"), new_pwd);
@@ -3639,15 +3641,15 @@ int    i, wrong_pwd, size;
 
   if (old_pwd[0] || new_pwd[0])
     {
-    f = fopen(file_name, "r+b");
-    if (f != NULL)
+    fh = open(file_name, O_RDWR | O_BINARY, 644);
+    if (fh > 0)
       {
-      fseek(f, 0, SEEK_END);
-      size = TELL(fileno(f));
-      fseek(f, 0, SEEK_SET);
+      lseek(fh, 0, SEEK_END);
+      size = TELL(fh);
+      lseek(fh, 0, SEEK_SET);
 
       buf = malloc(size+1);
-      fread(buf, 1, size, f);
+      read(fh, buf, size);
       buf[size] = 0;
       pl = buf;
 
@@ -3703,28 +3705,28 @@ int    i, wrong_pwd, size;
       /* replace password */
       if (!wrong_pwd)
         {
-        fseek(f, 0, SEEK_SET);
-        fwrite(buf, 1, pl-buf, f);
+        lseek(fh, 0, SEEK_SET);
+        write(fh, buf, pl-buf);
 
-        sprintf(str, "%s:%s:%s:%s", user, new_pwd, 
+        sprintf(str, "%s:%s:%s:%s\n", user, new_pwd, 
                 getparam("full_name"), getparam("user_email"));
-        fprintf(f, "%s\n", str);
+        write(fh, str, strlen(str));
 
         pl += strlen(line);
         while (*pl && (*pl == '\r' || *pl == '\n'))
           pl++;
 
-        fwrite(pl, 1, strlen(pl), f);
+        write(fh, pl, strlen(pl));
 
 #ifdef _MSC_VER
-        chsize(fileno(f), TELL(fileno(f)));
+        chsize(fh, TELL(fh));
 #else
-        ftruncate(fileno(f), TELL(fileno(f)));
+        ftruncate(fh, TELL(fh));
 #endif
         }
 
       free(buf);
-      fclose(f);
+      close(fh);
 
       if (!wrong_pwd && strcmp(user, getparam("unm")) == 0)
         {
@@ -4710,9 +4712,8 @@ char str[80];
 
 int save_user_config(LOGBOOK *lbs, char *user, BOOL new_user)
 {
-FILE   *f;
 char   file_name[256], str[256], line[256], *buf, *pl, new_pwd[80], new_pwd2[80];
-int    i, size;
+int    i, fh, size;
 
   /* check for hidden password */
   if (isparam("hpwd"))
@@ -4742,25 +4743,20 @@ int    i, size;
     strcat(file_name, str);
     }
 
-  f = fopen(file_name, "r+b");
-  if (f == NULL)
+  fh = open(file_name, O_RDWR | O_BINARY | O_CREAT, 644);
+  if (fh < 0)
     {
-    /* try to create file */
-    f = fopen(file_name, "wb");
-    if (f == NULL)
-      {
-      sprintf(str, loc("Cannot open file <b>%s</b>"), file_name);
-      show_error(str);
-      return 0;
-      }
+    sprintf(str, loc("Cannot open file <b>%s</b>"), file_name);
+    show_error(str);
+    return 0;
     }
 
-  fseek(f, 0, SEEK_END);
-  size = TELL(fileno(f));
-  fseek(f, 0, SEEK_SET);
+  lseek(fh, 0, SEEK_END);
+  size = TELL(fh);
+  lseek(fh, 0, SEEK_SET);
 
   buf = malloc(size+1);
-  fread(buf, 1, size, f);
+  read(fh, buf, size);
   buf[size] = 0;
   pl = buf;
 
@@ -4788,7 +4784,7 @@ int    i, size;
         sprintf(str, "%s \"%s\" %s", loc("Login name"), user, loc("exists already"));
         show_error(str);
         free(buf);
-        fclose(f);
+        close(fh);
         return 0;
         }
       break;
@@ -4801,40 +4797,40 @@ int    i, size;
 
   if (new_user)
     {
-    fseek(f, 0, SEEK_END);
+    lseek(fh, 0, SEEK_END);
     if (strlen(buf) != 0 &&
         (buf[strlen(buf)-1] != '\r' && buf[strlen(buf)-1] != '\n'))
-      fprintf(f, "\n");
+      write(fh, "\n", 2);
 
-    sprintf(str, "%s:%s:%s:%s:%s", getparam("new_user_name"), new_pwd, 
+    sprintf(str, "%s:%s:%s:%s:%s\n", getparam("new_user_name"), new_pwd, 
             getparam("new_full_name"), getparam("new_user_email"), getparam("email_notify"));
-    fprintf(f, "%s\n", str);
+    write(fh, str, strlen(str));
     }
   else
     {
     /* replace line */
-    fseek(f, 0, SEEK_SET);
-    fwrite(buf, 1, pl-buf, f);
+    lseek(fh, 0, SEEK_SET);
+    write(fh, buf, pl-buf);
 
-    sprintf(str, "%s:%s:%s:%s:%s", getparam("new_user_name"), new_pwd, 
+    sprintf(str, "%s:%s:%s:%s:%s\n", getparam("new_user_name"), new_pwd, 
             getparam("new_full_name"), getparam("new_user_email"), getparam("email_notify"));
-    fprintf(f, "%s\n", str);
+    write(fh, str, strlen(str));
 
     pl += strlen(line);
     while (*pl && (*pl == '\r' || *pl == '\n'))
       pl++;
 
-    fwrite(pl, 1, strlen(pl), f);
+    write(fh, pl, strlen(pl));
 
 #ifdef _MSC_VER
-    chsize(fileno(f), TELL(fileno(f)));
+    chsize(fh, TELL(fh));
 #else
-    ftruncate(fileno(f), TELL(fileno(f)));
+    ftruncate(fh, TELL(fh));
 #endif
     }
 
   free(buf);
-  fclose(f);
+  close(fh);
 
   /* if user name changed, set cookie */
   if (strcmp(user, getparam("new_user_name")) != 0 &&
