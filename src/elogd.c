@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.237  2004/02/04 15:25:14  midas
+   Fixed stack overflow in conjunction with 'use lock'
+
    Revision 1.236  2004/02/04 11:55:21  midas
    Display logbook in 'search all' even if 'list display' is present
 
@@ -3419,8 +3422,11 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
    struct tm tms;
    char file_name[256], dir[256], str[NAME_LENGTH];
    time_t now, ltime;
-   char message[TEXT_SIZE + 100], *p, *buffer;
+   char *message, *p, *buffer;
    char attachment_all[64 * MAX_ATTACHMENTS];
+
+   message = malloc(TEXT_SIZE + 100);
+   assert(message);
 
    /* generate new file name YYMMDD.log in data directory */
    strcpy(dir, lbs->data_dir);
@@ -3431,21 +3437,26 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
          if (lbs->el_index[index].message_id == message_id)
             break;
 
-      if (index == *lbs->n_el_index)
+      if (index == *lbs->n_el_index) {
+         free(message);
          return -1;
+      }
 
       sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
       fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
-      if (fh < 0)
+      if (fh < 0) {
+         free(message);
          return -1;
+      }
 
       lseek(fh, lbs->el_index[index].offset, SEEK_SET);
-      i = read(fh, message, sizeof(message) - 1);
+      i = read(fh, message, TEXT_SIZE+100);
       message[i] = 0;
 
       /* check for valid message */
       if (strncmp(message, "$@MID@$:", 8) != 0) {
          close(fh);
+         free(message);
 
          /* file might have been edited, rebuild index */
          el_build_index(lbs, TRUE);
@@ -3457,6 +3468,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       /* check for correct ID */
       if (atoi(message + 8) != message_id) {
          close(fh);
+         free(message);
          return -1;
       }
 
@@ -3486,6 +3498,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
          buffer = malloc(tail_size);
          if (buffer == NULL) {
             close(fh);
+            free(message);
             return -1;
          }
 
@@ -3525,8 +3538,10 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 
       sprintf(str, "%s%s", dir, file_name);
       fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
-      if (fh < 0)
+      if (fh < 0) {
+         free(message);
          return -1;
+      }
 
       lseek(fh, 0, SEEK_END);
 
@@ -3593,8 +3608,8 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       sprintf(message + strlen(message), "Locked by: %s\n", locked_by);
 
    sprintf(message + strlen(message), "========================================\n");
-   strlcat(message, text, sizeof(message));
-   strlcat(message, "\n", sizeof(message));
+   strlcat(message, text, TEXT_SIZE+100);
+   strlcat(message, "\n", TEXT_SIZE+100);
 
    write(fh, message, strlen(message));
 
@@ -3638,7 +3653,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       reply_id = atoi(in_reply_to);
 
       /* retrieve original message */
-      size = sizeof(message);
+      size = TEXT_SIZE+100;
       el_retrieve(lbs, reply_id, date, attr_list, attr, n_attr, message, &size,
                   in_reply_to, reply_to, att, enc, lock);
 
@@ -3651,6 +3666,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
                 reply_to, enc, att, TRUE, lock);
    }
 
+   free(message);
    return message_id;
 }
 
@@ -3659,12 +3675,13 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 void remove_reference(LOGBOOK * lbs, int message_id, int remove_id, BOOL reply_to_flag)
 {
    char date[80], attr[MAX_N_ATTR][NAME_LENGTH], enc[80], in_reply_to[80],
-       reply_to[MAX_REPLY_TO * 10], att[MAX_ATTACHMENTS][256], lock[256];
-   char *p, *ps, message[TEXT_SIZE + 1000];
+       reply_to[MAX_REPLY_TO * 10], att[MAX_ATTACHMENTS][256], lock[256], 
+       *p, *ps, *message;
    int size, status;
 
    /* retrieve original message */
-   size = sizeof(message);
+   size = TEXT_SIZE+1000;
+   message = malloc(size);
    status =
        el_retrieve(lbs, message_id, date, attr_list, attr, lbs->n_attr, message, &size,
                    in_reply_to, reply_to, att, enc, lock);
@@ -3697,6 +3714,8 @@ void remove_reference(LOGBOOK * lbs, int message_id, int remove_id, BOOL reply_t
    /* write modified message */
    el_submit(lbs, message_id, TRUE, date, attr_list, attr, lbs->n_attr, message,
              in_reply_to, reply_to, enc, att, TRUE, lock);
+
+   free(message);
 }
 
 /*------------------------------------------------------------------*/
