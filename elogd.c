@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.122  2003/01/07 21:20:16  midas
+  Check for leading '/' in data dir
+
   Revision 2.121  2003/01/07 16:21:19  midas
   Added directory separator to resource and logbook dir
 
@@ -2140,7 +2143,12 @@ int  i, j, n, status;
         strlcat(data_dir, DIR_SEPARATOR_STR, sizeof(data_dir));
 
       if (getcfg(logbook, "Subdir", str))
-        strlcat(data_dir, str, sizeof(data_dir));
+        {
+        if (str[0] == DIR_SEPARATOR)
+          strlcpy(data_dir, str, sizeof(data_dir));
+        else
+          strlcat(data_dir, str, sizeof(data_dir));
+        }
       else
         strlcat(data_dir, logbook, sizeof(data_dir)); /* use logbook name as default */
       }
