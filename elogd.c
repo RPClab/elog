@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.61  2002/08/06 11:06:48  midas
+  Adjusted text box sized
+
   Revision 2.60  2002/08/06 10:50:53  midas
   Added 'guest find menu commands'
 
@@ -3888,7 +3891,7 @@ time_t now;
           {
           if (strstr(attrib[i], getparam("full_name")) == NULL)
             {
-            sprintf(str, loc("Only user <i>%s</i> can edit this entry"), attrib[i]);
+            sprintf(str, loc("Only user <b>%s</b> can edit this entry"), attrib[i]);
             show_error(str);
             return;
             }
@@ -4999,15 +5002,15 @@ int  i;
   get_user_line(lbs, user, password, full_name, user_email, email_notify);
 
   rsprintf("<tr><td width=10%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Login name"));
-  rsprintf("<td bgcolor=%s><input type=text name=new_user_name value=\"%s\"></td></tr>\n", 
+  rsprintf("<td bgcolor=%s><input type=text size=40 name=new_user_name value=\"%s\"></td></tr>\n", 
             gt("Categories bgcolor2"), user);
 
   rsprintf("<tr><td width=10%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Full name"));
-  rsprintf("<td bgcolor=%s><input type=text name=new_full_name value=\"%s\"></tr>\n", 
+  rsprintf("<td bgcolor=%s><input type=text size=40 name=new_full_name value=\"%s\"></tr>\n", 
             gt("Categories bgcolor2"), full_name);
 
   rsprintf("<tr><td width=10%% bgcolor=%s>Email:</td>\n", gt("Categories bgcolor1"));
-  rsprintf("<td bgcolor=%s><input type=text name=new_user_email value=\"%s\">&nbsp;&nbsp;&nbsp;&nbsp;\n", 
+  rsprintf("<td bgcolor=%s><input type=text size=40 name=new_user_email value=\"%s\">&nbsp;&nbsp;&nbsp;&nbsp;\n", 
             gt("Categories bgcolor2"), user_email);
 
   rsprintf("%s:\n", loc("Automatic email notifications"));
@@ -5068,25 +5071,25 @@ void show_new_user_page(LOGBOOK *lbs)
   /*---- entry form ----*/
 
   rsprintf("<tr><td width=20%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Login name"));
-  rsprintf("<td bgcolor=%s><input type=text name=new_user_name> <i>(%s)</i></td></tr>\n", 
+  rsprintf("<td bgcolor=%s><input type=text size=40 name=new_user_name> <i>(%s)</i></td></tr>\n", 
             gt("Categories bgcolor2"), loc("name may not contain blanks"));
 
   rsprintf("<tr><td width=20%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Full name"));
-  rsprintf("<td bgcolor=%s><input type=text name=new_full_name></tr>\n", 
+  rsprintf("<td bgcolor=%s><input type=text size=40 name=new_full_name></tr>\n", 
             gt("Categories bgcolor2"));
 
   rsprintf("<tr><td width=20%% bgcolor=%s>Email:</td>\n", gt("Categories bgcolor1"));
-  rsprintf("<td bgcolor=%s><input type=text name=new_user_email></tr>\n", 
+  rsprintf("<td bgcolor=%s><input type=text size=40 name=new_user_email></tr>\n", 
             gt("Categories bgcolor2"));
 
   rsprintf("<tr><td width=20%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Automatic email notifications"));
   rsprintf("<td bgcolor=%s><input type=checkbox name=email_notify value=all></tr>\n", gt("Categories bgcolor2"));
 
   rsprintf("<tr><td width=20%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Password"));
-  rsprintf("<td bgcolor=%s><input type=password name=newpwd>\n", gt("Categories bgcolor2"));
+  rsprintf("<td bgcolor=%s><input type=password size=40 name=newpwd>\n", gt("Categories bgcolor2"));
 
   rsprintf("<tr><td width=20%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Retype password"));
-  rsprintf("<td bgcolor=%s><input type=password name=newpwd2>\n", gt("Categories bgcolor2"));
+  rsprintf("<td bgcolor=%s><input type=password size=40 name=newpwd2>\n", gt("Categories bgcolor2"));
 
   rsprintf("</td></tr></table></td></tr>\n");
 
