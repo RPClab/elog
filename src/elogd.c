@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.196  2004/01/16 20:41:34  midas
+   Fixed language bug with 'change [global]'
+
    Revision 1.195  2004/01/16 19:43:30  midas
    Implemented setlocale() for strftime()
 
@@ -2047,7 +2050,7 @@ int check_language()
    strlcat(file_name, language, sizeof(file_name));
 
    if (stat(file_name, &cfg_stat) == 0) {
-      if (_locfile_mtime < cfg_stat.st_mtime) {
+      if (_locfile_mtime != cfg_stat.st_mtime) {
          _locfile_mtime = cfg_stat.st_mtime;
 
          if (_locbuffer) {
@@ -2187,8 +2190,8 @@ char *unloc(char *orig)
 
 void check_config()
 {
-   check_language();
    check_config_file();
+   check_language();
 }
 
 /*------------------------------------------------------------------*/
@@ -5784,7 +5787,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       ts.tm_min = atoi(date + 14);
       ts.tm_sec = atoi(date + 17);
       ts.tm_year = atoi(date + 20) - 1900;
-      ts.tm_isdst = -1;      /* let mktime compute DST */
+      ts.tm_isdst = -1;         /* let mktime compute DST */
 
       mktime(&ts);
       strftime(str, sizeof(str), format, &ts);
@@ -6664,7 +6667,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
 {
    int fh, length, rows, cols;
    char *buffer, *p;
-   char section[NAME_LENGTH], str[NAME_LENGTH], str2[NAME_LENGTH], grp[NAME_LENGTH];
+   char section[NAME_LENGTH], str[NAME_LENGTH], grp[NAME_LENGTH];
 
    /*---- header ----*/
 
@@ -6710,13 +6713,12 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
    if (top_group) {
       if (equal_ustring(top_group, "global")) {
          rsprintf("<input type=hidden name=global value=\"global\">\n");
-         sprintf(str, loc("Editing %s"), "[global]");
+         strcpy(str, "[global]");
       } else {
          rsprintf("<input type=hidden name=global value=\"%s\">\n", top_group);
-         sprintf(str2, "[global %s]", top_group);
-         sprintf(str, loc("Editing %s"), str2);
+         sprintf(str, "[global %s]", top_group);
       }
-      rsprintf("<br><center>%s</center>", str);
+      rsprintf("<br><center><b>%s</b></center>", str);
    }
 
    rsprintf("</span></td></tr>\n\n");
@@ -8366,9 +8368,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
       strcpy(slist[j], "entry date");
 
-      if (!getcfg(lbs->name, "Date format", format)) 
+      if (!getcfg(lbs->name, "Date format", format))
          strcpy(format, DEFAULT_DATE_FORMAT);
-      
+
       memset(&ts, 0, sizeof(ts));
 
       for (i = 0; i < 12; i++)
@@ -8381,7 +8383,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       ts.tm_min = atoi(date + 14);
       ts.tm_sec = atoi(date + 17);
       ts.tm_year = atoi(date + 20) - 1900;
-      ts.tm_isdst = -1;      /* let mktime compute DST */
+      ts.tm_isdst = -1;         /* let mktime compute DST */
 
       mktime(&ts);
       strftime(svalue[j++], sizeof(str), format, &ts);
@@ -8445,7 +8447,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          if (equal_ustring(disp_attr[index], loc("Date"))) {
             if (!getcfg(lbs->name, "Date format", format))
                strcpy(format, DEFAULT_DATE_FORMAT);
-            
+
             memset(&ts, 0, sizeof(ts));
 
             for (i = 0; i < 12; i++)
@@ -8458,7 +8460,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             ts.tm_min = atoi(date + 14);
             ts.tm_sec = atoi(date + 17);
             ts.tm_year = atoi(date + 20) - 1900;
-            ts.tm_isdst = -1;        /* let mktime compute DST */
+            ts.tm_isdst = -1;   /* let mktime compute DST */
 
             mktime(&ts);
             strftime(str, sizeof(str), format, &ts);
@@ -8944,6 +8946,9 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          strcat(menu_str, "Config, Logout, ");
       } else {
          strcat(menu_str, "Config, ");
+         sprintf(str, loc("Change %s"), "[global]");
+         strcat(menu_str, str);
+         strcat(menu_str, ", ");
       }
 
       strcat(menu_str, "Help, ");
@@ -9030,7 +9035,8 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
    else if (command[0]) {
       n = strbreak(menu_str, menu_item, MAX_N_LIST);
       for (i = 0; i < n; i++)
-         if (equal_ustring(command, loc(menu_item[i])))
+         if (equal_ustring(command, menu_item[i]) ||
+             equal_ustring(command, loc(menu_item[i])))
             break;
 
       if (i == n) {
@@ -11646,7 +11652,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
       if (!getcfg(lbs->name, "Date format", format))
          strcpy(format, DEFAULT_DATE_FORMAT);
-      
+
       memset(&ts, 0, sizeof(ts));
 
       for (i = 0; i < 12; i++)
@@ -11659,7 +11665,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
       ts.tm_min = atoi(date + 14);
       ts.tm_sec = atoi(date + 17);
       ts.tm_year = atoi(date + 20) - 1900;
-      ts.tm_isdst = -1;      /* let mktime compute DST */
+      ts.tm_isdst = -1;         /* let mktime compute DST */
 
       mktime(&ts);
       strftime(str, sizeof(str), format, &ts);
@@ -12412,7 +12418,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
             ts.tm_min = atoi(date + 14);
             ts.tm_sec = atoi(date + 17);
             ts.tm_year = atoi(date + 20) - 1900;
-            ts.tm_isdst = -1;        /* let mktime compute DST */
+            ts.tm_isdst = -1;   /* let mktime compute DST */
             mktime(&ts);
             strftime(svalue[j++], sizeof(str), format, &ts);
             strsubst(str, slist, svalue, j);
@@ -13528,6 +13534,7 @@ void hup_handler(int sig)
 {
    /* reload configuration */
    check_config();
+   check_language();
 }
 
 /*------------------------------------------------------------------*/
