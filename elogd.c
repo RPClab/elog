@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.105  2002/11/28 08:20:32  midas
+  Fixed bug with missing attributes in search all logbooks
+
   Revision 2.104  2002/11/28 07:47:34  midas
   Do not expire entry form
 
@@ -6816,6 +6819,7 @@ time_t ltime, ltime_start, ltime_end, now;
 struct tm tms, *ptms;
 MSG_LIST *msg_list;
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
+LOGBOOK *lbs_cur;
 
   /* redirect if enpty parameters */
   if (strstr(_cmdline, "=&"))
@@ -7067,16 +7071,17 @@ char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
 
   msg_list = malloc(sizeof(MSG_LIST)*n_msg);
 
+  lbs_cur = lbs;
   for (i=n=0 ; i<n_logbook ; i++)
     {
     if (search_all)
-      lbs = &lb_list[i];
+      lbs_cur = &lb_list[i];
 
-    for (j=0 ; j<*lbs->n_el_index ; j++)
+    for (j=0 ; j<*lbs_cur->n_el_index ; j++)
       {
-      msg_list[n].lbs = lbs;
+      msg_list[n].lbs = lbs_cur;
       msg_list[n].index = j;
-      sprintf(msg_list[n].string, "%010d", lbs->el_index[j].file_time);
+      sprintf(msg_list[n].string, "%010d", lbs_cur->el_index[j].file_time);
       n++;
       }
     }
