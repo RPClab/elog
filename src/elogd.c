@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.531  2005/01/05 15:56:10  midas
+   Cancel button on 'create new logbook' now also works without password files
+
    Revision 1.530  2005/01/05 09:05:49  midas
    Fixed non-functioning Cancel button in 'create new logbook'
 
@@ -6254,6 +6257,7 @@ LBLIST get_logbook_hierarchy(void)
       if (!enumcfg("global", grpname, sizeof(grpname), grpmembers, sizeof(grpmembers), i))
          break;
 
+      /* flag indicates top group (2) or group (1) or other entry (0) */
       flag = 0;
       strlcpy(str, grpname, sizeof(str));
       str[9] = 0;
@@ -6264,6 +6268,8 @@ LBLIST get_logbook_hierarchy(void)
          flag = 1;
 
       if (flag) {
+
+         printf("Found group %s\n", grpname);
 
          /* allocate new node, increase member pointer array by one */
          if (n == 0)
@@ -18404,7 +18410,7 @@ void show_selection_page()
    char str[10000], file_name[256];
    LBLIST phier;
 
-   /* check if at least one logbook define */
+   /* check if at least one logbook defined */
    if (!lb_list[0].name[0]) {
       show_standard_header(NULL, FALSE, "ELOG", "", FALSE);
 
@@ -18460,6 +18466,7 @@ void show_selection_page()
       show_html_header(NULL, TRUE, str, TRUE, FALSE);
    } else
       show_html_header(NULL, TRUE, "ELOG Logbook Selection", TRUE, FALSE);
+
    rsprintf("<body>\n\n");
    rsprintf("<table class=\"selframe\" cellspacing=0 align=center>\n");
    rsprintf("<tr><td colspan=13 class=\"dlgtitle\">\n");
@@ -19400,7 +19407,12 @@ void interprete(char *lbook, char *path)
 
    if (strieq(command, loc("Create new logbook"))) {
       if (*getparam("tmp") && strieq(getparam("tmp"), "Cancel")) {
-         sprintf(str, "?cmd=%s", loc("Change config file"));
+
+         if (getcfg(lbs->name, "Password file", str, sizeof(str)))
+            sprintf(str, "?cmd=%s", loc("Change config file"));
+         else
+            sprintf(str, "?cmd=%s", loc("Config"));
+
          redirect(lbs, str);
          return;
       }
