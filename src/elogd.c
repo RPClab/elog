@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.215  2004/01/27 16:18:10  midas
+   Use HTTP 1.0 in receive_message
+
    Revision 1.214  2004/01/27 13:45:05  midas
    Fixed bug in attachment retrieval
 
@@ -1569,8 +1572,8 @@ int retrieve_url(char *url, char **buffer)
       return -1;
    }
 
-   /* compose GET request */
-   sprintf(str, "GET %s%s HTTP/1.1\r\nConnection: Close\r\n", subdir, param);
+   /* compose GET request, avoid chunked data in HTTP/1.1 protocol */
+   sprintf(str, "GET %s%s HTTP/1.0\r\nConnection: Close\r\n", subdir, param);
 
    /* add local username/password */
    if (isparam("unm"))
@@ -1626,6 +1629,8 @@ int retrieve_url(char *url, char **buffer)
    } while (1);
 
    closesocket(sock);
+
+
 
    return n;
 }
@@ -13630,13 +13635,13 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
             else
                sprintf(ref, "?gexp=%s", pparent->name);
 
-            rsprintf("<a href=\"%s\">-</a> ", ref);
+            rsprintf("<a href=\"%s\">- %s</a> ", ref, plb->name);
          } else {
             sprintf(ref, "?gexp=%s", plb->name);
-            rsprintf("<a href=\"%s\">+</a> ", ref);
+            rsprintf("<a href=\"%s\">+ %s</a> ", ref, plb->name);
          }
 
-         rsprintf("%s</td></tr>\n", plb->name);
+         rsprintf("</td></tr>\n");
       }
 
       if (plb->is_top || expand)
