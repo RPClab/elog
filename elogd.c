@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.87  2002/10/15 08:07:13  midas
+  Fixed display of multiple messages in threaded find
+
   Revision 2.86  2002/09/30 07:07:02  midas
   Fixed typo
 
@@ -6560,7 +6563,7 @@ char   str[256], col[80], ref[256], img[80];
 char   mode[80];
 char   menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH];
 char   *p , *pt, *pt1, *pt2;
-BOOL   show_attachments, threaded, only_message_heads;
+BOOL   show_attachments, threaded;
 time_t ltime, ltime_start, ltime_end, now;
 struct tm tms, *ptms;
 MSG_LIST *msg_list;
@@ -6581,6 +6584,16 @@ MSG_LIST *msg_list;
       while (*pt1 != '&' && *pt1 != '?')
         *pt1-- = 0;
       *pt1 = 0;
+      }
+    /* add reverse=0 if not present */
+    if (strstr(_cmdline, "reverse=") == NULL &&
+        getcfg(lbs->name, "Reverse sort", str) &&
+        atoi(str) == 1)
+      {
+      if (strchr(_cmdline, '?'))
+        strcat(_cmdline, "&reverse=0");
+      else
+        strcat(_cmdline, "?reverse=0");
       }
     redirect(_cmdline);
     return;
@@ -6639,7 +6652,6 @@ MSG_LIST *msg_list;
     }
 
   threaded = equal_ustring(mode, "threaded");
-  only_message_heads = threaded;
 
   /*---- convert dates to ltime ----*/
 
@@ -6888,7 +6900,6 @@ MSG_LIST *msg_list;
       {
       if (*getparam(attr_list[i]))
         {
-        only_message_heads = FALSE;
         strcpy(str, getparam(attr_list[i]));
         for (j=0 ; j<(int)strlen(str) ; j++)
           str[j] = toupper(str[j]);
@@ -6909,7 +6920,6 @@ MSG_LIST *msg_list;
 
     if (*getparam("subtext"))
       {
-      only_message_heads = FALSE;
       strcpy(str, getparam("subtext"));
       for (i=0 ; i<(int)strlen(str) ; i++)
         str[i] = toupper(str[i]);
@@ -6925,11 +6935,43 @@ MSG_LIST *msg_list;
         }
       }
 
-    /* check if reply */
-    if (only_message_heads && in_reply_to[0])
+    /* in threaded mode, find message head */
+    if (threaded && in_reply_to[0])
       {
-      msg_list[index].lbs = NULL;
-      continue;
+      do
+        {
+        message_id = atoi(in_reply_to);
+        size = sizeof(text);
+        status = el_retrieve(msg_list[index].lbs, message_id, 
+                             date, attr_list, attrib, lbs->n_attr,
+                             text, &size, in_reply_to, reply_to,
+                             attachment,
+                             encoding);
+        if (status != EL_SUCCESS)
+          break;
+
+        } while (in_reply_to[0]);
+        
+      /* search index of message head */
+      for (i=0 ; i < *msg_list[index].lbs->n_el_index ; i++)
+        if (msg_list[index].lbs->el_index[i].message_id == message_id)
+          break;
+
+      /* check if message head already in list */
+      for (j=0 ; j<index ; j++)
+        if (msg_list[j].lbs == msg_list[index].lbs &&
+            msg_list[j].index == i)
+          break;
+
+      if (i < index)
+        {
+        msg_list[index].lbs = NULL; // delete current message
+        continue;
+        }
+      else 
+        {
+        msg_list[index].index = i;  // replace current message with message head
+        }
       }
 
     /* add attribute for sorting */
