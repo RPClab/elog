@@ -9,12 +9,12 @@
 
 CC = gcc
 LIBS = 
-CFLAGS = -march=i586
-EXECS = elog elogd
+CFLAGS = -g -O
+EXECS = elog elogd elconv
 DESTDIR = /usr/local/sbin
 
-INSTALL=/usr/bin/install
-RM=/bin/rm
+INSTALL = /usr/bin/install
+RM = /bin/rm
 
 ifeq ($(OSTYPE),solaris)
 CC = gcc
@@ -30,11 +30,8 @@ endif
 
 all: $(EXECS)
 
-elog: elog.c
-	$(CC) $(CFLAGS) -o elog elog.c $(LIBS)
-
-elogd: elogd.c
-	$(CC) $(CFLAGS) -o elogd elogd.c $(LIBS)
+%: %.c
+	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 install: $(EXECS)
 	$(INSTALL) -m 0755 -o bin -g bin $(EXECS) $(DESTDIR)
