@@ -222,7 +222,7 @@ The "<B>-D</B>" (<I>daemon</I>) command line option only works under UNIX. To st
 <ul>
 <li>use the <code><b>srvany.exe</b></code> and <code><b>instsrv.exe</b></code> from the Windows
 Resource Kit. If you don't have the Resource Kit, these programs can probably
-be downloaded from various places like <a href="http://www.pyeung.com/userdefinedservice.html">this one</a>. Then follow these steps:
+be downloaded from various places like <a href="srvany.zip">this one</a>. Then follow these steps:
 <p>
 <OL>
 <LI>Copy SRVANY.EXE to %window%\system32\.
@@ -241,11 +241,12 @@ be downloaded from various places like <a href="http://www.pyeung.com/userdefine
          put an empty string for port 80)
   </UL>
 
-<LI>Under NT4, open the <i>Services</i> entry in the control panel, under Windows 2000 right-click
+<LI>Under NT4, open the <i>Services</i> entry in the control panel, under Windows 2000 and XP right-click
     on "My Computer", click to "Manage", select "Services and Applications", expand it and select
     "Services". On the right panel, double-click "ELogd". Then start the service manually and
     change the startup type to "Automatic". This way the <code><b>elogd</b></code> program gets started automatically
-    on every reboot.
+    on every reboot. You might have to change the account under the "Log On" tab to your account (NOT local system
+	account), and enter your password twice.
 </OL>
 <p>
 <li>better still, use the free <a href="http://www.firedaemon.com">FireDaemon</a> utility. Make sure <code><b>elogd</b></code> is not running, then start the FireDaemonUI application, and enter the following fields:
