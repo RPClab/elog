@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.212  2004/01/27 11:22:56  midas
+   Made cron work properly with 'wdays'
+
    Revision 1.211  2004/01/26 16:21:49  midas
    Revised logging for synchronizing
 
@@ -3940,10 +3943,10 @@ void logf(LOGBOOK * lbs, const char *format, ...)
 {
    char file_name[2000];
    va_list argptr;
-   char str[10000], lb[256];
+   char str[10000];
    FILE *f;
    time_t now;
-   char buf[256];
+   char buf[1000];
 
    if (lbs == NULL) {
       if (!getcfg("global", "logfile", str))
@@ -3968,19 +3971,21 @@ void logf(LOGBOOK * lbs, const char *format, ...)
 
    now = time(0);
    strftime(buf, sizeof(buf), "%d-%b-%Y %H:%M:%S", localtime(&now));
+   strcat(buf, " ");
 
-   if (lbs == NULL)
-      lb[0] = 0;
-   else
-      strlcpy(lb, lbs->name, sizeof(lb));
+   if (*getparam("unm") && rem_host[0]) 
+      sprintf(buf+strlen(buf), "[%s@%s] ", getparam("unm"), rem_host);
+   else if (rem_host[0])
+      sprintf(buf+strlen(buf), "[%s] ", rem_host);
 
-   if (*getparam("unm"))
-      fprintf(f, "%s [%s@%s] %s: %s", buf, getparam("unm"), rem_host, lb, str);
-   else
-      fprintf(f, "%s [%s] %s: %s", buf, rem_host, lb, str);
+   if (lbs)
+      sprintf(buf+strlen(buf), "{%s} ", lbs->name);
+      
+   strlcat(buf, str, sizeof(buf));
+   if (buf[strlen(buf) - 1] != '\n')
+      strlcat(buf, "\n", sizeof(buf));
 
-   if (str[strlen(str) - 1] != '\n')
-      fprintf(f, "\n");
+   fprintf(f, buf);
 
    fclose(f);
 }
@@ -8204,6 +8209,13 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
       }
    }
 
+   if (n == 0) {
+      if (strstr(text, "Login")) 
+         sprintf(error_str, loc("No user name supplied to access remote logbook"));
+      else
+         sprintf(error_str, loc("Error accessing remote logbook"));
+   }
+   
    /* debugging only
       for (i = 0; i < n; i++) {
       int j;
@@ -8942,19 +8954,23 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 
       md5_remote = NULL;
       n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote, error_str);
-      if (n_remote < 0) {
+      if (n_remote <= 0) {
 
          if (bcron)
             logf(lbs, error_str);
          else
-            rsprintf(error_str);
+            rsprintf("%s\n", error_str);
 
          if (md5_remote)
             free(md5_remote);
+
+         if (!bcron)
+            rsprintf("</pre>\n");
          continue;
       }
 
       /* load local copy of remote MD5s from file */
+      md5_cache = NULL;
       n_cache = load_md5(lbs, list[index], &md5_cache);
 
       /* if this is the first time (no cache exists yet), use remote list instead */
@@ -8972,7 +8988,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
          if (bcron)
             logf(lbs, "Error loading configuration file: %s", error_str);
          else
-            rsprintf("Error loading configuration file: %s", error_str);
+            rsprintf("Error loading configuration file: %s\n", error_str);
       } else
          MD5_checksum(buffer, strlen(buffer), digest);
 
@@ -8991,7 +9007,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
        */
 
       if (n_remote > 0) {
-         /* if message has been changed on this server, but not remotely, send it */
+         /* if config has been changed on this server, but not remotely, send it */
          if (!equal_md5(md5_cache[0].md5_digest, digest)
              && equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)) {
 
@@ -8999,7 +9015,8 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                logf(lbs, "MIRROR send config");
 
             /* submit configuration section */
-            submit_config(lbs, list[index], buffer, error_str);
+            if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+               submit_config(lbs, list[index], buffer, error_str);
 
             if (error_str[0]) {
                if (bcron)
@@ -9014,14 +9031,15 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
             md5_cache[0].message_id = -1;
 
          } else
-            /* if message has been changed remotely, but not on this server, receive it */
+            /* if config has been changed remotely, but not on this server, receive it */
             if (!equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)
                 && equal_md5(md5_cache[0].md5_digest, digest)) {
 
             if (_logging_level > 1)
                logf(lbs, "MIRROR receive config");
 
-            receive_config(lbs, list[index], error_str);
+            if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+                receive_config(lbs, list[index], error_str);
 
             if (error_str[0]) {
                if (bcron)
@@ -9035,7 +9053,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
             md5_cache[0].message_id = -1;
 
          } else
-            /* if message has been changed remotely and on this server, show conflict */
+            /* if config has been changed remotely and on this server, show conflict */
             if (!equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)
                 && !equal_md5(md5_cache[0].md5_digest, digest)
                 && !equal_md5(md5_remote[0].md5_digest, digest)) {
@@ -9051,7 +9069,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
             }
 
          } else {
-            /* messages are identical */
+            /* configs are identical */
             md5_cache[0].message_id = -1;
          }
       } else {                  /* n_remote == 0 */
@@ -9113,14 +9131,15 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                   logf(lbs, "MIRROR send entry #%d", message_id);
 
                /* submit local message */
-               submit_message(lbs, list[index], message_id, error_str);
+               if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+                  submit_message(lbs, list[index], message_id, error_str);
                all_identical = FALSE;
 
                /* not that submit_message() may have changed attr_list !!! */
 
                if (error_str[0]) {
                   if (bcron)
-                     logf(lbs, "Error sending local message: %s\n", error_str);
+                     logf(lbs, "Error sending local message: %s", error_str);
                   else
                      rsprintf("Error sending local message: %s\n", error_str);
                } else if (!bcron)
@@ -9138,12 +9157,13 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                if (_logging_level > 1)
                   logf(lbs, "MIRROR receive entry #%d", message_id);
 
-               receive_message(lbs, list[index], message_id, error_str, FALSE);
+               if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+                  receive_message(lbs, list[index], message_id, error_str, FALSE);
                all_identical = FALSE;
 
                if (error_str[0]) {
                   if (bcron)
-                     logf(lbs, "Error receiving message: %s\n", error_str);
+                     logf(lbs, "Error receiving message: %s", error_str);
                   else
                      rsprintf("Error receiving message: %s\n", error_str);
                } else if (!bcron)
@@ -9191,7 +9211,8 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
             if (_logging_level > 1)
                logf(lbs, "MIRROR delete local entry #%d", message_id);
 
-            el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
+            if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+               el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
             all_identical = FALSE;
 
             if (!bcron)
@@ -9199,6 +9220,9 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 
             /* message got deleted from local message list, so redo current index */
             i_msg--;
+
+            /* mark message non-conflicting */
+            md5_cache[i_cache].message_id = -1;
          }
 
          /* if message does not exist in cache and remotely, 
@@ -9208,7 +9232,8 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
             if (_logging_level > 1)
                logf(lbs, "MIRROR send entry #%d", message_id);
 
-            remote_id = submit_message(lbs, list[index], message_id, error_str);
+            if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+               remote_id = submit_message(lbs, list[index], message_id, error_str);
             all_identical = FALSE;
 
             if (remote_id != message_id) {
@@ -9220,13 +9245,11 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                            message_id, remote_id);
             } else if (error_str[0]) {
                if (bcron)
-                  logf(lbs, "%s: %s\n", loc("Error sending local entry"), error_str);
+                  logf(lbs, "%s: %s", loc("Error sending local entry"), error_str);
                else
                   rsprintf("%s: %s\n", loc("Error sending local entry"), error_str);
             } else if (!bcron)
                rsprintf("ID%d:\t%s\n", message_id, loc("Local entry submitted"));
-
-            md5_cache[i_cache].message_id = -1;
          }
 
          flush_return_buffer();
@@ -9255,12 +9278,13 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                      logf(lbs, "MIRROR receive entry #%d", message_id);
 
                   /* if message does not exist locally and in cache, it is new, so retrieve it */
-                  receive_message(lbs, list[index], message_id, error_str, TRUE);
+                  if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+                     receive_message(lbs, list[index], message_id, error_str, TRUE);
                   all_identical = FALSE;
 
                   if (error_str[0]) {
                      if (bcron)
-                        logf(lbs, "Error receiving message: %s\n", error_str);
+                        logf(lbs, "Error receiving message: %s", error_str);
                      else
                         rsprintf("Error receiving message: %s\n", error_str);
                   } else if (!bcron)
@@ -9273,7 +9297,9 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 
                   sprintf(str, "%d?cmd=Delete&confirm=Yes", message_id);
                   combine_url(lbs, list[index], str, url, sizeof(url));
-                  retrieve_url(url, &buffer);
+         
+                  if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+                     retrieve_url(url, &buffer);
                   all_identical = FALSE;
 
                   if (strstr(buffer, "Location: ")) {
@@ -9298,7 +9324,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
       md5_remote = NULL;
       n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote, error_str);
       if (n_remote < 0)
-         rsprintf(error_str);
+         rsprintf("%s\n", error_str);
 
       /* keep conflicting messages in cache */
       for (i = 0; i < n_cache; i++)
@@ -9338,7 +9364,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 void synchronize(LOGBOOK * lbs, BOOL bcron)
 {
    int i;
-   char str[256];
+   char str[256], pwd[256];
 
    if (!bcron) {
       show_html_header(NULL, FALSE, loc("Synchronization"));
@@ -9353,6 +9379,14 @@ void synchronize(LOGBOOK * lbs, BOOL bcron)
                if (lb_list[i].top_group[0]
                    && !equal_ustring(lb_list[i].top_group, getcfg_topgroup()))
                   continue;
+
+            /* if called by cron, set user name and password */
+            if (bcron && getcfg(lb_list[i].name, "mirror user", str)) {
+               if (get_user_line(lb_list[i].name, str, pwd, NULL, NULL, NULL) == EL_SUCCESS) {
+                  setparam("unm", str);
+                  setparam("upwd", pwd);
+               }
+            }
 
             synchronize_logbook(&lb_list[i], bcron);
          }
@@ -14903,6 +14937,26 @@ void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
 
 /*------------------------------------------------------------------*/
 
+BOOL cron_match(char *str, int value, BOOL ignore_star)
+{
+   int low, high; 
+
+   if (atoi(str) == value)
+      return TRUE;
+      
+   if (!ignore_star &&  str[0] == '*')
+      return TRUE;
+
+   /* check range */
+   if (strchr(str, '-')) {
+      low = atoi(str);
+      high = atoi(strchr(str, '-')+1);
+      return value >= low && value <= high;
+   }
+
+   return FALSE;
+}
+
 void check_cron()
 /* check 'mirror cron' etnry in configuration file
 
@@ -14917,7 +14971,7 @@ void check_cron()
 */
 {
    int i, j, n;
-   BOOL flag[5];
+   BOOL min_flag, hour_flag, day_flag, mon_flag, wday_flag;
    time_t now;
    char *p, str[256], cron[5][256];
    struct tm *ts;
@@ -14944,43 +14998,40 @@ void check_cron()
    str[24] = 0;
    printf("Cron: %s\r", str);
 
-   /* check if last_time is initialized */
-   if (last_time.tm_year) {
+   /* check once every minute */
+   if (last_time.tm_year && last_time.tm_min != ts->tm_min) {
 
-      for (i = 0; i < 5; i++)
-         flag[i] = FALSE;
+      min_flag = hour_flag = day_flag = mon_flag = wday_flag = FALSE;
 
       for (i = 0; i < 5; i++) {
          n = strbreak(cron[i], list, 60);
-         if (cron[i][0] == '*')
-            flag[i] = TRUE;
-         else
-            for (j = 0; j < n; j++) {
-               /* minutes */
-               if (i == 0 && ts->tm_min != last_time.tm_min
-                   && ts->tm_min == atoi(list[j]))
-                  flag[i] = TRUE;
-               /* hours */
-               if (i == 1 && ts->tm_hour != last_time.tm_hour
-                   && ts->tm_hour == atoi(list[j]))
-                  flag[i] = TRUE;
-               /* day of month */
-               if (i == 2 && ts->tm_mday != last_time.tm_mday
-                   && ts->tm_mday == atoi(list[j]))
-                  flag[i] = TRUE;
-               /* month of year */
-               if (i == 3 && ts->tm_mon != last_time.tm_mon
-                   && ts->tm_mon + 1 == atoi(list[j]))
-                  flag[i] = TRUE;
-               /* weekday */
-               if (i == 4 && ts->tm_wday != last_time.tm_wday
-                   && ts->tm_wday == atoi(list[j]))
-                  flag[i] = TRUE;
-            }
+
+         for (j = 0; j < n; j++) {
+            /* minutes */
+            if (i == 0 && cron_match(list[j], ts->tm_min, FALSE))
+               min_flag = TRUE;
+
+            /* hours */
+            if (i == 1 && cron_match(list[j], ts->tm_hour, FALSE))
+               hour_flag = TRUE;
+
+            /* day of month */
+            if (i == 2 && cron_match(list[j], ts->tm_mday, FALSE))
+               day_flag = TRUE;
+
+            /* month of year */
+            if (i == 3 && cron_match(list[j], ts->tm_mon, FALSE))
+               mon_flag = TRUE;
+            
+            /* weekday */
+            if (i == 4 && cron_match(list[j], ts->tm_wday, TRUE))
+               wday_flag = TRUE;
+         }
       }
 
-      if (flag[0] && flag[1] && flag[2] && flag[3] && flag[4]) {
+      if (min_flag && hour_flag && ((day_flag && mon_flag) || wday_flag)) {
 
+         rem_host[0] = 0;
          logf(NULL, "Cron job started");
 
          /* synchronize all logbooks */
