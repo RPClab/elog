@@ -11,7 +11,8 @@ CC = gcc
 LIBS = 
 CFLAGS = -g -O
 EXECS = elog elogd elconv
-DESTDIR = /usr/local/sbin
+DESTDIR = /usr/local/bin
+SDESTDIR = /usr/local/sbin
 
 INSTALL = /usr/bin/install
 RM = /bin/rm
@@ -34,7 +35,8 @@ all: $(EXECS)
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 install: $(EXECS)
-	$(INSTALL) -m 0755 -o bin -g bin $(EXECS) $(DESTDIR)
+	$(INSTALL) -m 0755 -o bin -g bin elog elconv $(DESTDIR)
+	$(INSTALL) -m 0755 -o bin -g bin elogd $(SDESTDIR)
 
 clean:
 	-$(RM) *~ $(EXECS)
