@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.125  2003/07/03 15:04:11  midas
+  Fixed bug with attachment redirection
+
   Revision 1.124  2003/07/01 14:32:52  midas
   Do not display logbook tabs during self-registration
 
@@ -12171,10 +12174,7 @@ FILE    *f;
       show_error(str);
       }
     else
-      {
-      sprintf(str, "../%s", attachment);
-      redirect(lbs, str);
-      }
+      redirect(lbs, attachment);
 
     return;
     }
