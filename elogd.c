@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.94  2002/11/05 15:40:58  midas
+  Hide non-allowed commands
+
   Revision 2.93  2002/11/05 15:14:37  midas
   Move whole thread on re-submission of individual entry
 
@@ -1352,6 +1355,7 @@ static char old_language[256];
         } while (p && *p);
 
       porig[n] = NULL;
+      ptrans[n] = NULL;
       }
 
     strcpy(old_language, language);
@@ -1706,7 +1710,7 @@ int eli_compare(const void *e1, const void *e2)
 
   if (((EL_INDEX *)e1)->file_time < ((EL_INDEX *)e2)->file_time)
     return -1;
-  if (((EL_INDEX *)e1)->file_time > ((EL_INDEX *)e2)->file_time)
+  if (((EL_INDEX *)e1)->file_time >= ((EL_INDEX *)e2)->file_time)
     return 1;
   return 0;
 }
@@ -4184,11 +4188,18 @@ int  i, n;
         break;
 
     if (i<n)
-      {
-      sprintf(str, loc("Error: Command \"<b>%s</b>\" is not allowed for user \"<b>%s</b>\""),
-              command, getparam("full_name"));
-      show_error(str);
       return FALSE;
+    }
+
+  /* check admin command */
+  if (equal_ustring(command, "Admin"))
+    {
+    if (getcfg(lbs->name, "Admin user", str))
+      {
+      if (strstr(str, getparam("unm")) != 0)
+        return TRUE;
+      else
+        return FALSE;
       }
     }
 
@@ -4202,10 +4213,6 @@ int  i, n;
   for (i=0 ; i<n ; i++)
     if (equal_ustring(list[i], getparam("unm")))
       return TRUE;
-
-  sprintf(str, loc("Error: Command \"<b>%s</b>\" is not allowed for user \"<b>%s</b>\""),
-          command, getparam("full_name"));
-  show_error(str);
 
   return FALSE;
 }
@@ -7270,19 +7277,9 @@ MSG_LIST *msg_list;
       strcpy(menu_str, "New, Find, Select, ");
 
       if (getcfg(lbs->name, "Password file", str))
-        {
-        if (getcfg(lbs->name, "Admin user", str) && 
-            strstr(str, getparam("unm")) != 0)
-          {
-          strcat(menu_str, "Admin");
-          strcat(menu_str, ", ");
-          }
-        strcat(menu_str, "Config, Logout, ");
-        }
+        strcat(menu_str, "Admin, Config, Logout, ");
       else
-        {
         strcat(menu_str, "Config, ");
-        }
       
       strcat(menu_str, "Last x, Help");
       }
@@ -7293,24 +7290,27 @@ MSG_LIST *msg_list;
       {
       for (i=0 ; i<n ; i++)
         {
-        if (equal_ustring(menu_item[i], "Last x"))
+        if (allow_user(lbs, menu_item[i]))
           {
-          rsprintf("<input type=hidden name=mode value=\"%s\">\n", mode);
-
-          if (past_n)
+          if (equal_ustring(menu_item[i], "Last x"))
             {
-            sprintf(str, loc("Last %d days"), past_n*2);
-            rsprintf("<input type=submit name=past value=\"%s\">\n", str);
-            }
+            rsprintf("<input type=hidden name=mode value=\"%s\">\n", mode);
 
-          if (last_n)
-            {
-            sprintf(str, loc("Last %d entries"), last_n*2);
-            rsprintf("<input type=submit name=last value=\"%s\">\n", str);
+            if (past_n)
+              {
+              sprintf(str, loc("Last %d days"), past_n*2);
+              rsprintf("<input type=submit name=past value=\"%s\">\n", str);
+              }
+
+            if (last_n)
+              {
+              sprintf(str, loc("Last %d entries"), last_n*2);
+              rsprintf("<input type=submit name=last value=\"%s\">\n", str);
+              }
             }
+          else
+            rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc(menu_item[i]));
           }
-        else
-          rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc(menu_item[i]));
         }
       }
     else
@@ -7319,53 +7319,56 @@ MSG_LIST *msg_list;
 
       for (i=0 ; i<n ; i++)
         {
-        if (equal_ustring(menu_item[i], "Last x"))
+        if (allow_user(lbs, menu_item[i]))
           {
-          if (past_n)
+          if (equal_ustring(menu_item[i], "Last x"))
             {
-            sprintf(str, loc("Last %d days"), past_n*2);
-            rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n*2, mode, str);
-            }
-
-          if (last_n)
-            {
-            sprintf(str, loc("Last %d entries"), last_n*2);
-            rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n*2, mode, str);
-            }
-          }
-        else if (equal_ustring(menu_item[i], "Select"))
-          {
-          strcpy(str, getparam("cmdline"));
-          if (atoi(getparam("select")) == 1)
-            {
-            /* remove select switch */
-            if (strstr(str, "select=1"))
+            if (past_n)
               {
-              *strstr(str, "select=1") = 0;
-              if (strlen(str) > 1 && 
-                 (str[strlen(str)-1] == '&' || str[strlen(str)-1] == '?'))
-                str[strlen(str)-1] = 0;
+              sprintf(str, loc("Last %d days"), past_n*2);
+              rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n*2, mode, str);
+              }
+
+            if (last_n)
+              {
+              sprintf(str, loc("Last %d entries"), last_n*2);
+              rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n*2, mode, str);
               }
             }
+          else if (equal_ustring(menu_item[i], "Select"))
+            {
+            strcpy(str, getparam("cmdline"));
+            if (atoi(getparam("select")) == 1)
+              {
+              /* remove select switch */
+              if (strstr(str, "select=1"))
+                {
+                *strstr(str, "select=1") = 0;
+                if (strlen(str) > 1 && 
+                   (str[strlen(str)-1] == '&' || str[strlen(str)-1] == '?'))
+                  str[strlen(str)-1] = 0;
+                }
+              }
+            else
+              {
+              /* add select switch */
+              if (strchr(str, '?'))
+                strcat(str, "&select=1");
+              else
+                strcat(str, "?select=1");
+              }
+            rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;|\n", str, loc("Select"));
+            }
           else
             {
-            /* add select switch */
-            if (strchr(str, '?'))
-              strcat(str, "&select=1");
-            else
-              strcat(str, "?select=1");
-            }
-          rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;|\n", str, loc("Select"));
-          }
-        else
-          {
-          strcpy(str, loc(menu_item[i]));
-          url_encode(str);
+            strcpy(str, loc(menu_item[i]));
+            url_encode(str);
 
-          if (i < n-1)
-            rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;|\n", str, loc(menu_item[i]));
-          else
-            rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;\n", str, loc(menu_item[i]));
+            if (i < n-1)
+              rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;|\n", str, loc(menu_item[i]));
+            else
+              rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;\n", str, loc(menu_item[i]));
+            }
           }
         }
 
@@ -9858,7 +9861,12 @@ FILE    *f;
 
   /* check if command allowed for current user */
   if (!allow_user(lbs, command))
+    {
+    sprintf(str, loc("Error: Command \"<b>%s</b>\" is not allowed for user \"<b>%s</b>\""),
+            command, getparam("full_name"));
+    show_error(str);
     return;
+    }
 
   /*---- check for various commands --------------------------------*/
 
