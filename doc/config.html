@@ -867,7 +867,7 @@ Guest menu commands</b></code> entry, you have to click on "Login" to get that s
 your login name from above
 <LI>If you now enter the "Config" page, you can add other users
 <LI>Remove the self registration option if you like
-</UL>
+</UL><p>
 
 The presence of a password file requires all users to "<I>log in</I>" using their name and
 password, except when a guest login is allowed via the <b>"Guest menu commands"</b> option.
@@ -883,10 +883,15 @@ Subst Email = $user_email</code></ul>
 Thus the author name is not user-input anymore, ensuring the entry always contains the
 actual user name. For a full listing of substitutions, see the "<I>Subst &lt;attrib></I>" option.<p>
 
-The user name and password are stored as cookies on the user side. They expire after the
-current browser session by default, which can be changed with the <code><b>Login
+The user name and password are stored as cookies on the user side. The expiration is
+controlled by the <b><code>Remember me</code></b> checkbox during the login. If unchecked,
+the cookies expire after the
+current browser session. If checked, they expire after 31 days by default, which 
+can be changed with the <code><b>Login
 expiration</b></code > option, giving the expiration time in hours. Setting this to 24
-for example, makes the password expire after one day.<p>
+for example, makes the password expire after one day. If presistent cookies are not
+desired, the <code><b>Login	expiration</b></code > option can be set to zero, in which
+case the <b><code>Remember me</code></b> checkbox is not displayed.<p>
 
 The <b><code>Admin user = &lt;user list&gt;</b></code> is a list of one or more user names,
 which have admin rights. They see a button <b><code>Change elogd.cfg</code></b> on the
