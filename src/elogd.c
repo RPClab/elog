@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.217  2004/01/29 09:41:28  midas
+   Implemented CSV output
+
    Revision 1.216  2004/01/28 15:27:18  midas
    Version 2.5.0
 
@@ -4240,7 +4243,7 @@ void rsprintf(const char *format, ...)
 
 void flush_return_buffer()
 {
-   send(_sock, return_buffer, strlen_retbuf + 1, 0);
+   send(_sock, return_buffer, strlen_retbuf, 0);
    memset(return_buffer, 0, return_buffer_size);
    strlen_retbuf = 0;
 }
@@ -4735,6 +4738,26 @@ void show_http_header(BOOL expires)
       rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
    }
 
+   rsprintf("\r\n");
+}
+
+void show_plain_header(int size)
+{
+   /* header */
+   rsprintf("HTTP/1.1 200 Document follows\r\n");
+   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+   rsprintf("Accept-Ranges: bytes\r\n");
+
+   if (use_keepalive) {
+      rsprintf("Connection: Keep-Alive\r\n");
+      rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+   }
+
+   rsprintf("Pragma: no-cache\r\n");
+   rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+   rsprintf("Content-Type: text/plain\r\n");
+   if (size)
+      rsprintf("Content-Length: %d\r\n", size);
    rsprintf("\r\n");
 }
 
@@ -6711,6 +6734,13 @@ void show_find_form(LOGBOOK * lbs)
       rsprintf("<input type=radio name=mode value=\"threaded\">%s&nbsp;&nbsp;\n",
                loc("Display threads"));
 
+   if (equal_ustring(mode, "CSV"))
+      rsprintf("<input type=radio name=mode value=\"CSV\" checked>%s&nbsp;&nbsp;\n",
+               loc("Display comma-separated values (CSV)"));
+   else
+      rsprintf("<input type=radio name=mode value=\"CSV\">%s&nbsp;&nbsp;\n",
+               loc("Display comma-separated values (CSV)"));
+
    rsprintf("</td></tr>\n");
 
    rsprintf("<tr><td class=\"form2\"><b>%s:</b><br>", loc("Options"));
@@ -8091,26 +8121,7 @@ int show_download_page(LOGBOOK * lbs, char *path)
       message[size] = 0;
    }
 
-   /* header */
-   rsprintf("HTTP/1.1 200 Document follows\r\n");
-   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-   rsprintf("Accept-Ranges: bytes\r\n");
-
-   /*
-      time(&now);
-      now += (int) (3600*3);
-      gmt = gmtime(&now);
-      strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
-      rsprintf("Expires: %s\r\n", str);
-    */
-
-   if (use_keepalive) {
-      rsprintf("Connection: Keep-Alive\r\n");
-      rsprintf("Keep-Alive: timeout=60, max=10\r\n");
-   }
-
-   rsprintf("Content-Type: text/plain\r\n");
-   rsprintf("Content-Length: %d\r\n\r\n", size);
+   show_plain_header(size);
 
    /* increase return buffer size if file too big */
    if (size > return_buffer_size - (int) strlen(return_buffer)) {
@@ -9006,7 +9017,12 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 
       if (!bcron) {
          rsprintf("<table width=\"100%%\" cellpadding=1 cellspacing=0");
-         sprintf(loc_ref, "<a href=\"../%s/\">%s</a>", lbs->name_enc, lbs->name);
+
+         if (getcfg_topgroup())
+            sprintf(loc_ref, "<a href=\"../%s/\">%s</a>", lbs->name_enc, lbs->name);
+         else
+            sprintf(loc_ref, "<a href=\"%s/\">%s</a>", lbs->name_enc, lbs->name);
+
          sprintf(str, loc("Synchronizing logbook %s with server \"%s\""), loc_ref,
                  list[index]);
          rsprintf("<tr><td class=\"title1\">%s</td></tr>\n", str);
@@ -9213,8 +9229,15 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                      logf(lbs, "Error receiving message: %s", error_str);
                   else
                      rsprintf("Error receiving message: %s\n", error_str);
-               } else if (!bcron)
-                  rsprintf("ID%d:\tRemote entry received\n", message_id);
+               } else if (!bcron) {
+                
+                  if (getcfg_topgroup())
+                     rsprintf("<a href=\"../%s/%d\">ID%d:</a>\t", lbs->name_enc, message_id, message_id);
+                  else
+                     rsprintf("<a href=\"%s/%d\">ID%d:</a>\t", lbs->name_enc, message_id, message_id);
+                 
+                  rsprintf("%s\n", loc("Remote entry received"));
+               }
 
                md5_cache[i_cache].message_id = -1;
 
@@ -9366,8 +9389,15 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                         logf(lbs, "Error receiving message: %s", error_str);
                      else
                         rsprintf("Error receiving message: %s\n", error_str);
-                  } else if (!bcron)
-                     rsprintf("ID%d:\tRemote entry received\n", message_id);
+                  } else if (!bcron) {
+
+                     if (getcfg_topgroup())
+                        rsprintf("<a href=\"../%s/%d\">ID%d:</a>\t", lbs->name_enc, message_id, message_id);
+                     else
+                        rsprintf("<a href=\"%s/%d\">ID%d:</a>\t", lbs->name_enc, message_id, message_id);
+                 
+                     rsprintf("%s\n", loc("Remote entry received"));
+                  }
 
                } else {
 
@@ -10651,7 +10681,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    char mode[80];
    char menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH];
    char *p, *pt, *pt1, *pt2;
-   BOOL show_attachments, threaded, mode_commands, expand, filtering, disp_filter;
+   BOOL show_attachments, threaded, csv, mode_commands, expand, filtering, disp_filter;
    time_t ltime, ltime_start, ltime_end, now;
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
@@ -10757,11 +10787,17 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          strcpy(mode, "Full");
    }
 
+   threaded = equal_ustring(mode, "threaded");
+   csv = equal_ustring(mode, "CSV");
+   
+   if (csv) {
+      page_n = -1;               /* display all pages */
+      show_attachments = FALSE;  /* hide attachments */
+   }
+
    /* supersede mode if in parameter */
    if (*getparam("attach"))
       show_attachments = (*getparam("attach") > 0);
-
-   threaded = equal_ustring(mode, "threaded");
 
    /*---- convert dates to ltime ----*/
 
@@ -11197,346 +11233,365 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    } else
       sprintf(str, "ELOG %s", lbs->name);
 
-   show_standard_header(lbs, TRUE, str, NULL);
+   if (csv) {
 
-   /*---- title ----*/
+      /* no menus and tables */
+      show_plain_header(0);
 
-   strcpy(str, ", ");
-   if (past_n == 1)
-      strcat(str, loc("Last day"));
-   else if (past_n > 1)
-      sprintf(str + strlen(str), loc("Last %d days"), past_n);
-   else if (last_n)
-      sprintf(str + strlen(str), loc("Last %d entries"), last_n);
-   else if (page_n == -1)
-      sprintf(str + strlen(str), loc("all entries"));
-   else if (page_n)
-      sprintf(str + strlen(str), loc("Page %d of %d"), page_n, (n_msg - 1) / n_page + 1);
-   if (strlen(str) == 2)
-      str[0] = 0;
-
-   if (printable)
-      show_standard_title(lbs->name, str, 1);
-   else
-      show_standard_title(lbs->name, str, 0);
-
-   /*---- menu buttons ----*/
-
-   if (!printable) {
-      rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
-
-      /* current command line for select command */
-      strcpy(str, getparam("cmdline"));
-
-      /* remove select switch */
-      if (strstr(str, "select=1")) {
-         *strstr(str, "select=1") = 0;
-         if (strlen(str) > 1
-             && (str[strlen(str) - 1] == '&' || str[strlen(str) - 1] == '?'))
-            str[strlen(str) - 1] = 0;
-      }
-
-      /* store current command line as hidden parameter for page navigation */
-      if (str[0] && !equal_ustring(str, "?")) {
-         rsprintf("<input type=hidden name=lastcmd value=\"%s\">\n", str);
-      }
-
-      if (!getcfg(lbs->name, "Guest Find menu commands", menu_str)
-          || *getparam("unm") != 0)
-         getcfg(lbs->name, "Find menu commands", menu_str);
-
-      /* default menu commands */
-      if (menu_str[0] == 0) {
-         strcpy(menu_str, "New, Find, Select, ");
-
-         if (getcfg(lbs->name, "Password file", str))
-            strcat(menu_str, "Config, Logout, ");
+      for (i=0 ; i<lbs->n_attr ; i++) {
+         strlcpy(str, attr_list[i], sizeof(str));
+         while (strchr(str, '"'))
+            *strchr(str, '"') = '\'';
+         rsprintf("\"%s\"", str);
+         if (i<lbs->n_attr-1)
+            rsprintf(",");
          else
-            strcat(menu_str, "Config, ");
-
-         if (getcfg(lbs->name, "Mirror server", str))
-            strcat(menu_str, "Synchronize, ");
-
-         strcat(menu_str, "Last x, Help");
+            rsprintf("\r\n");
       }
 
-      n = strbreak(menu_str, menu_item, MAX_N_LIST);
+   } else {
 
-      for (i = 0; i < n; i++) {
-         if (is_user_allowed(lbs, menu_item[i])) {
-            if (equal_ustring(menu_item[i], "Last x")) {
-               if (past_n) {
-                  sprintf(str, loc("Last %d days"), past_n * 2);
-                  rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n * 2,
-                           mode, str);
-               }
+      show_standard_header(lbs, TRUE, str, NULL);
 
-               if (last_n) {
-                  sprintf(str, loc("Last %d entries"), last_n * 2);
-                  rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n * 2,
-                           mode, str);
-               }
-            } else if (equal_ustring(menu_item[i], "Select")) {
-               strcpy(str, getparam("cmdline"));
-               if (atoi(getparam("select")) == 1) {
-                  /* remove select switch */
-                  if (strstr(str, "select=1")) {
-                     *strstr(str, "select=1") = 0;
-                     if (strlen(str) > 1
-                         && (str[strlen(str) - 1] == '&' || str[strlen(str) - 1] == '?'))
-                        str[strlen(str) - 1] = 0;
+      /*---- title ----*/
+
+      strcpy(str, ", ");
+      if (past_n == 1)
+         strcat(str, loc("Last day"));
+      else if (past_n > 1)
+         sprintf(str + strlen(str), loc("Last %d days"), past_n);
+      else if (last_n)
+         sprintf(str + strlen(str), loc("Last %d entries"), last_n);
+      else if (page_n == -1)
+         sprintf(str + strlen(str), loc("all entries"));
+      else if (page_n)
+         sprintf(str + strlen(str), loc("Page %d of %d"), page_n, (n_msg - 1) / n_page + 1);
+      if (strlen(str) == 2)
+         str[0] = 0;
+
+      if (printable)
+         show_standard_title(lbs->name, str, 1);
+      else
+         show_standard_title(lbs->name, str, 0);
+
+      /*---- menu buttons ----*/
+
+      if (!printable) {
+         rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
+
+         /* current command line for select command */
+         strcpy(str, getparam("cmdline"));
+
+         /* remove select switch */
+         if (strstr(str, "select=1")) {
+            *strstr(str, "select=1") = 0;
+            if (strlen(str) > 1
+                && (str[strlen(str) - 1] == '&' || str[strlen(str) - 1] == '?'))
+               str[strlen(str) - 1] = 0;
+         }
+
+         /* store current command line as hidden parameter for page navigation */
+         if (str[0] && !equal_ustring(str, "?")) {
+            rsprintf("<input type=hidden name=lastcmd value=\"%s\">\n", str);
+         }
+
+         if (!getcfg(lbs->name, "Guest Find menu commands", menu_str)
+             || *getparam("unm") != 0)
+            getcfg(lbs->name, "Find menu commands", menu_str);
+
+         /* default menu commands */
+         if (menu_str[0] == 0) {
+            strcpy(menu_str, "New, Find, Select, ");
+
+            if (getcfg(lbs->name, "Password file", str))
+               strcat(menu_str, "Config, Logout, ");
+            else
+               strcat(menu_str, "Config, ");
+
+            if (getcfg(lbs->name, "Mirror server", str))
+               strcat(menu_str, "Synchronize, ");
+
+            strcat(menu_str, "Last x, Help");
+         }
+
+         n = strbreak(menu_str, menu_item, MAX_N_LIST);
+
+         for (i = 0; i < n; i++) {
+            if (is_user_allowed(lbs, menu_item[i])) {
+               if (equal_ustring(menu_item[i], "Last x")) {
+                  if (past_n) {
+                     sprintf(str, loc("Last %d days"), past_n * 2);
+                     rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n * 2,
+                              mode, str);
                   }
-               } else {
-                  /* add select switch */
-                  if (strchr(str, '?'))
-                     strcat(str, "&select=1");
-                  else
-                     strcat(str, "?select=1");
-               }
-               rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;|\n", str, loc("Select"));
-            } else {
-               strcpy(str, loc(menu_item[i]));
-               url_encode(str, sizeof(str));
 
-               if (i < n - 1)
-                  rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;|\n", str,
-                           loc(menu_item[i]));
-               else
-                  rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;\n", str,
-                           loc(menu_item[i]));
+                  if (last_n) {
+                     sprintf(str, loc("Last %d entries"), last_n * 2);
+                     rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n * 2,
+                              mode, str);
+                  }
+               } else if (equal_ustring(menu_item[i], "Select")) {
+                  strcpy(str, getparam("cmdline"));
+                  if (atoi(getparam("select")) == 1) {
+                     /* remove select switch */
+                     if (strstr(str, "select=1")) {
+                        *strstr(str, "select=1") = 0;
+                        if (strlen(str) > 1
+                            && (str[strlen(str) - 1] == '&' || str[strlen(str) - 1] == '?'))
+                           str[strlen(str) - 1] = 0;
+                     }
+                  } else {
+                     /* add select switch */
+                     if (strchr(str, '?'))
+                        strcat(str, "&select=1");
+                     else
+                        strcat(str, "?select=1");
+                  }
+                  rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;|\n", str, loc("Select"));
+               } else {
+                  strcpy(str, loc(menu_item[i]));
+                  url_encode(str, sizeof(str));
+
+                  if (i < n - 1)
+                     rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;|\n", str,
+                              loc(menu_item[i]));
+                  else
+                     rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;\n", str,
+                              loc(menu_item[i]));
+               }
             }
          }
+
+         rsprintf("</span></td></tr>\n\n");
       }
 
-      rsprintf("</span></td></tr>\n\n");
-   }
+      /*---- find menu text ----*/
 
-   /*---- find menu text ----*/
+      if (getcfg(lbs->name, "find menu text", str) && !printable) {
+         FILE *f;
+         char file_name[256], *buf;
 
-   if (getcfg(lbs->name, "find menu text", str) && !printable) {
-      FILE *f;
-      char file_name[256], *buf;
+         rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
 
-      rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
+         /* check if file starts with an absolute directory */
+         if (str[0] == DIR_SEPARATOR || str[1] == ':')
+            strcpy(file_name, str);
+         else {
+            strlcpy(file_name, resource_dir, sizeof(file_name));
+            strlcat(file_name, str, sizeof(file_name));
+         }
 
-      /* check if file starts with an absolute directory */
-      if (str[0] == DIR_SEPARATOR || str[1] == ':')
-         strcpy(file_name, str);
-      else {
-         strlcpy(file_name, resource_dir, sizeof(file_name));
-         strlcat(file_name, str, sizeof(file_name));
+         f = fopen(file_name, "rb");
+         if (f != NULL) {
+            fseek(f, 0, SEEK_END);
+            size = TELL(fileno(f));
+            fseek(f, 0, SEEK_SET);
+
+            buf = malloc(size + 1);
+            fread(buf, 1, size, f);
+            buf[size] = 0;
+            fclose(f);
+
+
+            rsputs(buf);
+
+         } else
+            rsprintf("<center><b>Error: file <i>\"%s\"</i> not found</b></center>",
+                     file_name);
+
+         rsprintf("</span></td></tr>");
       }
 
-      f = fopen(file_name, "rb");
-      if (f != NULL) {
-         fseek(f, 0, SEEK_END);
-         size = TELL(fileno(f));
-         fseek(f, 0, SEEK_SET);
+      /*---- display filters ----*/
 
-         buf = malloc(size + 1);
-         fread(buf, 1, size, f);
-         buf[size] = 0;
-         fclose(f);
+      disp_filter = *getparam("m1") || *getparam("y1") || *getparam("d1") || *getparam("m2")
+          || *getparam("y2") || *getparam("d2")
+          || *getparam("subtext");
 
+      for (i = 0; i < lbs->n_attr; i++)
+         if (*getparam(attr_list[i]))
+            disp_filter = TRUE;
 
-         rsputs(buf);
+      if (disp_filter) {
+         rsprintf("<tr><td class=\"listframe\">\n");
+         rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
 
-      } else
-         rsprintf("<center><b>Error: file <i>\"%s\"</i> not found</b></center>",
-                  file_name);
-
-      rsprintf("</span></td></tr>");
-   }
-
-   /*---- display filters ----*/
-
-   disp_filter = *getparam("m1") || *getparam("y1") || *getparam("d1") || *getparam("m2")
-       || *getparam("y2") || *getparam("d2")
-       || *getparam("subtext");
-
-   for (i = 0; i < lbs->n_attr; i++)
-      if (*getparam(attr_list[i]))
-         disp_filter = TRUE;
-
-   if (disp_filter) {
-      rsprintf("<tr><td class=\"listframe\">\n");
-      rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
-
-      if (*getparam("m1") || *getparam("y1") || *getparam("d1")) {
+         if (*getparam("m1") || *getparam("y1") || *getparam("d1")) {
 
 
-         memset(&tms, 0, sizeof(struct tm));
-         tms.tm_year = y1 % 100;
-         tms.tm_mon = m1 - 1;
-         tms.tm_mday = d1;
-         tms.tm_hour = 12;
-         if (tms.tm_year < 90)
-            tms.tm_year += 100;
-         mktime(&tms);
-         strftime(str, sizeof(str), "%#x", &tms);
-
-         rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>",
-                  loc("Start date"));
-         rsprintf("<td class=\"attribvalue\">%s</td></tr>", str);
-      }
-
-      if (*getparam("m2") || *getparam("y2") || *getparam("d2")) {
-         /* calculate previous day */
-         memset(&tms, 0, sizeof(struct tm));
-         tms.tm_year = y2 % 100;
-         tms.tm_mon = m2 - 1;
-         tms.tm_mday = d2;
-         tms.tm_hour = 12;
-         if (tms.tm_year < 90)
-            tms.tm_year += 100;
-         ltime = mktime(&tms);
-         ltime -= 3600 * 24;
-         memcpy(&tms, localtime(&ltime), sizeof(struct tm));
-         strftime(str, sizeof(str), "%#x", &tms);
-
-         rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>",
-                  loc("End date"));
-
-         rsprintf("<td class=\"attribvalue\">%s</td></tr>", str);
-      }
-
-      for (i = 0; i < lbs->n_attr; i++) {
-         if (*getparam(attr_list[i])) {
-            comment[0] = 0;
-            if (attr_flags[i] & AF_ICON) {
-               sprintf(str, "Icon comment %s", getparam(attr_list[i]));
-               getcfg(lbs->name, str, comment);
-            }
-
-            if (comment[0] == 0)
-               strcpy(comment, getparam(attr_list[i]));
+            memset(&tms, 0, sizeof(struct tm));
+            tms.tm_year = y1 % 100;
+            tms.tm_mon = m1 - 1;
+            tms.tm_mday = d1;
+            tms.tm_hour = 12;
+            if (tms.tm_year < 90)
+               tms.tm_year += 100;
+            mktime(&tms);
+            strftime(str, sizeof(str), "%#x", &tms);
 
             rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>",
-                     attr_list[i]);
-            rsprintf("<td class=\"attribvalue\">%s</td></tr>", comment);
+                     loc("Start date"));
+            rsprintf("<td class=\"attribvalue\">%s</td></tr>", str);
          }
+
+         if (*getparam("m2") || *getparam("y2") || *getparam("d2")) {
+            /* calculate previous day */
+            memset(&tms, 0, sizeof(struct tm));
+            tms.tm_year = y2 % 100;
+            tms.tm_mon = m2 - 1;
+            tms.tm_mday = d2;
+            tms.tm_hour = 12;
+            if (tms.tm_year < 90)
+               tms.tm_year += 100;
+            ltime = mktime(&tms);
+            ltime -= 3600 * 24;
+            memcpy(&tms, localtime(&ltime), sizeof(struct tm));
+            strftime(str, sizeof(str), "%#x", &tms);
+
+            rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>",
+                     loc("End date"));
+
+            rsprintf("<td class=\"attribvalue\">%s</td></tr>", str);
+         }
+
+         for (i = 0; i < lbs->n_attr; i++) {
+            if (*getparam(attr_list[i])) {
+               comment[0] = 0;
+               if (attr_flags[i] & AF_ICON) {
+                  sprintf(str, "Icon comment %s", getparam(attr_list[i]));
+                  getcfg(lbs->name, str, comment);
+               }
+
+               if (comment[0] == 0)
+                  strcpy(comment, getparam(attr_list[i]));
+
+               rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>",
+                        attr_list[i]);
+               rsprintf("<td class=\"attribvalue\">%s</td></tr>", comment);
+            }
+         }
+
+         if (*getparam("subtext")) {
+            rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>",
+                     loc("Text"));
+            rsprintf
+                ("<td class=\"attribvalue\"><span style=\"color:black;background-color:#ffff66\">%s</span></td></tr>",
+                 getparam("subtext"));
+         }
+
+         rsprintf("</table></td></tr>\n\n");
       }
 
-      if (*getparam("subtext")) {
-         rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>",
-                  loc("Text"));
-         rsprintf
-             ("<td class=\"attribvalue\"><span style=\"color:black;background-color:#ffff66\">%s</span></td></tr>",
-              getparam("subtext"));
+      /* get number of summary lines */
+      n_line = 3;
+      if (getcfg(lbs->name, "Summary lines", str))
+         n_line = atoi(str);
+
+      /* get mode commands flag */
+      mode_commands = TRUE;
+      if (getcfg(lbs->name, "Mode commands", str) && atoi(str) == 0)
+         mode_commands = FALSE;
+
+      /*---- page navigation ----*/
+
+      if (!printable) {
+         show_page_filters(lbs, n_msg, page_n, n_page, TRUE, mode_commands, threaded);
+         show_page_navigation(lbs, n_msg, page_n, n_page, TRUE, mode_commands, threaded);
       }
 
-      rsprintf("</table></td></tr>\n\n");
-   }
+      /*---- select navigation ----*/
 
-   /* get number of summary lines */
-   n_line = 3;
-   if (getcfg(lbs->name, "Summary lines", str))
-      n_line = atoi(str);
-
-   /* get mode commands flag */
-   mode_commands = TRUE;
-   if (getcfg(lbs->name, "Mode commands", str) && atoi(str) == 0)
-      mode_commands = FALSE;
-
-   /*---- page navigation ----*/
-
-   if (!printable) {
-      show_page_filters(lbs, n_msg, page_n, n_page, TRUE, mode_commands, threaded);
-      show_page_navigation(lbs, n_msg, page_n, n_page, TRUE, mode_commands, threaded);
-   }
-
-   /*---- select navigation ----*/
-
-   if (atoi(getparam("select")) == 1)
-      show_select_navigation(lbs);
-
-   /*---- table titles ----*/
-
-   /* overall listing table */
-   rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>\n");
-
-   size = printable ? 2 : 3;
-
-   list[0] = 0;
-   if (!getcfg(lbs->name, "List display", list))        /* new 2.3.10 format */
-      getcfg(lbs->name, "Display search", list);        /* old 2.3.9  format */
-
-   if (list[0])
-      n_attr_disp = strbreak(list, disp_attr, MAX_N_ATTR);
-   else {
-      if (search_all) {
-         n_attr_disp = lbs->n_attr + 3;
-
-         strcpy(disp_attr[0], loc("ID"));
-         strcpy(disp_attr[1], loc("Logbook"));
-         strcpy(disp_attr[2], loc("Date"));
-         memcpy(disp_attr + 3, attr_list, sizeof(attr_list));
-      } else {
-         n_attr_disp = lbs->n_attr + 2;
-
-         strcpy(disp_attr[0], loc("ID"));
-         strcpy(disp_attr[1], loc("Date"));
-         memcpy(disp_attr + 2, attr_list, sizeof(attr_list));
-      }
-   }
-
-   if (threaded) {
-   } else {
-      rsprintf("<tr>\n");
-
-      /* empty title for selection box */
       if (atoi(getparam("select")) == 1)
-         rsprintf("<th class=\"listtitle\">&nbsp;</th>\n");
+         show_select_navigation(lbs);
 
-      for (i = 0; i < n_attr_disp; i++) {
-         /* assemble current command line, replace sort statements */
-         strcpy(ref, getparam("cmdline"));
-         if (strstr(ref, "&sort=")) {
-            p = strstr(ref, "&sort=") + 1;
-            while (*p && *p != '&')
-               p++;
-            strcpy(strstr(ref, "&sort="), p);
-         }
-         if (strstr(ref, "&rsort=")) {
-            p = strstr(ref, "&rsort=") + 1;
-            while (*p && *p != '&')
-               p++;
-            strcpy(strstr(ref, "&rsort="), p);
-         }
-         if (strstr(ref, "?sort="))
-            *strstr(ref, "?sort=") = 0;
-         if (strstr(ref, "?rsort="))
-            *strstr(ref, "?rsort=") = 0;
+      /*---- table titles ----*/
 
-         strcpy(str, disp_attr[i]);
-         url_encode(str, sizeof(str));
-         if (strcmp(getparam("sort"), disp_attr[i]) == 0) {
-            if (strchr(ref, '?'))
-               sprintf(ref + strlen(ref), "&rsort=%s", str);
-            else
-               sprintf(ref + strlen(ref), "?rsort=%s", str);
+      /* overall listing table */
+      rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>\n");
+
+      size = printable ? 2 : 3;
+
+      list[0] = 0;
+      if (!getcfg(lbs->name, "List display", list))        /* new 2.3.10 format */
+         getcfg(lbs->name, "Display search", list);        /* old 2.3.9  format */
+
+      if (list[0])
+         n_attr_disp = strbreak(list, disp_attr, MAX_N_ATTR);
+      else {
+         if (search_all) {
+            n_attr_disp = lbs->n_attr + 3;
+
+            strcpy(disp_attr[0], loc("ID"));
+            strcpy(disp_attr[1], loc("Logbook"));
+            strcpy(disp_attr[2], loc("Date"));
+            memcpy(disp_attr + 3, attr_list, sizeof(attr_list));
          } else {
-            if (strchr(ref, '?'))
-               sprintf(ref + strlen(ref), "&sort=%s", str);
-            else
-               sprintf(ref + strlen(ref), "?sort=%s", str);
+            n_attr_disp = lbs->n_attr + 2;
+
+            strcpy(disp_attr[0], loc("ID"));
+            strcpy(disp_attr[1], loc("Date"));
+            memcpy(disp_attr + 2, attr_list, sizeof(attr_list));
          }
-
-         img[0] = 0;
-         if (strcmp(getparam("sort"), disp_attr[i]) == 0)
-            strcpy(img, "<img align=top src=\"up.gif\">");
-         else if (strcmp(getparam("rsort"), disp_attr[i]) == 0)
-            strcpy(img, "<img align=top src=\"down.gif\">");
-
-         rsprintf("<th class=\"listtitle\"><a href=\"%s\">%s</a>%s</th>\n", ref,
-                  disp_attr[i], img);
       }
 
-      if (!equal_ustring(mode, "Full") && n_line > 0)
-         rsprintf("<th class=\"listtitle\">%s</th>\n", loc("Text"));
+      if (threaded) {
+      } else {
+         rsprintf("<tr>\n");
 
-      rsprintf("</tr>\n\n");
-   }
+         /* empty title for selection box */
+         if (atoi(getparam("select")) == 1)
+            rsprintf("<th class=\"listtitle\">&nbsp;</th>\n");
+
+         for (i = 0; i < n_attr_disp; i++) {
+            /* assemble current command line, replace sort statements */
+            strcpy(ref, getparam("cmdline"));
+            if (strstr(ref, "&sort=")) {
+               p = strstr(ref, "&sort=") + 1;
+               while (*p && *p != '&')
+                  p++;
+               strcpy(strstr(ref, "&sort="), p);
+            }
+            if (strstr(ref, "&rsort=")) {
+               p = strstr(ref, "&rsort=") + 1;
+               while (*p && *p != '&')
+                  p++;
+               strcpy(strstr(ref, "&rsort="), p);
+            }
+            if (strstr(ref, "?sort="))
+               *strstr(ref, "?sort=") = 0;
+            if (strstr(ref, "?rsort="))
+               *strstr(ref, "?rsort=") = 0;
+
+            strcpy(str, disp_attr[i]);
+            url_encode(str, sizeof(str));
+            if (strcmp(getparam("sort"), disp_attr[i]) == 0) {
+               if (strchr(ref, '?'))
+                  sprintf(ref + strlen(ref), "&rsort=%s", str);
+               else
+                  sprintf(ref + strlen(ref), "?rsort=%s", str);
+            } else {
+               if (strchr(ref, '?'))
+                  sprintf(ref + strlen(ref), "&sort=%s", str);
+               else
+                  sprintf(ref + strlen(ref), "?sort=%s", str);
+            }
+
+            img[0] = 0;
+            if (strcmp(getparam("sort"), disp_attr[i]) == 0)
+               strcpy(img, "<img align=top src=\"up.gif\">");
+            else if (strcmp(getparam("rsort"), disp_attr[i]) == 0)
+               strcpy(img, "<img align=top src=\"down.gif\">");
+
+            rsprintf("<th class=\"listtitle\"><a href=\"%s\">%s</a>%s</th>\n", ref,
+                     disp_attr[i], img);
+         }
+
+         if (!equal_ustring(mode, "Full") && n_line > 0)
+            rsprintf("<th class=\"listtitle\">%s</th>\n", loc("Text"));
+
+         rsprintf("</tr>\n\n");
+      }
+   } /* if (!csv) */
 
    /*---- display message list ----*/
 
@@ -11551,116 +11606,134 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       if (status != EL_SUCCESS)
          break;
 
-      /*---- add highlighting for searched subtext ----*/
+      if (csv) {
 
-      if (*getparam("subtext")) {
-         strcpy(str, getparam("subtext"));
-         for (i = 0; i < (int) strlen(str); i++)
-            str[i] = toupper(str[i]);
-
-         for (i = 0; i < (int) strlen(text); i++)
-            text1[i] = toupper(text[i]);
-         text1[i] = 0;
-
-         text2[0] = 0;
-         pt = text;             /* original text */
-         pt1 = text1;           /* upper-case text */
-         pt2 = text2;           /* text with inserted coloring */
-         do {
-            p = strstr(pt1, str);
-            size = (int) (p - pt1);
-            if (p != NULL) {
-               pt1 = p + strlen(str);
-
-               /* copy first part original text */
-               memcpy(pt2, pt, size);
-               pt2 += size;
-               pt += size;
-
-               /* add coloring 1st part */
-
-               /* here: \001='<', \002='>', /003='"', and \004=' ' */
-               /* see also rsputs2(char* ) */
-
-               if (equal_ustring(encoding, "plain")
-                   || !equal_ustring(mode, "Full"))
-                  strcpy(pt2,
-                         "\001B\004style=\003color:black;background-color:#ffff66\003\002");
-               else
-                  strcpy(pt2, "<B style=\"color:black;background-color:#ffff66\">");
-
-               pt2 += strlen(pt2);
-
-               /* copy origial search text */
-               memcpy(pt2, pt, strlen(str));
-               pt2 += strlen(str);
-               pt += strlen(str);
-
-               /* add coloring 2nd part */
-               if (equal_ustring(encoding, "plain")
-                   || !equal_ustring(mode, "Full"))
-                  strcpy(pt2, "\001/B\002");
-               else
-                  strcpy(pt2, "</B>");
-               pt2 += strlen(pt2);
-            }
-         } while (p != NULL);
-
-         strcpy(pt2, pt);
-         strcpy(text, text2);
-      }
-
-                  /*---- display line ----*/
-
-      expand = 1;
-      if (threaded) {
-         if (getcfg(lbs->name, "Expand default", str))
-            expand = atoi(str);
-
-         if (isparam("expand"))
-            expand = atoi(getparam("expand"));
-      }
-
-      display_line(msg_list[index].lbs, message_id,
-                   index, mode, expand, 0, printable, n_line,
-                   show_attachments, date, in_reply_to, reply_to,
-                   n_attr_disp, disp_attr, attrib, lbs->n_attr, text,
-                   attachment, encoding, atoi(getparam("select")), &n_display, locked_by);
-
-      if (threaded) {
-         if (reply_to[0] && expand > 0) {
-            p = reply_to;
-            do {
-               display_reply(msg_list[index].lbs, atoi(p), printable, expand, n_line,
-                             n_attr_disp, disp_attr, 1);
-
-               while (*p && isdigit(*p))
-                  p++;
-               while (*p && (*p == ',' || *p == ' '))
-                  p++;
-            } while (*p);
+         for (i=0 ; i<lbs->n_attr ; i++) {
+            strlcpy(str, attrib[i], sizeof(str));
+            while (strchr(str, '"'))
+               *strchr(str, '"') = '\'';
+            rsprintf("\"%s\"", str);
+            if (i<lbs->n_attr-1)
+               rsprintf(",");
+            else
+               rsprintf("\r\n");
          }
-      }
+
+      } else {
+
+         /*---- add highlighting for searched subtext ----*/
+
+         if (*getparam("subtext")) {
+            strcpy(str, getparam("subtext"));
+            for (i = 0; i < (int) strlen(str); i++)
+               str[i] = toupper(str[i]);
+
+            for (i = 0; i < (int) strlen(text); i++)
+               text1[i] = toupper(text[i]);
+            text1[i] = 0;
+
+            text2[0] = 0;
+            pt = text;             /* original text */
+            pt1 = text1;           /* upper-case text */
+            pt2 = text2;           /* text with inserted coloring */
+            do {
+               p = strstr(pt1, str);
+               size = (int) (p - pt1);
+               if (p != NULL) {
+                  pt1 = p + strlen(str);
+
+                  /* copy first part original text */
+                  memcpy(pt2, pt, size);
+                  pt2 += size;
+                  pt += size;
+
+                  /* add coloring 1st part */
+
+                  /* here: \001='<', \002='>', /003='"', and \004=' ' */
+                  /* see also rsputs2(char* ) */
+
+                  if (equal_ustring(encoding, "plain")
+                      || !equal_ustring(mode, "Full"))
+                     strcpy(pt2,
+                            "\001B\004style=\003color:black;background-color:#ffff66\003\002");
+                  else
+                     strcpy(pt2, "<B style=\"color:black;background-color:#ffff66\">");
+
+                  pt2 += strlen(pt2);
+
+                  /* copy origial search text */
+                  memcpy(pt2, pt, strlen(str));
+                  pt2 += strlen(str);
+                  pt += strlen(str);
+
+                  /* add coloring 2nd part */
+                  if (equal_ustring(encoding, "plain")
+                      || !equal_ustring(mode, "Full"))
+                     strcpy(pt2, "\001/B\002");
+                  else
+                     strcpy(pt2, "</B>");
+                  pt2 += strlen(pt2);
+               }
+            } while (p != NULL);
+
+            strcpy(pt2, pt);
+            strcpy(text, text2);
+         }
+
+         /*---- display line ----*/
+
+         expand = 1;
+         if (threaded) {
+            if (getcfg(lbs->name, "Expand default", str))
+               expand = atoi(str);
+
+            if (isparam("expand"))
+               expand = atoi(getparam("expand"));
+         }
+
+         display_line(msg_list[index].lbs, message_id,
+                      index, mode, expand, 0, printable, n_line,
+                      show_attachments, date, in_reply_to, reply_to,
+                      n_attr_disp, disp_attr, attrib, lbs->n_attr, text,
+                      attachment, encoding, atoi(getparam("select")), &n_display, locked_by);
+
+         if (threaded) {
+            if (reply_to[0] && expand > 0) {
+               p = reply_to;
+               do {
+                  display_reply(msg_list[index].lbs, atoi(p), printable, expand, n_line,
+                                n_attr_disp, disp_attr, 1);
+
+                  while (*p && isdigit(*p))
+                     p++;
+                  while (*p && (*p == ',' || *p == ' '))
+                     p++;
+               } while (*p);
+            }
+         }
+      } /* if (!csv) */
+   } /* for() */
+
+   if (!csv) {
+      rsprintf("</table>\n");
+
+      if (n_display)
+         rsprintf("<input type=hidden name=nsel value=%d>\n", n_display);
+
+      rsprintf("</td></tr>\n");
+
+      if (n_msg == 0)
+         rsprintf("<tr><td class=\"errormsg\">%s</td></tr>", loc("No entries found"));
+
+      /*---- page navigation ----*/
+
+      if (!printable)
+         show_page_navigation(lbs, n_msg, page_n, n_page, FALSE, FALSE, threaded);
+
+      rsprintf("</table>\n");
+      show_bottom_text(lbs);
+      rsprintf("</form></body></html>\r\n");
    }
-
-   rsprintf("</table>\n");
-
-   if (n_display)
-      rsprintf("<input type=hidden name=nsel value=%d>\n", n_display);
-
-   rsprintf("</td></tr>\n");
-
-   if (n_msg == 0)
-      rsprintf("<tr><td class=\"errormsg\">%s</td></tr>", loc("No entries found"));
-
-   /*---- page navigation ----*/
-
-   if (!printable)
-      show_page_navigation(lbs, n_msg, page_n, n_page, FALSE, FALSE, threaded);
-
-   rsprintf("</table>\n");
-   show_bottom_text(lbs);
-   rsprintf("</form></body></html>\r\n");
 
    free(msg_list);
    free(text);
