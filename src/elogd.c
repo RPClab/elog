@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.486  2004/09/24 20:49:16  midas
+   Show revision on startup
+
    Revision 1.485  2004/09/24 20:40:25  midas
    Added cvs_revision
 
@@ -568,7 +571,7 @@
 
 /* Version of ELOG */
 #define VERSION "2.5.4-4"
-char cvs_revision = "$Id$";
+char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
 static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
@@ -19555,7 +19558,11 @@ void server_loop(void)
    }
 
    /* about to entering the server loop, welcome user with a brief info */
-   eprintf("%s\n", ELOGID);
+   eprintf("%s ", ELOGID);
+   strcpy(str, cvs_revision+15);
+   if (strchr(str, ' '))
+      *strchr(str, ' ') = 0;
+   eprintf("revision %s\n", str);
    if (verbose) {
       eprintf("Config file  : %s\n", config_file);
       eprintf("Resource dir : %s\n", resource_dir[0] ? resource_dir : "current dir");
