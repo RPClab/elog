@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.532  2005/01/05 20:36:49  midas
+   Logbook hierarchy can now be deeper than two levels
+
    Revision 1.531  2005/01/05 15:56:10  midas
    Cancel button on 'create new logbook' now also works without password files
 
@@ -1081,7 +1084,7 @@ char *getparam(char *param);
 void write_logfile(LOGBOOK * lbs, const char *format, ...);
 BOOL check_login_user(LOGBOOK * lbs, char *user);
 LBLIST get_logbook_hierarchy(void);
-int is_logbook_in_group(LBLIST pgrp, char *logbook);
+BOOL is_logbook_in_group(LBLIST pgrp, char *logbook);
 BOOL is_admin_user(char *logbook, char *user);
 BOOL is_admin_user_global(char *user);
 void free_logbook_hierarchy(LBLIST root);
@@ -6241,11 +6244,31 @@ void show_upgrade_page(LOGBOOK * lbs)
 
 /*------------------------------------------------------------------*/
 
+LBLIST *get_subgroup(LBLIST pgrp, char *logbook)
+/* retrieve parent of group member "logbook" (which might be group by itself) */
+{
+   int i;
+
+   for (i = 0; i < pgrp->n_members; i++) {
+      /* check if logbook is current member */
+      if (strieq(logbook, pgrp->member[i]->name))
+         return &(pgrp->member[i]);
+
+      /* check if logbook is in subgroup of current member */
+      if (pgrp->member[i]->n_members > 0 && get_subgroup(pgrp->member[i], logbook))
+         return get_subgroup(pgrp->member[i], logbook);
+   }
+
+   return NULL;
+}
+
+/*------------------------------------------------------------------*/
+
 LBLIST get_logbook_hierarchy(void)
 {
-   int i, j, k, n, m, flag;
+   int i, j, n, m, flag;
    char str[1000], grpname[256], grpmembers[1000];
-   LBLIST root;
+   LBLIST root, *pgrp;
    char grplist[MAX_N_LIST][NAME_LENGTH];
 
    /* allocate root node */
@@ -6268,8 +6291,6 @@ LBLIST get_logbook_hierarchy(void)
          flag = 1;
 
       if (flag) {
-
-         printf("Found group %s\n", grpname);
 
          /* allocate new node, increase member pointer array by one */
          if (n == 0)
@@ -6306,27 +6327,21 @@ LBLIST get_logbook_hierarchy(void)
    /* populate nodes with logbooks or other groups */
    for (i = 0; i < root->n_members; i++)
       if (root->member[i]) {
-         for (j = 0; j < root->member[i]->n_members; j++) {
-            /* check if node is valid logbook */
-            for (k = 0; lb_list[k].name[0]; k++)
-               if (strieq(root->member[i]->member[j]->name, lb_list[k].name))
-                  break;
 
-            /* check if node is subgroup of other node */
-            if (!lb_list[k].name[0]) {
-               for (k = 0; k < root->n_members; k++)
-                  if (strieq(root->member[i]->member[j]->name, root->member[k]->name)) {
+         for (j = 0; j < root->n_members; j++) {
+            if (i != j && root->member[j] != NULL &&
+               (pgrp = get_subgroup(root->member[j], root->member[i]->name)) != NULL) {
 
-                     /* node is allocated twice, so free one... */
-                     xfree(root->member[i]->member[j]);
+               /* node is allocated twice, so free one...*/
+               xfree(*pgrp);
 
-                     /* ... and reference the other */
-                     root->member[i]->member[j] = root->member[k];
+               /* ... and reference the other */
+               *pgrp = root->member[i];
 
-                     /* mark original pointer invalid */
-                     root->member[k] = NULL;
-                     break;
-                  }
+               /* mark original pointer invalid */
+               root->member[i] = NULL;
+
+               break;
             }
          }
       }
@@ -6385,23 +6400,23 @@ void free_logbook_hierarchy(LBLIST root)
 
 /*------------------------------------------------------------------*/
 
-int is_logbook_in_group(LBLIST pgrp, char *logbook)
+BOOL is_logbook_in_group(LBLIST pgrp, char *logbook)
 /* test if "logbook" is in group node plb */
 {
    int i;
 
-   if (strieq(pgrp->name, logbook))
-      return 1;
+   if (strieq(logbook, pgrp->name))
+      return TRUE;
 
    for (i = 0; i < pgrp->n_members; i++) {
       if (strieq(logbook, pgrp->member[i]->name))
-         return 1;
+         return TRUE;
 
       if (pgrp->member[i]->n_members > 0 && is_logbook_in_group(pgrp->member[i], logbook))
-         return 1;
+         return TRUE;
    }
 
-   return 0;
+   return FALSE;
 }
 
 /*------------------------------------------------------------------*/
