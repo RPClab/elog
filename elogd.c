@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.58  2002/08/06 09:26:16  midas
+  Added automatic creation of new password file
+
   Revision 2.57  2002/08/06 09:03:41  midas
   Removed itoa()
 
@@ -4733,8 +4736,14 @@ int    i, size;
   f = fopen(file_name, "r+b");
   if (f == NULL)
     {
-    show_error("");
-    return 0;
+    /* try to create file */
+    f = fopen(file_name, "wb");
+    if (f == NULL)
+      {
+      sprintf(str, loc("Cannot open file <b>%s</b>"), file_name);
+      show_error(str);
+      return 0;
+      }
     }
 
   fseek(f, 0, SEEK_END);
@@ -8316,7 +8325,12 @@ int   i;
     return TRUE;
     }
   else
-    return FALSE;
+    {
+    if (user[0])
+      return FALSE;
+    else
+      return TRUE;
+    }
 }
 
 /*------------------------------------------------------------------*/
@@ -8422,7 +8436,7 @@ char  str[256], upwd[256], full_name[256], email[256];
   else
     {
     getcfg(lbs->name, "Password file", str);
-    sprintf(full_name, "Error: Password file \"%s\" not found", str);
+    sprintf(full_name, loc("Cannot open file <b>%s</b>"), str);
     show_error(full_name);
     return FALSE;
     }
