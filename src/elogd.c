@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.273  2004/02/27 08:20:02  midas
+   Do not sort 'edit' and 'delete' in 'list display'
+
    Revision 1.272  2004/02/27 08:10:40  midas
    Added 'edit' and 'delete' to 'list display'
 
@@ -10365,14 +10368,14 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
          if (strieq(disp_attr[index], loc("Edit"))) {
             if (!strieq(mode, "Threaded")) {
-               rsprintf("<td class=\"%s\" %s><a href=\"%s?cmd=Edit\">", sclass, nowrap, ref);
+               rsprintf("<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref, loc("Edit"));
                rsprintf("<img src=\"edit.gif\" border=0 alt=\"%s\"></a></td>\n", loc("Edit entry"));
             }
          }
 
          if (strieq(disp_attr[index], loc("Delete"))) {
             if (!strieq(mode, "Threaded")) {
-               rsprintf("<td class=\"%s\" %s><a href=\"%s?cmd=Delete\">", sclass, nowrap, ref);
+               rsprintf("<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref, loc("Delete"));
                rsprintf("<img src=\"delete.gif\" border=0 alt=\"%s\"></a></td>\n", loc("Delete entry"));
             }
          }
@@ -12429,8 +12432,11 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
             else if (strcmp(getparam("rsort"), disp_attr[i]) == 0)
                strcpy(img, "<img align=top src=\"down.gif\">");
 
-            rsprintf("<th class=\"listtitle\"><a href=\"%s\">%s</a>%s</th>\n", ref,
-                     disp_attr[i], img);
+            if (strieq(disp_attr[i], "Edit") || strieq(disp_attr[i], "Delete"))
+               rsprintf("<th class=\"listtitle\">%s</th>\n", disp_attr[i]);
+            else
+               rsprintf("<th class=\"listtitle\"><a href=\"%s\">%s</a>%s</th>\n", ref,
+                        disp_attr[i], img);
          }
 
          if (!strieq(mode, "Full") && n_line > 0)
