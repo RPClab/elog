@@ -1,5 +1,16 @@
-Version 2.1.2, released September xx, 2002
+Version 2.1.3, released September xx, 2002
 =========================================
+
+- Fixed wrong error "password file not found" if user doesn't exist
+- Fixed double check boxes on select command for threaded display
+- Ignore empty line in password files or lines without a ":"
+- Fixed bug where wrong password caused login screen to re-appear
+  even with correct password
+- Don't display check box for edit with "Suppress email on edit = 1"
+- Implemented "Deny <command>" option
+
+Version 2.1.2, released September 12th, 2002
+============================================
 
 - Self registration now also works without guest menu commands
 - Reversed up/down arrow to indicate sort order

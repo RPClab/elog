@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.75  2002/09/13 15:32:58  midas
+  Various fixes and enhancements
+
   Revision 2.74  2002/09/12 10:08:25  midas
   Fixed problem with 'self register = 3'
 
@@ -555,7 +558,7 @@ LOGBOOK *lb_list = NULL;
 void show_error(char *error);
 void show_http_header();
 BOOL enum_user_line(LOGBOOK *lbs, int n, char *user);
-BOOL get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name, char *email, char *email_notify);
+int  get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name, char *email, char *email_notify);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -3950,7 +3953,26 @@ int  i, n;
   if (!getcfg(lbs->name, "Password file", str))
     return TRUE;
 
-  /* allow by default */
+  /* check for deny */
+  sprintf(str, "Deny %s", command);
+  if (getcfg(lbs->name, str, users))
+    {
+    /* check if current user in list */
+    n = strbreak(users, list, MAX_N_LIST);
+    for (i=0 ; i<n ; i++)
+      if (equal_ustring(list[i], getparam("unm")))
+        break;
+
+    if (i<n)
+      {
+      sprintf(str, loc("Error: Command \"<b>%s</b>\" is not allowed for user \"<b>%s</b>\""),
+              command, getparam("full_name"));
+      show_error(str);
+      return FALSE;
+      }
+    }
+
+  /* check for allow */
   sprintf(str, "Allow %s", command);
   if (!getcfg(lbs->name, str, users))
     return TRUE;
@@ -4490,23 +4512,26 @@ time_t now;
     }
 
   /* Suppress check box */
-  if (getcfg(lbs->name, "Suppress default", str))
+  if ( !(bedit && getcfg(lbs->name, "Suppress Email on edit", str) && atoi(str) == 1) )
     {
-    if (atoi(str) == 0)
+    if (getcfg(lbs->name, "Suppress default", str))
+      {
+      if (atoi(str) == 0)
+        {
+        rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
+        rsprintf("<input type=checkbox name=suppress value=1>%s\n", loc("Suppress Email notification"));
+        }
+      else if (atoi(str) == 1)
+        {
+        rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
+        rsprintf("<input type=checkbox checked name=suppress value=1>%s\n", loc("Suppress Email notification"));
+        }
+      }
+    else
       {
       rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
       rsprintf("<input type=checkbox name=suppress value=1>%s\n", loc("Suppress Email notification"));
       }
-    else if (atoi(str) == 1)
-      {
-      rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-      rsprintf("<input type=checkbox checked name=suppress value=1>%s\n", loc("Suppress Email notification"));
-      }
-    }
-  else
-    {
-    rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-    rsprintf("<input type=checkbox name=suppress value=1>%s\n", loc("Suppress Email notification"));
     }
 
   if (bedit)
@@ -5311,7 +5336,7 @@ int  i;
 
   rsprintf("<tr><td width=10%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Login name"));
 
-  if (!get_user_line(lbs, user, password, full_name, user_email, email_notify))
+  if (get_user_line(lbs, user, password, full_name, user_email, email_notify) != 1)
     sprintf(str, loc("User [%s] has been deleted"), user);
   else
     strcpy(str, user);
@@ -5772,7 +5797,7 @@ FILE *f;
   else
     {
     /* show select box */
-    if (select)
+    if (select && !equal_ustring(mode, "Threaded"))
       rsprintf("<td bgcolor=%s><input type=checkbox name=\"s%d\" value=%d>\n", col, (*n_display)++, message_id);
 
     for (index=0 ; index<n_attr_disp ; index++)
@@ -6023,6 +6048,9 @@ FILE *f;
   rsprintf("</tr>\n");
 
   colspan = n_attr_disp;
+
+  if (select)
+    colspan++;
 
   if (equal_ustring(mode, "Full"))
     {
@@ -8847,7 +8875,7 @@ char  str[256];
     show_standard_header(loc("ELOG password"), NULL);
 
     /* define hidden fields for current destination */
-    if (redir[0])
+    if (redir[0] && !password[0])
       rsprintf("<input type=hidden name=redir value=\"%s\">\n", redir);
 
     rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
@@ -8886,7 +8914,7 @@ char  str[256];
 
 /*------------------------------------------------------------------*/
 
-BOOL get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name, char *email, char *email_notify)
+int get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name, char *email, char *email_notify)
 {
 char  str[256], line[256], file_name[256], *p;
 FILE  *f;
@@ -8897,10 +8925,13 @@ int   i;
   if (email) email[0] = 0;
   if (email_notify) email_notify[0] = 0;
 
-  getcfg(lbs->name, "Password file", str);
+  if (lbs == NULL)
+    getcfg("global", "Password file", str);
+  else
+    getcfg(lbs->name, "Password file", str);
 
   if (!str[0])
-    return TRUE;
+    return 1;
 
   if (str[0] == DIR_SEPARATOR || str[1] == ':')
     strcpy(file_name, str);
@@ -8916,7 +8947,7 @@ int   i;
     if (!user[0])
       {
       fclose(f);
-      return TRUE;
+      return 1;
       }
 
     while (!feof(f))
@@ -8936,7 +8967,7 @@ int   i;
     fclose(f);
 
     if (strcmp(str, user) != 0)
-      return FALSE;
+      return 2;
 
     /* if user found, retrieve other info */
     p = line;
@@ -8968,14 +8999,14 @@ int   i;
         strcpy(email_notify, str);
       }
 
-    return TRUE;
+    return 1;
     }
   else
     {
     if (user[0])
-      return FALSE;
+      return 3;
     else
-      return TRUE;
+      return 1;
     }
 }
 
@@ -9012,6 +9043,9 @@ int   i;
       if (line[0] == ';' || line[0] == '#' || line[0] == 0)
         continue;
 
+      if (strchr(line, ':') == NULL)
+        continue;
+
       strcpy(str, line);
       if (strchr(str, ':'))
         *strchr(str, ':') = 0;
@@ -9035,9 +9069,10 @@ int   i;
 
 BOOL check_user_password(LOGBOOK *lbs, char *user, char *password, char *redir)
 {
-char  str[256], upwd[256], full_name[256], email[256];
+char  status, str[256], upwd[256], full_name[256], email[256];
 
-  if (get_user_line(lbs, user, upwd, full_name, email, NULL))
+  status = get_user_line(lbs, user, upwd, full_name, email, NULL);
+  if (status == 1)
     {
     if (user[0] && strcmp(password, upwd) == 0)
       {
@@ -9050,7 +9085,7 @@ char  str[256], upwd[256], full_name[256], email[256];
     show_standard_header("ELOG login", NULL);
 
     /* define hidden fields for current destination */
-    if (redir[0])
+    if (redir[0] && !password[0])
       rsprintf("<input type=hidden name=redir value=\"%s\">\n", redir);
 
     rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
@@ -9070,9 +9105,18 @@ char  str[256], upwd[256], full_name[256], email[256];
     rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;<input type=password name=upassword></td></tr>\n",
              gt("Cell BGColor"), loc("Password"));
 
-    if (getcfg(lbs->name, "Self register", str) && atoi(str) > 0)
-      rsprintf("<tr><td align=center bgcolor=%s><a href=\"?cmd=New+user\">%s</td></tr>", 
-                gt("Cell BGColor"), loc("Register as new user"));
+    if (lbs == NULL)
+      {
+      if (getcfg("global", "Self register", str) && atoi(str) > 0)
+        rsprintf("<tr><td align=center bgcolor=%s><a href=\"?cmd=New+user\">%s</td></tr>", 
+                  gt("Cell BGColor"), loc("Register as new user"));
+      }
+    else
+      {
+      if (getcfg(lbs->name, "Self register", str) && atoi(str) > 0)
+        rsprintf("<tr><td align=center bgcolor=%s><a href=\"?cmd=New+user\">%s</td></tr>", 
+                  gt("Cell BGColor"), loc("Register as new user"));
+      }
 
     rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=\"%s\"></td></tr>", 
               gt("Cell BGColor"), loc("Submit"));
@@ -9085,8 +9129,13 @@ char  str[256], upwd[256], full_name[256], email[256];
     }
   else
     {
-    getcfg(lbs->name, "Password file", str);
-    sprintf(full_name, loc("Cannot open file <b>%s</b>"), str);
+    if (status == 2)
+      sprintf(full_name, loc("Invalid user name <b>%s</b>"), user);
+    else
+      {
+      getcfg(lbs->name, "Password file", str);
+      sprintf(full_name, loc("Cannot open file <b>%s</b>"), str);
+      }
     show_error(full_name);
     return FALSE;
     }
@@ -9255,6 +9304,15 @@ LOGBOOK *cur_lb;
     {
     if (n > 1)
       {
+      /* if password file is given in global section, protect also logbook selection page */
+      /*##
+      if (getcfg("global", "password file", str))
+        {
+        if (!check_user_password(NULL, getparam("unm"), getparam("upwd"), "")
+          return;
+        }
+      */
+      
       show_selection_page();
       return;
       }
