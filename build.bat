@@ -12,6 +12,6 @@ cd ..
 
 "\program files\NSIS\makensis" /DVERSION=%version% elog.nsi
 
-scp elog%version%.exe midas@midas:html/elog/download/windows/
-scp elog%version%.exe midas@midas:html/elog/download/windows/elog-latest.exe
-
+scp elog%version%.exe ritt@midas.psi.ch:html/elog/download/windows/
+scp elog%version%.exe ritt@midas.psi.ch:html/elog/download/windows/elog-latest.exe
+scp doc/*.html ritt@midas.psi.ch:html/elog/

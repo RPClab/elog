@@ -17,7 +17,7 @@ On PC4534:
 On PC5082:
 
 - cvs update
-- Increse version in elog.spec
+- Increase version in elog.spec
 - build x.x.x
 
 Declare new version at freshmeat.
