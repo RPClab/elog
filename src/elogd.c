@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.554  2005/02/12 16:14:19  ritt
+   Removed superflous </a>
+
    Revision 1.553  2005/02/12 16:06:03  ritt
    - Added missing 'alt' tags to images
    - Use admin user email in 'from' field if nothing else is availabe
@@ -13364,7 +13367,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          rsprintf("<a href=\"%s\">", ref);
 
       if (attr_icon[0])
-         rsprintf("<img border=0 src=\"icons/%s\" alt=\"%s\"></a>&nbsp;", attr_icon, attr_icon);
+         rsprintf("<img border=0 src=\"icons/%s\" alt=\"%s\">&nbsp;", attr_icon, attr_icon);
       else {
          /* if top level only, display reply icon if message has a reply */
          if (getcfg(lbs->name, "Top level only", str, sizeof(str)) && atoi(str) == 1 && reply_to[0])
