@@ -1,4 +1,4 @@
-Version 2.3.8, released June xxth, 2003
+Version 2.3.8, released June 4th, 2003
 ======================================
 
 - remove message lock on "back" button
@@ -8,6 +8,7 @@ Version 2.3.8, released June xxth, 2003
 - Added "Guest selection page" option
 - Added possibility to reference attachment with elog:<id>/<n> with <n> the attachment
   number starting with 1
+- elog utility can now read text from stdin (or piped in via "|")
 
 Version 2.3.7, released May 15th, 2003
 ======================================
