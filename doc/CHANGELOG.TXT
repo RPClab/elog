@@ -1,5 +1,5 @@
-Version 2.2.2, released Nobember xxth, 2002
-===========================================
+Version 2.2.2, released Nobember 6th, 2002
+==========================================
 
 - "Select" command now works in non-english installations
 - Made self registration work with global password file
