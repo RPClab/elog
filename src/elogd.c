@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.164  2003/12/04 11:34:36  midas
+  Made 'preset xxx' work with boolean attributes
+
   Revision 1.163  2003/12/03 14:36:01  midas
   Added 'comment <attribute>'
 
@@ -5591,8 +5594,12 @@ char   fl[8][NAME_LENGTH];
         if (equal_ustring(attr_options[index][0], "boolean"))
           {
           /* display checkbox */
-          rsprintf("<td class=\"attribvalue\"><input type=checkbox name=\"%s\" value=1>\n",
-                    attr_list[index]);
+          if (atoi(attrib[index]) == 1)
+            rsprintf("<td class=\"attribvalue\"><input type=checkbox checked name=\"%s\" value=1>\n",
+                      attr_list[index]);
+          else
+            rsprintf("<td class=\"attribvalue\"><input type=checkbox name=\"%s\" value=1>\n",
+                      attr_list[index]);
           }
         else
           {
