@@ -1,6 +1,6 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.5.6)
+# (for 2.5.7)
 # A more recent version may be available at :
 # http://midas.psi.ch/cgi-bin/cvsweb/elog/eloglang.french
 #
@@ -339,12 +339,8 @@ Case sensitive = Tient compte de la casse
 List = Liste
 From = De
 Date must be between 1970 and 2037 = La date doit être comprise entre 1970 et 2037
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-up = 
-down = 
-stop = 
-Entry = 
-name may not contain blanks = 
+up = haut
+down = bas
+stop = arrêter
+Entry = Entrée
+name may not contain blanks = le nom de doit pas contenir d'espace
