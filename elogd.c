@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.24  2002/06/18 07:48:33  midas
+  Fixed bug with previous submission
+
   Revision 2.23  2002/06/18 07:32:03  midas
   Add logbook name when URL is specified
 
@@ -6043,10 +6046,12 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, message_id;
                 sprintf(str, "http://%s/", host_name);
               else
                 sprintf(str, "http://%s:%d/", host_name, tcp_port);
-
-              strcat(str, lbs->name);
-              strcat(str, "/");
               }
+            }
+          else
+            {
+            strcat(str, lbs->name);
+            strcat(str, "/");
             }
 
           sprintf(mail_text+strlen(mail_text), "\r\n%s URL         : %s%d\r\n",
