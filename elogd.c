@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.16  2002/04/22 10:32:35  midas
+  Version 1.3.4
+
   Revision 1.15  2002/04/22 10:31:58  midas
   Added "logfile", fixed hightlighting problems, thanks to
   Heiko.Schleit@mpi-hd.mpg.de
@@ -53,7 +56,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.3.3"
+#define VERSION "1.3.4"
 
 #include <stdio.h>
 #include <sys/types.h>
