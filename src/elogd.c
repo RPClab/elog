@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.406  2004/07/27 20:48:49  midas
+   Fixed compiler warnings
+
    Revision 1.405  2004/07/27 20:37:08  midas
    Implemented read_password
 
@@ -405,6 +408,7 @@ typedef int BOOL;
 #include <pwd.h>
 #include <grp.h>
 #include <syslog.h>
+#include <termios.h>
 
 #define closesocket(s) close(s)
 #ifndef O_BINARY
@@ -11563,11 +11567,12 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
          rsprintf("</table><p>\n");
 
          rsprintf("<pre>");
-      } else if (mode == SYNC_CLONE)
+      } else if (mode == SYNC_CLONE) {
          if (list[index][strlen(list[index]) - 1] != '/')
             eprintf("\nRetrieving entries from \"%s/%s\"...\n", list[index], lbs->name);
          else
             eprintf("\nRetrieving entries from \"%s%s\"...\n", list[index], lbs->name);
+      }
 
       /* send partial return buffer */
       flush_return_buffer();
@@ -11813,7 +11818,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                } else if (mode == SYNC_CLONE) {
                   eprintf("%s\n", loc("Remote entry received"));
                } else {
-                  sprintf(str, "ID%s:\t%s", message_id, loc("Remote entry received"));
+                  sprintf(str, "ID%d:\t%s", message_id, loc("Remote entry received"));
                   mprint(lbs, mode, str);
                }
 
@@ -19832,9 +19837,6 @@ int ss_getchar(BOOL reset)
    int i, fd;
    char c[3];
 
-   if (_daemon_flag)
-      return 0;
-
    fd = fileno(stdin);
 
    if (reset) {
@@ -19870,7 +19872,7 @@ int ss_getchar(BOOL reset)
 
    /* BS/DEL -> BS */
    if (c[0] == 127)
-      return CH_BS;
+      return 8;
 
    return c[0];
 
