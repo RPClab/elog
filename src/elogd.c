@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.375  2004/07/08 19:53:14  midas
+   Fixed wrong link with 'show top groups' flag
+
    Revision 1.374  2004/07/08 19:48:09  midas
    Implemented 'show top groups' flag
 
@@ -16709,7 +16712,7 @@ void show_top_selection_page()
          strlcpy(name, phier->member[i]->name, sizeof(name));
          strlcpy(name_enc, name, sizeof(name_enc));
          url_encode(name_enc, sizeof(name_enc));
-         rsprintf("<a href=\"../%s/\">%s</a>", name_enc, name);
+         rsprintf("<a href=\"%s/\">%s</a>", name_enc, name);
          rsprintf("</td></tr>\n");
       }
 
