@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.589  2005/03/16 21:07:43  ritt
+   Fixed problem with MOptions and elog
+
    Revision 1.588  2005/03/14 20:53:23  ritt
    Implemented option 'link display'
 
@@ -16840,6 +16843,10 @@ void submit_elog(LOGBOOK *lbs)
                sprintf(str, "%s_%d", ua, j);
                if (getparam(str) && *getparam(str))
                   break;
+
+               /* check for attributes without the _<i> from elog */
+               if (getparam(ua) && *getparam(ua))
+                  break;
             }
 
             if (j == MAX_N_LIST) {
@@ -16961,23 +16968,28 @@ void submit_elog(LOGBOOK *lbs)
       btou(ua);
 
       if (attr_flags[i] & AF_MULTI) {
-         attrib[i][0] = 0;
-         first = 1;
-         for (j = 0; j < MAX_N_LIST; j++) {
-            sprintf(str, "%s_%d", ua, j);
-            if (getparam(str)) {
-               if (*getparam(str)) {
-                  if (first)
-                     first = 0;
-                  else
-                     strlcat(attrib[i], " | ", NAME_LENGTH);
-                  if (strlen(attrib[i]) + strlen(getparam(str)) < NAME_LENGTH - 2)
-                     strlcat(attrib[i], getparam(str), NAME_LENGTH);
-                  else
-                     break;
-               }
-            } else
-               break;
+
+         if (getparam(ua) && *getparam(ua)) {
+            strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
+         } else {
+            attrib[i][0] = 0;
+            first = 1;
+            for (j = 0; j < MAX_N_LIST; j++) {
+               sprintf(str, "%s_%d", ua, j);
+               if (getparam(str)) {
+                  if (*getparam(str)) {
+                     if (first)
+                        first = 0;
+                     else
+                        strlcat(attrib[i], " | ", NAME_LENGTH);
+                     if (strlen(attrib[i]) + strlen(getparam(str)) < NAME_LENGTH - 2)
+                        strlcat(attrib[i], getparam(str), NAME_LENGTH);
+                     else
+                        break;
+                  }
+               } else
+                  break;
+            }
          }
       } else if (attr_flags[i] & AF_DATE) {
 
