@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.382  2004/07/14 10:10:59  midas
+   Fixed compiler warning
+
    Revision 1.381  2004/07/14 10:09:47  midas
    Fixed bug in stristr()
 
@@ -11163,7 +11166,7 @@ BOOL equal_md5(unsigned char m1[16], unsigned char m2[16])
 #define SYNC_CRON   2
 #define SYNC_CLONE  3
 
-mprint(LOGBOOK *lbs, int mode, char *str)
+void mprint(LOGBOOK *lbs, int mode, char *str)
 {
    char line[1000];
 
