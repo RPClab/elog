@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.577  2005/03/02 17:13:24  ritt
+   Implemented central load_password_file()
+
    Revision 1.576  2005/03/02 16:29:20  ritt
    Encode '&' correctly if present in 'Start page' option
 
@@ -1239,6 +1242,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
                      char attrib[][NAME_LENGTH], BOOL format_date);
 void highlight_searchtext(regex_t * re_buf, char *src, char *dst, BOOL hidden);
 int parse_config_file(char *config_file);
+PMXML_NODE load_password_file(char *logbook_name);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -7284,16 +7288,7 @@ BOOL change_pwd(LOGBOOK * lbs, char *user, char *pwd)
    char str[256], file_name[256];
    PMXML_NODE xml_tree, node;
 
-   getcfg(lbs->name, "Password file", str, sizeof(str));
-
-   if (str[0] == DIR_SEPARATOR || str[1] == ':')
-      strcpy(file_name, str);
-   else {
-      strlcpy(file_name, resource_dir, sizeof(file_name));
-      strlcat(file_name, str, sizeof(file_name));
-   }
-
-   xml_tree = mxml_parse_file(file_name, str, sizeof(str));
+   xml_tree = load_password_file(lbs->name);
    if (!xml_tree)
       return FALSE;
 
@@ -9947,14 +9942,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
    if (activate || !new_user || self_register != 3) {   /* do not save in mode 3 */
       getcfg(lbs->name, "Password file", str, sizeof(str));
 
-      if (str[0] == DIR_SEPARATOR || str[1] == ':')
-         strcpy(file_name, str);
-      else {
-         strlcpy(file_name, resource_dir, sizeof(file_name));
-         strlcat(file_name, str, sizeof(file_name));
-      }
-
-      xml_tree = mxml_parse_file(file_name, str, sizeof(str));
+      xml_tree = load_password_file(lbs->name);
       if (xml_tree == NULL) {
          show_error(str);
          return 0;
@@ -9994,6 +9982,14 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
          mxml_replace_subvalue(node, "full_name", getparam("new_full_name"));
          mxml_replace_subvalue(node, "email", getparam("new_user_email"));
          mxml_replace_subvalue(node, "email_notify", getparam("email_notify"));
+      }
+
+      getcfg(lbs->name, "Password file", str, sizeof(str));
+      if (str[0] == DIR_SEPARATOR || str[1] == ':')
+         strlcpy(file_name, str, sizeof(file_name));
+      else {
+         strlcpy(file_name, resource_dir, sizeof(file_name));
+         strlcat(file_name, str, sizeof(file_name));
       }
 
       mxml_write_tree(file_name, xml_tree);
@@ -10135,16 +10131,7 @@ int remove_user(LOGBOOK * lbs, char *user)
    char file_name[256], str[256];
    PMXML_NODE xml_tree, node;
 
-   getcfg(lbs->name, "Password file", str, sizeof(str));
-
-   if (str[0] == DIR_SEPARATOR || str[1] == ':')
-      strcpy(file_name, str);
-   else {
-      strlcpy(file_name, resource_dir, sizeof(file_name));
-      strlcat(file_name, str, sizeof(file_name));
-   }
-
-   xml_tree = mxml_parse_file(file_name, str, sizeof(str));
+   xml_tree = load_password_file(lbs->name);
    if (xml_tree == NULL)
       return FALSE;
 
@@ -18375,12 +18362,71 @@ BOOL convert_password_file(char *file_name)
 
 /*------------------------------------------------------------------*/
 
+PMXML_NODE load_password_file(char *logbook_name)
+{
+   PMXML_NODE xml_tree;
+   char str[256], line[256], file_name[256];
+   int fh;
+
+   getcfg(logbook_name, "Password file", str, sizeof(str));
+
+   if (!str[0])
+      return NULL;
+
+   if (str[0] == DIR_SEPARATOR || str[1] == ':')
+      strlcpy(file_name, str, sizeof(file_name));
+   else {
+      strlcpy(file_name, resource_dir, sizeof(file_name));
+      strlcat(file_name, str, sizeof(file_name));
+   }
+
+   fh = open(file_name, O_RDONLY);
+
+   /* if password file doen't exist, try to create it */
+   if (fh < 0) {
+      fh = open(file_name, O_CREAT | O_RDWR, 0600);
+      if (fh < 0) {
+         sprintf(str, loc("Cannot open file <b>%s</b>"), file_name);
+         strcat(str, ": ");
+         strlcat(str, strerror(errno), sizeof(str));
+         show_error(str);
+         return NULL;
+      }
+      close(fh);
+      fh = open(file_name, O_RDONLY);
+   }
+
+   if (fh < 0) {
+      sprintf(str, loc("Cannot open file <b>%s</b>"), file_name);
+      strcat(str, ": ");
+      strlcat(str, strerror(errno), sizeof(str));
+      show_error(str);
+      return NULL;
+   }
+
+   /* check if in XML format, otherwise convert it */
+   line[0] = 0;
+   read(fh, line, sizeof(line));
+   close(fh);
+   if (strstr(line, "<?xml") == 0) {
+      if (!convert_password_file(file_name))
+         return NULL;
+   }
+
+   if ((xml_tree = mxml_parse_file(file_name, str, sizeof(str))) == NULL) {
+      show_error(str);
+      return NULL;
+   }
+
+   return xml_tree;
+}
+
+/*------------------------------------------------------------------*/
+
 int get_user_line(char *logbook_name, char *user, char *password, char *full_name,
                   char *email, char *email_notify)
 {
-   char str[256], line[256], file_name[256];
-   FILE *f;
-   int fd;
+   char str[256];
    PMXML_NODE xml_tree, user_node, node;
 
    if (password)
@@ -18394,47 +18440,12 @@ int get_user_line(char *logbook_name, char *user, char *password, char *full_nam
 
    getcfg(logbook_name, "Password file", str, sizeof(str));
 
-   if (!str[0])
+   if (!str[0] || !user[0])
       return 1;
 
-   if (str[0] == DIR_SEPARATOR || str[1] == ':')
-      strlcpy(file_name, str, sizeof(file_name));
-   else {
-      strlcpy(file_name, resource_dir, sizeof(file_name));
-      strlcat(file_name, str, sizeof(file_name));
-   }
+   xml_tree = load_password_file(logbook_name);
 
-   f = fopen(file_name, "r");
-
-   /* if password file doen't exist, try to create it */
-   if (f == NULL) {
-      fd = open(file_name, O_CREAT | O_RDWR, 0600);
-      if (fd < 0)
-         return 3;
-      close(fd);
-      f = fopen(file_name, "r");
-   }
-
-   if (f != NULL) {
-      if (!user[0]) {
-         fclose(f);
-         return 1;
-      }
-
-      /* check if in XML format, otherwise convert it */
-      line[0] = 0;
-      fgets(line, sizeof(line), f);
-      if (strstr(line, "<?xml") == 0) {
-         fclose(f);
-         if (!convert_password_file(file_name))
-            return 1;
-      }
-
-      if ((xml_tree = mxml_parse_file(file_name, str, sizeof(str))) == NULL) {
-         show_error(str);
-         return 1;
-      }
-
+   if (xml_tree) {
       sprintf(str, "/list/user[name=%s]", user);
       if ((user_node = mxml_find_node(xml_tree, str)) == NULL) {
          mxml_free_tree(xml_tree);
@@ -18465,7 +18476,7 @@ int get_user_line(char *logbook_name, char *user, char *password, char *full_nam
 
 BOOL enum_user_line(LOGBOOK * lbs, int n, char *user, int size)
 {
-   char str[256], file_name[256];
+   char str[256];
    PMXML_NODE xml_tree, node;
 
    getcfg(lbs->name, "Password file", str, sizeof(str));
@@ -18473,14 +18484,8 @@ BOOL enum_user_line(LOGBOOK * lbs, int n, char *user, int size)
    if (!str[0])
       return FALSE;
 
-   if (str[0] == DIR_SEPARATOR || str[1] == ':')
-      strcpy(file_name, str);
-   else {
-      strlcpy(file_name, resource_dir, sizeof(file_name));
-      strlcat(file_name, str, sizeof(file_name));
-   }
-
-   if ((xml_tree = mxml_parse_file(file_name, str, sizeof(str))) == NULL) {
+   xml_tree = load_password_file(lbs->name);
+   if (!xml_tree) {
       show_error(str);
       return FALSE;
    }
