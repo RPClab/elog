@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.81  2003/04/09 14:02:18  midas
+  Better error message on email send failure
+
   Revision 1.80  2003/04/09 11:55:39  midas
   Fixed bug with 'summary page title'
 
@@ -6618,7 +6621,11 @@ char str[1000], login_name[256], full_name[256], user_email[256], name[256], pwd
           return;
           }
         else
-          show_error(loc("Error sending Email"));
+          {
+          sprintf(str, loc("Error sending Email via <i>\"%s\"</i>"), smtp_host);
+          show_error(str);
+          return;
+          }
         }
       }
 
