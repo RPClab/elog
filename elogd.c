@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.22  2002/06/18 07:22:28  midas
+  Removed width from logbook selection page
+
   Revision 2.21  2002/06/14 18:34:38  midas
   Fixed bug in el_build_index()
 
@@ -7385,7 +7388,7 @@ char str[10000], logbook[256];
 
   rsprintf("<body>\n\n");
 
-  rsprintf("<p><p><p><table border=0 width=50%% bgcolor=#486090 cellpadding=0 cellspacing=0 align=center>");
+  rsprintf("<p><p><p><table border=0 bgcolor=#486090 cellpadding=0 cellspacing=0 align=center>");
   rsprintf("<tr><td><table cellpadding=5 cellspacing=1 border=0 width=100%% bgcolor=#486090>\n");
 
   rsprintf("<tr><td align=center colspan=2 bgcolor=#486090>\n");
