@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.116  2002/12/19 14:37:14  midas
+  Avoid long lines with many radio/check buttons
+
   Revision 2.115  2002/12/13 12:07:01  midas
   Improved email sending
 
@@ -4711,10 +4714,10 @@ time_t now;
               sprintf(str, "%s%d", attr_list[index], i);
 
               if (strstr(attrib[index], attr_options[index][i]))
-                rsprintf("<input type=checkbox checked name=\"%s\" value=\"%s\">%s&nbsp;\n",
+                rsprintf("<nobr><input type=checkbox checked name=\"%s\" value=\"%s\">%s</nobr>\n",
                   str, attr_options[index][i], attr_options[index][i]);
               else
-                rsprintf("<input type=checkbox name=\"%s\" value=\"%s\">%s&nbsp;\n",
+                rsprintf("<nobr><input type=checkbox name=\"%s\" value=\"%s\">%s</nobr>\n",
                   str, attr_options[index][i], attr_options[index][i]);
               }
 
@@ -4728,10 +4731,10 @@ time_t now;
             for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
               {
               if (strstr(attrib[index], attr_options[index][i]))
-                rsprintf("<input type=radio checked name=\"%s\" value=\"%s\">%s&nbsp;\n",
+                rsprintf("<nobr><input type=radio checked name=\"%s\" value=\"%s\">%s</nobr>\n",
                   attr_list[index], attr_options[index][i], attr_options[index][i]);
               else
-                rsprintf("<input type=radio name=\"%s\" value=\"%s\">%s&nbsp;\n",
+                rsprintf("<nobr><input type=radio name=\"%s\" value=\"%s\">%s</nobr>\n",
                   attr_list[index], attr_options[index][i], attr_options[index][i]);
               }
 
@@ -4745,11 +4748,11 @@ time_t now;
             for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
               {
               if (strstr(attrib[index], attr_options[index][i]))
-                rsprintf("<input type=radio checked name=\"%s\" value=\"%s\">", attr_list[index], attr_options[index][i]);
+                rsprintf("<nobr><input type=radio checked name=\"%s\" value=\"%s\">", attr_list[index], attr_options[index][i]);
               else
-                rsprintf("<input type=radio name=\"%s\" value=\"%s\">", attr_list[index], attr_options[index][i]);
+                rsprintf("<nobr><input type=radio name=\"%s\" value=\"%s\">", attr_list[index], attr_options[index][i]);
 
-              rsprintf("<img src=\"icons/%s\">&nbsp;\n", attr_options[index][i]);
+              rsprintf("<img src=\"icons/%s\"></nobr>\n", attr_options[index][i]);
               }
 
             rsprintf("</td></tr>\n");
@@ -5194,8 +5197,8 @@ char   str[256], mode[256];
         {
         for (j=0 ; j<MAX_N_LIST && attr_options[i][j][0] ; j++)
           {
-          rsprintf("<input type=radio name=\"%s\" value=\"%s\">", attr_list[i], attr_options[i][j]);
-          rsprintf("<img src=\"icons/%s\">&nbsp;\n", attr_options[i][j]);
+          rsprintf("<nobr><input type=radio name=\"%s\" value=\"%s\">", attr_list[i], attr_options[i][j]);
+          rsprintf("<img src=\"icons/%s\"></nobr>\n", attr_options[i][j]);
           }
         }
 
