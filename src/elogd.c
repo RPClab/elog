@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.533  2005/01/06 08:51:22  midas
+   Made extendable attributes work with conditional attributes
+
    Revision 1.532  2005/01/05 20:36:49  midas
    Logbook hierarchy can now be deeper than two levels
 
@@ -2996,7 +2999,7 @@ char *find_param(char *buf, char *group, char *param)
                while (pstr > str && (*pstr == ' ' || *pstr == '=' || *pstr == '\t'))
                   *pstr-- = 0;
 
-               if (strieq(str, param)) {
+               if (match_param(str, param, FALSE)) {
                   xfree(str);
                   return pstart;
                }
@@ -7866,7 +7869,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<input type=hidden name=\"upwd\" value=\"%s\">\n", getparam("upwd"));
    }
 
-
    rsprintf("<input type=hidden name=\"jcmd\">\n");
 
    /*---- title row ----*/
@@ -7921,6 +7923,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Entry time"));
    rsprintf("<td class=\"attribvalue\">%s\n", str);
    rsprintf("<input type=hidden name=entry_date value=\"%s\"></td></tr>\n", date);
+  
+   if (condition[0])
+      rsprintf("<input type=hidden name=condition value=\"%s\"></td></tr>\n", condition);
 
    /* retrieve attribute flags */
    for (i = 0; i < n_attr; i++) {
@@ -16070,7 +16075,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
 
 /*------------------------------------------------------------------*/
 
-int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue)
+int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue, char *condition)
 {
    int fh, i, length;
    char str[NAME_LENGTH], *buf, *buf2, *p1, *p2, *p3;
@@ -16092,6 +16097,11 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue)
    buf[length] = 0;
 
    /* find location of options */
+   if (condition && condition[0])
+      set_condition(condition);
+   else
+      set_condition("");
+
    sprintf(str, "Options %s", attrname);
    p1 = (char *) find_param(buf, lbs->name, str);
    if (p1 == NULL) {
@@ -16248,7 +16258,7 @@ void submit_elog(LOGBOOK * lbs)
        email_notify[256], mail_param[1000], *mail_to, att_file[MAX_ATTACHMENTS][256],
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], ua[NAME_LENGTH];
    int i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_orig,
-       mail_to_size, ltime, year, month, day;
+       mail_to_size, ltime, year, month, day, n_attr;
    BOOL bedit;
    struct tm tms;
 
@@ -16319,7 +16329,15 @@ void submit_elog(LOGBOOK * lbs)
       }
 
    /* check for extended attributs */
-   for (i = 0; i < lbs->n_attr; i++) {
+   if (isparam("condition")) {
+      set_condition(getparam("condition"));
+      
+      /* rescan attributes */
+      n_attr = scan_attributes(lbs->name);
+   } else
+      n_attr = lbs->n_attr;
+      
+   for (i = 0; i < n_attr; i++) {
       strcpy(ua, attr_list[i]);
       btou(ua);
       if (isparam(ua) && attr_options[i][0][0]) {
@@ -16361,7 +16379,7 @@ void submit_elog(LOGBOOK * lbs)
                      return;
                   }
 
-                  if (!add_attribute_option(lbs, attr_list[i], getparam(ua)))
+                  if (!add_attribute_option(lbs, attr_list[i], getparam(ua), getparam("condition")))
                      return;
                } else {
                   sprintf(error, loc("Error: Attribute option <b>%s</b> not existing"), getparam(ua));
@@ -16380,7 +16398,7 @@ void submit_elog(LOGBOOK * lbs)
    }
 
    /* retrieve attributes */
-   for (i = 0; i < lbs->n_attr; i++) {
+   for (i = 0; i < n_attr; i++) {
 
       strcpy(ua, attr_list[i]);
       btou(ua);
@@ -16456,7 +16474,7 @@ void submit_elog(LOGBOOK * lbs)
       add_subst_list(slist, svalue, "message id", getparam("edit_id"), &n);
 
    /* substitute attributes */
-   for (i = 0; i < lbs->n_attr; i++) {
+   for (i = 0; i < n_attr; i++) {
       if (!*getparam("edit_id")) {
          sprintf(str, "Subst %s", attr_list[i]);
          if (getcfg(lbs->name, str, subst_str, sizeof(subst_str))) {
@@ -16517,7 +16535,7 @@ void submit_elog(LOGBOOK * lbs)
    }
 
    message_id =
-       el_submit(lbs, message_id, bedit, date, attr_list, attrib, lbs->n_attr,
+       el_submit(lbs, message_id, bedit, date, attr_list, attrib, n_attr,
                  getparam("text"), in_reply_to, reply_to,
                  *getparam("html") ? "HTML" : "plain", att_file, TRUE, NULL);
 
@@ -16550,12 +16568,12 @@ void submit_elog(LOGBOOK * lbs)
             && getcfg(lbs->name, "Suppress Email on edit", str, sizeof(str))
             && atoi(str) == 1)) {
          /* go throuch "Email xxx" in configuration file */
-         for (index = mindex = 0; index <= lbs->n_attr; index++) {
+         for (index = mindex = 0; index <= n_attr; index++) {
 
             strcpy(ua, attr_list[index]);
             btou(ua);
 
-            if (index < lbs->n_attr) {
+            if (index < n_attr) {
                strcpy(str, "Email ");
                if (strchr(attr_list[index], ' '))
                   sprintf(str + strlen(str), "\"%s\"", attr_list[index]);
