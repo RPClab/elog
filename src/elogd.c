@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.275  2004/03/01 15:56:47  midas
+   Fixed bug with top text
+
    Revision 1.274  2004/03/01 07:32:29  midas
    Added label for 'search across all logbooks'
 
@@ -5466,7 +5469,7 @@ void show_top_text(LOGBOOK * lbs)
 
          rsputs(buf);
       } else
-         rsputs(file_name);
+         rsputs(str);
    }
 }
 
@@ -5502,7 +5505,7 @@ void show_bottom_text(LOGBOOK * lbs)
 
          rsputs(buf);
       } else
-         rsputs(file_name);
+         rsputs(str);
    } else
       /* add little logo */
       rsprintf
