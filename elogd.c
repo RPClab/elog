@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.131  2003/01/12 11:36:00  midas
+  Fixed problem with attachment names containg '+' also in find result page
+
   Revision 2.130  2003/01/11 19:25:59  midas
   Removed bugfix for old Konqueror wich is not necessary from Konqueror 3.0.4 on
 
@@ -6899,6 +6902,7 @@ FILE *f;
         strcpy(str, attachment[index]);
         str[13] = 0;
         sprintf(ref, "../%s/%s/%s", lbs->name_enc, str, attachment[index]+14);
+        url_encode(ref, sizeof(ref)); /* for file names with special characters like "+" */
 
         for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
           str[i] = toupper(attachment[index][i]);
