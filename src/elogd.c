@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.444  2004/08/06 07:30:52  midas
+   Sorted and completed help screen
+
    Revision 1.443  2004/08/06 06:45:01  midas
    Added strerror in more places
 
@@ -8726,7 +8729,7 @@ void adjust_crlf(char *buffer, int bufsize)
    /* convert \n -> \r\n */
    p = buffer;
    while ((p = strstr(p, "\n")) != NULL) {
-      
+
       if (p > buffer && *(p-1) == '\r') {
          p++;
          continue;
@@ -17563,7 +17566,7 @@ BOOL is_admin_user(char *logbook, char *user)
 
    /* Removed user[0] for cloning, have to check implications, same below.
       if (getcfg(logbook, "Admin user", str, sizeof(str)) && user[0]) { */
-   
+
    if (getcfg(logbook, "Admin user", str, sizeof(str))) {
       n = strbreak(str, list, MAX_N_LIST, ",");
       for (i = 0; i < n; i++)
@@ -18953,7 +18956,7 @@ void interprete(char *lbook, char *path)
          strlcpy(file_name, resource_dir, sizeof(file_name));
          strlcat(file_name, str, sizeof(file_name));
       }
-      
+
       send_file_direct(file_name);
       return;
    }
@@ -21045,24 +21048,26 @@ int main(int argc, char *argv[])
          else {
           usage:
             printf("%s\n", ELOGID);
-            printf("usage: elogd [-p port] [-n hostname] [-D] [-c file] [-r pwd] ");
-            printf("[-w pwd] [-a pwd] [-l logbook] [-k] [-f file] [-C <url>] [-x]\n\n");
-            printf("       -p <port> TCP/IP port\n");
-            printf("       -n <hostname> TCP/IP hostname\n");
-            printf("       -D become a daemon\n");
+            printf("usage: elogd [-a <pwd>] [-c <file>] [-C <url>] [-D] [-d <dir>] ");
+            printf("[-f <file>] [-h] [-k] [-l <logbook>] [-n <hostname>] [-p <port>] ");
+            printf("[-r <pwd>] [-S] [-s <dir>] [-v] [-w <pwd>] [-x]\n\n");
+            printf("       -a <pwd> create/overwrite admin password in config file\n");
             printf("       -c <file> specify configuration file\n");
-            printf("       -s <dir> specify resource directory (themes, icons, ...)\n");
+            printf("       -C <url> clone remote elogd configuration\n");
+            printf("       -D become a daemon\n");
             printf("       -d <dir> specify logbook root directory\n");
-            printf("       -v debugging output\n");
-            printf("       -r create/overwrite read password in config file\n");
-            printf("       -w create/overwrite write password in config file\n");
-            printf("       -a create/overwrite admin password in config file\n");
-            printf("       -l <logbook> specify logbook for -r and -w commands\n\n");
+            printf("       -f <file> PID file\n");
+            printf("       -h this help\n");
             printf("       -k do not use keep-alive\n");
-            printf("       -f path/filename for PID file\n");
+            printf("       -l <logbook> specify logbook for -r and -w commands\n");
+            printf("       -n <hostname> TCP/IP hostname\n");
+            printf("       -p <port> TCP/IP port\n");
+            printf("       -r <pwd> create/overwrite read password in config file\n");
+            printf("       -S be silent\n");
+            printf("       -s <dir> specify resource directory (themes, icons, ...)\n");
+            printf("       -v debugging output\n");
+            printf("       -w <pwd> create/overwrite write password in config file\n");
             printf("       -x enable execution of shell commands\n\n");
-            printf("       -C <url> clone remote elogd configuration\n\n");
-            printf("       -h this help\n\n");
 #ifdef OS_WINNT
             printf("Windows service funtions:\n");
             printf("       -install     install elogd as service and start it\n");
@@ -21223,7 +21228,7 @@ int main(int argc, char *argv[])
                   setcfg_topgroup(lb_list[i].top_group);
                else
                   setcfg_topgroup("");
-               
+
                if (getcfg(lb_list[i].name, "Password file", file_name, sizeof(file_name))) {
 
                   /* check if this file has not already been retrieved */
