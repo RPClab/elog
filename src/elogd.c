@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.583  2005/03/08 08:42:17  ritt
+   Show logbook list for subscription for new user
+
    Revision 1.582  2005/03/08 08:29:47  ritt
    Fixed problem with self-register and password file
 
@@ -10507,6 +10510,8 @@ void show_forgot_pwd_page(LOGBOOK *lbs)
 
 void show_new_user_page(LOGBOOK *lbs)
 {
+   int i;
+
    /*---- header ----*/
 
    show_html_header(NULL, TRUE, loc("ELOG new user"), TRUE, FALSE);
@@ -10535,24 +10540,69 @@ void show_new_user_page(LOGBOOK *lbs)
 
    /*---- entry form ----*/
 
-   rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Login name"));
+   rsprintf("<tr><td nowrap>%s:</td>\n", loc("Login name"));
    rsprintf("<td><input type=text size=40 name=new_user_name></td>\n");
-   rsprintf("<td align=left><i><font size=2>(%s)</i></font></td></tr>\n",
+   rsprintf("<td nowrap align=left><i><font size=2>(%s)</i></font></td></tr>\n",
             loc("name may not contain blanks"));
 
-   rsprintf("<tr><td nowrap width = \"10%%\">%s:</td>\n", loc("Full name"));
+   rsprintf("<tr><td nowrap>%s:</td>\n", loc("Full name"));
    rsprintf("<td colspan=2><input type=text size=40 name=new_full_name></tr>\n");
 
-   rsprintf("<tr><td nowrap width=\"10%%\">Email:</td>\n");
+   rsprintf("<tr><td nowrap>Email:</td>\n");
    rsprintf("<td colspan=2><input type=text size=40 name=new_user_email></tr>\n");
 
-   rsprintf("<tr><td colspan=3>%s:&nbsp;\n", loc("Enable email notifications"));
-   rsprintf("<input type=checkbox checked name=email_notify value=all></tr>\n");
+   //rsprintf("<tr><td colspan=3>%s:&nbsp;\n", loc("Enable email notifications"));
+   //rsprintf("<input type=checkbox checked name=email_notify value=all></tr>\n");
 
-   rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Password"));
+
+   rsprintf("<tr><td nowrap>%s:\n", loc("Subscribe to logbooks"));
+
+   rsprintf("<br><span class=\"selcomment\"><b>(%s)</b></span>\n",  
+      loc("enable automatic email notifications"));
+
+   rsprintf("<td>\n");
+
+   for (i = 0; lb_list[i].name[0]; i++) {
+
+      if (!getcfg_topgroup() || strieq(getcfg_topgroup(), lb_list[i].top_group)) {
+
+         rsprintf("<input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
+         rsprintf("<label for=\"lb%d\">%s</label><br>\n", i, lb_list[i].name);
+      }
+   }
+
+   if (i > 2) {
+      rsprintf("<script language=\"JavaScript\" type=\"text/javascript\">\n");
+      rsprintf("<!--\n");
+      rsprintf("function SetNone()\n");
+      rsprintf("  {\n");
+      rsprintf("  for (var i = 0; i < document.form1.elements.length; i++)\n");
+      rsprintf("    {\n");
+      rsprintf("    if( document.form1.elements[i].type == 'checkbox' )\n");
+      rsprintf("      document.form1.elements[i].checked = false;\n");
+      rsprintf("    }\n");
+      rsprintf("  }\n");
+      rsprintf("function SetAll()\n");
+      rsprintf("  {\n");
+      rsprintf("  for (var i = 0; i < document.form1.elements.length; i++)\n");
+      rsprintf("    {\n");
+      rsprintf("    if( document.form1.elements[i].type == 'checkbox' )\n");
+      rsprintf("      document.form1.elements[i].checked = true;\n");
+      rsprintf("    }\n");
+      rsprintf("  }\n");
+      rsprintf("//-->\n");
+      rsprintf("</script>\n");
+
+      rsprintf("<input type=button value=\"%s\" onClick=\"SetAll();\">\n", loc("Set all"));
+      rsprintf("<input type=button value=\"%s\" onClick=\"SetNone();\">\n", loc("Set none"));
+   }
+
+   rsprintf("</td></tr>\n");
+
+   rsprintf("<tr><td nowrap>%s:</td>\n", loc("Password"));
    rsprintf("<td colspan=2><input type=password size=40 name=newpwd>\n");
 
-   rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Retype password"));
+   rsprintf("<tr><td nowrap>%s:</td>\n", loc("Retype password"));
    rsprintf("<td colspan=2><input type=password size=40 name=newpwd2>\n");
 
    rsprintf("</td></tr></table></td></tr>\n");
