@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.63  2002/08/06 12:01:19  midas
+  Fixed another problem with file truncate
+
   Revision 2.62  2002/08/06 11:40:00  midas
   Fixed problem with file truncate
 
@@ -4854,9 +4857,8 @@ int    i, fh, size;
 
 int remove_user(LOGBOOK *lbs, char *user)
 {
-FILE   *f;
 char   file_name[256], str[256], line[256], *buf, *pl;
-int    i, size;
+int    i, fh, size;
 
   getcfg(lbs->name, "Password file", str);
 
@@ -4868,19 +4870,22 @@ int    i, size;
     strcat(file_name, str);
     }
 
-  f = fopen(file_name, "r+b");
-  if (f == NULL)
+  fh = open(file_name, O_RDWR | O_BINARY, 0644);
+  if (fh < 0)
     {
-    show_error("");
+    sprintf(str, loc("Cannot open file <b>%s</b>"), file_name);
+    strcat(str, ": ");
+    strcat(str, strerror(errno));
+    show_error(str);
     return 0;
     }
 
-  fseek(f, 0, SEEK_END);
-  size = TELL(fileno(f));
-  fseek(f, 0, SEEK_SET);
+  lseek(fh, 0, SEEK_END);
+  size = TELL(fh);
+  lseek(fh, 0, SEEK_SET);
 
   buf = malloc(size+1);
-  fread(buf, 1, size, f);
+  read(fh, buf, size);
   buf[size] = 0;
   pl = buf;
 
@@ -4910,23 +4915,23 @@ int    i, size;
     }
 
   /* remove line */
-  fseek(f, 0, SEEK_SET);
-  fwrite(buf, 1, pl-buf, f);
+  lseek(fh, 0, SEEK_SET);
+  write(fh, buf, pl-buf);
 
   pl += strlen(line);
   while (*pl && (*pl == '\r' || *pl == '\n'))
     pl++;
 
-  fwrite(pl, 1, strlen(pl), f);
+  write(fh, pl, strlen(pl));
 
 #ifdef _MSC_VER
-  chsize(fileno(f), TELL(fileno(f)));
+  chsize(fh, TELL(fh));
 #else
-  ftruncate(fileno(f), TELL(fileno(f)));
+  ftruncate(fh, TELL(fh));
 #endif
 
   free(buf);
-  fclose(f);
+  close(fh);
   
   return 1;
 }
