@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.317  2004/04/06 21:19:59  midas
+   Fixed problem with multiple quick filters on attributes without option lists
+
    Revision 1.316  2004/03/27 14:33:59  midas
    Implemeted first version of favicon
 
@@ -12045,16 +12048,49 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    /* redirect if enpty parameters */
    if (strstr(_cmdline, "=&")) {
       while ((pt1 = strstr(_cmdline, "=&")) != NULL) {
-         pt2 = pt1 + 2;
+         pt2 = pt1;
          while (*pt1 != '&' && *pt1 != '?')
             pt1--;
-         strcpy(pt1 + 1, pt2);
+         pt1++;
+         strcpy(param, pt1);
+         param[(int)pt2-(int)pt1] = 0;
+         strcpy(pt1, pt2+2);
+
+         /* remove param from lastcmd if present */
+         if ((pt1 = strstr(_cmdline, "lastcmd=")) != NULL) {
+            sprintf(str, "%s%%3D", param);
+            if (pt1 = strstr(_cmdline, str)) {
+               pt2 = pt1+strlen(str);
+               while (*pt2 && *pt2 != '%')
+                  pt2++;
+               if (*pt2 == '%')
+                  pt2 += 3;
+               strcpy(pt1, pt2);
+            }
+         }
       }
       if (_cmdline[strlen(_cmdline) - 1] == '=') {
          pt1 = _cmdline + strlen(_cmdline) - 1;
          while (*pt1 != '&' && *pt1 != '?')
-            *pt1-- = 0;
+            pt1--;
+         pt1++;
+         strcpy(param, pt1);
+         if (param[strlen(param)-1] == '=')
+            param[strlen(param)-1] = 0;
          *pt1 = 0;
+
+         /* remove param from lastcmd if present */
+         if ((pt1 = strstr(_cmdline, "lastcmd=")) != NULL) {
+            sprintf(str, "%s%%3D", param);
+            if (pt1 = strstr(_cmdline, str)) {
+               pt2 = pt1+strlen(str);
+               while (*pt2 && *pt2 != '%' && *pt2 != '&')
+                  pt2++;
+               if (*pt2 == '%')
+                  pt2 += 3;
+               strcpy(pt1, pt2);
+            }
+         }
       }
       /* add reverse=0 if not present */
       if (strstr(_cmdline, "reverse=") == NULL && getcfg(lbs->name, "Reverse sort", str)
