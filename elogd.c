@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.12  2002/06/12 10:18:16  midas
+  Added redirection if '/' is missing after logbook
+
   Revision 2.11  2002/06/12 09:30:03  midas
   Added elog:x HTML link
 
@@ -8402,6 +8405,14 @@ struct timeval       timeout;
       strcpy(logbook_enc, logbook);
       url_decode(logbook);
 
+      /* check for trailing '/' after logbook */
+      if (logbook[0] && *p == ' ')
+        {
+        sprintf(str, "../%s/", logbook_enc);
+        redirect(str);
+        goto redir;
+        }
+
       /* check if logbook exists */
       for (i=0 ; ; i++)
         {
@@ -8708,6 +8719,7 @@ struct timeval       timeout;
           }
         }
 
+redir:
       if (return_length != -1)
         {
         if (return_length == 0)
