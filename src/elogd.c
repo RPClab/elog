@@ -6,6 +6,11 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.102  2003/05/07 18:45:42  midas
+  - moved lock.gif to themes directory
+  - fixed a few bugs with </th>
+  - added anchor <a name=attX> (X=1,2,3) for attachments
+
   Revision 1.101  2003/05/02 21:40:06  midas
   Introduced 3D cell frames
 
@@ -824,7 +829,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.3.6"
+#define VERSION "2.3.7"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -5349,6 +5354,7 @@ time_t now;
       {
       rsprintf("<td class=\"attribvalue\">\n");
       rsputs2(attrib[index]);
+      rsprintf("&nbsp;");
 
       if (attr_flags[index] & AF_MULTI)
         {
@@ -9116,7 +9122,7 @@ LOGBOOK *lbs_cur;
 
     /* empty title for selection box */
     if (atoi(getparam("select")) == 1)
-      rsprintf("<th class=\"listtitle\"></td>&nbsp;\n");
+      rsprintf("<th class=\"listtitle\"></th>&nbsp;\n");
     
     for (i=0 ; i<n_attr_disp ; i++)
       {
@@ -9164,12 +9170,12 @@ LOGBOOK *lbs_cur;
       else if (strcmp(getparam("rsort"), disp_attr[i]) == 0)
         strcpy(img, "<img align=top src=\"down.gif\">");
 
-      rsprintf("<th class=\"listtitle\"><a href=\"%s\">%s</a>%s</td>\n", 
+      rsprintf("<th class=\"listtitle\"><a href=\"%s\">%s</a>%s</th>\n", 
                 ref, disp_attr[i], img);
       }
 
     if (!equal_ustring(mode, "Full") && n_line > 0)
-      rsprintf("<th class=\"listtitle\">Text</td>\n");
+      rsprintf("<th class=\"listtitle\">Text</th>\n");
 
     rsprintf("</tr>\n\n");
     }
@@ -10593,6 +10599,7 @@ BOOL   first;
               strstr(att, ".PNG"))
             {
             rsprintf("<tr><td class=\"messageframe\">\n");
+            rsprintf("<a name=\"att%d\">\n", index+1);
             rsprintf("<img src=\"%s\"></td></tr>", ref);
             rsprintf("</td></tr>\n\n");
             }
@@ -10604,6 +10611,9 @@ BOOL   first;
               {
               /* display attachment */
               rsprintf("<tr><td class=\"messageframe\">\n");
+
+              /* anchor for references */
+              rsprintf("<a name=\"att%d\">\n", index+1);
 
               if (!strstr(att, ".HTML"))
                 rsprintf("<pre class=\"messagepre\">");
@@ -12770,19 +12780,9 @@ int                  net_buffer_size;
 
       if (strstr(logbook, ".gif") || strstr(logbook, ".jpg") ||
           strstr(logbook, ".jpg") || strstr(logbook, ".png") ||
-          strstr(logbook, ".htm"))
+          strstr(logbook, ".htm") || strstr(logbook, ".css"))
         {
-        /* serve file directly */
-        strlcpy(str, resource_dir, sizeof(str));
-        strlcat(str, logbook, sizeof(str));
-        send_file_direct(str);
-        send(_sock, return_buffer, return_length, 0);
-
-        goto finished;
-        }
-      else if (strstr(logbook, ".css"))
-        {
-        /* send default CSS file */
+        /* serve file directly from themes directory */
         strlcpy(str, resource_dir, sizeof(str));
         strlcat(str, "themes", sizeof(str));
         strlcat(str, DIR_SEPARATOR_STR, sizeof(str));

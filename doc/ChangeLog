@@ -1,3 +1,12 @@
+Version 2.3.7, released April 23rd, 2003
+========================================
+
+- Fixed bug in password recovery with logbooks containing blanks
+- Fixed bug with logbooks containing blanks in registration notification
+- Added icon for protected logbooks
+- Increased number of attachments to 50
+- Implemented 3D cell frames
+
 Version 2.3.6, released April 23rd, 2003
 ========================================
 
