@@ -1,5 +1,5 @@
-Version 2.3.2, released March xxst, 2003
-==========================================
+Version 2.3.2, released March 12th, 2003
+========================================
 
 - Exchanged priviledge drop and directory creation (Recai Oktas)
 - Added 'X-Mailer: Elog' and 'X-Elog-URL' in mail header
