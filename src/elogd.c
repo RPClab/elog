@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.239  2004/02/05 07:58:38  midas
+   Use send_tcp for large buffers
+
    Revision 1.238  2004/02/05 07:47:27  midas
    Fixed bug in search display for all logbooks
 
@@ -8527,6 +8530,46 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
 
 /*------------------------------------------------------------------*/
 
+INT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags)
+/********************************************************************\
+  
+    Send network data over TCP port. Break buffer in smaller
+    parts if larger than maximum TCP buffer size (usually 64k).
+
+\********************************************************************/
+{
+#ifndef NET_TCP_SIZE
+#define NET_TCP_SIZE 65536
+#endif
+
+   DWORD count;
+   INT status;
+
+   /* transfer fragments until complete buffer is transferred */
+
+   for (count = 0; count < buffer_size - NET_TCP_SIZE;) {
+      status = send(sock, buffer + count, NET_TCP_SIZE, flags);
+      if (status != -1)
+         count += status;
+      else {
+         return status;
+      }
+   }
+
+   while (count < buffer_size) {
+      status = send(sock, buffer + count, buffer_size - count, flags);
+      if (status != -1)
+         count += status;
+      else {
+         return status;
+      }
+   }
+
+   return count;
+}
+
+/*------------------------------------------------------------------*/
+
 int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 {
    int size, i, n, status, fh, port, sock, content_length, header_length, remote_id,
@@ -8743,7 +8786,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    send(sock, request, header_length, 0);
 
    /* send content */
-   send(sock, content, content_length, 0);
+   send_tcp(sock, content, content_length, 0);
 
    /* receive response */
    i = recv(sock, response, 10000, 0);
