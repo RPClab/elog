@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.47  2003/03/10 15:26:18  midas
+  Fixed another bug with parameter filter
+
   Revision 1.46  2003/03/10 15:15:57  midas
   Fixed bug with parameter filter
 
@@ -7101,11 +7104,11 @@ char *p;
     if (strstr(p, param) == NULL)
       return NULL;
 
-    p = strstr(str, param);
+    p = strstr(p, param);
   
     /* if parameter is value of another parameter, skip it */
     if (p > str+1 && *(p-1) == '=')
-      p = strstr(p, param)+strlen(param);
+      p += strlen(param);
     else
       return p;
 
@@ -7142,7 +7145,7 @@ char *p1, *p2, *s;
     return;
     }
 
-  if (param_in_str(str, param) == NULL)
+  if ((p1 = param_in_str(str, param)) == NULL)
     {
     if (strchr(str, '?'))
       strlcat(str, "&", size);
@@ -7155,7 +7158,7 @@ char *p1, *p2, *s;
     return;
     }
 
-  p1 = strstr(str, param) + strlen(param) + 1;
+  p1 += strlen(param) + 1;
   for (p2 = p1 ; *p2 && *p2 != '&' ; p2++);
   len = (int)p2 - (int)p1;
   if (len > (int)strlen(value))
