@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.133  2003/01/13 19:04:03  midas
+  Changed 'Mail' to 'EMail'
+
   Revision 2.132  2003/01/13 19:01:49  midas
   Fixed bug with logbook_dir
 
@@ -9695,7 +9698,7 @@ BOOL   first;
           {
           if (i==0)
             rsprintf("<tr><td colspan=2 bgcolor=#FFC020>");
-          rsprintf("%s <b>%s</b><br>\n", loc("Mail sent to"), getparam(str));
+          rsprintf("%s <b>%s</b><br>\n", loc("EMail sent to"), getparam(str));
           }
         else
           break;
