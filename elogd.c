@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.6  2002/06/10 10:38:22  midas
+  Added 'top level only' flag
+
   Revision 2.5  2002/06/07 14:56:53  midas
   Fixed time offset due to DST when using 'Date format'
 
@@ -1063,6 +1066,9 @@ THEME default_theme [] = {
 
   { "BGImage",                ""        },
   { "BGTImage",               ""        },
+
+  { "Thread image",           ""        },
+  { "Thread reply image",     ""        },
 
   { "" }
 
@@ -3811,7 +3817,7 @@ time_t now;
 void show_elog_find(LOGBOOK *lbs)
 {
 int    i, j, n_attr;
-char   str[256];
+char   str[256], mode[256];
 
   n_attr = scan_attributes(lbs->name);
 
@@ -3841,18 +3847,37 @@ char   str[256];
   rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n",
            gt("Categories border"), gt("Categories cellpadding"), gt("Frame color"));
 
+  rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
+  rsprintf("<b>Mode:</b>&nbsp;&nbsp;");
+
+  if (!getcfg(lbs->name, "Display mode", mode))
+    strcpy(mode, "Full");
+
   if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1)
     {
-    rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
-
-    if (getcfg(lbs->name, "Summary on default", str) && atoi(str) == 1)
-      rsprintf("<input type=checkbox checked name=mode value=\"summary\">%s\n", loc("Summary only"));
+    if (equal_ustring(mode, "Full"))
+      rsprintf("<input type=radio name=mode value=\"full\" checked>%s&nbsp;&nbsp;\n", loc("Display full message"));
     else
-      rsprintf("<input type=checkbox name=mode value=\"summary\">%s\n", loc("Summary only"));
-    rsprintf("</td></tr>\n");
+      rsprintf("<input type=radio name=mode value=\"full\">%s&nbsp;&nbsp;\n", loc("Display full message"));
+
+    if (equal_ustring(mode, "Summary"))
+      rsprintf("<input type=radio name=mode value=\"summary\" checked>%s&nbsp;&nbsp;\n", loc("Summary only"));
+    else
+      rsprintf("<input type=radio name=mode value=\"summary\">%s&nbsp;&nbsp;\n", loc("Summary only"));
+
+    if (equal_ustring(mode, "Threaded"))
+      rsprintf("<input type=radio name=mode value=\"threaded\" checked>%s&nbsp;&nbsp;\n", loc("Display threads"));
+    else
+      rsprintf("<input type=radio name=mode value=\"threaded\">%s&nbsp;&nbsp;\n", loc("Display threads"));
     }
-  rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
-  rsprintf("<input type=checkbox name=attach value=1>%s</td></tr>\n", loc("Show attachments"));
+
+  rsprintf("</td></tr>\n");
+
+  if (!getcfg(lbs->name, "Number attachments", str) || atoi(str) > 0)
+    {
+    rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
+    rsprintf("<input type=checkbox name=attach value=1>%s</td></tr>\n", loc("Show attachments"));
+    }
 
   rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
   rsprintf("<input type=checkbox name=printable value=1>%s</td></tr>\n", loc("Printable output"));
@@ -4145,22 +4170,509 @@ char   str[256];
 
 /*------------------------------------------------------------------*/
 
+void display_line(LOGBOOK *lbs, int message_id, int number, char *mode, 
+                  int level, BOOL printable, int n_line, int show_attachments, 
+                  char *date, char *reply_to,
+                  int n_attr_disp, char disp_attr[MAX_N_ATTR+4][NAME_LENGTH], 
+                  char attrib[MAX_N_ATTR][NAME_LENGTH],
+                  int n_attr, char *text,
+                  char attachment[MAX_ATTACHMENTS][256], char *encoding)
+{
+char str[256], ref[256], *nowrap, col[80], format[256], file_name[256];
+char slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
+char display[256], attr_icon[80];
+int  i, j, size, i_line, index, colspan;
+BOOL link_displayed, skip_comma;
+FILE *f;
+
+  sprintf(ref, "../%s/%d", lbs->name_enc, message_id);
+
+  if (equal_ustring(mode, "Summary"))
+    {
+    if (number % 2 == 0)
+      strcpy(col, gt("List bgcolor1"));
+    else
+      strcpy(col, gt("List bgcolor2"));
+    }
+  else if (equal_ustring(mode, "Full"))
+    strcpy(col, gt("List bgcolor1"));
+  else if (equal_ustring(mode, "Threaded"))
+    {
+    if (level == 0)
+      strcpy(col, gt("List bgcolor1"));
+    else
+      strcpy(col, gt("List bgcolor2"));
+    }
+
+  rsprintf("<tr>");
+
+  /* only single cell for threaded display */
+  if (equal_ustring(mode, "Threaded"))
+    {
+    rsprintf("<td align=left bgcolor=%s>", col);
+    for (i=0 ; i<level ; i++)
+      rsprintf("&nbsp;&nbsp;&nbsp;");
+    }
+
+  size = printable ? 2 : 3;
+  nowrap = printable ? "" : "nowrap";
+  link_displayed = FALSE;
+  skip_comma = FALSE;
+
+  if (equal_ustring(mode, "Threaded") && getcfg(lbs->name, "Thread display", display))
+    {
+    /* check if to use icon from attributes */
+    attr_icon[0] = 0;
+    if (getcfg(lbs->name, "Thread icon", attr_icon))
+      {
+      for (i=0 ; i<n_attr ; i++)
+        if (equal_ustring(attr_list[i], attr_icon))
+          break;
+      if (i<n_attr && attrib[i][0])
+        strcpy(attr_icon, attrib[i]);
+      else
+        attr_icon[0] = 0;
+      }
+
+    if (attr_icon[0])
+      rsprintf("<a href=\"%s\"><img border=0 src=\"icons/%s\"></a>&nbsp;", ref, attr_icon);
+    else
+      {
+      /* if top level only, display reply icon if message has a reply */
+      if (getcfg(lbs->name, "Top level only", str) && atoi(str) == 1 && reply_to[0])
+        {
+        if (*gt("Thread reply image"))
+          rsprintf("<a href=\"%s\"><img border=0 src=\"%s\"></a>&nbsp;", ref, gt("Thread reply image"));
+        else
+          rsprintf("<font size=%d><a href=\"%s\">&nbsp;%d >&nbsp;</a></font>",
+                    size, ref, message_id);
+        }
+      else
+        {
+        /* display standard icons */
+        if (level == 0)
+          {
+          if (*gt("Thread image"))
+            rsprintf("<a href=\"%s\"><img border=0 src=\"%s\"></a>&nbsp;", ref, gt("Thread image"));
+          else
+            rsprintf("<font size=%d><a href=\"%s\">&nbsp;%d&nbsp;</a></font>",
+                      size, ref, message_id);
+          }
+        else
+          {
+          if (*gt("Thread reply image"))
+            rsprintf("<a href=\"%s\"><img border=0 src=\"%s\"></a>&nbsp;", ref, gt("Thread reply image"));
+          else
+            rsprintf("<font size=%d><a href=\"%s\">&nbsp;%d&nbsp;</a></font>",
+                      size, ref, message_id);
+          }
+        }
+      }
+
+    j = build_subst_list(lbs, slist, svalue, attrib);
+    strsubst(display, slist, svalue, j);
+    rsputs2(display);
+    }
+  else
+    {
+    for (index=0 ; index<n_attr_disp ; index++)
+      {
+      if (equal_ustring(disp_attr[index], "#"))
+        {
+        if (equal_ustring(mode, "Threaded"))
+          {
+          if (level == 0)
+            {
+            if (*gt("Thread image"))
+              rsprintf("<a href=\"%s\"><img border=0 src=\"%s\"></a>&nbsp;", ref, gt("Thread image"));
+            else
+              rsprintf("<font size=%d><a href=\"%s\">&nbsp;%d&nbsp;</a></font>",
+                        size, ref, message_id);
+            }
+          else
+            {
+            if (*gt("Thread reply image"))
+              rsprintf("<a href=\"%s\"><img border=0 src=\"%s\"></a>&nbsp;", ref, gt("Thread reply image"));
+            else
+              rsprintf("<font size=%d><a href=\"%s\">&nbsp;%d&nbsp;</a></font>",
+                        size, ref, message_id);
+            }
+
+          skip_comma = TRUE;
+          }
+        else
+          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></font></td>",
+            col, size, ref, message_id);
+
+        link_displayed = TRUE;
+        }
+
+      if (equal_ustring(disp_attr[index], "Logbook"))
+        {
+        if (equal_ustring(mode, "Threaded"))
+          {
+          if (!link_displayed)
+            {
+            rsprintf("<font size=%d><a href=\"%s\">%s</a></font>", 
+                     size, ref, lbs->name);
+            link_displayed = TRUE;
+            }
+          else
+            if (skip_comma)
+              {
+              rsprintf("<font size=%d>%s</font>", size, lbs->name);
+              skip_comma = FALSE;
+              }
+            else
+              rsprintf("<font size=%d>, %s</font>", size, lbs->name);
+          }
+        else
+          {
+          if (!link_displayed)
+            {
+            rsprintf("<td align=center %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>", 
+              nowrap, col, size, ref, lbs->name);
+            link_displayed = TRUE;
+            }
+          else
+            rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, lbs->name);
+          }
+        }
+
+      if (equal_ustring(disp_attr[index], "Date"))
+        {
+        if (getcfg(lbs->name, "Date format", format))
+          {
+          struct tm ts;
+
+          memset(&ts, 0, sizeof(ts));
+
+          for (i=0 ; i<12 ; i++)
+            if (strncmp(date+4, mname[i], 3) == 0)
+              break;
+          ts.tm_mon = i;
+
+          ts.tm_mday = atoi(date+8);
+          ts.tm_hour = atoi(date+11);
+          ts.tm_min  = atoi(date+14);
+          ts.tm_sec  = atoi(date+17);
+          ts.tm_year = atoi(date+20)-1900;
+
+          strftime(str, sizeof(str), format, &ts);
+          }
+        else
+          strcpy(str, date);
+
+        if (equal_ustring(mode, "Threaded"))
+          {
+          if (!link_displayed)
+            {
+            rsprintf("<font size=%d><a href=\"%s\">%s</a></font>", 
+                     size, ref, str);
+            link_displayed = TRUE;
+            }
+          else
+            if (skip_comma)
+              {
+              rsprintf("<font size=%d>  %s</font>", size, str);
+              skip_comma = FALSE;
+              }
+            else
+              rsprintf("<font size=%d>, %s</font>", size, str);
+          }
+        else
+          {
+          if (!link_displayed)
+            {
+            rsprintf("<td align=center %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>", 
+              nowrap, col, size, ref, str);
+            link_displayed = TRUE;
+            }
+          else
+            rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, str);
+          }
+        }
+
+      for (i=0 ; i<n_attr ; i++)
+        if (equal_ustring(disp_attr[index], attr_list[i]))
+          {
+          if (equal_ustring(mode, "Threaded"))
+            {
+            if (equal_ustring(attr_options[i][0], "boolean"))
+              {
+              if (atoi(attrib[i]) == 1)
+                {
+                rsprintf("<font size=%d>", size);
+                if (!link_displayed)
+                  {
+                  rsprintf("<a href=\"%s\">", ref);
+                  rsputs2(attr_list[i]);
+                  rsprintf("</a>");
+                  link_displayed = TRUE;
+                  }
+                else
+                  {
+                  if (skip_comma)
+                    {
+                    rsprintf(" ");
+                    skip_comma = FALSE;
+                    }
+                  else
+                    rsprintf(", ");
+
+                  rsputs2(attrib[i]);
+                  }
+                rsprintf("&nbsp</font>");
+                }
+              }
+
+            else if (attr_flags[i] & AF_ICON)
+              {
+              if (attrib[i][0])
+                rsprintf("&nbsp;<img src=\"icons/%s\">&nbsp;", attrib[i]);
+              }
+
+            else
+              {
+              rsprintf("<font size=%d>", size);
+              if (!link_displayed)
+                {
+                rsprintf("<a href=\"%s\">", ref);
+                rsputs2(attrib[i]);
+                rsprintf("</a>");
+                link_displayed = TRUE;
+                }
+              else
+                {
+                if (skip_comma)
+                  {
+                  rsprintf(" ");
+                  skip_comma = FALSE;
+                  }
+                else
+                  rsprintf(", ");
+
+                rsputs2(attrib[i]);
+                }
+              rsprintf("</font>");
+              }
+            }
+          else
+            {
+            if (equal_ustring(attr_options[i][0], "boolean"))
+              {
+              if (atoi(attrib[i]) == 1)
+                rsprintf("<td align=center bgcolor=%s><input type=checkbox checked disabled></td>\n", col);
+              else
+                rsprintf("<td align=center bgcolor=%s><input type=checkbox disabled></td>\n", col);
+              }
+
+            else if (attr_flags[i] & AF_ICON)
+              {
+              rsprintf("<td align=center bgcolor=%s>", col);
+              if (attrib[i][0])
+                rsprintf("<img src=\"icons/%s\">", attrib[i]);
+              rsprintf("&nbsp</td>");
+              }
+
+            else
+              {
+              rsprintf("<td align=center bgcolor=%s><font size=%d>", col, size);
+              if (!link_displayed)
+                {
+                rsprintf("<a href=\"%s\">", ref);
+                rsputs2(attrib[i]);
+                rsprintf("</a>");
+                link_displayed = TRUE;
+                }
+              else
+                rsputs2(attrib[i]);
+              rsprintf("&nbsp</font></td>");
+              }
+            }
+          }
+        }
+    }
+
+  if (equal_ustring(mode, "Threaded"))
+    rsprintf("</td>\n");
+
+  if (equal_ustring(mode, "Summary") && n_line > 0)
+    {
+    rsprintf("<td bgcolor=%s><font size=%d>", col, size);
+    for (i=i_line=0 ; i<sizeof(str)-1 ; i++)
+      {
+      str[i] = text[i];
+      if (str[i] == '\n')
+        i_line++;
+
+      if (i_line == n_line)
+        break;
+      }
+    str[i] = 0;
+
+    /* always encode, not to rip apart HTML documents,
+       e.g. only the start of a table */
+    strencode(str);
+
+    rsprintf("&nbsp;</font></td>\n");
+    }
+
+  rsprintf("</tr>\n");
+
+  colspan = n_attr_disp;
+
+  if (equal_ustring(mode, "Full"))
+    {
+    if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1)
+      {
+      rsprintf("<tr><td bgcolor=#FFFFFF colspan=%d><font size=%d>", colspan, size);
+
+      if (equal_ustring(encoding, "plain"))
+        {
+        rsputs("<pre>");
+        rsputs2(text);
+        rsputs("</pre>");
+        }
+      else
+        rsputs(text);
+
+      rsprintf("</font></td></tr>\n");
+      }
+
+    if (!show_attachments && attachment[0][0])
+      {
+      rsprintf("<tr><td bgcolor=#FFFFFF colspan=%d><font size=%d>", colspan, size);
+
+      if (attachment[1][0])
+        rsprintf("%s: ", loc("Attachments"));
+      else
+        rsprintf("%s: ", loc("Attachment"));
+      }
+
+    for (index = 0 ; index < MAX_ATTACHMENTS ; index++)
+      {
+      if (attachment[index][0])
+        {
+        strcpy(str, attachment[index]);
+        str[13] = 0;
+        sprintf(ref, "../%s/%s/%s", lbs->name_enc, str, attachment[index]+14);
+
+        for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
+          str[i] = toupper(attachment[index][i]);
+        str[i] = 0;
+
+        if (!show_attachments)
+          {
+          rsprintf("<a href=\"%s\"><b>%s</b></a>&nbsp;&nbsp;&nbsp;&nbsp; ",
+                    ref, attachment[index]+14);
+          }
+        else
+          {
+          if (strstr(str, ".GIF") ||
+              strstr(str, ".JPG") ||
+              strstr(str, ".JPEG") ||
+              strstr(str, ".PNG"))
+            {
+            rsprintf("<tr><td colspan=%d bgcolor=%s><b>%s %d:</b> <a href=\"%s\">%s</a>\n",
+                      colspan, gt("List bgcolor2"), loc("Attachment"), index+1, ref, attachment[index]+14);
+            if (show_attachments)
+              rsprintf("</td></tr><tr><td colspan=%d bgcolor=#FFFFFF><img src=\"%s\"></td></tr>", colspan, ref);
+            }
+          else
+            {
+            rsprintf("<tr><td colspan=%d bgcolor=%s><b>%s %d:</b> <a href=\"%s\">%s</a>\n",
+                      colspan, gt("List bgcolor2"), loc("Attachment"), index+1, ref, attachment[index]+14);
+
+            if ((strstr(str, ".TXT") ||
+                 strstr(str, ".ASC") ||
+                 strchr(str, '.') == NULL) && show_attachments)
+              {
+              /* display attachment */
+              rsprintf("<br><font size=%d><pre>", size);
+
+              strcpy(file_name, lbs->data_dir);
+
+              strcat(file_name, attachment[index]);
+
+              f = fopen(file_name, "rt");
+              if (f != NULL)
+                {
+                while (!feof(f))
+                  {
+                  str[0] = 0;
+                  fgets(str, sizeof(str), f);
+                  rsputs2(str);
+                  }
+                fclose(f);
+                }
+
+              rsprintf("</pre>\n");
+              }
+            rsprintf("</font></td></tr>\n");
+            }
+          }
+        }
+      }
+
+    if (!show_attachments && attachment[0][0])
+      rsprintf("</font></td></tr>\n");
+    }
+}
+
+/*------------------------------------------------------------------*/
+
+void display_reply(LOGBOOK *lbs, int message_id, int printable, int n_attr_disp, 
+                   char disp_attr[MAX_N_ATTR+4][NAME_LENGTH], int level)
+{
+char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
+       in_reply_to[80], reply_to[256], attachment[MAX_ATTACHMENTS][256], encoding[80];
+int    status, n_attr, size;
+char   *p;
+
+  n_attr = scan_attributes(lbs->name);
+  reply_to[0] = 0;
+  size = sizeof(text);
+  status = el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
+                       text, &size, in_reply_to, reply_to,
+                       attachment, encoding);
+
+  display_line(lbs, message_id, 0, "threaded", level, printable, 0,
+               FALSE, date, reply_to, n_attr_disp, disp_attr, 
+               attrib, n_attr, NULL, NULL, encoding);
+
+  if (reply_to[0])
+    {
+    p = reply_to;
+    do
+      {
+      display_reply(lbs, atoi(p), printable, n_attr_disp, disp_attr, level+1);
+
+      while (*p && isdigit(*p))
+        p++;
+      while (*p && (*p == ',' || *p == ' '))
+        p++;
+      } while(*p);
+    }
+}
+
+/*------------------------------------------------------------------*/
+
 void show_elog_submit_find(LOGBOOK *lbs, INT past_n, INT last_n)
 {
-int    i, j, n, size, status, d1, m1, y1, d2, m2, y2, index, colspan, i_line, n_line, i_col;
+int    i, j, n, size, status, d1, m1, y1, d2, m2, y2, n_line;
 int    current_year, current_month, current_day, printable, n_logbook, lindex, n_attr,
        reverse, n_attr_disp, n_found, search_all, message_id;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR+4][NAME_LENGTH],
        list[10000], text[TEXT_SIZE], text1[TEXT_SIZE], text2[TEXT_SIZE],
        in_reply_to[80], reply_to[256], attachment[MAX_ATTACHMENTS][256], encoding[80];
-char   str[256], ref[256], file_name[256], col[80];
-char   *nowrap, format[80];
+char   str[256], col[80];
+char   mode[80];
 char   menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH];
 char   *p , *pt, *pt1, *pt2;
-BOOL   full, show_attachments, link_displayed;
+BOOL   show_attachments;
 time_t ltime, ltime_start, ltime_end, ltime_current, now;
 struct tm tms, *ptms;
-FILE   *f;
 
   n_attr = scan_attributes(lbs->name);
 
@@ -4195,18 +4707,17 @@ FILE   *f;
     show_standard_title(lbs->name, str, 0);
 
   /* get mode */
+  strcpy(mode, "Full");
+
   if (past_n || last_n)
     {
-    if (getcfg(lbs->name, "Summary on default", str))
-      full = !atoi(str);
-    else
-      full = TRUE;
-
+    if (getcfg(lbs->name, "Display Mode", str))
+      strcpy(mode, str);
     show_attachments = FALSE;
     }
   else
     {
-    full = !(*getparam("mode"));
+    strcpy(mode, getparam("mode"));
     show_attachments = (*getparam("attach") > 0);
     }
 
@@ -4525,7 +5036,6 @@ FILE   *f;
            printable ? "1" : gt("Border width"), gt("Categories cellpadding"), gt("Frame color"));
 
   strcpy(col, gt("Categories bgcolor1"));
-  rsprintf("<tr>\n");
 
   size = printable ? 2 : 3;
 
@@ -4552,43 +5062,42 @@ FILE   *f;
       }
     }
 
-  for (i=0 ; i<n_attr_disp ; i++)
+  if (equal_ustring(mode, "threaded"))
     {
-    if (equal_ustring(disp_attr[i], "#"))
-      rsprintf("<td width=10%% align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>#</b></td>", 
-               col, size);
-
-    if (equal_ustring(disp_attr[i], "Logbook"))
-      rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Logbook</b></td>", 
-               col, size);
-
-    if (equal_ustring(disp_attr[i], "Date"))
-      rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Date</b></td>", 
-               col, size);
     }
-
-  for (i=0 ; i<n_attr ; i++)
+  else
     {
-    for (j=0 ; j<n_attr_disp ; j++)
-      if (equal_ustring(disp_attr[j], attr_list[i]))
-        break;
+    rsprintf("<tr>\n");
+  
+    for (i=0 ; i<n_attr_disp ; i++)
+      {
+      if (equal_ustring(disp_attr[i], "#"))
+        rsprintf("<td width=10%% align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>#</b></td>", 
+                 col, size);
 
-    if (j == n_attr_disp)
-      continue;
+      if (equal_ustring(disp_attr[i], "Logbook"))
+        rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Logbook</b></td>", 
+                 col, size);
 
-    rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>%s</b></td>",
-              col, size, attr_list[i]);
+      if (equal_ustring(disp_attr[i], "Date"))
+        rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Date</b></td>", 
+                 col, size);
+
+      for (j=0 ; j<n_attr ; j++)
+        if (equal_ustring(disp_attr[i], attr_list[j]))
+          rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>%s</b></td>",
+                    col, size, attr_list[j]);
+      }
+
+    if (!equal_ustring(mode, "Full") && n_line > 0)
+      rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Text</b></td>",
+               col, size);
+
+    rsprintf("</tr>\n\n");
     }
-
-  if (!full && n_line > 0)
-    rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Text</b></td>",
-             col, size);
-
-  rsprintf("</tr>\n\n");
 
   /*---- do find ----*/
 
-  i_col = 0;
   n_found = 0;
 
   if (search_all)
@@ -4784,7 +5293,7 @@ FILE   *f;
               /* here: \001='<', \002='>', /003='"', and \004=' ' */
               /* see also rsputs2(char* ) */
 
-              if (equal_ustring(encoding, "plain") || !full)
+              if (equal_ustring(encoding, "plain") || !equal_ustring(mode, "Full"))
                 strcpy(pt2, "\001B\004style=\003color:black;background-color:#ffff66\003\002");
               else
                 strcpy(pt2, "<B style=\"color:black;background-color:#ffff66\">");
@@ -4797,7 +5306,7 @@ FILE   *f;
               pt += strlen(str);
 
               /* add coloring 2nd part */
-              if (equal_ustring(encoding, "plain") || !full)
+              if (equal_ustring(encoding, "plain") || !equal_ustring(mode, "Full"))
                 strcpy(pt2, "\001/B\002");
               else
                 strcpy(pt2, "</B>");
@@ -4809,254 +5318,33 @@ FILE   *f;
           strcpy(text, text2);
           }
 
+        /* check if reply */
+        if (equal_ustring(mode, "threaded") && in_reply_to[0])
+          goto skip;
+
         /*---- filter passed: display line ----*/
 
         n_found++;
 
-        sprintf(ref, "../%s/%d", lbs->name_enc, message_id);
+        display_line(lbs, message_id, n_found, mode, 0, printable, n_line,
+                     show_attachments, date, reply_to, n_attr_disp, disp_attr, 
+                     attrib, n_attr, text, attachment, encoding);
 
-        if (!full)
+        if (equal_ustring(mode, "threaded"))
           {
-          if (i_col % 2 == 0)
-            strcpy(col, gt("List bgcolor1"));
-          else
-            strcpy(col, gt("List bgcolor2"));
-          i_col++;
-          }
-        else
-          strcpy(col, gt("List bgcolor1"));
-        rsprintf("<tr>");
-
-        size = printable ? 2 : 3;
-        nowrap = printable ? "" : "nowrap";
-        link_displayed = FALSE;
-
-        for (j=0 ; j<n_attr_disp ; j++)
-          if (equal_ustring(disp_attr[j], "#"))
-            break;
-
-        if (j < n_attr_disp)
-          {
-          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></font></td>",
-            col, size, ref, n_found);
-          link_displayed = TRUE;
-          }
-
-        for (j=0 ; j<n_attr_disp ; j++)
-          if (equal_ustring(disp_attr[j], "Logbook"))
-            break;
-
-        if (j < n_attr_disp)
-          {
-          if (!link_displayed)
+          if (reply_to[0] && (!getcfg(lbs->name, "Top level only", str) || atoi(str) == 0))
             {
-            rsprintf("<td align=center %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>", 
-              nowrap, col, size, ref, lbs->name);
-            link_displayed = TRUE;
-            }
-          else
-            rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, lbs->name);
-          }
-
-        for (j=0 ; j<n_attr_disp ; j++)
-          if (equal_ustring(disp_attr[j], "Date"))
-            break;
-
-        if (j < n_attr_disp)
-          {
-          if (getcfg(lbs->name, "Date format", format))
-            {
-            struct tm ts;
-
-            memset(&ts, 0, sizeof(ts));
-
-            for (i=0 ; i<12 ; i++)
-              if (strncmp(date+4, mname[i], 3) == 0)
-                break;
-            ts.tm_mon = i;
-
-            ts.tm_mday = atoi(date+8);
-            ts.tm_hour = atoi(date+11);
-            ts.tm_min  = atoi(date+14);
-            ts.tm_sec  = atoi(date+17);
-            ts.tm_year = atoi(date+20)-1900;
-
-            strftime(str, sizeof(str), format, &ts);
-            }
-          else
-            strcpy(str, date);
-
-          if (!link_displayed)
-            {
-            rsprintf("<td align=center %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>", 
-              nowrap, col, size, ref, str);
-            link_displayed = TRUE;
-            }
-          else
-            rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, str);
-          }
-
-        for (i=0 ; i<n_attr ; i++)
-          {
-          for (j=0 ; j<n_attr_disp ; j++)
-            if (equal_ustring(disp_attr[j], attr_list[i]))
-              break;
-
-          if (j == n_attr_disp)
-            continue;
-
-          if (equal_ustring(attr_options[i][0], "boolean"))
-            {
-            if (atoi(attrib[i]) == 1)
-              rsprintf("<td align=center bgcolor=%s><input type=checkbox checked disabled></td>\n", col);
-            else
-              rsprintf("<td align=center bgcolor=%s><input type=checkbox disabled></td>\n", col);
-            }
-
-          else if (attr_flags[i] & AF_ICON)
-            {
-            rsprintf("<td align=center bgcolor=%s>", col);
-            if (attrib[i][0])
-              rsprintf("<img src=\"icons/%s\">", attrib[i]);
-            rsprintf("&nbsp</td>");
-            }
-
-          else
-            {
-            rsprintf("<td align=center bgcolor=%s><font size=%d>", col, size);
-            if (!link_displayed)
+            p = reply_to;
+            do
               {
-              rsprintf("<a href=\"%s\">", ref);
-              rsputs2(attrib[i]);
-              rsprintf("</a>");
-              link_displayed = TRUE;
-              }
-            else
-              rsputs2(attrib[i]);
-            rsprintf("&nbsp</font></td>");
+              display_reply(lbs, atoi(p), printable, n_attr_disp, disp_attr, 1);
+
+              while (*p && isdigit(*p))
+                p++;
+              while (*p && (*p == ',' || *p == ' '))
+                p++;
+              } while(*p);
             }
-          }
-
-        if (!full && n_line > 0)
-          {
-          rsprintf("<td bgcolor=%s><font size=%d>", col, size);
-          for (i=i_line=0 ; i<sizeof(str)-1 ; i++)
-            {
-            str[i] = text[i];
-            if (str[i] == '\n')
-              i_line++;
-
-            if (i_line == n_line)
-              break;
-            }
-          str[i] = 0;
-
-          /* always encode, not to rip apart HTML documents,
-             e.g. only the start of a table */
-          strencode(str);
-
-          rsprintf("&nbsp;</font></td>\n");
-          }
-
-        rsprintf("</tr>\n");
-
-        colspan = n_attr_disp;
-
-        if (full)
-          {
-          if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1)
-            {
-            rsprintf("<tr><td bgcolor=#FFFFFF colspan=%d><font size=%d>", colspan, size);
-
-            if (equal_ustring(encoding, "plain"))
-              {
-              rsputs("<pre>");
-              rsputs2(text);
-              rsputs("</pre>");
-              }
-            else
-              rsputs(text);
-
-            rsprintf("</font></td></tr>\n");
-            }
-
-          if (!show_attachments && attachment[0][0])
-            {
-            rsprintf("<tr><td bgcolor=#FFFFFF colspan=%d><font size=%d>", colspan, size);
-
-            if (attachment[1][0])
-              rsprintf("%s: ", loc("Attachments"));
-            else
-              rsprintf("%s: ", loc("Attachment"));
-            }
-
-          for (index = 0 ; index < MAX_ATTACHMENTS ; index++)
-            {
-            if (attachment[index][0])
-              {
-              strcpy(str, attachment[index]);
-              str[13] = 0;
-              sprintf(ref, "../%s/%s/%s", lbs->name_enc, str, attachment[index]+14);
-
-              for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
-                str[i] = toupper(attachment[index][i]);
-              str[i] = 0;
-
-              if (!show_attachments)
-                {
-                rsprintf("<a href=\"%s\"><b>%s</b></a>&nbsp;&nbsp;&nbsp;&nbsp; ",
-                          ref, attachment[index]+14);
-                }
-              else
-                {
-                if (strstr(str, ".GIF") ||
-                    strstr(str, ".JPG") ||
-                    strstr(str, ".JPEG") ||
-                    strstr(str, ".PNG"))
-                  {
-                  rsprintf("<tr><td colspan=%d bgcolor=%s><b>%s %d:</b> <a href=\"%s\">%s</a>\n",
-                            colspan, gt("List bgcolor2"), loc("Attachment"), index+1, ref, attachment[index]+14);
-                  if (show_attachments)
-                    rsprintf("</td></tr><tr><td colspan=%d bgcolor=#FFFFFF><img src=\"%s\"></td></tr>", colspan, ref);
-                  }
-                else
-                  {
-                  rsprintf("<tr><td colspan=%d bgcolor=%s><b>%s %d:</b> <a href=\"%s\">%s</a>\n",
-                            colspan, gt("List bgcolor2"), loc("Attachment"), index+1, ref, attachment[index]+14);
-
-                  if ((strstr(str, ".TXT") ||
-                       strstr(str, ".ASC") ||
-                       strchr(str, '.') == NULL) && show_attachments)
-                    {
-                    /* display attachment */
-                    rsprintf("<br><font size=%d><pre>", size);
-
-                    strcpy(file_name, lbs->data_dir);
-
-                    strcat(file_name, attachment[index]);
-
-                    f = fopen(file_name, "rt");
-                    if (f != NULL)
-                      {
-                      while (!feof(f))
-                        {
-                        str[0] = 0;
-                        fgets(str, sizeof(str), f);
-                        rsputs2(str);
-                        }
-                      fclose(f);
-                      }
-
-                    rsprintf("</pre>\n");
-                    }
-                  rsprintf("</font></td></tr>\n");
-                  }
-                }
-              }
-            }
-
-          if (!show_attachments && attachment[0][0])
-            rsprintf("</font></td></tr>\n");
           }
         }
 
@@ -5729,7 +6017,7 @@ BOOL   first;
 
   if (equal_ustring(command, loc("Search")))
     {
-    if (dec_path[0] && atoi(dec_path) == 0)
+    if (dec_path[0] && atoi(dec_path) == 0 && strchr(dec_path, '/') != NULL)
       {
       sprintf(str, "Invalid URL: <b>%s</b>", dec_path);
       show_error(str);
