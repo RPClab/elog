@@ -832,8 +832,20 @@ as described unter the "<I>Subst &lt;attribute&gt;</I>" option.
 <LI><b><code>List display = &lt;list&gt;</code></b>
 <br>
 Specified the display and order of items in a message listing page or a search
-result page. In addition to all attributes, one can specify here <b>"ID"</b> for
-the message ID and <b>"Date"</b>. The restriction to certain
+result page. In addition to all attributes, following items can be specified:
+<br><br>
+
+<UL>
+<LI><b><code>ID</code></b> for the entry ID
+<LI><b><code>Date</code></b> for the entry date/time
+<LI><b><code>Edit</code></b> to display a column with an edit icon to directly edit
+and entry
+<LI><b><code>Delete</code></b> to display a column with a delete icon to directly delete
+and entry
+</UL>
+<br>
+
+The restriction to certain
 attributes can be helpful if many attributes are defined in a logbook, which
 usually makes the table too big to fit in the browser. The default
 is<br>
@@ -1641,7 +1653,7 @@ The other (remote) server does not need to have any mirror option in its configu
 file, since the local server simulates a web browser to send and retrieve messages to
 the remote server. It is however allowed that the remote server also contains some
 mirror settings in the configuration file, this way the synchronization can be
-started from both servers.<p>  
+started from both servers.<p>
 
 <li><b><code>Mirror config = 0 | 1</code></b><br><br>
 
