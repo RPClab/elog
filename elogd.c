@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.31  2002/06/25 12:08:32  midas
+  Version 2.0.3
+
   Revision 2.30  2002/06/25 11:52:24  midas
   Fixed problem with changeing passwords
 
@@ -194,7 +197,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.0.2"
+#define VERSION "2.0.3"
 
 #include <stdio.h>
 #include <sys/types.h>
