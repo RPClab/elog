@@ -327,21 +327,20 @@ Web server, which does not serve files like standard Web servers, but
 reads logbook entries from its database and formats them into HTML. Since
 only forms and tables are used, no Java or Javascript is necessary, which makes the logbook display very fast. The system does not use any images on purpose to reduce the amount of data to be transferred. Since the <b>ELOG</b> daemon contains its own <i>http</i> server, no additional server like Apache is required.
 <p>
-The "<I>database</I>" in which <b>ELOG</b> saves its entries is in plain ASCII format. One file is
-created for each day in the form <b><code>YYMMDD.log</b></code> (where
-YY is the year, MM the month and DD the day). The only non-ASCII character
-is a form-feed at the end of each message. If  a log file is sent directly
-to a printer, each message is therefore printed on a separate page. Note
-that the log files should not be edited manually, since this could invalidate
-the internal database structure (each header contains the message length
-in bytes, which would then become incorrect).
-<p>
+The "<I>database</I>" in which <b>ELOG</b> saves its entries is in plain ASCII format.
+One file is created for each day in the form <b><code>YYMMDDa.log</b></code>
+(where YY is the year, MM the month and DD the day). For ELOG versions 1.x.x,
+the format was <b><code>YYMMDD.log</code></b>. Messages are separated internally
+by the string <b><code>$@MID@$</code></b>. If this string is entered in a message
+(main body text or attribute), it gets converted automatically in order not
+to invalidate the database structure.<p>
+
 If attachments are submitted, they are saved as separate files named
 <b><code>YYMMDD_HHMMSS_name</code></b> - where in addition to the date the
 time is specified and <b><code>name</code></b> is the original file name of
 the attachment. To copy the database to another computer, only the *.log
 files and the attachment files need to be copied. To copy for example all
-files from March 2001, just select them with <b><code>0103??.log</code>
+files from March 2001, just select them with <b><code>0103??a.log</code>
 </b> and <b><code>0103??_*</code></b>.
 <p>
 
