@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.260  2004/02/18 18:13:22  midas
+   Made 'main tab' work with top level groups
+
    Revision 1.259  2004/02/18 14:18:10  midas
    Fixed synchronization problems with other language
 
@@ -5230,8 +5233,12 @@ void show_standard_title(char *logbook, char *text, int printable)
       for (level = 0;; level++) {
          rsprintf("<tr><td class=\"tabs\">\n");
 
-         if (level == 0 && getcfg("global", "main tab", str))
+         if (level == 0 && getcfg("global", "main tab", str) && !getcfg_topgroup())
             rsprintf("<span class=\"ltab\"><a href=\"../\">%s</a></span>\n", str);
+
+         if (level == 1 && getcfg("global", "main tab", str) && getcfg_topgroup())
+            rsprintf("<span class=\"ltab\"><a href=\"../%s/\">%s</a></span>\n", 
+               getcfg_topgroup(), str);
 
          /* iterate through members of this group */
          for (i = 0; i < pnode->n_members; i++) {
