@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.540  2005/01/21 20:17:20  ritt
+   Display current entry in thread bold
+
    Revision 1.539  2005/01/19 21:08:32  midas
    Display thread in single entry page if present
 
@@ -13246,20 +13249,25 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             attr_icon[0] = 0;
       }
 
-      if (attr_icon[0])
-         rsprintf("<a href=\"%s\"><img border=0 src=\"icons/%s\"></a>&nbsp;", ref, attr_icon);
+      if (highlight != message_id)
+         rsprintf("<a href=\"%s\">", ref);
+
+      if (attr_icon[0]) 
+         rsprintf("<img border=0 src=\"icons/%s\"></a>&nbsp;", attr_icon);
       else {
          /* if top level only, display reply icon if message has a reply */
          if (getcfg(lbs->name, "Top level only", str, sizeof(str)) && atoi(str) == 1 && reply_to[0])
-            rsprintf("<a href=\"%s\"><img border=0 src=\"reply.gif\"></a>&nbsp;", ref);
+            rsprintf("<img border=0 src=\"reply.gif\">&nbsp;");
          else {
             /* display standard icons */
             if (level == 0)
-               rsprintf("<a href=\"%s\"><img border=0 src=\"entry.gif\"></a>&nbsp;", ref);
+               rsprintf("<img border=0 src=\"entry.gif\">&nbsp;");
             else
-               rsprintf("<a href=\"%s\"><img border=0 src=\"reply.gif\"></a>&nbsp;", ref);
+               rsprintf("<img border=0 src=\"reply.gif\">&nbsp;");
          }
       }
+      if (highlight != message_id)
+         rsprintf("</a>");
 
       j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
       sprintf(str, "%d", message_id);
@@ -13269,14 +13277,20 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
       strsubst(display, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
 
-      rsprintf("<a href=\"%s\">", ref);
+      if (highlight != message_id)
+         rsprintf("<a href=\"%s\">", ref);
+      else
+         rsprintf("<b>");
 
       if (is_html(display))
          rsputs(display);
       else
          rsputs2(display);
 
-      rsprintf("</a>\n");
+      if (highlight != message_id)
+         rsprintf("</a>", ref);
+      else
+         rsprintf("</b>");
    } else {
       /* show select box */
       if (select && !strieq(mode, "Threaded")) {
@@ -13290,8 +13304,12 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          rsprintf("</td>\n");
       }
 
-      if (strieq(mode, "Threaded"))
-         rsprintf("<a href=\"%s\">", ref);
+      if (strieq(mode, "Threaded")) {
+         if (highlight != message_id)
+            rsprintf("<a href=\"%s\">", ref);
+         else
+            rsprintf("<b>");
+      }
 
       for (index = 0; index < n_attr_disp; index++) {
          if (strieq(disp_attr[index], loc("ID"))) {
@@ -13479,8 +13497,12 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             }
       }
 
-      if (strieq(mode, "Threaded"))
-         rsprintf("</a>\n");
+      if (strieq(mode, "Threaded")) {
+         if (highlight != message_id)
+            rsprintf("</a>");
+         else
+            rsprintf("</b>");
+      }
    }
 
    if (strieq(mode, "Threaded") && expand > 1 && show_text) {
