@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.330  2004/06/04 14:51:40  midas
+   Implemented stristr
+
    Revision 1.329  2004/06/04 14:03:15  midas
    Fixed stack overflow under Windows on resubmit of entry
 
@@ -826,6 +829,35 @@ BOOL strieq(const char *str1, const char *str2)
       return FALSE;
 
    return TRUE;
+}
+
+char *stristr(const char *str, const char *pattern)
+{
+   char c1, c2, *ps;
+
+   if (str == NULL || pattern == NULL)
+      return NULL;
+
+   while (*str) {
+      ps = (char *)str;
+      c1 = *str;
+      c2 = *pattern;
+      if (my_toupper(c1) == my_toupper(c2)) {
+         while (*pattern) {
+            c1 = *ps++;
+            c2 = *pattern++;
+
+            if (my_toupper(c1) != my_toupper(c2))
+               break;
+         }
+
+         if (!*pattern)
+            return (char *)str;
+      }
+      str++;
+   }
+
+   return NULL;
 }
 
 /*---- strlcpy and strlcat to avoid buffer overflow ----------------*/
@@ -11503,10 +11535,10 @@ char *param_in_str(char *str, char *param)
 
    p = str;
    do {
-      if (strstr(p, param) == NULL)
+      if (stristr(p, param) == NULL)
          return NULL;
 
-      p = strstr(p, param);
+      p = stristr(p, param);
 
       /* if parameter is value of another parameter, skip it */
       if (p > str + 1 && *(p - 1) == '=')
@@ -12377,6 +12409,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             p--;
          strcpy(p, pt);
       }  
+      if (strchr(str, '&') && !strchr(str, '?'))
+         *strchr(str, '&') = '?';
       redirect(lbs, str);
    }
 
