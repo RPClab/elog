@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.11  2003/02/14 22:22:12  midas
+  GET without '/' does not crash any more elogd
+
   Revision 1.10  2003/02/14 22:07:56  midas
   Made most HTML pages pass validator.w3.org
 
@@ -11529,7 +11532,15 @@ struct timeval       timeout;
       return_length = 0;
 
       /* extract logbook */
-      p = strchr(net_buffer, '/')+1;
+      if (strchr(net_buffer, '/') == NULL ||
+          strchr(net_buffer, '\r') == NULL ||
+          strstr(net_buffer, "HTTP") == NULL)
+        {
+        /* invalid request, make valid */
+        strcpy(net_buffer, "GET / HTTP/1.0\r\n\r\n");
+        }
+
+      p = strchr(net_buffer, '/');
       logbook[0] = 0;
       for (i=0 ; *p && *p != '/' && *p != '?' && *p != ' '; i++)
         logbook[i] = *p++;
