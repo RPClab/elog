@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.199  2004/01/19 09:13:28  midas
+   Removed '{n}' in quick filter and find page list
+
    Revision 1.198  2004/01/18 21:47:11  midas
    Continued working on synchronizing
 
@@ -6454,7 +6457,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 void show_find_form(LOGBOOK * lbs)
 {
    int i, j;
-   char str[NAME_LENGTH], mode[256], comment[256];
+   char str[NAME_LENGTH], mode[NAME_LENGTH], comment[NAME_LENGTH], option[NAME_LENGTH];
 
    /*---- header ----*/
 
@@ -6625,26 +6628,35 @@ void show_find_form(LOGBOOK * lbs)
          /* display image for icon */
          else if (attr_flags[i] & AF_ICON) {
             for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
-               sprintf(str, "Icon comment %s", attr_options[i][j]);
+               strcpy(option, attr_options[i][j]);
+               if (strchr(option, '{'))
+                  *strchr(option, '{') = 0;
+
+               sprintf(str, "Icon comment %s", option);
                getcfg(lbs->name, str, comment);
 
                rsprintf("<nobr><input type=radio name=\"%s\" value=\"%s\">", attr_list[i],
-                        attr_options[i][j]);
+                        option);
 
                if (comment[0])
                   rsprintf("<img src=\"icons/%s\" alt=\"%s\"></nobr>\n",
-                           attr_options[i][j], comment);
+                           option, comment);
                else
-                  rsprintf("<img src=\"icons/%s\"></nobr>\n", attr_options[i][j]);
+                  rsprintf("<img src=\"icons/%s\"></nobr>\n", option);
             }
          }
 
          else {
             rsprintf("<select name=\"%s\">\n", attr_list[i]);
             rsprintf("<option value=\"\">\n");
-            for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++)
-               rsprintf("<option value=\"%s\">%s\n", attr_options[i][j],
-                        attr_options[i][j]);
+            for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
+
+               strcpy(option, attr_options[i][j]);
+               if (strchr(option, '{'))
+                  *strchr(option, '{') = 0;
+
+               rsprintf("<option value=\"%s\">%s\n", option, option);
+            }
             rsprintf("</select>\n");
          }
       }
@@ -9195,7 +9207,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, int n_page, BOOL to
 {
    int cur_exp, n, i, j, index;
    char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH];
-   char list[MAX_N_LIST][NAME_LENGTH];
+   char list[MAX_N_LIST][NAME_LENGTH], option[NAME_LENGTH];
 
    rsprintf("<tr><td class=\"menuframe\">\n");
    rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
@@ -9327,15 +9339,19 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, int n_page, BOOL to
                         getcfg(lbs->name, str, comment);
                      }
 
+                     strcpy(option, attr_options[i][j]);
+                     if (strchr(option, '{'))
+                        *strchr(option, '{') = 0;
+
                      if (comment[0] == 0)
-                        strcpy(comment, attr_options[i][j]);
+                        strcpy(comment, option);
 
                      if (isparam(attr_list[i])
-                         && equal_ustring(attr_options[i][j], getparam(attr_list[i])))
-                        rsprintf("<option selected value=\"%s\">%s\n", attr_options[i][j],
+                         && equal_ustring(option, getparam(attr_list[i])))
+                        rsprintf("<option selected value=\"%s\">%s\n", option,
                                  comment);
                      else
-                        rsprintf("<option value=\"%s\">%s\n", attr_options[i][j],
+                        rsprintf("<option value=\"%s\">%s\n", option,
                                  comment);
                   }
                }
