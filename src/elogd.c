@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.417  2004/07/30 19:51:10  midas
+   Improved error reporting by Recai Oktas
+
    Revision 1.416  2004/07/30 13:41:40  midas
    Fixed compiler warning
 
@@ -676,6 +679,10 @@ typedef struct {
 } MSG_LIST;
 
 LOGBOOK *lb_list = NULL;
+
+#ifdef OS_WINNT
+int run_service(void);
+#endif
 
 void show_error(char *error);
 BOOL enum_user_line(LOGBOOK * lbs, int n, char *user);
@@ -7423,7 +7430,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          }
       }
 
-      /* chech for p<attribute> */
+      /* check for p<attribute> */
       sprintf(str, "p%s", attr_list[index]);
       if (isparam(str))
          strlcpy(attrib[index], getparam(str), NAME_LENGTH);
@@ -7452,7 +7459,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                                                              && (attr_flags[index] &
                                                                  AF_FIXED_REPLY))) {
          if (attr_flags[index] & AF_DATE) {
-            
+
             if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
                strcpy(format, DEFAULT_DATE_FORMAT);
 
@@ -7463,7 +7470,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             else
                strftime(str, sizeof(str), format, pts);
 
-         } else 
+         } else
             strlcpy(str, attrib[index], sizeof(str));
 
          rsprintf("<td%s class=\"attribvalue\">\n", title);
@@ -19107,13 +19114,13 @@ void server_loop(int tcp_port)
    lsock = socket(AF_INET, SOCK_STREAM, 0);
    if (lsock == -1) {
       eprintf("Cannot create socket\n");
-      return;
+      exit(EXIT_FAILURE);
    }
 
    /* bind local node name and port to socket */
    memset(&serv_addr, 0, sizeof(serv_addr));
    serv_addr.sin_family = AF_INET;
-   /* if no hostname given with the -h flag, listen on any interface */
+   /* if no hostname given with the -n flag, listen on any interface */
    if (tcp_hostname[0] == 0)
       serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
    else {
@@ -19121,12 +19128,12 @@ void server_loop(int tcp_port)
          or an IP address */
       phe = gethostbyname(tcp_hostname);
       if (!phe) {
-         eprintf("Cannot find address for -h %s\n", tcp_hostname);
-         return;
+         eprintf("Cannot find address for -n %s\n", tcp_hostname);
+         exit(EXIT_FAILURE);
       }
       if (phe->h_addrtype != AF_INET) {
-         eprintf("Non Internet address for -h %s\n", tcp_hostname);
-         return;
+         eprintf("Non Internet address for -n %s\n", tcp_hostname);
+         exit(EXIT_FAILURE);
       }
       memcpy(&serv_addr.sin_addr.s_addr, phe->h_addr_list[0], phe->h_length);
    }
@@ -19138,9 +19145,9 @@ void server_loop(int tcp_port)
    status = bind(lsock, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
    if (status < 0) {
       eprintf
-          ("Cannot bind to port %d.\nPlease try later or use the \"-p\" flag to specify a different port\n",
+          ("Cannot bind to port %d.\nPlease try later or use the \"-p\" flag to specify a different port.\n",
            tcp_port);
-      return;
+      exit(EXIT_FAILURE);
    }
 
    /* get host name for mail notification */
@@ -19154,6 +19161,32 @@ void server_loop(int tcp_port)
 
    /* open configuration file */
    getcfg("dummy", "dummy", str, sizeof(str));
+
+   /* now, initiate daemon/service */
+   if (running_as_daemon) {
+      /* Redirect all messages handled with eprintf/efputs to syslog */
+      redirect_to_syslog();
+
+#ifdef OS_WINNT
+      if (!run_service()) {
+         eprintf("Couldn't run the service; aborting\n");
+         exit(EXIT_FAILURE);
+      }
+#else
+      if (!ss_daemon_init()) {
+         eprintf("Couldn't initiate the daemon; aborting\n");
+         exit(EXIT_FAILURE);
+      }
+#endif
+   }
+
+   /* about to entering the server loop, welcome user with a brief info */
+   eprintf("%s\n", ELOGID);
+   if (verbose) {
+      eprintf("Config file  : %s\n", config_file);
+      eprintf("Resource dir : %s\n", resource_dir[0] ? resource_dir : "current dir");
+      eprintf("Logbook dir  : %s\n", logbook_dir[0] ? logbook_dir : "current dir");
+   }
 
 #ifdef OS_UNIX
    /* create PID file if given as command line parameter or if running under root */
@@ -19246,7 +19279,7 @@ void server_loop(int tcp_port)
    status = listen(lsock, SOMAXCONN);
    if (status < 0) {
       eprintf("Cannot listen\n");
-      return;
+      exit(EXIT_FAILURE);
    }
 
    eprintf("Server listening on port %d ...\n", tcp_port);
@@ -20256,18 +20289,19 @@ void cleanup(void)
 {
 #ifdef OS_UNIX
    char str[256];
+   struct stat finfo;
 
    /* regain original uid */
    if (setegid(orig_gid) < 0 || seteuid(orig_uid) < 0)
       eprintf("Cannot restore original GID/UID.\n");
-   if (pidfile[0]) {
+   if (pidfile[0] && stat(pidfile, &finfo) >= 0) {
       if (remove(pidfile) < 0) {
          sprintf(str, "Cannot remove pidfile \"%s\"\n", pidfile);
          eprintf("%s; %s\n", str, strerror(errno));
       }
    }
 #endif
-   
+
    if (running_as_daemon)
 #ifdef OS_UNIX
       closelog();
@@ -20510,6 +20544,7 @@ int main(int argc, char *argv[])
        clone_url[256], error_str[256];
    time_t now;
    struct tm *tms;
+   struct stat finfo;
 
 #ifdef OS_UNIX
    /* save gid/uid to regain later */
@@ -20652,6 +20687,19 @@ int main(int argc, char *argv[])
    }
 #endif
 
+#ifdef OS_WINNT
+   if (running_as_daemon) {
+      /* change to directory of executable */
+      strcpy(str, argv[0]);
+      for (i = strlen(str) - 1; i > 0; i--)
+         if (str[i] != '\\')
+            str[i] = 0;
+         else
+            break;
+      chdir(str);
+   }
+#endif
+
    /* clone remote elogd configuration */
    if (clone_url[0]) {
       if (clone_url[0] == 1) {
@@ -20727,6 +20775,19 @@ int main(int argc, char *argv[])
    /* set default logbook dir if not given */
    if (!logbook_dir[0])
       strcpy(logbook_dir, "logbooks");
+
+   /* check for directories */
+   if (logbook_dir[0] && stat(logbook_dir, &finfo) < 0) {
+      eprintf("Logbook directory \"%s\" not found.\n", logbook_dir);
+      exit(EXIT_FAILURE);
+   }
+
+   if (resource_dir[0] && stat(resource_dir, &finfo) < 0) {
+      eprintf("Resource directory \"%s\" not found.\n", resource_dir);
+      exit(EXIT_FAILURE);
+   }
+
+   /* append '/' */
    if (resource_dir[0]
        && resource_dir[strlen(resource_dir) - 1] != DIR_SEPARATOR)
       strlcat(resource_dir, DIR_SEPARATOR_STR, sizeof(resource_dir));
@@ -20781,41 +20842,6 @@ int main(int argc, char *argv[])
    /* get optional content length from configuration file */
    if (getcfg("global", "Max content length", str, sizeof(str)))
       _max_content_length = atoi(str);
-
-   /* initiate daemon/service as soon as possible */
-
-   if (running_as_daemon) {
-      /* Redirect all messages handled with eprintf/efputs to syslog */
-      redirect_to_syslog();
-
-#ifdef OS_WINNT
-      /* change to directory of executable */
-      strcpy(str, argv[0]);
-      for (i = strlen(str) - 1; i > 0; i--)
-         if (str[i] != '\\')
-            str[i] = 0;
-         else
-            break;
-      chdir(str);
-
-      if (!run_service()) {
-         eprintf("Couldn't run the service; aborting\n");
-         exit(EXIT_FAILURE);
-      }
-#else
-      if (!ss_daemon_init()) {
-         eprintf("Couldn't initiate the daemon; aborting\n");
-         exit(EXIT_FAILURE);
-      }
-#endif
-   }
-
-   eprintf("%s\n", ELOGID);
-   if (verbose) {
-      eprintf("Config file  : %s\n", config_file);
-      eprintf("Resource dir : %s\n", resource_dir[0] ? resource_dir : "current dir");
-      eprintf("Logbook dir  : %s\n", logbook_dir[0] ? logbook_dir : "current dir");
-   }
 
    server_loop(tcp_port);
 
