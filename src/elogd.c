@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.404  2004/07/23 23:27:26  midas
+   Finished entry deletion with confirmation
+
    Revision 1.403  2004/07/23 23:06:59  midas
    Fixed problem with delete recommendation
 
@@ -11526,7 +11529,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
 {
    int index, i, j, i_msg, i_remote, i_cache, n_remote, n_cache, nserver,
        remote_id, exist_remote, exist_cache, message_id, max_id;
-   int all_identical;
+   int all_identical, n_delete;
    char str[2000], url[256], loc_ref[256], rem_ref[256], pwd[256];
    MD5_INDEX *md5_remote, *md5_cache;
    char list[MAX_N_LIST][NAME_LENGTH], error_str[256], *buffer;
@@ -11713,6 +11716,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
       /*---- loop through logbook entries ----*/
 
       all_identical = TRUE;
+      n_delete = 0;
 
       for (i_msg = 0; i_msg < *lbs->n_el_index; i_msg++) {
 
@@ -11912,6 +11916,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
 
                   sprintf(str, loc("%s should be deleted"), loc_ref);
                   rsprintf("ID%d:\t%s\n", message_id, str);
+                  n_delete++;
 
                } else {
 
@@ -12111,6 +12116,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
 
                            sprintf(str, loc("%s should be deleted"), rem_ref);
                            rsprintf("ID%d:\t%s\n", message_id, str);
+                           n_delete++;
 
                         }
 
@@ -12185,6 +12191,21 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
 
       if (md5_cache)
          free(md5_cache);
+
+      if (mode == SYNC_HTML && n_delete) {
+
+         if (getcfg_topgroup())
+            rsprintf("<br><b><a href=\"../%s/?cmd=Synchronize&confirm=1\">", lbs->name_enc);
+         else
+            rsprintf("<br><b><a href=\"%s/?cmd=Synchronize&confirm=1\">", lbs->name_enc);
+
+         if (n_delete > 1)
+            rsprintf(loc("Click here to delete %s entries"), n_delete);
+         else
+            rsprintf(loc("Click here to delete this entry"));
+
+         rsprintf("</a></b>\n");
+      }
 
       if (mode == SYNC_HTML && all_identical)
          rsprintf(loc("All entries identical"));
