@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.43  2002/07/11 08:13:31  midas
+  Fixed problem of submitting messages with konqueror
+
   Revision 2.42  2002/07/11 07:22:42  midas
   Made 'elog:<logbook>/<id>' reference work
 
@@ -1657,7 +1660,7 @@ int i;
     {
     if (head_only)
       {
-      for (i=*lbs->n_el_index-1 ; i>0 ; i--)
+      for (i=*lbs->n_el_index-1 ; i>=0 ; i--)
         if (lbs->el_index[i].thread_head)
           return lbs->el_index[i].message_id;
       
@@ -4278,7 +4281,7 @@ time_t now;
   rsprintf("</td></tr></table></td></tr>\n\n");
 
   rsprintf("</td></tr></table>\n");
-  rsprintf("</body></html>\r\n");
+  rsprintf("</form></body></html>\r\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -4476,7 +4479,7 @@ char *buffer;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>ELOG config</title></head>\n");
-  rsprintf("<body><form method=\"POST\" action=\".\" enctype=\"multipart/form-data\">\n");
+  rsprintf("<body><form method=\"POST   \" action=\".\" enctype=\"multipart/form-data\">\n");
 
   /*---- title ----*/
 
@@ -8745,11 +8748,14 @@ struct timeval       timeout;
       url_decode(logbook);
 
       /* check for trailing '/' after logbook */
-      if (logbook[0] && *p == ' ')
+      if (strstr(net_buffer, "POST") == NULL) // fix for konqueror
         {
-        sprintf(str, "%s/", logbook_enc);
-        redirect(str);
-        goto redir;
+        if (logbook[0] && *p == ' ')
+          {
+          sprintf(str, "%s/", logbook_enc);
+          redirect(str);
+          goto redir;
+          }
         }
 
       /* check for trailing '/' after logbook/ID */
