@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.25  2003/02/24 13:39:33  midas
+  Fixed problem with emails depending on MOptions attribute
+
   Revision 1.24  2003/02/24 13:04:50  midas
   Fixed problem with creation of nested logbook directories
 
@@ -8613,8 +8616,8 @@ LOGBOOK *lbs_cur;
 
 /*------------------------------------------------------------------*/
 
-int compose_mail(LOGBOOK *lbs, char *mail_to, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], 
-                 char *mail_param, int old_mail)
+int compose_email(LOGBOOK *lbs, char *mail_to, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], 
+                  char *mail_param, int old_mail)
 {
 int    i, j, n;
 char   str[NAME_LENGTH+100], mail_from[256], *mail_text, smtp_host[256], subject[256];
@@ -8730,14 +8733,14 @@ char   list[MAX_PARAM][NAME_LENGTH];
 
 void submit_elog(LOGBOOK *lbs)
 {
-char   str[1000], file_name[256], error[1000], date[80],
+char   str[1000], str2[1000], file_name[256], error[1000], date[80],
        mail_list[MAX_N_LIST][NAME_LENGTH], list[10000],
        attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[MAX_PATH_LENGTH], in_reply_to[80],
        reply_to[256], user[256], user_email[256], email_notify[256];
 char   mail_param[1000], *mail_to;
 char   att_file[MAX_ATTACHMENTS][256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
-int    i, j, n, missing, first, index, suppress, message_id, resubmit_orig, mail_to_size;
+int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_orig, mail_to_size;
 
   /* check for required attributs */
   missing = 0;
@@ -8913,7 +8916,7 @@ int    i, j, n, missing, first, index, suppress, message_id, resubmit_orig, mail
     if (!(*getparam("edit") && getcfg(lbs->name, "Suppress Email on edit", str) && atoi(str) == 1))
       {
       /* go throuch "Email xxx" in configuration file */
-      for (index=0 ; index <= lbs->n_attr ; index++)
+      for (index=mindex=0 ; index <= lbs->n_attr ; index++)
         {
         if (index < lbs->n_attr)
           {
@@ -8924,10 +8927,23 @@ int    i, j, n, missing, first, index, suppress, message_id, resubmit_orig, mail
             strlcat(str, attr_list[index], sizeof(str));
           strcat(str, " ");
 
-          if (strchr(getparam(attr_list[index]), ' '))
-            sprintf(str+strlen(str), "\"%s\"", getparam(attr_list[index]));
+          if (attr_flags[index] & AF_MULTI)
+            {
+            sprintf(str2, "%s#%d", attr_list[index], mindex);
+
+            mindex++;
+            if (mindex == MAX_N_LIST)
+              mindex = 0;
+            else
+              index--; /* repeat this loop */
+            }
           else
-            strlcat(str, getparam(attr_list[index]), sizeof(str));
+            strcpy(str2, attr_list[index]);
+
+          if (strchr(getparam(str2), ' '))
+            sprintf(str+strlen(str), "\"%s\"", getparam(str2));
+          else
+            strlcat(str, getparam(str2), sizeof(str));
           }
         else
           sprintf(str, "Email ALL");
@@ -8984,7 +9000,7 @@ int    i, j, n, missing, first, index, suppress, message_id, resubmit_orig, mail
   if (strlen(mail_to) > 0)
     {
     mail_to[strlen(mail_to)-1] = 0; /* strip last ',' */
-    if (compose_mail(lbs, mail_to, message_id, attrib, mail_param, *getparam("edit")) == 0)
+    if (compose_email(lbs, mail_to, message_id, attrib, mail_param, *getparam("edit")) == 0)
       return;
     }
 
