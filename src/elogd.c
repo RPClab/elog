@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.77  2003/04/08 10:40:48  midas
+  Fixed missing/wrong translation
+
   Revision 1.76  2003/04/08 10:25:56  midas
   Fixed small bug in debugging code
 
@@ -6582,7 +6585,7 @@ char str[1000], login_name[256], full_name[256], user_email[256], name[256], pwd
 
         sprintf(mail_text, loc("A new password has been created for you on host %s"), host_name);
         strlcat(mail_text, ".\r\n", sizeof(mail_text));
-        strlcat(mail_text, loc("Plese log on by clicking on following link and change your password"), sizeof(mail_text));
+        strlcat(mail_text, loc("Please log on by clicking on following link and change your password"), sizeof(mail_text));
         strlcat(mail_text, ":\r\n\r\n", sizeof(mail_text));
         strlcat(mail_text, url, sizeof(mail_text));
         strlcat(mail_text, "\r\n\r\n", sizeof(mail_text));

@@ -259,3 +259,7 @@ A new password for user <i>"%s"</i> has been sent to %s = Ein neues Kennwort für
 Forgot = vergessen
 User "%s" registered on host "%s" = Benutzer "%s" auf Computer "%s" registriert
 Registration request on host "%s" = Registrierungsanforderung auf Computer "%s"
+Please log on by clicking on following link and change your password = Bitte durch Anklicken des folgenden Links einloggen und das Kennwort ändern
+A new password has been created for you on host %s = Ein neues Kennwort wurde auf dem Computer %s registriert
+Enter your user name or email address = Bitten Benutzername oder Email-Adresse eingeben
+Password recovery for ELOG %s = Kennwort-Wiederherstellung für ELOG %s
