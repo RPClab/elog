@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.380  2004/07/13 21:04:37  midas
+   Implemented synchronizing during cloning
+
    Revision 1.379  2004/07/12 20:36:48  midas
    Started to implement synchronize after clone
 
@@ -2930,7 +2933,7 @@ int el_index_logbooks()
          continue;
 
       /* check for duplicate name */
-      for (j = 0; j < i; j++)
+      for (j = 0; j < i && lb_list[j].name[0] ; j++)
          if (strieq(lb_list[j].name, logbook)) {
             printf("Error in configuration file: Duplicate logbook \"%s\"\n", logbook);
             return EL_DUPLICATE;
@@ -3007,9 +3010,10 @@ int el_index_logbooks()
                j = mkdir(str, 0755);
 #endif
 
-               if (j == 0)
-                  printf("Created directory \"%s\"\n", str);
-               else {
+               if (j == 0) {
+                  if (verbose)
+                     printf("Created directory \"%s\"\n", str);
+               } else {
                   perror("el_index_logbooks");
                   printf("Cannot create directory \"%s\"\n", str);
                }
@@ -3024,14 +3028,17 @@ int el_index_logbooks()
       strcpy(lb_list[n].data_dir, data_dir);
       lb_list[n].el_index = NULL;
 
-      printf("Indexing logbook \"%s\" ... ", logbook);
+      if (verbose)
+         printf("Indexing logbook \"%s\" ... ", logbook);
       fflush(stdout);
       status = el_build_index(&lb_list[n], FALSE);
-      printf("ok\n");
+      if (verbose)
+         printf("ok\n");
 
-      if (status == EL_EMPTY)
-         printf("Found empty logbook \"%s\"\n", logbook);
-      else if (status == EL_UPGRADE) {
+      if (status == EL_EMPTY) {
+         if (verbose)
+            printf("Found empty logbook \"%s\"\n", logbook);
+      } else if (status == EL_UPGRADE) {
          printf("Please upgrade data files in \"%s\" with the elconv program.\n",
                 data_dir);
          return EL_UPGRADE;
@@ -10982,6 +10989,7 @@ int adjust_config(char *url)
    sprintf(p1, "Mirror server = %s\r\n", url);
    strlcat(p1, buf2, length + 1000);
    free(buf2);
+   printf("Option \"Mirror server = %s\" added to config file.\n", url);
 
    /* outcomment "URL = xxx" */
    p1 = strstr(buf, "URL =");
@@ -10997,22 +11005,8 @@ int adjust_config(char *url)
       strlcat(p1, "; ", length + 1000);
       strlcat(p1, buf2, length + 1000);
       free(buf2);
-   }
 
-   /* outcomment "Mirror config = xxx" */
-   p1 = strstr(buf, "Mirror config =");
-   if (p1 != NULL) {
-
-      /* save tail */
-      buf2 = malloc(strlen(p1) + 1);
-      assert(buf2);
-      strlcpy(buf2, p1, strlen(p1) + 1);
-
-      /* add comment */
-      sprintf(p1, "; Following line has been outcommented after cloning\r\n");
-      strlcat(p1, "; ", length + 1000);
-      strlcat(p1, buf2, length + 1000);
-      free(buf2);
+      puts("Option \"URL = xxx\" has been outcommented from config file.");
    }
 
 #ifdef OS_UNIX
@@ -11042,8 +11036,6 @@ int adjust_config(char *url)
    close(fh);
    free(buf);
 
-   puts("Option \"URL = xxx\" has been outcommented from config file.");
-   
    return 1;
 }
 
@@ -11169,11 +11161,16 @@ BOOL equal_md5(unsigned char m1[16], unsigned char m2[16])
 
 mprint(LOGBOOK *lbs, int mode, char *str)
 {
+   char line[1000];
+
    if (mode == SYNC_HTML)
       rsprintf("%s\n", str);
-   else if (mode == SYNC_CRON)
-      logf(lbs, str);
-   else
+   else if (mode == SYNC_CRON) {
+      if (_logging_level > 1) {
+         sprintf(line, "MIRROR: %s", str);
+         logf(lbs, line);
+      }
+   } else
       puts(str);
 }
 
@@ -11210,8 +11207,9 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
          rsprintf("</table><p>\n");
 
          rsprintf("<pre>");
-      }
-
+      } else if (mode == SYNC_CLONE)
+         printf("\nRetrieving entries from %s%s\"...\n", list[index], lbs->name);
+ 
       /* send partial return buffer */
       flush_return_buffer();
 
@@ -11572,9 +11570,6 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
 
                if (!exist_cache) {
 
-                  if (_logging_level > 1)
-                     logf(lbs, "MIRROR receive entry #%d", message_id);
-
                   /* if message does not exist locally and in cache, it is new, so retrieve it */
                   if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
                      receive_message(lbs, list[index], message_id, error_str, TRUE);
@@ -11584,7 +11579,6 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                      sprintf(str, "Error receiving message: %s", error_str);
                      mprint(lbs, mode, str);
                   } else if (mode == SYNC_HTML) {
-
                      if (getcfg_topgroup())
                         rsprintf("<a href=\"../%s/%d\">ID%d:</a>\t", lbs->name_enc,
                                  message_id, message_id);
@@ -11593,6 +11587,9 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                                  message_id, message_id);
 
                      rsprintf("%s\n", loc("Remote entry received"));
+                  } else {
+                     sprintf(str, "ID%d:\t%s", message_id, loc("Remote entry received"));
+                     mprint(lbs, mode, str);
                   }
 
                } else {
@@ -11693,6 +11690,9 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
 
       if (mode == SYNC_HTML && all_identical)
          rsprintf(loc("All entries identical"));
+
+      if (mode == SYNC_CLONE && all_identical)
+         mprint(lbs, mode, loc("All entries identical"));
 
       if (mode == SYNC_HTML)
          rsprintf("</pre>\n");
@@ -19735,19 +19735,12 @@ int main(int argc, char *argv[])
          printf(error_str);
          exit(EXIT_FAILURE);
       } else {
-         printf("Remote configuration successfully received.\n");
+         printf("\nRemote configuration successfully received.\n\n");
 
          /* adjust config file */
          adjust_config(clone_url);
 
-         /* force re-read of config file */
-         check_config_file(TRUE);
-         el_index_logbooks();
-
-         /* synchronize all logbooks */
-         synchronize(NULL, SYNC_CLONE);
-         
-         exit(EXIT_SUCCESS);
+         /* receive logbook entries after set-up of direcories ... */
       }
    }
 
@@ -19759,34 +19752,11 @@ int main(int argc, char *argv[])
    }
    close(fh);
 
-   /* evaluate directories fron config file */
+   /* evaluate directories from config file */
    if (getcfg("global", "Resource Dir", str))
       strlcpy(resource_dir, str, sizeof(resource_dir));
    if (getcfg("global", "Logbook Dir", str))
       strlcpy(logbook_dir, str, sizeof(logbook_dir));
-
-   if ((read_pwd[0] || write_pwd[0] || admin_pwd[0]) && !logbook[0]) {
-      printf("Must specify a lookbook via the -l parameter.\n");
-      exit(EXIT_SUCCESS);
-   }
-
-   if (read_pwd[0]) {
-      do_crypt(read_pwd, str);
-      create_password(logbook, "Read Password", str);
-      exit(EXIT_SUCCESS);
-   }
-
-   if (write_pwd[0]) {
-      do_crypt(write_pwd, str);
-      create_password(logbook, "Write Password", str);
-      exit(EXIT_SUCCESS);
-   }
-
-   if (admin_pwd[0]) {
-      do_crypt(admin_pwd, str);
-      create_password(logbook, "Admin Password", str);
-      exit(EXIT_SUCCESS);
-   }
 
    /* extract resource directory from configuration file if not given */
    if (config_file[0] && strchr(config_file, DIR_SEPARATOR)
@@ -19824,6 +19794,42 @@ int main(int argc, char *argv[])
       printf("Config file  : %s\n", config_file);
       printf("Resource dir : %s\n", resource_dir[0] ? resource_dir : "current dir");
       printf("Logbook dir  : %s\n", logbook_dir[0] ? logbook_dir : "current dir");
+   }
+
+   if (clone_url[0]) {
+
+      /* force re-read of config file */
+      check_config_file(TRUE);
+      el_index_logbooks();
+
+      /* synchronize all logbooks */
+      synchronize(NULL, SYNC_CLONE);
+
+      puts("\nCloning finished. Check elogd.cfg and start the server normally.");
+      exit(EXIT_SUCCESS);
+   }
+
+   if ((read_pwd[0] || write_pwd[0] || admin_pwd[0]) && !logbook[0]) {
+      printf("Must specify a lookbook via the -l parameter.\n");
+      exit(EXIT_SUCCESS);
+   }
+
+   if (read_pwd[0]) {
+      do_crypt(read_pwd, str);
+      create_password(logbook, "Read Password", str);
+      exit(EXIT_SUCCESS);
+   }
+
+   if (write_pwd[0]) {
+      do_crypt(write_pwd, str);
+      create_password(logbook, "Write Password", str);
+      exit(EXIT_SUCCESS);
+   }
+
+   if (admin_pwd[0]) {
+      do_crypt(admin_pwd, str);
+      create_password(logbook, "Admin Password", str);
+      exit(EXIT_SUCCESS);
    }
 
    /* get port from configuration file */
