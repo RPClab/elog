@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.435  2004/08/04 13:43:07  midas
+   eputs() makes only one call to fputs_handler
+
    Revision 1.434  2004/08/04 13:38:43  midas
    Removed \r for syslog
 
@@ -965,8 +968,16 @@ void efputs(const char *buf)
 /* Dump with the newline, drop-in replacement for puts(buf) */
 void eputs(const char *buf)
 {
-   (*fputs_handler) (buf);
-   (*fputs_handler) ("\n");
+   char *p;
+
+   p = malloc(strlen(buf)+2);
+   assert(p);
+   strcpy(p, buf);
+   strcat(p, "\n");
+
+   (*fputs_handler) (p);
+
+   free(p);
 }
 
 /* Flush the current output stream */
