@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.140  2003/07/25 08:34:52  midas
+  Fixed bugs in HTML code
+
   Revision 1.139  2003/07/18 06:55:03  midas
   Fixed bug with logging file if resource dir is present
 
@@ -8793,7 +8796,7 @@ char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH];
 char list[MAX_N_LIST][NAME_LENGTH];
 
   rsprintf("<tr><td class=\"menuframe\">\n");
-  rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0\n");
+  rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
 
   rsprintf("<tr>\n");
 
@@ -10060,7 +10063,7 @@ LOGBOOK *lbs_cur;
 
     /* empty title for selection box */
     if (atoi(getparam("select")) == 1)
-      rsprintf("<th class=\"listtitle\"></th>&nbsp;\n");
+      rsprintf("<th class=\"listtitle\">&nbsp;</th>\n");
 
     for (i=0 ; i<n_attr_disp ; i++)
       {
@@ -11813,6 +11816,8 @@ BOOL   first;
 
       rsputs(buf);
       }
+    else
+      rsprintf("<center><b>Error: file <i>\"%s\"</i> not found</b></center>", file_name);
     }
   else
     /* add little logo */
@@ -12066,7 +12071,7 @@ int   i, n;
     show_html_header(NULL, FALSE, "ELOG error");
 
     rsprintf("<body><center>\n");
-    rsprintf("<table class=\"dlgframe\" width=50%% cellpadding=1 cellspacing=0");
+    rsprintf("<table class=\"dlgframe\" width=50%% cellpadding=1 cellspacing=0>");
     sprintf(str, loc("User <i>\"%s\"</i> has no access to logbook <i>\"%s\"</i>"), getparam("iusr"), lbs->name);
     rsprintf("<tr><td class=\"errormsg\">%s</td></tr>\n", str);
 
