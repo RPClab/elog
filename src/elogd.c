@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.123  2003/07/01 14:08:43  midas
+  Dont display more than 10 email recipients
+
   Revision 1.122  2003/07/01 06:21:19  midas
   Added emailing of attachments
 
@@ -9913,11 +9916,20 @@ char   list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
       strcat(mail_param, "&");
 
     n = strbreak(mail_to, list, MAX_PARAM);
-    for (i=0 ; i<n && i<MAX_PARAM ; i++)
+
+    if (n < 10)
       {
-      sprintf(mail_param+strlen(mail_param), "mail%d=%s", i, list[i]);
-      if (i<n-1)
-        strcat(mail_param, "&");
+      for (i=0 ; i<n && i<MAX_PARAM ; i++)
+        {
+        sprintf(mail_param+strlen(mail_param), "mail%d=%s", i, list[i]);
+        if (i<n-1)
+          strcat(mail_param, "&");
+        }
+      }
+    else
+      {
+      sprintf(str, "%d%%20%s", n, loc("recipients"));
+      sprintf(mail_param+strlen(mail_param), "mail0=%s", str);
       }
     }
 
