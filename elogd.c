@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.36  2002/07/01 09:32:32  midas
+  Fixed problem with submitting '------' as only text
+
   Revision 2.35  2002/07/01 08:29:08  midas
   Propagage '?mode=xxx' though 'lastxx' commands
 
@@ -8181,7 +8184,9 @@ int  i, n;
           string = strstr(p, boundary) + strlen(boundary);
           *strstr(p, boundary) = 0;
           ptmp = p + (strlen(p) - 1);
-          while (*ptmp == '-' || *ptmp == '\n' || *ptmp == '\r')
+          while (*ptmp == '-')
+            *ptmp-- = 0;
+          while (*ptmp == '\n' || *ptmp == '\r')
             *ptmp-- = 0;
           }
 
