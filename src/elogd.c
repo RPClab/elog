@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.99  2003/05/02 10:00:31  midas
+  Added lock icon for protected logbooks
+
   Revision 1.98  2003/05/02 06:57:40  midas
   Increased MAX_ATTACHMENT to 50
 
@@ -11075,8 +11078,14 @@ char str[10000];
 
     if (!getcfg(lb_list[i].name, "Hidden", str) || atoi(str) == 0)
       {
-      rsprintf("<tr><td class=\"attribname\"><a href=\"%s/\">%s</a></td>", lb_list[i].name_enc, lb_list[i].name);
+      rsprintf("<tr><td class=\"attribname\"><a href=\"%s/\">%s</a>", lb_list[i].name_enc, lb_list[i].name);
 
+      if (getcfg(lb_list[i].name, "Read password", str) ||
+         (getcfg(lb_list[i].name, "Password file", str) && 
+          !getcfg(lb_list[i].name, "Guest menu commands", str)))
+        rsprintf("&nbsp;&nbsp;<img src=\"lock.gif\">");
+
+      rsprintf("</td>\n");
       str[0] = 0;
       getcfg(lb_list[i].name, "Comment", str);
       rsprintf("<td class=\"attribvalue\">%s&nbsp;</td>\n", str);
