@@ -1112,12 +1112,14 @@ It is possible to execute a shell command on the server side after a new message
 has been submitted, edited or deleted. This feature has been used in the past
 for SMS notifications over a telephone system and for synchrnonization of the ELOG
 database with an external SQL database. The <b><code>&lt;command&gt;</code></b> can
-contain substitutions similar to the <b><code>Subst</code></b> command.
+contain substitutions similar to the <b><code>Subst</code></b> command. In addition
+the list of all attachments can be referred to via <b><code>&lt;$attachemnts&gt;</code></b>
 Following (Unix) command writes a notification into some file:<p>
 
 <pre>
 Execute new = echo "New message of type $type from $long_name on $remote_host" >> /tmp/elog.log
 </pre>
+
 <br>
 It should be noted that this feature can impose a security problem. If someone can edit
 the elogd.cfg through the <b><code>Config</code></b> command of elogd, that person
@@ -1924,9 +1926,9 @@ but not executed. Default is <b><code>0</code></b>.<br><br>
 
 <li><b><code>Mirror exclude = 0 | 1</code></b><br><br>
 
-By default, all logbooks are mirrored. Individual logbooks might be excluded from 
+By default, all logbooks are mirrored. Individual logbooks might be excluded from
 mirroring by putting <b><code>Mirror exclude = 1</code></b> in their individual logbook
-section of the configuration file (<B>Not</B> the [global] section). 
+section of the configuration file (<B>Not</B> the [global] section).
 Default is <b><code>0</code></b>.
 
 </UL>
