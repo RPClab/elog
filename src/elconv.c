@@ -6,6 +6,9 @@
   Contents:     Conversion program for ELOG messages
 
   $Log$
+  Revision 1.5  2004/04/15 06:48:43  midas
+  Fixed bug with unterminated string
+
   Revision 1.4  2004/02/17 11:19:49  midas
   Fixed compiler warnings
 
@@ -504,6 +507,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
          close(lfh);
          return EL_FILE_ERROR;
       }
+      str[15] = 0;
       lseek(lfh, -15, SEEK_CUR);
 
       if (strncmp(str, "$Start$: ", 9) == 0) {
