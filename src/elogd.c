@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.256  2004/02/17 11:13:37  midas
+   Added charset for sending files
+
    Revision 1.255  2004/02/17 10:21:46  midas
    Translate 'entries'
 
@@ -5493,7 +5496,7 @@ int exist_file(char *file_name)
 void send_file_direct(char *file_name)
 {
    int fh, i, length, delta;
-   char str[MAX_PATH_LENGTH];
+   char str[MAX_PATH_LENGTH], charset[80];
    time_t now;
    struct tm *gmt;
 
@@ -5528,12 +5531,15 @@ void send_file_direct(char *file_name)
          if (strstr(str, filetype[i].ext))
             break;
 
-      if (filetype[i].ext[0])
-         rsprintf("Content-Type: %s\r\n", filetype[i].type);
+      if (!getcfg("global", "charset", charset))
+         strcpy(charset, "iso-8859-1");
+
+      if (filetype[i].ext[0]) 
+         rsprintf("Content-Type: %s;charset=%s\r\n", filetype[i].type, charset);
       else if (strchr(str, '.') == NULL)
-         rsprintf("Content-Type: text/plain\r\n");
+         rsprintf("Content-Type: text/plain;charset=%s\r\n", charset);
       else
-         rsprintf("Content-Type: application/octet-stream\r\n");
+         rsprintf("Content-Type: application/octet-stream;charset=%s\r\n", charset);
 
       rsprintf("Content-Length: %d\r\n\r\n", length);
 
