@@ -6,6 +6,12 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.71  2003/04/07 15:44:58  midas
+  Added 'Forgot' to allowed commands list
+
+  Revision 1.71  2003/04/07 15:38:20  midas
+  Added 'forgot' to allowed commands list
+
   Revision 1.70  2003/04/07 15:30:46  midas
   V2.3.5beta
 
@@ -7638,7 +7644,7 @@ int  i, n;
       strlcat(menu_str, "Config, ", sizeof(menu_str));
     }
 
-  strcpy(other_str, "Upload, Submit, Back, Search, Save, Download, Cancel, First, Last, Previous, Next, Requested, ");
+  strcpy(other_str, "Upload, Submit, Back, Search, Save, Download, Cancel, First, Last, Previous, Next, Requested, Forgot");
 
   /* admin commands */
   if (getcfg(lbs->name, "Admin user", str) && 
@@ -10849,7 +10855,7 @@ int   i, n;
       rsprintf("%s</td></tr>\n", loc("Remember me on this computer"));
       }
 
-    rsprintf("<tr><td align=center colspan=2 class=\"dlgform\"><a href=\"?cmd=forgot\">%s</a>", 
+    rsprintf("<tr><td align=center colspan=2 class=\"dlgform\"><a href=\"?cmd=Forgot\">%s</a>", 
               loc("Forgot password?"));
 
     if (getcfg(lbs->name, "Self register", str) && atoi(str) > 0)
