@@ -17,6 +17,11 @@ Version 2.0.0, released June 12th, 2002
   ID of a logbook message
 - Added redirection if no '/' after logbook
 - Made ".../last10?mode=summary" work
+- Introduced wrapping logbook tabs (single line insted of table cells)
+- Sort message index by date (fixed problems with messages before 2000)
+- Rebuild index if data file got changed or deleted
+- When copying messages between logbooks, keep entry date
+- Fixed problems with resubmit
 
 Version 1.3.6, released June 3rd, 2002
 ======================================
