@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.80  2002/09/23 07:18:05  midas
+  'Show last' xxx half finished
+
   Revision 2.79  2002/09/16 08:27:20  midas
   Fixed problem with Konqueror and 'Cancel'
 
@@ -5366,7 +5369,9 @@ int  i;
         break;
       }
 
-    rsprintf("</select></td></tr>\n");
+    rsprintf("</select>\n");
+    rsprintf("<input type=submit value=\"%s\"></td></tr>\n", loc("Go"));
+
     }
 
   /*---- entry form ----*/
@@ -6246,14 +6251,46 @@ int msg_compare_reverse(const void *m1, const void *m2)
 
 /*------------------------------------------------------------------*/
 
-void show_page_navigation(int n_msg, int page_n, int n_page)
+void build_ref(char *ref)
+{
+char *p1, *p2;
+
+  if (strchr(getparam("cmdline"), '?'))
+    strcat(ref, strchr(getparam("cmdline"), '?'));
+
+  /* eliminate old search */
+  if (strstr(ref, "cmd=Search&"))
+    strcpy(strstr(ref, "cmd=Search&"), strstr(ref, "cmd=Search&")+11);
+
+  if (isparam("last"))
+    {
+    /* eliminate old last= */
+    if ((p1 = strstr(ref, "last=")) != NULL)
+      {
+      for (p2 = p1+5 ; *p2 && isdigit(*p2) ; p2++);
+      strcpy(p1-1, p2);
+      }
+    sprintf(ref+strlen(ref), "&last=%s", getparam("last"));
+    }
+
+  /* replace first '&' by '?' if not present */
+  if (!strchr(ref, '?') && strchr(ref, '&'))
+    *strchr(ref, '&') = '?';
+}
+
+void show_page_navigation(int n_msg, int page_n, int n_page, BOOL top)
 {
 int i;
 char ref[256];
 
-  rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1>\n",
+  if (!(page_n && n_msg > n_page) && !top)
+    return;
+
+  rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1>\n");
+  rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=0>\n",
             gt("Border width"), gt("Categories cellpadding"));
-  rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
+
+  rsprintf("<tr><td align=left bgcolor=%s>\n", gt("Menu1 BGColor"));
 
   rsprintf("<font size=1 face=verdana,arial,helvetica,sans-serif><b>");
 
@@ -6263,70 +6300,94 @@ char ref[256];
   if (page_n > 1)
     {
     sprintf(ref, "page%d", page_n - 1);
-    if (strstr(getparam("cmdline"), "cmd=Search&"))
-      {
-      strcat(ref, "?");
-      strcat(ref, strstr(getparam("cmdline"), "cmd=Search&")+11);
-      }
-    else if (strchr(getparam("cmdline"), '?'))
-      strcat(ref, strchr(getparam("cmdline"), '?'));
+    build_ref(ref);
+
     rsprintf("<a href=\"%s\">Previous</a>&nbsp;&nbsp;", ref);
     }
 
-  for (i=0 ; i<(n_msg-1)/n_page+1 ; i++)
+  if (page_n && n_msg > n_page)
     {
-    sprintf(ref, "page%d", i+1);
-    if (strstr(getparam("cmdline"), "cmd=Search&"))
+    for (i=0 ; i<(n_msg-1)/n_page+1 ; i++)
       {
-      strcat(ref, "?");
-      strcat(ref, strstr(getparam("cmdline"), "cmd=Search&")+11);
-      }
-    else if (strchr(getparam("cmdline"), '?'))
-      strcat(ref, strchr(getparam("cmdline"), '?'));
+      sprintf(ref, "page%d", i+1);
+      build_ref(ref);
 
-    if (i == (n_msg-1)/n_page)
-      {
-      if (page_n == i+1)
-        rsprintf("%d&nbsp;&nbsp", i+1);
+      if (i == (n_msg-1)/n_page)
+        {
+        if (page_n == i+1)
+          rsprintf("%d&nbsp;&nbsp", i+1);
+        else
+          rsprintf("<a href=\"%s\">%d</a>&nbsp;&nbsp\n", ref, i+1);
+        }
       else
-        rsprintf("<a href=\"%s\">%d</a>&nbsp;&nbsp\n", ref, i+1);
-      }
-    else
-      {
-      if (page_n == i+1)
-        rsprintf("%d, ", i+1);
-      else
-        rsprintf("<a href=\"%s\">%d</a>, \n", ref, i+1);
+        {
+        if (page_n == i+1)
+          rsprintf("%d, ", i+1);
+        else
+          rsprintf("<a href=\"%s\">%d</a>, \n", ref, i+1);
+        }
       }
     }
 
   if (page_n != -1 && page_n * n_page < n_msg)
     {
     sprintf(ref, "page%d", page_n + 1);
-    if (strstr(getparam("cmdline"), "cmd=Search&"))
-      {
-      strcat(ref, "?");
-      strcat(ref, strstr(getparam("cmdline"), "cmd=Search&")+11);
-      }
-    else if (strchr(getparam("cmdline"), '?'))
-      strcat(ref, strchr(getparam("cmdline"), '?'));
+    build_ref(ref);
+
     rsprintf("<a href=\"%s\">Next</a>&nbsp;&nbsp;", ref);
     }
 
   if (page_n != -1 && n_page < n_msg)
     {
     sprintf(ref, "page");
-    if (strstr(getparam("cmdline"), "cmd=Search&"))
-      {
-      strcat(ref, "?");
-      strcat(ref, strstr(getparam("cmdline"), "cmd=Search&")+11);
-      }
-    else if (strchr(getparam("cmdline"), '?'))
-      strcat(ref, strchr(getparam("cmdline"), '?'));
+    build_ref(ref);
+
     rsprintf("<a href=\"%s\">All</a>\n", ref);
     }
 
-  rsprintf("</b></font></td></tr></table></td></tr>\n\n");
+  rsprintf("</td><td bgcolor=%s align=right>\n", gt("Menu1 BGColor"));
+
+  if (top)
+    {
+    i = atoi(getparam("last"));
+
+    rsprintf("<b>%s</b>&nbsp;\n", loc("Show last"));
+
+    rsprintf("<select name=last onChange=\"document.form1.submit()\">\n");
+
+    rsprintf("<option value=\"\">%s\n", loc("All entries"));
+
+    if (i == 1)
+      rsprintf("<option selected value=1>%s\n", loc("Day"));
+    else
+      rsprintf("<option value=1>%s\n", loc("Day"));
+    if (i == 7)
+      rsprintf("<option selected value=7>%s\n", loc("Week"));
+    else
+      rsprintf("<option value=7>%s\n", loc("Week"));
+    if (i == 31)
+      rsprintf("<option selected value=31>%s\n", loc("Month"));
+    else
+      rsprintf("<option value=31>%s\n", loc("Month"));
+    if (i == 92)
+      rsprintf("<option selected value=92>3 %s\n", loc("Months"));
+    else
+      rsprintf("<option value=92>3 %s\n", loc("Months"));
+    if (i == 182)
+      rsprintf("<option selected value=182>6 %s\n", loc("Month"));
+    else
+      rsprintf("<option value=182>6 %s\n", loc("Month"));
+    if (i == 364)
+      rsprintf("<option selected value=364>%s\n", loc("Year"));
+    else
+      rsprintf("<option value=364>%s\n", loc("Year"));
+    
+    rsprintf("</select>\n");
+
+    rsprintf("<input type=submit value=%s>\n", loc("Go"));
+    }
+
+  rsprintf("</b></font></td></tr></table></td></tr></table></td></tr>\n\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -6453,6 +6514,27 @@ time_t ltime, ltime_start, ltime_end, now;
 struct tm tms, *ptms;
 MSG_LIST *msg_list;
 
+  /* redirect if enpty parameters */
+  if (strstr(_cmdline, "=&"))
+    {
+    while (pt1 = strstr(_cmdline, "=&"))
+      {
+      pt2 = pt1+2;
+      while (*pt1 != '&' && *pt1 != '?')
+        pt1--;
+      strcpy(pt1+1, pt2);
+      }
+    if (_cmdline[strlen(_cmdline)-1] == '=')
+      {
+      pt1 = _cmdline+strlen(_cmdline)-1;
+      while (*pt1 != '&' && *pt1 != '?')
+        *pt1-- = 0;
+      *pt1 = 0;
+      }
+    redirect(_cmdline);
+    return;
+    }
+
   printable = atoi(getparam("Printable"));
 
   if (*getparam("Reverse"))
@@ -6464,9 +6546,10 @@ MSG_LIST *msg_list;
       reverse = atoi(str);
     }
 
-  /* get mode */
-  strcpy(mode, "Full");
+  /* default mode */
+  strcpy(mode, "Summary");
 
+  /* for page display, get mode from config file */
   if (past_n || last_n || page_n)
     {
     if (getcfg(lbs->name, "Display Mode", str))
@@ -6477,6 +6560,7 @@ MSG_LIST *msg_list;
     }
   else
     {
+    /* for find result, get mode from find form */
     strcpy(mode, getparam("mode"));
     if (mode[0] == 0)
       strcpy(mode, "Full");
@@ -6693,6 +6777,19 @@ MSG_LIST *msg_list;
         msg_list[i].lbs = NULL;
     }
 
+  if (isparam("last"))
+    {
+    n = atoi(getparam("last"));
+
+    if (n > 0)
+      {
+      for (i=0 ; i<n_msg ; i++)
+        if (msg_list[i].lbs &&
+            msg_list[i].lbs->el_index[msg_list[i].index].file_time < now-3600*24*n)
+          msg_list[i].lbs = NULL;
+      }
+    }
+  
   /*---- filter message list ----*/
 
   for (i=0 ; i<lbs->n_attr ; i++)
@@ -6821,9 +6918,8 @@ MSG_LIST *msg_list;
 
       if (i_start >= n_msg && n_msg > 0)
         {
-        show_error("Page doesn't exist");
-        free(msg_list);
-        return;
+        page_n = 1;
+        i_start = 0;
         }
 
       if (i_stop >= n_msg)
@@ -6847,7 +6943,7 @@ MSG_LIST *msg_list;
   else if (page_n == -1)
     sprintf(str+strlen(str), loc("all entries"));
   else if (page_n)
-    sprintf(str+strlen(str), loc("Page %d of %d"), page_n, n_msg/n_page+1);
+    sprintf(str+strlen(str), loc("Page %d of %d"), page_n, (n_msg-1)/n_page+1);
   if (strlen(str) == 2)
     str[0] = 0;
 
@@ -6877,7 +6973,9 @@ MSG_LIST *msg_list;
         str[strlen(str)-1] = 0;
       }
 
-    rsprintf("<input type=hidden name=cmdline value=\"%s\">\n", str);
+    /* store current command line as hidden parameter for page navigation */
+    if (str[0])
+      rsprintf("<input type=hidden name=cmdline value=\"%s\">\n", str);
 
     if (!getcfg(lbs->name, "Guest Find menu commands", menu_str) ||
         *getparam("unm") != 0)
@@ -6886,13 +6984,33 @@ MSG_LIST *msg_list;
     /* default menu commands */
     if (menu_str[0] == 0)
       {
-      strcpy(menu_str, loc("Last x"));
+      strcpy(menu_str, loc("New"));
       strcat(menu_str, ", ");
       strcat(menu_str, loc("Find"));
       strcat(menu_str, ", ");
       strcat(menu_str, loc("Select"));
       strcat(menu_str, ", ");
-      strcat(menu_str, loc("Back"));
+
+      if (getcfg(lbs->name, "Password file", str))
+        {
+        if (getcfg(lbs->name, "Admin user", str) && 
+            strstr(str, getparam("unm")) != 0)
+          {
+          strcat(menu_str, loc("Admin"));
+          strcat(menu_str, ", ");
+          }
+        strcat(menu_str, loc("Config"));
+        strcat(menu_str, ", ");
+        strcat(menu_str, loc("Logout"));
+        strcat(menu_str, ", ");
+        }
+      else
+        {
+        strcat(menu_str, loc("Config"));
+        strcat(menu_str, ", ");
+        }
+      
+      strcat(menu_str, loc("Last x"));
       strcat(menu_str, ", ");
       strcat(menu_str, loc("Help"));
       }
@@ -6918,7 +7036,6 @@ MSG_LIST *msg_list;
             sprintf(str, loc("Last %d entries"), last_n*2);
             rsprintf("<input type=submit name=last value=\"%s\">\n", str);
             }
-
           }
         else
           rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc(menu_item[i]));
@@ -7039,8 +7156,8 @@ MSG_LIST *msg_list;
 
   /*---- page navigation ----*/
 
-  if (!printable && page_n && n_msg > n_page)
-    show_page_navigation(n_msg, page_n, n_page);
+  if (!printable)
+    show_page_navigation(n_msg, page_n, n_page, TRUE);
 
   /*---- select navigation ----*/
 
@@ -7245,7 +7362,8 @@ MSG_LIST *msg_list;
       }
     }
 
-  rsprintf("<input type=hidden name=nsel value=%d>\n", n_display);
+  if (n_display)
+    rsprintf("<input type=hidden name=nsel value=%d>\n", n_display);
 
   rsprintf("</table></td></tr>\n");
 
@@ -7266,8 +7384,8 @@ MSG_LIST *msg_list;
 
   /*---- page navigation ----*/
 
-  if (!printable && page_n && n_msg > n_page)
-    show_page_navigation(n_msg, page_n, n_page);
+  if (!printable)
+    show_page_navigation(n_msg, page_n, n_page, FALSE);
   
   rsprintf("</table>\n");
 
@@ -7807,11 +7925,11 @@ LOGBOOK *lbs_dest;
 
 /*------------------------------------------------------------------*/
 
-void show_elog_page(LOGBOOK *lbs, char *dec_path)
+void show_elog_page(LOGBOOK *lbs, char *dec_path, char *command)
 {
 int    size, i, j, len, n, n_log, status, fh, length, message_error, index;
 int    message_id, orig_message_id;
-char   str[1000], command[80], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
+char   str[1000], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char   date[80], text[TEXT_SIZE], menu_str[1000], other_str[1000], cmd[256],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
 char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80], admin_user[80],
@@ -7821,32 +7939,7 @@ FILE   *f;
 BOOL   first;
 
   message_id = atoi(dec_path);
-
-  if (getcfg(lbs->name, "Types", str))
-    {
-    show_upgrade_page(lbs);
-    return;
-    }
-
   message_error = EL_SUCCESS;
-
-  /*---- interprete commands ---------------------------------------*/
-
-  strcpy(command, getparam("cmd"));
-
-  /* correct for image buttons */
-  if (*getparam("cmd_first.x"))
-    strcpy(command, loc("First"));
-  if (*getparam("cmd_previous.x"))
-    strcpy(command, loc("Previous"));
-  if (*getparam("cmd_next.x"))
-    strcpy(command, loc("Next"));
-  if (*getparam("cmd_last.x"))
-    strcpy(command, loc("Last"));
-
-  /* check if command allowed for current user */
-  if (!allow_user(lbs, command))
-    return;
 
   /* check for guest access */
   if (!getcfg(lbs->name, "Guest Menu commands", menu_str) ||
@@ -7856,7 +7949,9 @@ BOOL   first;
   /* default menu commands */
   if (menu_str[0] == 0)
     {
-    strcpy(menu_str, loc("New"));
+    strcpy(menu_str, loc("Back"));
+    strcat(menu_str, ", ");
+    strcat(menu_str, loc("New"));
     strcat(menu_str, ", ");
     strcat(menu_str, loc("Edit"));
     strcat(menu_str, ", ");
@@ -7865,10 +7960,6 @@ BOOL   first;
     strcat(menu_str, loc("Reply"));
     strcat(menu_str, ", ");
     strcat(menu_str, loc("Find"));
-    strcat(menu_str, ", ");
-    strcat(menu_str, loc("Last day"));
-    strcat(menu_str, ", ");
-    strcat(menu_str, loc("Last 10"));
     strcat(menu_str, ", ");
 
     if (getcfg(lbs->name, "Password file", str))
@@ -7974,220 +8065,6 @@ BOOL   first;
     return;
     }
 
-  if (equal_ustring(command, loc("Help")))
-    {
-    if (getcfg(lbs->name, "Help URL", str))
-      {
-      /* if file is given, add '/' to make absolute path */
-      if (strchr(str, '/') == NULL)
-        sprintf(ref, "/%s", str);
-      else
-        strcpy(ref, str);
-
-      redirect(ref);
-      return;
-      }
-
-    /* send local help file */
-    strcpy(file_name, cfg_dir);
-    strcat(file_name, "eloghelp_");
-
-    if (getcfg("global", "Language", str))
-      {
-      str[2] = 0;
-      strcat(file_name, str);
-      }
-    else
-      strcat(file_name, "en");
-    strcat(file_name, ".html");
-
-    f = fopen(file_name, "r");
-    if (f == NULL)
-      redirect("http://midas.psi.ch/elog/eloghelp_en.html");
-    else
-      {
-      fclose(f);
-      send_file(file_name);
-      }
-    return;
-    }
-
-  if (equal_ustring(command, loc("New")))
-    {
-    show_elog_new(lbs, 0, FALSE);
-    return;
-    }
-
-  if (equal_ustring(command, loc("Edit")))
-    {
-    if (message_id)
-      {
-      show_elog_new(lbs, message_id, TRUE);
-      return;
-      }
-    }
-
-  if (equal_ustring(command, loc("Reply")))
-    {
-    show_elog_new(lbs, message_id, FALSE);
-    return;
-    }
-
-  if (equal_ustring(command, loc("Submit")) ||
-      equal_ustring(command, "Submit"))
-    {
-    submit_elog(lbs);
-    return;
-    }
-
-  if (equal_ustring(command, loc("Find")))
-    {
-    show_elog_find(lbs);
-    return;
-    }
-
-  if (equal_ustring(command, loc("Search")))
-    {
-    if (dec_path[0] && atoi(dec_path) == 0 && strchr(dec_path, '/') != NULL)
-      {
-      sprintf(str, "Invalid URL: <b>%s</b>", dec_path);
-      show_error(str);
-      return;
-      }
-
-    show_elog_submit_find(lbs, 0, 0, 1);
-    return;
-    }
-
-  if (equal_ustring(command, loc("Last day")))
-    {
-    redirect("past1");
-    return;
-    }
-
-  if (equal_ustring(command, loc("Last 10")))
-    {
-    redirect("last10");
-    return;
-    }
-
-  if (equal_ustring(command, loc("Copy to")))
-    {
-    copy_to(lbs, message_id, getparam("destc"), 0);
-    return;
-    }
-
-  if (equal_ustring(command, loc("Move to")))
-    {
-    copy_to(lbs, message_id, getparam("destm"), 1);
-    return;
-    }
-
-  if (equal_ustring(command, loc("Admin")))
-    {
-    show_admin_page(lbs);
-    return;
-    }
-
-  if (equal_ustring(command, loc("Change Password")) ||
-      (isparam("newpwd") && !equal_ustring(command, loc("Cancel")) && !equal_ustring(command, loc("Save"))))
-    {
-    show_change_pwd_page(lbs);
-    return;
-    }
-
-  if (equal_ustring(command, loc("Save")))
-    {
-    if (isparam("config"))
-      {
-      /* change existing user */
-      if (!save_user_config(lbs, getparam("config"), FALSE, FALSE))
-        return;
-      }
-    else if (isparam("new_user_name"))
-      {
-      /* new user */
-      if (!save_user_config(lbs, getparam("new_user_name"), TRUE, FALSE))
-        return;
-      }
-    else if (!save_admin_config()) /* save cfg file */
-      return;
-
-    sprintf(str, "../%s/", lbs->name_enc);
-    redirect(str);
-    return;
-    }
-
-  if (equal_ustring(command, loc("Activate")))
-    {
-    if (!save_user_config(lbs, getparam("new_user_name"), TRUE, TRUE))
-      return;
-
-    setparam("cfg_user", getparam("new_user_name"));
-    show_config_page(lbs);
-    return;
-    }
-
-  if (equal_ustring(command, loc("Remove user")))
-    {
-    remove_user(lbs, getparam("config"));
-
-    /* if removed user is current user, do logout */
-    if (equal_ustring(getparam("config"), getparam("unm")))
-      {
-      /* log activity */
-      logf("Logout of user \"%s\" from logbook \"%s\"", getparam("unm"), lbs->name);
-
-      /* set cookies */
-      set_login_cookies(lbs, "", "");
-      }
-
-    /* continue configuration as administrator */
-    unsetparam("cfg_user");
-    show_config_page(lbs);
-    return;
-    }
-
-  if (equal_ustring(command, loc("New user")))
-    {
-    show_new_user_page(lbs);
-    return;
-    }
-
-  if (equal_ustring(command, loc("Config")))
-    {
-    if (!getcfg(lbs->name, "Password file", str))
-      show_admin_page(lbs);
-    else
-      show_config_page(lbs);
-    return;
-    }
-
-  if (equal_ustring(command, loc("Download")))
-    {
-    show_download_page(lbs, dec_path);
-    return;
-    }
-
-  if (equal_ustring(command, loc("Logout")))
-    {
-    /* log activity */
-    logf("Logout of user \"%s\" from logbook \"%s\"", getparam("unm"), lbs->name);
-
-    if (getcfg(lbs->name, "Logout to main", str) &&
-        atoi(str) == 1)
-      setparam("redir", "../");
-
-    set_login_cookies(lbs, "", "");
-    return;
-    }
-
-  if (equal_ustring(command, loc("Delete")))
-    {
-    show_elog_delete(lbs, message_id);
-    return;
-    }
-
   /*---- check next/previous message -------------------------------*/
 
   if (equal_ustring(command, loc("Next")) || equal_ustring(command, loc("Previous")) ||
@@ -8284,24 +8161,6 @@ BOOL   first;
       return;
 
       } while (TRUE);
-    }
-
-  /*---- check for welcome page ------------------------------------*/
-
-  if (!message_id && getcfg(lbs->name, "Welcome page", str) && str[0])
-    {
-    strcpy(file_name, cfg_dir);
-    strcat(file_name, str);
-    send_file(file_name);
-    return;
-    }
-
-  /*---- check for start page --------------------------------------*/
-
-  if (!message_id && getcfg(lbs->name, "Start page", str) && str[0])
-    {
-    redirect(str);
-    return;
     }
 
   /*---- check for valid URL ---------------------------------------*/
@@ -9268,14 +9127,15 @@ void interprete(char *lbook, char *path)
 
 \********************************************************************/
 {
-int     i, j, n, index, lb_index;
+int     i, j, n, index, lb_index, message_id;
 double  exp;
-char    str[256], enc_pwd[80], file_name[256];
+char    str[256], enc_pwd[80], file_name[256], command[80], ref[256];
 char    enc_path[256], dec_path[256], logbook[256], logbook_enc[256];
-char    *experiment, *command, *value, *group;
+char    *experiment, *value, *group;
 time_t  now;
 struct  tm *gmt;
-LOGBOOK *cur_lb;
+LOGBOOK *lbs;
+FILE    *f;
 
   /* encode path for further usage */
   strcpy(dec_path, path);
@@ -9283,8 +9143,8 @@ LOGBOOK *cur_lb;
   strcpy(enc_path, dec_path);
   url_encode(enc_path);
 
+  strcpy(command, getparam("cmd"));
   experiment = getparam("exp");
-  command = getparam("cmd");
   value = getparam("value");
   group = getparam("group");
   index = atoi(getparam("index"));
@@ -9387,7 +9247,7 @@ LOGBOOK *cur_lb;
     if (equal_ustring(logbook, lb_list[i].name))
       break;
 
-  cur_lb = &lb_list[i];
+  lbs = &lb_list[i];
   
   /* get theme for logbook */
   if (getcfg(logbook, "Theme", str))
@@ -9396,15 +9256,15 @@ LOGBOOK *cur_lb;
     loadtheme(NULL); /* get default values */
 
   lb_index = i;
-  cur_lb = lb_list+i;
-  cur_lb->n_attr = scan_attributes(cur_lb->name);
+  lbs = lb_list+i;
+  lbs->n_attr = scan_attributes(lbs->name);
 
   if (*getparam("wpassword"))
     {
     /* check if password correct */
     do_crypt(getparam("wpassword"), enc_pwd);
 
-    if (!check_password(cur_lb, "Write password", enc_pwd, getparam("redir")))
+    if (!check_password(lbs, "Write password", enc_pwd, getparam("redir")))
       return;
 
     rsprintf("HTTP/1.1 302 Found\r\n");
@@ -9453,7 +9313,7 @@ LOGBOOK *cur_lb;
     /* check if password correct */
     do_crypt(getparam("apassword"), enc_pwd);
 
-    if (!check_password(cur_lb, "Admin password", enc_pwd, getparam("redir")))
+    if (!check_password(lbs, "Admin password", enc_pwd, getparam("redir")))
       return;
 
     rsprintf("HTTP/1.1 302 Found\r\n");
@@ -9510,42 +9370,39 @@ LOGBOOK *cur_lb;
     else
       strcpy(str, getparam("cmdline"));
 
-    if (!check_user_password(cur_lb, getparam("uname"), enc_pwd, str))
+    if (!check_user_password(lbs, getparam("uname"), enc_pwd, str))
       return;
 
     logf("Login of user \"%s\" (successful)", getparam("uname"));
 
     /* set cookies */
-    set_login_cookies(cur_lb, getparam("uname"), enc_pwd);
+    set_login_cookies(lbs, getparam("uname"), enc_pwd);
 
     return;
     }
-
-  /*---- show ELog page --------------------------------------------*/
-
 
   /* if password file given, check password and user name */
   if (getcfg(logbook, "Password file", str))
     {
     /* check if guest access */
-    if (getcfg(cur_lb->name, "Guest menu commands", str) && *getparam("unm") == 0)
+    if (getcfg(lbs->name, "Guest menu commands", str) && *getparam("unm") == 0)
       logf("Guest access");
     else
       {
       /* if no guest menu commands but self register, evaluate new user commands */
-      if (getcfg(cur_lb->name, "Self register", str) && atoi(str) > 0)
+      if (getcfg(lbs->name, "Self register", str) && atoi(str) > 0)
         {
         if (equal_ustring(command, loc("New user")))
           {
-          show_new_user_page(cur_lb);
+          show_new_user_page(lbs);
           return;
           }
         if (equal_ustring(command, loc("Save")) && isparam("new_user_name") && !isparam("config"))
           {
-          if (!save_user_config(cur_lb, getparam("new_user_name"), TRUE, FALSE))
+          if (!save_user_config(lbs, getparam("new_user_name"), TRUE, FALSE))
             return;
 
-          sprintf(str, "../%s/", cur_lb->name_enc);
+          sprintf(str, "../%s/", lbs->name_enc);
           redirect(str);
           return;
           }
@@ -9571,14 +9428,14 @@ LOGBOOK *cur_lb;
         }
 
       logf("Connection of user \"%s\"",getparam("unm"));
-      if (!check_user_password(cur_lb, getparam("unm"), getparam("upwd"), getparam("cmdline")))
+      if (!check_user_password(lbs, getparam("unm"), getparam("upwd"), getparam("cmdline")))
         return;
       }
     }
 
   if (equal_ustring(command, loc("Login")))
     {
-    check_user_password(cur_lb, "", "", path);
+    check_user_password(lbs, "", "", path);
     return;
     }
 
@@ -9589,7 +9446,7 @@ LOGBOOK *cur_lb;
       equal_ustring(command, loc("Submit")))
     {
     sprintf(str, "%s?cmd=%s", path, command);
-    if (!check_password(cur_lb, "Write password", getparam("wpwd"), str))
+    if (!check_password(lbs, "Write password", getparam("wpwd"), str))
       return;
     }
 
@@ -9599,13 +9456,13 @@ LOGBOOK *cur_lb;
       equal_ustring(command, loc("Move to")))
     {
     sprintf(str, "%s?cmd=%s", path, command);
-    if (!check_password(cur_lb, "Admin password", getparam("apwd"), str))
+    if (!check_password(lbs, "Admin password", getparam("apwd"), str))
       return;
     }
 
   /* check for "Back" button */
   if (equal_ustring(command, loc("Back")) &&
-      getcfg(cur_lb->name, "Back to main", str) &&
+      getcfg(lbs->name, "Back to main", str) &&
       atoi(str) == 1)
     {
     redirect("../");
@@ -9614,7 +9471,11 @@ LOGBOOK *cur_lb;
 
   if (equal_ustring(command, loc("Back")))
     {
-    sprintf(str, "../%s/", logbook_enc);
+    if (isparam("orig"))
+      sprintf(str, "../%s/%s", logbook_enc, getparam("orig"));
+    else
+      sprintf(str, "../%s/", logbook_enc);
+
     redirect(str);
     return;
     }
@@ -9652,7 +9513,7 @@ LOGBOOK *cur_lb;
   if (strncmp(path, "past", 4) == 0 &&
       *getparam("cmd") == 0)
     {
-    show_elog_submit_find(cur_lb, atoi(path+4), 0, 0);
+    show_elog_submit_find(lbs, atoi(path+4), 0, 0);
     return;
     }
 
@@ -9660,7 +9521,7 @@ LOGBOOK *cur_lb;
       (!isparam("cmd") || equal_ustring(getparam("cmd"), loc("Select")))
       && !isparam("newpwd"))
     {
-    show_elog_submit_find(cur_lb, 0, atoi(path+4), 0);
+    show_elog_submit_find(lbs, 0, atoi(path+4), 0);
     return;
     }
 
@@ -9668,9 +9529,9 @@ LOGBOOK *cur_lb;
       *getparam("cmd") == 0)
     {
     if (!path[4])
-      show_elog_submit_find(cur_lb, 0, 0, -1);
+      show_elog_submit_find(lbs, 0, 0, -1);
     else
-      show_elog_submit_find(cur_lb, 0, 0, atoi(path+4));
+      show_elog_submit_find(lbs, 0, 0, atoi(path+4));
     return;
     }
 
@@ -9688,7 +9549,7 @@ LOGBOOK *cur_lb;
         dec_path[13] = '_';
 
       /* file from data directory requested */
-      strcpy(file_name, cur_lb->data_dir);
+      strcpy(file_name, lbs->data_dir);
       strcat(file_name, dec_path);
       }
     else
@@ -9711,7 +9572,266 @@ LOGBOOK *cur_lb;
     return;
     }
 
-  show_elog_page(cur_lb, dec_path);
+  /* check for new syntax in elogd.cfg */
+  if (getcfg(lbs->name, "Types", str))
+    {
+    show_upgrade_page(lbs);
+    return;
+    }
+
+  /* correct for image buttons */
+  if (*getparam("cmd_first.x"))
+    strcpy(command, loc("First"));
+  if (*getparam("cmd_previous.x"))
+    strcpy(command, loc("Previous"));
+  if (*getparam("cmd_next.x"))
+    strcpy(command, loc("Next"));
+  if (*getparam("cmd_last.x"))
+    strcpy(command, loc("Last"));
+
+  /* check if command allowed for current user */
+  if (!allow_user(lbs, command))
+    return;
+
+  /*---- check for various commands --------------------------------*/
+
+  if (equal_ustring(command, loc("Help")))
+    {
+    if (getcfg(lbs->name, "Help URL", str))
+      {
+      /* if file is given, add '/' to make absolute path */
+      if (strchr(str, '/') == NULL)
+        sprintf(ref, "/%s", str);
+      else
+        strcpy(ref, str);
+
+      redirect(ref);
+      return;
+      }
+
+    /* send local help file */
+    strcpy(file_name, cfg_dir);
+    strcat(file_name, "eloghelp_");
+
+    if (getcfg("global", "Language", str))
+      {
+      str[2] = 0;
+      strcat(file_name, str);
+      }
+    else
+      strcat(file_name, "en");
+    strcat(file_name, ".html");
+
+    f = fopen(file_name, "r");
+    if (f == NULL)
+      redirect("http://midas.psi.ch/elog/eloghelp_en.html");
+    else
+      {
+      fclose(f);
+      send_file(file_name);
+      }
+    return;
+    }
+
+  if (equal_ustring(command, loc("New")))
+    {
+    show_elog_new(lbs, 0, FALSE);
+    return;
+    }
+
+  message_id = atoi(dec_path);
+
+  if (equal_ustring(command, loc("Edit")))
+    {
+    if (message_id)
+      {
+      show_elog_new(lbs, message_id, TRUE);
+      return;
+      }
+    }
+
+  if (equal_ustring(command, loc("Reply")))
+    {
+    show_elog_new(lbs, message_id, FALSE);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Submit")) ||
+      equal_ustring(command, "Submit"))
+    {
+    submit_elog(lbs);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Find")))
+    {
+    show_elog_find(lbs);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Search")))
+    {
+    if (dec_path[0] && atoi(dec_path) == 0 && strchr(dec_path, '/') != NULL)
+      {
+      sprintf(str, "Invalid URL: <b>%s</b>", dec_path);
+      show_error(str);
+      return;
+      }
+
+    show_elog_submit_find(lbs, 0, 0, 1);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Last day")))
+    {
+    redirect("past1");
+    return;
+    }
+
+  if (equal_ustring(command, loc("Last 10")))
+    {
+    redirect("last10");
+    return;
+    }
+
+  if (equal_ustring(command, loc("Copy to")))
+    {
+    copy_to(lbs, message_id, getparam("destc"), 0);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Move to")))
+    {
+    copy_to(lbs, message_id, getparam("destm"), 1);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Admin")))
+    {
+    show_admin_page(lbs);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Change Password")) ||
+      (isparam("newpwd") && !equal_ustring(command, loc("Cancel")) && !equal_ustring(command, loc("Save"))))
+    {
+    show_change_pwd_page(lbs);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Save")))
+    {
+    if (isparam("config"))
+      {
+      /* change existing user */
+      if (!save_user_config(lbs, getparam("config"), FALSE, FALSE))
+        return;
+      }
+    else if (isparam("new_user_name"))
+      {
+      /* new user */
+      if (!save_user_config(lbs, getparam("new_user_name"), TRUE, FALSE))
+        return;
+      }
+    else if (!save_admin_config()) /* save cfg file */
+      return;
+
+    sprintf(str, "../%s/", lbs->name_enc);
+    redirect(str);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Activate")))
+    {
+    if (!save_user_config(lbs, getparam("new_user_name"), TRUE, TRUE))
+      return;
+
+    setparam("cfg_user", getparam("new_user_name"));
+    show_config_page(lbs);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Remove user")))
+    {
+    remove_user(lbs, getparam("config"));
+
+    /* if removed user is current user, do logout */
+    if (equal_ustring(getparam("config"), getparam("unm")))
+      {
+      /* log activity */
+      logf("Logout of user \"%s\" from logbook \"%s\"", getparam("unm"), lbs->name);
+
+      /* set cookies */
+      set_login_cookies(lbs, "", "");
+      }
+
+    /* continue configuration as administrator */
+    unsetparam("cfg_user");
+    show_config_page(lbs);
+    return;
+    }
+
+  if (equal_ustring(command, loc("New user")))
+    {
+    show_new_user_page(lbs);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Config")))
+    {
+    if (!getcfg(lbs->name, "Password file", str))
+      show_admin_page(lbs);
+    else
+      show_config_page(lbs);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Download")))
+    {
+    show_download_page(lbs, dec_path);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Logout")))
+    {
+    /* log activity */
+    logf("Logout of user \"%s\" from logbook \"%s\"", getparam("unm"), lbs->name);
+
+    if (getcfg(lbs->name, "Logout to main", str) &&
+        atoi(str) == 1)
+      setparam("redir", "../");
+
+    set_login_cookies(lbs, "", "");
+    return;
+    }
+
+  if (equal_ustring(command, loc("Delete")))
+    {
+    show_elog_delete(lbs, message_id);
+    return;
+    }
+
+  /* check for welcome page */
+  if (!message_id && getcfg(lbs->name, "Welcome page", str) && str[0])
+    {
+    strcpy(file_name, cfg_dir);
+    strcat(file_name, str);
+    send_file(file_name);
+    return;
+    }
+
+  /* check for start page */
+  if (!message_id && getcfg(lbs->name, "Start page", str) && str[0])
+    {
+    redirect(str);
+    return;
+    }
+
+  /* show page listing or display single entry */
+  if (dec_path[0] == 0)
+    show_elog_submit_find(lbs, 0, 0, 1);
+  else  
+    show_elog_page(lbs, dec_path, command);
 
   return;
 }
