@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.211  2004/01/26 16:21:49  midas
+   Revised logging for synchronizing
+
    Revision 1.210  2004/01/26 14:52:26  midas
    Added cron facility
 
@@ -8333,11 +8336,6 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
               "%s\r\nContent-Disposition: form-data; name=\"upwd\"\r\n\r\n%s\r\n",
               boundary, getparam("upwd"));
 
-   if (isparam("exp"))
-      sprintf(content + strlen(content),
-              "%s\r\nContent-Disposition: form-data; name=\"exp\"\r\n\r\n%s\r\n",
-              boundary, getparam("exp"));
-
    if (in_reply_to[0])
       sprintf(content + strlen(content),
               "%s\r\nContent-Disposition: form-data; name=\"in_reply_to\"\r\n\r\n%s\r\n",
@@ -8914,7 +8912,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 {
    int index, i, j, i_msg, i_remote, i_cache, n_remote, n_cache, nserver,
        remote_id, exist_remote, exist_cache, message_id;
-   int priority_remote = 0;
+   int priority_remote = 0, all_identical;
    char str[2000], url[256], loc_ref[256], rem_ref[256];
    MD5_INDEX *md5_remote, *md5_cache;
    char list[MAX_N_LIST][NAME_LENGTH], error_str[256], *buffer;
@@ -9054,8 +9052,6 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 
          } else {
             /* messages are identical */
-            if (!bcron)
-               rsprintf("%s\n", loc("Config identical"));
             md5_cache[0].message_id = -1;
          }
       } else {                  /* n_remote == 0 */
@@ -9075,11 +9071,11 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 
       /*---- loop through logbook entries ----*/
 
+      all_identical = TRUE;
+
       for (i_msg = 0; i_msg < *lbs->n_el_index; i_msg++) {
 
          message_id = lbs->el_index[i_msg].message_id;
-         if (!bcron)
-            rsprintf("ID%d:\t", message_id);
 
          /* look for message id in MD5s */
          for (i_remote = 0; i_remote < n_remote; i_remote++)
@@ -9118,6 +9114,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 
                /* submit local message */
                submit_message(lbs, list[index], message_id, error_str);
+               all_identical = FALSE;
 
                /* not that submit_message() may have changed attr_list !!! */
 
@@ -9127,7 +9124,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                   else
                      rsprintf("Error sending local message: %s\n", error_str);
                } else if (!bcron)
-                  rsprintf("Local entry submitted\n");
+                  rsprintf("ID%d:\tLocal entry submitted\n", message_id);
 
                md5_cache[i_cache].message_id = -1;
 
@@ -9142,6 +9139,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                   logf(lbs, "MIRROR receive entry #%d", message_id);
 
                receive_message(lbs, list[index], message_id, error_str, FALSE);
+               all_identical = FALSE;
 
                if (error_str[0]) {
                   if (bcron)
@@ -9149,7 +9147,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                   else
                      rsprintf("Error receiving message: %s\n", error_str);
                } else if (!bcron)
-                  rsprintf("Remote entry received\n");
+                  rsprintf("ID%d:\tRemote entry received\n", message_id);
 
                md5_cache[i_cache].message_id = -1;
 
@@ -9170,6 +9168,8 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                sprintf(rem_ref, "<a href=\"http://%s%d\">%s</a>", str, message_id,
                        loc("remote"));
 
+               all_identical = FALSE;
+
                if (!bcron) {
                   rsprintf("%s.\n\t", loc("Entry has been changed locally and remotely"));
                   rsprintf(loc("Please delete %s or %s entry to resolve conflict"),
@@ -9180,8 +9180,6 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
             } else {
 
                /* messages are identical */
-               if (!bcron)
-                  rsprintf("%s\n", loc("Entry identical"));
                md5_cache[i_cache].message_id = -1;
             }
          }
@@ -9194,9 +9192,10 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                logf(lbs, "MIRROR delete local entry #%d", message_id);
 
             el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
+            all_identical = FALSE;
 
             if (!bcron)
-               rsprintf("%s\n", loc("Entry deleted locally"));
+               rsprintf("ID%d:\t%s\n", message_id, loc("Entry deleted locally"));
 
             /* message got deleted from local message list, so redo current index */
             i_msg--;
@@ -9210,6 +9209,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                logf(lbs, "MIRROR send entry #%d", message_id);
 
             remote_id = submit_message(lbs, list[index], message_id, error_str);
+            all_identical = FALSE;
 
             if (remote_id != message_id) {
                if (bcron)
@@ -9224,7 +9224,8 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                else
                   rsprintf("%s: %s\n", loc("Error sending local entry"), error_str);
             } else if (!bcron)
-               rsprintf("%s\n", loc("Local entry submitted"));
+               rsprintf("ID%d:\t%s\n", message_id, loc("Local entry submitted"));
+
             md5_cache[i_cache].message_id = -1;
          }
 
@@ -9243,9 +9244,6 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 
             if (i_msg == *lbs->n_el_index) {
 
-               if (!bcron)
-                  rsprintf("ID%d:\t", message_id);
-
                for (i_cache = 0; i_cache < n_cache; i_cache++)
                   if (md5_cache[i_cache].message_id == message_id)
                      break;
@@ -9258,6 +9256,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 
                   /* if message does not exist locally and in cache, it is new, so retrieve it */
                   receive_message(lbs, list[index], message_id, error_str, TRUE);
+                  all_identical = FALSE;
 
                   if (error_str[0]) {
                      if (bcron)
@@ -9265,7 +9264,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                      else
                         rsprintf("Error receiving message: %s\n", error_str);
                   } else if (!bcron)
-                     rsprintf("Remote entry received\n");
+                     rsprintf("ID%d:\tRemote entry received\n", message_id);
 
                } else {
                   /* if message does not exist locally but in cache, delete remote message */
@@ -9275,10 +9274,11 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                   sprintf(str, "%d?cmd=Delete&confirm=Yes", message_id);
                   combine_url(lbs, list[index], str, url, sizeof(url));
                   retrieve_url(url, &buffer);
+                  all_identical = FALSE;
 
                   if (strstr(buffer, "Location: ")) {
                      if (!bcron)
-                        rsprintf("%s\n", loc("Entry deleted remotely"));
+                        rsprintf("ID%d:\t%s\n", message_id, loc("Entry deleted remotely"));
                   } else {
                      if (bcron)
                         logf(lbs, "%s", loc("Error deleting remote entry"));
@@ -9295,6 +9295,7 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
       free(md5_remote);
 
       /* save remote MD5s in file */
+      md5_remote = NULL;
       n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote, error_str);
       if (n_remote < 0)
          rsprintf(error_str);
@@ -9308,20 +9309,25 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
             else
                for (j = 0; j < n_remote; j++)
                   if (md5_remote[j].message_id == md5_cache[i].message_id) {
-                     memcpy(md5_remote[j].md5_digest, md5_cache[j].md5_digest, 16);
+                     memcpy(md5_remote[j].md5_digest, md5_cache[i].md5_digest, 16);
                      break;
                   }
          }
 
       save_md5(lbs, list[index], md5_remote, n_remote);
 
-      free(md5_remote);
+      if (md5_remote)
+         free(md5_remote);
       if (md5_cache)
          free(md5_cache);
+
+      if (!bcron && all_identical)
+         rsprintf(loc("All entries identical"));
+
+      if (!bcron)
+         rsprintf("</pre>\n");
    }
 
-   if (!bcron)
-      rsprintf("</pre>\n");
 
    flush_return_buffer();
    keep_alive = 0;
@@ -12205,7 +12211,13 @@ void submit_elog_mirror(LOGBOOK * lbs)
             strlcpy(in_reply_to, value, sizeof(in_reply_to));
          else if (equal_ustring(name, "encoding"))
             strlcpy(encoding, value, sizeof(encoding));
-         else if (!equal_ustring(name, "cmd")) {
+         else if (!equal_ustring(name, "cmd") &&
+                  !equal_ustring(name, "full_name") &&
+                  !equal_ustring(name, "user_email") &&
+                  !equal_ustring(name, "unm") &&
+                  !equal_ustring(name, "upwd") &&
+                  !equal_ustring(name, "wpwd") &&
+                  strncmp(name, "attachment", 10) != 0) {
             strlcpy(attrib_name[n_attr], name, NAME_LENGTH);
             strlcpy(attrib_value[n_attr++], value, NAME_LENGTH);
          }
