@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.386  2004/07/15 07:59:15  midas
+   Apply tooltip title to whole attribute row
+
    Revision 1.385  2004/07/14 20:29:40  midas
    Implemented 'tooltip <attribute>'
 
@@ -6979,15 +6982,15 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          }
       }
 
-      /* display text box */
-      rsprintf("<tr><td nowrap class=\"attribname\">");
-
-      /* display attribute name with optional tooltip */
+      /* display text box with optional tooltip */
       sprintf(str, "Tooltip %s", attr_list[index]);
       if (getcfg(lbs->name, str, comment))
-         rsprintf("<div title=\"%s\">%s%s:</div>", comment, attr_list[index], star);
+         rsprintf("<tr title=\"%s\"><td nowrap class=\"attribname\">", comment);
       else
-         rsprintf("<div title=\"%s\">%s%s:</div>", comment, attr_list[index], star);
+         rsprintf("<tr><td nowrap class=\"attribname\">");
+
+      /* display attribute name */
+      rsprintf("%s%s:", attr_list[index], star);
 
       /* show optional comment */
       sprintf(str, "Comment %s", attr_list[index]);
