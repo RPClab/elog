@@ -35,7 +35,7 @@ cp Makefile $dir
 cp elogd.cfg $dir/elogd.cfg
 cp COPYING $dir
 cp README $dir
-cp elogd.init $dir
+cp elogd.init_template $dir
 
 cp eloghelp_??.html $dir
 cp eloglang.* $dir
@@ -60,7 +60,7 @@ rm -Rf $dir
 cd /home/midas/elog
 cp /tmp/$archive /home/midas/html/elog/download/tar/
 cp /tmp/$archive /home/midas/html/elog/download/tar/elog-latest.tar.gz
-cp /tmp/$archive /usr/src/redhat/SOURCES/
+cp /tmp/$archive /usr/src/redhat/SOURCES/elog-$version.tar.gz
 cp -f doc/ChangeLog /home/midas/html/elog/download/ChangeLog
 rm /tmp/$archive
 
