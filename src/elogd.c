@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.119  2003/06/27 16:14:42  midas
+  Added 'file://' to automatic link display
+
   Revision 1.118  2003/06/23 11:22:42  midas
   Added option 'Title image'
 
@@ -3789,7 +3792,7 @@ void rsputs(const char *str)
 
 /*------------------------------------------------------------------*/
 
-char *list[] = { "http://", "https://", "ftp://", "mailto:", "elog:", "" };
+char *list[] = { "http://", "https://", "ftp://", "mailto:", "elog:", "file://", "" };
 
 void rsputs2(const char *str)
 {
