@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.17  2003/02/17 15:53:44  midas
+  Fixed absolute path for cookies
+
   Revision 1.16  2003/02/17 15:25:32  midas
   Fixed bug with vanishing attributes on upload in new message
 
@@ -3600,7 +3603,7 @@ struct tm *gmt;
       {
       extract_path(str);
       url_encode(str, sizeof(str));
-      rsprintf(" path=%s%s;", str, lbs->name_enc);
+      rsprintf(" path=/%s%s;", str, lbs->name_enc);
       }
     else
       rsprintf(" path=/%s;", lbs->name_enc);
