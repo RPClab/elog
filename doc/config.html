@@ -186,12 +186,45 @@ contain the port number if not the standard port 80 is used like<br>
 <code>URL = http://host.domain:8080/</code>
 <p>
 
-<LI><b><code>User = &lt;name&gt;</code></b>
-<LI><b><code>Group = &lt;name&gt;</code></b>
+<LI><b><code>Usr = &lt;name&gt;</code></b>
+<LI><b><code>Grp = &lt;name&gt;</code></b>
 <br>
 The user and group to run the elogd daemon under when started by root.<p>
 
 </UL>
+
+<hr>
+<div class=section>&nbsp; Groups of logbooks &nbsp;</div>
+<p>
+
+If installations have very many logbooks, it can be hard to navigate between them.
+To make things more structured, it is possible to build a hierarchy of logbooks. A
+logbook group can contain any number of logbooks as well as other logbook groups.
+The hierarchy is defined with the the option<p>
+
+<b><code>Group &lt;group name&gt; = &lt;Logbook1&gt;, &lt;Logbook2&gt;, &lt;other group&gt;</b></code><p>
+
+in the <b><code>[global]</code></b> section of the configuration file.<p>
+
+To define following logbook hierarchy:<p>
+
+<img src="hierarchy.gif"><p>
+
+one would use following statements:
+
+<ul><pre>
+[global]
+Group Linux PCs = Red Hat, Debian, Mandrake
+Group Windows PCs = 98, ME, NT, XP, CE
+Group CE = 1.0, 2.0
+</pre></ul>
+
+The logbook tabs would then look like this:<p>
+
+<img src="tabs.gif"><p>
+
+Where the selected group or logbook becomes blue. The lower groups/logbooks change according
+to the selected upper group.<p>
 
 <hr>
 <div class=title>&nbsp; Individual logbook options &nbsp;</div>

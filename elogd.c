@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.120  2003/01/07 15:54:12  midas
+  Change 'User' and 'Group' to 'Usr' and 'Grp' not to conflict with groups
+
   Revision 2.119  2003/01/07 15:17:28  midas
   Improved performance, introduced resource and logbook dirs
 
@@ -11340,7 +11343,7 @@ struct timeval       timeout;
     struct group  *gr;
     struct passwd *pw;
 
-    if (getcfg("global", "Group", str))
+    if (getcfg("global", "Grp", str))
       {
       gr = getgrnam(str);
 
@@ -11352,7 +11355,7 @@ struct timeval       timeout;
     else
       setgid(getgid()); /* used for setuid programs */
 
-    if (getcfg("global", "User", str))
+    if (getcfg("global", "Usr", str))
       {
       pw = getpwnam(str);
 
@@ -12246,6 +12249,13 @@ struct tm *tms;
 #ifdef LOGBOOK_DIR
   strlcpy(logbook_dir, LOGBOOK_DIR, sizeof(logbook_dir));
 #endif
+
+  /* look for config file in command line parameters */
+  for (i=1 ; i<argc ; i++)
+    {
+    if (argv[i][0] == '-' && argv[i][1] == 'c')
+      strcpy(config_file, argv[i+1]);
+    }
 
   /* check for configuration file */
   fh = open(config_file, O_RDONLY | O_BINARY);
