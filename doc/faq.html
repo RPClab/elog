@@ -37,7 +37,8 @@ shows the last 10 entries as the default. To show all messages, one can use:
 <code><p>
 Start page = ?cmd=Search&mode=summary&all=1<p>
 </code><p>
-This shows all messages from all logbooks (<i>all=1</i>). It is a good idea to have logbook tabs one here:<p>
+This shows all messages from all logbooks (<i>all=1</i>). It is a good idea to have logbook tabs one
+here in the elogd.cfg configuration file:<p>
 <code><p>
 Logbook tabs = 1
 </code><p>
@@ -81,31 +82,20 @@ Note the "l" before the second attribute, as in "<I>lAuthor=1</I>".
 
 <LI><b>I want a logbook with public read access (no password), but restricted write access</b>
 <p>
-There is a trick for that: Define two logbooks, but with the same data directory. The first one has no passwords, but a restricted set of menu commands. The second logbook has a read and/or write password or user level access and a full menu (including edit, delete, etc.). So the public uses the first logbook, while the adminitrator uses the second logbook. Here is an example configuration file:
-<p>
-<pre>
-[global]
-logbook tabs = 0
+In an old version of the FAQ it has been stated here that one has to use two logbooks pointing to
+the same data directory. From Version 2.0.6 on, this can be accomplished much easier by the usage
+of the <b>"Guest menu command"</b>. Use a logbook with user level access (password file), and add
+menu lists like in the following example to the configuration file:<p>
 
-[Public]
-data dir = c:\elog
-Comment = Public access
-Attributes = Author, Type, Category, Subject
-Options Type = Routine, Software Installation, Problem Fixed, Configuration, Other
-Options Category = General, Hardware, Software, Network, Other
-Menu commands = Find, Last day, Last 10, Help
+<code>
+Menu commands = New, Edit, Reply, Find, Last 10, Change password, Logout, Help<br>
+Guest menu commands = Find, Last 10, Login, Help<br>
+</code><p>
 
-[Restricted]
-Data dir = c:\elog
-Comment = Access only for administrator
-Password file = passwd.txt
-Attributes = Author, Type, Category, Subject
-Options Type = Routine, Software Installation, Problem Fixed, Configuration, Other
-Options Category = General, Hardware, Software, Network, Other
-Menu commands = New, Edit, Delete, Reply, Find, Last day, Last 10, Config, Change Password, Logout, Help
-</pre>
-Note the "<I>logbook tabs = 0</I>" which "<I>hides</I>" the restricted logbook so that public users don't get confused.
-<p>
+If users access the logbook without supplying a user name, they are treated like "guests" and see
+the "Guest menu commands", with which one cannot submit or edit logbook entries. If one hits the
+"login" button, a user can login with a user name/password and sees the normal menu commands, with
+which one can submit new logbook entries.<p>
 
 <LI><b>I have many loogbooks with password files, so if I add a user or want to change
 a password I have to do this for all logbooks which is painful.</b>
@@ -165,7 +155,7 @@ a feature you find useful on the list, there is a good chance that it will appea
 <tr><td>Multiple templates for "Preset text"<td>1</tr>
 <tr><td>Put an option into "elog" to create replies<td>1</tr>
 <tr><td>Sort search by date if "search all logbooks" is on<td>1</tr>
-<tr><td>Conditional attributes, automatic fill in of email address<td>2</tr>
+<tr><td>Conditional attributes<td>2</tr>
 
 </table></center><p>
 
