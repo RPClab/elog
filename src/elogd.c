@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.419  2004/07/30 22:45:38  midas
+   Retrieve password files during cloning
+
    Revision 1.418  2004/07/30 20:47:57  midas
    Fixed wrong link for deleting entries during synchronization
 
@@ -6211,6 +6214,14 @@ void set_login_cookies(LOGBOOK * lbs, char *user, char *enc_pwd)
    set_cookie(lbs, "unm", user, global, exp);
    set_cookie(lbs, "upwd", enc_pwd, global, exp);
 
+   if (user[0]) {
+      /* set "remember me" cookie on login */
+      if (isparam("remember"))
+         set_cookie(lbs, "urem", "1", global, "24*365");
+      else
+         set_cookie(lbs, "urem", "0", global, "24*365");
+   }
+
    set_redir(lbs, getparam("redir"));
 }
 
@@ -10706,7 +10717,7 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
          strcat(error_str, str);
       }
 
-      return -1;
+      return -3;
    }
 
    p = strstr(text, "\r\n\r\n");
@@ -11557,6 +11568,138 @@ int adjust_config(char *url)
 
 /*------------------------------------------------------------------*/
 
+void receive_pwdfile(LOGBOOK *lbs, char *server, char *error_str)
+{
+   char str[256], pwd[256], url[256], *buffer, *p;
+   int i, status, version, fh;
+
+   error_str[0] = pwd[0] = 0;
+
+   do {
+
+      combine_url(lbs, server, "", url, sizeof(url));
+      strcpy(str, url);
+      strcat(str, "?cmd=GetPwdFile"); // request password file
+
+      if (retrieve_url(str, &buffer, pwd) < 0) {
+         *strchr(str, '?') = 0;
+         sprintf(error_str, "Cannot contact elogd server at http://%s", str);
+         return;
+      }
+
+      /* check version */
+      p = strstr(buffer, "ELOG HTTP ");
+      if (!p) {
+         sprintf(error_str, "Remote server is not an ELOG server");
+         free(buffer);
+         return;
+      }
+      version = atoi(p + 10) * 100 + atoi(p + 12) * 10 + atoi(p + 14);
+      if (version < 254) {
+         strlcpy(str, p+10, 10);
+         if (strchr(str, '\r'))
+            *strchr(str, '\r') = 0;
+
+         sprintf(error_str, "Incorrect remote ELOG server version %s, must be 2.5.4 or later", str);
+         free(buffer);
+         return;
+      }
+
+      /* evaluate status */
+      p = strchr(buffer, ' ');
+      if (p == NULL) {
+         free(buffer);
+         *strchr(str, '?') = 0;
+         sprintf(error_str, "Received invalid response from elogd server at http://%s",
+                 str);
+         free(buffer);
+         return;
+      }
+      p++;
+      status = atoi(p);
+      if (status == 401) {
+         free(buffer);
+         eprintf("Please enter password to access remote elogd server: ");
+         fgets(pwd, sizeof(pwd), stdin);
+         while (pwd[strlen(pwd) - 1] == '\n' || pwd[strlen(pwd) - 1] == '\r')
+            pwd[strlen(pwd) - 1] = 0;
+      } else if (status != 200 && status != 302) {
+         free(buffer);
+         *strchr(str, '?') = 0;
+         sprintf(error_str, "Received invalid response from elogd server at http://%s",
+                 str);
+         return;
+      }
+
+      p = strstr(buffer, "\r\n\r\n");
+      if (p == NULL) {
+         free(buffer);
+         sprintf(error_str, loc("Cannot receive \"%s\""), str);
+         return;
+      }
+      p += 4;
+
+      /* check for logbook access */
+      if (strstr(p, loc("Please login")) || strstr(p, "GetPwdFile") || status == 302) {
+
+         if (strstr(buffer, "?wusr=") || strstr(buffer, "?wpwd="))
+            eprintf("\nInvalid username or password.");
+
+         if (strstr(p, loc("Please login")) == NULL && strstr(p, "GetPwdFile"))
+            eprintf("\nUser \"%s\" has no admin rights on remote server.", getparam("unm"));
+
+         /* ask for username and password */
+         eprintf("\nPlease enter admin username to access\n%s: ", url);
+         fgets(str, sizeof(str), stdin);
+         while (str[strlen(str) - 1] == '\r' || str[strlen(str) - 1] == '\n')
+            str[strlen(str) - 1] = 0;
+         setparam("unm", str);
+
+         eprintf("\nPlease enter admin password to access\n%s: ", url);
+         read_password(str, sizeof(str));
+         eprintf("\n");
+         while (str[strlen(str) - 1] == '\r' || str[strlen(str) - 1] == '\n')
+            str[strlen(str) - 1] = 0;
+         do_crypt(str, pwd);
+         setparam("upwd", pwd);
+         status = 0;
+      }
+
+   } while (status != 200);
+
+
+   getcfg(lbs->name, "Password file", str, sizeof(str));
+   fh = open(str, O_CREAT | O_RDWR, 644);
+   if (fh < 0) {
+      sprintf(error_str, loc("Cannot open file <b>%s</b>"), str);
+      strcat(error_str, ": ");
+      strcat(error_str, strerror(errno));
+      return;
+   }
+
+#ifdef OS_UNIX
+   /* under unix, convert CRLF to CR */
+   remove_crlf(buffer);
+#endif
+
+   i = write(fh, p, strlen(p));
+   if (i < (int) strlen(p)) {
+      sprintf(error_str, loc("Cannot write to <b>%s</b>"), str);
+      strcat(error_str, ": ");
+      strcat(error_str, strerror(errno));
+      close(fh);
+      return;
+   }
+
+   TRUNCATE(fh);
+
+   close(fh);
+
+   free(buffer);
+}
+
+/*------------------------------------------------------------------*/
+
 int save_md5(LOGBOOK * lbs, char *server, MD5_INDEX * md5_index, int n)
 {
    char str[256], url[256], file_name[256];
@@ -11742,17 +11885,20 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
          n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote, error_str);
          if (n_remote <= 0) {
 
-            if (n_remote == -2 && mode == SYNC_CLONE) {
+            if ((n_remote == -2 || n_remote == -3) && mode == SYNC_CLONE) {
+               
+               if (n_remote == -3)
+                  eprintf("\nInvalid username or password.");
+               
+               combine_url(lbs, list[index], "", url, sizeof(url));
                /* ask for username and password */
-               eprintf("\nPlease enter username to access\n%s%s: ", list[index],
-                       lbs->name);
+               eprintf("\nPlease enter username to access\n%s: ", url);
                fgets(str, sizeof(str), stdin);
                while (str[strlen(str) - 1] == '\r' || str[strlen(str) - 1] == '\n')
                   str[strlen(str) - 1] = 0;
                setparam("unm", str);
 
-               eprintf("\nPlease enter password to access\n%s%s: ", list[index],
-                       lbs->name);
+               eprintf("\nPlease enter password to access\n%s: ", url);
                read_password(str, sizeof(str));
                eprintf("\n");
                while (str[strlen(str) - 1] == '\r' || str[strlen(str) - 1] == '\n')
@@ -13221,6 +13367,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
             strcat(menu_str, "Delete this logbook, ");
             strcat(menu_str, "Rename this logbook, ");
             strcat(menu_str, "Create new logbook, ");
+            strcat(menu_str, "GetPwdFile, ");
 
 
             if (getcfg(lbs->name, "Mirror server", str, sizeof(str)))
@@ -13253,6 +13400,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
       }
 
       strcat(menu_str, "Help, ");
+
    } else {
       /* check for admin command */
       n = strbreak(menu_str, menu_item, MAX_N_LIST, ",");
@@ -13272,6 +13420,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          strcat(menu_str, "Delete this logbook, ");
          strcat(menu_str, "Rename this logbook, ");
          strcat(menu_str, "Create new logbook, ");
+         strcat(menu_str, "GetPwdFile, ");
 
          if (is_admin_user("global", getparam("unm"))) {
 
@@ -17383,7 +17532,11 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
 
       if (!getcfg(lbs->name, "Login expiration", str, sizeof(str)) || atoi(str) > 0) {
          rsprintf("<td align=center colspan=2 class=\"dlgform\">");
-         rsprintf("<input type=checkbox checked name=remember value=1>\n");
+         
+         if (isparam("urem") && atoi(getparam("urem")) == 0)
+            rsprintf("<input type=checkbox name=remember value=1>\n");
+         else
+            rsprintf("<input type=checkbox checked name=remember value=1>\n");
          rsprintf("%s</td></tr>\n", loc("Remember me on this computer"));
       }
 
@@ -18605,6 +18758,12 @@ void interprete(char *lbook, char *path)
 
    if (strieq(command, loc("Create new logbook"))) {
       show_logbook_new(lbs);
+      return;
+   }
+
+   if (strieq(command, "GetPwdFile")) {
+      getcfg(lbs->name, "Password file", str, sizeof(str));
+      send_file_direct(str);
       return;
    }
 
@@ -20206,6 +20365,8 @@ int read_password(char *pwd, int size)
    } while (1);
    str[n] = 0;
 
+   ss_getchar(1); // reset
+
    strlcpy(pwd, str, size);
    return n;
 }
@@ -20558,9 +20719,9 @@ int run_service(void)
 
 int main(int argc, char *argv[])
 {
-   int i, fh, tcp_port_cl;
+   int i, j, n, fh, tcp_port_cl;
    char read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256],
-       clone_url[256], error_str[256];
+       clone_url[256], error_str[256], file_name[256];
    time_t now;
    struct tm *tms;
    struct stat finfo;
@@ -20748,15 +20909,12 @@ int main(int argc, char *argv[])
    }
 
    /* check for configuration file */
-   if (!clone_url[0]) {
-
-      fh = open(config_file, O_RDONLY | O_BINARY);
-      if (fh < 0) {
-         eprintf("Configuration file \"%s\" not found.\n", config_file);
-         exit(EXIT_FAILURE);
-      }
-      close(fh);
+   fh = open(config_file, O_RDONLY | O_BINARY);
+   if (fh < 0) {
+      eprintf("Configuration file \"%s\" not found.\n", config_file);
+      exit(EXIT_FAILURE);
    }
+   close(fh);
 
    /* evaluate directories from config file */
    if (getcfg("global", "Resource Dir", str, sizeof(str)))
@@ -20816,11 +20974,41 @@ int main(int argc, char *argv[])
       check_config_file(TRUE);
       el_index_logbooks();
 
-      eprintf("Retrieve remote logbook entries? [y]/n:  ");
+      eprintf("\nRetrieve remote logbook entries? [y]/n:  ");
       fgets(str, sizeof(str), stdin);
       if (str[0] != 'n' && str[0] != 'N')
          /* synchronize all logbooks */
          synchronize(NULL, SYNC_CLONE);
+
+      /* check for retrieving password files */
+      for (i = n = 0; lb_list[i].name[0] ; i++)
+         if (getcfg(lb_list[i].name, "Password file", str, sizeof(str)))
+            n++;
+
+      if (n > 0) {
+         eprintf("\nRetrieve remote password files? [y]/n:  ");
+         fgets(str, sizeof(str), stdin);
+         if (str[0] != 'n' && str[0] != 'N') {
+            for (i = n = 0; lb_list[i].name[0] ; i++)
+               if (getcfg(lb_list[i].name, "Password file", file_name, sizeof(file_name))) {
+                  
+                  /* check if this file has not already been retrieved */
+                  for (j=0 ; j<i; j++)
+                     if (getcfg(lb_list[j].name, "Password file", str, sizeof(str)) &&
+                         stricmp(file_name, str) == 0)
+                         break;
+
+                  if (j == i) {
+                     receive_pwdfile(&lb_list[i], clone_url, error_str);
+                     if (error_str[0]) {
+                        eprintf(error_str);
+                        exit(EXIT_FAILURE);
+                     } else 
+                        eprintf("File \"%s\" received successfully.\n", file_name);
+                  }
+               }
+         }
+      }
 
       puts("\nCloning finished. Check elogd.cfg and start the server normally.");
       exit(EXIT_SUCCESS);
