@@ -321,7 +321,17 @@ in the <b><code>[global &lt;top group&gt;]</code></b> setting, which by itsel ov
 in the <b><code>[global]</code></b> section. This way one can define settings for all top level
 groups (such as the SMTP host) in the <b><code>[global]</code></b> section, and define different
 password files and administrators in the individual top level group sections.
-<p>
+<br><br>
+
+If top groups are used, the root of the elogd server is not accessible any more. Presume that
+elogd is accessible normally under <b><code>http://your.host:8080/</code></b>, this URL becomes
+invalid for top groups, to avoid the case that one group can "see" the logbooks of the other
+groups. Instead, one has to append the top group name to the URL, such as
+<b><code>http://your.host:8080/engineering</code></b> or
+<b><code>http://your.host:8080/administration</code></b>. If someone does not know the
+top group name, one cannot see the list of logbooks there, so the groups become completely
+independent of each other.<p>
+
 
 <hr>
 <div class=title>&nbsp; Individual logbook options &nbsp;</div>
@@ -1028,7 +1038,7 @@ be chosen.
 
 <LI><b><code>ID display = &lt;string&gt;</b></code>
 <br>
-This option determines the display of the entry ID. In some applications, the entry ID 
+This option determines the display of the entry ID. In some applications, the entry ID
 can be used as a tag, containing more than just the ID number. For example
 <p>
 
@@ -1140,8 +1150,8 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
 </pre></ul>
 <p>
 
-It is possible to specify an OR of several conditions like in the case {b,c}. This is 
-also possible over several conditions, like {1,a} would mean 
+It is possible to specify an OR of several conditions like in the case {b,c}. This is
+also possible over several conditions, like {1,a} would mean
 <i>"The PC has Linux or is in the Main Building"</i>. To specify a AND between
 conditions, a "&" is used. The condition
 <p>
