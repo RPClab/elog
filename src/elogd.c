@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.304  2004/03/21 18:42:59  midas
+   Implemented CSV import and XML export
+
    Revision 1.303  2004/03/19 15:11:20  midas
    Implemented 'guest list display'
 
@@ -627,10 +630,10 @@ int tcp_port = 80;
 char theme_name[80];
 
 #define MAX_GROUPS       32
-#define MAX_PARAM       100
+#define MAX_PARAM       120
 #define MAX_ATTACHMENTS  50
 #define MAX_N_LIST      100
-#define MAX_N_ATTR       50
+#define MAX_N_ATTR      100
 #define MAX_REPLY_TO    100
 #define CMD_SIZE      10000
 #define TEXT_SIZE    250000
@@ -805,6 +808,8 @@ int is_logbook_in_group(LBLIST pgrp, char *logbook);
 void free_logbook_hierarchy(LBLIST root);
 void show_top_text(LOGBOOK * lbs);
 void show_bottom_text(LOGBOOK * lbs);
+int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n);
+void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *info);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -3014,7 +3019,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
                      if (*lbs->n_el_index == 0)
                         printf("\n");
 
-                     printf("  ID %3d in %s, ofs %5d, %s, MD5=",
+                     printf("  ID %3d, %s, ofs %5d, %s, MD5=",
                             lbs->el_index[*lbs->n_el_index].message_id,
                             str, lbs->el_index[*lbs->n_el_index].offset,
                             lbs->el_index[*lbs->n_el_index].
@@ -3047,7 +3052,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
    if (verbose) {
       printf("After sort:\n");
       for (i = 0; i < *lbs->n_el_index; i++)
-         printf("  ID %3d in %s, ofs %5d\n", lbs->el_index[i].message_id,
+         printf("  ID %3d, %s, ofs %5d\n", lbs->el_index[i].message_id,
                 lbs->el_index[i].file_name, lbs->el_index[i].offset);
    }
 
@@ -3872,10 +3877,12 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 
    sprintf(message + strlen(message), "Attachment: ");
 
-   sprintf(message + strlen(message), afilename[0]);
-   for (i = 1; i < MAX_ATTACHMENTS; i++)
-      if (afilename[i][0])
-         sprintf(message + strlen(message), ",%s", afilename[i]);
+   if (afilename) {
+      sprintf(message + strlen(message), afilename[0]);
+      for (i = 1; i < MAX_ATTACHMENTS; i++)
+         if (afilename[i][0])
+            sprintf(message + strlen(message), ",%s", afilename[i]);
+   }
    sprintf(message + strlen(message), "\n");
 
    sprintf(message + strlen(message), "Encoding: %s\n", encoding);
@@ -4737,7 +4744,9 @@ int setparam(char *param, char *value)
 
       strlcpy(_value[i], value, NAME_LENGTH);
    } else {
-      printf("Error: parameter array too small\n");
+      sprintf(str, "Error: Too many parameters (> %d). Cannot perform operation.\n", MAX_PARAM);
+      show_error(str);
+      return 0;
    }
 
    return 1;
@@ -5006,15 +5015,32 @@ and trailing blanks */
    for (i = 0; *p && i < size; i++) {
       if (*p == '"') {
          p++;
+         j = 0;
+         memset(list[i], 0, NAME_LENGTH);
+         do {
+            /* convert two '"' to one */
+            if (*p == '"' && *(p+1) == '"') {
+               list[i][j++] = '"';
+               p += 2;
+            } else if (*p == '"') {
+               break;
+            } else
+               list[i][j++] = *p++;
 
-         strlcpy(list[i], p, NAME_LENGTH);
+         } while (j < NAME_LENGTH-1);
+         list[i][j] = 0;
 
-         if (strchr(list[i], '"'))
-            *strchr(list[i], '"') = 0;
+         /* skip second '"' */
+         p++;
 
-         p += strlen(list[i]) + 1;
-         while (*p == ' ' || strchr(brk, *p))
+         /* skip blanks and break character */
+         while (*p == ' ')
             p++;
+         if (*p && strchr(brk, *p))
+            p++;
+         while (*p == ' ')
+            p++;
+
       } else {
          strlcpy(list[i], p, NAME_LENGTH);
 
@@ -5023,7 +5049,11 @@ and trailing blanks */
                list[i][j] = 0;
 
          p += strlen(list[i]);
-         while (*p == ' ' || (*p && strchr(brk, *p)))
+         while (*p == ' ')
+            p++;
+         if (*p && strchr(brk, *p))
+            p++;
+         while (*p == ' ')
             p++;
       }
 
@@ -5177,7 +5207,7 @@ void show_http_header(BOOL expires)
    rsprintf("\r\n");
 }
 
-void show_plain_header(int size)
+void show_plain_header(int size, char *file_name)
 {
    /* header */
    rsprintf("HTTP/1.1 200 Document follows\r\n");
@@ -5192,7 +5222,7 @@ void show_plain_header(int size)
    rsprintf("Pragma: no-cache\r\n");
    rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
    rsprintf("Content-Type: text/plain\r\n");
-   rsprintf("Content-disposition: attachment; filename=\"export.txt\"\r\n");
+   rsprintf("Content-disposition: attachment; filename=\"%s\"\r\n", file_name);
    if (size)
       rsprintf("Content-Length: %d\r\n", size);
    rsprintf("\r\n");
@@ -7459,9 +7489,14 @@ void show_find_form(LOGBOOK * lbs)
       rsprintf("<input type=radio id=\"CSV\" name=\"mode\" value=\"CSV\" checked>");
    else
       rsprintf("<input type=radio id=\"CSV\" name=\"mode\" value=\"CSV\">");
-
    rsprintf("<label for=\"CSV\">%s&nbsp;&nbsp;</label>\n",
             loc("Display comma-separated values (CSV)"));
+
+   if (strieq(mode, "XML"))
+      rsprintf("<input type=radio id=\"XML\" name=\"mode\" value=\"XML\" checked>");
+   else
+      rsprintf("<input type=radio id=\"XML\" name=\"mode\" value=\"XML\">");
+   rsprintf("<label for=\"XML\">XML&nbsp;&nbsp;</label>\n");
 
    rsprintf("</td></tr>\n");
 
@@ -8861,7 +8896,7 @@ int show_download_page(LOGBOOK * lbs, char *path)
       message[size] = 0;
    }
 
-   show_plain_header(size);
+   show_plain_header(size, "export.txt");
 
    /* increase return buffer size if file too big */
    if (size > return_buffer_size - (int) strlen(return_buffer)) {
@@ -8882,9 +8917,14 @@ int show_download_page(LOGBOOK * lbs, char *path)
 
 void show_import_page(LOGBOOK * lbs)
 {
+   char str[256];
+
    /*---- header ----*/
 
-   show_standard_header(lbs, TRUE, loc("ELOG CSV import"), ".");
+   show_html_header(lbs, FALSE, loc("ELOG CSV import"), TRUE);
+
+   rsprintf
+       ("<body><form method=\"POST\" action=\"./\" enctype=\"multipart/form-data\">\n");
 
    /*---- title ----*/
 
@@ -8906,28 +8946,210 @@ void show_import_page(LOGBOOK * lbs)
    /*---- entry form ----*/
 
    rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n",
-            loc("CSV filename"));
-   rsprintf("<td class=\"attribvalue\">");
-   rsprintf("<input type=\"file\" size=\"60\" maxlength=\"200\" name=\"csvfile\" ");
-   rsprintf("accept=\"filetype/*\"></td></tr>\n");
-
-   rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n",
             loc("Field separator"));
    rsprintf("<td class=\"attribvalue\">");
-   rsprintf("<input type=\"text\" size=\"1\" maxlength=\"1\" name=\"sep\" value=\",\">");
+
+   strcpy(str, ",");
+   if (isparam("sep"))
+      strcpy(str, getparam("sep"));
+
+   if (str[0] == ',')
+     rsprintf("<input type=\"radio\" checked id=\"comma\" name=\"sep\" value=\",\">");
+   else
+     rsprintf("<input type=\"radio\" id=\"comma\" name=\"sep\" value=\",\">");
+   rsprintf("<label for=\"comma\">%s (,)</label>\n", loc("Comma"));
+
+   if (str[0] == ';')
+      rsprintf("<input type=\"radio\" checked id=\"semi\" name=\"sep\" value=\",\">");
+   else
+      rsprintf("<input type=\"radio\" id=\"semi\" name=\"sep\" value=\",\">");
+   rsprintf("<label for=\"semi\">%s (;)</label>\n", loc("Semicolon"));
+
    rsprintf("</td></tr>\n");
 
    rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n",
             loc("Options"));
    rsprintf("<td class=\"attribvalue\">");
-   rsprintf("<input type=checkbox id=\"head\" name=\"head\" value=\"1\">\n");
+   
+   if (isparam("head"))
+      rsprintf("<input type=checkbox checked id=\"head\" name=\"head\" value=\"1\">\n");
+   else
+      rsprintf("<input type=checkbox id=\"head\" name=\"head\" value=\"1\">\n");
    rsprintf("<label for=\"head\">%s</label>\n", loc("Derive attributes from CSV file"));
+
+   if (isparam("ignore"))
+      rsprintf("<input type=checkbox checked id=\"ignore\" name=\"ignore\" value=\"1\">\n");
+   else
+      rsprintf("<input type=checkbox id=\"ignore\" name=\"ignore\" value=\"1\">\n");
+   rsprintf("<label for=\"ignore\">%s</label>\n", loc("Ignore first line"));
+
+   rsprintf("<input type=checkbox id=\"preview\" name=\"preview\" value=\"1\">\n");
+   rsprintf("<label for=\"preview\">%s</label>\n", loc("Preview import"));
    rsprintf("</td></tr>\n");
+
+   rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n",
+            loc("CSV filename"));
+
+   rsprintf("<td class=\"attribvalue\">");
+   rsprintf("<input type=\"file\" size=\"60\" maxlength=\"200\" name=\"csvfile\" ");
+   if (isparam("csvfile"))
+      rsprintf(" value=\"%s\" ", getparam("csvfile"));
+   rsprintf("accept=\"filetype/*\"></td></tr>\n");
 
    rsprintf("</table></td></tr></table>\n\n");
    show_bottom_text(lbs);
    rsprintf("</form></body></html>\r\n");
 
+}
+
+/*------------------------------------------------------------------*/
+
+void csv_import(LOGBOOK * lbs, char *csv, int size, char *csvfile)
+{
+   char *list, *line, *p, str[256], date[80], sep[80];
+   int i, n, n_attr, iline, n_imported;
+   BOOL first, in_quotes;
+
+   list = malloc(MAX_N_ATTR * NAME_LENGTH);
+   if (list == NULL)
+      return;
+   line = malloc(10000);
+   if (line == NULL) {
+      free(list);
+      return;
+   }
+
+   p = csv;
+   first = TRUE;
+   in_quotes = FALSE;
+   iline = n_imported = 0;
+
+   strcpy(sep, ",");
+   if (isparam("sep"))
+      strcpy(sep, getparam("sep"));
+   if (sep[0] == 0)
+      strcpy(sep, ",");
+   n_attr = lbs->n_attr;
+
+   if (isparam("preview")) {
+
+      /* title row */
+      sprintf(str, loc("CVS import preview of %s"), csvfile);
+      show_standard_header(lbs, TRUE, str, "./");
+      rsprintf("<table class=\"frame\" cellpadding=0 cellspacing=0>\n");
+      rsprintf("<tr><td class=\"title1\">%s</td></tr>\n", str, str);
+ 
+      /* menu buttons */
+      rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
+      rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
+      rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("CSV Import"));
+
+      /* hidden fields */
+      rsprintf("<input type=hidden name=sep value=\"%s\">\n", sep);
+      if (isparam("head"))
+         rsprintf("<input type=hidden name=head value=\"%s\">\n", getparam("head"));
+      if (isparam("ignore"))
+         rsprintf("<input type=hidden name=ignore value=\"%s\">\n", getparam("ignore"));
+      rsprintf("<input type=hidden name=csvfile value=\"%s\">\n", csvfile);
+
+      rsprintf("</span></td></tr>\n\n");
+      
+      rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>");
+   }
+
+   do {
+      for (i=0 ; i<10000 && *p ; i++) {
+         if (!in_quotes && (*p == '\r' || *p == '\n'))
+            break;
+
+         line[i] = *p++;
+         if (line[i] == '"')
+            in_quotes = !in_quotes;
+      }
+
+      line[i] = 0;
+      while (*p == '\r' || *p == '\n')
+         p++;
+      if (!*p)
+         break;
+
+      memset(list, 0, MAX_N_ATTR * NAME_LENGTH);
+      n = strbreak(line, (char (*)[NAME_LENGTH])list, MAX_N_ATTR, sep);
+
+      if (n == MAX_N_ATTR) {
+         sprintf(str, loc("Too many attributes in CSV file"));
+         show_error(str);
+      }
+
+      /* ignore first line */
+      if (first && isparam("ignore")) {
+         first = FALSE;
+         continue;
+      }
+
+      /* derive attributes from first line */
+      if (first && isparam("head")) {
+         if (isparam("preview")) {
+            rsprintf("<tr>\n");
+            for (i=0 ; i<n ; i++)
+               rsprintf("<th class=\"listtitle\">%s</th>\n", list+i*NAME_LENGTH);
+            rsprintf("</tr>\n");
+            n_attr = n;
+
+         } else {
+            for (i=0 ; i<n ; i++)
+               strlcpy(attr_list[i], list+i*NAME_LENGTH, NAME_LENGTH);
+
+            if (!set_attributes(lbs, attr_list, n))
+               return;
+            lbs->n_attr = n;
+         }
+      
+      } else {
+
+         if (isparam("preview")) {
+            rsprintf("<tr>\n");
+            for (i=0 ; i<n_attr ; i++) {
+               if (iline % 2 == 0)
+                  rsputs("<td class=\"list1\">");
+               else
+                  rsputs("<td class=\"list2\">");
+
+               if (i >= n || !list[i*NAME_LENGTH])
+                  rsputs("&nbsp;");
+               else
+                  rsputs(list+i*NAME_LENGTH);
+
+               rsputs("</td>");
+            }
+            rsputs("</tr>\n");
+            iline++;
+         
+         } else {
+
+            /* submit entry */
+            date[0] = 0;
+            if (el_submit(lbs, 0, FALSE, date, attr_list, (char (*)[NAME_LENGTH])list, 
+                           n_attr, "", "", "", "plain", NULL, TRUE, NULL))
+               n_imported++;
+         }
+      }
+      first = FALSE;
+   } while (*p);
+
+   free(line);
+   free(list);
+
+   if (isparam("preview")) {
+      rsprintf("</table></td></tr></table>\n");
+      show_bottom_text(lbs);
+      rsprintf("</form></body></html>\r\n");
+
+      return;
+   }
+
+   sprintf(str, loc("%d entries successfully imported"), n_imported);
+   show_elog_list(lbs, 0, 0, 1, str);
 }
 
 /*------------------------------------------------------------------*/
@@ -11246,6 +11468,10 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
       strcat(other_str, "Remove user, New user, ");
    }
 
+   /* allow import if CSV import is present */
+   if (strstr(menu_str, loc("CSV Import")))
+      strcat(other_str, "Import, ");
+
    /* allow change password if "config" possible */
    if (strieq(command, loc("Change password")) && strstr(menu_str, "Config")) {
       return TRUE;
@@ -11747,7 +11973,7 @@ time_t retrieve_date(char *index, BOOL bstart)
 
 /*------------------------------------------------------------------*/
 
-void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
+void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *info)
 {
    int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line;
    int current_year, current_month, current_day, printable, n_logbook,
@@ -11759,7 +11985,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
        str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH], mode[80], mid[80],
        menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH], format[80];
    char *p, *pt, *pt1, *pt2, *slist, *svalue, *gattr;
-   BOOL show_attachments, threaded, csv, mode_commands, expand, filtering, disp_filter,
+   BOOL show_attachments, threaded, csv, xml, mode_commands, expand, filtering, disp_filter,
       show_text;
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2;
    struct tm tms, *ptms;
@@ -11874,8 +12100,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
    threaded = strieq(mode, "threaded");
    csv = strieq(mode, "CSV");
+   xml = strieq(mode, "XML");
 
-   if (csv) {
+   if (csv || xml) {
       page_n = -1;              /* display all pages */
       show_attachments = FALSE; /* hide attachments */
    }
@@ -12342,18 +12569,34 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    if (csv) {
 
       /* no menus and tables */
-      show_plain_header(0);
+      show_plain_header(0, "export.csv");
 
       for (i = 0; i < lbs->n_attr; i++) {
          strlcpy(str, attr_list[i], sizeof(str));
-         while (strchr(str, '"'))
-            *strchr(str, '"') = '\'';
-         rsprintf("\"%s\"", str);
+         if (str[0]) {
+            rsputs("\"");
+            pt1 = str;
+            while ((pt2 = strchr(pt1, '"')) != NULL) {
+               *pt2 = 0;
+               rsputs(pt1);
+               rsputs("\"\"");
+               pt1 = pt2+1;
+            }
+            rsputs(pt1);
+            rsputs("\"");
+         }
          if (i < lbs->n_attr - 1)
             rsprintf(",");
          else
             rsprintf("\r\n");
       }
+   } else if (xml) {
+
+      /* no menus and tables */
+      show_plain_header(0, "export.xml");
+      rsputs("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
+      rsprintf("<!-- ELOGD Version %s export.xml -->\n", VERSION);
+      rsprintf("<ELOG_LIST>\n");
 
    } else {
 
@@ -12645,6 +12888,12 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       if (getcfg(lbs->name, "Mode commands", str) && atoi(str) == 0)
          mode_commands = FALSE;
 
+      /*---- notification message ----*/
+
+      if (info && info[0]) {
+         rsprintf("<tr><td class=\"notifyleft\">%s</td></tr>\n", info);
+      }
+
       /*---- page navigation ----*/
 
       if (!printable) {
@@ -12769,7 +13018,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
          rsprintf("</tr>\n\n");
       }
-   }                            /* if (!csv) */
+   }  /* if (!csv && !xml) */
 
    /*---- display message list ----*/
 
@@ -12788,14 +13037,40 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
          for (i = 0; i < lbs->n_attr; i++) {
             strlcpy(str, attrib[i], sizeof(str));
-            while (strchr(str, '"'))
-               *strchr(str, '"') = '\'';
-            rsprintf("\"%s\"", str);
+            if (str[0]) {
+
+               rsputs("\"");
+               pt1 = str;
+               while ((pt2 = strchr(pt1, '"')) != NULL) {
+                  *pt2 = 0;
+                  rsputs(pt1);
+                  rsputs("\"\"");
+                  pt1 = pt2+1;
+               }
+               rsputs(pt1);
+               rsputs("\"");
+            }
             if (i < lbs->n_attr - 1)
                rsprintf(",");
             else
                rsprintf("\r\n");
          }
+
+      } else if (xml) {
+
+         rsputs("\t<ENTRY>\n");
+         rsprintf("\t\t<MID>%d</MID>\n", message_id);
+         rsprintf("\t\t<DATE>%s</DATE>\n", date);
+
+         for (i = 0; i < lbs->n_attr; i++) {
+            strcpy(str, attr_list[i]);
+            for (j=0 ; j<(int)strlen(str) ; j++)
+               if (!isalpha(str[j]))
+                  str[j] = '_';
+            rsprintf("\t\t<%s>%s</%s>\n", str, attrib[i], str);
+         }
+
+         rsputs("\t</ENTRY>\n");
 
       } else {
 
@@ -12890,10 +13165,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                } while (*p);
             }
          }
-      }                         /* if (!csv) */
+      }                         /* if (!csv && !xml) */
    }                            /* for() */
 
-   if (!csv) {
+   if (!csv && !xml) {
       rsprintf("</table>\n");
 
       if (n_display)
@@ -12912,6 +13187,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       rsprintf("</table>\n");
       show_bottom_text(lbs);
       rsprintf("</form></body></html>\r\n");
+   }
+
+   if (xml) {
+      rsputs("</ELOG_LIST>\n");
    }
 
    free(slist);
@@ -13192,7 +13471,7 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue)
       return 0;
 
    p2 = strchr(p1, '\n');
-   if (*(p2 - 1) == '\r')
+   if (p2 && *(p2 - 1) == '\r')
       p2--;
 
    /* save tail */
@@ -13215,6 +13494,100 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue)
       strlcat(buf, buf2, length + strlen(attrvalue) + 3);
       free(buf2);
    }
+
+   lseek(fh, 0, SEEK_SET);
+   i = write(fh, buf, strlen(buf));
+   if (i < (int) strlen(buf)) {
+      sprintf(str, loc("Cannot write to <b>%s</b>"), config_file);
+      strcat(str, ": ");
+      strcat(str, strerror(errno));
+      show_error(str);
+      close(fh);
+      free(buf);
+      return 0;
+   }
+#ifdef _MSC_VER
+   chsize(fh, TELL(fh));
+#else
+   ftruncate(fh, TELL(fh));
+#endif
+
+   close(fh);
+   free(buf);
+
+   /* force re-read of config file */
+   check_config();
+
+   return 1;
+}
+
+/*------------------------------------------------------------------*/
+
+int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
+{
+   int fh, i, length, size;
+   char str[NAME_LENGTH], *buf, *buf2, *p1, *p2, *p3;
+
+   fh = open(config_file, O_RDWR | O_BINARY, 644);
+   if (fh < 0) {
+      sprintf(str, loc("Cannot open file <b>%s</b>"), config_file);
+      strcat(str, ": ");
+      strcat(str, strerror(errno));
+      show_error(str);
+      return 0;
+   }
+
+   /* determine length of attributes */
+   for (i=size=0 ; i<n ; i++)
+      size += strlen(attributes[i])+2;
+
+   /* read previous contents */
+   length = lseek(fh, 0, SEEK_END);
+   lseek(fh, 0, SEEK_SET);
+   buf = malloc(length + size + 3);
+   assert(buf);
+   read(fh, buf, length);
+   buf[length] = 0;
+
+   /* find location of attributes */
+   p1 = (char *) find_param(buf, lbs->name, "Attributes");
+   if (p1 == NULL) {
+      sprintf(str, loc("No 'Attributes' option present in %s"), config_file);
+      show_error(str);
+      return 0;
+   }
+
+   p2 = strchr(p1, '\n');
+   if (p2 && *(p2 - 1) == '\r')
+      p2--;
+
+   /* save tail */
+   buf2 = NULL;
+   if (p2) {
+      buf2 = malloc(strlen(p2) + 1);
+      assert(buf2);
+      strlcpy(buf2, p2, strlen(p2) + 1);
+   }
+
+   /* add list */
+   p3 = strchr(p1, '=');
+   if (p3 == NULL)
+      return 0;
+   p3++;
+   while (*p3 == ' ')
+      p3++;
+
+   for (i=0 ; i<n-1 ; i++) {
+      sprintf(p3, "%s, ", attributes[i]);
+      p3 += strlen(p3);
+   }
+   sprintf(p3, "%s", attributes[i]);
+
+   if (p2) {
+      strlcat(buf, buf2, length + size + 3);
+      free(buf2);
+   }
+
 
    lseek(fh, 0, SEEK_SET);
    i = write(fh, buf, strlen(buf));
@@ -15884,22 +16257,22 @@ void interprete(char *lbook, char *path)
 
    /* check for lastxx and pastxx and listxx */
    if (strncmp(path, "past", 4) == 0 && isdigit(path[4]) && *getparam("cmd") == 0) {
-      show_elog_list(lbs, atoi(path + 4), 0, 0);
+      show_elog_list(lbs, atoi(path + 4), 0, 0, NULL);
       return;
    }
 
    if (strncmp(path, "last", 4) == 0 && strstr(path, ".gif") == NULL &&
        (!isparam("cmd") || strieq(getparam("cmd"), loc("Select")))
        && !isparam("newpwd")) {
-      show_elog_list(lbs, 0, atoi(path + 4), 0);
+      show_elog_list(lbs, 0, atoi(path + 4), 0, NULL);
       return;
    }
 
    if (strncmp(path, "page", 4) == 0 && *getparam("cmd") == 0) {
       if (!path[4])
-         show_elog_list(lbs, 0, 0, -1);
+         show_elog_list(lbs, 0, 0, -1, NULL);
       else
-         show_elog_list(lbs, 0, 0, atoi(path + 4));
+         show_elog_list(lbs, 0, 0, atoi(path + 4), NULL);
       return;
    }
 
@@ -16106,7 +16479,7 @@ void interprete(char *lbook, char *path)
          return;
       }
 
-      show_elog_list(lbs, 0, 0, 1);
+      show_elog_list(lbs, 0, 0, 1, NULL);
       return;
    }
 
@@ -16313,7 +16686,7 @@ void interprete(char *lbook, char *path)
 
    /* show page listing or display single entry */
    if (dec_path[0] == 0)
-      show_elog_list(lbs, 0, 0, 1);
+      show_elog_list(lbs, 0, 0, 1, NULL);
    else
       show_elog_message(lbs, dec_path, command);
    return;
@@ -16345,7 +16718,9 @@ void decode_get(char *logbook, char *string)
             *p++ = 0;
             url_decode(pitem);
             url_decode(p);
-            setparam(pitem, p);
+            if (!setparam(pitem, p))
+               return;
+
             p = strtok(NULL, "&");
          }
       }
@@ -16387,7 +16762,57 @@ void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
             n_att = atoi(item + 10) + 1;
          }
 
-         if (strncmp(item, "attfile", 7) == 0) {
+         if (strncmp(item, "csvfile", 7) == 0) {
+            /* evaluate CSV import file */
+            if (strstr(string, "filename=")) {
+               p = strstr(string, "filename=") + 9;
+               if (*p == '\"')
+                  p++;
+               if (strstr(p, "\r\n\r\n"))
+                  string = strstr(p, "\r\n\r\n") + 4;
+               else if (strstr(p, "\r\r\n\r\r\n"))
+                  string = strstr(p, "\r\r\n\r\r\n") + 6;
+               if (strchr(p, '\"'))
+                  *strchr(p, '\"') = 0;
+               /* set attachment filename */
+               strcpy(file_name, p);
+               if (file_name[0]) {
+                  if (verbose)
+                     printf("decode_post: Found CSV import file\n");
+               }
+
+               /* find next boundary */
+               ptmp = string;
+               do {
+                  while (*ptmp != '-')
+                     ptmp++;
+                  if ((p = strstr(ptmp, boundary)) != NULL) {
+                     if (*(p - 1) == '-')
+                        p--;
+                     while (*p == '-')
+                        p--;
+                     if (*p == 10)
+                        p--;
+                     if (*p == 13)
+                        p--;
+                     p++;
+                     break;
+                  } else
+                     ptmp += strlen(ptmp);
+               } while (TRUE);
+
+               /* import CSVfile */
+               if (file_name[0]) {
+                  setparam("csvfile", file_name);
+                  csv_import(lbs, string, (int) (p - string), file_name);
+                  return;
+               }
+
+               string = strstr(p, boundary) + strlen(boundary);
+            } else
+               string = strstr(string, boundary) + strlen(boundary);
+
+         } else if (strncmp(item, "attfile", 7) == 0) {
             /* evaluate file attachment */
             if (strstr(string, "filename=")) {
                p = strstr(string, "filename=") + 9;
