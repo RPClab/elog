@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.499  2004/10/25 21:26:35  midas
+   Changed XML encoding
+
    Revision 1.498  2004/10/25 21:07:07  midas
    Implemented RSS feeds
 
@@ -14231,10 +14234,10 @@ void show_rss_feed(LOGBOOK * lbs)
    if (getcfg("global", "charset", str, sizeof(str)))
       rsprintf("Content-Type: text/xml;charset=%s\r\n", str);
    else
-      rsprintf("Content-Type: text/xml;charset=iso-8859-1\r\n");
+      rsprintf("Content-Type: text/xml;charset=UTF-8\r\n");
    rsprintf("\r\n");
 
-   rsprintf("<?xml version=\"1.0\" ?>\n");
+   rsprintf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
    rsprintf("<rss version=\"2.0\">\n");
    rsprintf("<channel>\n");
 
@@ -14275,8 +14278,6 @@ void show_rss_feed(LOGBOOK * lbs)
    }
 
    rsprintf("<generator>ELOG V%s</generator>\n", VERSION);
-
-   rsprintf("<image>favicon.png</image>\n");
 
    /*---- show last 15 items ----*/
 
