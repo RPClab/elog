@@ -7,6 +7,10 @@ Version 2.5.1, released February xxth, 2004
 - Implemented calendar
 - Added entry counter
 - Added form validation via JavaScript
+- Do not renumber entries which are identical
+- Fixed bug with "find in all logbooks" under foreign languages
+- Fixed bug wiht "last submission" display
+- Change CRLF -> CR when saving elogd.cfg under Unix
 - Changed "entry date" to "entry time"
 - Changed "Date format" to "Time format"
 - Implemented "Type <attrib> = date"

@@ -833,16 +833,17 @@ as described unter the "<I>Subst &lt;attribute&gt;</I>" option.
 <br>
 Specified the display and order of items in a message listing page or a search
 result page. In addition to all attributes, one can specify here <b>"ID"</b> for
-the message ID, <b>"Logbook"</b> and <b>"Date"</b>. The restriction to certain
+the message ID and <b>"Date"</b>. The restriction to certain
 attributes can be helpful if many attributes are defined in a logbook, which
 usually makes the table too big to fit in the browser. The default
 is<br>
 <pre>
-Display search = ID, Date, &lt;all attributs&gt;
+List display = ID, Date, &lt;all attributs&gt;
 </pre>
 Which displays the message number, date, and all attributes. The display of the
 message body is controlled by the <b><code>Display mode</code></b> and
-<b><code>Summary lines</code></b> options.
+<b><code>Summary lines</code></b> options. If a search goes over "all logbooks",
+an additional colums with the logbook name of each entry is added in front.
 <p>
 
 <LI><b><code>Thread display = &lt;string&gt;</code></b>
