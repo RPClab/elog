@@ -38,10 +38,11 @@
 a password I have to do this for all logbooks which is painful.
 <LI><a href=#8>How can I configure ELOG such that it displays something else than the message list by default?
 <LI><a href=#9>I want to have additional commands specific to my lookbook
-<LI><a href=#10>How does one configure elog to disable editing of existing messages? I want a logbook 
+<LI><a href=#10>How does one configure elog to disable editing of existing messages? I want a logbook
 where one can enter messages but not change them afterwards.
 <LI><a href=#11>How can I track various revisions of a message using the "edit" command?
 <LI><a href=#12>How can I enter a date which is different from current one?
+<LI><a href=#13>I cannot pass the login page, it's always redisplayed even if I put in the right password?
 </OL>
 
 <hr>
@@ -236,6 +237,13 @@ display and also sort by that. Note the <i>Date format</i> showing first year, t
 and day. This is necessary since sorting is done only lexically. Please note that the
 <i>List Display</i> was renamed recently. Prior to version 2.3.10, it was called
 <i>Display Search</i>.
+
+<LI><a name=#13><b>I cannot pass the login page, it's always redisplayed even if I put in the right password?</b>
+<p>
+This can happen if you change the login policy, for example move the <code><b>Password file =</b></code> entry
+in the configuration file from a logbook section to the [global] section or back. In that case some old cookies
+could be stored in your browser, which confuse the system. Please delete your cookies in the browser to resolve
+this problem. Read your browser documentation on how to do that.<p>
 
 </UL>
 
