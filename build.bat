@@ -1,5 +1,5 @@
 @echo on
-rem Usage: build_elog <version> like "build 100"
+rem Usage: build_elog <version> like "build 234-5"
 rem Build ELOG distribution
 
 set version=%1
