@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.339  2004/06/14 10:58:51  midas
+   Added client code for cloning
+
    Revision 1.338  2004/06/11 07:14:50  midas
    Tested onUnload
 
@@ -1609,8 +1612,6 @@ int retrieve_url(char *url, char **buffer)
    } while (1);
 
    closesocket(sock);
-
-
 
    return n;
 }
@@ -7789,6 +7790,52 @@ int save_admin_config(char *section, char *buffer, char *error)
 
 /*------------------------------------------------------------------*/
 
+int save_config(char *buffer, char *error)
+{
+   int fh, i;
+
+   error[0] = 0;
+
+   fh = open(config_file, O_RDWR | O_BINARY, 644);
+   if (fh < 0) {
+      sprintf(error, loc("Cannot open file <b>%s</b>"), config_file);
+      strcat(error, ": ");
+      strcat(error, strerror(errno));
+      return 0;
+   }
+
+#ifdef OS_UNIX
+
+   /* under unix, convert CRLF to CR */
+   remove_crlf(buffer);
+
+#endif
+
+   i = write(fh, buffer, strlen(buffer));
+   if (i < (int) strlen(buffer)) {
+      sprintf(error, loc("Cannot write to <b>%s</b>"), config_file);
+      strcat(error, ": ");
+      strcat(error, strerror(errno));
+      close(fh);
+      return 0;
+   }
+
+#ifdef _MSC_VER
+   chsize(fh, TELL(fh));
+#else
+   ftruncate(fh, TELL(fh));
+#endif
+
+   close(fh);
+
+   /* force re-read of config file */
+   check_config();
+
+   return 1;
+}
+
+/*------------------------------------------------------------------*/
+
 int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 {
    char file_name[256], str[256], line[256], *buf, *pl, new_pwd[80], new_pwd2[80];
@@ -9141,9 +9188,11 @@ void combine_url(LOGBOOK * lbs, char *url, char *param, char *result, int size)
    if (result[strlen(result) - 1] != '/')
       strlcat(result, "/", size);
 
-   if (!strstr(result, lbs->name_enc)) {
-      strlcat(result, lbs->name_enc, size);
-      strlcat(result, "/", size);
+   if (lbs != NULL) {
+      if (!strstr(result, lbs->name_enc)) {
+         strlcat(result, lbs->name_enc, size);
+         strlcat(result, "/", size);
+      }
    }
 
    if (param)
@@ -9858,27 +9907,38 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
 
 /*------------------------------------------------------------------*/
 
-void receive_config(LOGBOOK * lbs, char *server, char *error_str)
+int receive_config(LOGBOOK * lbs, char *server, char *error_str)
 {
    char str[256], *buffer, *p;
 
    error_str[0] = 0;
 
    combine_url(lbs, server, "", str, sizeof(str));
-   sprintf(str + strlen(str), "?cmd=Download");
-   retrieve_url(str, &buffer);
+   if (lbs == NULL)
+      strcat(str, "?cmd=GetConfig"); // request complete config file
+   else
+      strcat(str, "?cmd=Download");  // request config section of logbook
+   if (retrieve_url(str, &buffer) < 0)
+      return 0;
+
    p = strstr(buffer, "\r\n\r\n");
    if (p == NULL) {
       free(buffer);
       sprintf(error_str, loc("Cannot receive \"%s\""), str);
-      return;
+      return 0;
    }
    p += 4;
 
-   if (!save_admin_config(lbs->name, p, str))
-      rsprintf(str);
+   if (lbs == NULL) {
+      if (!save_config(p, str))
+         rsprintf(str);
+   } else {
+      if (!save_admin_config(lbs->name, p, str))
+         rsprintf(str);
+   }
 
    free(buffer);
+   return 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -17108,15 +17168,6 @@ void server_loop(int tcp_port, int daemon)
    net_buffer = malloc(net_buffer_size);
    return_buffer_size = 100000;
    return_buffer = malloc(return_buffer_size);
-#ifdef OS_WINNT
-   {
-      WSADATA WSAData;
-
-      /* Start windows sockets */
-      if (WSAStartup(MAKEWORD(1, 1), &WSAData) != 0)
-         return;
-   }
-#endif
 
    /* create a new socket */
    lsock = socket(AF_INET, SOCK_STREAM, 0);
@@ -18261,7 +18312,8 @@ int main(int argc, char *argv[])
 {
    int i, fh, tcp_port_cl;
    int daemon = FALSE;
-   char read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256];
+   char read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256],
+      clone_url[256], error_str[256];
    time_t now;
    struct tm *tms;
 
@@ -18279,7 +18331,7 @@ int main(int argc, char *argv[])
    tzset();
 
    /* initialize variables */
-   read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = 0;
+   read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = clone_url[0] = 0;
    logbook_dir[0] = resource_dir[0] = logbook_dir[0] = pidfile[0] = 0;
    tcp_port_cl = 0;
    use_keepalive = TRUE;
@@ -18331,9 +18383,14 @@ int main(int argc, char *argv[])
 #endif
 
       else if (argv[i][0] == '-') {
-         if (i + 1 >= argc || argv[i + 1][0] == '-')
+         if (argv[i][1] == 'C') {
+            if (i + 1 >= argc || argv[i + 1][0] == '-')
+               clone_url[0] = 1;
+            else 
+               strcpy(clone_url, argv[++i]);
+         } else if (i + 1 >= argc || argv[i + 1][0] == '-')
             goto usage;
-         if (argv[i][1] == 'p')
+         else if (argv[i][1] == 'p')
             tcp_port_cl = atoi(argv[++i]);
          else if (argv[i][1] == 'c')
             strcpy(config_file, argv[++i]);
@@ -18356,7 +18413,7 @@ int main(int argc, char *argv[])
          else {
           usage:
             printf("\nusage: elogd [-p port] [-n hostname] [-D] [-c file] [-r pwd] ");
-            printf("[-w pwd] [-a pwd] [-l logbook] [-k] [-f file] [-x]\n\n");
+            printf("[-w pwd] [-a pwd] [-l logbook] [-k] [-f file] [-C <url>] [-x]\n\n");
             printf("       -p <port> TCP/IP port\n");
             printf("       -n <hostname> TCP/IP hostname\n");
             printf("       -D become a daemon\n");
@@ -18371,6 +18428,7 @@ int main(int argc, char *argv[])
             printf("       -k do not use keep-alive\n");
             printf("       -f path/filename for PID file\n");
             printf("       -x enable execution of shell commands\n\n");
+            printf("       -C <url> clone remote elogd configuration\n\n");
             printf("       -h this help\n\n");
 #ifdef OS_WINNT
             printf("Windows service funtions:\n");
@@ -18381,6 +18439,16 @@ int main(int argc, char *argv[])
          }
       }
    }
+
+#ifdef OS_WINNT
+   {
+      WSADATA WSAData;
+
+      /* Start windows sockets */
+      if (WSAStartup(MAKEWORD(1, 1), &WSAData) != 0)
+         return 0;
+   }
+#endif
 
 #ifdef OS_WINNT
    if (daemon) {
@@ -18394,6 +18462,17 @@ int main(int argc, char *argv[])
       chdir(str);
    }
 #endif
+
+   /* clone remote elogd configuration */
+   if (clone_url[0]) {
+      if (clone_url[0] == 1) {
+         printf("Please enter URL of remote elogd server: ");
+         fgets(clone_url, sizeof(clone_url), stdin);
+      }
+
+      /* contact remote server */
+      receive_config(NULL, clone_url, error_str);
+   }
 
    /* check for configuration file */
    fh = open(config_file, O_RDONLY | O_BINARY);
