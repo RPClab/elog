@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.250  2004/02/16 16:28:46  midas
+   Changed indentation
+
    Revision 1.249  2004/02/16 15:50:54  midas
    Fixed other warnings
 
@@ -341,7 +344,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.0"
+#define VERSION "2.5.1"
 
 #include <stdio.h>
 #include <sys/types.h>
