@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.56  2003/03/26 11:45:31  midas
+  Added text search in all attributes
+
   Revision 1.55  2003/03/26 11:21:37  midas
   Added 'Icon comment' option
 
@@ -5769,12 +5772,11 @@ char   str[NAME_LENGTH], mode[256], comment[256];
     rsprintf("</td></tr>\n");
     }
 
-  if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1)
-    {
-    rsprintf("<tr><td>%s:</td>", loc("Text"));
-    rsprintf("<td><input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\">\n");
-    rsprintf("<i>%s</i></td></tr>\n", loc("(case insensitive substring)"));
-    }
+  rsprintf("<tr><td>%s:</td>", loc("Text"));
+  rsprintf("<td><input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\">\n");
+  rsprintf("<i>%s</i></td></tr>\n", loc("(case insensitive substring)"));
+
+  rsprintf("<tr><td><td><input type=checkbox name=sall value=1>%s</td></tr>\n", loc("Search text also in attributes"));
 
   rsprintf("</table></td></tr></table>\n");
   rsprintf("</form></body></html>\r\n");
@@ -8267,7 +8269,26 @@ LOGBOOK *lbs_cur;
         text1[i] = toupper(text[i]);
       text1[i] = 0;
 
-      if (strstr(text1, str) == NULL)
+      if (atoi(getparam("sall")) && strstr(text1, str) == NULL)
+        {
+        /* search text in attributes */
+        for (i=0 ; i<lbs->n_attr ; i++)
+          {
+          for (j=0 ; j<(int)strlen(attrib[i]) ; j++)
+            text1[j] = toupper(attrib[i][j]);
+          text1[j] = 0;
+
+          if (strstr(text1, str) != NULL)
+            break;
+          }
+
+        if (i == lbs->n_attr)
+          {
+          msg_list[index].lbs = NULL;
+          continue;
+          }
+        }
+      else if (strstr(text1, str) == NULL)
         {
         msg_list[index].lbs = NULL;
         continue;
