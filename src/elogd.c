@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.162  2003/12/03 12:49:14  midas
+  Changed email notification format
+
   Revision 1.161  2003/12/03 12:10:24  midas
   Change email notification format
 
@@ -10131,7 +10134,7 @@ LOGBOOK *lbs_cur;
 int compose_email(LOGBOOK *lbs, char *mail_to, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH],
                   char *mail_param, int old_mail, char att_file[MAX_ATTACHMENTS][256])
 {
-int    i, j, n, flags, status;
+int    i, j, k, n, flags, status;
 char   str[NAME_LENGTH+100], str2[256], mail_from[256], *mail_text, smtp_host[256], subject[256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
 char   list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
@@ -10183,7 +10186,7 @@ char   list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
     {
     for (j=0 ; j<lbs->n_attr ; j++)
       {
-      strcpy(str, "                                    ");
+      strcpy(str, "                                                                       ");
       memcpy(str, attr_list[j], strlen(attr_list[j]));
 
       comment[0] = 0;
@@ -10192,11 +10195,20 @@ char   list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
         sprintf(str2, "Icon comment %s", attrib[j]);
         getcfg(lbs->name, str2, comment);
         }
+      if (!comment[0])
+        strcpy(comment, attrib[j]);
 
-      if (comment[0])
+      if (equal_ustring(attr_options[j][0], "boolean"))
+        strcpy(comment, atoi(attrib[j]) ? loc("Yes") : loc("No"));
+
+      for (k=strlen(str)-1 ; k>0 ; k--)
+        if (str[k] != ' ')
+          break;
+
+      if (k < 20)
         sprintf(str+20, ": %s\r\n", comment);
       else
-        sprintf(str+20, ": %s\r\n", attrib[j]);
+        sprintf(str+k+1, ": %s\r\n", comment);
 
       strcpy(mail_text+strlen(mail_text), str);
       }
