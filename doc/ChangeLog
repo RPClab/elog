@@ -3,6 +3,11 @@ Version 2.3.9, released June xxth, 2003
 
 - Fixed problem when submitting elog.c itself as an attachment through elog.exe
 - Added option "Use Lock"
+- Added option "Title image"
+- Don't display non-allowed menu items in search list display
+- Remove blanks from "Referer:"
+- Fixed problem with Reply-To in elog utility
+- Don't send email notificatin to users which are not in the 'Login user' list
 
 Version 2.3.8, released June 4th, 2003
 ======================================
