@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.2  2002/06/07 11:58:43  midas
+  'Display search' can now supress display of '#', 'Logbook' and 'Date'
+
   Revision 2.1  2002/06/07 09:37:02  midas
   Added 'HTML default = 3'
 
@@ -4138,14 +4141,14 @@ void show_elog_submit_find(LOGBOOK *lbs, INT past_n, INT last_n)
 int    i, j, n, size, status, d1, m1, y1, d2, m2, y2, index, colspan, i_line, n_line, i_col;
 int    current_year, current_month, current_day, printable, n_logbook, lindex, n_attr,
        reverse, n_attr_disp, n_found, search_all, message_id;
-char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR][NAME_LENGTH],
+char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR+4][NAME_LENGTH],
        list[10000], text[TEXT_SIZE], text1[TEXT_SIZE], text2[TEXT_SIZE],
        in_reply_to[80], reply_to[256], attachment[MAX_ATTACHMENTS][256], encoding[80];
 char   str[256], ref[256], file_name[256], col[80];
 char   *nowrap, format[80];
 char   menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH];
 char   *p , *pt, *pt1, *pt2;
-BOOL   full, show_attachments;
+BOOL   full, show_attachments, link_displayed;
 time_t ltime, ltime_start, ltime_end, ltime_current, now;
 struct tm tms, *ptms;
 FILE   *f;
@@ -4517,19 +4520,42 @@ FILE   *f;
 
   size = printable ? 2 : 3;
 
-  rsprintf("<td width=10%% align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>#</b></td>", col, size);
-
-  if (search_all)
-    rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Logbook</b></td>", col, size);
-
-  rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Date</b></td>", col, size);
-
   if (getcfg(lbs->name, "Display search", list))
     n_attr_disp = strbreak(list, disp_attr, MAX_N_ATTR);
   else
     {
-    n_attr_disp = n_attr;
-    memcpy(disp_attr, attr_list, sizeof(attr_list));
+    if (search_all)
+      {
+      n_attr_disp = n_attr + 3;
+
+      strcpy(disp_attr[0], "#");
+      strcpy(disp_attr[1], "Logbook");
+      strcpy(disp_attr[2], "Date");
+      memcpy(disp_attr+3, attr_list, sizeof(attr_list));
+      }
+    else
+      {
+      n_attr_disp = n_attr + 2;
+
+      strcpy(disp_attr[0], "#");
+      strcpy(disp_attr[1], "Date");
+      memcpy(disp_attr+2, attr_list, sizeof(attr_list));
+      }
+    }
+
+  for (i=0 ; i<n_attr_disp ; i++)
+    {
+    if (equal_ustring(disp_attr[i], "#"))
+      rsprintf("<td width=10%% align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>#</b></td>", 
+               col, size);
+
+    if (equal_ustring(disp_attr[i], "Logbook"))
+      rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Logbook</b></td>", 
+               col, size);
+
+    if (equal_ustring(disp_attr[i], "Date"))
+      rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Date</b></td>", 
+               col, size);
     }
 
   for (i=0 ; i<n_attr ; i++)
@@ -4774,26 +4800,61 @@ FILE   *f;
           strcpy(text, text2);
           }
 
-        /* filter passed: display line */
+        /*---- filter passed: display line ----*/
 
         n_found++;
 
         sprintf(ref, "../%s/%d", lbs->name_enc, message_id);
 
-        if (full)
+        if (!full)
           {
+          if (i_col % 2 == 0)
+            strcpy(col, gt("List bgcolor1"));
+          else
+            strcpy(col, gt("List bgcolor2"));
+          i_col++;
+          }
+        else
           strcpy(col, gt("List bgcolor1"));
-          rsprintf("<tr>");
+        rsprintf("<tr>");
 
-          size = printable ? 2 : 3;
-          nowrap = printable ? "" : "nowrap";
+        size = printable ? 2 : 3;
+        nowrap = printable ? "" : "nowrap";
+        link_displayed = FALSE;
 
+        for (j=0 ; j<n_attr_disp ; j++)
+          if (equal_ustring(disp_attr[j], "#"))
+            break;
+
+        if (j < n_attr_disp)
+          {
           rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></font></td>",
             col, size, ref, n_found);
+          link_displayed = TRUE;
+          }
 
-          if (search_all)
+        for (j=0 ; j<n_attr_disp ; j++)
+          if (equal_ustring(disp_attr[j], "Logbook"))
+            break;
+
+        if (j < n_attr_disp)
+          {
+          if (!link_displayed)
+            {
+            rsprintf("<td align=center %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>", 
+              nowrap, col, size, ref, lbs->name);
+            link_displayed = TRUE;
+            }
+          else
             rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, lbs->name);
+          }
 
+        for (j=0 ; j<n_attr_disp ; j++)
+          if (equal_ustring(disp_attr[j], "Date"))
+            break;
+
+        if (j < n_attr_disp)
+          {
           if (getcfg(lbs->name, "Date format", format))
             {
             struct tm ts;
@@ -4817,48 +4878,84 @@ FILE   *f;
           else
             strcpy(str, date);
 
-          rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, str);
-
-          for (i=0 ; i<n_attr ; i++)
+          if (!link_displayed)
             {
-            for (j=0 ; j<n_attr_disp ; j++)
-              if (equal_ustring(disp_attr[j], attr_list[i]))
-                break;
+            rsprintf("<td align=center %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>", 
+              nowrap, col, size, ref, str);
+            link_displayed = TRUE;
+            }
+          else
+            rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, str);
+          }
 
-            if (j == n_attr_disp)
-              continue;
+        for (i=0 ; i<n_attr ; i++)
+          {
+          for (j=0 ; j<n_attr_disp ; j++)
+            if (equal_ustring(disp_attr[j], attr_list[i]))
+              break;
 
-            if (equal_ustring(attr_options[i][0], "boolean"))
-              {
-              if (atoi(attrib[i]) == 1)
-                rsprintf("<td align=center bgcolor=%s><input type=checkbox checked disabled></td>\n", col);
-              else
-                rsprintf("<td align=center bgcolor=%s><input type=checkbox disabled></td>\n", col);
-              }
+          if (j == n_attr_disp)
+            continue;
 
-            else if (attr_flags[i] & AF_ICON)
-              {
-              rsprintf("<td align=center bgcolor=%s>", col);
-              if (attrib[i][0])
-                rsprintf("<img src=\"icons/%s\">", attrib[i]);
-              rsprintf("&nbsp</td>");
-              }
-
+          if (equal_ustring(attr_options[i][0], "boolean"))
+            {
+            if (atoi(attrib[i]) == 1)
+              rsprintf("<td align=center bgcolor=%s><input type=checkbox checked disabled></td>\n", col);
             else
-              {
-              rsprintf("<td align=center bgcolor=%s><font size=%d>", col, size);
-              rsputs2(attrib[i]);
-              rsprintf("&nbsp</font></td>");
-              }
+              rsprintf("<td align=center bgcolor=%s><input type=checkbox disabled></td>\n", col);
             }
 
-          rsprintf("</tr>\n");
+          else if (attr_flags[i] & AF_ICON)
+            {
+            rsprintf("<td align=center bgcolor=%s>", col);
+            if (attrib[i][0])
+              rsprintf("<img src=\"icons/%s\">", attrib[i]);
+            rsprintf("&nbsp</td>");
+            }
 
-          if (search_all)
-            colspan = 3+n_attr_disp;
           else
-            colspan = 2+n_attr_disp;
+            {
+            rsprintf("<td align=center bgcolor=%s><font size=%d>", col, size);
+            if (!link_displayed)
+              {
+              rsprintf("<a href=\"%s\">", ref);
+              rsputs2(attrib[i]);
+              rsprintf("</a>");
+              link_displayed = TRUE;
+              }
+            else
+              rsputs2(attrib[i]);
+            rsprintf("&nbsp</font></td>");
+            }
+          }
 
+        if (!full && n_line > 0)
+          {
+          rsprintf("<td bgcolor=%s><font size=%d>", col, size);
+          for (i=i_line=0 ; i<sizeof(str)-1 ; i++)
+            {
+            str[i] = text[i];
+            if (str[i] == '\n')
+              i_line++;
+
+            if (i_line == n_line)
+              break;
+            }
+          str[i] = 0;
+
+          /* always encode, not to rip apart HTML documents,
+             e.g. only the start of a table */
+          strencode(str);
+
+          rsprintf("&nbsp;</font></td>\n");
+          }
+
+        rsprintf("</tr>\n");
+
+        colspan = n_attr_disp;
+
+        if (full)
+          {
           if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1)
             {
             rsprintf("<tr><td bgcolor=#FFFFFF colspan=%d><font size=%d>", colspan, size);
@@ -4952,103 +5049,6 @@ FILE   *f;
 
           if (!show_attachments && attachment[0][0])
             rsprintf("</font></td></tr>\n");
-
-          }
-        else /* if (full) */
-          {
-          if (i_col % 2 == 0)
-            strcpy(col, gt("List bgcolor1"));
-          else
-            strcpy(col, gt("List bgcolor2"));
-          i_col++;
-
-          rsprintf("<tr>");
-
-          size = printable ? 2 : 3;
-          nowrap = printable ? "" : "nowrap";
-
-          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></font></td>",
-            col, size, ref, n_found);
-
-          if (search_all)
-            rsprintf("<td align=center %s bgcolor=%s>%s</td>", nowrap, col, lbs->name);
-
-          if (getcfg(lbs->name, "Date format", format))
-            {
-            struct tm ts;
-
-            memset(&ts, 0, sizeof(ts));
-
-            for (i=0 ; i<12 ; i++)
-              if (strncmp(date+4, mname[i], 3) == 0)
-                break;
-            ts.tm_mon = i;
-
-            ts.tm_mday = atoi(date+8);
-            ts.tm_hour = atoi(date+11);
-            ts.tm_min  = atoi(date+14);
-            ts.tm_sec  = atoi(date+17);
-            ts.tm_year = atoi(date+20)-1900;
-
-            mktime(&ts);
-            strftime(str, sizeof(str), format, &ts);
-            }
-          else
-            strcpy(str, date);
-
-          rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, str);
-
-          for (i=0 ; i<n_attr ; i++)
-            {
-            for (j=0 ; j<n_attr_disp ; j++)
-              if (equal_ustring(disp_attr[j], attr_list[i]))
-                break;
-
-            if (j == n_attr_disp)
-              continue;
-
-            if (equal_ustring(attr_options[i][0], "boolean"))
-              {
-              if (atoi(attrib[i]) == 1)
-                rsprintf("<td align=center bgcolor=%s><input type=checkbox checked disabled></td>\n", col);
-              else
-                rsprintf("<td align=center bgcolor=%s><input type=checkbox disabled></td>\n", col);
-              }
-
-            else if (attr_flags[i] & AF_ICON)
-              {
-              rsprintf("<td align=center bgcolor=%s>", col);
-              if (attrib[i][0])
-                rsprintf("<img src=\"icons/%s\">", attrib[i]);
-              rsprintf("&nbsp</td>");
-              }
-
-            else
-              rsprintf("<td align=center bgcolor=%s><font size=%d>%s&nbsp</font></td>", col, size, attrib[i]);
-            }
-
-          if (n_line > 0)
-            {
-            rsprintf("<td bgcolor=%s><font size=%d>", col, size);
-            for (i=i_line=0 ; i<sizeof(str)-1 ; i++)
-              {
-              str[i] = text[i];
-              if (str[i] == '\n')
-                i_line++;
-
-              if (i_line == n_line)
-                break;
-              }
-            str[i] = 0;
-
-            /* always encode, not to rip apart HTML documents,
-               e.g. only the start of a table */
-            strencode(str);
-
-            rsprintf("&nbsp;</font></td>\n");
-            }
-
-          rsprintf("</tr>\n");
           }
         }
 
