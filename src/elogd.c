@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.615  2005/04/01 19:25:52  ritt
+   Implemented drop-down boxes for copy/move also on individual entry page
+
    Revision 1.614  2005/03/31 20:43:45  ritt
    Added 'Duplicate' to default menu commands
 
@@ -17951,7 +17954,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
        message_id, orig_message_id, format_flags[MAX_N_ATTR], att_hide[MAX_ATTACHMENTS],
        n_attachments, n_lines;
    char str[1000], ref[256], file_enc[256], thumb_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
-   char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], cmd_enc[256],
+   char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256],
        orig_tag[80], reply_tag[MAX_REPLY_TO * 10], display[256],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        att[256], lattr[256], mid[80], menu_item[MAX_N_LIST][NAME_LENGTH], format[80],
@@ -18161,27 +18164,19 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          continue;
 
       if (strieq(cmd, "Copy to") || strieq(cmd, "Move to")) {
+
+         rsprintf("&nbsp;<input type=submit name=cmd value=\"%s\">\n", loc(cmd));
+         if (strieq(cmd, "Copy to"))
+            rsprintf("<select name=destc>\n");
+         else
+            rsprintf("<select name=destm>\n");
+
          if (getcfg(lbs->name, cmd, str, sizeof(str))) {
             n_log = strbreak(str, lbk_list, MAX_N_LIST, ",");
 
-            for (j = 0; j < n_log; j++) {
-               strcpy(ref, lbk_list[j]);
-               url_encode(ref, sizeof(ref));
-
-               strcpy(cmd_enc, loc(cmd));
-               url_encode(cmd_enc, sizeof(cmd_enc));
-
-               if (strieq(cmd, loc("Copy to")))
-                  rsprintf
-                      ("&nbsp;<a href=\"../%s/%d?cmd=%s&destc=%s\">%s \"%s\"</a>&nbsp|\n",
-                       lbs->name_enc, message_id, cmd_enc, ref, loc(cmd), lbk_list[j]);
-               else
-                  rsprintf
-                      ("&nbsp;<a href=\"../%s/%d?cmd=%s&destm=%s\">%s \"%s\"</a>&nbsp|\n",
-                       lbs->name_enc, message_id, cmd_enc, ref, loc(cmd), lbk_list[j]);
-            }
+            for (j = 0; j < n_log; j++)
+               rsprintf("<option value=\"%s\">%s\n", lbk_list[j], lbk_list[j]);
          } else {
-            /* put one link for each logbook except current one */
             for (j = 0;; j++) {
                if (!enumgrp(j, str))
                   break;
@@ -18192,22 +18187,14 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                if (strieq(str, lbs->name))
                   continue;
 
-               strlcpy(ref, str, sizeof(ref));
-               url_encode(ref, sizeof(ref));
-
-               strcpy(cmd_enc, loc(cmd));
-               url_encode(cmd_enc, sizeof(cmd_enc));
-
-               if (strieq(cmd, "Copy to"))
-                  rsprintf
-                      ("&nbsp;<a href=\"../%s/%d?cmd=%s&amp;destc=%s\">%s \"%s\"</a>&nbsp|\n",
-                       lbs->name_enc, message_id, cmd_enc, ref, loc(cmd), str);
-               else
-                  rsprintf
-                      ("&nbsp;<a href=\"../%s/%d?cmd=%s&amp;destm=%s\">%s \"%s\"</a>&nbsp|\n",
-                       lbs->name_enc, message_id, cmd_enc, ref, loc(cmd), str);
+               rsprintf("<option value=\"%s\">%s\n", str, str);
             }
          }
+         rsprintf("</select>\n");
+
+         if (i < n - 1)
+            rsprintf("&nbsp|\n");
+
       } else {
          strcpy(str, loc(menu_item[i]));
          url_encode(str, sizeof(str));
