@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.448  2004/08/08 14:22:07  midas
+   Fixed disappearing &nbsp; in replies
+
    Revision 1.447  2004/08/08 14:11:51  midas
    Fixed disappearing &nbsp; in config file
 
@@ -7984,7 +7987,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         rsprintf("%s<br>\n", p);
                      } else {
                         rsputs(reply_string);
-                        rsprintf("%s\n", p);
+                        rsputs2(p);
+                        rsprintf("\n");
                      }
 
                      p += strlen(p) + 1;
@@ -7996,7 +8000,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         rsprintf("%s<p>\n", p);
                      } else {
                         rsputs(reply_string);
-                        rsprintf("%s\n\n", p);
+                        rsputs2(p);
+                        rsprintf("\n\n");
                      }
 
                      break;
