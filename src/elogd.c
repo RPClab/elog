@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.471  2004/09/15 05:24:31  midas
+   Use again common table for attribute display
+
    Revision 1.470  2004/09/15 02:05:28  midas
    Only show first 1000 lines of inline ASCII attachments
 
@@ -6478,8 +6481,8 @@ void show_bottom_text(LOGBOOK * lbs)
    } else
       /* add little logo */
       rsprintf
-          ("<center><a class=\"bottomlink\" href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></center>",
-           VERSION);
+          ("<center><a class=\"bottomlink\" title=\"%s\" href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></center>",
+           loc("Goto ELOG home page"), VERSION);
 }
 
 /*------------------------------------------------------------------*/
@@ -16750,7 +16753,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
        lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256], class_name[80], class_value[80],
        fl[8][NAME_LENGTH];
    FILE *f;
-   BOOL first, show_text, display_inline;
+   BOOL first, show_text, display_inline, subtable;
    struct tm *pts;
    time_t ltime;
 
@@ -17213,6 +17216,10 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          }
       }
 
+      /* 2 column table for all attributes */
+      rsprintf("<tr><td><table width=\"100%%\" cellpadding=0 cellspacing=0>");
+      subtable = 0;
+
       for (i = 0; i < lbs->n_attr; i++) {
 
          if (getcfg(lbs->name, "Password file", str, sizeof(str)) &&
@@ -17239,8 +17246,16 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                strlcpy(class_value, fl[2], sizeof(class_value));
          }
 
-         if ((format_flags[i] & AFF_SAME_LINE) == 0)
-            rsprintf("<tr><td><table width=\"100%%\" cellpadding=0 cellspacing=0><tr>");
+         if (format_flags[i] & AFF_SAME_LINE)
+            /* if attribute on same line, do nothing */
+            rsprintf("");
+         else if (i < lbs->n_attr-1 && (format_flags[i+1] & AFF_SAME_LINE)) {
+            /* if next attribute on same line, start a new subtable */
+            rsprintf("<tr><td colspan=2><table width=\"100%%\" cellpadding=0 cellspacing=0><tr>");
+            subtable = 1;
+         } else
+            /* for normal attribute, start new row */
+            rsprintf("<tr>");
 
          sprintf(lattr, "l%s", attr_list[i]);
          rsprintf("<td nowrap class=\"%s\">", class_name);
@@ -17340,9 +17355,26 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             rsprintf("&nbsp</td>\n");
          }
 
-         if (i == lbs->n_attr - 1 || (format_flags[i + 1] & AFF_SAME_LINE) == 0)
-            rsprintf("</tr></table></td></tr>\n");
+         if (i < lbs->n_attr-1 && (format_flags[i+1] & AFF_SAME_LINE) == 0) {
+            /* if next attribute not on same line, close row or subtable */
+            if (subtable) {
+               rsprintf("</table></td></tr>\n");
+               subtable = 0;
+            } else
+               rsprintf("</tr>");
+         }
+
+         /* if last attribute, close row or subtable */
+         if (i == lbs->n_attr - 1) {
+            if (subtable) {
+               rsprintf("</table></td></tr>\n");
+               subtable = 0;
+            } else
+               rsprintf("</tr>");
+         }
       }
+      
+      rsputs("</table></td></tr>\n"); // 2 column table
 
       rsputs("</table><!-- listframe -->\n");
 
