@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.604  2005/03/29 10:22:16  ritt
+   Version 2.5.8-2
+
    Revision 1.603  2005/03/29 07:52:06  ritt
    Renamed it to 'expand selection page'
 
@@ -924,7 +927,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.8-1"
+#define VERSION "2.5.8-2"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
