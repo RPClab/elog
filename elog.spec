@@ -4,7 +4,7 @@
 
 Name:       elog
 Summary:    elog is a standalone electronic web logbook
-Version:    2.2.6
+Version:    2.3.2
 Release:    1
 Copyright:  GPL
 Group:      Applications/Networking
@@ -86,16 +86,19 @@ install -m 0755 elogd.init $RPM_BUILD_ROOT/etc/rc.d/init.d/elogd
 
 mkdir -p $RPM_BUILD_ROOT%{_mandir}/man1
 mkdir -p $RPM_BUILD_ROOT%{_mandir}/man8
-install -m 644 elog.1 $RPM_BUILD_ROOT%{_mandir}/man1
-install -m 644 elconv.1 $RPM_BUILD_ROOT%{_mandir}/man1
-install -m 644 elogd.8 $RPM_BUILD_ROOT%{_mandir}/man8
+install -m 644 man/elog.1 $RPM_BUILD_ROOT%{_mandir}/man1
+install -m 644 man/elconv.1 $RPM_BUILD_ROOT%{_mandir}/man1
+install -m 644 man/elogd.8 $RPM_BUILD_ROOT%{_mandir}/man8
+
+%post
+chown -R %{elog_uid}:%{elog_gid} $RPM_BUILD_ROOT%{prefix}/elog
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%doc	README.txt COPYING doc
+%doc	README COPYING doc
 %prefix/bin/*
 %prefix/sbin/elogd
 %prefix/elog/eloghelp*
@@ -104,5 +107,5 @@ rm -rf $RPM_BUILD_ROOT
 %prefix/elog/logbooks
 %config(noreplace) %prefix/elog/elogd.cfg
 /etc/rc.d/init.d/elogd
-%{_mandir}/man8/*
+%{_mandir}/man1/*
 %{_mandir}/man8/*
