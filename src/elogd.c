@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.561  2005/02/15 18:55:35  ritt
+   Use 'attachmentframe' style
+
    Revision 1.560  2005/02/14 20:00:06  ritt
    Fixed HTML code to pass validator
 
@@ -13750,10 +13753,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                        colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
                   if (show_attachments) {
                      rsprintf("</td></tr><tr>");
-                     rsprintf("<td colspan=%d class=\"messagelist\">", colspan);
-                     rsprintf("<img src=\"%s\" alt=\"%s\" style=\"width:100%%\"></td>",
-                          ref, attachment[index] + 14);
-                     rsprintf("</tr>\n");
+                     rsprintf("<td colspan=%d class=\"attachmentframe\">", colspan);
+                     rsprintf("<img src=\"%s\" alt=\"%s\">", ref, attachment[index] + 14);
+                     rsprintf("</td></tr>\n");
                   }
                } else {
                   rsprintf
@@ -18154,7 +18156,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                     || atoi(str) == 1) && !att_hide[index] && display_inline) {
 
                   if (is_image(att)) {
-                     rsprintf("<tr><td class=\"messageframe\">\n");
+                     rsprintf("<tr><td class=\"attachmentframe\">\n");
                      rsprintf("<a name=\"att%d\"></a>\n", index + 1);
                      rsprintf("<img src=\"%s\" alt=\"%s\">\n", ref, attachment[index]+14);
                      rsprintf("</td></tr>\n\n");
