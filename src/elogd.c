@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.142  2003/07/29 20:25:47  midas
+  Fixed display of text attachments
+
   Revision 1.141  2003/07/28 15:24:27  midas
   Fixed bug with elog:/n reference
 
@@ -8402,7 +8405,7 @@ FILE *f;
                  strchr(str, '.') == NULL) && show_attachments)
               {
               /* display attachment */
-              rsprintf("<br><pre class=\"messagelist\">");
+              rsprintf("</td></tr><tr><td colspan=%d class=\"messagelist\"><pre>", colspan);
 
               strlcpy(file_name, lbs->data_dir, sizeof(file_name));
 
