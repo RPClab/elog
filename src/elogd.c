@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.508  2004/11/06 16:45:14  midas
+   Fixed wrong link if last entry in logbook has been moved
+
    Revision 1.507  2004/11/03 10:01:48  midas
    Version 2.5.5
 
@@ -16687,7 +16690,10 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
       return;
 
    /* display status message */
-   sprintf(str, "%d", source_id);
+   if (source_id)
+      sprintf(str, "%d", source_id);
+   else
+      str[0] = 0;
    show_standard_header(lbs, FALSE, loc("Copy ELog entry"), str, FALSE);
 
    rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
@@ -16719,7 +16725,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
    }
 
    rsprintf("</b></tr>\n");
-   if (src_id)
+   if (source_id)
       rsprintf
           ("<tr><td align=center class=\"dlgform\">%s <a href=\"../%s/%d\">%s</td></tr>\n",
            loc("Go to"), lbs->name, source_id, lbs->name);
