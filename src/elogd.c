@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.117  2003/06/18 14:26:11  midas
+  Added option 'Use lock'
+
   Revision 1.116  2003/06/04 13:20:06  midas
   Fixed problem with 'change elogd.cfg' and user-defined menu commands
 
@@ -5354,17 +5357,20 @@ time_t now;
 
       if (bedit)
         {
-        if (*getparam("full_name"))
-          strcpy(str, getparam("full_name"));
-        else
-          strcpy(str, loc("user"));
+        if (getcfg(lbs->name, "Use Lock", str) && atoi(str) == 1)
+          {
+          if (*getparam("full_name"))
+            strcpy(str, getparam("full_name"));
+          else
+            strcpy(str, loc("user"));
 
-        strcat(str, " ");
-        strcat(str, loc("on"));
-        strcat(str, " ");
-        strcat(str, rem_host);
+          strcat(str, " ");
+          strcat(str, loc("on"));
+          strcat(str, " ");
+          strcat(str, rem_host);
 
-        el_lock_message(lbs, message_id, str);
+          el_lock_message(lbs, message_id, str);
+          }
         }
       }
     else
