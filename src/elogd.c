@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.567  2005/02/20 20:18:26  ritt
+   Fixed problem with conditional attributes and presets
+
    Revision 1.566  2005/02/20 19:39:19  ritt
    Improved speed by pre-parsing configuration file
 
@@ -7682,6 +7685,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
    }
 
+   /* check for preset attributes without any condition */
+   set_condition("");
    for (index = 0; index < lbs->n_attr; index++) {
 
       /* check for preset string */
@@ -7773,6 +7778,58 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          attrib_from_param(n_attr, attrib);
    } else
       n_attr = lbs->n_attr;
+
+   /* now check again for conditional preset */
+   for (index = 0; index < lbs->n_attr; index++) {
+
+      /* check for preset string */
+      sprintf(str, "Preset %s", attr_list[index]);
+      if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0) {
+
+         if ((!bedit && !breply) ||     /* don't subst on edit or reply */
+             (breedit && i == 2)) {     /* subst on reedit only if preset is under condition */
+
+            /* do not format date for date attributes */
+            i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & AF_DATE) == 0);
+            strsubst(preset, slist, svalue, i);
+
+            /* check for index substitution */
+            if (!bedit && strchr(preset, '%')) {
+               /* get index */
+               i = get_last_index(lbs, index);
+
+               strcpy(str, preset);
+               sprintf(preset, str, i + 1);
+            }
+
+            if (!strchr(preset, '%'))
+               strcpy(attrib[index], preset);
+         }
+      }
+
+      sprintf(str, "Preset on reply %s", attr_list[index]);
+      if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0 && breply) {
+
+         if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
+
+            /* do not format date for date attributes */
+            i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & AF_DATE) == 0);
+            strsubst(preset, slist, svalue, i);
+
+            /* check for index substitution */
+            if (!bedit && strchr(preset, '%')) {
+               /* get index */
+               i = get_last_index(lbs, index);
+
+               strcpy(str, preset);
+               sprintf(preset, str, i + 1);
+            }
+
+            if (!strchr(preset, '%'))
+               strcpy(attrib[index], preset);
+         }
+      }
+   }
 
    /* check for maximum number of replies */
    if (breply) {
