@@ -14,10 +14,10 @@ a:hover { color:#0000FF; text-decoration:underline }
 a:active { color:#0000FF; text-decoration:underline }
 a:focus { color:#0000FF; text-decoration:underline }
 
-/* standard table cell */
 td {
   color:black;
-  font-family:sans-serif; 
+  font-family:sans-serif;
+  font-size:8pt; 
 }
 
 /* frame table */
@@ -25,10 +25,15 @@ td {
   width:100%;
 }
 
+/* printable frame table */
+.pframe {
+  width:600;
+}
+
 /* standard formatting for logbook tabs */
 .tabs {
   font-family:sans-serif;
-  font-size:10pt;
+  font-size:8pt;
   background-color:white;
 }
 
@@ -36,8 +41,8 @@ td {
 
 .gtab a {
   background-color:#B0E0B0;
-  padding-left:5px;
-  padding-right:5px;
+  padding-left:1px;
+  padding-right:1px;
 }
 
 .gtab {
@@ -47,8 +52,8 @@ td {
 
 .sgtab a {
   color:white;
-  padding-left:5px;
-  padding-right:5px;
+  padding-left:1px;
+  padding-right:1px;
 }
 
 .sgtab {
@@ -63,8 +68,8 @@ td {
 
 .ltab a {
   background-color:#E0E0E0;
-  padding-left:5px;
-  padding-right:5px;
+  padding-left:1px;
+  padding-right:1px;
 }
 
 .ltab {
@@ -75,8 +80,8 @@ td {
 .sltab a {
   background-color:#486090;
   color:white;
-  padding-left:5px;
-  padding-right:5px;
+  padding-left:1px;
+  padding-right:1px;
 }
 
 .sltab {
@@ -91,6 +96,9 @@ td {
 
 .title1 {
   background-color:#486090;
+  border-bottom:1px solid black;
+  border-top:1px solid #E0E0E0;
+  border-left:1px solid #E0E0E0;
   color:white;
   font-size:10pt;
   font-family:sans-serif;
@@ -99,6 +107,8 @@ td {
 
 .title2 {
   background-color:#486090;
+  border-bottom:1px solid black;
+  border-top:1px solid #E0E0E0;
   color:white;
   font-size:10pt;
   font-family:sans-serif;
@@ -106,6 +116,9 @@ td {
 }
 
 .title3 {
+  border-bottom:1px solid black;
+  border-top:1px solid #E0E0E0;
+  border-right:1px solid black;
   background-color:#486090;
   text-align:right;
 }
@@ -114,8 +127,9 @@ td {
 
 .menuframe {
   border:1px solid #486090;
-  border-top:0px;
-  padding:0px;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  padding:1px;
   background-color:#E0E0E0;
 }
 
@@ -138,7 +152,6 @@ td {
   text-align:left;
   font-size:8pt;
   font-weight:bold;
-  padding:1px;
 }
 
 .menu4 {
@@ -149,87 +162,99 @@ td {
 
 /* frame table in listings */
 .listframe {
+  border:1px solid #0000FF;
+  border-top:1px solid white;
+  border-left:1pc solid white;
   background-color:#486090;
   border:0px;
 }
 
 /* title row in listing */
 .listtitle {
+  border:1px solid #0000FF;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#CCCCFF;
   text-align:center;
-  padding:0px;
 }
 
 /* odd and even lines in message listing */
 
 .list1 {
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#DDEEBB;
   text-align:center;
-  font-size:8pt;
 }
 
 .list2 {
+  border:1px solid #808040;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#FFFFB0;
   text-align:center;
-  font-size:8pt;
 }
-
-.list1 a:link { color:black; text-decoration:none }
-.list1 a:visited { color:black; text-decoration:none }
-.list1 a:hover { color:#0000FF; text-decoration:underline }
-.list1 a:active { color:black; text-decoration:underline }
-.list1 a:focus { color:#0000FF; text-decoration:underline }
-
-.list2 a:link { color:black; text-decoration:none }
-.list2 a:visited { color:black; text-decoration:none }
-.list2 a:hover { color:#0000FF; text-decoration:underline }
-.list2 a:active { color:black; text-decoration:underline }
-.list2 a:focus { color:#0000FF; text-decoration:underline }
 
 /* attachment line */
 
 .attachment {
+  border:1px solid #808040;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#FFFFB0;
   text-align:left;
 }
 
 /* threaded listing */
 .thread {
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#DDEEBB;
   text-align:left;
 }
 
 .threadreply {
+  border:1px solid #808040;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#FFFFB0;
   text-align:left;
 }
 
-.thread a:link { color:black; text-decoration:none }
-.thread a:visited { color:black; text-decoration:none }
-.thread a:hover { color:#0000FF; text-decoration:underline }
-.thread a:active { color:black; text-decoration:underline }
-.thread a:focus { color:#0000FF; text-decoration:underline }
-
-.threadreply a:link { color:black; text-decoration:none }
-.threadreply a:visited { color:black; text-decoration:none }
-.threadreply a:hover { color:#0000FF; text-decoration:underline }
-.threadreply a:active { color:black; text-decoration:underline }
-.threadreply a:focus { color:#0000FF; text-decoration:underline }
-
 /* attribute names and values on single message page */
-.attribname {
-  background-color:#CCCCFF;
+.attribhead {
+  background-color:#E0E0A0;
+  border:1px solid #0000FF;
+  border-top:1px solid white;
+  border-left:1px solid white;
   padding:1px;
   font-size:8pt;
+  font-family:sans-serif;
+}
+
+.attribname {
+  width:150px;
+  background-color:#CCCCFF;
+  border:1px solid #0000FF;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  padding:1px;
 }
 
 .attribvalue {
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#DDEEBB;
   padding:1px;
-  font-size:8pt;
 }
 
 .attribvalue2 {
+  border:1px solid #808040;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#FFFFB0;
   padding:1px;
 }
@@ -237,6 +262,9 @@ td {
 /* message cell in listing */
 .messagelist {
   background-color:white;
+  border-right:1px solid gray;
+  border-left:1px solid gray;
+  border-bottom:1px solid gray;
   font-family:'lucida console',courier,monospace;
   font-size:8pt;
   padding:1px;
@@ -247,7 +275,7 @@ td {
   background-color:white;
   border:1px solid #486090;
   border-top:0px;
-  padding:2px;
+  padding:1px;
 }
 
 .messagepre {
@@ -263,6 +291,9 @@ td {
 
 /* summary display (threaded mode expand) */
 .summary {
+  border:1px solid black;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:white;
   font-family:'lucida console',courier,monospace;
   font-size:8pt;
@@ -270,22 +301,25 @@ td {
 
 /* input forms */
 .form1 {
-  border:1px solid #486090;
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#DDEEBB;
-  padding:0px;
+  padding:1px;
 }
 
 .form2 {
-  border:1px solid #486090;
-  border-top:0px;
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#DDEEBB;
-  padding:0px;
+  padding:1px;
 }
 
 /* error message */
 .errormsg {
   border:1px solid #486090;
-  padding:5px;
+  padding:1px;
   background-color:#FFB0B0;
   text-align:center;
   font-size:10pt;
@@ -293,7 +327,10 @@ td {
 
 /* notification (warning) */
 .notifymsg {
-  padding:5px;
+  padding:1px;
+  border:1px solid #806000;
+  border-top:1px solid white;
+  border-left:1px solid white;
   background-color:#FFD070;
   text-align:center;
   font-size:10pt;
@@ -304,29 +341,29 @@ td {
   width:50%;
   background-color:#486090; 
   border:1px solid #486090;
-  margin-top:0px;
+  margin-top:2cm;
 }
 
 .dlgerror {
   background-color:red;
-  padding:1px;
-  font-size:8pt;
+  padding:10px;
+  font-size:10pt;
   text-align:center;
-  font-size:medium;
+  font-size:10pt;
   color:white;
 }
 
 .dlgtitle {
   background-color:#486090;
   color:white;
-  font-size:medium;
+  font-size:10pt;
   text-align:center;
-  padding:1px;
+  padding:5px;
 }
 
 .dlgform {
   background-color:#DDEEBB;
-  padding:1px;
+  padding:5px;
 }
 
 /* ELOG home page link at bottom of page */
