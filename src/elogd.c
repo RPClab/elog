@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.310  2004/03/22 14:17:31  midas
+   Implemented 'display <attribute>' for single entry display
+
    Revision 1.309  2004/03/22 14:14:57  midas
    Implemented 'display <attribute>'
 
@@ -15022,10 +15025,27 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
          } else {
             rsprintf("%s:</td><td class=\"%s\">\n", attr_list[i], class_value);
 
-            if (is_html(attrib[i]))
-               rsputs(attrib[i]);
+            sprintf(str, "Display %s", attr_list[i]);
+            if (getcfg(lbs->name, str, display)) {
+               j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
+                                    (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
+               sprintf(str, "%d", message_id);
+               add_subst_list((char (*)[NAME_LENGTH]) slist,
+                              (char (*)[NAME_LENGTH]) svalue, "message id", str, &j);
+               add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
+                              (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
+
+               strsubst(display, (char (*)[NAME_LENGTH]) slist,
+                        (char (*)[NAME_LENGTH]) svalue, j);
+
+            } else 
+               strcpy(display, attrib[i]);
+
+            if (is_html(display))
+               rsputs(display);
             else
-               rsputs2(attrib[i]);
+               rsputs2(display);
+
             rsprintf("&nbsp</td>\n");
          }
 
