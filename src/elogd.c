@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.611  2005/03/30 08:59:35  ritt
+   Implemented datetime format
+
    Revision 1.610  2005/03/29 21:20:37  ritt
    Fixed find form for DATETIME
 
@@ -1270,6 +1273,8 @@ struct {
    ".XML", "text/xml"}, {
    ".XSL", "text/xml"}, {
    ".ZIP", "application/x-zip-compressed"}, {
+
+   ".THUMB", "image/jpeg"}, {  // hard-coded for now...
 "", ""},};
 
 typedef struct {
@@ -7156,7 +7161,7 @@ void send_file_direct(char *file_name)
       str[i] = 0;
 
       for (i = 0; filetype[i].ext[0]; i++)
-         if (strstr(str, filetype[i].ext))
+         if (chkext(str, filetype[i].ext))
             break;
 
       if (!getcfg("global", "charset", charset, sizeof(charset)))
@@ -14918,14 +14923,16 @@ void show_select_navigation(LOGBOOK * lbs)
 
 time_t retrieve_date(char *index, BOOL bstart)
 {
-   int year, month, day, current_year, current_month, current_day;
-   char pm[10], py[10], pd[10], str[NAME_LENGTH];
+   int year, month, day, hour, minute, current_year, current_month, current_day;
+   char pm[10], py[10], pd[10], ph[10], pn[10], str[NAME_LENGTH];
    struct tm tms;
    time_t ltime;
 
    sprintf(pm, "m%s", index);
    sprintf(py, "y%s", index);
    sprintf(pd, "d%s", index);
+   sprintf(ph, "h%s", index);
+   sprintf(pn, "n%s", index);
 
    time(&ltime);
    memcpy(&tms, localtime(&ltime), sizeof(tms));
@@ -14977,18 +14984,32 @@ time_t retrieve_date(char *index, BOOL bstart)
 
    }
 
+   /* if hour not given, use 0 */
+   if (*getparam(ph)) {
+      hour = atoi(getparam(ph));
+   } else
+      hour = 0;
+
+   /* if minute not given, use 0 */
+   if (*getparam(pn)) {
+      minute = atoi(getparam(pn));
+   } else
+      minute = 0;
+
    memset(&tms, 0, sizeof(struct tm));
    tms.tm_year = year - 1900;
    tms.tm_mon = month - 1;
    tms.tm_mday = day;
-   tms.tm_hour = 0;
+   tms.tm_hour = hour;
+   tms.tm_min = minute;
+   tms.tm_isdst = -1;
 
    if (tms.tm_year < 90)
       tms.tm_year += 100;
 
    ltime = mktime(&tms);
 
-   if (!bstart)
+   if (!bstart && *getparam(ph) == 0)
       /* end time is first second of next day */
       ltime += 3600 * 24;
 
@@ -16096,7 +16117,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             disp_filter = TRUE;
 
       for (i = 0; i < lbs->n_attr; i++) {
-         if (attr_flags[i] & AF_DATE) {
+         if (attr_flags[i] & (AF_DATE | AF_DATETIME)) {
             sprintf(str, "%da", i);
             ltime = retrieve_date(str, TRUE);
             if (ltime > 0)
@@ -16168,7 +16189,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                   rsprintf("<td class=\"attribvalue\">");
                   if (ltime1) {
                      memcpy(&tms, localtime(&ltime1), sizeof(struct tm));
-                     strcpy(format, "%x");
+                     if (attr_flags[i] & AF_DATE)
+                        strcpy(format, DEFAULT_DATE_FORMAT);
+                     else
+                        strcpy(format, DEFAULT_TIME_FORMAT);
                      strftime(str, sizeof(str), format, &tms);
                      if (ltime2 > 0)
                         rsprintf("%s %s", loc("From"), str);
@@ -16177,7 +16201,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                   }
                   if (ltime2) {
                      memcpy(&tms, localtime(&ltime2), sizeof(struct tm));
-                     strcpy(format, "%x");
+                     if (attr_flags[i] & AF_DATE)
+                        strcpy(format, DEFAULT_DATE_FORMAT);
+                     else
+                        strcpy(format, DEFAULT_TIME_FORMAT);
                      strftime(str, sizeof(str), format, &tms);
                      if (ltime1 > 0)
                         rsprintf(" %s %s", loc("to"), str);

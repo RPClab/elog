@@ -1074,22 +1074,24 @@ Default is <i>"0, attribname, attribvalue, 80, 500"</i>. Trailing parameters can
 so specifying for example only the flags is possible.
 <p>
 
-<LI><b><code>Type &lt;attribute&gt; = date | numeric | userlist</b></code>
+<LI><b><code>Type &lt;attribute&gt; = date | datetime | numeric | userlist</b></code>
 <br>
 A normal attribute can contain strings of any type. With this option, attributes can be
-forced to be numeric or to be a date, or to consist of a list of all users from the password file.
-When new logbook entries are made,
-numeric attributes are checked to contain only digits. Note that JavaScript has to be
-enabled to do this.<br><br>
+forced to be numeric or to be a date/time, or to consist of a list of all users from
+the password file. When new logbook entries are made, numeric attributes are checked
+to contain only digits. Note that JavaScript has to be enabled to do this.<br><br>
 
-Attributes of type <b><code>date</code></b> are treated as a date.
+Attributes of type <b><code>date</code></b> are treated as a date. Their format for
+display can be controlled by the <b><code>Date format</code></b> option.
 Upon entry, drop-down boxes are displayed which let the user select the day, month and
 year. Alternatively, a pop-up date picker using a calendar can be displayed if JavaScript
 is enabled. Date attributes are saved internally as seconds since 1.1.1970, and can therefore
 be sorted propoerly by clicking on the header of a logbook entry list. On the find page,
 dates can be searched for via a start and end date. If date attributes are used in a quick filter
 (see above), a drop-down quick filter box is displayed which lets the user select "last day",
-"last week", "next week", and so on.<p>
+"last week", "next week", and so on. The <b><code>datetime</code></b> type combines
+a date and time in HH:MM. The output of this combination is controlled by the
+<b><code>Time format</code></b> option.<br><br>
 
 If the attribute type is <b><code>userlist</code></b>, a drop-down box is displayed which contains
 all user names from the current password file. This can be useful for example in a bug
