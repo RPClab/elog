@@ -77,4 +77,5 @@ install: $(EXECS)
 restart:
 	/etc/rc.d/init.d/elogd restart
 clean:
-	-$(RM) *~ $(EXECS) regex.o
+	-$(RM) *~ $(EXECS) regex.o mxml.o
+
