@@ -6,6 +6,9 @@
    Contents:     Header file for mxml.c
 
    $Log$
+   Revision 1.2  2005/03/03 15:34:40  ritt
+   Implemented mxml_debug_tree()
+
    Revision 1.1  2005/03/01 23:48:18  ritt
    Implemented MXML for password file
 
@@ -47,6 +50,7 @@ BOOL mxml_write_value(MXML_WRITER *writer, const char *value);
 BOOL mxml_close_document(MXML_WRITER *writer);
 
 int mxml_get_number_of_children(PMXML_NODE pnode);
+PMXML_NODE mxml_subnode(PMXML_NODE pnode, int index);
 PMXML_NODE mxml_find_node(PMXML_NODE tree, char *xml_path);
 char *mxml_get_value(PMXML_NODE pnode);
 char *mxml_get_attribute(PMXML_NODE pnode, char *name);
@@ -66,6 +70,7 @@ BOOL mxml_delete_attribute(PMXML_NODE, char *attrib_name);
 PMXML_NODE mxml_create_root_node();
 PMXML_NODE mxml_parse_file(char *file_name, char *error, int error_size);
 BOOL mxml_write_tree(char *file_name, PMXML_NODE tree);
+void mxml_debug_tree(PMXML_NODE tree, int level);
 void mxml_free_tree(PMXML_NODE tree);
 
 /*------------------------------------------------------------------*/

@@ -6,6 +6,9 @@
    Contents:     Midas XML Library
 
    $Log$
+   Revision 1.3  2005/03/03 15:34:21  ritt
+   Implemented mxml_debug_tree()
+
    Revision 1.2  2005/03/01 23:55:43  ritt
    Fixed compiler warnings
 
@@ -342,13 +345,25 @@ PMXML_NODE mxml_create_root_node()
 PMXML_NODE mxml_add_node(PMXML_NODE parent, char *node_name, char *value)
 /* add a subnode (child) to an existing parent node */
 {
-   PMXML_NODE pnode;
+   PMXML_NODE pnode, pchild;
+   int i, j;
 
    assert(parent);
    if (parent->n_children == 0)
       parent->child = malloc(sizeof(MXML_NODE));
-   else
+   else {
+      pchild = parent->child;
       parent->child = realloc(parent->child, sizeof(MXML_NODE)*(parent->n_children+1));
+
+      if (parent->child != pchild) {
+         /* correct parent pointer for children */
+         for (i=0 ; i<parent->n_children ; i++) {
+            pchild = parent->child+i;
+            for (j=0 ; j<pchild->n_children ; j++)
+               pchild->child[j].parent = pchild;
+         }
+      }
+   }
    assert(parent->child);
    pnode = &parent->child[parent->n_children];
    memset(pnode, 0, sizeof(MXML_NODE));
@@ -393,6 +408,17 @@ int mxml_get_number_of_children(PMXML_NODE pnode)
 {
    assert(pnode);
    return pnode->n_children;
+}
+
+/*------------------------------------------------------------------*/
+
+PMXML_NODE mxml_subnode(PMXML_NODE pnode, int index)
+/* return number of subnodes (children) of a node */
+{
+   assert(pnode);
+   if (index < pnode->n_children)
+      return &pnode->child[index];
+   return NULL;
 }
 
 /*------------------------------------------------------------------*/
@@ -1021,6 +1047,33 @@ BOOL mxml_write_tree(char *file_name, PMXML_NODE tree)
       return FALSE;
 
    return TRUE;
+}
+
+/*------------------------------------------------------------------*/
+
+void mxml_debug_tree(PMXML_NODE tree, int level)
+/* print XML tree for debugging */
+{
+   int i;
+
+   for (i=0 ; i<level ; i++)
+      printf("  ");
+   printf("Name: %s\n", tree->name);
+   for (i=0 ; i<level ; i++)
+      printf("  ");
+   printf("Addr: %08X\n", tree);
+   for (i=0 ; i<level ; i++)
+      printf("  ");
+   printf("Prnt: %08X\n", tree->parent);
+   for (i=0 ; i<level ; i++)
+      printf("  ");
+   printf("NCld: %d\n", tree->n_children);
+
+   for (i=0 ; i<tree->n_children ; i++)
+      mxml_debug_tree(tree->child+i, level+1);
+
+   if (level == 0)
+      printf("\n");
 }
 
 /*------------------------------------------------------------------*/
