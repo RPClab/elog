@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.7  2002/07/08 08:39:38  midas
+  Fixed return code
+
   Revision 1.6  2002/06/12 07:52:41  midas
   Increased text size
 
@@ -399,7 +402,7 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
           else
             {
             printf("Error: Attributes must be supplied in the form \"-a <attribute>=<value>\".\n");
-            return 0;
+            return 1;
             }
           }
         else if (argv[i][1] == 'f')
@@ -422,7 +425,7 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
           printf("The elog message can either be submitted on the command line\n");
           printf("or in a file with the -m flag. Multiple attributes and attachments\n");
           printf("can be supplied\n");
-          return 0;
+          return 1;
           }
         }
       else
@@ -433,19 +436,19 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
   if (host_name[0] == 0)
     {
     printf("Please specify hostname.\n");
-    return 0;
+    return 1;
     }
 
   if (logbook[0] == 0)
     {
     printf("Please specify logbook with the \"-l\" flag.\n");
-    return 0;
+    return 1;
     }
 
   if (n_attr == 0)
     {
     printf("Please specify attribute(s) with the \"-a\" flag.\n");
-    return 0;
+    return 1;
     }
 
   if (text[0] == 0 && textfile[0] == 0)
@@ -461,7 +464,7 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
     if (fh < 0)
       {
       printf("Message file \"%s\" does not exist.\n", textfile);
-      return 0;
+      return 1;
       }
 
     size = lseek(fh, 0, SEEK_END);
@@ -470,7 +473,7 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
     if (size > sizeof(text)-1)
       {
       printf("Message file \"%s\" is too long (%d bytes max).\n", textfile, sizeof(text));
-      return 0;
+      return 1;
       }
 
     memset(text, 0, sizeof(text));
@@ -478,7 +481,7 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
     if (i < size)
       {
       printf("Cannot fully read message file \"%s\".\n", textfile);
-      return 0;
+      return 1;
       }
 
     close(fh);
@@ -495,7 +498,7 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
     if (fh < 0)
       {
       printf("Attachment file \"%s\" does not exist.\n", attachment[i]);
-      return 0;
+      return 1;
       }
 
     att_size[i] = lseek(fh, 0, SEEK_END);
@@ -505,14 +508,14 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
     if (buffer[i] == NULL || att_size[i] > 500*1024)
       {
       printf("Attachment file \"%s\" is too long (500k max).\n", attachment[i]);
-      return 0;
+      return 1;
       }
 
     n = read(fh, buffer[i], att_size[i]);
     if (n < att_size[i])
       {
       printf("Cannot fully read attachment file \"%s\".\n", attachment[i]);
-      return 0;
+      return 1;
       }
     buffer[i][n] = 0;
 
@@ -529,5 +532,5 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
     if (buffer[i])
       free(buffer[i]);
 
-  return 1;
+  return 0;
 }
