@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.20  2002/05/02 15:42:06  midas
+  Removed lingering and do a REUSEADDR by default
+
   Revision 1.19  2002/05/02 14:45:10  midas
   Evaluage 'HEAD' request (for wget)
 
@@ -7295,7 +7298,6 @@ char                 cookie[256], boundary[256], list[1000],
                      rem_host_ip[256];
 int                  lsock, len, flag, content_length, header_length;
 struct hostent       *phe;
-struct linger        ling;
 fd_set               readfds;
 struct timeval       timeout;
 
@@ -7345,22 +7347,15 @@ struct timeval       timeout;
 
   serv_addr.sin_port = htons((short) tcp_port);
 
+  /* try reusing address */
+  flag = 1;
+  setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR, (char *) &flag, sizeof(INT));
+
   status = bind(lsock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
   if (status < 0)
     {
-    /* try reusing address */
-    flag = 1;
-    setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR,
-               (char *) &flag, sizeof(INT));
-    status = bind(lsock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-
-    if (status < 0)
-      {
-      printf("Cannot bind to port %d.\nPlease try later or use the \"-p\" flag to specify a different port\n", tcp_port);
-      return;
-      }
-    else
-      printf("Warning: port %d already in use\n", tcp_port);
+    printf("Cannot bind to port %d.\nPlease try later or use the \"-p\" flag to specify a different port\n", tcp_port);
+    return;
     }
 
   /* get host name for mail notification */
@@ -7416,11 +7411,6 @@ struct timeval       timeout;
       {
       len = sizeof(acc_addr);
       _sock = accept(lsock, (struct sockaddr *) &acc_addr, &len);
-
-      /* turn on lingering (borrowed from NCSA httpd code) */
-      ling.l_onoff = 1;
-      ling.l_linger = 600;
-      setsockopt(_sock, SOL_SOCKET, SO_LINGER, (char *) &ling, sizeof(ling));
 
       /* find new entry in socket table */
       for (i=0 ; i<N_MAX_CONNECTION ; i++)
