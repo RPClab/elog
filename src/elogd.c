@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.269  2004/02/26 13:16:34  midas
+   Show attribute values as HTML if the contain <a> or <img> in listing
+
    Revision 1.268  2004/02/26 13:09:14  midas
    Show attribute values as HTML if the contain <a> or <img>
 
@@ -10398,9 +10401,17 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   }
 
                   else {
-                     rsprintf("<td class=\"%s\"><a href=\"%s\">", sclass, ref);
-                     rsputs2(attrib[i]);
-                     rsprintf("&nbsp</a></td>");
+                     rsprintf("<td class=\"%s\">", sclass);
+
+                     if (is_html(attrib[i]))
+                        rsputs(attrib[i]);
+                     else  {
+                        rsprintf("<a href=\"%s\">", ref);
+                        rsputs2(attrib[i]);
+                        rsprintf("</a>");
+                     }
+
+                     rsprintf("&nbsp</td>");
                   }
                }
             }
