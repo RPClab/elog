@@ -1,4 +1,4 @@
-Version 2.0.0, released June 12th, 2002
+Version 2.0.0, released June 17th, 2002
 =======================================
 
 - Reworked database system to use indices instead of file offsets
