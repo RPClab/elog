@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.117  2003/01/04 20:22:35  midas
+  Added new email options and hierarchical logbooks
+
   Revision 2.116  2002/12/19 14:37:14  midas
   Avoid long lines with many radio/check buttons
 
@@ -671,6 +674,15 @@ typedef struct {
   int       *n_el_index;
   int       n_attr;
 } LOGBOOK;
+
+typedef struct LBNODE *LBLIST;
+  
+struct LBNODE  {
+  char    name[256];
+  LBLIST  member;
+  int     n_members;
+  int     subgroup;
+} LBNODE;
 
 typedef struct {
   LOGBOOK   *lbs;
@@ -3771,10 +3783,109 @@ void show_standard_header(char *title, char *path)
 
 /*------------------------------------------------------------------*/
 
+int get_logbook_hierarchy(LBLIST *lblist)
+{
+int    i, j, k, n, m;
+char   str[1000], grpname[256], grpmembers[1000];
+LBLIST lbl;
+char   grplist[MAX_N_LIST][NAME_LENGTH];
+
+  /* enumerate groups */
+  for (i=n=0 ; ; i++)
+    {
+    if (!enumcfg("global", grpname, grpmembers, i))
+      break;
+
+    strlcpy(str, grpname, sizeof(str));
+    str[5] = 0;
+    if (equal_ustring(str, "group"))
+      {
+      if (n == 0)
+        lbl = malloc(sizeof(LBNODE));
+      else
+        lbl = realloc(lbl, (n+1) * sizeof(LBNODE));
+      memset(lbl+n, 0, sizeof(LBNODE));
+
+      strlcpy(lbl[n].name, grpname+6, 256);
+      m = strbreak(grpmembers, grplist, MAX_N_LIST);
+      lbl[n].n_members = m;
+
+      lbl[n].member = calloc(sizeof(LBNODE), m);
+      for (j=0 ; j<m ; j++)
+        strlcpy(lbl[n].member[j].name, grplist[j], 256);
+
+      n++;
+      }
+    }
+
+  /* populate nodes with logbooks or other groups */
+  for (i=0 ; i<n ; i++)
+    for (j=0 ; j<lbl[i].n_members ; j++)
+      {
+      /* check if node is valid logbook */
+      for (k=0 ; lb_list[k].name[0] ; k++)
+        if (equal_ustring(lbl[i].member[j].name, lb_list[k].name))
+          break;
+
+      /* check if node is other node */
+      if (!lb_list[k].name[0])
+        {
+        for (k=0 ; k<n ; k++)
+          if (equal_ustring(lbl[i].member[j].name, lbl[k].name))
+            {
+            lbl[i].member[j].member = lbl[k].member;
+            lbl[i].member[j].n_members = lbl[k].n_members;
+            
+            /* mark group as subgroup */
+            lbl[k].subgroup = 1;
+            break;
+            }
+        }
+      }
+
+  if (n == 0)
+    {
+    for (n=0 ; lb_list[n].name[0] ; n++);
+
+    /* make simple list with logbooks */
+    lbl = malloc(n * sizeof(LBNODE));
+    for (i=0 ; i<n ; i++)
+      strlcpy(lbl[i].name, lb_list[i].name, 256);
+    }
+
+  *lblist = lbl;
+
+  return n;
+}
+
+int is_logbook_in_group(LBLIST lbl, char *logbook)
+{
+int i;
+
+  if (equal_ustring(lbl->name, logbook))
+    return 1;
+
+  for (i=0 ; i<lbl->n_members ; i++)
+    {
+    if (equal_ustring(logbook, lbl->member[i].name))
+      return 1;
+
+    if (lbl->member[i].n_members > 0 &&
+        is_logbook_in_group(&(lbl->member[i]), logbook))
+      return 1;
+    }
+
+  return 0;
+}
+
+
+/*------------------------------------------------------------------*/
+
 void show_standard_title(char *logbook, char *text, int printable)
 {
-char str[256], ref[256];
-int  i, j;
+char   str[256], ref[256];
+int    i, j, n_grp, n_lb, nnum, level;
+LBLIST clb, flb, nlb, lbl;
 
   /* overall table, containing title, menu and message body */
   if (printable)
@@ -3784,50 +3895,83 @@ int  i, j;
     rsprintf("<table width=%s border=%s cellpadding=0 cellspacing=0 bgcolor=%s>\n\n",
              gt("Table width"), gt("Border width"), gt("Frame color"));
 
+  /* scan logbook hierarchy */
+  n_grp = get_logbook_hierarchy(&lbl);
+
   /*---- logbook selection row ----*/
 
+  clb = lbl;
+  nlb = NULL;
+  n_lb = n_grp;
   if (!printable && getcfg(logbook, "logbook tabs", str) && atoi(str) == 1)
     {
-    rsprintf("<tr><td bgcolor=#FFFFFF>\n");
-
-    if (getcfg("global", "main tab", str))
-      rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"background-color:#E0E0E0\">&nbsp;<a href=\"../\">%s</a>&nbsp;</font>&nbsp\n", str);
-
-    for (i=0 ;  ; i++)
+    for (level = 0 ; ; level++)
       {
-      if (!enumgrp(i, str))
+      rsprintf("<tr><td bgcolor=#FFFFFF>\n");
+
+      if (getcfg("global", "main tab", str))
+        rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"background-color:#E0E0E0\">&nbsp;<a href=\"../\">%s</a>&nbsp;</font>&nbsp\n", str);
+
+      for (i=0 ; i<n_lb ; i++)
+        {
+        if (level == 0 && clb[i].subgroup)   // check for subgroup
+          continue;
+
+        strlcpy(str, clb[i].name, sizeof(str));
+
+        /* build reference to first logbook in group */
+        if (clb[i].member == NULL)
+          strlcpy(ref, str, sizeof(ref)); // current node is logbook
+        else
+          {
+          flb = &clb[i].member[0];        // current node is group
+          while (flb->member)             // so traverse hierarchy
+            flb = &flb->member[0];
+          strlcpy(ref, flb->name, sizeof(ref));
+          }
+        url_encode(ref, sizeof(ref));
+
+        if (is_logbook_in_group(&clb[i], logbook))
+          {
+          nlb = clb[i].member;
+          nnum = clb[i].n_members;
+
+          rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"color:%s;background-color:%s\">&nbsp;",
+                    gt("Title fontcolor"), gt("Title BGColor"));
+          rsprintf("<a style=\"text-decoration:none;color:%s\" href=\"../%s/\">", gt("Title fontcolor"), ref);
+          }
+        else
+          {
+          rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"background-color:#E0E0E0\">&nbsp;");
+          rsprintf("<a style=\"text-decoration:none\" href=\"../%s/\">", ref);
+          }
+
+
+        for (j=0 ; j<(int)strlen(str) ; j++)
+          if (str[j] == ' ')
+            rsprintf("&nbsp;");
+          else
+            rsprintf("%c", str[j]);
+
+        rsprintf("</a>&nbsp;</font>&nbsp\n");
+        }
+      rsprintf("</td></tr>\n\n");
+
+      clb = nlb;
+      n_lb = nnum;
+
+      if (nlb == NULL)
         break;
 
-      if (equal_ustring(str, "global"))
-        continue;
-
-      strcpy(ref, str);
-      url_encode(ref, sizeof(ref));
-
-      if (equal_ustring(str, logbook))
-        {
-        rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"color:%s;background-color:%s\">&nbsp;",
-                 gt("Title fontcolor"), gt("Title BGColor"));
-        rsprintf("<a style=\"text-decoration:none;color:%s\" href=\"../%s/\">", gt("Title fontcolor"), ref);
-        }
-      else
-        {
-        rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"background-color:#E0E0E0\">&nbsp;");
-        rsprintf("<a style=\"text-decoration:none\" href=\"../%s/\">", ref);
-        }
-
-
-      for (j=0 ; j<(int)strlen(str) ; j++)
-        if (str[j] == ' ')
-          rsprintf("&nbsp;");
-        else
-          rsprintf("%c", str[j]);
-
-      rsprintf("</a>&nbsp;</font>&nbsp\n");
       }
-    rsprintf("</td></tr>\n\n");
-
     }
+
+  /* free logbook node memory */
+  for (i=0 ; i<n_grp ; i++)
+    if (lbl[i].member)
+      free(lbl[i].member);
+
+  free(lbl);
 
   /*---- title row ----*/
 
@@ -8592,6 +8736,9 @@ int    i, j, n, missing, first, index, suppress, message_id, resubmit_orig, mail
 
           for (i=0 ; i<n ; i++)
             {
+            j = build_subst_list(lbs, slist, svalue, attrib);
+            strsubst(mail_list[i], slist, svalue, j);
+
             if ((int)strlen(mail_to) + (int)strlen(mail_list[i]) >= mail_to_size)
               {
               mail_to_size += 256;
@@ -8603,23 +8750,27 @@ int    i, j, n, missing, first, index, suppress, message_id, resubmit_orig, mail
           }
         }
 
-      /* go through password file */
-      for (index=0 ; ; index++)
+      if (!getcfg(lbs->name, "Suppress Email to users", str) ||
+           atoi(str) == 0)
         {
-        if (!enum_user_line(lbs, index, user))
-          break;
-
-        get_user_line(lbs->name, user, NULL, NULL, user_email, email_notify);
-
-        if (email_notify[0])
+        /* go through password file */
+        for (index=0 ; ; index++)
           {
-          if ((int)strlen(mail_to) + (int)strlen(user_email) >= mail_to_size)
+          if (!enum_user_line(lbs, index, user))
+            break;
+
+          get_user_line(lbs->name, user, NULL, NULL, user_email, email_notify);
+
+          if (email_notify[0])
             {
-            mail_to_size += 256;
-            mail_to = realloc(mail_to, mail_to_size);
+            if ((int)strlen(mail_to) + (int)strlen(user_email) >= mail_to_size)
+              {
+              mail_to_size += 256;
+              mail_to = realloc(mail_to, mail_to_size);
+              }
+            strcat(mail_to, user_email);
+            strcat(mail_to, ",");
             }
-          strcat(mail_to, user_email);
-          strcat(mail_to, ",");
           }
         }
       }

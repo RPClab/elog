@@ -831,6 +831,7 @@ individual logbook sections, one has to log in to each logbook separately.<p>
 <LI><b><code>Use Email Subject = &lt;string&gt;</code></b>
 <LI><b><code>Use Email From = &lt;string&gt;</code></b>
 <LI><b><code>Omit Email To = 0|1</code></b>
+<LI><b><code>Suppress Email to users = 0|1</code></b>
 
 </ul>
 <p>
@@ -840,8 +841,12 @@ of the configuration file. To submit an email based on an attribute value, use t
 &lt;list&gt;</b></code>. Whenever an entry is submitted where <b><code>
 attribute</code></b> is equal to <b><code>value</code></b>, an email
 notification is sent to the email addresses in <b><code>list</code></b>.
-Several mail addresses may be supplied, separated by commas. Multiple <b>
-<code>Email xxx</code></b > statements may occur in a configuration
+Several mail addresses may be supplied, separated by commas. The mail addresses can
+contain attributes via the <b>"$"</b> substitution. If a logbook contains for
+example an attribute <i>name</i> which contains email names, then one can
+put <i>$name@domain</i> to form a valid email address.<p>
+
+Multiple <b><code>Email xxx</code></b > statements may occur in a configuration
 file. If either the attribute or the value contains one or more blanks the string
 must be enclosed with quotation marks, as in:
 <p>
@@ -856,9 +861,12 @@ attribute. For a full list of possible substitutions, see the
 "<I>Subst &lt;attribute&gt;</I>" option. The option <b><code>Use Email From = &lt;string&gt;
 </code></b> is used for the "<I>from</I>" field in the email. If the flag <b><code>
 Omit Email To</b></code> is set to <b>1</b>, the <i>To:</i> field in the email is
-left empty insted set to the real email address of the recipients. This can
+left empty instead set to the real email address of the recipients. This can
 be useful if one recipient should not see the email addresses of the other recipients.
 <p>
+The flag <b><code>Suppress Email to users</b></code> can be set to <b>"1"</b> if email should
+only be sent to the recipients of the <b><code>Email &lt;attribute&gt; &lt;value&gt; = &lt;list&gt;</code></b>
+statements but not to the users who have registerd for automatic email notification.<p>
 
 <a name="flags"><hr>
 <div class=section>&nbsp; Flags &nbsp;</div>
