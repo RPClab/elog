@@ -1,0 +1,42 @@
+body {
+  color:black;
+  background-color:white;
+  font-family: sans-serif; 
+  /* background-image:url(elog.gif); */
+}
+
+/* link colors and decorations */
+a:link { font-weight:bold; color:#0000FF; text-decoration:none }
+a:visited { font-weight:bold; color:#800080; text-decoration:none }
+a:hover { font-weight:bold; color:#0000FF; text-decoration:underline }
+a:active { font-weight:bold; color:#0000FF; text-decoration:underline }
+a:focus { font-weight:bold; color:#0000FF; text-decoration:underline }
+
+td {
+  color:black;
+  font-family:sans-serif; 
+}
+
+pre {
+  font-family:'lucida console',courier;
+  font-size:small;
+}
+
+/* ELOG home page link at bottom of page */
+
+.bottomlink {
+  font-family: sans-serif; 
+  font-size: xx-small;
+}
+
+/* logbook title */
+
+.title {
+  /* background-color:#486090; */
+  background-color:orange;
+  color:white;
+  font-weight:bold;
+  font-size:medium;
+  font-family:sans-serif;
+}
+
