@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.66  2002/08/09 13:43:14  midas
+  Preserve attributes on edit also for preset attributes
+
   Revision 2.65  2002/08/06 13:41:40  midas
   Fixed problem with empty logbooks
 
@@ -4042,7 +4045,7 @@ time_t now;
     sprintf(str, "Preset %s", attr_list[index]);
     if (getcfg(lbs->name, str, preset))
       {
-      if (!bedit || (attr_flags[index] & AF_FIXED) == 0)
+      if (!bedit)
         {
         i = build_subst_list(lbs, slist, svalue, NULL);
         strsubst(preset, slist, svalue, i);
@@ -6671,6 +6674,8 @@ MSG_LIST *msg_list;
 
       rsputs(buf);
       }
+    else
+      rsprintf("<center><b>Error: file <i>\"%s\"</i> not found</b></center>", file_name);
     }
   else
     /* add little logo */
