@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.416  2004/07/30 13:41:40  midas
+   Fixed compiler warning
+
    Revision 1.415  2004/07/30 08:06:46  midas
    Improved error display with synchronization
 
@@ -11815,10 +11818,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                      mprint(lbs, mode, error_str);
                   else
                      mprint(lbs, mode, "Remote config received");
-               } else {
-                  sprintf(str, "ID%d:\t%s", message_id, loc("Remote config should be received"));
-                  mprint(lbs, mode, str);
-               }
+               } else
+                  mprint(lbs, mode, loc("Remote config should be received"));
 
                md5_cache[0].message_id = -1;
 
