@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.537  2005/01/17 16:14:51  midas
+   Implemented 'show attributes' and removed 'hidden attributes'
+
    Revision 1.536  2005/01/17 15:42:05  midas
    Made extendable attributes work with MOptions
 
@@ -951,7 +954,6 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 #define AF_DATE               (1<<8)
 #define AF_NUMERIC            (1<<9)
 #define AF_USERLIST          (1<<10)
-#define AF_HIDDEN            (1<<11)
 
 /* attribute format flags */
 #define AFF_SAME_LINE              1
@@ -6087,15 +6089,6 @@ and attr_flags arrays */
                attr_flags[j] |= AF_EXTENDABLE;
       }
 
-      /* check for hidden attributes */
-      getcfg(logbook, "Hidden Attributes", list, sizeof(list));
-      m = strbreak(list, tmp_list, MAX_N_ATTR, ",");
-      for (i = 0; i < m; i++) {
-         for (j = 0; j < n; j++)
-            if (strieq(attr_list[j], tmp_list[i]))
-               attr_flags[j] |= AF_HIDDEN;
-      }
-
       for (i = 0; i < n; i++) {
          sprintf(str, "Type %s", attr_list[i]);
          if (getcfg(logbook, str, type, sizeof(type))) {
@@ -7505,8 +7498,8 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
 
 void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload, BOOL breedit)
 {
-   int i, j, n, index, size, width, height, fh, length, input_size, input_maxlen,
-       format_flags[MAX_N_ATTR], year, month, day, n_attr;
+   int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
+       format_flags[MAX_N_ATTR], year, month, day, n_attr, n_disp_attr, attr_index[MAX_N_ATTR];
    char str[1000], preset[1000], *p, *pend, star[80], comment[10000], reply_string[256],
        list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80],
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80],
@@ -7722,7 +7715,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("{\n");
 
    for (i = 0; i < n_attr; i++) {
-      if ((attr_flags[i] & AF_REQUIRED) && (attr_flags[i] & AF_HIDDEN) == 0) {
+      if ((attr_flags[i] & AF_REQUIRED)) {
 
          /* convert blanks to underscores */
          strcpy(ua, attr_list[i]);
@@ -7958,11 +7951,28 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    subtable = 0;
 
-   /* display attributes */
-   for (index = 0; index < n_attr; index++) {
+   /* generate list of attributes to show */
+   if (getcfg(lbs->name, "Show attributes", str, sizeof(str))) {
+      n_disp_attr = strbreak(str, list, MAX_N_ATTR, ",");
+      for (i=0 ; i<n_disp_attr ; i++) {
+         for (j=0 ; j<n_attr ; j++)
+            if (strieq(attr_list[j], list[i]))
+               break;
+         if (!strieq(attr_list[j], list[i]))  
+            /* attribute not found */
+            j = 0; 
+         attr_index[i] = j;
+      }
+   } else {
+      for (i=0 ; i<n_attr ; i++)
+         attr_index[i] = i;
+      n_disp_attr = n_attr;
+   }
 
-      if (attr_flags[index] & AF_HIDDEN)
-         continue;
+   /* display attributes */
+   for (aindex = 0; aindex < n_disp_attr; aindex++) {
+
+      index = attr_index[aindex];
 
       strcpy(class_name, "attribname");
       strcpy(class_value, "attribvalue");
