@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.276  2004/03/03 10:29:56  midas
+   Fixed bug with date attribute email notification
+
    Revision 1.275  2004/03/01 15:56:47  midas
    Fixed bug with top text
 
@@ -12610,9 +12613,11 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
 {
    int i, j, k, n, flags, status;
    char str[NAME_LENGTH + 100], str2[256], mail_from[256], *mail_text, smtp_host[256],
-       subject[256];
+       subject[256], format[256];
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
    char list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
+   time_t ltime;
+   struct tm *pts;
 
    if (!getcfg("global", "SMTP host", smtp_host)) {
       show_error(loc("No SMTP host defined in [global] section of configuration file"));
@@ -12667,9 +12672,23 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
 
          comment[0] = 0;
          if (attr_flags[j] & AF_ICON) {
+         
             sprintf(str2, "Icon comment %s", attrib[j]);
             getcfg(lbs->name, str2, comment);
-         }
+         
+         }  else if (attr_flags[j] & AF_DATE) {
+
+               if (!getcfg(lbs->name, "Date format", format))
+                  strcpy(format, DEFAULT_DATE_FORMAT);
+
+               ltime = atoi(attrib[j]);
+               pts = localtime(&ltime);
+               if (ltime == 0)
+                  strcpy(comment, "-");
+               else
+                  strftime(comment, sizeof(str), format, pts);
+            }
+
          if (!comment[0])
             strcpy(comment, attrib[j]);
 
