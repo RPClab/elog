@@ -1,3 +1,8 @@
+Version 2.3.6, released April xxx, 2003
+=======================================
+
+- Eliminated WEB_BUFFER_SIZE, made memory allocation dynamically
+
 Version 2.3.5, released April 9th, 2003
 =======================================
 

@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.82  2003/04/11 07:25:52  midas
+  Eliminated WEB_BUFFER_SIZE and made memory allocation dynamically
+
   Revision 1.81  2003/04/09 14:02:18  midas
   Better error message on email send failure
 
@@ -863,9 +866,8 @@ typedef int INT;
 #define EL_NEXT        3
 #define EL_PREV        4
 
-#define WEB_BUFFER_SIZE 2000000
-
-char return_buffer[WEB_BUFFER_SIZE];
+char *return_buffer;
+int  return_buffer_size;
 int  strlen_retbuf;
 int  keep_alive;
 char header_buffer[1000];
@@ -3564,11 +3566,14 @@ char    buf[256];
 
 void rsputs(const char *str)
 {
-  if (strlen_retbuf + strlen(str) > sizeof(return_buffer))
-    strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
-  else
-    strcpy(return_buffer+strlen_retbuf, str);
+  if (strlen_retbuf + (int)strlen(str) > return_buffer_size)
+    {
+    return_buffer = realloc(return_buffer, return_buffer_size + 100000);
+    memset(return_buffer + return_buffer_size, 0, 100000);
+    return_buffer_size += 100000;
+    }
 
+  strcpy(return_buffer+strlen_retbuf, str);
   strlen_retbuf += strlen(str);
 }
 
@@ -3581,68 +3586,70 @@ void rsputs2(const char *str)
 int i, j, k, l;
 char *p, link[256];
 
-  if (strlen_retbuf + strlen(str) > sizeof(return_buffer))
-    strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
-  else
+  if (strlen_retbuf + (int)strlen(str) > return_buffer_size)
     {
-    j = strlen_retbuf;
-    for (i=0 ; i<(int)strlen(str) ; i++)
+    return_buffer = realloc(return_buffer, return_buffer_size + 100000);
+    memset(return_buffer + return_buffer_size, 0, 100000);
+    return_buffer_size += 100000;
+    }
+
+  j = strlen_retbuf;
+  for (i=0 ; i<(int)strlen(str) ; i++)
+    {
+    for (l=0 ; list[l][0] ; l++)
       {
-      for (l=0 ; list[l][0] ; l++)
+      if (strncmp(str+i, list[l], strlen(list[l])) == 0)
         {
-        if (strncmp(str+i, list[l], strlen(list[l])) == 0)
-          {
-          p = (char *) (str+i+strlen(list[l]));
-          i += strlen(list[l]);
-          for (k=0 ; *p && strcspn(p, "> ,\t\n\r({[)}]") ; k++,i++)
-            link[k] = *p++;
-          link[k] = 0;
-          i--;
+        p = (char *) (str+i+strlen(list[l]));
+        i += strlen(list[l]);
+        for (k=0 ; *p && strcspn(p, "> ,\t\n\r({[)}]") ; k++,i++)
+          link[k] = *p++;
+        link[k] = 0;
+        i--;
 
-          if (strcmp(list[l], "elog:") == 0)
-            {
-            /* if link contains '/' (reference to other logbook), add ".." in front */
-            if (strchr(link, '/'))
-              sprintf(return_buffer+j, "<a href=\"../%s\">elog:%s</a>", link, link);
-            else
-              sprintf(return_buffer+j, "<a href=\"%s\">elog:%s</a>", link, link);
-            }
+        if (strcmp(list[l], "elog:") == 0)
+          {
+          /* if link contains '/' (reference to other logbook), add ".." in front */
+          if (strchr(link, '/'))
+            sprintf(return_buffer+j, "<a href=\"../%s\">elog:%s</a>", link, link);
           else
-            sprintf(return_buffer+j, "<a href=\"%s%s\">%s%s</a>", list[l], link, list[l], link);
-
-          j += strlen(return_buffer+j);
-          break;
-          }
-        }
-
-      if (!list[l][0])
-        {
-        if (strncmp(str+i, "<br>", 4) == 0)
-          {
-          strcpy(return_buffer+j, "<br>");
-          j+=4;
-          i+=3;
+            sprintf(return_buffer+j, "<a href=\"%s\">elog:%s</a>", link, link);
           }
         else
-          switch (str[i])
-            {
-            case '<': strcat(return_buffer, "&lt;"); j+=4; break;
-            case '>': strcat(return_buffer, "&gt;"); j+=4; break;
+          sprintf(return_buffer+j, "<a href=\"%s%s\">%s%s</a>", list[l], link, list[l], link);
 
-            /* the translation for the search highliting */
-            case '\001' : strcat(return_buffer, "<");    j++;  break;
-            case '\002' : strcat(return_buffer, ">");    j++;  break;
-            case '\003' : strcat(return_buffer, "\"");   j++;  break;
-            case '\004' : strcat(return_buffer, " ");    j++;  break;
-
-            default: return_buffer[j++] = str[i];
-            }
+        j += strlen(return_buffer+j);
+        break;
         }
       }
 
-    return_buffer[j] = 0;
-    strlen_retbuf = j;
+    if (!list[l][0])
+      {
+      if (strncmp(str+i, "<br>", 4) == 0)
+        {
+        strcpy(return_buffer+j, "<br>");
+        j+=4;
+        i+=3;
+        }
+      else
+        switch (str[i])
+          {
+          case '<': strcat(return_buffer, "&lt;"); j+=4; break;
+          case '>': strcat(return_buffer, "&gt;"); j+=4; break;
+
+          /* the translation for the search highliting */
+          case '\001' : strcat(return_buffer, "<");    j++;  break;
+          case '\002' : strcat(return_buffer, ">");    j++;  break;
+          case '\003' : strcat(return_buffer, "\"");   j++;  break;
+          case '\004' : strcat(return_buffer, " ");    j++;  break;
+
+          default: return_buffer[j++] = str[i];
+          }
+      }
     }
+
+  return_buffer[j] = 0;
+  strlen_retbuf = j;
 }
 
 /*------------------------------------------------------------------*/
@@ -3656,10 +3663,14 @@ char    str[10000];
   vsprintf(str, (char *) format, argptr);
   va_end(argptr);
 
-  if (strlen_retbuf + strlen(str) > sizeof(return_buffer))
-    strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
-  else
-    strcpy(return_buffer+strlen_retbuf, str);
+  if (strlen_retbuf + (int)strlen(str) > return_buffer_size)
+    {
+    return_buffer = realloc(return_buffer, return_buffer_size + 100000);
+    memset(return_buffer + return_buffer_size, 0, 100000);
+    return_buffer_size += 100000;
+    }
+
+  strcpy(return_buffer+strlen_retbuf, str);
 
   strlen_retbuf += strlen(str);
 }
@@ -4564,7 +4575,7 @@ BOOL   global;
 
 void send_file_direct(char *file_name)
 {
-int    fh, i, length;
+int    fh, i, length, delta;
 char   str[MAX_PATH_LENGTH];
 time_t now;
 struct tm *gmt;
@@ -4611,12 +4622,14 @@ struct tm *gmt;
 
     rsprintf("Content-Length: %d\r\n\r\n", length);
 
-    /* return if file too big */
-    if (length > (int) (sizeof(return_buffer) - strlen(return_buffer)))
+    /* increase return buffer size if file too big */
+    if (length > return_buffer_size - (int)strlen(return_buffer))
       {
-      printf("return buffer too small\n");
-      close(fh);
-      return;
+      delta = length - (return_buffer_size - strlen(return_buffer)) + 1000;
+
+      return_buffer = realloc(return_buffer, return_buffer_size + delta);
+      memset(return_buffer + return_buffer_size, 0, delta);
+      return_buffer_size += delta;
       }
 
     return_length = strlen(return_buffer)+length;
@@ -6904,7 +6917,7 @@ char   attrib[MAX_N_ATTR][NAME_LENGTH];
 int show_download_page(LOGBOOK *lbs, char *path)
 {
 char   file_name[256];
-int    index, message_id, fh, i, size;
+int    index, message_id, fh, i, size, delta;
 char   message[TEXT_SIZE+1000], *p;
 
   message_id = atoi(path);
@@ -6963,11 +6976,14 @@ char   message[TEXT_SIZE+1000], *p;
   rsprintf("Content-Type: text/plain\r\n");
   rsprintf("Content-Length: %d\r\n\r\n", size);
 
-  /* return if file too big */
-  if (size > (int) (sizeof(return_buffer) - strlen(return_buffer)))
+  /* increase return buffer size if file too big */
+  if (size > return_buffer_size - (int)strlen(return_buffer))
     {
-    printf("return buffer too small\n");
-    return EL_MEM_ERROR;
+    delta = size - (return_buffer_size - strlen(return_buffer)) + 1000;
+
+    return_buffer = realloc(return_buffer, return_buffer_size + delta);
+    memset(return_buffer + return_buffer_size, 0, delta);
+    return_buffer_size += delta;
     }
 
   return_length = strlen(return_buffer)+size;
@@ -12076,8 +12092,6 @@ void ctrlc_handler(int sig)
 
 /*------------------------------------------------------------------*/
 
-char net_buffer[WEB_BUFFER_SIZE];
-
 #define N_MAX_CONNECTION 10
 #define KEEP_ALIVE_TIME  60
 
@@ -12099,6 +12113,14 @@ struct hostent       *phe;
 fd_set               readfds;
 struct timeval       timeout;
 struct stat          cfg_stat;
+char                 *net_buffer = NULL;
+int                  net_buffer_size;
+
+  net_buffer_size = 100000;
+  net_buffer = malloc(net_buffer_size);
+
+  return_buffer_size = 100000;
+  return_buffer = malloc(return_buffer_size);
 
 #ifdef OS_WINNT
   {
@@ -12374,7 +12396,7 @@ struct stat          cfg_stat;
 
     if (_sock > 0)
       {
-      memset(net_buffer, 0, sizeof(net_buffer));
+      memset(net_buffer, 0, net_buffer_size);
       len = 0;
       header_length = 0;
       n_error = 0;
@@ -12389,7 +12411,7 @@ struct stat          cfg_stat;
         status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
 
         if (FD_ISSET(_sock, &readfds))
-          i = recv(_sock, net_buffer+len, sizeof(net_buffer)-len, 0);
+          i = recv(_sock, net_buffer+len, net_buffer_size-len, 0);
         else
           goto finished;
 
@@ -12400,40 +12422,28 @@ struct stat          cfg_stat;
         if (i>0)
           len += i;
 
-        /* check if net_buffer too small */
-        if (len >= sizeof(net_buffer))
+        /* check if net_buffer needs to be increased */
+        if (len == net_buffer_size)
           {
-          /* drain incoming remaining data */
-          do
+          net_buffer = realloc(net_buffer, net_buffer_size + 100000);
+
+          if (net_buffer == NULL)
             {
-            FD_ZERO(&readfds);
-            FD_SET(_sock, &readfds);
-
-            timeout.tv_sec  = 2;
-            timeout.tv_usec = 0;
-
-            status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
-
-            if (FD_ISSET(_sock, &readfds))
-              i = recv(_sock, net_buffer, sizeof(net_buffer), 0);
-            else
-              break;
-            } while (i);
-
-          memset(return_buffer, 0, sizeof(return_buffer));
-          strlen_retbuf = 0;
-          return_length = 0;
-
-          show_error("Submitted attachment too large, please increase WEB_BUFFER_SIZE in elogd.c and recompile");
-          send(_sock, return_buffer, strlen_retbuf+1, 0);
-          keep_alive = 0;
-          if (verbose)
-            {
-            printf("==== Return ================================\n");
-            puts(return_buffer);
-            printf("\n\n");
+            sprintf(str, "Error: Cannot increase net_buffer, out of memory, net_buffer_size = %d", net_buffer_size);
+            show_error(str);
+            send(_sock, return_buffer, strlen_retbuf+1, 0);
+            keep_alive = 0;
+            if (verbose)
+              {
+              printf("==== Return ================================\n");
+              puts(return_buffer);
+              printf("\n\n");
+              }
+            goto finished;
             }
-          goto finished;
+
+          memset(net_buffer + net_buffer_size, 0, 100000);
+          net_buffer_size += 100000;
           }
 
         if (i == 0)
@@ -12590,7 +12600,7 @@ struct stat          cfg_stat;
           *strchr(browser, '\r') = 0;
         }
 
-      memset(return_buffer, 0, sizeof(return_buffer));
+      memset(return_buffer, 0, return_buffer_size);
       strlen_retbuf = 0;
 
       if (strncmp(net_buffer, "GET", 3) != 0 &&
