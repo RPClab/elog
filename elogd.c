@@ -6,6 +6,10 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.15  2002/04/22 10:31:58  midas
+  Added "logfile", fixed hightlighting problems, thanks to
+  Heiko.Schleit@mpi-hd.mpg.de
+
   Revision 1.14  2002/03/14 11:48:43  midas
   Added .jpeg file extension
 
@@ -113,7 +117,8 @@ typedef int INT;
 #define EL_SUCCESS    1
 #define EL_FIRST_MSG  2
 #define EL_LAST_MSG   3
-#define EL_FILE_ERROR 4
+#define EL_NO_MSG     4
+#define EL_FILE_ERROR 5
 
 #define WEB_BUFFER_SIZE 2000000
 
@@ -236,6 +241,7 @@ struct {
 };
 
 int scan_attributes(char *logbook);
+void show_error(char *error);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -561,7 +567,7 @@ INT ss_daemon_init()
 
   setsid();               /* become session leader */
   chdir("/");             /* change working direcotry (not on NFS!) */
-  umask(0);               /* clear our file mode createion mask */
+  umask(0);               /* clear our file mode creation mask */
 
 #endif
 
@@ -624,7 +630,7 @@ int  fh;
           while (*p && *p != '=' && *p != '\n')
             *pstr++ = *p++;
           *pstr-- = 0;
-          while (pstr > str && (*pstr == ' ' || *pstr == '='))
+          while (pstr > str && (*pstr == ' ' || *pstr == '=' || *pstr == '\t'))
             *pstr-- = 0;
 
           if (equal_ustring(str, param))
@@ -632,13 +638,13 @@ int  fh;
             if (*p == '=')
               {
               p++;
-              while (*p == ' ')
+              while (*p == ' ' || *p == '\t')
                 p++;
               pstr = str;
               while (*p && *p != '\n' && *p != '\r')
                 *pstr++ = *p++;
               *pstr-- = 0;
-              while (*pstr == ' ')
+              while (*pstr == ' ' || *pstr == '\t')
                 *pstr-- = 0;
 
               strcpy(value, str);
@@ -1344,7 +1350,7 @@ char   *file_list;
         {
         if (file_list)
           free(file_list);
-        return EL_FILE_ERROR;
+        return EL_NO_MSG;
         }
 
       for (i=0,max=0 ; i<n ; i++)
@@ -1857,13 +1863,15 @@ INT el_retrieve(char *tag, char *date, char attr_list[MAX_N_ATTR][NAME_LENGTH],
 
   Function value:
     EL_SUCCESS              Successful completion
+    EL_NO_MSG               No message in log
     EL_LAST_MSG             Last message in log
+    EL_FILE_ERROR           Internal error
 
 \********************************************************************/
 {
 int     i, size, fh, offset, search_status;
 char    str[256], *p;
-char    message[TEXT_SIZE+100], thread[256], attachment_all[64*MAX_ATTACHMENTS];
+char    message[TEXT_SIZE+1000], thread[256], attachment_all[64*MAX_ATTACHMENTS];
 
   if (tag[0])
     {
@@ -1974,7 +1982,8 @@ char    message[TEXT_SIZE+100], thread[256], attachment_all[64*MAX_ATTACHMENTS];
         {
         strncpy(text, p, *textsize-1);
         text[*textsize-1] = 0;
-        return -1;
+        show_error("Message too long to display. Please increase TEXT_SIZE and recompile elogd.");
+        return EL_FILE_ERROR;
         }
       else
         {
@@ -2215,6 +2224,38 @@ char date[80], text[TEXT_SIZE], orig_tag[80], reply_tag[80],
 
 /*------------------------------------------------------------------*/
 
+void logf(const char *format, ...)
+{
+char    fname[2000];
+va_list argptr;
+char    str[10000];
+FILE*   f;
+time_t  now;
+char    buf[256];
+
+  if (!getcfg("global", "logfile", fname)) 
+    return;
+
+  va_start(argptr, format);
+  vsprintf(str, (char *) format, argptr);
+  va_end(argptr);
+  
+  f=fopen(fname,"a");
+  if (!f) 
+    return;
+
+  now=time(0);
+  strftime(buf, sizeof(buf), "%d-%b-%Y %H:%M:%S", localtime(&now));
+  fprintf(f,"%s: %s",buf,str);
+
+  if (str[strlen(str)-1] != '\n') 
+    fprintf(f,"\n");
+
+  fclose(f);
+}
+
+/*------------------------------------------------------------------*/
+
 void rsputs(const char *str)
 {
   if (strlen_retbuf + strlen(str) > sizeof(return_buffer))
@@ -2290,10 +2331,15 @@ char *p, link[256];
       else
         switch (str[i])
           {
-          case 1  : strcat(return_buffer, "<");    j++;  break;
-          case 2  : strcat(return_buffer, ">");    j++;  break;
           case '<': strcat(return_buffer, "&lt;"); j+=4; break;
           case '>': strcat(return_buffer, "&gt;"); j+=4; break;
+
+          /* the translation for the search highliting */
+          case '\001' : strcat(return_buffer, "<");    j++;  break;
+          case '\002' : strcat(return_buffer, ">");    j++;  break;
+          case '\003' : strcat(return_buffer, "\"");   j++;  break;
+          case '\004' : strcat(return_buffer, " ");    j++;  break;
+
           default: return_buffer[j++] = str[i];
           }
       }
@@ -2333,18 +2379,24 @@ void initparam()
   _text[0] = 0;
 }
 
-void setparam(char *param, char *value)
+int setparam(char *param, char *value)
 {
 int i;
+char str[256];
 
   if (equal_ustring(param, "text"))
     {
     if (strlen(value) >= TEXT_SIZE)
-      printf("Error: parameter value too big\n");
+      {
+      sprintf(str, "Error: Message text too big (%d bytes). Please increase TEXT_SIZE and recompile elogd\n", 
+              strlen(value));
+      show_error(str);
+      return 0;
+      }
 
     strncpy(_text, value, TEXT_SIZE);
     _text[TEXT_SIZE-1] = 0;
-    return;
+    return 1;
     }
 
   for (i=0 ; i<MAX_PARAM ; i++)
@@ -2356,7 +2408,10 @@ int i;
     strcpy(_param[i], param);
 
     if (strlen(value) >= VALUE_SIZE)
-      printf("Error: parameter value too big\n");
+      {
+      show_error("Error: Parameter value too big. Please increase VALUE_SIZE and recompile elogd\n");
+      return 0;
+      }
 
     strncpy(_value[i], value, VALUE_SIZE);
     _value[i][VALUE_SIZE-1] = 0;
@@ -2365,6 +2420,8 @@ int i;
     {
     printf("Error: parameter array too small\n");
     }
+
+  return 1;
 }
 
 char *getparam(char *param)
@@ -2799,7 +2856,7 @@ int  i;
   if (*getparam("full_name"))
     {
     rsprintf("<td bgcolor=%s align=center>", gt("Title BGColor"));
-    rsprintf("<font size=1 face=verdana,arial,helvetica,sans-serif color=%s><b>&nbsp;&nbsp;%s \"%s\"<b></font></td>\n",
+    rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif color=%s><b>&nbsp;&nbsp;%s \"%s\"<b></font></td>\n",
               gt("Title fontcolor"), loc("Logged in as"), getparam("full_name"));
     }
 
@@ -2947,6 +3004,13 @@ int i;
       case '&': rsprintf("&amp;"); break;
       case '\"': rsprintf("&quot;"); break;
       case ' ': rsprintf("&nbsp;"); break;
+
+      /* the translation for the search highliting */
+      case '\001': rsprintf("<"); break;   
+      case '\002': rsprintf(">"); break;
+      case '\003': rsprintf("\""); break;
+      case '\004': rsprintf(" "); break;
+
       default: rsprintf("%c", text[i]);
       }
     }
@@ -3258,7 +3322,7 @@ char   str[80], date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
 
 void show_elog_new(char *path, BOOL bedit)
 {
-int    i, n, n_attr, index, size, wrap, fh, length;
+int    i, n, n_attr, index, size, width, fh, length;
 char   str[1000], preset[1000], *p, star[80], comment[10000];
 char   list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256];
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
@@ -3541,8 +3605,15 @@ time_t now;
 
   rsprintf("</td></tr>\n");
 
-  /* increased wrapping for replies (leave space for '> ' */
-  wrap = (path && !bedit) ? 78 : 76;
+  /* set textarea width */
+  width = 76;
+
+  if (getcfg(logbook, "Message width", str))
+    width = atoi(str);
+
+  /* increased wrapping width for replies (leave space for '> ' */
+  if (path && !bedit)
+    width += 2;
 
   rsprintf("<tr><td colspan=2 bgcolor=#FFFFFF>\n");
 
@@ -3554,7 +3625,7 @@ time_t now;
 
   if (!getcfg(logbook, "Show text", str) || atoi(str) == 1)
     {
-    rsprintf("<textarea rows=20 cols=%d wrap=hard name=Text>", wrap);
+    rsprintf("<textarea rows=20 cols=%d wrap=hard name=Text>", width);
 
     if (path)
       {
@@ -4708,8 +4779,12 @@ FILE   *f;
               pt += size;
 
               /* add coloring 1st part */
-              if (equal_ustring(encoding, "plain"))
-                strcpy(pt2, "\001B style=\"color:black;background-color:#ffff66\"\002");
+
+              /* here: \001='<', \002='>', /003='"', and \004=' ' */
+              /* see also rsputs2(char* ) */
+
+              if (equal_ustring(encoding, "plain") || !full)
+                strcpy(pt2, "\001B\004style=\003color:black;background-color:#ffff66\003\002");
               else
                 strcpy(pt2, "<B style=\"color:black;background-color:#ffff66\">");
 
@@ -4721,7 +4796,7 @@ FILE   *f;
               pt += strlen(str);
 
               /* add coloring 2nd part */
-              if (equal_ustring(encoding, "plain"))
+              if (equal_ustring(encoding, "plain") || !full)
                 strcpy(pt2, "\001/B\002");
               else
                 strcpy(pt2, "</B>");
@@ -4729,8 +4804,8 @@ FILE   *f;
               }
             } while (p != NULL);
 
-            strcpy(pt2, pt);
-            strcpy(text, text2);
+          strcpy(pt2, pt);
+          strcpy(text, text2);
           }
 
         /* filter passed: display line */
@@ -4848,7 +4923,7 @@ FILE   *f;
               {
               strcpy(str, attachment[index]);
               str[13] = 0;
-              sprintf(ref, "/%s/%s/%s", logbook_enc, str, attachment[index]+14);
+              sprintf(ref, "/%s/%s/%s", logbook_list[lindex], str, attachment[index]+14);
 
               for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
                 str[i] = toupper(attachment[index][i]);
@@ -4911,7 +4986,7 @@ FILE   *f;
             rsprintf("</font></td></tr>\n");
 
           }
-        else
+        else /* if (full) */
           {
           if (i_col % 2 == 0)
             strcpy(col, gt("List bgcolor1"));
@@ -4988,10 +5063,10 @@ FILE   *f;
               }
             str[i] = 0;
 
-            if (equal_ustring(encoding, "HTML"))
-              rsputs(str);
-            else
-              strencode(str);
+            /* always encode, not to rip apart HTML documents, 
+               e.g. only the start of a table */
+            strencode(str);
+
             rsprintf("&nbsp;</font></td>\n");
             }
 
@@ -5709,6 +5784,9 @@ FILE   *f;
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
       }
 
+    /* log activity */
+    logf("Logout of user \"%s\" from logbook \"%s\"",getparam("unm"),logbook);
+
     /* delete user cookies */
     rsprintf("Set-Cookie: upwd=; path=/%s; expires=Fri, 01 Jan 1983 00:00:00 GMT\r\n", logbook_enc, str);
     rsprintf("Set-Cookie: unm=; path=/%s; expires=Fri, 01 Jan 1983 00:00:00 GMT\r\n", logbook_enc, str);
@@ -5911,6 +5989,8 @@ FILE   *f;
     else
       show_standard_header(logbook, path);
     }
+  else if (msg_status == EL_FILE_ERROR)
+    return;
   else
     show_standard_header("", "");
 
@@ -6832,8 +6912,13 @@ struct tm *gmt;
     /* check if password correct */
     do_crypt(getparam("upassword"), enc_pwd);
 
+    /* log logins */
+    logf("Login of user \"%s\" (attempt) for logbook \"%s\" ",getparam("uname"),logbook);
+
     if (!check_user_password(logbook, getparam("uname"), enc_pwd, getparam("redir")))
       return;
+
+    logf("Login of user \"%s\" (successful)",getparam("uname"));
 
     rsprintf("HTTP/1.1 302 Found\r\n");
     rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
@@ -6874,6 +6959,8 @@ struct tm *gmt;
   /* if password file given, check password and user name */
   if (getcfg(logbook, "Password file", str))
     {
+    logf("Connection of user \"%s\"",getparam("unm"));
+
     /* don't check password for submit, since cookie might have been expired during editing */
     if (!equal_ustring(command, loc("Submit")))
       if (!check_user_password(logbook, getparam("unm"), getparam("upwd"), path))
@@ -7016,6 +7103,14 @@ int  i, n;
           if (verbose)
             printf("decode_post: Found attachment %s\n", file_name);
 
+          /* check filename for invalid characters */
+          if (strpbrk(file_name, ",;"))
+            {
+            sprintf(str, "Error: Filename \"%s\" contains invalid character", file_name);
+            show_error(str);
+            return;
+            }
+
           /* find next boundary */
           ptmp = string;
           do
@@ -7069,7 +7164,9 @@ int  i, n;
           while (*ptmp == '-' || *ptmp == '\n' || *ptmp == '\r')
             *ptmp-- = 0;
           }
-        setparam(item, p);
+
+        if (setparam(item, p) == 0)
+          return;
         }
 
       while (*string == '-' || *string == '\n' || *string == '\r')
@@ -8024,7 +8121,7 @@ struct tm *tms;
       {
       time(&now);
       tms = localtime(&now);
-      printf("Acutal date/time: %02d%02d%02d_%02d%02d%02d\n",
+      printf("Actual date/time: %02d%02d%02d_%02d%02d%02d\n",
              tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
              tms->tm_hour, tms->tm_min, tms->tm_sec);
       return 0;
