@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.312  2004/03/24 20:44:21  midas
+   Improved synchronization speed
+
    Revision 1.311  2004/03/22 21:13:07  midas
    Improved speed of strieq()
 
@@ -10421,7 +10424,13 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                   logf(lbs, "MIRROR conflict entry #%d", message_id);
 
                combine_url(lbs, list[index], "", str, sizeof(str));
-               sprintf(loc_ref, "<a href=\"%d\">%s</a>", message_id, loc("local"));
+               
+               if (getcfg_topgroup())
+                  sprintf(loc_ref, "<a href=\"../%s/%d\">%s</a>", lbs->name_enc, 
+                                    message_id, loc("local"));
+               else
+                  sprintf(loc_ref, "<a href=\"%d\">%s</a>", message_id, loc("local"));
+
                sprintf(rem_ref, "<a href=\"http://%s%d\">%s</a>", str, message_id,
                        loc("remote"));
 
@@ -10671,29 +10680,32 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
       free(md5_remote);
 
       /* save remote MD5s in file */
-      n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote, error_str);
-      if (n_remote < 0)
-         rsprintf("%s\n", error_str);
+      if (!all_identical) {
+         n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote, error_str);
+         if (n_remote < 0)
+            rsprintf("%s\n", error_str);
 
-      /* keep conflicting messages in cache */
-      for (i = 0; i < n_cache; i++)
-         if (md5_cache[i].message_id != -1) {
+         /* keep conflicting messages in cache */
+         for (i = 0; i < n_cache; i++)
+            if (md5_cache[i].message_id != -1) {
 
-            if (i == 0)
-               memcpy(md5_remote[0].md5_digest, md5_cache[0].md5_digest, 16);
-            else
-               for (j = 0; j < n_remote; j++)
-                  if (md5_remote[j].message_id == md5_cache[i].message_id) {
-                     memcpy(md5_remote[j].md5_digest, md5_cache[i].md5_digest, 16);
-                     break;
-                  }
-         }
+               if (i == 0)
+                  memcpy(md5_remote[0].md5_digest, md5_cache[0].md5_digest, 16);
+               else
+                  for (j = 0; j < n_remote; j++)
+                     if (md5_remote[j].message_id == md5_cache[i].message_id) {
+                        memcpy(md5_remote[j].md5_digest, md5_cache[i].md5_digest, 16);
+                        break;
+                     }
+            }
 
-      if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
-         save_md5(lbs, list[index], md5_remote, n_remote);
+         if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+            save_md5(lbs, list[index], md5_remote, n_remote);
 
-      if (md5_remote)
-         free(md5_remote);
+         if (md5_remote)
+            free(md5_remote);
+      }
+
       if (md5_cache)
          free(md5_cache);
 
@@ -16449,6 +16461,12 @@ void interprete(char *lbook, char *path)
       }
 
       send_file_direct(file_name);
+      return;
+   }
+
+   /* from here on, logbook must be valid */
+   if (!logbook[0]) {
+      show_selection_page(NULL);
       return;
    }
 
