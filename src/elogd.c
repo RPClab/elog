@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.158  2003/11/20 16:36:05  midas
+  Added check_config_file()
+
   Revision 1.157  2003/11/20 16:22:54  midas
   Removed printf()
 
@@ -1461,6 +1464,34 @@ INT ss_daemon_init()
 char *cfgbuffer;
 time_t cfgfile_mtime = 0;
 
+/*-------------------------------------------------------------------*/
+
+void check_config_file()
+{
+struct stat  cfg_stat;
+
+  /* force re-read configuration file if changed */
+  if (stat(config_file, &cfg_stat) == 0)
+    {
+    if (cfgfile_mtime < cfg_stat.st_mtime)
+      {
+      cfgfile_mtime = cfg_stat.st_mtime;
+
+      if (cfgbuffer)
+        {
+        free(cfgbuffer);
+        cfgbuffer = NULL;
+        }
+      }
+    }
+  else
+    {
+    perror("Cannot stat() config file");
+    }
+}
+
+/*-------------------------------------------------------------------*/
+
 int getcfg(char *group, char *param, char *value)
 {
 char *str, *p, *pstr;
@@ -1865,6 +1896,7 @@ int n;
 void check_config()
 {
   check_language();
+  check_config_file();
 }
 
 /*------------------------------------------------------------------*/
@@ -6297,6 +6329,10 @@ char str[80];
     }
 
   close(fh);
+
+  /* language might have changed, so re-read config file */
+  check_config();
+
   return 1;
 }
 
@@ -13256,7 +13292,6 @@ int                  lsock, len, flag, content_length, header_length;
 struct hostent       *phe;
 fd_set               readfds;
 struct timeval       timeout;
-struct stat          cfg_stat;
 char                 *net_buffer = NULL;
 int                  net_buffer_size;
 
@@ -13681,14 +13716,6 @@ int                  net_buffer_size;
         puts(net_buffer);
         }
 
-#ifdef OS_WINNT
-
-      /* under windows, check if configuration changed (via fstat()) once each access */
-      check_config();
-
-      /* under unix, rely on "kill -HUP elogd" */
-#endif
-
       /* initialize parametr array */
       initparam();
 
@@ -13851,24 +13878,13 @@ int                  net_buffer_size;
           }
         }
 
-      /* force re-read configuration file if changed */
-      if (stat(config_file, &cfg_stat) == 0)
-        {
-        if (cfgfile_mtime < cfg_stat.st_mtime)
-          {
-          cfgfile_mtime = cfg_stat.st_mtime;
+#ifdef OS_WINNT
 
-          if (cfgbuffer)
-            {
-            free(cfgbuffer);
-            cfgbuffer = NULL;
-            }
-          }
-        }
-      else
-        {
-        perror("Cannot stat() config file");
-        }
+      /* under windows, check if configuration changed (via stat()) once each access */
+      check_config();
+
+      /* under unix, rely on "kill -HUP elogd" */
+#endif
 
       /* check if logbook exists */
       for (i=0 ; ; i++)
