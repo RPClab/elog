@@ -14,7 +14,7 @@ On PC4534:
 - c:\elog> cvs commit -m "Version x.x.x" 
 - build xxx
 
-On PC2075:
+On PC5082:
 
 - cvs update
 - Increse version in elog.spec
