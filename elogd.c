@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.130  2003/01/11 19:25:59  midas
+  Removed bugfix for old Konqueror wich is not necessary from Konqueror 3.0.4 on
+
   Revision 2.129  2003/01/11 11:26:40  midas
   Fixed problem with attachment names containing a '+'
 
@@ -8975,8 +8978,8 @@ int    i, j, n, missing, first, index, suppress, message_id, resubmit_orig, mail
     rsprintf("Keep-Alive: timeout=60, max=10\r\n");
     }
 
-  /* bug for Konqueror */
-  if (strstr(browser, "Konqueror"))
+  /* bug for old Konqueror */
+  if (strstr(browser, "Konqueror") && !strstr(browser, "Konqueror/3"))
     rsprintf("Location: %s/%d%s\r\n\r\n<html>redir</html>\r\n",
               lbs->name_enc, message_id, mail_param);
   else
