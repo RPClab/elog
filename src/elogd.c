@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.424  2004/08/04 07:53:43  midas
+   Changed 644 to 0644
+
    Revision 1.423  2004/08/04 07:47:56  midas
    Added \n to error display during cloning
 
@@ -9058,7 +9061,7 @@ int save_config(char *buffer, char *error)
 
    error[0] = 0;
 
-   fh = open(config_file, O_RDWR | O_BINARY | O_CREAT, 644);
+   fh = open(config_file, O_RDWR | O_BINARY | O_CREAT, 0644);
    if (fh < 0) {
       sprintf(error, loc("Cannot open file <b>%s</b>"), config_file);
       strcat(error, ": ");
@@ -9140,7 +9143,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
          strlcat(file_name, str, sizeof(file_name));
       }
 
-      fh = open(file_name, O_RDWR | O_BINARY | O_CREAT, 644);
+      fh = open(file_name, O_RDWR | O_BINARY | O_CREAT, 0644);
       if (fh < 0) {
          sprintf(str, loc("Cannot open file <b>%s</b>"), file_name);
          show_error(str);
@@ -11499,7 +11502,7 @@ int adjust_config(char *url)
    char *buf, *buf2, *p1, *p2;
    char str[256];
 
-   fh = open(config_file, O_RDWR | O_BINARY, 644);
+   fh = open(config_file, O_RDWR | O_BINARY, 0644);
    if (fh < 0) {
       sprintf(str, loc("Cannot open file <b>%s</b>"), config_file);
       strcat(str, ": ");
@@ -11697,7 +11700,7 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
 
 
    getcfg(lbs->name, "Password file", str, sizeof(str));
-   fh = open(str, O_CREAT | O_RDWR, 644);
+   fh = open(str, O_CREAT | O_RDWR, 0644);
    if (fh < 0) {
       sprintf(error_str, loc("Cannot open file <b>%s</b>"), str);
       strcat(error_str, ": ");
@@ -15529,7 +15532,7 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue)
    int fh, i, length;
    char str[NAME_LENGTH], *buf, *buf2, *p1, *p2, *p3;
 
-   fh = open(config_file, O_RDWR | O_BINARY, 644);
+   fh = open(config_file, O_RDWR | O_BINARY, 0644);
    if (fh < 0) {
       sprintf(str, loc("Cannot open file <b>%s</b>"), config_file);
       strcat(str, ": ");
@@ -15615,7 +15618,7 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
    int fh, i, length, size;
    char str[NAME_LENGTH], *buf, *buf2, *p1, *p2, *p3;
 
-   fh = open(config_file, O_RDWR | O_BINARY, 644);
+   fh = open(config_file, O_RDWR | O_BINARY, 0644);
    if (fh < 0) {
       sprintf(str, loc("Cannot open file <b>%s</b>"), config_file);
       strcat(str, ": ");
