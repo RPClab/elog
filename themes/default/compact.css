@@ -1,0 +1,279 @@
+/* default formatting */
+body {
+  margin:0px;
+  color:black;
+  background-color:white;
+  font-family:sans-serif;
+  /* background-image:url(elog.gif); */
+}
+
+/* standard link colors and decorations */
+a:link { color:#0000FF; text-decoration:none }
+a:visited { color:#800080; text-decoration:none }
+a:hover { color:#0000FF; text-decoration:underline }
+a:active { color:#0000FF; text-decoration:underline }
+a:focus { color:#0000FF; text-decoration:underline }
+
+td {
+  color:black;
+  font-family:sans-serif; 
+}
+
+/* frame table */
+.frame {
+  width:100%;
+}
+
+/* standard formatting for logbook tabs */
+.tabs {
+  font-family:sans-serif;
+  font-size:small;
+  background-color:white;
+}
+
+/* unselected and selected group tabs */
+
+.gtab, .gtab a {
+  background-color:#B0E0B0;
+}
+
+.sgtab, .sgtab a {
+  background-color:#486090;
+  color:white;
+}
+
+.sgtab a:visited { color:white; } /* buf for IE */
+
+/* unselected and selected logbook tabs */
+
+.ltab, .ltab a {
+  background-color:#E0E0E0;
+}
+
+.sltab, .sltab a {
+  background-color:#486090;
+  color:white;
+}
+
+.sltab a:visited { color:white; } /* bug for IE */
+
+/* logbook title, left, middle and right cell */
+
+.title1 {
+  background-color:#486090;
+  color:white;
+  font-size:medium;
+  font-family:sans-serif;
+  text-align:left;
+}
+
+.title2 {
+  background-color:#486090;
+  color:white;
+  font-size:medium;
+  font-family:sans-serif;
+  text-align:center;
+}
+
+.title3 {
+  background-color:#486090;
+  text-align:right;
+}
+
+/* main menu row */
+
+.menuframe {
+  border:1px solid #486090;
+  border-top:0px;
+  padding:0px;
+  background-color:#E0E0E0;
+}
+
+.menu1 {
+  text-align:left;
+  font-size:10pt;
+}
+
+.menu2a {
+  text-align:left;
+  font-size:10pt;
+}
+
+.menu2b {
+  text-align:right;
+  font-size:10pt;
+}
+
+.menu3 {
+  text-align:left;
+  font-size:8pt;
+  font-weight:bold;
+}
+
+.menu4 {
+  text-align:right;
+  font-size:10pt;
+  vertical-align:middle;
+}
+
+/* frame table in listings */
+.listframe {
+  background-color:#486090;
+  border:0px;
+}
+
+/* title row in listing */
+.listtitle {
+  background-color:#CCCCFF;
+  text-align:center;
+  padding:0px;
+}
+
+/* odd and even lines in message listing */
+
+.list1 {
+  background-color:#DDEEBB;
+  text-align:center;
+  font-size:10pt;
+}
+
+.list2 {
+  background-color:#FFFFB0;
+  text-align:center;
+}
+
+/* attachment line */
+
+.attachment {
+  background-color:#FFFFB0;
+  text-align:left;
+}
+
+/* threaded listing */
+.thread {
+  background-color:#DDEEBB;
+  text-align:left;
+}
+
+.threadreply {
+  background-color:#FFFFB0;
+  text-align:left;
+}
+
+/* attribute names and values on single message page */
+.attribname {
+  background-color:#CCCCFF;
+  padding:1px;
+}
+
+.attribvalue {
+  background-color:#DDEEBB;
+  padding:1px;
+}
+
+.attribvalue2 {
+  background-color:#FFFFB0;
+  padding:1px;
+}
+
+/* message cell in listing */
+.messagelist {
+  background-color:white;
+  font-family:'lucida console',courier,monospace;
+  font-size:10pt;
+  padding:1px;
+}
+
+/* message display in single message page */
+.messageframe {
+  background-color:white;
+  border:1px solid #486090;
+  border-top:0px;
+  padding:2px;
+}
+
+.messagepre {
+  font-family:'lucida console',courier,monospace;
+  font-size:10pt;
+}
+
+/* attachment size */
+.bytes {
+  font-family:'lucida console',courier,monospace;
+  font-size:10pt;
+}
+
+/* summary display (threaded mode expand) */
+.summary {
+  background-color:white;
+  font-family:'lucida console',courier,monospace;
+  font-size:8pt;
+}
+
+/* input forms */
+.form1 {
+  border:1px solid #486090;
+  background-color:#DDEEBB;
+  padding:0px;
+}
+
+.form2 {
+  border:1px solid #486090;
+  border-top:0px;
+  background-color:#DDEEBB;
+  padding:0px;
+}
+
+/* error message */
+.errormsg {
+  border:1px solid #486090;
+  padding:5px;
+  background-color:#FFB0B0;
+  text-align:center;
+  font-size:medium;
+}
+
+/* notification (warning) */
+.notifymsg {
+  padding:5px;
+  background-color:#FFD070;
+  text-align:center;
+  font-size:small;
+}
+
+/* dialog boxes (login, delete, etc.) */
+.dlgframe {
+  width:50%;
+  background-color:#486090; 
+  border:1px solid #486090;
+  margin-top:2cm;
+}
+
+.dlgerror {
+  background-color:red;
+  padding:10px;
+  font-size:small;
+  text-align:center;
+  font-size:medium;
+  color:white;
+}
+
+.dlgtitle {
+  background-color:#486090;
+  color:white;
+  font-size:medium;
+  text-align:center;
+  padding:5px;
+}
+
+.dlgform {
+  background-color:#DDEEBB;
+  padding:5px;
+}
+
+/* ELOG home page link at bottom of page */
+.bottomlink {
+  font-family:sans-serif; 
+  font-size:xx-small;
+}
+
