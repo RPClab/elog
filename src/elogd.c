@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.562  2005/02/16 08:15:00  ritt
+   Test regular expressions for validity
+
    Revision 1.561  2005/02/15 18:55:35  ritt
    Use 'attachmentframe' style
 
@@ -8993,7 +8996,7 @@ void show_find_form(LOGBOOK * lbs)
 
    rsprintf("<tr><td class=\"form2\"><b>%s:</b>", loc("Filters"));
    rsprintf("&nbsp;&nbsp;<span class=\"selcomment\">(%s)</span><br>",
-            loc("Text fields may contain regular expressions"));
+            loc("Text fields are treated as regular expressions"));
 
    /* table for two-column items */
    rsprintf("<table width=\"100%%\" cellspacing=0>\n");
@@ -15216,7 +15219,14 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       flags = REG_EXTENDED;
       if (!isparam("casesensitive"))
          flags |= REG_ICASE;
-      regcomp(re_buf, str, flags);
+      status = regcomp(re_buf, str, flags);
+      if (status) {
+         sprintf(line, loc("Error in regular expression \"%s\": "), str);
+         regerror(status, re_buf, str, sizeof(str));
+         strlcat(line, str, sizeof(line));
+         show_error(line);
+         return;
+      }
    }
 
    /* compile regex for attributes */
@@ -15240,7 +15250,14 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          if (!isparam("casesensitive"))
             flags |= REG_ICASE;
 
-         regcomp(re_buf + i + 1, str, flags);
+         status = regcomp(re_buf + i + 1, str, flags);
+         if (status) {
+            sprintf(line, loc("Error in regular expression \"%s\": "), str);
+            regerror(status, re_buf + i + 1, str, sizeof(str));
+            strlcat(line, str, sizeof(line));
+            show_error(line);
+            return;
+         }
       }
    }
 
