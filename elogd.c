@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.7  2002/01/23 08:41:42  midas
+  Added "Search all logbooks" flag
+
   Revision 1.6  2002/01/15 10:23:59  midas
   - Remove "back" button from error display (NS4.7 does not support it)
   - Fixed wrong URL in email notification
@@ -3725,8 +3728,11 @@ char   str[256];
 
   if (i > 2)
     {
-    rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
-    rsprintf("<input type=checkbox name=all value=1>%s</td></tr>\n", loc("Search all logbooks"));
+    if (!getcfg(logbook, "Search all logbooks", str) || atoi(str) == 1)
+      {
+      rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
+      rsprintf("<input type=checkbox name=all value=1>%s</td></tr>\n", loc("Search all logbooks"));
+      }
     }
 
   rsprintf("<tr><td nowrap width=10%% bgcolor=%s>%s:</td>", gt("Categories bgcolor1"), loc("Start date"));
@@ -3989,7 +3995,7 @@ void show_elog_submit_find(INT past_n, INT last_n)
 {
 int    i, j, n, size, status, d1, m1, y1, d2, m2, y2, index, colspan, i_line, n_line, i_col;
 int    current_year, current_month, current_day, printable, n_logbook, lindex, n_attr,
-       reverse, n_attr_disp, n_found;
+       reverse, n_attr_disp, n_found, search_all;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR][NAME_LENGTH],
        list[10000], text[TEXT_SIZE], text1[TEXT_SIZE], text2[TEXT_SIZE],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80];
@@ -4353,6 +4359,12 @@ FILE   *f;
   if (getcfg(logbook, "Summary lines", str))
     n_line = atoi(str);
 
+  /* check for search all */
+  search_all = atoi(getparam("all"));
+
+  if (getcfg(logbook, "Search all logbooks", str) && atoi(str) == 0)
+    search_all = 0;
+  
   /*---- table titles ----*/
 
   rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n",
@@ -4365,7 +4377,7 @@ FILE   *f;
 
   rsprintf("<td width=10%% align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>#</b></td>", col, size);
 
-  if (atoi(getparam("all")) == 1)
+  if (search_all)
     rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Logbook</b></td>", col, size);
 
   rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Date</b></td>", col, size);
@@ -4403,7 +4415,7 @@ FILE   *f;
   n_found = 0;
 
   old_data_dir[0] = 0;
-  if (atoi(getparam("all")) == 1)
+  if (search_all)
     {
     /* count logbooks */
     for (i=n_logbook=0 ;  ; i++)
@@ -4668,7 +4680,7 @@ FILE   *f;
 
           rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></font></td>", col, size, ref, n_found);
 
-          if (atoi(getparam("all")) == 1)
+          if (search_all)
             rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, logbook_list[lindex]);
 
           if (getcfg(logbook, "Date format", format))
@@ -4722,7 +4734,7 @@ FILE   *f;
 
           rsprintf("</tr>\n");
 
-          if (atoi(getparam("all")) == 1)
+          if (search_all)
             colspan = 3+n_attr_disp;
           else
             colspan = 2+n_attr_disp;
@@ -4836,7 +4848,7 @@ FILE   *f;
 
           rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></font></td>", col, size, ref, n_found);
 
-          if (atoi(getparam("all")) == 1)
+          if (search_all)
             rsprintf("<td align=center %s bgcolor=%s>%s</td>", nowrap, col, logbook_list[lindex]);
 
           if (getcfg(logbook, "Date format", format))
@@ -7934,7 +7946,7 @@ struct tm *tms;
       else
         {
 usage:
-        printf("usage: %s [-p port] [-h hostname] [-D] [-c file] [-r pwd] [-w pwd] [-a pwd] [-l loggbook]\n\n", argv[0]);
+        printf("usage: %s [-p port] [-h hostname] [-D] [-c file] [-r pwd] [-w pwd] [-a pwd] [-l logbook]\n\n", argv[0]);
         printf("       -p <port> TCP/IP port\n");
         printf("       -h <hostname> TCP/IP hostname\n");
         printf("       -D become a daemon\n");
