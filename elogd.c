@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.134  2003/01/13 19:18:34  midas
+  Fixed yet another bug with logbook_dir
+
   Revision 2.133  2003/01/13 19:04:03  midas
   Changed 'Mail' to 'EMail'
 
@@ -12504,6 +12507,7 @@ usage:
         break;
       logbook_dir[i] = 0;
       }
+    strlcat(logbook_dir, "logbooks", sizeof(logbook_dir));
     }
 
   /* set default logbook dir if not given */
