@@ -283,28 +283,59 @@ Logbook dir</b></code> in the <b><a href="config.html">elogd.cfg description</a>
 <div class=section>&nbsp; Secure Connections HOWTO &nbsp;</div>
 <p>
 Although the <code><b>elogd</b></code> program does not support secure
-connections over SSL directly, it is possible to use it together with
-<a href="http://stunnel.mirt.net/">stunnel</a> to do so. Three steps are
-necessary:
+connections over SSL directly, it is still possible to access <code><b>elogd</b></code>
+securely using one of the following methods:
+
+<h3><i>Using stunnel</i>:</h3>
+
+To use <code><b>elogd</b></code> togethwer with
+<a href="http://www.stunnel.or/g">stunnel</a>, following steps are necessary:
+
 <OL>
 <LI>Start <code><b>elogd</b></code>. If another Web server is running
 on port 80, use a different port.
 <P>
-<LI>Install the <b><code>stunnel</code></b> program if not already done
+<LI>Configure stunnel. This requires the creation of a certificate. See
+the <a href="http://www.stunnel.org/faq/certs.html">manual</a> for
+details.
+<P>
+<LI>Start the <b><code>stunnel</code></b> program if not already done
     and start it with:
 <P>
     <pre>stunnel -d 443 -r your.host.name:80</pre>
     Substitute the port 80 if you started <code><b>elogd</b></code> on another port. This
-    causes <b><code>stunnel</code></b> to receive requests on the https port 443 and         forward them to the <code><b>elogd</b></code> port.
+    causes <b><code>stunnel</code></b> to receive requests on the https port 443 and
+    forward them to the <code><b>elogd</b></code> port.
 <P>
 <LI>Put the URL under which <code><b>elogd</b></code> runs into elogd.cfg:<p>
     <pre>URL = https://your.host.name/</pre>
 <LI>Connect to your logbook with a browser which supports SSL via:
 <P>
     <pre>https://your.host.name/</pre>
+<LI>If you have problems, start stunnel in the foreground mode with
+<P>
+    <pre>stunnel -f -d 443 -r your.host.name:80</pre>
+
+This reveals any potential error.<p>
 </OL>
 <p>
-Alternatively, <code><b>elogd</b></code> can be accessed through a SSH tunnel.
+
+<h3><i>Using Apache</i>:</h3>
+
+The <a href="http://httpd.apache.org">Apache<a> web server can be used as a proxy
+server allowing secure connections. To do so, Apache has to be configured
+accordingly and a certificate has to be generated. See some
+<a href="http://slacksite.com/apache/certificate.html">instuctions</a>
+on how to create a certificate, and see <i>Running elogd under Apache</i>
+before on this page on how to run elogd under Apache. Once configured
+correctly, elogd can be accessed via <i>http://your.host</i> and via
+<i>https://your.host</i> simultaneously. See the ELOG Forum for example
+via <a href="http://midas.psi.ch/elogs/forum/">nonsecure</a> and
+<a href="https://midas.psi.ch/elogs/forum/">secure</a> connection.<p>
+
+<h3><i>Using ssh</i>:</h3>
+
+<code><b>elogd</b></code> can be accessed through a a SSH tunnel.
 To do so, open an SSH tunnel like:
 <P>
 <ul><pre>ssh -L 1234:your.server.name:8080 your.server.name</pre></ul>
