@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.163  2003/12/03 14:36:01  midas
+  Added 'comment <attribute>'
+
   Revision 1.162  2003/12/03 12:49:14  midas
   Changed email notification format
 
@@ -5524,7 +5527,14 @@ char   fl[8][NAME_LENGTH];
       }
 
     /* display text box */
-    rsprintf("<tr><td nowrap class=\"attribname\">%s%s:</td>", attr_list[index], star);
+    rsprintf("<tr><td nowrap class=\"attribname\">%s%s:", attr_list[index], star);
+
+    /* show optional comment */
+    sprintf(str, "Comment %s", attr_list[index]);
+    if (getcfg(lbs->name, str, comment))
+      rsprintf("<br><span class=\"selcomment\"><b>%s</b></span>\n", comment);
+
+    rsprintf("</td>\n");
 
     /* if attribute cannot be changed, just display text */
     if ((attr_flags[index] & AF_LOCKED) ||
