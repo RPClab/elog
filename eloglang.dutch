@@ -1,7 +1,7 @@
 #
 # Dutch messages by djek@xs4all.nl
-# $Revision$
-# 29-9-2002
+# $Revision$ 
+# 12-12-2002
 #
 
 #
@@ -201,3 +201,10 @@ Automatic email notifications=Automatisch e-mail aankondiging
 
 # New strings for V2.2.2
 A old entry has been updated on %s = Een ouder bericht is op %s gewijzigd
+
+# New strings for V2.2.4
+Collapse = Samenvatten
+Expand = Uitbreiden
+Full = Volledig
+Summary = Samenvatting
+Threaded = Berichtdraad

@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.115  2002/12/13 12:07:01  midas
+  Improved email sending
+
   Revision 2.114  2002/12/12 13:25:59  midas
   Make active logbook tab also a link
 
@@ -446,7 +449,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.2.4"
+#define VERSION "2.2.5"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -1014,15 +1017,16 @@ struct timeval timeout;
 }
 
 
-INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text)
+INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text, BOOL email_to)
 {
 struct sockaddr_in   bind_addr;
 struct hostent       *phe;
-int                  s, offset;
+int                  i, n, s, offset;
 char                 buf[80];
 char                 str[TEXT_SIZE+1000];
 time_t               now;
 struct tm            *ts;
+char                 list[1024][NAME_LENGTH];
 
   if (verbose)
     printf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
@@ -1071,11 +1075,17 @@ struct tm            *ts;
   recv_string(s, str, sizeof(str), 3000);
   if (verbose) puts(str);
 
-  snprintf(str, sizeof(str) - 1, "RCPT TO: <%s>\r\n", to);
-  send(s, str, strlen(str), 0);
-  if (verbose) puts(str);
-  recv_string(s, str, sizeof(str), 3000);
-  if (verbose) puts(str);
+  /* break recipients into list */
+  n = strbreak(to, list, 1024);
+
+  for (i=0 ; i<n ; i++)
+    {
+    snprintf(str, sizeof(str) - 1, "RCPT TO: <%s>\r\n", list[i]);
+    send(s, str, strlen(str), 0);
+    if (verbose) puts(str);
+    recv_string(s, str, sizeof(str), 3000);
+    if (verbose) puts(str);
+    }
 
   snprintf(str, sizeof(str) - 1, "DATA\r\n");
   send(s, str, strlen(str), 0);
@@ -1083,7 +1093,18 @@ struct tm            *ts;
   recv_string(s, str, sizeof(str), 3000);
   if (verbose) puts(str);
 
-  snprintf(str, sizeof(str) - 1, "To: %s\r\nFrom: %s\r\nSubject: %s\r\n", to, from, subject);
+  if (email_to)
+    {
+    snprintf(str, sizeof(str) - 1, "To: %s\r\n", to);
+    send(s, str, strlen(str), 0);
+    if (verbose) puts(str);
+    }
+
+  snprintf(str, sizeof(str) - 1, "From: %s\r\nSubject: %s\r\n", from, subject);
+  send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
+
+  snprintf(str, sizeof(str) - 1, "From: %s\r\nSubject: %s\r\n", from, subject);
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
 
@@ -5500,7 +5521,7 @@ int    i, fh, size, self_register;
       sprintf(url+strlen(url), "?cmd=Login&unm=%s", getparam("new_user_name"));
       sprintf(mail_text+strlen(mail_text), "%s %s\r\n", loc("You can access it at"), url);
 
-      sendmail(smtp_host, mail_from, getparam("new_user_email"), subject, mail_text);
+      sendmail(smtp_host, mail_from, getparam("new_user_email"), subject, mail_text, TRUE);
       }
     else
       {
@@ -5555,7 +5576,7 @@ int    i, fh, size, self_register;
                       loc("Logbook"), url, getparam("new_user_name"), pl);
               }
 
-            sendmail(smtp_host, mail_from, email_addr, subject, mail_text);
+            sendmail(smtp_host, mail_from, email_addr, subject, mail_text, TRUE);
             }
 
           pl = strtok(NULL, " ,");
@@ -8236,11 +8257,12 @@ LOGBOOK *lbs_cur;
 /*------------------------------------------------------------------*/
 
 int compose_mail(LOGBOOK *lbs, char *mail_to, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], 
-                 char *mail_param, int *n_mail, int old_mail)
+                 char *mail_param, int old_mail)
 {
-int    j;
+int    i, j, n;
 char   str[256], mail_from[256], mail_text[TEXT_SIZE+1000], smtp_host[256], subject[256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
+char   list[MAX_PARAM][NAME_LENGTH];
 
   if (!getcfg("global", "SMTP host", smtp_host))
     {
@@ -8318,7 +8340,10 @@ char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
       getparam("text"));
     }
 
-  sendmail(smtp_host, mail_from, mail_to, subject, mail_text);
+  if (getcfg(lbs->name, "Omit Email to", str) && atoi(str) == 1)
+    sendmail(smtp_host, mail_from, mail_to, subject, mail_text, FALSE);
+  else
+    sendmail(smtp_host, mail_from, mail_to, subject, mail_text, TRUE);
 
   if (!getcfg(lbs->name, "Display email recipients", str) ||
        atoi(str) == 1)
@@ -8327,7 +8352,14 @@ char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
       strcpy(mail_param, "?");
     else
       strcat(mail_param, "&");
-    sprintf(mail_param+strlen(mail_param), "mail%d=%s", (*n_mail)++, mail_to);
+
+    n = strbreak(mail_to, list, MAX_PARAM);
+    for (i=0 ; i<n && i<MAX_PARAM ; i++)
+      {
+      sprintf(mail_param+strlen(mail_param), "mail%d=%s", i, list[i]);
+      if (i<n-1)
+        strcat(mail_param, "&");
+      }
     }
 
   return 1;
@@ -8341,10 +8373,10 @@ char   str[256], file_name[256], error[1000], date[80],
        mail_list[MAX_N_LIST][NAME_LENGTH], list[10000],
        attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[256], in_reply_to[80],
        reply_to[256], user[256], user_email[256], email_notify[256];
-char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
+char   *buffer[MAX_ATTACHMENTS], mail_param[1000], *mail_to;
 char   att_file[MAX_ATTACHMENTS][256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
-int    i, j, n, missing, first, index, n_mail, suppress, message_id, resubmit_orig;
+int    i, j, n, missing, first, index, suppress, message_id, resubmit_orig, mail_to_size;
 
   /* check for required attributs */
   missing = 0;
@@ -8516,7 +8548,9 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id, resubmit_or
 
   /* check for mail submissions */
   mail_param[0] = 0;
-  n_mail = 0;
+  mail_to = malloc(256);
+  mail_to[0] = 0;
+  mail_to_size = 256;
 
   if (suppress)
     {
@@ -8554,8 +8588,15 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id, resubmit_or
             printf("\n%s to %s\n\n", str, list);
 
           for (i=0 ; i<n ; i++)
-            if (!compose_mail(lbs, mail_list[i], message_id, attrib, mail_param, &n_mail, *getparam("edit")))
-              return;
+            {
+            if ((int)strlen(mail_to) + (int)strlen(mail_list[i]) >= mail_to_size)
+              {
+              mail_to_size += 256;
+              mail_to = realloc(mail_to, mail_to_size);
+              }
+            strcat(mail_to, mail_list[i]);
+            strcat(mail_to, ",");
+            }
           }
         }
 
@@ -8568,11 +8609,26 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id, resubmit_or
         get_user_line(lbs->name, user, NULL, NULL, user_email, email_notify);
 
         if (email_notify[0])
-          if (!compose_mail(lbs, user_email, message_id, attrib, mail_param, &n_mail, *getparam("edit")))
-            return;
+          {
+          if ((int)strlen(mail_to) + (int)strlen(user_email) >= mail_to_size)
+            {
+            mail_to_size += 256;
+            mail_to = realloc(mail_to, mail_to_size);
+            }
+          strcat(mail_to, user_email);
+          strcat(mail_to, ",");
+          }
         }
       }
     }
+
+  if (strlen(mail_to) > 0)
+    {
+    mail_to[strlen(mail_to)-1] = 0; /* strip last ',' */
+    compose_mail(lbs, mail_to, message_id, attrib, mail_param, *getparam("edit"));
+    }
+
+  free(mail_to);
 
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     if (buffer[i])

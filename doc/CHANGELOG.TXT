@@ -1,3 +1,9 @@
+Version 2.2.5, released December 12th, 2002
+===========================================
+
+- Improved speed for sending many email notifications
+- Added "Omit email to" option
+
 Version 2.2.4, released December 12th, 2002
 ===========================================
 

@@ -830,6 +830,8 @@ individual logbook sections, one has to log in to each logbook separately.<p>
 <LI><b><code>Email &lt;attribute&gt; &lt;value&gt; = &lt;list&gt;</code></b>
 <LI><b><code>Use Email Subject = &lt;string&gt;</code></b>
 <LI><b><code>Use Email From = &lt;string&gt;</code></b>
+<LI><b><code>Omit Email To = 0|1</code></b>
+
 </ul>
 <p>
 To send email automatically when new entries are created in a logbook, a <b><code>SMTP host =
@@ -852,7 +854,10 @@ used as the email subject. The text can contain <b><code>$&lt;attribute&gt;
 </code></b>statements which are substituted with the current value of that
 attribute. For a full list of possible substitutions, see the
 "<I>Subst &lt;attribute&gt;</I>" option. The option <b><code>Use Email From = &lt;string&gt;
-</code></b> is used for the "<I>from</I>" field in the email.
+</code></b> is used for the "<I>from</I>" field in the email. If the flag <b><code>
+Omit Email To</b></code> is set to <b>1</b>, the <i>To:</i> field in the email is
+left empty insted set to the real email address of the recipients. This can
+be useful if one recipient should not see the email addresses of the other recipients.
 <p>
 
 <a name="flags"><hr>
