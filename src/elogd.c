@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.355  2004/06/23 07:41:34  midas
+   Added _cmdline in redirection
+
    Revision 1.354  2004/06/23 07:34:04  midas
    Redirect login screen if URL does not match the one in the config file
 
@@ -15848,7 +15851,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
          if (strchr(str2, ':'))
             *strchr(str2, ':') = 0;
          if (!strieq(str, str2)) {
-            redirect(lbs, "");
+            redirect(lbs, _cmdline);
             return FALSE;
          }
       }
