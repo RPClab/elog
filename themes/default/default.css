@@ -198,9 +198,9 @@ td {
 /* attachment line */
 
 .attachment {
-  border:1px solid #808040;
-  border-top:1px solid white;
-  border-left:1px solid white;
+  border-left:1px solid gray;
+  border-right:1px solid gray;
+  border-bottom:1px solid gray;
   background-color:#FFFFB0;
   text-align:left;
 }
