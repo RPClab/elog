@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.30  2002/06/25 11:52:24  midas
+  Fixed problem with changeing passwords
+
   Revision 2.29  2002/06/20 14:53:33  midas
   Synchronize indices if several logbooks share the same data directory
 
@@ -7932,7 +7935,7 @@ LOGBOOK *cur_lb;
     }
 
   if (strncmp(path, "last", 4) == 0 && strstr(path, ".gif") == NULL &&
-      *getparam("cmd") == 0)
+      !isparam("cmd") && !isparam("newpwd"))
     {
     show_elog_submit_find(cur_lb, 0, atoi(path+4));
     return;
