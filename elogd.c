@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.102  2002/11/21 09:25:05  midas
+  Fixed bug with 'hosts allow'
+
   Revision 2.101  2002/11/21 09:13:33  midas
   Added 'menu text' and 'find menu text'
 
@@ -407,7 +410,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.2.3"
+#define VERSION "2.2.4"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -10727,6 +10730,8 @@ struct timeval       timeout;
         strcpy(remote_host[i_conn], phe->h_name);
       else
         strcpy(remote_host[i_conn], (char *)inet_ntoa(rem_addr));
+
+      strcpy(rem_host, remote_host[i_conn]);
 
 #ifdef DEBUG_CONN
       printf("## open new connection %d\n", i_conn);
