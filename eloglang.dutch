@@ -40,8 +40,8 @@ Wrong password = Verkeerde wachtwoord
 Please login = Aanmelden
 Username = Gebruikersnaam
 Password = &nbsp;&nbsp;&nbsp;&nbsp;Wachtwoord
-Old Password = &nbsp;Oude wachtwoord
-New Password = Nieuw wachtwoord
+Old password = &nbsp;Oude wachtwoord
+New password = Nieuw wachtwoord
 ELOG password = ELOG wachtwoord
 ELOG change password = ELOG wachtwoord wijzigen
 Please enter password to obtain write access = Geef wachtwoord om schrijfrechten te verkrijgen
@@ -149,7 +149,7 @@ and all its replies = en al de antwoorden
 Message ID =Bericht ID
 
 #
-# New string for V2.1.0
+# New string for V2.xx
 Not logged in = Niet ingelogd
 Login = Inloggen
 Page %d of %d = Pagina %d van de %d
@@ -168,4 +168,18 @@ Retype password = Wachtwoord opnieuw opgeven
 exists already = bestaat al
 Register as new user = Als nieuwe gebruiker aanmelden
 
+#
+# New strings for V2.1.1
+A new ELOG user has been registered on %s = Een nieuwe gebruiker heeft zich aangemeld op %s 
+Email = Email
+User "%s" registered on logbook "%s" = Gebruiker "%s" geregistreerd in logboek "%s"
+User [%s] has been deleted = Gebruiker [%s] is gewist
+Hit following URL to activate that account = Klik op de volgende URL om de gebruikers account te activeren
+ELOG registration = ELOG Registratie
+Your ELOG account has been activated on host = Uw ELOG account is geactiveerd op
+You can access it at = U kan toegang krijgen op
+Are you sure to delete these messages? = Weet u zeker dat u deze boodschappen wilt wissen?
+%d message moved successfully from "%s" to "%s" = Boodschap is succesvol verplaatst van "%s" naar "%s"
+%d message copied successfully from "%s" to "%s" = Boodschap is succesvol gekopieerd "%s" naar "%s"
+Select = Kies
 
