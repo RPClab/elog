@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.63  2003/04/02 08:11:49  midas
+  Fixed bug with missing link in reply/upload
+
   Revision 1.62  2003/03/31 18:54:17  midas
   Added link to main page
 
@@ -5333,6 +5336,10 @@ time_t now;
   if (breply)
     /* hidden text for original message */
     rsprintf("<input type=hidden name=reply_to value=\"%d\">\n", message_id);
+
+  if (bupload)
+    /* hidden text for original message */
+    rsprintf("<input type=hidden name=reply_to value=\"%s\">\n", getparam("reply_to"));
 
   if (bedit && message_id)
     rsprintf("<input type=hidden name=edit_id value=\"%d\">\n", message_id);
