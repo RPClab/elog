@@ -1,4 +1,4 @@
-Checklist for new ELOG release
+Checklist for new ELOG version
 ==============================
 
 On PC4534:
@@ -20,4 +20,21 @@ On PC5082:
 - Increse version in elog.spec
 - build x.x.x
 
-Declare new release at freshmeat.
+Declare new version at freshmeat.
+
+
+Checklist for new ELOG release
+==============================
+
+On PC4534:
+
+- Put all new options in doc/config.html
+- Increse release in elogd.c "x.x.x-y"
+- c:\elog> cvs commit -m "Version x.x.x-y" 
+- build xxx-y
+
+On PC5082:
+
+- cvs update
+- Increse release in elog.spec
+- build x.x.x y
