@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.235  2004/02/04 10:39:22  midas
+   Added 'js=xxx.js' support
+
    Revision 1.234  2004/02/04 09:21:37  midas
    Added 'use email heading edit'
 
@@ -531,6 +534,7 @@ struct {
    ".XLS", "application/x-msexcel"}, {
    ".DOC", "application/msword"}, {
    ".PDF", "application/pdf"}, {
+   ".JS", "application/x-javascript"}, {
    ".TXT", "text/plain"}, {
    ".ASC", "text/plain"}, {
    ".ZIP", "application/x-zip-compressed"}, {
@@ -2304,8 +2308,7 @@ char *loc(char *orig)
       }
 
    /* special case: "Change %s" */
-   if (strstr(orig, "Change ") && 
-       strcmp(orig, "Change %s") != 0) {
+   if (strstr(orig, "Change ") && strcmp(orig, "Change %s") != 0) {
       sprintf(result, loc("Change %s"), orig + 7);
       return result;
    }
@@ -6123,7 +6126,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("  return true;\n");
    rsprintf("}\n");
    rsprintf("//-->\n");
-   rsprintf("</script>\n");
+   rsprintf("</script>\n\n");
+
+   /* external script if requested */
+   if (isparam("js")) {
+      rsprintf("<script src=\"%s\" type=\"text/javascript\">\n", getparam("js"));
+      rsprintf("</script>\n\n");
+   }
+
    rsprintf("</head>\n");
 
    rsprintf("<body>\n");
@@ -7288,7 +7298,7 @@ void remove_crlf(char *buffer)
 
    p = buffer;
    while ((p = strstr(p, "\r\n")) != NULL) {
-      strcpy(p, p+1);
+      strcpy(p, p + 1);
    }
 }
 
@@ -7308,7 +7318,6 @@ int save_admin_config(LOGBOOK * lbs, char *section, char *buffer, char *error)
       strcat(error, strerror(errno));
       return 0;
    }
-
 #ifdef OS_UNIX
 
    /* under unix, convert CRLF to CR */
@@ -7345,7 +7354,7 @@ int save_admin_config(LOGBOOK * lbs, char *section, char *buffer, char *error)
    strcat(p1, buffer);
    strcat(p1, "\r\n\r\n");
 #endif
-   
+
    if (p2) {
       strlcat(p1, buf2, length + strlen(buffer) + 1);
       free(buf2);
@@ -9520,7 +9529,8 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
             messages were added on both sides, so resubmit local one and retrieve remote one
             if messages are different */
          if (!exist_cache && exist_remote &&
-             !equal_md5(md5_remote[i_remote].md5_digest, lbs->el_index[i_msg].md5_digest)) {
+             !equal_md5(md5_remote[i_remote].md5_digest,
+                        lbs->el_index[i_msg].md5_digest)) {
 
             /* find max id both locally and remotely */
             max_id = 1;
@@ -11967,7 +11977,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
 
    if (flags & 1) {
       if (getcfg(lbs->name, "Use Email heading", str)) {
-         if (old_mail) { 
+         if (old_mail) {
             if (!getcfg(lbs->name, "Use Email heading edit", str))
                getcfg(lbs->name, "Use Email heading", str);
          }
@@ -14751,7 +14761,7 @@ void interprete(char *lbook, char *path)
    }
 
    /* check for lastxx and pastxx and listxx */
-   if (strncmp(path, "past", 4) == 0 && *getparam("cmd") == 0) {
+   if (strncmp(path, "past", 4) == 0 && isdigit(path[4]) && *getparam("cmd") == 0) {
       show_elog_list(lbs, atoi(path + 4), 0, 0);
       return;
    }
@@ -14782,7 +14792,8 @@ void interprete(char *lbook, char *path)
        || (strlen(pfile) > 13 && pfile[6] == '_' && pfile[13] == '/')
        || strstr(pfile, ".gif")
        || strstr(pfile, ".jpg") || strstr(pfile, ".jpeg")
-       || strstr(pfile, ".png") || strstr(pfile, ".css")) {
+       || strstr(pfile, ".png") || strstr(pfile, ".css")
+       || strstr(pfile, ".js")) {
       if ((strlen(pfile) > 13 && pfile[6] == '_'
            && pfile[13] == '_') || (strlen(pfile) > 13 && pfile[6] == '_'
                                     && pfile[13] == '/')) {
