@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.98  2002/11/19 11:17:31  midas
+  Added 'table align'
+
   Revision 2.97  2002/11/19 08:32:29  midas
   Fixed bug with 10 attachments
 
@@ -5962,7 +5965,7 @@ void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
 {
 char str[256], ref[256], *nowrap, col[80], format[256], file_name[256];
 char slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
-char display[256], attr_icon[80];
+char display[256], attr_icon[80], align[32];
 int  i, j, size, i_line, index, colspan;
 BOOL link_displayed, skip_comma;
 FILE *f;
@@ -6005,6 +6008,9 @@ FILE *f;
   nowrap = printable ? "" : "nowrap";
   link_displayed = FALSE;
   skip_comma = FALSE;
+  strcpy(align, "center");
+  if (getcfg(lbs->name, "Table align", str))
+    strcpy(align, str);
 
   if (equal_ustring(mode, "Threaded") && getcfg(lbs->name, "Thread display", display))
     {
@@ -6152,12 +6158,12 @@ FILE *f;
           {
           if (!link_displayed)
             {
-            rsprintf("<td align=center %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>",
-              nowrap, col, size, ref, lbs->name);
+            rsprintf("<td align=%s %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>",
+              align, nowrap, col, size, ref, lbs->name);
             link_displayed = TRUE;
             }
           else
-            rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, lbs->name);
+            rsprintf("<td align=%s %s bgcolor=%s><font size=%d>%s</font></td>", align, nowrap, col, size, lbs->name);
           }
         }
 
@@ -6208,12 +6214,12 @@ FILE *f;
           {
           if (!link_displayed)
             {
-            rsprintf("<td align=center %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>",
-              nowrap, col, size, ref, str);
+            rsprintf("<td align=%s %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>",
+              align, nowrap, col, size, ref, str);
             link_displayed = TRUE;
             }
           else
-            rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, str);
+            rsprintf("<td align=%s %s bgcolor=%s><font size=%d>%s</font></td>", align, nowrap, col, size, str);
           }
         }
 
@@ -6301,7 +6307,7 @@ FILE *f;
 
             else
               {
-              rsprintf("<td align=center bgcolor=%s><font size=%d>", col, size);
+              rsprintf("<td align=%s bgcolor=%s><font size=%d>", align, col, size);
               if (!link_displayed)
                 {
                 rsprintf("<a href=\"%s\">", ref);
