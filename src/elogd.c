@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.79  2003/04/08 11:28:03  midas
+  Increased TEXT_SIZE to 250000
+
   Revision 1.78  2003/04/08 11:10:06  midas
   Made password recovery work in German
 
@@ -877,7 +880,7 @@ char theme_name[80];
 #define MAX_N_LIST      100
 #define MAX_N_ATTR       50
 #define CMD_SIZE      10000
-#define TEXT_SIZE    100000
+#define TEXT_SIZE    250000
 #define MAX_PATH_LENGTH 256
 
 char _param[MAX_PARAM][NAME_LENGTH];
@@ -8135,7 +8138,7 @@ int    current_year, current_month, current_day, printable, n_logbook, n_display
        reverse, n_attr_disp, n_msg, search_all, message_id, n_page, i_start, i_stop,
        in_reply_to_id;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR+4][NAME_LENGTH],
-       list[10000], text[TEXT_SIZE], text1[TEXT_SIZE], text2[TEXT_SIZE],
+       list[10000], *text, *text1, *text2,
        in_reply_to[80], reply_to[256], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80];
 char   str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH];
 char   mode[80];
@@ -8503,6 +8506,15 @@ LOGBOOK *lbs_cur;
   if (*getparam("subtext"))
     filtering = TRUE;
 
+  text  = malloc(TEXT_SIZE);
+  text1 = malloc(TEXT_SIZE);
+  text2 = malloc(TEXT_SIZE);
+  if (text2 == NULL)
+    {
+    show_error("Out of memory");
+    return;
+    }
+
   /* do filtering */
   for (index=0 ; index<n_msg ; index++)
     {
@@ -8510,7 +8522,7 @@ LOGBOOK *lbs_cur;
       continue;
 
     /* retrieve message */
-    size = sizeof(text);
+    size = TEXT_SIZE;
     message_id = msg_list[index].lbs->el_index[msg_list[index].index].message_id;
     in_reply_to_id = msg_list[index].lbs->el_index[msg_list[index].index].in_reply_to;
 
@@ -9084,7 +9096,7 @@ LOGBOOK *lbs_cur;
 
   for (index=i_start ; index<=i_stop ; index++)
     {
-    size = sizeof(text);
+    size = TEXT_SIZE;
     message_id = msg_list[index].lbs->el_index[msg_list[index].index].message_id;
 
     status = el_retrieve(msg_list[index].lbs, message_id,
@@ -9245,6 +9257,9 @@ LOGBOOK *lbs_cur;
   rsprintf("</form></body></html>\r\n");
 
   free(msg_list);
+  free(text);
+  free(text1);
+  free(text2);
 }
 
 /*------------------------------------------------------------------*/
@@ -12494,7 +12509,10 @@ struct stat          cfg_stat;
         goto finished;
 
       if (verbose)
-        printf("\n\n\n%s\n", net_buffer);
+        {
+        puts("\n");
+        puts(net_buffer);
+        }
 
       /* initialize parametr array */
       initparam();
