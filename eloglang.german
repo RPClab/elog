@@ -223,3 +223,4 @@ ELOG Entries = ELOG Einträge
 Filters = Filter
 Mode = Modus
 Options = Optionen
+Error: start date after end date = Fehler: Anfangsdatum nach Enddatum
