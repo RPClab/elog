@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.170  2004/01/05 15:02:14  midas
+  Version 2.4.0
+
   Revision 1.169  2004/01/05 15:01:22  midas
   Display message comment on reedit
 
@@ -101,7 +104,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.3.10beta"
+#define VERSION "2.4.0"
 
 #include <stdio.h>
 #include <sys/types.h>
