@@ -6,6 +6,9 @@
   Contents:     Conversion program for ELOG messages
 
   $Log$
+  Revision 1.7  2004/09/18 04:42:46  midas
+  Fixed bug with not displaying inline images
+
   Revision 1.6  2004/07/28 18:51:57  midas
   Fixed error with gcc 3.4, thanks to Recai Oktas
 
@@ -272,14 +275,12 @@ INT ss_file_find(char *path, char *pattern, char **plist)
       return 0;
    first = 0;
    *plist = (char *) realloc(*plist, (i + 1) * MAX_PATH_LENGTH);
-   strncpy(*plist + (i * MAX_PATH_LENGTH), lpfdata->cFileName,
-           strlen(lpfdata->cFileName));
+   strncpy(*plist + (i * MAX_PATH_LENGTH), lpfdata->cFileName, strlen(lpfdata->cFileName));
    *(*plist + (i * MAX_PATH_LENGTH) + strlen(lpfdata->cFileName)) = '\0';
    i++;
    while (FindNextFile(pffile, lpfdata)) {
       *plist = (char *) realloc(*plist, (i + 1) * MAX_PATH_LENGTH);
-      strncpy(*plist + (i * MAX_PATH_LENGTH), lpfdata->cFileName,
-              strlen(lpfdata->cFileName));
+      strncpy(*plist + (i * MAX_PATH_LENGTH), lpfdata->cFileName, strlen(lpfdata->cFileName));
       *(*plist + (i * MAX_PATH_LENGTH) + strlen(lpfdata->cFileName)) = '\0';
       i++;
    }
@@ -339,8 +340,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
       do {
          tms = localtime(&ltime);
 
-         sprintf(file_name, "%s%02d%02d%02d.log", dir, tms->tm_year % 100,
-                 tms->tm_mon + 1, tms->tm_mday);
+         sprintf(file_name, "%s%02d%02d%02d.log", dir, tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
          lfh = open(file_name, O_RDWR | O_BINARY, 0644);
 
          if (lfh < 0) {
@@ -356,8 +356,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
 
             /* set new tag */
             tms = localtime(&ltime);
-            sprintf(tag, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon + 1,
-                    tms->tm_mday);
+            sprintf(tag, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
          }
 
          /* in forward direction, stop today */
@@ -458,8 +457,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
          do {
             lt -= 3600 * 24;
             tms = localtime(&lt);
-            sprintf(str, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon + 1,
-                    tms->tm_mday);
+            sprintf(str, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
 
             status = el_search_message(str, &lfh, FALSE, FALSE);
 
@@ -532,8 +530,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
          do {
             lt += 3600 * 24;
             tms = localtime(&lt);
-            sprintf(str, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon + 1,
-                    tms->tm_mday);
+            sprintf(str, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
 
             status = el_search_message(str, &lfh, FALSE, FALSE);
 
@@ -710,8 +707,7 @@ INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
       time(&now);
       tms = localtime(&now);
 
-      sprintf(file_name, "%s%02d%02d%02d.log", dir, tms->tm_year % 100, tms->tm_mon + 1,
-              tms->tm_mday);
+      sprintf(file_name, "%s%02d%02d%02d.log", dir, tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
 
       fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
       if (fh < 0)
@@ -788,8 +784,7 @@ INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
    size = strlen(message) + strlen(start_str) + strlen(end_str);
 
    if (tag != NULL && !bedit)
-      sprintf(tag, "%02d%02d%02d.%d", tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday,
-              (int) (TELL(fh)));
+      sprintf(tag, "%02d%02d%02d.%d", tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday, (int) (TELL(fh)));
 
    sprintf(start_str, "$Start$: %6d\n", size);
    sprintf(end_str, "$End$:   %6d\n\f", size);

@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.475  2004/09/18 04:42:46  midas
+   Fixed bug with not displaying inline images
+
    Revision 1.474  2004/09/18 03:27:34  midas
    Fixed problem with '/' in forgotten password
 
@@ -5026,7 +5029,10 @@ int is_ascii(char *file_name)
 
 int is_image(char *att)
 {
-   return strstr(att, ".GIF") || strstr(att, ".JPG") || strstr(att, ".JPEG") || strstr(att, ".PNG");
+   return (stristr(att, ".GIF")  != NULL) ||
+          (stristr(att, ".JPG")  != NULL) || 
+          (stristr(att, ".JPEG") != NULL) || 
+          (stristr(att, ".PNG")  != NULL) ;
 }
 
 /*------------------------------------------------------------------*/

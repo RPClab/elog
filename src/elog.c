@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.21  2004/09/18 04:42:46  midas
+  Fixed bug with not displaying inline images
+
   Revision 1.20  2004/03/28 10:41:05  midas
   Fixed problem with logbooks containing blanks
 
@@ -308,8 +311,7 @@ char request[100000], response[100000], *content;
 
 INT retrieve_elog(char *host, int port, char *subdir, char *experiment,
                   char *passwd, char *uname, char *upwd, int message_id,
-                  char attrib_name[MAX_N_ATTR][NAME_LENGTH],
-                  char attrib[MAX_N_ATTR][NAME_LENGTH], char *text)
+                  char attrib_name[MAX_N_ATTR][NAME_LENGTH], char attrib[MAX_N_ATTR][NAME_LENGTH], char *text)
 /********************************************************************\
 
   Routine: retrive_elog
@@ -782,42 +784,35 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
 
    if (uname[0])
       sprintf(content + strlen(content),
-              "%s\r\nContent-Disposition: form-data; name=\"unm\"\r\n\r\n%s\r\n",
-              boundary, uname);
+              "%s\r\nContent-Disposition: form-data; name=\"unm\"\r\n\r\n%s\r\n", boundary, uname);
 
    if (upwd[0]) {
       base64_encode(upwd, str);
       sprintf(content + strlen(content),
-              "%s\r\nContent-Disposition: form-data; name=\"upwd\"\r\n\r\n%s\r\n",
-              boundary, str);
+              "%s\r\nContent-Disposition: form-data; name=\"upwd\"\r\n\r\n%s\r\n", boundary, str);
    }
 
    if (experiment[0])
       sprintf(content + strlen(content),
-              "%s\r\nContent-Disposition: form-data; name=\"exp\"\r\n\r\n%s\r\n",
-              boundary, experiment);
+              "%s\r\nContent-Disposition: form-data; name=\"exp\"\r\n\r\n%s\r\n", boundary, experiment);
 
    if (reply)
       sprintf(content + strlen(content),
-              "%s\r\nContent-Disposition: form-data; name=\"reply_to\"\r\n\r\n%d\r\n",
-              boundary, reply);
+              "%s\r\nContent-Disposition: form-data; name=\"reply_to\"\r\n\r\n%d\r\n", boundary, reply);
 
    if (edit)
       sprintf(content + strlen(content),
-              "%s\r\nContent-Disposition: form-data; name=\"edit_id\"\r\n\r\n%d\r\n",
-              boundary, edit);
+              "%s\r\nContent-Disposition: form-data; name=\"edit_id\"\r\n\r\n%d\r\n", boundary, edit);
 
    if (suppress)
       sprintf(content + strlen(content),
-              "%s\r\nContent-Disposition: form-data; name=\"suppress\"\r\n\r\n1\r\n",
-              boundary);
+              "%s\r\nContent-Disposition: form-data; name=\"suppress\"\r\n\r\n1\r\n", boundary);
 
    for (i = 0; i < n_attr; i++) {
       strcpy(str, attrib_name[i]);
       btou(str);
       sprintf(content + strlen(content),
-              "%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n", boundary,
-              str, attrib[i]);
+              "%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n", boundary, str, attrib[i]);
    }
 
    sprintf(content + strlen(content),
@@ -855,8 +850,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
    }
    strcat(request, " HTTP/1.0\r\n");
 
-   sprintf(request + strlen(request),
-           "Content-Type: multipart/form-data; boundary=%s\r\n", boundary);
+   sprintf(request + strlen(request), "Content-Type: multipart/form-data; boundary=%s\r\n", boundary);
    sprintf(request + strlen(request), "Host: %s\r\n", host_name);
    sprintf(request + strlen(request), "User-Agent: ELOG\r\n");
    sprintf(request + strlen(request), "Content-Length: %d\r\n", content_length);
@@ -1007,8 +1001,7 @@ int main(int argc, char *argv[])
                   strcpy(attr_name[n_attr], str);
                   n_attr++;
                } else {
-                  printf
-                      ("Error: Attributes must be supplied in the form \"-a <attribute>=<value>\".\n");
+                  printf("Error: Attributes must be supplied in the form \"-a <attribute>=<value>\".\n");
                   return 1;
                }
             } else if (argv[i][1] == 'f')
@@ -1023,28 +1016,20 @@ int main(int argc, char *argv[])
              usage:
                printf("\nusage: elog\n");
                printf("           -h <hostname> [-p port] [-s subdir]\n");
-               printf
-                   ("                                    Location where elogd is running\n");
-               printf
-                   ("           -l logbook/experiment    Name of logbook or experiment\n");
+               printf("                                    Location where elogd is running\n");
+               printf("           -l logbook/experiment    Name of logbook or experiment\n");
                printf("           [-v]                     for verbose output\n");
-               printf
-                   ("           [-w password]            write password defined on server\n");
+               printf("           [-w password]            write password defined on server\n");
                printf("           [-u username password]   user name and password\n");
-               printf("           [-f <attachment>]        (up to %d times)\n",
-                      MAX_ATTACHMENTS);
-               printf("           -a <attribute>=<value>   (up to %d times)\n",
-                      MAX_N_ATTR);
+               printf("           [-f <attachment>]        (up to %d times)\n", MAX_ATTACHMENTS);
+               printf("           -a <attribute>=<value>   (up to %d times)\n", MAX_N_ATTR);
                printf("           [-r <id>]                Reply to existing message\n");
                printf("           [-e <id>]                Edit existing message\n");
-               printf
-                   ("           [-x]                     Suppress email notification\n");
+               printf("           [-x]                     Suppress email notification\n");
                printf("           -m <textfile>] | <text>\n");
                printf("\nArguments with blanks must be enclosed in quotes\n");
-               printf
-                   ("The elog message can either be submitted on the command line, piped in like\n");
-               printf
-                   ("\"cat text | elog -h ... -l ... -a ...\" or in a file with the -m flag.\n");
+               printf("The elog message can either be submitted on the command line, piped in like\n");
+               printf("\"cat text | elog -h ... -l ... -a ...\" or in a file with the -m flag.\n");
                printf("Multiple attributes and attachments can be supplied\n");
                return 1;
             }
@@ -1081,8 +1066,7 @@ int main(int argc, char *argv[])
       lseek(fh, 0, SEEK_SET);
 
       if (size > (int) sizeof(text) - 1) {
-         printf("Message file \"%s\" is too long (%d bytes max).\n", textfile,
-                sizeof(text));
+         printf("Message file \"%s\" is too long (%d bytes max).\n", textfile, sizeof(text));
          return 1;
       }
 
