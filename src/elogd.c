@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.353  2004/06/21 19:11:35  midas
+   Implemented retrieve_elog_from
+
    Revision 1.352  2004/06/21 18:04:43  midas
    Fixed email notification problem if URL does not contain a trailing '/'
 
@@ -2394,6 +2397,20 @@ void check_config()
 {
    check_config_file();
    check_language();
+}
+
+/*-------------------------------------------------------------------*/
+
+void retrieve_email_from(LOGBOOK *lbs, char *ret)
+{
+   char str[256];
+   
+   if (isparam("user_email") && *getparam("user_email"))
+      strcpy(str, getparam("user_email"));
+   else if (!getcfg(lbs->name, "Use Email from", str))
+      sprintf(str, "ELog@%s", host_name);
+
+   strcpy(ret, str);
 }
 
 /*------------------------------------------------------------------*/
@@ -8194,8 +8211,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
          }
       }
 
-      if (!getcfg(lbs->name, "Use Email from", mail_from))
-         sprintf(mail_from, "ELog@%s", host_name);
+      retrieve_email_from(lbs, mail_from);
 
       if (activate) {
          sprintf(subject, loc("Your ELOG account has been activated"));
@@ -8593,8 +8609,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             sprintf(str, "?redir=%s&uname=%s&upassword=%s", redir, login_name, pwd);
             strlcat(url, str, sizeof(url));
 
-            if (!getcfg(lbs->name, "Use Email from", mail_from))
-               sprintf(mail_from, "ELog@%s", host_name);
+            retrieve_email_from(lbs, mail_from);
 
             if (lbs)
                sprintf(subject, loc("Password recovery for ELOG %s"), lbs->name);
@@ -13636,15 +13651,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
    if (getcfg(lbs->name, "Email format", str))
       flags = atoi(str);
 
-   if (getcfg(lbs->name, "Use Email from", mail_from)) {
-      j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-      sprintf(str, "%d", message_id);
-      add_subst_list(slist, svalue, "message id", str, &j);
-      strsubst(mail_from, slist, svalue, j);
-      if (strncmp(mail_from, "mailto:", 7) == 0)
-         strcpy(mail_from, mail_from + 7);
-   } else
-      sprintf(mail_from, "ELog@%s", host_name);
+   retrieve_email_from(lbs, mail_from);
 
    mail_text = malloc(TEXT_SIZE + 1000);
    mail_text[0] = 0;
