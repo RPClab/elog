@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.33  2002/06/26 11:53:43  midas
+  Use ts->tm_isdst instead daylight
+
   Revision 2.32  2002/06/26 11:44:54  midas
   Fixed bug when deleting last message in logbook
 
@@ -691,7 +694,7 @@ struct tm            *ts;
   ts = localtime(&now);
   strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S", ts);
   offset = (-(int)timezone);
-  if (daylight)
+  if (ts->tm_isdst)
     offset += 3600;
   snprintf(str, sizeof(str) - 1, "Date: %s %+03d%02d\r\n\r\n", buf,
           (int) (offset/3600), (int) ((abs((int)offset)/60) % 60));
