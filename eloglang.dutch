@@ -179,8 +179,8 @@ ELOG registration = ELOG Registratie
 Your ELOG account has been activated on host = Uw ELOG account is geactiveerd op
 You can access it at = U kan toegang krijgen op
 Are you sure to delete these messages? = Weet u zeker dat u deze boodschappen wilt wissen?
-%d message moved successfully from "%s" to "%s" = Boodschap is succesvol verplaatst van "%s" naar "%s"
-%d message copied successfully from "%s" to "%s" = Boodschap is succesvol gekopieerd "%s" naar "%s"
+%d messages moved successfully from "%s" to "%s" = Boodschap is succesvol verplaatst van "%s" naar "%s"
+%d messages copied successfully from "%s" to "%s" = Boodschap is succesvol gekopieerd "%s" naar "%s"
 Select = Kies
 
 # New strings for V2.2.0

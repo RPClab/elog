@@ -3,8 +3,8 @@
 # $Revision$
 #
 
-# ElogLang.French - French interface file for ELOG 1.3.2+
-# version 1.4 - 31/01/02 by Fred Pacquier <fredp@mygale.org>
+# ElogLang.French - French interface file for ELOG 2.2.5+
+# version 1.5 - 12/01/03 by Fred Pacquier <fredp@dial.oleane.com>
 #
 
 #
@@ -18,7 +18,7 @@ Find = Chercher
 Last day = Dernier jour
 Last 10 = 10 Dernières entrées
 Config = Configuration
-Change Password = Changer le mot de passe
+Change password = Changer le mot de passe
 Logout = Se déconnecter
 Help = Aide
 Back = Retour
@@ -91,6 +91,7 @@ Please go back and enter the <b>%s</b> field = Revenez en arrière et renseignez 
 Please use your browser's back button to go back = Utilisez le bouton "page précédente" de votre navigateur pour revenir en arrière
 Original attachment = Ancien attachement
 New attachment = Nouvel attachement
+Only user <i>%s</i> can edit this entry = Seulement l'utilisateur <i>%s</i> peut changer cetter entrée
 
 #
 # Find display
@@ -150,3 +151,72 @@ Logbook is empty = Ce registre est vide
 This message has been deleted = Ce message a été effacé
 Download = Télécharger
 and all its replies = et toutes les réponses
+Message ID = Numéro de message
+
+#
+# New strings for V2.1.0
+Not logged in = Non identifié
+Login = S'identifier
+Page %d of %d = Page %d sur %d
+all entries = Toutes les entrées
+%d entries = %d entrées
+Login name = Nom de connexion
+Full name = Nom complet
+ELOG user config = Configuration d'un utilisateur ELOG
+ELOG new user = Création d'un utilisateur ELOG
+Admin = Administration
+Select user = Sélectionner un utilisateur
+Go = Sélectionner
+Remove user = Supprimer l'utilisateur courant
+New user = Créer un nouvel utilisateur
+Retype new password = Re-saisir le nouveau mot de passe
+New passwords do not match, please retype = Les nouveaux mots de passe ne sont pas identiques, merci de les re-saisir
+Retype password = Re-saisir le mot de passe
+exists already = existe déjà
+Register as new user = S'enregistrer comme nouvel utilisateur
+name may not contain blanks = ce nom ne doit pas contenir d'espace
+
+#
+# New strings for V2.1.1
+A new ELOG user has been registered on %s = Un nouvel utilisteur ELOG a été enregistré sur %s
+Email = Mél.
+User "%s" registered on logbook "%s" = L'utilisateur "%s" est enregistré dans le registre "%s"
+User [%s] has been deleted = L'utilisateur [%s] a été supprimé
+Hit following URL to activate that account = Cliquer sur l'URL suivante pour activer ce compte
+ELOG registration = Enregistrement ELOG
+Your ELOG account has been activated on host = Votre compte ELOG a été activé sur
+You can access it at = Vous pouvez y accéder par
+Are you sure to delete these messages? = Confirmez-vous la suppression de ces messages ?
+%d messages moved successfully from "%s" to "%s" = Message déplacé de "%s" vers "%s"
+%d messages copied successfully from "%s" to "%s" = Message copié de "%s" vers "%s"
+Select = Sélectionner
+
+#
+# New strings for V2.2.0
+No message selected for deletion = Aucun message marqué à supprimer
+No message selected = Aucun message sélectionné
+All entries = Toutes les entrées
+Day = Jour
+Week = Semaine
+Month = Mois
+Months = Mois
+Show last = Afficher
+Goto page = Aller à la page
+All = Tous
+Display = Afficher
+entries per page = entrées par page
+Toggle all = Basculer tout
+Selected entries = Entrées sélectionnées
+Automatic email notifications = Notifications automatiques par mél.
+
+#
+# New strings for V2.2.2
+A old entry has been updated on %s = Une entrée existante a été mise à jour dans le registre %s
+
+#
+# New strings for V2.2.4
+Collapse = Réduire
+Expand = Développer
+Full = Détail
+Summary = Résumé
+Threaded = Arborescence

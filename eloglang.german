@@ -136,6 +136,7 @@ Cannot write to <b>%s</b> = Datei <b>%s</b> kann nicht geschrieben werden
 No SMTP host defined in [global] section of configuration file = Kein SMTP Host im [global] Bereich der Konfigurationsdatei definiert
 Messags %s cannot be read from logook "%s" = Eintrag %s kann nicht aus dem Logbuch "%s" gelesen werden
 New message cannot be written to directory "%s" = Neuer Eintrag kann nicht ins Verzeichnis "%s" geschrieben werden
+Only user <i>%s</i> can edit this entry = Nur Benutzer <i>%s</i> kann diesen Eintrag ändern
 
 #
 # New strings for V2.0
@@ -158,8 +159,10 @@ all entries = alle Einträge
 Login name = Name zum Einloggen
 Full name = Benutzername
 ELOG user config = ELOG Benutzerkonfiguration
+ELOG new user = ELOG Neuer Benutzer
 Admin = Verwaltung
 Select user = Benutzer auswählen
+Go = Auswählen 
 Remove user = Benutzer entfernen
 New user = Neuen Benutzer anlegen
 Retype new password = Neues Kennwort nochmals eingeben
@@ -167,6 +170,7 @@ New passwords do not match, please retype = Kennwörter verschieden, bitte nochma
 Retype password = Kennwort erneut eingeben
 exists already = existiert bereits
 Register as new user = Als neuer Benutzer anmelden
+name may not contain blanks = Name darf keine Leerzeichen enthalten
 
 #
 # New strings for V2.1.1
@@ -179,8 +183,8 @@ ELOG registration = ELOG Registrierung
 Your ELOG account has been activated on host = Ihr ELOG Konto wurde aktiviert auf
 You can access it at = Der Zugriff erfolgt über
 Are you sure to delete these messages? = Diese Einträge wirklich löschen?
-%d message moved successfully from "%s" to "%s" = Eintrag erfolgreich von "%s" nach "%s" verschoben
-%d message copied successfully from "%s" to "%s" = Eintrag erfolgreich von "%s" nach "%s" kopiert
+%d messages moved successfully from "%s" to "%s" = Eintrag erfolgreich von "%s" nach "%s" verschoben
+%d messages copied successfully from "%s" to "%s" = Eintrag erfolgreich von "%s" nach "%s" kopiert
 Select = Auswählen
 
 #
