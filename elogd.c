@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.132  2003/01/13 19:01:49  midas
+  Fixed bug with logbook_dir
+
   Revision 2.131  2003/01/12 11:36:00  midas
   Fixed problem with attachment names containg '+' also in find result page
 
@@ -5971,7 +5974,7 @@ int  i;
 
   /*---- header ----*/
 
-  show_standard_header(loc("ElOG user config"), ".");
+  show_standard_header(loc("ELOG user config"), ".");
 
   /*---- title ----*/
 
@@ -6082,7 +6085,7 @@ void show_new_user_page(LOGBOOK *lbs)
 
   /*---- header ----*/
 
-  show_standard_header(loc("ElOG new user"), "");
+  show_standard_header(loc("ELOG new user"), "");
 
   /*---- title ----*/
 
@@ -12333,11 +12336,12 @@ struct tm *tms;
 
   tzset();
 
-  read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = resource_dir[0] = logbook_dir[0] = 0;
+  read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = 0;
+  logbook_dir [0] = resource_dir[0] = logbook_dir[0] = 0;
   tcp_port_cl = 0;
 
+  /* default config file */
   strcpy(config_file, "elogd.cfg");
-  strcpy(logbook_dir, "logbooks");
 
   /* evaluate predefined files and directories */
 
@@ -12498,6 +12502,10 @@ usage:
       logbook_dir[i] = 0;
       }
     }
+
+  /* set default logbook dir if not given */
+  if (!logbook_dir[0])
+    strcpy(logbook_dir, "logbooks");
 
   if (resource_dir[0] && resource_dir[strlen(resource_dir)-1] != DIR_SEPARATOR)
     strlcat(resource_dir, DIR_SEPARATOR_STR, sizeof(resource_dir));
