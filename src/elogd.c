@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.565  2005/02/20 14:30:07  ritt
+   Applied patch from Heiko Scheit fixing problem with 'Show attributes' causing the 'Format ...' options to be ignored
+
    Revision 1.564  2005/02/16 14:50:40  ritt
    Implemented $attachements subsitution in 'execute' command
 
@@ -8188,7 +8191,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       if (format_flags[index] & AFF_SAME_LINE)
          /* if attribute on same line, do nothing */
          rsprintf("");
-      else if (index < n_attr - 1 && (format_flags[index + 1] & AFF_SAME_LINE)) {
+      else if (aindex < n_disp_attr - 1 && (format_flags[attr_index[aindex + 1]] & AFF_SAME_LINE)) {
          /* if next attribute on same line, start a new subtable */
          rsprintf("<tr><td colspan=2><table width=\"100%%\" cellpadding=0 cellspacing=0><tr>");
          subtable = 1;
@@ -8488,7 +8491,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          }
       }
 
-      if (index < n_attr - 1 && (format_flags[index + 1] & AFF_SAME_LINE) == 0) {
+      if (aindex < n_disp_attr - 1 && (format_flags[attr_index[aindex + 1]] & AFF_SAME_LINE) == 0) {
          /* if next attribute not on same line, close row or subtable */
          if (subtable) {
             rsprintf("</table></td></tr>\n");
@@ -8498,7 +8501,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
 
       /* if last attribute, close row or subtable */
-      if (index == n_attr - 1) {
+      if (aindex == n_disp_attr - 1) {
          if (subtable) {
             rsprintf("</table></td></tr>\n");
             subtable = 0;
