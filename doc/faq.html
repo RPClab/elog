@@ -22,7 +22,7 @@
 &nbsp;[<a class=nav href="download.html">Download</a>]&nbsp;
 </div>
 <p>
-<div class=Sub><i>Frequently Asked Questions about usage and administration</i></div>
+<div class=Sub><i>Frequently Asked Questions about usage and configuration</i></div>
 <hr>
 
 <OL>
@@ -157,6 +157,19 @@ This gives you three links with different display mode. You can also add filters
 like<br>
 
 <b><code>&lt;a href="?mode=summary&Type=Routine"&gt;Routine entries&lt;/a&gt;</b></code>.<p>
+
+<LI><b>How does one configure elog to disable editing of existing messages? I want a logbook where one
+can enter messages but not change them afterwards.</b>
+<p>
+This works with the option <b><code>Menu commands</code></b>. By default, the menu commands <b><code>
+Back, New, Edit, Delete, Reply, Find, Config, Help</code></b> are dispalyed and allowed. To avoid
+editing (and deleting) of existing messages, one removes the two commands and puts following
+statement into <b><code>elogd.cfg</b></code>:
+<p>
+<code>Menu commands = Back, New, Reply, Find, Config, Help</code>
+<p>
+This prohibits the execution of the commands "Edit" and "Delete".
+<p>
 
 <LI><b>What new features are planned for future releases ?</b>
 <p>
