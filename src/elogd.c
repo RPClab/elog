@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.361  2004/06/28 20:29:49  midas
+   Rename logbook in groups on logbook rename
+
    Revision 1.360  2004/06/28 19:35:07  midas
    Rename logbook directory on logbook rename
 
@@ -502,6 +505,7 @@ void show_top_text(LOGBOOK * lbs);
 void show_bottom_text(LOGBOOK * lbs);
 int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n);
 void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *info);
+int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_value);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -5356,6 +5360,44 @@ int is_logbook_in_group(LBLIST pgrp, char *logbook)
 
 /*------------------------------------------------------------------*/
 
+void change_logbook_in_group(LOGBOOK *lbs, char *new_name)
+{
+   int i, j, n, flag;
+   char str[1000], grpname[256], grpmembers[1000];
+   char grplist[MAX_N_LIST][NAME_LENGTH];
+
+   /* enumerate groups */
+   for (i = 0;; i++) {
+      if (!enumcfg("global", grpname, grpmembers, i))
+         break;
+
+      flag = 0;
+      strlcpy(str, grpname, sizeof(str));
+      str[9] = 0;
+      if (strieq(str, "top group"))
+         flag = 2;
+      str[5] = 0;
+      if (strieq(str, "group"))
+         flag = 1;
+
+      if (flag) {
+
+         n = strbreak(grpmembers, grplist, MAX_N_LIST, ",");
+         for (j = 0; j < n; j++) {
+            if (strieq(lbs->name, grplist[j])) {
+               if (new_name[0]) {
+                  /* rename logbook */
+                  change_config_line(lbs, grpname, lbs->name, new_name);
+                  break;
+               }
+            }
+         }
+      }
+   }
+}
+   
+/*------------------------------------------------------------------*/
+
 void show_standard_title(char *logbook, char *text, int printable)
 {
    char str[256], ref[256], sclass[32];
@@ -7968,6 +8010,131 @@ int save_admin_config(char *section, char *buffer, char *error)
 
 /*------------------------------------------------------------------*/
 
+int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_value)
+{
+   int fh, i, j, n, length;
+   char str[NAME_LENGTH], *buf, *buf2, *p1, *p2, *p3;
+   char list[MAX_N_LIST][NAME_LENGTH], line[NAME_LENGTH];
+
+   fh = open(config_file, O_RDWR | O_BINARY, 644);
+   if (fh < 0) {
+      sprintf(str, loc("Cannot open file <b>%s</b>"), config_file);
+      strcat(str, ": ");
+      strcat(str, strerror(errno));
+      show_error(str);
+      return 0;
+   }
+
+   /* read previous contents */
+   length = lseek(fh, 0, SEEK_END);
+   lseek(fh, 0, SEEK_SET);
+   buf = malloc(length + strlen(new_value) + 10);
+   assert(buf);
+   read(fh, buf, length);
+   buf[length] = 0;
+
+   /* find location of option */
+   p1 = (char *) find_param(buf, lbs->name, option);
+   if (p1 == NULL)
+      return 0;
+
+   p2 = strchr(p1, '=');
+   if (p2 == 0)
+      return 0;
+
+   p2++;
+   while (*p2 == ' ' || *p2 == '\t')
+      p2++;
+
+   strlcpy(line, p2, sizeof(line));
+   if (strchr(line, '\r'))
+      *strchr(line, '\r') = 0;
+   if (strchr(line, '\n'))
+      *strchr(line, '\n') = 0;
+   n = strbreak(line, list, MAX_N_LIST, ",");
+
+   /* save tail */
+   p3 = strchr(p2, '\n');
+   if (p3 && *(p3 - 1) == '\r')
+      p3--;
+
+   buf2 = NULL;
+   if (p3) {
+      buf2 = malloc(strlen(p3) + 1);
+      assert(buf2);
+      strlcpy(buf2, p3, strlen(p3) + 1);
+   }
+
+   if (old_value[0]) {
+      for (i = 0; i < n; i++) {
+         if (strieq(old_value, list[i])) {
+            if (new_value[0]) {
+               /* rename value */
+               strcpy(list[i], new_value);
+            } else {
+               /* delete value */
+               for (j=i ; j<n-1 ; j++)
+                  strcpy(list[j], list[j+1]);
+               n--;
+            }
+         break;
+         }
+      }
+   } else {
+      if (n < MAX_N_LIST)
+         strcpy(list[n++], new_value);
+   }
+
+   /* write new option list */
+   for (i=0 ; i<n ; i++) {
+      strcpy(p2, list[i]);
+      if (i < n-1)
+         strcat(p2, ", ");
+      p2 += strlen(p2);
+   }
+      
+   /* append tail */
+   if (buf2) {
+      strlcat(p2, buf2, length + strlen(new_value) + 10);
+      free(buf2);
+   }
+
+#ifdef OS_UNIX
+
+   /* under unix, convert CRLF to CR */
+   remove_crlf(buf);
+
+#endif
+
+   lseek(fh, 0, SEEK_SET);
+   i = write(fh, buf, strlen(buf));
+   if (i < (int) strlen(buf)) {
+      sprintf(str, loc("Cannot write to <b>%s</b>"), config_file);
+      strcat(str, ": ");
+      strcat(str, strerror(errno));
+      show_error(str);
+      close(fh);
+      free(buf);
+      return 0;
+   }
+
+#ifdef _MSC_VER
+   chsize(fh, TELL(fh));
+#else
+   ftruncate(fh, TELL(fh));
+#endif
+
+   close(fh);
+   free(buf);
+
+   /* force re-read of config file */
+   check_config();
+
+   return 1;
+}
+
+/*------------------------------------------------------------------*/
+
 int delete_logbook(char *logbook, char *error)
 {
    int fh, i, length;
@@ -8029,7 +8196,7 @@ int delete_logbook(char *logbook, char *error)
 
 /*------------------------------------------------------------------*/
 
-int rename_logbook(char *logbook, char *newname, char *error)
+int rename_logbook(LOGBOOK *lbs, char *new_name, char *error)
 {
    int fh, i, length;
    char *buf, *buf2, *p1, *p2;
@@ -8046,26 +8213,29 @@ int rename_logbook(char *logbook, char *newname, char *error)
    }
 
    /* rename logbook file */
-   if (!getcfg(logbook, "Subdir", str)) {
+   if (!getcfg(lbs->name, "Subdir", str)) {
       strlcpy(lb_dir, logbook_dir, sizeof(lb_dir));
       if (lb_dir[strlen(lb_dir) - 1] != DIR_SEPARATOR)
          strlcat(lb_dir, DIR_SEPARATOR_STR, sizeof(lb_dir));
 
-      sprintf(old_dir, "%s%s", lb_dir, logbook);
-      sprintf(new_dir, "%s%s", lb_dir, newname);
+      sprintf(old_dir, "%s%s", lb_dir, lbs->name);
+      sprintf(new_dir, "%s%s", lb_dir, new_name);
       rename(old_dir, new_dir);
    }
+
+   /* change logbook name in groups */
+   change_logbook_in_group(lbs, new_name);
 
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   buf = malloc(length + strlen(newname) + 10);
+   buf = malloc(length + strlen(new_name) + 10);
    assert(buf);
    read(fh, buf, length);
    buf[length] = 0;
 
    /* find logbook config */
-   p1 = (char *) find_section(buf, logbook);
+   p1 = (char *) find_section(buf, lbs->name);
    p2 = strchr(p1, ']');
    if (p2 == NULL) {
       close(fh);
@@ -8081,9 +8251,9 @@ int rename_logbook(char *logbook, char *newname, char *error)
    strlcpy(buf2, p2, strlen(p2) + 1);
 
    /* replace logbook name */
-   sprintf(p1, "[%s]", newname);
+   sprintf(p1, "[%s]", new_name);
 
-   strlcat(p1, buf2, length + strlen(newname) + 1);
+   strlcat(p1, buf2, length + strlen(new_name) + 1);
    free(buf2);
 
 #ifdef OS_UNIX
@@ -9197,7 +9367,7 @@ void show_logbook_rename(LOGBOOK * lbs)
    /* redirect if confirm = NO */
    if (getparam("lbname") && *getparam("lbname")) {
 
-      rename_logbook(lbs->name, getparam("lbname"), str);
+      rename_logbook(lbs, getparam("lbname"), str);
       if (str[0])
          show_error(str);
       else {
