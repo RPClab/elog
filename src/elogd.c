@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.214  2004/01/27 13:45:05  midas
+   Fixed bug in attachment retrieval
+
    Revision 1.213  2004/01/27 13:27:43  midas
    Remove email notification in submit_elog_mirror
 
@@ -8625,7 +8628,15 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
             strlcat(str, str2, sizeof(str));
 
             size = retrieve_url(str, &message);
-            el_submit_attachment(lbs, attachment[i], message, size, NULL);
+            p = strstr(message, "\r\n\r\n");
+            if (p == NULL) {
+               free(message);
+               sprintf(error_str, loc("Cannot receive \"%s\""), str);
+               return -1;
+            }
+            p += 4;
+
+            el_submit_attachment(lbs, attachment[i], p, size, NULL);
             free(message);
          }
       }
