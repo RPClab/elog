@@ -9,6 +9,8 @@ On PC4534:
 - Modify ChangeLog
 - Add release date to ChangeLog
 - Do a "make indent"
+- Do a "make loc"
+- Translate new strings in eloglang.german
 - c:\elog> cvs commit -m "Version x.x.x" 
 - build xxx
 

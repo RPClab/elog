@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.216  2004/01/28 15:27:18  midas
+   Version 2.5.0
+
    Revision 1.215  2004/01/27 16:18:10  midas
    Use HTTP 1.0 in receive_message
 
@@ -3472,8 +3475,14 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 
       /* if index not ordered, sort it */
       i = *lbs->n_el_index;
-      if (i > 1 && lbs->el_index[i - 1].file_time < lbs->el_index[i - 2].file_time)
+      if (i > 1 && lbs->el_index[i - 1].file_time < lbs->el_index[i - 2].file_time) {
          qsort(lbs->el_index, i, sizeof(EL_INDEX), eli_compare);
+
+         /* search message again, index could have been changed by sorting */
+         for (index = 0; index < *lbs->n_el_index; index++)
+            if (lbs->el_index[index].message_id == message_id)
+               break;
+      }
 
       /* if other logbook has same index, update pointers */
       for (i = 0; lb_list[i].name[0]; i++)
@@ -3642,7 +3651,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
 
 \********************************************************************/
 {
-   INT i, index, n, size, fh, tail_size;
+   INT i, index, n, size, fh, tail_size, old_offset;
    char str[MAX_PATH_LENGTH], file_name[MAX_PATH_LENGTH], reply_to[MAX_REPLY_TO * 10],
        in_reply_to[256];
    char *buffer, *p;
@@ -3773,13 +3782,18 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
 
    /* remove message from index */
    strcpy(str, lbs->el_index[index].file_name);
+   old_offset = lbs->el_index[index].offset;
    for (i = index; i < *lbs->n_el_index - 1; i++) {
       memcpy(&lbs->el_index[i], &lbs->el_index[i + 1], sizeof(EL_INDEX));
-      if (equal_ustring(lbs->el_index[i].file_name, str))
-         lbs->el_index[i].offset -= size;
    }
    (*lbs->n_el_index)--;
    lbs->el_index = realloc(lbs->el_index, sizeof(EL_INDEX) * (*lbs->n_el_index));
+
+   /* correct all offsets after deleted message */
+   for (i = 0; i < *lbs->n_el_index; i++)
+      if (equal_ustring(lbs->el_index[i].file_name, str) &&
+          lbs->el_index[i].offset > old_offset)
+         lbs->el_index[i].offset -= size;
 
    /* if other logbook has same index, update pointers */
    for (i = 0; lb_list[i].name[0]; i++)
@@ -3896,13 +3910,14 @@ This routine corrects that. */
 int el_move_message_thread(LOGBOOK * lbs, int message_id)
 {
    int i, n, size, new_id;
-   char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
+   char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], *text,
        in_reply_to[80], reply_to[MAX_REPLY_TO * 10], encoding[80], locked_by[256];
    char list[MAX_N_ATTR][NAME_LENGTH], str[256];
    char att_file[MAX_ATTACHMENTS][256];
 
    /* retrieve message */
-   size = sizeof(text);
+   text = malloc(TEXT_SIZE);
+   size = TEXT_SIZE;
    el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
                text, &size, in_reply_to, reply_to, att_file, encoding, locked_by);
 
@@ -3910,6 +3925,8 @@ int el_move_message_thread(LOGBOOK * lbs, int message_id)
    date[0] = 0;
    new_id = el_submit(lbs, 0, FALSE, date, attr_list, attrib, lbs->n_attr, text,
                       in_reply_to, reply_to, encoding, att_file, FALSE, locked_by);
+
+   free(text);
 
    /* correct links */
    el_correct_links(lbs, message_id, new_id);
@@ -3927,6 +3944,42 @@ int el_move_message_thread(LOGBOOK * lbs, int message_id)
    }
 
    return new_id;
+}
+
+/*------------------------------------------------------------------*/
+
+int el_move_message(LOGBOOK * lbs, int old_id, int new_id)
+{
+   int status, size;
+   char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], *text, in_reply_to[80],
+       reply_to[MAX_REPLY_TO * 10], encoding[80], locked_by[256],
+       att_file[MAX_ATTACHMENTS][256];
+
+   /* retrieve message */
+   text = malloc(TEXT_SIZE);
+   size = TEXT_SIZE;
+   status = el_retrieve(lbs, old_id, date, attr_list, attrib, lbs->n_attr,
+                        text, &size, in_reply_to, reply_to, att_file, encoding,
+                        locked_by);
+   if (status != EL_SUCCESS)
+      return 0;
+
+   /* submit as new message */
+   status = el_submit(lbs, new_id, FALSE, date, attr_list, attrib, lbs->n_attr, text,
+                      in_reply_to, reply_to, encoding, att_file, FALSE, locked_by);
+
+   free(text);
+
+   if (status != new_id)
+      return 0;
+
+   /* correct links */
+   el_correct_links(lbs, old_id, new_id);
+
+   /* delete original message */
+   el_delete_message(lbs, old_id, FALSE, NULL, FALSE, FALSE);
+
+   return 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -8231,18 +8284,6 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
          sprintf(error_str, loc("Error accessing remote logbook"));
    }
 
-   /* debugging only
-      for (i = 0; i < n; i++) {
-      int j;
-
-      printf("ID %d MD5:", (*md5_index)[i].message_id);
-      for (j = 0; j < 16; j++)
-      printf("%02X", (*md5_index)[i].md5_digest[j]);
-
-      printf("\n");
-      }
-    */
-
    free(text);
 
    return n;
@@ -8947,7 +8988,7 @@ BOOL equal_md5(unsigned char m1[16], unsigned char m2[16])
 void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 {
    int index, i, j, i_msg, i_remote, i_cache, n_remote, n_cache, nserver,
-       remote_id, exist_remote, exist_cache, message_id;
+       remote_id, exist_remote, exist_cache, message_id, max_id;
    int priority_remote = 0, all_identical;
    char str[2000], url[256], loc_ref[256], rem_ref[256];
    MD5_INDEX *md5_remote, *md5_cache;
@@ -9128,19 +9169,6 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
          /* if message exists in both lists, compare MD5s */
          if (exist_remote && exist_cache) {
 
-            /*
-               printf("ID%02d:   ", message_id);
-               for (j = 0; j < 16; j++)
-               printf("%02X", lbs->el_index[i_msg].md5_digest[j]);
-               printf("\nCache : ");
-               for (j = 0; j < 16; j++)
-               printf("%02X", md5_cache[i_cache].md5_digest[j]);
-               printf("\nRemote: ");
-               for (j = 0; j < 16; j++)
-               printf("%02X", md5_remote[i_remote].md5_digest[j]);
-               printf("\n\n");
-             */
-
             /* if message has been changed on this server, but not remotely, send it */
             if (!equal_md5(md5_cache[i_cache].md5_digest, lbs->el_index[i_msg].md5_digest)
                 && equal_md5(md5_cache[i_cache].md5_digest,
@@ -9210,7 +9238,8 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                all_identical = FALSE;
 
                if (!bcron) {
-                  rsprintf("%s.\n\t", loc("Entry has been changed locally and remotely"));
+                  rsprintf("ID%d:\t%s.\n\t", message_id,
+                           loc("Entry has been changed locally and remotely"));
                   rsprintf(loc("Please delete %s or %s entry to resolve conflict"),
                            loc_ref, rem_ref);
                   rsprintf(".\n");
@@ -9269,6 +9298,37 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                   rsprintf("%s: %s\n", loc("Error sending local entry"), error_str);
             } else if (!bcron)
                rsprintf("ID%d:\t%s\n", message_id, loc("Local entry submitted"));
+         }
+
+         /* if message does not exist in cache but remotely, 
+            messages were added on both sides, so resubmit local one and retrieve remote one */
+         if (!exist_cache && exist_remote) {
+
+            /* find max id both locally and remotely */
+            max_id = 1;
+            for (i = 0; i < *lbs->n_el_index; i++)
+               if (lbs->el_index[i].message_id > max_id)
+                  max_id = lbs->el_index[i].message_id;
+
+            for (i = 0; i < n_remote; i++)
+               if (md5_remote[i].message_id > max_id)
+                  max_id = md5_remote[i].message_id;
+
+            if (_logging_level > 1)
+               logf(lbs, "MIRROR change entry #%d to #%d", message_id, max_id + 1);
+
+            /* rearrange local message not to conflict with remote message */
+            if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+               el_move_message(lbs, message_id, max_id + 1);
+            all_identical = FALSE;
+
+            if (!bcron) {
+               sprintf(str, loc("Changed local entry ID to %d"), max_id + 1);
+               rsprintf("ID%d:\t%s\n", message_id, str);
+            }
+
+            /* current message has been changed, so start over */
+            i_msg--;
          }
 
          flush_return_buffer();
@@ -12044,6 +12104,7 @@ void submit_elog(LOGBOOK * lbs)
    if (*getparam("edit_id") && *getparam("resubmit")
        && atoi(getparam("resubmit")) == 1) {
       resubmit_orig = atoi(getparam("edit_id"));
+      bedit = TRUE;
 
       /* get old links */
       el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0, NULL, 0, in_reply_to,
@@ -12087,8 +12148,7 @@ void submit_elog(LOGBOOK * lbs)
    message_id =
        el_submit(lbs, message_id, bedit, date, attr_list, attrib, lbs->n_attr,
                  getparam("text"), in_reply_to, reply_to,
-                 *getparam("html") ? "HTML" : "plain", att_file,
-                 !isparam("mirror_id"), NULL);
+                 *getparam("html") ? "HTML" : "plain", att_file, TRUE, NULL);
 
    if (message_id <= 0) {
       sprintf(str, loc("New entry cannot be written to directory \"%s\""), lbs->data_dir);
@@ -14906,10 +14966,6 @@ void check_cron()
 
    time(&now);
    ts = localtime(&now);
-
-   strcpy(str, ctime(&now));
-   str[24] = 0;
-   printf("Cron: %s\r", str);
 
    /* check once every minute */
    if (last_time.tm_year && last_time.tm_min != ts->tm_min) {

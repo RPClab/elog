@@ -28,6 +28,7 @@
 &nbsp;[<a class=nav href="#access">Access Control</a>]&nbsp;
 &nbsp;[<a class=nav href="#flags">Flags</a>]&nbsp;
 &nbsp;[<a class=nav href="#themes">Themes</a>]&nbsp;
+&nbsp;[<a class=nav href="#mirroring">Mirroring</a>]&nbsp;
 *&nbsp;</div>
 <p>
 <div class=Sub><i>Global and individual logbook options for an ELOG server</i></div>
@@ -1529,6 +1530,136 @@ These two images display the same logbook entry using different themes:
 <p>
 <img src=theme1.jpg>&nbsp;&nbsp;<img src=theme2.jpg>
 <p>
+
+<a name="mirroring"><hr>
+<div class=section>&nbsp; Mirroring &nbsp;</div>
+<p>
+Sometimes it can be useful to have the same ELOG logbook on two different computers. This
+might be the case if you travel with your laptop, but want to keep the logbooks from your
+desktop computer on the laptop. The problem is that if you add an entry on your laptop,
+the logbooks on the laptop and the desktop get out of sync. Merging only the ELOG database
+files does not help, since two entries could be made at the same day on the laptop and
+the desktop, which would lead to a conflict in that day's database file.
+<p>
+
+To solve this problem, <i>mirroring</i> was introduced from Version 2.5.0 on. This technology
+allows to synchronize one ELOG server with a number of other servers on a per-entry basis. No
+additional software is needed, only two elogd daemons talking to each other. The synchronization
+can be executed manually or periodically. If entries are changed/added/deleted on both sides,
+they get merged properly during synchronization. In order to minimize network traffic, each
+ELOG server calculates a MD5 checksum for each message, which gets exchanged during synchronization.
+Only when the MD5 checksum differs, entries are transferred.
+<p>
+
+To set-up mirroring, following configuration options are available. They should be put
+into the [global] section of the cofiguration file:<p>
+
+<UL>
+<li><b><code>Mirror server = &lt;URL-list&gt;</code></b>
+<br>
+This statement specifies one or more mirror servers. Each URL must contain the host, port and
+possible subdirectory of the remote server, as if you would access it through your browser.
+A typical statement looks like:<br><br>
+
+<code>Mirror server = myhost.mydomain.org:8080, http://another.server.org/elog/</code>
+<br><br>
+
+The URL should not contain any logbook name, this gets added automatically. The second
+example contains a subdirectory, which is typically used if the elogd daemon runs
+under an Apache proxy. If this statement is present in the configuration file, a new
+menu option <b><code>"Synchronize"</code></b> appears on the elog page. Clicking on
+this menu options starts the synchronization:<br><br>
+
+<img src="sync.gif"><br><br>
+
+On the left side one sees the entry ID's. Entries which are equal locally and remotely
+are not displayed. Here are the rules for synchronization:<br><br>
+
+<UL>																  
+<LI> If an entry has been modified locally but not remotely, it is submitted to the remote
+server.
+
+<LI> If an entry has been modified remotely but not locally, it is retrieved from the
+remote server and saved locally.
+
+<LI> If an entry has been modified remotely and locally since the last synchronization,
+an error is shown that the entries are conflicting. In that case one has to merge
+the entries manually and delete it on one side.
+
+<LI> If an entry has been deleted locally, it is deleted remotely.
+
+<LI> If an entry has been deleted remotely, it is deleted locally.
+
+<LI> If a new entry exists locally, it is submitted.
+
+<LI> If a new entry exists remotely, it is retrieved from the remote server and
+saved locally.
+
+<LI> If new entries exist locally and remotely having the same entry ID, the local
+entries are changed to have higher entry IDs, then the remote ones are retrieved. Care
+should be taken if external links (such as <b><code>elog:123</code></b>) to the 
+local entries are used, since they will point afterwards to the wrong entry.
+
+</UL><br><br>
+
+<li><b><code>Mirror config = 0 | 1</code></b><br>
+
+Normally, only the logbook entries are mirrored. One can also mirror the contents
+of the elogd.cfg configuration file for individual logbooks. This can be turned on
+by setting this option to <b><code>1</code></b>. Default is <b><code>1</code></b>. 
+Only the individual logbook section is mirrored, not the [global] section. Settings
+which are specific to one server, for example the <b><code>URL = </code></b> statement,
+should then be kept in the [global] section, so that they are not mirrored between
+different servers.<br><br>
+
+<li><b><code>Mirror cron = Minute Hour Day Month Weekday</code></b><br>
+
+This statement turns on periodic mirroring. The format is similar to the UNIX 
+<b><code>cron</b></code> command. Each of the five values can either be an
+asterisk, which means all possible values, a comma-separated list or a range.
+It can be explained most easily with examples:<br><br>
+
+<table border=1>
+<tr><th>Mirror cron=<th>meaning</tr>
+
+<tr><td>0 3 * * *<td>Every night at 3:00</td>
+<tr><td>30 7 1,15 * *<td>At 7:30 every 1st and 15th of a month</td>
+<tr><td>0 12 10 10 *<td>Once a year at 12:00 on my birthday</td>
+<tr><td>0 7-18 * * 1-5<td>Once every hour from 7:00 to 18:00 from Monday to Friday</td>
+</table><br><br>
+
+Valid ranges for each value are:<br><br>
+
+<table border=1>
+<tr><td>Minute<td>0-59</td>
+<tr><td>Hour<td>0-23</td>
+<tr><td>Day<td>1-31</td>
+<tr><td>Month<td>1-12</td>
+<tr><td>Weekday<td>0-6 with 0=Sunday, 1=Monday, etc.</td>
+</table><br><br>
+
+If mirroring is turned on, it is advisable to use the <b><code>Logfile =</code></b>
+option to turn on logging, so that one can inspect the logfile to see if the mirroring
+works correctly.<br><br>
+
+<li><b><code>Mirror user = &lt;name&gt;</code></b><br>
+
+If periodic mirroring is used via the <b><code>Mirror cron =</b></code> statement
+and the remote logbook uses user-level access, this statement specifies the
+user name which is used to log in to the remote logbook. The password is taken from
+the local password file and has to match the password in the remote password file,
+otherwise the access is not allowed. The user name is typical the login name of
+the administrator.<br><br>
+
+<li><b><code>Mirror simulate = 0 | 1</code></b><br>
+
+If one wants to try out mirroring without causing any harm, one can turn on this flag.
+During synchronization, entries are compared and necessary transfers are displayed,
+but not executed. Default is <b><code>0</code></b>.
+
+</UL>
+
+
 
 <HR>
 <div class=footer>&nbsp;

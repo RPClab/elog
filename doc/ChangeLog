@@ -1,3 +1,14 @@
+Version 2.5.0, released January 28th, 2004
+==========================================
+
+- Implemented mirroring, see new section in config.html
+- Updated all translation files with current set of required stings
+- Search 'all logbooks' only for current top group
+- Changed 'message' to 'entry' consistently
+- Removed '{n}' in quick filter and find page list
+- Display months on find page localized
+- Implemented setlocale() for strftime()
+
 Version 2.4.1, released January 13th, 2004
 ==========================================
 
