@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.527  2004/12/29 13:42:38  midas
+   Patch from Recai
+
    Revision 1.526  2004/12/20 16:14:58  midas
    Version 2.5.5-3
 
@@ -21488,14 +21491,14 @@ int main(int argc, char *argv[])
          else {
           usage:
             printf("%s\n", ELOGID);
-            printf("usage: elogd [-a <pwd>] [-c <file>] [-C <url>] [-D] [-d <dir>] ");
-            printf("[-f <file>] [-h] [-k] [-l <logbook>] [-n <hostname>] [-p <port>] ");
-            printf("[-r <pwd>] [-S] [-s <dir>] [-v] [-w <pwd>] [-x]\n\n");
+            printf("usage: elogd [-a <pwd>] [-C <url>] [-c <file>] [-D] [-d <dir>] ");
+            printf("[-f <file>] [-h] [-k] [-l <logbook>] [-M] [-m] [-n <hostname>] ");
+            printf("[-p <port>] [-r <pwd>] [-S] [-s <dir>] [-v] [-w <pwd>] [-x]\n\n");
             printf("       -a <pwd> create/overwrite admin password in config file\n");
-            printf("       -c <file> specify configuration file\n");
             printf("       -C <url> clone remote elogd configuration\n");
-            printf("       -m synchronize logbook(s) with remote server\n");
+            printf("       -c <file> specify configuration file\n");
             printf("       -M synchronize with removing deleted entries\n");
+            printf("       -m synchronize logbook(s) with remote server\n");
             printf("       -D become a daemon\n");
             printf("       -d <dir> specify logbook root directory\n");
 #ifdef OS_UNIX
