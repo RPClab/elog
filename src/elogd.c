@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.27  2003/02/24 16:07:43  midas
+  Changed mode display with 'show text = 0'
+
   Revision 1.26  2003/02/24 13:53:39  midas
   Improved display of links in messages
 
@@ -5383,12 +5386,20 @@ char   str[NAME_LENGTH], mode[256];
       rsprintf("<input type=radio name=mode value=\"summary\" checked>%s&nbsp;&nbsp;\n", loc("Summary only"));
     else
       rsprintf("<input type=radio name=mode value=\"summary\">%s&nbsp;&nbsp;\n", loc("Summary only"));
-
-    if (equal_ustring(mode, "Threaded"))
-      rsprintf("<input type=radio name=mode value=\"threaded\" checked>%s&nbsp;&nbsp;\n", loc("Display threads"));
-    else
-      rsprintf("<input type=radio name=mode value=\"threaded\">%s&nbsp;&nbsp;\n", loc("Display threads"));
     }
+  else
+    {
+    if (equal_ustring(mode, "Full") || equal_ustring(mode, "Summary"))
+      rsprintf("<input type=radio name=mode value=\"summary\" checked>%s&nbsp;&nbsp;\n", loc("Summary"));
+    else
+      rsprintf("<input type=radio name=mode value=\"summary\">%s&nbsp;&nbsp;\n", loc("Summary"));
+    }
+
+
+  if (equal_ustring(mode, "Threaded"))
+    rsprintf("<input type=radio name=mode value=\"threaded\" checked>%s&nbsp;&nbsp;\n", loc("Display threads"));
+  else
+    rsprintf("<input type=radio name=mode value=\"threaded\">%s&nbsp;&nbsp;\n", loc("Display threads"));
 
   rsprintf("</td></tr>\n");
 
@@ -7179,12 +7190,15 @@ char list[MAX_N_LIST][NAME_LENGTH];
     {
     rsprintf("<td class=\"menu2a\">\n");
 
-    if (page_n != 1)
-      sprintf(ref, "page%d", page_n);
-    else
-      ref[0] = 0;
-    build_ref(ref, sizeof(ref), "full", "");
-    rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;|", ref, loc("Full"));
+    if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1)
+      {
+      if (page_n != 1)
+        sprintf(ref, "page%d", page_n);
+      else
+        ref[0] = 0;
+      build_ref(ref, sizeof(ref), "full", "");
+      rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;|", ref, loc("Full"));
+      }
 
     if (page_n != 1)
       sprintf(ref, "page%d", page_n);
@@ -10823,6 +10837,18 @@ FILE    *f;
     return;
     }
 
+  if (equal_ustring(command, loc("Last day")))
+    {
+    redirect(lbs, "past1");
+    return;
+    }
+
+  if (equal_ustring(command, loc("Last 10")))
+    {
+    redirect(lbs, "last10");
+    return;
+    }
+
   if (equal_ustring(command, loc("Copy to")))
     {
     copy_to(lbs, message_id, getparam("destc"), 0);
@@ -12037,6 +12063,9 @@ struct timeval       timeout;
           for (i=0 ; lb_list[i].name[0] ; i++)
             if (equal_ustring(logbook, lb_list[i].name))
               break;
+
+          if (strstr(net_buffer+header_length, "line1"))
+            strcpy(str, strstr(net_buffer+header_length, "line1"));
 
           decode_post(&lb_list[i], net_buffer+header_length, boundary, content_length);
           }
