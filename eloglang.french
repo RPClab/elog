@@ -1,6 +1,6 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.5.4)
+# (for 2.5.5)
 # A more recent version may be available at :
 # http://midas.psi.ch/cgi-bin/cvsweb/elog/eloglang.french
 #
@@ -323,23 +323,19 @@ You can "steal" the lock by editing this entry = Vous pouvez vous approprier le 
 Several logbooks groups are defined on this host = Plusieurs groupes de registres sont définis sur ce serveur
 Please select one to list the logbooks in that group = Veuillez en sélectionner un pour en voir le contenu
 No logbook defined on this server = Aucun registre n'est défini sur ce serveur
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Goto ELOG home page = 
-Please enter "%s" = 
-Change config file = 
-Click here to delete %d entries = 
-From = 
-Please check that it exists and elogd has write access and disk is not full = 
-Show = 
-Hide = 
-Hide all = 
-Show all = 
-This logbook requires authentication = 
-Attachment file <b>"%s"</b> empty or not found = 
-Please increase <b>"Max content length"</b> in config file = 
-Text fields may contain regular expressions = 
-Case sensitive = 
-List = 
+Goto ELOG home page = Aller à la page d'accueil ELOG
+Please enter "%s" = Veuillez saisir "%s"
+Change config file = Modifier le fichier de configuration
+Click here to delete %d entries = Cliquer ici pour supprimer %d entrées
+>From = De
+Please check that it exists and elogd has write access and disk is not full = Veuillez vérifier qu'il existe, que elogd a les droits en écriture et que le disque n'est pas plein
+Show = Montrer
+Hide = Cacher
+Hide all = Cacher tout
+Show all = Montrer tout
+This logbook requires authentication = Ce registre nécessite une authentification
+Attachment file <b>"%s"</b> empty or not found = Fichier joint <b>"%s"</b> vide ou non trouvé
+Please increase <b>"Max content length"</b> in config file = Veuiller augmenter <b>"Max content length"</b> dans le fichier de configuration
+Text fields may contain regular expressions = Les champs "texte" peuvent contenir des expressions régulières
+Case sensitive = Tient compte de la casse
+List = Liste
