@@ -1,7 +1,6 @@
 #
 # Dutch messages by djek@xs4all.nl
-# $Revision$
-# 01-03-2003
+# 18-01-2004
 #
 
 New = Nieuw
@@ -59,20 +58,15 @@ Attachments = Bijlagen
 No message available = Geen bericht beschikbaar
 Reply to this = Hierop antwoorden
 In reply to = In antwoord op
-If no attachments are resubmitted, the original ones are kept = Als er geen bijlagen worden verzonden worden de originele bewaard.
-To delete an old attachment, enter <code>&lt;delete&gt;</code> in the new attachment field = Om een oude bijlage te wissen, geef <code>&lt;wissen&gt;</code> op
-<delete> = <wissen>
 ELOG Error = ELOG Fout
 Fields marked with = Velden gemarkeerd met
 are required = zijn verplicht
-Error: Attachment file <i>%s</i> invalid, please bo back and enter a proper file name = Fout: Bijlage <i>%s</i> is onjuist, ga terug en geef een juiste bestandsnaam op
 New message cannot be written to directory "%s" = Nieuw bericht kan niet naar map "%s" worden geschreven
 Please check that it exists and elogd has write access = Controleer of het bestaat en of elog schrijfrechten heeft
 Error: Attribute <b>%s</b> not supplied = Fout: Attribuut <b>%s</b> niet ingevuld
 Please go back and enter the <b>%s</b> field = Ga terug en vul het veld <b>%s</b> in
 Please use your browser's back button to go back = Gebruik de terug-knop van je browser om terug te gaan
 Only user <i>%s</i> can edit this entry = Alleen de gebruiker <i>%s</i> kan dit item wijzigen
-New attachment = Nieuwe bijlage
 ELOG search result = ELOG zoekresultaat
 ELOG find = ELOG zoeken
 Find = zoek
@@ -94,8 +88,6 @@ No entries found = Geen berichten gevonden
 A new entry has been submitted on %s = Een nieuwe bericht is verzonden op %s
 Logbook = Logboek
 Copy ELog entry = ELog bericht kopiëren
-Message moved successfully from "%s" to "%s" = bericht met succes verplaatst van "%s" naar "%s"
-Message copied successfully from "%s" to "%s" = bericht met succes gekopieerd van "%s" naar "%s"
 Are you sure to delete this message? = Wil je echt het bericht wissen?
 Yes = Ja
 No = Nee
@@ -146,8 +138,6 @@ ELOG registration = ELOG Registratie
 Your ELOG account has been activated on host = Uw ELOG account is geactiveerd op
 You can access it at = U kan toegang krijgen op
 Are you sure to delete these messages? = Weet u zeker dat u deze berichten wilt wissen?
-%d messages moved successfully from "%s" to "%s" = Bericht is succesvol verplaatst van "%s" naar "%s"
-%d messages copied successfully from "%s" to "%s" = Bericht is succesvol gekopieerd "%s" naar "%s"
 Select = Kies
 No message selected for deletion = Geen bericht geselecteerd om te wissen
 No message selected = Geen bericht geselecteerd
@@ -199,7 +189,7 @@ Change elogd.cfg = elogd.cfg aanpassen
 Remember me on this computer = Onthou mij op deze computer
 Forgot password? = Wachwoord vergeten?
 Email address <i>"%s"</i> not registered = E-mailadres <i>"%s"</i> is niet geregistreerd
-User name <i>\%s\</i> not registered = Gebruikersnaam <i>"%s"</i> is niet geregistreerd
+User name <i>"%s"</i> not registered = Gebruikersnaam <i>"%s"</i> is niet geregistreerd
 ELOG password recovery = ELOG Wachtwoord Herstel
 No Email address registered with user name <i>"%s"</i> = Voor gebruiker <i>"%s"</i> is geen e-mail adres geregistreerd
 Error sending Email via <i>"%s"</i> = Fout bij het versturen van e-mail via <i>"%s"</i>
@@ -221,24 +211,23 @@ on = op
 computer = Computer
 Entry is currently edited by = Bericht wordt momenteel gewijzigd door
 recipients = Ontvanger
+Suppress shell execution = Onderdruk commmando uitvoer
+Maximum number of replies (%d) exceeded=Maximum aantal antwoorden (%d) bereikt.
+Update = Ververs
+by = van
+Change %s = %s wijzigen
+Add new option here = Hier nieuwe optie opgeven
+Expand all = Alles uitbreiden
+Message can only be edited %1.2lg hours after creation =Bericht kan alleen binnen %1.2lg uur gewijzigd worden
+Add %s = Voeg %s toe
+No mirror server defined in configuration file =Geen mirror server gedefinieerd in het configuratie bestand
+Mirror URL "%s" does not contain logbook name = Mirror URL "%s" bevat geen logboek naam
+Synchronization = Synchronisatie
+Synchronizing with = Synchronizeren met
+Message identical = Bericht identiek
+Error: Value <b>%s</b> not allowed for boolean attributes = Fout: Waarde <b>%s</b> niet toegestaan voor booleaanse attributen
+Error: Attribute option <b>%s</b> not existing = Fout: Attribuut optie <b>%s</b> bestaat niet
+Message %s cannot be read from logbook "%s" = Bericht %s can niet worden gelezen uit logboek "%s"
+Last submission = Laatste toevoeging
+Synchronize = Synchroniseer
 
-# to be done:
-
-Maximum number of replies (%d) exceeded = 
-Message can only be edited %1.2lg hours after creation = 
-Update = 
-Add %s = 
-Add new option here = 
-Suppress shell execution = 
-Change %s = 
-Editing %s = 
-User name <i>"%s"</i> not registered = 
-Synchronization = 
-Synchronizing with = 
-Message identical = 
-Error: Value <b>%s</b> not allowed for boolean attributes = 
-Error: Attribute option <b>%s</b> not existing = 
-Message %s cannot be read from logbook "%s" = 
-Last submission = 
-Expand all = 
-Synchronize = 
