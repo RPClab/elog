@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.35  2002/07/01 08:29:08  midas
+  Propagage '?mode=xxx' though 'lastxx' commands
+
   Revision 2.34  2002/07/01 08:13:46  midas
   Fixed problem with wrong color in command '?cmd=Search'
 
@@ -5268,6 +5271,8 @@ struct tm tms, *ptms;
           {
           if (equal_ustring(menu_item[i], "Last x"))
             {
+            rsprintf("<input type=hidden name=mode value=\"%s\">\n", mode);
+
             if (past_n)
               {
               sprintf(str, loc("Last %d days"), past_n*2);
@@ -5295,13 +5300,14 @@ struct tm tms, *ptms;
             if (past_n)
               {
               sprintf(str, loc("Last %d days"), past_n*2);
-              rsprintf("&nbsp;<a href=\"past%d\">%s</a>&nbsp;|\n", past_n*2, str);
+              rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n*2, mode, str);
               }
 
             if (last_n)
               {
               sprintf(str, loc("Last %d entries"), last_n*2);
-              rsprintf("&nbsp;<a href=\"last%d\">%s</a>&nbsp;|\n", last_n*2, str);
+              sprintf(str+strlen(str), "?mode=%s", mode);
+              rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n*2, mode, str);
               }
             }
           else
@@ -5323,6 +5329,8 @@ struct tm tms, *ptms;
       {
       if (atoi(gt("Use buttons")) == 1)
         {
+        rsprintf("<input type=hidden name=mode value=\"%s\">\n", mode);
+
         if (past_n)
           {
           sprintf(str, loc("Last %d days"), past_n*2);
@@ -5345,13 +5353,13 @@ struct tm tms, *ptms;
         if (past_n)
           {
           sprintf(str, loc("Last %d days"), past_n*2);
-          rsprintf("&nbsp;<a href=\"past%d\">%s</a>&nbsp;|\n", past_n*2, str);
+          rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n*2, mode, str);
           }
 
         if (last_n)
           {
           sprintf(str, loc("Last %d entries"), last_n*2);
-          rsprintf("&nbsp;<a href=\"last%d\">%s</a>&nbsp;|\n", last_n*2, str);
+          rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n*2, mode, str);
           }
 
         rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;|\n", loc("Find"), loc("Find"));
@@ -7932,6 +7940,8 @@ LOGBOOK *cur_lb;
     {
     i = atoi(strchr(str, ' '));
     sprintf(str, "last%d", i);
+    if (isparam("mode"))
+      sprintf(str+strlen(str), "?mode=%s", getparam("mode"));
     redirect(str);
     return;
     }
