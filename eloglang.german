@@ -204,3 +204,7 @@ Automatic email notifications = Automatische Email Benachrichtigung
 # New strings for V2.2.2
 A old entry has been updated on %s = Ein alter Eintrag wurde von %s geändert
 
+#
+# New strings for V2.2.4
+Collapse = Zusammenfassen
+Expand = Erweitern
