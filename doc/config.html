@@ -403,10 +403,19 @@ theme directory. This option should only be used if the <b><code>Title image</co
 option is not used.
 <p>
 
+<LI><b><code>Time format = &lt;string&gt;</code></b>
+<br>
+This option determines how the date and time of a logbook entry is displayed. The format
+of the string is the same as the C function
+<a href="http://www.gnu.org/manual/glibc-2.2.3/html_node/libc_427.html#IDX2636">
+strftime</a>, so a string of <b>%A, %B %d, %Y, %H:%M </b> yields in a display of
+<b>Thursday, November 15, 2001, 12:35</b> for example.
+<p>
+
 <LI><b><code>Date format = &lt;string&gt;</code></b>
 <br>
-This option determines how the date of a logbook entry is displayed. The format
-of the string is the same as the C function
+This option determines how the date is displayed from attributes which are of type "date". 
+The format of the string is the same as the C function
 <a href="http://www.gnu.org/manual/glibc-2.2.3/html_node/libc_427.html#IDX2636">
 strftime</a>, so a string of <b>%A, %B %d, %Y</b> yields in a display of
 <b>Thursday, November 15, 2001</b> for example.
@@ -844,13 +853,13 @@ substitutions are possible:
 <UL>
 <LI><b>$&lt;attribute&gt;</b>: The value of the attribute
 <LI><b>$logbook</b>: The name of the current logbook
-<LI><b>$entry date</b>: The message date, formatted via "<I>Date format</I>"
+<LI><b>$entry time</b>: The message date and time, formatted via "<I>Time format</I>"
 <LI><b>$message id</b>: The message ID
 </UL>
 <br>
 A typical example would be
 <br>
-<pre>Thread display = $subject, posted by $author on $entry date</pre>
+<pre>Thread display = $subject, posted by $author on $entry time</pre>
 <p>
 
 <LI><b><code>Thread icon = &lt;attribute&gt;</code></b>
@@ -975,7 +984,7 @@ The administrator has to ensure then of course that only trusted people can edit
 <LI><b><code>Last submission = &lt;string&gt;</b></code>
 <br>
 This option determines what gets displayed on the logbook selection page in the
-<i>Last submission</i> colum. The default string is <code><b>$entry date by $author</b></code>. If
+<i>Last submission</i> colum. The default string is <code><b>$entry time by $author</b></code>. If
 a logbook does not contain an <code><b>author</b></code> attribute, another string can
 be chosen.
 <p>
