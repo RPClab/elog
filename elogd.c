@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.73  2002/09/12 08:48:54  midas
+  Fixed sorting bug
+
   Revision 2.72  2002/09/10 15:34:38  midas
   Version 2.1.2
 
@@ -1792,17 +1795,27 @@ struct tm tms;
 int el_index_logbooks(BOOL reinit)
 {
 char str[256], data_dir[256], logbook[256];
-int  i, n, status;
+int  i, j, n, status;
 
   if (reinit)
     {
     for (i=0 ; lb_list[i].name[0] ; i++)
       {
-      free(lb_list[i].el_index);
-      free(lb_list[i].n_el_index);
+      if (lb_list[i].el_index != NULL)
+        {
+        free(lb_list[i].el_index);
+        free(lb_list[i].n_el_index);
+
+        /* check if othe logbooks uses same index */
+        for (j=i+1 ; lb_list[j].name[0] ; j++)
+          {
+          /* mark that logbook already freed */
+          if (lb_list[j].el_index == lb_list[i].el_index)
+            lb_list[j].el_index = NULL;
+          }
+        }
       }
     free(lb_list);
-
     }
 
   /* count logbooks */
@@ -5317,7 +5330,7 @@ int  i;
     rsprintf("<input type=checkbox name=email_notify value=all></td></tr>\n");
 
   rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
-  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change password"));
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change Password"));
 
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Remove user"));
 
@@ -6578,7 +6591,7 @@ MSG_LIST *msg_list;
       {
       msg_list[n].lbs = lbs;
       msg_list[n].index = j;
-      sprintf(msg_list[n].string, "%d", lbs->el_index[j].file_time);
+      sprintf(msg_list[n].string, "%010d", lbs->el_index[j].file_time);
       n++;
       }
     }
@@ -7024,13 +7037,27 @@ MSG_LIST *msg_list;
           p++;
         strcpy(strstr(ref, "&rsort="), p);
         }
+      if (strstr(ref, "?sort="))
+        *strstr(ref, "?sort=") = 0;
+      if (strstr(ref, "?rsort="))
+        *strstr(ref, "?rsort=") = 0;
 
       strcpy(str, disp_attr[i]);
       url_encode(str);
       if (strcmp(getparam("sort"), disp_attr[i]) == 0)
-        sprintf(ref+strlen(ref), "&rsort=%s", str);
+        {
+        if (strchr(ref, '?'))
+          sprintf(ref+strlen(ref), "&rsort=%s", str);
+        else
+          sprintf(ref+strlen(ref), "?rsort=%s", str);
+        }
       else
-        sprintf(ref+strlen(ref), "&sort=%s", str);
+        {
+        if (strchr(ref, '?'))
+          sprintf(ref+strlen(ref), "&sort=%s", str);
+        else
+          sprintf(ref+strlen(ref), "?sort=%s", str);
+        }
       
       img[0] = 0;
       if (strcmp(getparam("sort"), disp_attr[i]) == 0)
@@ -9218,6 +9245,10 @@ LOGBOOK *cur_lb;
         }
       }
     }
+
+  /* check for deleted logbook */
+  if (lb_list[j].name[0] != 0)
+    el_index_logbooks(TRUE);
 
   /* check for global selection page if no logbook given */
   if (!logbook[0] && getcfg("global", "Selection page", str))
