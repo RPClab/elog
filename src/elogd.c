@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.146  2003/09/08 10:57:46  midas
+  Fixed even more HTML errors
+
   Revision 1.145  2003/09/08 09:29:27  midas
   Fixed HTML errors with nested tables etc.
 
@@ -6930,7 +6933,7 @@ char str[NAME_LENGTH];
   rsprintf("</textarea>\n");
 
   /* put link for config page */
-  rsprintf("<a target=\"_blank\" href=\"http://midas.psi.ch/elog/config.html\">Syntax Help</a>");
+  rsprintf("<br><a target=\"_blank\" href=\"http://midas.psi.ch/elog/config.html\">Syntax Help</a>");
 
   rsprintf("</td></tr>\n");
 
@@ -8099,7 +8102,7 @@ FILE *f;
     strsubst(display, slist, svalue, j);
 
     rsprintf("<a href=\"%s\">", ref);
-    rsputs(display);
+    rsputs2(display);
     rsprintf("</a>\n");
     }
   else
@@ -8113,6 +8116,8 @@ FILE *f;
         rsprintf("<input type=checkbox name=\"s%d\" value=%d>\n", (*n_display)++, message_id);
       else
         rsprintf("&nbsp;\n");
+
+      rsprintf("</td>\n");
       }
 
     if (equal_ustring(mode, "Threaded"))
@@ -8141,7 +8146,7 @@ FILE *f;
             rsprintf("<img src=\"stop.gif\" alt=\"%s\">&nbsp;", str);
             }
 
-          rsprintf("<a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></td>", ref, message_id);
+          rsprintf("<a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></td>\n", ref, message_id);
           }
         }
 
@@ -8158,7 +8163,7 @@ FILE *f;
             rsprintf(", %s", lbs->name);
           }
         else
-          rsprintf("<td class=\"%s\" %s><a href=\"%s\">%s</a></td>", sclass, nowrap, ref, lbs->name);
+          rsprintf("<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", sclass, nowrap, ref, lbs->name);
         }
 
       if (equal_ustring(disp_attr[index], loc("Date")))
@@ -8198,7 +8203,7 @@ FILE *f;
             rsprintf(", %s", str);
           }
         else
-          rsprintf("<td class=\"%s\" %s><a href=\"%s\">%s</a></td>", sclass, nowrap, ref, str);
+          rsprintf("<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", sclass, nowrap, ref, str);
         }
 
       for (i=0 ; i<n_attr ; i++)
@@ -8277,7 +8282,7 @@ FILE *f;
 
   if (equal_ustring(mode, "Threaded") && expand > 1)
     {
-    rsprintf("</td>\n");
+    rsprintf("</td></tr>\n");
 
     rsprintf("<tr><td class=\"summary\">");
 
@@ -8338,8 +8343,6 @@ FILE *f;
     if (equal_ustring(mode, "Threaded"))
       rsprintf("</tr>\n");
     }
-
-  rsprintf("</tr>\n");
 
   colspan = n_attr_disp;
 
@@ -10009,7 +10012,7 @@ LOGBOOK *lbs_cur;
                 getparam("subtext"));
       }
 
-    rsprintf("</td></tr></table></td></tr>\n\n");
+    rsprintf("</table></td></tr>\n\n");
     }
 
   /* get number of summary lines */
@@ -10247,10 +10250,12 @@ LOGBOOK *lbs_cur;
       }
     }
 
-  rsprintf("</table></td></tr>\n");
+  rsprintf("</table>\n");
 
   if (n_display)
     rsprintf("<input type=hidden name=nsel value=%d>\n", n_display);
+
+  rsprintf("</td></tr>\n");
 
   if (n_msg == 0)
     rsprintf("<tr><td class=\"errormsg\">%s</td></tr>", loc("No entries found"));
@@ -12098,7 +12103,7 @@ int   i, n;
     rsprintf("<tr><td class=\"errormsg\">");
     rsprintf("<a href=\"../\">%s</a></td></tr>", loc("Goto logbook selection page"));
 
-    rsprintf("</td></tr>\n</table>\n");
+    rsprintf("<</table>\n");
     rsprintf("</center></body></html>\n");
 
     return FALSE;
