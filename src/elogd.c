@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.472  2004/09/18 02:43:03  midas
+   Use single attribute table in edit form
+
    Revision 1.471  2004/09/15 05:24:31  midas
    Use again common table for attribute display
 
@@ -7217,7 +7220,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts, ts;
-   BOOL preset_text;
+   BOOL preset_text, subtable;
 
    for (i = 0; i < MAX_ATTACHMENTS; i++)
       att[i][0] = 0;
@@ -7662,8 +7665,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /*---- entry form ----*/
 
    /* table for two-column items */
-   rsprintf
-       ("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0 cellpadding=0>");
+   rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0 cellpadding=0>");
 
    /* print required message if one of the attributes has it set */
    for (i = 0; i < lbs->n_attr; i++) {
@@ -7708,6 +7710,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
    }
 
+   subtable = 0;
+
    /* display attributes */
    for (index = 0; index < lbs->n_attr; index++) {
       strcpy(class_name, "attribname");
@@ -7730,9 +7734,16 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             input_maxlen = atoi(fl[4]);
       }
 
-      if (index == 0 || (format_flags[index] & AFF_SAME_LINE) == 0)
-         rsprintf
-             ("<tr><td colspan=2><table width=\"100%%\" cellpadding=0 cellspacing=0><tr>");
+      if (format_flags[index] & AFF_SAME_LINE)
+         /* if attribute on same line, do nothing */
+         rsprintf("");
+      else if (index < lbs->n_attr-1 && (format_flags[index+1] & AFF_SAME_LINE)) {
+         /* if next attribute on same line, start a new subtable */
+         rsprintf("<tr><td colspan=2><table width=\"100%%\" cellpadding=0 cellspacing=0><tr>");
+         subtable = 1;
+      } else
+         /* for normal attribute, start new row */
+         rsprintf("<tr>");
 
       strcpy(star, (attr_flags[index] & AF_REQUIRED) ? "<font color=red>*</font>" : "");
 
@@ -8062,10 +8073,25 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          }
       }
 
-      if (index == lbs->n_attr - 1 || (format_flags[index + 1] & AFF_SAME_LINE) == 0)
-         rsprintf("</tr></table></td></tr>\n");
-   }
+      if (index < lbs->n_attr-1 && (format_flags[index+1] & AFF_SAME_LINE) == 0) {
+         /* if next attribute not on same line, close row or subtable */
+         if (subtable) {
+            rsprintf("</table></td></tr>\n");
+            subtable = 0;
+         } else
+            rsprintf("</tr>");
+      }
 
+      /* if last attribute, close row or subtable */
+      if (index == lbs->n_attr - 1) {
+         if (subtable) {
+            rsprintf("</table></td></tr>\n");
+            subtable = 0;
+         } else
+            rsprintf("</tr>");
+      }
+   }
+   
    /* set textarea width */
    width = 76;
 
@@ -18946,6 +18972,12 @@ void interprete(char *lbook, char *path)
       return;
    }
 
+   /* check for calender */
+   if (strieq(dec_path, "cal.html")) {
+      show_calendar(lbs);
+      return;
+   }
+
    /*---- check if file requested -----------------------------------*/
 
    /* skip elog message id in front of possible attachment */
@@ -19380,12 +19412,6 @@ void interprete(char *lbook, char *path)
    /* check for start page */
    if (!_cmdline[0] && getcfg(lbs->name, "Start page", str, sizeof(str)) && str[0]) {
       redirect(lbs, str);
-      return;
-   }
-
-   /* check for calender */
-   if (strieq(dec_path, "cal.html")) {
-      show_calendar(lbs);
       return;
    }
 
