@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.606  2005/03/29 11:52:59  ritt
+   Changed is_ascii() to accept umlaute
+
    Revision 1.605  2005/03/29 11:45:46  ritt
    Check for '.' in btou()
 
@@ -5529,10 +5532,6 @@ int is_ascii(char *file_name)
 
    for (i = 0; i < length; i++) {
       if (buf[i] < 32 && buf[i] != '\r' && buf[i] != '\n' && buf[i] != '\t') {
-         xfree(buf);
-         return FALSE;
-      }
-      if (buf[i] > 128) {
          xfree(buf);
          return FALSE;
       }
