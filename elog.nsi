@@ -63,6 +63,10 @@ Section "ELOG system (required)" SecSystem
   File COPYING
   File README
 
+  ; stop service to replace elogd.exe
+  ExecWait 'net stop "elog server"'
+  Sleep 3000
+
   File nt\release\elogd.exe
   File nt\release\elog.exe
   File nt\release\elconv.exe
@@ -141,6 +145,7 @@ SectionEnd
 
 ; optional section
 Section "Register ELOG Server Service" SecService
+  ExecWait "$INSTDIR\elogd.exe -s -remove"
   ExecWait "$INSTDIR\elogd.exe -install"
 SectionEnd
 
