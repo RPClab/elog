@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.106  2002/11/28 16:28:59  midas
+  Fixed bug with config and German
+
   Revision 2.105  2002/11/28 08:20:32  midas
   Fixed bug with missing attributes in search all logbooks
 
@@ -5609,7 +5612,7 @@ int  i;
 
   rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
 
-  rsprintf("<input type=hidden name=cmd value=\"Config\">\n", user); // for select javascript
+  rsprintf("<input type=hidden name=cmd value=\"%s\">\n", loc("Config")); // for select javascript
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
   rsprintf("<input type=hidden name=config value=\"%s\">\n", user);
@@ -6599,12 +6602,14 @@ char ref[256];
   rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=0>\n",
             gt("Border width"), gt("Categories cellpadding"));
 
-  rsprintf("<tr><td align=left bgcolor=%s>\n", gt("Menu1 BGColor"));
-
-  rsprintf("<font size=1 face=verdana,arial,helvetica,sans-serif><b>");
+  rsprintf("<tr>\n");
 
   if (n_msg > n_page)
+    {
+    rsprintf("<td align=left bgcolor=%s>\n", gt("Menu1 BGColor"));
+    rsprintf("<font size=1 face=verdana,arial,helvetica,sans-serif><b>");
     rsprintf("%s \n", loc("Goto page"));
+    }
 
   if (page_n > 1)
     {
@@ -6654,7 +6659,10 @@ char ref[256];
     rsprintf("<a href=\"%s\">%s</a>\n", ref, loc("All"));
     }
 
-  rsprintf("</td><td bgcolor=%s align=right>\n", gt("Menu1 BGColor"));
+  if (n_msg > n_page)
+    rsprintf("</td>\n");
+    
+  rsprintf("<td bgcolor=%s align=right>\n", gt("Menu1 BGColor"));
 
   if (top)
     {
