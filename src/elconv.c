@@ -6,6 +6,9 @@
   Contents:     Conversion program for ELOG messages
 
   $Log$
+  Revision 1.3  2004/01/07 11:14:53  midas
+  Changed line length
+
   Revision 1.2  2004/01/06 13:21:34  midas
   Changed indent style
 
@@ -147,8 +150,7 @@ void el_decode(char *message, char *key, char *result)
    *result = 0;
 
    if (strstr(message, key)) {
-      for (pc = strstr(message, key) + strlen(key);
-           *pc != '\n' && *pc != '\r';)
+      for (pc = strstr(message, key) + strlen(key); *pc != '\n' && *pc != '\r';)
          *result++ = *pc++;
       *result = 0;
    }
@@ -234,8 +236,7 @@ INT ss_file_find(char *path, char *pattern, char **plist)
    for (dp = readdir(dir_pointer); dp != NULL; dp = readdir(dir_pointer)) {
       if (fnmatch1(pattern, dp->d_name) == 0) {
          *plist = (char *) realloc(*plist, (i + 1) * MAX_PATH_LENGTH);
-         strncpy(*plist + (i * MAX_PATH_LENGTH), dp->d_name,
-                 strlen(dp->d_name));
+         strncpy(*plist + (i * MAX_PATH_LENGTH), dp->d_name, strlen(dp->d_name));
          *(*plist + (i * MAX_PATH_LENGTH) + strlen(dp->d_name)) = '\0';
          i++;
          seekdir(dir_pointer, telldir(dir_pointer));
@@ -270,8 +271,7 @@ INT ss_file_find(char *path, char *pattern, char **plist)
       *plist = (char *) realloc(*plist, (i + 1) * MAX_PATH_LENGTH);
       strncpy(*plist + (i * MAX_PATH_LENGTH), lpfdata->cFileName,
               strlen(lpfdata->cFileName));
-      *(*plist + (i * MAX_PATH_LENGTH) + strlen(lpfdata->cFileName)) =
-          '\0';
+      *(*plist + (i * MAX_PATH_LENGTH) + strlen(lpfdata->cFileName)) = '\0';
       i++;
    }
    free(lpfdata);
@@ -283,8 +283,7 @@ INT ss_file_find(char *path, char *pattern, char **plist)
 
 INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
 {
-   int lfh, i, n, d, min, max, size, offset, direction, last, status,
-       did_walk;
+   int lfh, i, n, d, min, max, size, offset, direction, last, status, did_walk;
    struct tm *tms, ltms;
    time_t lt, ltime, lact;
    char str[256], file_name[256], dir[256];
@@ -330,8 +329,8 @@ INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
       do {
          tms = localtime(&ltime);
 
-         sprintf(file_name, "%s%02d%02d%02d.log", dir,
-                 tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
+         sprintf(file_name, "%s%02d%02d%02d.log", dir, tms->tm_year % 100,
+                 tms->tm_mon + 1, tms->tm_mday);
          lfh = open(file_name, O_RDWR | O_BINARY, 0644);
 
          if (lfh < 0) {
@@ -347,8 +346,8 @@ INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
 
             /* set new tag */
             tms = localtime(&ltime);
-            sprintf(tag, "%02d%02d%02d.0", tms->tm_year % 100,
-                    tms->tm_mon + 1, tms->tm_mday);
+            sprintf(tag, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon + 1,
+                    tms->tm_mday);
          }
 
          /* in forward direction, stop today */
@@ -356,8 +355,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
             break;
 
          /* in backward direction, go back 10 years */
-         if (direction == -1
-             && abs((int) (lt - ltime)) > 3600 * 24 * 365 * 10)
+         if (direction == -1 && abs((int) (lt - ltime)) > 3600 * 24 * 365 * 10)
             break;
 
       } while (lfh < 0);
@@ -450,13 +448,12 @@ INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
          do {
             lt -= 3600 * 24;
             tms = localtime(&lt);
-            sprintf(str, "%02d%02d%02d.0",
-                    tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
+            sprintf(str, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon + 1,
+                    tms->tm_mday);
 
             status = el_search_message(str, &lfh, FALSE, FALSE);
 
-         } while (status != SUCCESS &&
-                  (INT) ltime - (INT) lt < 3600 * 24 * 365);
+         } while (status != SUCCESS && (INT) ltime - (INT) lt < 3600 * 24 * 365);
 
          if (status != EL_SUCCESS) {
             if (fh)
@@ -524,13 +521,12 @@ INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
          do {
             lt += 3600 * 24;
             tms = localtime(&lt);
-            sprintf(str, "%02d%02d%02d.0",
-                    tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
+            sprintf(str, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon + 1,
+                    tms->tm_mday);
 
             status = el_search_message(str, &lfh, FALSE, FALSE);
 
-         } while (status != EL_SUCCESS &&
-                  (INT) lt - (INT) lact < 3600 * 24);
+         } while (status != EL_SUCCESS && (INT) lt - (INT) lact < 3600 * 24);
 
          if (status != EL_SUCCESS) {
             if (fh)
@@ -566,8 +562,8 @@ INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
               char attr_value[MAX_N_ATTR][NAME_LENGTH],
               int n_attr, char *text, char *reply_to, char *encoding,
               char afilename[MAX_ATTACHMENTS][256],
-              char *buffer[MAX_ATTACHMENTS],
-              INT buffer_size[MAX_ATTACHMENTS], char *tag, INT tag_size)
+              char *buffer[MAX_ATTACHMENTS], INT buffer_size[MAX_ATTACHMENTS], char *tag,
+              INT tag_size)
 /********************************************************************\
 
   Routine: el_submit
@@ -601,8 +597,8 @@ INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
    INT n, i, size, fh, status, index, offset, tail_size;
    struct tm *tms;
    char file_name[256], afile_name[MAX_ATTACHMENTS][256], dir[256],
-       str[256], start_str[80], end_str[80], last[80], date[80],
-       thread[80], attachment_all[64 * MAX_ATTACHMENTS];
+       str[256], start_str[80], end_str[80], last[80], date[80], thread[80],
+       attachment_all[64 * MAX_ATTACHMENTS];
    time_t now;
    char message[TEXT_SIZE + 100], *p;
    BOOL bedit;
@@ -638,11 +634,11 @@ INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
 
                strcpy(str, p);
                sprintf(afile_name[index], "%02d%02d%02d_%02d%02d%02d_%s",
-                       tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday,
-                       tms->tm_hour, tms->tm_min, tms->tm_sec, str);
+                       tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday, tms->tm_hour,
+                       tms->tm_min, tms->tm_sec, str);
                sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir,
-                       tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday,
-                       tms->tm_hour, tms->tm_min, tms->tm_sec, str);
+                       tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday, tms->tm_hour,
+                       tms->tm_min, tms->tm_sec, str);
 
                /* save attachment */
                fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
@@ -701,8 +697,8 @@ INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
       time(&now);
       tms = localtime(&now);
 
-      sprintf(file_name, "%s%02d%02d%02d.log", dir,
-              tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday);
+      sprintf(file_name, "%s%02d%02d%02d.log", dir, tms->tm_year % 100, tms->tm_mon + 1,
+              tms->tm_mday);
 
       fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
       if (fh < 0)
@@ -725,8 +721,7 @@ INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
    sprintf(message + strlen(message), "Thread: %s\n", thread);
 
    for (i = 0; i < n_attr; i++)
-      sprintf(message + strlen(message), "%s: %s\n", attr_name[i],
-              attr_value[i]);
+      sprintf(message + strlen(message), "%s: %s\n", attr_name[i], attr_value[i]);
 
    /* keep original attachment if edit and no new attachment */
 
@@ -746,8 +741,7 @@ INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
 
          if (afile_name[i][0]) {
             if (n == 0) {
-               sprintf(message + strlen(message), "Attachment: %s",
-                       afile_name[i]);
+               sprintf(message + strlen(message), "Attachment: %s", afile_name[i]);
                n++;
             } else
                sprintf(message + strlen(message), ",%s", afile_name[i]);
@@ -771,8 +765,7 @@ INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
    sprintf(message + strlen(message), "\n");
 
    sprintf(message + strlen(message), "Encoding: %s\n", encoding);
-   sprintf(message + strlen(message),
-           "========================================\n");
+   sprintf(message + strlen(message), "========================================\n");
    strcat(message, text);
 
    size = 0;
@@ -782,8 +775,8 @@ INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
    size = strlen(message) + strlen(start_str) + strlen(end_str);
 
    if (tag != NULL && !bedit)
-      sprintf(tag, "%02d%02d%02d.%d", tms->tm_year % 100, tms->tm_mon + 1,
-              tms->tm_mday, (int) (TELL(fh)));
+      sprintf(tag, "%02d%02d%02d.%d", tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday,
+              (int) (TELL(fh)));
 
    sprintf(start_str, "$Start$: %6d\n", size);
    sprintf(end_str, "$End$:   %6d\n\f", size);
@@ -1026,8 +1019,7 @@ void scan_messages()
       if (atoi(thread_list[message_id - 1].reply) > 0) {
          /* search id for reply */
          for (i = 0; i < n_messages; i++)
-            if (strstr
-                (thread_list[i].v1_tag, thread_list[message_id - 1].reply))
+            if (strstr(thread_list[i].v1_tag, thread_list[message_id - 1].reply))
                break;
 
          if (i < n_messages) {
@@ -1039,9 +1031,7 @@ void scan_messages()
       if (atoi(thread_list[message_id - 1].in_reply_to) > 0) {
          /* search id for reply */
          for (i = 0; i < n_messages; i++)
-            if (strstr
-                (thread_list[i].v1_tag,
-                 thread_list[message_id - 1].in_reply_to))
+            if (strstr(thread_list[i].v1_tag, thread_list[message_id - 1].in_reply_to))
                break;
 
          if (i < n_messages) {

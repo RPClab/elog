@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.13  2004/01/07 11:14:53  midas
+  Changed line length
+
   Revision 1.12  2004/01/06 13:21:34  midas
   Changed indent style
 
@@ -107,8 +110,7 @@ char text[TEXT_SIZE], old_text[TEXT_SIZE], new_text[TEXT_SIZE];
 
 /*------------------------------------------------------------------*/
 
-char *map =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+char *map = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 void base64_encode(char *s, char *d)
 {
@@ -335,11 +337,9 @@ INT retrieve_elog(char *host, int port, char *subdir, char *experiment,
    /* compose request */
    strcpy(request, "GET /");
    if (subdir[0])
-      sprintf(request + strlen(request), "%s/%d?cmd=download", subdir,
-              message_id);
+      sprintf(request + strlen(request), "%s/%d?cmd=download", subdir, message_id);
    if (experiment[0])
-      sprintf(request + strlen(request), "%s/%d?cmd=download", experiment,
-              message_id);
+      sprintf(request + strlen(request), "%s/%d?cmd=download", experiment, message_id);
    strcat(request, " HTTP/1.0\r\n");
 
    sprintf(request + strlen(request), "Host: %s\r\n", host_name);
@@ -472,8 +472,7 @@ INT retrieve_elog(char *host, int port, char *subdir, char *experiment,
                *strchr(str, '\r') = 0;
 
             if (strrchr(str, '/'))
-               printf("Message successfully transmitted, ID=%s\n",
-                      strrchr(str, '/') + 1);
+               printf("Message successfully transmitted, ID=%s\n", strrchr(str, '/') + 1);
             else
                printf("Message successfully transmitted, ID=%s\n", str);
          }
@@ -501,10 +500,8 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
                 char attrib_name[MAX_N_ATTR][NAME_LENGTH],
                 char attrib[MAX_N_ATTR][NAME_LENGTH],
                 int n_attr,
-                char *text,
-                char afilename[MAX_ATTACHMENTS][256],
-                char *buffer[MAX_ATTACHMENTS],
-                INT buffer_size[MAX_ATTACHMENTS])
+                char *text, char afilename[MAX_ATTACHMENTS][256],
+                char *buffer[MAX_ATTACHMENTS], INT buffer_size[MAX_ATTACHMENTS])
 /********************************************************************\
 
   Routine: submit_elog
@@ -538,8 +535,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
    struct hostent *phe;
    struct sockaddr_in bind_addr;
    char host_name[256], boundary[80], str[80], *encoding, *p;
-   char old_attrib_name[MAX_N_ATTR][NAME_LENGTH],
-       old_attrib[MAX_N_ATTR][NAME_LENGTH];
+   char old_attrib_name[MAX_N_ATTR][NAME_LENGTH], old_attrib[MAX_N_ATTR][NAME_LENGTH];
 
 #if defined( _MSC_VER )
    {
@@ -553,8 +549,8 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
 
    if (edit) {
       status =
-          retrieve_elog(host, port, subdir, experiment, passwd, uname,
-                        upwd, edit, old_attrib_name, old_attrib, old_text);
+          retrieve_elog(host, port, subdir, experiment, passwd, uname, upwd, edit,
+                        old_attrib_name, old_attrib, old_text);
 
       if (status != 1)
          return status;
@@ -583,9 +579,8 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
 
    if (reply) {
       status =
-          retrieve_elog(host, port, subdir, experiment, passwd, uname,
-                        upwd, reply, old_attrib_name, old_attrib,
-                        old_text);
+          retrieve_elog(host, port, subdir, experiment, passwd, uname, upwd, reply,
+                        old_attrib_name, old_attrib, old_text);
 
       if (status != 1)
          return status;
@@ -720,11 +715,9 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
 
    /* compose content */
    srand((unsigned) time(NULL));
-   sprintf(boundary, "---------------------------%04X%04X%04X", rand(),
-           rand(), rand());
+   sprintf(boundary, "---------------------------%04X%04X%04X", rand(), rand(), rand());
    strcpy(content, boundary);
-   strcat(content,
-          "\r\nContent-Disposition: form-data; name=\"cmd\"\r\n\r\nSubmit\r\n");
+   strcat(content, "\r\nContent-Disposition: form-data; name=\"cmd\"\r\n\r\nSubmit\r\n");
 
    if (uname[0])
       sprintf(content + strlen(content),
@@ -760,8 +753,8 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
 
    for (i = 0; i < n_attr; i++)
       sprintf(content + strlen(content),
-              "%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n",
-              boundary, attrib_name[i], attrib[i]);
+              "%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n", boundary,
+              attrib_name[i], attrib[i]);
 
    sprintf(content + strlen(content),
            "%s\r\nContent-Disposition: form-data; name=\"Text\"\r\n\r\n%s\r\n%s\r\n",
@@ -799,8 +792,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
            "Content-Type: multipart/form-data; boundary=%s\r\n", boundary);
    sprintf(request + strlen(request), "Host: %s\r\n", host_name);
    sprintf(request + strlen(request), "User-Agent: ELOG\r\n");
-   sprintf(request + strlen(request), "Content-Length: %d\r\n",
-           content_length);
+   sprintf(request + strlen(request), "Content-Length: %d\r\n", content_length);
 
    if (passwd[0]) {
       base64_encode(passwd, str);
@@ -872,8 +864,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
                *strchr(str, '\r') = 0;
 
             if (strrchr(str, '/'))
-               printf("Message successfully transmitted, ID=%s\n",
-                      strrchr(str, '/') + 1);
+               printf("Message successfully transmitted, ID=%s\n", strrchr(str, '/') + 1);
             else
                printf("Message successfully transmitted, ID=%s\n", str);
          }
@@ -901,17 +892,15 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
 int main(int argc, char *argv[])
 {
    char str[1000], uname[80], upwd[80];
-   char host_name[256], logbook[32], textfile[256], password[80],
-       subdir[256];
+   char host_name[256], logbook[32], textfile[256], password[80], subdir[256];
    char *buffer[MAX_ATTACHMENTS], attachment[MAX_ATTACHMENTS][256];
    INT att_size[MAX_ATTACHMENTS];
    INT i, n, fh, n_att, n_attr, size, port, reply, edit, suppress;
-   char attr_name[MAX_N_ATTR][NAME_LENGTH],
-       attrib[MAX_N_ATTR][NAME_LENGTH];
+   char attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 
    text[0] = textfile[0] = uname[0] = upwd[0] = suppress = 0;
-   host_name[0] = logbook[0] = password[0] = subdir[0] = n_att = n_attr =
-       reply = edit = 0;
+   host_name[0] = logbook[0] = password[0] = subdir[0] = n_att = n_attr = reply = edit =
+       0;
    port = 80;
 
    for (i = 0; i < MAX_ATTACHMENTS; i++) {
@@ -971,33 +960,25 @@ int main(int argc, char *argv[])
                    ("                                    Location where elogd is running\n");
                printf
                    ("           -l logbook/experiment    Name of logbook or experiment\n");
-               printf
-                   ("           [-v]                     for verbose output\n");
+               printf("           [-v]                     for verbose output\n");
                printf
                    ("           [-w password]            write password defined on server\n");
-               printf
-                   ("           [-u username password]   user name and password\n");
-               printf
-                   ("           [-f <attachment>]        (up to %d times)\n",
-                    MAX_ATTACHMENTS);
-               printf
-                   ("           -a <attribute>=<value>   (up to %d times)\n",
-                    MAX_N_ATTR);
-               printf
-                   ("           [-r <id>]                Reply to existing message\n");
-               printf
-                   ("           [-e <id>]                Edit existing message\n");
+               printf("           [-u username password]   user name and password\n");
+               printf("           [-f <attachment>]        (up to %d times)\n",
+                      MAX_ATTACHMENTS);
+               printf("           -a <attribute>=<value>   (up to %d times)\n",
+                      MAX_N_ATTR);
+               printf("           [-r <id>]                Reply to existing message\n");
+               printf("           [-e <id>]                Edit existing message\n");
                printf
                    ("           [-s]                     Suppress email notification\n");
                printf("           -m <textfile>] | <text>\n");
-               printf
-                   ("\nArguments with blanks must be enclosed in quotes\n");
+               printf("\nArguments with blanks must be enclosed in quotes\n");
                printf
                    ("The elog message can either be submitted on the command line, piped in like\n");
                printf
                    ("\"cat text | elog -h ... -l ... -a ...\" or in a file with the -m flag.\n");
-               printf
-                   ("Multiple attributes and attachments can be supplied\n");
+               printf("Multiple attributes and attachments can be supplied\n");
                return 1;
             }
          } else
@@ -1033,8 +1014,8 @@ int main(int argc, char *argv[])
       lseek(fh, 0, SEEK_SET);
 
       if (size > sizeof(text) - 1) {
-         printf("Message file \"%s\" is too long (%d bytes max).\n",
-                textfile, sizeof(text));
+         printf("Message file \"%s\" is too long (%d bytes max).\n", textfile,
+                sizeof(text));
          return 1;
       }
 
@@ -1083,8 +1064,7 @@ int main(int argc, char *argv[])
 
       n = read(fh, buffer[i], att_size[i]);
       if (n < att_size[i]) {
-         printf("Cannot fully read attachment file \"%s\".\n",
-                attachment[i]);
+         printf("Cannot fully read attachment file \"%s\".\n", attachment[i]);
          return 1;
       }
       buffer[i][n] = 0;
@@ -1094,8 +1074,7 @@ int main(int argc, char *argv[])
 
    /* now submit message */
    submit_elog(host_name, port, subdir, logbook, password,
-               uname, upwd, reply, edit, suppress,
-               attr_name, attrib, n_attr, text,
+               uname, upwd, reply, edit, suppress, attr_name, attrib, n_attr, text,
                attachment, buffer, att_size);
 
    for (i = 0; i < MAX_ATTACHMENTS; i++)
