@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.138  2003/07/17 08:51:02  midas
+  Fixed missing </tr> in logbook selection page
+
   Revision 1.137  2003/07/17 08:01:24  midas
   Renames 'display search' to 'list display'
 
@@ -11888,7 +11891,7 @@ char str[10000];
 
   rsprintf("<body>\n\n");
 
-  rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
+  rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>\n");
   rsprintf("<tr><td colspan=3 class=\"dlgtitle\">\n");
 
   if (getcfg("global", "Welcome title", str))
@@ -11898,8 +11901,10 @@ char str[10000];
   else
     {
     rsprintf("%s.<BR>\n", loc("Several logbooks are defined on this host"));
-    rsprintf("%s:</td></tr>\n", loc("Please select the one to connect to"));
+    rsprintf("%s:\n", loc("Please select the one to connect to"));
     }
+
+  rsprintf("</td></tr>\n");
 
   for (i=0 ;  ; i++)
     {
