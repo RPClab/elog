@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.234  2004/02/04 09:21:37  midas
+   Added 'use email heading edit'
+
    Revision 1.233  2004/02/04 08:25:06  midas
    Only [global] admin user sees 'synchronize all logbooks'
 
@@ -11964,7 +11967,13 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
 
    if (flags & 1) {
       if (getcfg(lbs->name, "Use Email heading", str)) {
+         if (old_mail) { 
+            if (!getcfg(lbs->name, "Use Email heading edit", str))
+               getcfg(lbs->name, "Use Email heading", str);
+         }
+
          sprintf(mail_text + strlen(mail_text), str);
+
       } else {
          if (old_mail)
             sprintf(mail_text + strlen(mail_text),
@@ -14125,7 +14134,6 @@ void show_selection_page()
          rsprintf("</tr>\n");
       }
    }
-
 
    phier = get_logbook_hierarchy();
    show_title = 0;

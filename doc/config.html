@@ -315,7 +315,7 @@ Password file = admin.pwd
 Admin user = bill
 </UL></pre>
 
-Note that there can be a <b><code>[global]</code></b> section for each top level group of logbooks. 
+Note that there can be a <b><code>[global]</code></b> section for each top level group of logbooks.
 The rule is that a configuration setting in an individual logbook section overrides a setting
 in the <b><code>[global &lt;top group&gt;]</code></b> setting, which by itsel overrides a setting
 in the <b><code>[global]</code></b> section. This way one can define settings for all top level
@@ -605,7 +605,7 @@ It can contain for example a link back to the main logbook selection page like:
 &lt;center&gt;&lt;a href="/"&gt;Main page&lt;/a&gt;&lt;/center&gt;
 </pre>
 
-Or it can contain other useful links. If a file is specified, it must 
+Or it can contain other useful links. If a file is specified, it must
 be present in the resource directory.
 Alternatively, an absolute path can be used if the file
 name starts with a <b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or <b><code>
@@ -689,7 +689,7 @@ When using the <code><b>Options &lt;attribute&gt;</b></code> to specify a list
 of possible options, this list is fixed. Sometimes it is desirable to extend
 the list when a new entry in a logbook is made and a certain option is missing
 on the list. By adding the attribute name to the <code><b>Extandable options</b></code>
-list, a button appears next to the attribute in the message entry form which 
+list, a button appears next to the attribute in the message entry form which
 lets you add new options to the list. The elogd.cfg configuration file is
 then automatically updated. When a new logbook entry gets made, the new option
 automatically appears in the drop-down box for that attribute.
@@ -974,7 +974,7 @@ The administrator has to ensure then of course that only trusted people can edit
 
 <LI><b><code>Last submission = &lt;string&gt;</b></code>
 <br>
-This option determines what gets displayed on the logbook selection page in the 
+This option determines what gets displayed on the logbook selection page in the
 <i>Last submission</i> colum. The default string is <code><b>$entry date by $author</b></code>. If
 a logbook does not contain an <code><b>author</b></code> attribute, another string can
 be chosen.
@@ -997,7 +997,7 @@ Options Operating System = Linux, Windows
 </pre></ul>
 <p>
 
-For the operating system version, you would like a list, but this list has to be different 
+For the operating system version, you would like a list, but this list has to be different
 for Linux and Windows. This can be achieved with <i>conditional attributes</i>. Simply write
 following configuration:
 <p>
@@ -1018,14 +1018,14 @@ in the line of the Operating System which has to be pressed to make the Version 
 
 The number {1} and {2} in the configuration file are called <i>conditions</i>. Depending
 on these conditions, certain other lines can be activated. So if the Operating System
-<i>Linux</i> is selected, condition {1} is true, which selects the line starting 
-with {1} to select the options <i>2.2, 2.4, 2.6</i>. 
+<i>Linux</i> is selected, condition {1} is true, which selects the line starting
+with {1} to select the options <i>2.2, 2.4, 2.6</i>.
 <p>
 
 This technique offers various other possibilities, since any configuration option can
 be made conditional by adding a <code><b>{&lt;n&gt;}</b></code> in front of that line
 where &lt;n&gt; is an arbitrary number.	One often used possibility is the definition
-of forms. Depending on an attribute, the configuration option 
+of forms. Depending on an attribute, the configuration option
 <code><b>Prset text = ...</b></code> can be used to copy some pre-defined forms into
 the message body, which can then be filled out. Consider following example:
 <p>
@@ -1250,6 +1250,7 @@ individual logbook sections, one has to log in to each logbook separately.<p>
 <LI><b><code>Use Email Subject = &lt;string&gt;</code></b>
 <LI><b><code>Use Email From = &lt;string&gt;</code></b>
 <LI><b><code>Use Email Heading = &lt;string&gt;</code></b>
+<LI><b><code>Use Email Heading Edit = &lt;string&gt;</code></b>
 <LI><b><code>Omit Email To = 0|1</code></b>
 <LI><b><code>Suppress Email to users = 0|1</code></b>
 
@@ -1280,7 +1281,9 @@ used as the email subject. The text can contain <b><code>$&lt;attribute&gt;
 attribute. For a full list of possible substitutions, see the
 "<I>Subst &lt;attribute&gt;</I>" option. The <b><code>Use Email Heading
 = &lt;string&gt;</code></b> specifies the text for the email heading line.
-Default is <i>"A new entry has been submitted/updated on [host]"</i>.<p>
+Default is <i>"A new entry has been submitted on [host]"</i>. The option
+<b><code>Use Email Heading Edit = &lt;string&gt;</code></b> works the same
+way for updated (edited) entries.<p>
 
 The option <b><code>Use Email From = &lt;string&gt;
 </code></b> is used for the "<I>From:</I>" field in the email. Please note that more and
@@ -1490,7 +1493,7 @@ Default for "Use Lock" is <b>0</b>.<p>
 <li><b><code>Date on reply = 0|1|2</code></b>
 </br>
 If this flag is nozero, the current date is placed between the quoted original entry
-and the new entry. <b>1</b> causes the date to appear on top of the quoted entry, 
+and the new entry. <b>1</b> causes the date to appear on top of the quoted entry,
 <b>2</b> cuses the date to appear below the quoted entry.
 This can be useful for email notifications, if one wants to see the
 time history of all replies in the email messages. Default is <b>0</b>.
@@ -1575,7 +1578,7 @@ this menu options starts the synchronization:<br><br>
 On the left side one sees the entry ID's. Entries which are equal locally and remotely
 are not displayed. Here are the rules for synchronization:<br><br>
 
-<UL>																  
+<UL>
 <LI> If an entry has been modified locally but not remotely, it is submitted to the remote
 server.
 
@@ -1597,7 +1600,7 @@ saved locally.
 
 <LI> If new entries exist locally and remotely having the same entry ID, the local
 entries are changed to have higher entry IDs, then the remote ones are retrieved. Care
-should be taken if external links (such as <b><code>elog:123</code></b>) to the 
+should be taken if external links (such as <b><code>elog:123</code></b>) to the
 local entries are used, since they will point afterwards to the wrong entry.
 
 </UL><br><br>
@@ -1606,7 +1609,7 @@ local entries are used, since they will point afterwards to the wrong entry.
 
 Normally, only the logbook entries are mirrored. One can also mirror the contents
 of the elogd.cfg configuration file for individual logbooks. This can be turned on
-by setting this option to <b><code>1</code></b>. Default is <b><code>1</code></b>. 
+by setting this option to <b><code>1</code></b>. Default is <b><code>1</code></b>.
 Only the individual logbook section is mirrored, not the [global] section. Settings
 which are specific to one server, for example the <b><code>URL = </code></b> statement,
 should then be kept in the [global] section, so that they are not mirrored between
@@ -1614,7 +1617,7 @@ different servers.<br><br>
 
 <li><b><code>Mirror cron = Minute Hour Day Month Weekday</code></b><br>
 
-This statement turns on periodic mirroring. The format is similar to the UNIX 
+This statement turns on periodic mirroring. The format is similar to the UNIX
 <b><code>cron</b></code> command. Each of the five values can either be an
 asterisk, which means all possible values, a comma-separated list or a range.
 It can be explained most easily with examples:<br><br>
