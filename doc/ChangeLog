@@ -12,9 +12,14 @@ Version 2.3.9, released June xxth, 2003
 - Send attachments as email attachments
 - Don't display more than 10 email recipients
 - Made default for "Filteres browsing" zero
-- Added "Format <attribute> = width, size, flags, css1, css2"
+- Added "Format <attribute> = width, size, flags, css1, css2", this requires
+  an update of the default.css file
 - Display error if email notification fails
 - Added execute on new/edit/delete functionality, added -x flag
+- Fixed problems with coloring hyperlinks in the find result page
+- Reply in elog utility now puts "> " in front of old text
+- elog utility can edit old messages (with new "-e" flag)
+- Added "loggin level = 1,2,3"
 
 Version 2.3.8, released June 4th, 2003
 ======================================
