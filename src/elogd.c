@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.371  2004/07/07 15:53:11  midas
+   Added error display if max. number of attribute options gets exceeded
+
    Revision 1.370  2004/07/07 15:10:50  midas
    Omit 'preset text' on edit of entries
 
@@ -14759,6 +14762,16 @@ void submit_elog(LOGBOOK * lbs)
 
             if (!attr_options[i][j][0] && *getparam(ua)) {
                if (attr_flags[i] & AF_EXTENDABLE) {
+
+                  /* check if maximal number of options exceeded */
+                  if (attr_options[i][MAX_N_LIST-1][0]) {
+                     strcpy(error, loc("Maximum number of attribute options exceeded"));
+                     strcat(error, "<br>");
+                     strcat(error, loc("Please increase MAX_N_LIST in elogd.c and recompile"));
+                     show_error(error);
+                     return;
+                  }
+
                   if (!add_attribute_option(lbs, attr_list[i], getparam(ua)))
                      return;
                } else {
