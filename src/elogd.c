@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.612  2005/03/31 18:15:32  ritt
+   Implemented seconds for datetime
+
    Revision 1.611  2005/03/30 08:59:35  ritt
    Implemented datetime format
 
@@ -7695,24 +7698,32 @@ void show_date_selector(int day, int month, int year, char *index)
 
 /*------------------------------------------------------------------*/
 
-void show_time_selector(int hour, int min, char *index)
+void show_time_selector(int hour, int min, int sec, char *index)
 {
    int i;
 
    rsprintf("<select name=\"h%s\">\n", index);
-
    rsprintf("<option value=\"\">\n");
    for (i = 0; i < 24; i++)
       if (i == hour)
          rsprintf("<option selected value=\"%d\">%02d\n", i, i);
       else
          rsprintf("<option value=\"%d\">%02d\n", i, i);
-   rsprintf("</select> <b>:</b> \n");
+   rsprintf("</select>&nbsp;<b>:</b>&nbsp;\n");
 
    rsprintf("<select name=\"n%s\">", index);
    rsprintf("<option selected value=\"\">\n");
    for (i = 0; i < 60; i++)
       if (i == min)
+         rsprintf("<option selected value=%d>%02d\n", i, i);
+      else
+         rsprintf("<option value=%d>%02d\n", i, i);
+   rsprintf("</select>&nbsp;<b>:</b>&nbsp;\n");
+
+   rsprintf("<select name=\"s%s\">", index);
+   rsprintf("<option selected value=\"\">\n");
+   for (i = 0; i < 60; i++)
+      if (i == sec)
          rsprintf("<option selected value=%d>%02d\n", i, i);
       else
          rsprintf("<option value=%d>%02d\n", i, i);
@@ -7723,7 +7734,7 @@ void show_time_selector(int hour, int min, char *index)
 
 void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
 {
-   int i, j, first, year, month, day, hour, min;
+   int i, j, first, year, month, day, hour, min, sec;
    char str[1000], ua[NAME_LENGTH];
    time_t ltime;
    struct tm ts;
@@ -7794,12 +7805,16 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
          sprintf(str, "n%d", i);
          min = atoi(getparam(str));
 
+         sprintf(str, "s%d", i);
+         sec = atoi(getparam(str));
+
          memset(&ts, 0, sizeof(struct tm));
          ts.tm_year = year - 1900;
          ts.tm_mon = month - 1;
          ts.tm_mday = day;
          ts.tm_hour = hour;
          ts.tm_min  = min;
+         ts.tm_sec  = sec;
          ts.tm_isdst = -1;
 
          if (month && day) {
@@ -7819,7 +7834,7 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
 void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload, BOOL breedit)
 {
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
-       format_flags[MAX_N_ATTR], year, month, day, hour, min, n_attr, n_disp_attr, attr_index[MAX_N_ATTR];
+       format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr, attr_index[MAX_N_ATTR];
    char str[1000], preset[1000], *p, *pend, star[80], comment[10000], reply_string[256],
        list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80],
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80],
@@ -8218,6 +8233,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf("    document.form1.n%d.focus();\n", i);
                rsprintf("    return false;\n");
                rsprintf("  }\n");
+               rsprintf("  if (document.form1.s%d.value == \"\") {\n", i);
+               sprintf(str, loc("Please enter second for attribute '%s'"), attr_list[i]);
+               rsprintf("    alert(\"%s\");\n", str);
+               rsprintf("    document.form1.s%d.focus();\n", i);
+               rsprintf("    return false;\n");
+               rsprintf("  }\n");
             }
 
          } else {
@@ -8545,7 +8566,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             } else if (attr_flags[index] & AF_DATETIME) {
 
                year = month = day = 0;
-               hour = min = -1;
+               hour = min = sec = -1;
                if (attrib[index][0]) {
                   ltime = atoi(attrib[index]);
                   pts = localtime(&ltime);
@@ -8554,13 +8575,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   day = pts->tm_mday;
                   hour = pts->tm_hour;
                   min = pts->tm_min;
+                  sec = pts->tm_sec;
                }
 
                rsprintf("<td%s class=\"attribvalue\">", title);
                sprintf(str, "%d", index);
                show_date_selector(day, month, year, str);
                rsprintf("&nbsp;&nbsp;");
-               show_time_selector(hour, min, str);
+               show_time_selector(hour, min, sec, str);
 
                rsprintf("</td>\n");
 
@@ -9340,7 +9362,7 @@ void show_find_form(LOGBOOK * lbs)
             show_date_selector(0, 0, 0, str);
             if (attr_flags[i] & AF_DATETIME) {
                rsprintf("&nbsp;&nbsp;");
-               show_time_selector(-1, -1, str);
+               show_time_selector(-1, -1, -1, str);
             }
 
             rsprintf("</td></tr>\n");
@@ -9349,7 +9371,7 @@ void show_find_form(LOGBOOK * lbs)
             show_date_selector(0, 0, 0, str);
             if (attr_flags[i] & AF_DATETIME) {
                rsprintf("&nbsp;&nbsp;");
-               show_time_selector(-1, -1, str);
+               show_time_selector(-1, -1, -1, str);
             }
 
             rsprintf("</td></tr></table>\n");
@@ -14923,8 +14945,8 @@ void show_select_navigation(LOGBOOK * lbs)
 
 time_t retrieve_date(char *index, BOOL bstart)
 {
-   int year, month, day, hour, minute, current_year, current_month, current_day;
-   char pm[10], py[10], pd[10], ph[10], pn[10], str[NAME_LENGTH];
+   int year, month, day, hour, min, sec, current_year, current_month, current_day;
+   char pm[10], py[10], pd[10], ph[10], pn[10], ps[10], str[NAME_LENGTH];
    struct tm tms;
    time_t ltime;
 
@@ -14933,6 +14955,7 @@ time_t retrieve_date(char *index, BOOL bstart)
    sprintf(pd, "d%s", index);
    sprintf(ph, "h%s", index);
    sprintf(pn, "n%s", index);
+   sprintf(ps, "s%s", index);
 
    time(&ltime);
    memcpy(&tms, localtime(&ltime), sizeof(tms));
@@ -14992,16 +15015,23 @@ time_t retrieve_date(char *index, BOOL bstart)
 
    /* if minute not given, use 0 */
    if (*getparam(pn)) {
-      minute = atoi(getparam(pn));
+      min = atoi(getparam(pn));
    } else
-      minute = 0;
+      min = 0;
+
+   /* if second not given, use 0 */
+   if (*getparam(ps)) {
+      sec = atoi(getparam(ps));
+   } else
+      sec = 0;
 
    memset(&tms, 0, sizeof(struct tm));
    tms.tm_year = year - 1900;
    tms.tm_mon = month - 1;
    tms.tm_mday = day;
    tms.tm_hour = hour;
-   tms.tm_min = minute;
+   tms.tm_min = min;
+   tms.tm_sec = sec;
    tms.tm_isdst = -1;
 
    if (tms.tm_year < 90)
@@ -17091,7 +17121,7 @@ void submit_elog(LOGBOOK * lbs)
        mail_param[1000], *mail_to, att_file[MAX_ATTACHMENTS][256],
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], ua[NAME_LENGTH];
    int i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_orig,
-       mail_to_size, ltime, year, month, day, hour, min, n_attr, email_notify[1000];
+       mail_to_size, ltime, year, month, day, hour, min, sec, n_attr, email_notify[1000];
    BOOL bedit;
    struct tm tms;
 
@@ -17348,6 +17378,9 @@ void submit_elog(LOGBOOK * lbs)
             sprintf(str, "n%d", i);
             min = atoi(getparam(str));
 
+            sprintf(str, "s%d", i);
+            sec = atoi(getparam(str));
+
             if (month == 0 || day == 0)
                strcpy(attrib[i], "");
             else {
@@ -17357,6 +17390,7 @@ void submit_elog(LOGBOOK * lbs)
                tms.tm_mday = day;
                tms.tm_hour = hour;
                tms.tm_min = min;
+               tms.tm_sec = sec;
                tms.tm_isdst = -1;
 
                ltime = mktime(&tms);
