@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.20  2003/02/19 09:32:05  midas
+  Fixed problem with cookie path
+
   Revision 1.19  2003/02/19 08:05:49  midas
   Changed permission of 'elogd.pid' file
 
@@ -3614,10 +3617,10 @@ struct tm *gmt;
       {
       extract_path(str);
       url_encode(str, sizeof(str));
-      rsprintf(" path=/%s%s;", str, lbs->name_enc);
+      rsprintf(" path=/%s/%s;", str, lbs->name_enc);
       }
     else
-      rsprintf(" path=/%s;", lbs->name_enc);
+      rsprintf(" path=/%s/;", lbs->name_enc);
     }
 
   exp = atof(expiration);
