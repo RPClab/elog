@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.169  2004/01/05 15:01:22  midas
+  Display message comment on reedit
+
   Revision 1.168  2003/12/31 19:47:06  midas
   Implemented conditional attributes
 
@@ -5844,7 +5847,7 @@ struct tm *ts;
   if (bedit && message_id)
     rsprintf("<input type=hidden name=edit_id value=\"%d\">\n", message_id);
 
-  if (getcfg_cond(lbs->name, condition, "Message comment", comment) && !bedit && !message_id)
+  if (getcfg_cond(lbs->name, condition, "Message comment", comment) && !message_id)
     {
     rsputs(comment);
     rsputs("<br>\n");
@@ -6132,7 +6135,7 @@ struct tm *ts;
       }
 
     /* optional attachment comment */
-    if (getcfg_cond(lbs->name, condition, "Attachment comment", comment) && !bedit && !message_id)
+    if (getcfg_cond(lbs->name, condition, "Attachment comment", comment) && !message_id)
       {
       rsprintf("<tr><td colspan=2 class=\"attribvalue\">\n");
       rsputs(comment);
