@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.491  2004/10/11 19:34:52  midas
+   Fixed bug in xrealloc when deleting last entry
+
    Revision 1.490  2004/09/29 03:27:45  midas
    Added error display if disk is full
 
@@ -4721,11 +4724,12 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
    /* remove message from index */
    strcpy(str, lbs->el_index[index].file_name);
    old_offset = lbs->el_index[index].offset;
-   for (i = index; i < *lbs->n_el_index - 1; i++) {
+   for (i = index; i < *lbs->n_el_index - 1; i++)
       memcpy(&lbs->el_index[i], &lbs->el_index[i + 1], sizeof(EL_INDEX));
-   }
+
    (*lbs->n_el_index)--;
-   lbs->el_index = xrealloc(lbs->el_index, sizeof(EL_INDEX) * (*lbs->n_el_index));
+   if (*lbs->n_el_index > 0)
+      lbs->el_index = xrealloc(lbs->el_index, sizeof(EL_INDEX) * (*lbs->n_el_index));
 
    /* correct all offsets after deleted message */
    for (i = 0; i < *lbs->n_el_index; i++)
