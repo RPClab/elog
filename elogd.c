@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.3  2002/06/07 14:22:00  midas
+  Workaround for Konqueror browser
+
   Revision 2.2  2002/06/07 11:58:43  midas
   'Display search' can now supress display of '#', 'Logbook' and 'Date'
 
@@ -196,6 +199,7 @@ char header_buffer[1000];
 int  return_length;
 char host_name[256];
 char referer[256];
+char browser[256];
 char cfg_file[256];
 char cfg_dir[256];
 char tcp_hostname[256];
@@ -5400,8 +5404,12 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, message_id;
     rsprintf("Keep-Alive: timeout=60, max=10\r\n");
     }
 
-  rsprintf("Location: %d%s\r\n\r\n<html>redir</html>\r\n",
-            message_id, mail_param);
+  if (strstr(browser, "Konqueror"))
+    rsprintf("Location: %s/%d%s\r\n\r\n<html>redir</html>\r\n",
+              lbs->name_enc, message_id, mail_param);
+  else
+    rsprintf("Location: %d%s\r\n\r\n<html>redir</html>\r\n",
+              message_id, mail_param);
 }
 
 /*------------------------------------------------------------------*/
@@ -7451,7 +7459,9 @@ struct timeval       timeout;
       {
       gr = getgrnam(str);
 
-      if (setgid(gr->gr_gid) < 0 || initgroups(gr->gr_name, gr->gr_gid) < 0)
+      if (gr == NULL)
+        printf("Group \"%s\" not found\n", str);
+      else if (setgid(gr->gr_gid) < 0 || initgroups(gr->gr_name, gr->gr_gid) < 0)
         printf("Cannot set GID to group \"%s\"\n", gr->gr_name);
       }
     else
@@ -7461,7 +7471,9 @@ struct timeval       timeout;
       {
       pw = getpwnam(str);
 
-      if (setuid(pw->pw_uid) < 0)
+      if (pw == NULL)
+        printf("User \"%s\" not found\n", str);
+      else if (setuid(pw->pw_uid) < 0)
         printf("Cannot set UID to user \"%s\\n", str);
       }
     else
@@ -7763,6 +7775,18 @@ struct timeval       timeout;
           *strchr(referer, '?') = 0;
         for (p=referer+strlen(referer)-1 ; p>referer && *p != '/' ; p--)
           *p = 0;
+        }
+
+      /* extract browser */
+      browser[0] = 0;
+      if ((p = strstr(net_buffer, "User-Agent:")) != NULL)
+        {
+        p += 11;
+        while (*p && *p == ' ')
+          p++;
+        strncpy(browser, p, sizeof(browser));
+        if (strchr(browser, '\r'))
+          *strchr(browser, '\r') = 0;
         }
 
       memset(return_buffer, 0, sizeof(return_buffer));
