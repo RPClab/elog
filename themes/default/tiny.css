@@ -1,0 +1,308 @@
+/* default formatting */
+body {
+  margin:0px;
+  color:black;
+  background-color:white;
+  font-family:sans-serif;
+  /* background-image:url(elog.gif); */
+}
+
+/* standard link colors and decorations */
+a:link { color:#0000FF; text-decoration:none }
+a:visited { color:#800080; text-decoration:none }
+a:hover { color:#0000FF; text-decoration:underline }
+a:active { color:#0000FF; text-decoration:underline }
+a:focus { color:#0000FF; text-decoration:underline }
+
+/* standard table cell */
+td {
+  color:black;
+  font-family:sans-serif; 
+}
+
+/* frame table */
+.frame {
+  width:100%;
+}
+
+/* standard formatting for logbook tabs */
+.tabs {
+  font-family:sans-serif;
+  font-size:8pt;
+  background-color:white;
+}
+
+/* unselected and selected group tabs */
+
+.gtab, .gtab a {
+  background-color:#B0E0B0;
+}
+
+.sgtab, .sgtab a {
+  background-color:#486090;
+  color:white;
+}
+
+.sgtab a:visited { color:white; } /* buf for IE */
+
+/* unselected and selected logbook tabs */
+
+.ltab, .ltab a {
+  background-color:#E0E0E0;
+}
+
+.sltab, .sltab a {
+  background-color:#486090;
+  color:white;
+}
+
+.sltab a:visited { color:white; } /* bug for IE */
+
+/* logbook title, left, middle and right cell */
+
+.title1 {
+  background-color:#486090;
+  color:white;
+  font-size:10pt;
+  font-family:sans-serif;
+  text-align:left;
+}
+
+.title2 {
+  background-color:#486090;
+  color:white;
+  font-size:10pt;
+  font-family:sans-serif;
+  text-align:center;
+}
+
+.title3 {
+  background-color:#486090;
+  text-align:right;
+}
+
+/* main menu row */
+
+.menuframe {
+  border:1px solid #486090;
+  border-top:0px;
+  padding:0px;
+  background-color:#E0E0E0;
+}
+
+.menu1 {
+  text-align:left;
+  font-size:8pt;
+}
+
+.menu2a {
+  text-align:left;
+  font-size:8pt;
+}
+
+.menu2b {
+  text-align:right;
+  font-size:8pt;
+}
+
+.menu3 {
+  text-align:left;
+  font-size:8pt;
+  font-weight:bold;
+  padding:1px;
+}
+
+.menu4 {
+  text-align:right;
+  font-size:8pt;
+  vertical-align:middle;
+}
+
+/* frame table in listings */
+.listframe {
+  background-color:#486090;
+  border:0px;
+}
+
+/* title row in listing */
+.listtitle {
+  background-color:#CCCCFF;
+  text-align:center;
+  padding:0px;
+}
+
+/* odd and even lines in message listing */
+
+.list1 {
+  background-color:#DDEEBB;
+  text-align:center;
+  font-size:8pt;
+}
+
+.list2 {
+  background-color:#FFFFB0;
+  text-align:center;
+  font-size:8pt;
+}
+
+.list1 a:link { color:black; text-decoration:none }
+.list1 a:visited { color:black; text-decoration:none }
+.list1 a:hover { color:#0000FF; text-decoration:underline }
+.list1 a:active { color:black; text-decoration:underline }
+.list1 a:focus { color:#0000FF; text-decoration:underline }
+
+.list2 a:link { color:black; text-decoration:none }
+.list2 a:visited { color:black; text-decoration:none }
+.list2 a:hover { color:#0000FF; text-decoration:underline }
+.list2 a:active { color:black; text-decoration:underline }
+.list2 a:focus { color:#0000FF; text-decoration:underline }
+
+/* attachment line */
+
+.attachment {
+  background-color:#FFFFB0;
+  text-align:left;
+}
+
+/* threaded listing */
+.thread {
+  background-color:#DDEEBB;
+  text-align:left;
+}
+
+.threadreply {
+  background-color:#FFFFB0;
+  text-align:left;
+}
+
+.thread a:link { color:black; text-decoration:none }
+.thread a:visited { color:black; text-decoration:none }
+.thread a:hover { color:#0000FF; text-decoration:underline }
+.thread a:active { color:black; text-decoration:underline }
+.thread a:focus { color:#0000FF; text-decoration:underline }
+
+.threadreply a:link { color:black; text-decoration:none }
+.threadreply a:visited { color:black; text-decoration:none }
+.threadreply a:hover { color:#0000FF; text-decoration:underline }
+.threadreply a:active { color:black; text-decoration:underline }
+.threadreply a:focus { color:#0000FF; text-decoration:underline }
+
+/* attribute names and values on single message page */
+.attribname {
+  background-color:#CCCCFF;
+  padding:1px;
+  font-size:8pt;
+}
+
+.attribvalue {
+  background-color:#DDEEBB;
+  padding:1px;
+  font-size:8pt;
+}
+
+.attribvalue2 {
+  background-color:#FFFFB0;
+  padding:1px;
+}
+
+/* message cell in listing */
+.messagelist {
+  background-color:white;
+  font-family:'lucida console',courier,monospace;
+  font-size:8pt;
+  padding:1px;
+}
+
+/* message display in single message page */
+.messageframe {
+  background-color:white;
+  border:1px solid #486090;
+  border-top:0px;
+  padding:2px;
+}
+
+.messagepre {
+  font-family:'lucida console',courier,monospace;
+  font-size:8pt;
+}
+
+/* attachment size */
+.bytes {
+  font-family:'lucida console',courier,monospace;
+  font-size:8pt;
+}
+
+/* summary display (threaded mode expand) */
+.summary {
+  background-color:white;
+  font-family:'lucida console',courier,monospace;
+  font-size:8pt;
+}
+
+/* input forms */
+.form1 {
+  border:1px solid #486090;
+  background-color:#DDEEBB;
+  padding:0px;
+}
+
+.form2 {
+  border:1px solid #486090;
+  border-top:0px;
+  background-color:#DDEEBB;
+  padding:0px;
+}
+
+/* error message */
+.errormsg {
+  border:1px solid #486090;
+  padding:5px;
+  background-color:#FFB0B0;
+  text-align:center;
+  font-size:10pt;
+}
+
+/* notification (warning) */
+.notifymsg {
+  padding:5px;
+  background-color:#FFD070;
+  text-align:center;
+  font-size:10pt;
+}
+
+/* dialog boxes (login, delete, etc.) */
+.dlgframe {
+  width:50%;
+  background-color:#486090; 
+  border:1px solid #486090;
+  margin-top:0px;
+}
+
+.dlgerror {
+  background-color:red;
+  padding:1px;
+  font-size:8pt;
+  text-align:center;
+  font-size:medium;
+  color:white;
+}
+
+.dlgtitle {
+  background-color:#486090;
+  color:white;
+  font-size:medium;
+  text-align:center;
+  padding:1px;
+}
+
+.dlgform {
+  background-color:#DDEEBB;
+  padding:1px;
+}
+
+/* ELOG home page link at bottom of page */
+.bottomlink {
+  font-family:sans-serif; 
+  font-size:6pt;
+}
+
