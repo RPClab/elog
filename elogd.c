@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.56  2002/08/06 08:57:39  midas
+  Added email notify flag to password file
+
   Revision 2.55  2002/08/05 15:37:21  midas
   First version of self-registration
 
@@ -495,7 +498,7 @@ LOGBOOK *lb_list = NULL;
 void show_error(char *error);
 void show_http_header();
 BOOL enum_user_line(LOGBOOK *lbs, int n, char *user);
-BOOL get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name, char *email);
+BOOL get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name, char *email, char *email_notify);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -4782,8 +4785,8 @@ int    i, size;
         (buf[strlen(buf)-1] != '\r' && buf[strlen(buf)-1] != '\n'))
       fprintf(f, "\n");
 
-    sprintf(str, "%s:%s:%s:%s", getparam("new_user_name"), new_pwd, 
-            getparam("new_full_name"), getparam("new_user_email"));
+    sprintf(str, "%s:%s:%s:%s:%s", getparam("new_user_name"), new_pwd, 
+            getparam("new_full_name"), getparam("new_user_email"), getparam("email_notify"));
     fprintf(f, "%s\n", str);
     }
   else
@@ -4792,8 +4795,8 @@ int    i, size;
     fseek(f, 0, SEEK_SET);
     fwrite(buf, 1, pl-buf, f);
 
-    sprintf(str, "%s:%s:%s:%s", getparam("new_user_name"), new_pwd, 
-            getparam("new_full_name"), getparam("new_user_email"));
+    sprintf(str, "%s:%s:%s:%s:%s", getparam("new_user_name"), new_pwd, 
+            getparam("new_full_name"), getparam("new_user_email"), getparam("email_notify"));
     fprintf(f, "%s\n", str);
 
     pl += strlen(line);
@@ -4819,7 +4822,14 @@ int    i, size;
     set_login_cookies(lbs, getparam("new_user_name"), new_pwd);
     return 0;
     }  
-  
+
+  /* if new user, login as this user */
+  if (new_user && !*getparam("unm"))
+    {
+    set_login_cookies(lbs, getparam("new_user_name"), new_pwd);
+    return 0;
+    }
+
   return 1;
 }
 
@@ -4908,7 +4918,7 @@ int    i, size;
 
 void show_config_page(LOGBOOK *lbs)
 {
-char str[256], user[80], password[80], full_name[80], user_email[80];
+char str[256], user[80], password[80], full_name[80], user_email[80], email_notify[256];
 int  i;
 
   /*---- header ----*/
@@ -4968,7 +4978,7 @@ int  i;
 
   /*---- entry form ----*/
 
-  get_user_line(lbs, user, password, full_name, user_email);
+  get_user_line(lbs, user, password, full_name, user_email, email_notify);
 
   rsprintf("<tr><td width=10%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Login name"));
   rsprintf("<td bgcolor=%s><input type=text name=new_user_name value=\"%s\"></td></tr>\n", 
@@ -4979,8 +4989,15 @@ int  i;
             gt("Categories bgcolor2"), full_name);
 
   rsprintf("<tr><td width=10%% bgcolor=%s>Email:</td>\n", gt("Categories bgcolor1"));
-  rsprintf("<td bgcolor=%s><input type=text name=new_user_email value=\"%s\"></tr>\n", 
+  rsprintf("<td bgcolor=%s><input type=text name=new_user_email value=\"%s\">&nbsp;&nbsp;&nbsp;&nbsp;\n", 
             gt("Categories bgcolor2"), user_email);
+
+  rsprintf("%s:\n", loc("Automatic email notifications"));
+  
+  if (email_notify[0])
+    rsprintf("<input type=checkbox checked name=email_notify value=all></td></tr>\n");
+  else
+    rsprintf("<input type=checkbox name=email_notify value=all></td></tr>\n");
 
   rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change password"));
@@ -5043,6 +5060,9 @@ void show_new_user_page(LOGBOOK *lbs)
   rsprintf("<tr><td width=20%% bgcolor=%s>Email:</td>\n", gt("Categories bgcolor1"));
   rsprintf("<td bgcolor=%s><input type=text name=new_user_email></tr>\n", 
             gt("Categories bgcolor2"));
+
+  rsprintf("<tr><td width=20%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Automatic email notifications"));
+  rsprintf("<td bgcolor=%s><input type=checkbox name=email_notify value=all></tr>\n", gt("Categories bgcolor2"));
 
   rsprintf("<tr><td width=20%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Password"));
   rsprintf("<td bgcolor=%s><input type=password name=newpwd>\n", gt("Categories bgcolor2"));
@@ -6635,12 +6655,103 @@ MSG_LIST *msg_list;
 
 /*------------------------------------------------------------------*/
 
+int compose_mail(LOGBOOK *lbs, char *mail_to, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], 
+                 char *mail_param, int *n_mail)
+{
+int    j;
+char   str[256], mail_from[256], mail_text[TEXT_SIZE+1000], smtp_host[256], subject[256];
+char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
+
+  if (!getcfg("global", "SMTP host", smtp_host))
+    {
+    show_error(loc("No SMTP host defined in [global] section of configuration file"));
+    return 0;
+    }
+
+  if (getcfg(lbs->name, "Use Email from", mail_from))
+    {
+    j = build_subst_list(lbs, slist, svalue, attrib);
+    strsubst(mail_from, slist, svalue, j);
+    }
+  else
+    sprintf(mail_from, "ELog@%s", host_name);
+
+  sprintf(mail_text, loc("A new entry has been submitted on %s"), host_name);
+  sprintf(mail_text+strlen(mail_text), "\r\n\r\n");
+
+  sprintf(mail_text+strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), lbs->name);
+
+  for (j=0 ; j<lbs->n_attr ; j++)
+    {
+    strcpy(str, "                                    ");
+    memcpy(str, attr_list[j], strlen(attr_list[j]));
+    sprintf(str+20, ": %s\r\n", attrib[j]);
+
+    strcpy(mail_text+strlen(mail_text), str);
+    }
+
+  /* compose subject from attributes */
+  if (getcfg(lbs->name, "Use Email Subject", subject))
+    {
+    j = build_subst_list(lbs, slist, svalue, attrib);
+    strsubst(subject, slist, svalue, j);
+    }
+  else
+    strcpy(subject, "New ELOG entry");
+
+  /* try to get URL from referer */
+
+  if (!getcfg("global", "URL", str))
+    {
+    if (referer[0])
+      strcpy(str, referer);
+    else
+      {
+      if (tcp_port == 80)
+        sprintf(str, "http://%s/", host_name);
+      else
+        sprintf(str, "http://%s:%d/", host_name, tcp_port);
+      }
+    }
+  else
+    {
+    strcat(str, lbs->name);
+    strcat(str, "/");
+    }
+
+  sprintf(mail_text+strlen(mail_text), "\r\n%s URL         : %s%d\r\n",
+          loc("Logbook"), str, message_id);
+
+  if (getcfg(lbs->name, "Email message body", str) &&
+      atoi(str) == 1)
+    {
+    sprintf(mail_text+strlen(mail_text), "\r\n=================================\r\n\r\n%s",
+      getparam("text"));
+    }
+
+  sendmail(smtp_host, mail_from, mail_to, subject, mail_text);
+
+  if (!getcfg(lbs->name, "Display email recipients", str) ||
+       atoi(str) == 1)
+    {
+    if (mail_param[0] == 0)
+      strcpy(mail_param, "?");
+    else
+      strcat(mail_param, "&");
+    sprintf(mail_param+strlen(mail_param), "mail%d=%s", (*n_mail)++, mail_to);
+    }
+
+  return 1;
+}
+
+/*------------------------------------------------------------------*/
+
 void submit_elog(LOGBOOK *lbs)
 {
-char   str[256], mail_to[256], mail_from[256], file_name[256], error[1000], date[80],
-       mail_text[TEXT_SIZE+1000], mail_list[MAX_N_LIST][NAME_LENGTH], list[10000], smtp_host[256],
-       subject[256], attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[256], in_reply_to[80],
-       reply_to[256];
+char   str[256], file_name[256], error[1000], date[80],
+       mail_list[MAX_N_LIST][NAME_LENGTH], list[10000],
+       attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[256], in_reply_to[80],
+       reply_to[256], user[256], user_email[256], email_notify[256];
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
 char   att_file[MAX_ATTACHMENTS][256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
@@ -6791,6 +6902,8 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id;
     return;
     }
 
+  /*---- email notifications ----*/
+
   suppress = atoi(getparam("suppress"));
 
   /* check for mail submissions */
@@ -6803,116 +6916,52 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id;
     }
   else
     {
-    for (index=0 ; index <= lbs->n_attr ; index++)
+    if (!(*getparam("edit") && getcfg(lbs->name, "Suppress Email on edit", str) && atoi(str) == 1))
       {
-      if (index < lbs->n_attr)
+      /* go throuch "Email xxx" in configuration file */
+      for (index=0 ; index <= lbs->n_attr ; index++)
         {
-        strcpy(str, "Email ");
-        if (strchr(attr_list[index], ' '))
-          sprintf(str+strlen(str), "\"%s\"", attr_list[index]);
-        else
-          strcat(str, attr_list[index]);
-        strcat(str, " ");
-
-        if (strchr(getparam(attr_list[index]), ' '))
-          sprintf(str+strlen(str), "\"%s\"", getparam(attr_list[index]));
-        else
-          strcat(str, getparam(attr_list[index]));
-        }
-      else
-        sprintf(str, "Email ALL");
-
-      if (getcfg(lbs->name, str, list))
-        {
-        n = strbreak(list, mail_list, MAX_N_LIST);
-
-        if (verbose)
-          printf("\n%s to %s\n\n", str, list);
-
-        if (!getcfg("global", "SMTP host", smtp_host))
-          if (!getcfg("global", "SMTP host", smtp_host))
-            {
-            show_error(loc("No SMTP host defined in [global] section of configuration file"));
-            return;
-            }
-
-        for (i=0 ; i<n ; i++)
+        if (index < lbs->n_attr)
           {
-          strcpy(mail_to, mail_list[i]);
-
-          if (getcfg(lbs->name, "Use Email from", mail_from))
-            {
-            j = build_subst_list(lbs, slist, svalue, attrib);
-            strsubst(mail_from, slist, svalue, j);
-            }
+          strcpy(str, "Email ");
+          if (strchr(attr_list[index], ' '))
+            sprintf(str+strlen(str), "\"%s\"", attr_list[index]);
           else
-            sprintf(mail_from, "ELog@%s", host_name);
+            strcat(str, attr_list[index]);
+          strcat(str, " ");
 
-          sprintf(mail_text, loc("A new entry has been submitted on %s"), host_name);
-          sprintf(mail_text+strlen(mail_text), "\r\n\r\n");
-
-          sprintf(mail_text+strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), lbs->name);
-
-          for (j=0 ; j<lbs->n_attr ; j++)
-            {
-            strcpy(str, "                                    ");
-            memcpy(str, attr_list[j], strlen(attr_list[j]));
-            sprintf(str+20, ": %s\r\n", attrib[j]);
-
-            strcpy(mail_text+strlen(mail_text), str);
-            }
-
-          /* compose subject from attributes */
-          if (getcfg(lbs->name, "Use Email Subject", subject))
-            {
-            j = build_subst_list(lbs, slist, svalue, attrib);
-            strsubst(subject, slist, svalue, j);
-            }
+          if (strchr(getparam(attr_list[index]), ' '))
+            sprintf(str+strlen(str), "\"%s\"", getparam(attr_list[index]));
           else
-            strcpy(subject, "New ELOG entry");
-
-          /* try to get URL from referer */
-
-          if (!getcfg("global", "URL", str))
-            {
-            if (referer[0])
-              strcpy(str, referer);
-            else
-              {
-              if (tcp_port == 80)
-                sprintf(str, "http://%s/", host_name);
-              else
-                sprintf(str, "http://%s:%d/", host_name, tcp_port);
-              }
-            }
-          else
-            {
-            strcat(str, lbs->name);
-            strcat(str, "/");
-            }
-
-          sprintf(mail_text+strlen(mail_text), "\r\n%s URL         : %s%d\r\n",
-                  loc("Logbook"), str, message_id);
-
-          if (getcfg(lbs->name, "Email message body", str) &&
-              atoi(str) == 1)
-            {
-            sprintf(mail_text+strlen(mail_text), "\r\n=================================\r\n\r\n%s",
-              getparam("text"));
-            }
-
-          sendmail(smtp_host, mail_from, mail_to, subject, mail_text);
-
-          if (!getcfg(lbs->name, "Display email recipients", str) ||
-               atoi(str) == 1)
-            {
-            if (mail_param[0] == 0)
-              strcpy(mail_param, "?");
-            else
-              strcat(mail_param, "&");
-            sprintf(mail_param+strlen(mail_param), "mail%d=%s", n_mail++, mail_to);
-            }
+            strcat(str, getparam(attr_list[index]));
           }
+        else
+          sprintf(str, "Email ALL");
+
+        if (getcfg(lbs->name, str, list))
+          {
+          n = strbreak(list, mail_list, MAX_N_LIST);
+
+          if (verbose)
+            printf("\n%s to %s\n\n", str, list);
+
+          for (i=0 ; i<n ; i++)
+            if (!compose_mail(lbs, mail_list[i], message_id, attrib, mail_param, &n_mail))
+              return;
+          }
+        }
+
+      /* go through password file */
+      for (index=0 ; ; index++)
+        {
+        if (!enum_user_line(lbs, index, user))
+          break;
+
+        get_user_line(lbs, user, NULL, NULL, user_email, email_notify);
+
+        if (email_notify[0])
+          if (!compose_mail(lbs, user_email, message_id, attrib, mail_param, &n_mail))
+            return;
         }
       }
     }
@@ -6937,6 +6986,7 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id;
     rsprintf("Keep-Alive: timeout=60, max=10\r\n");
     }
 
+  /* bug for Konqueror */
   if (strstr(browser, "Konqueror"))
     rsprintf("Location: %s/%d%s\r\n\r\n<html>redir</html>\r\n",
               lbs->name_enc, message_id, mail_param);
@@ -8184,13 +8234,17 @@ char  str[256];
 
 /*------------------------------------------------------------------*/
 
-BOOL get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name, char *email)
+BOOL get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name, char *email, char *email_notify)
 {
 char  str[256], line[256], file_name[256], *p;
 FILE  *f;
 int   i;
 
-  password[0] = full_name[0] = email[0] = 0;
+  if (password) password[0] = 0;
+  if (full_name) full_name[0] = 0;
+  if (email) email[0] = 0;
+  if (email_notify) email_notify[0] = 0;
+
   getcfg(lbs->name, "Password file", str);
 
   if (str[0] == DIR_SEPARATOR || str[1] == ':')
@@ -8229,7 +8283,7 @@ int   i;
     /* if user found, retrieve other info */
     p = line;
 
-    for (i=0 ; i<3 ; i++)
+    for (i=0 ; i<4 ; i++)
       {
       if (strchr(p, ':') == NULL)
         break;
@@ -8246,12 +8300,14 @@ int   i;
              str[strlen(str)-1] == '\n')
         str[strlen(str)-1] = 0;
 
-      if (i==0)
+      if (i==0 && password)
         strcpy(password, str);
-      else if (i==1)
+      else if (i==1 && full_name)
         strcpy(full_name, str);
-      else if (i==2)
+      else if (i==2 && email)
         strcpy(email, str);
+      else if (i==3 && email_notify)
+        strcpy(email_notify, str);
       }
 
     return TRUE;
@@ -8315,7 +8371,7 @@ BOOL check_user_password(LOGBOOK *lbs, char *user, char *password, char *redir)
 {
 char  str[256], upwd[256], full_name[256], email[256];
 
-  if (get_user_line(lbs, user, upwd, full_name, email))
+  if (get_user_line(lbs, user, upwd, full_name, email, NULL))
     {
     if (user[0] && strcmp(password, upwd) == 0)
       {
