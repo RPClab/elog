@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.194  2004/01/15 12:15:47  midas
+   Fixed missing format_flags initialization
+
    Revision 1.193  2004/01/15 11:22:52  midas
    Fixed bug that boolean attributes were not accepted
 
@@ -5803,6 +5806,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       strcpy(class_value, "attribvalue");
       input_size = 80;
       input_maxlen = NAME_LENGTH;
+      format_flags = 0;
 
       sprintf(str, "Format %s", attr_list[index]);
       if (getcfg_cond(lbs->name, condition, str, format)) {
@@ -10744,12 +10748,13 @@ void submit_elog(LOGBOOK * lbs)
 
          if (equal_ustring(attr_options[i][0], "boolean")) {
             if (atoi(attr_list[i]) != 0 && atoi(attr_list[i]) != 1) {
-               sprintf(error, loc("Error: Value <b>%s</b> not allowed for boolean attributes"),
+               sprintf(error,
+                       loc("Error: Value <b>%s</b> not allowed for boolean attributes"),
                        getparam(attr_list[i]));
                show_error(error);
                return;
             }
-            
+
          } else {
 
             /* check if option exists */
@@ -12471,7 +12476,7 @@ void show_selection_page()
    }
 
    rsprintf("</td></tr>\n");
-   
+
    phier = get_logbook_hierarchy();
    show_title = 0;
 
@@ -12480,8 +12485,8 @@ void show_selection_page()
          if (equal_ustring(getcfg_topgroup(), phier->member[i]->name)) {
             if (phier->member[i]->n_members == 0)
                show_title = 1;
-            else 
-               for (j=0 ; j<phier->member[i]->n_members ; j++)
+            else
+               for (j = 0; j < phier->member[i]->n_members; j++)
                   if (phier->member[i]->member[j]->n_members == 0)
                      show_title = 1;
 
@@ -12492,7 +12497,7 @@ void show_selection_page()
          if (phier->member[i]->n_members == 0)
             show_title = 1;
          else
-            for (j=0 ; j<phier->member[i]->n_members ; j++)
+            for (j = 0; j < phier->member[i]->n_members; j++)
                if (phier->member[i]->member[j]->n_members == 0)
                   show_title = 1;
       }
@@ -12507,7 +12512,7 @@ void show_selection_page()
       rsprintf("<th class=\"seltitle\">%s</th>\n", loc("Entries"));
       rsprintf("<th class=\"seltitle\">%s</th>\n", loc("Last submission"));
       rsprintf("</tr>\n");
-   }  else {
+   } else {
       rsprintf("<tr>\n");
       rsprintf("<td colspan=13 class=\"selexp\">\n");
       rsprintf("<a href=\"?gexp=all\">%s</a></td>\n", loc("Expand all"));
@@ -12523,7 +12528,7 @@ void show_selection_page()
    } else
       for (i = 0; i < phier->n_members; i++)
          show_logbook_node(phier->member[i], NULL, 0, 0);
-   
+
    free_logbook_hierarchy(phier);
    rsprintf("</table></body>\n");
    rsprintf("</html>\r\n\r\n");
