@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.320  2004/05/05 15:24:45  midas
+   Changed redirection to absolute location
+
    Revision 1.319  2004/04/30 22:17:29  midas
    Implemented text body CSV import
 
@@ -4854,42 +4857,40 @@ void set_location(LOGBOOK * lbs, char *rel_path)
       else
          getcfg("global", "URL", str);
 
-      if (str[0]) {
-         /* absolute path */
-         if (str[strlen(str) - 1] != '/')
-            strcat(str, "/");
+      if (!str[0]) {
+         /* assemble absolute path from host name and port */
+         sprintf(str, "http://%s", host_name);
+         if (tcp_port != 80)
+            sprintf(str+strlen(str), ":%d", tcp_port);
+         strcat(str, "/");
+      }
 
-         rsputs("Location: ");
-         rsputs(str);
+      /* add trailing '/' if not present */
+      if (str[strlen(str) - 1] != '/')
+         strcat(str, "/");
 
-         /* add top group if existing and not logbook */
-         if (!lbs && getcfg_topgroup()) {
-            rsputs(getcfg_topgroup());
+      rsputs("Location: ");
+      rsputs(str);
+
+      /* add top group if existing and not logbook */
+      if (!lbs && getcfg_topgroup()) {
+         rsputs(getcfg_topgroup());
+         rsputs("/");
+      }
+
+      if (strncmp(rel_path, "../", 3) == 0)
+         rsputs(rel_path + 3);
+      else if (strcmp(rel_path, ".") == 0) {
+         if (lbs)
+            rsputs(lbs->name_enc);
+      } else if (rel_path[0] == '/')
+         rsputs(rel_path + 1);
+      else {
+         if (lbs) {
+            rsputs(lbs->name_enc);
             rsputs("/");
-         }
-
-         if (strncmp(rel_path, "../", 3) == 0)
-            rsputs(rel_path + 3);
-         else if (strcmp(rel_path, ".") == 0) {
-            if (lbs)
-               rsputs(lbs->name_enc);
-         } else if (rel_path[0] == '/')
-            rsputs(rel_path + 1);
-         else {
-            if (lbs) {
-               rsputs(lbs->name_enc);
-               rsputs("/");
-               rsputs(rel_path);
-            } else
-               rsputs(rel_path);
-         }
-      } else {
-         /* relative path */
-         rsputs("Location: ");
-
-         if (rel_path[0] == 0)
-            rsputs(".");        /* empty location forbidden for konqueror */
-         else
+            rsputs(rel_path);
+         } else
             rsputs(rel_path);
       }
    }
@@ -12228,6 +12229,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          else
             strlcat(_cmdline, "?reverse=0", sizeof(_cmdline));
       }
+      if (_cmdline[strlen(_cmdline)-1] == '&')
+         _cmdline[strlen(_cmdline)-1] = 0;
       redirect(lbs, _cmdline);
       return;
    }
@@ -17741,7 +17744,8 @@ void server_loop(int tcp_port, int daemon)
          if (strstr(net_buffer, "POST") == NULL) {      // fix for konqueror
             if (logbook[0] && *p == ' ') {
                if (!strstr(logbook, ".css") && !strstr(logbook, ".htm")
-                   && !strstr(logbook, ".gif") && !strstr(logbook, ".jpg")) {
+                   && !strstr(logbook, ".gif") && !strstr(logbook, ".jpg")
+                   && !strstr(logbook, ".png")) {
                   sprintf(str, "%s/", logbook_enc);
                   redirect(NULL, str);
                   goto redir;
@@ -18395,7 +18399,7 @@ int main(int argc, char *argv[])
    if (tcp_port_cl != 0)
       tcp_port = tcp_port_cl;
    else {
-      if (getcfg("global", "Port", str))
+      if (getcfg("global", "Port1", str))
          tcp_port = atoi(str);
    }
 
