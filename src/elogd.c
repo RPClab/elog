@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.441  2004/08/05 08:26:32  midas
+   Changed reusing port back to old scheme
+
    Revision 1.440  2004/08/05 08:15:24  midas
    Changed way of reusing port
 
@@ -19497,21 +19500,15 @@ void server_loop(int tcp_port)
 
    serv_addr.sin_port = htons((short) tcp_port);
 
-   /* first try without reusing address */
+   /* switch on reuse of port */
+   flag = 1;
+   setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR, (char *) &flag, sizeof(INT));
    status = bind(lsock, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
    if (status < 0) {
-      eprintf("Warning: another server might already run on port %d.\n\n",tcp_port);
-
-      /* now try with reusing address */
-      flag = 1;
-      setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR, (char *) &flag, sizeof(INT));
-      status = bind(lsock, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
-      if (status < 0) {
-         eprintf
-             ("Cannot bind to port %d.\nPlease use the \"-p\" flag to specify a different port.\n",
-              tcp_port);
-         exit(EXIT_FAILURE);
-      }
+      eprintf
+          ("Cannot bind to port %d.\nPlease use the \"-p\" flag to specify a different port.\n",
+           tcp_port);
+      exit(EXIT_FAILURE);
    }
 
    /* get host name for mail notification */
