@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.78  2002/09/16 07:02:54  midas
+  Version 2.1.3
+
   Revision 2.77  2002/09/16 06:45:22  midas
   Fixed problem with saving other user as admin
 
@@ -335,7 +338,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.1.2"
+#define VERSION "2.1.3"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -9698,6 +9701,7 @@ LOGBOOK *cur_lb;
     }
 
   show_elog_page(cur_lb, dec_path);
+
   return;
 }
 

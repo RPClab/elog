@@ -8,6 +8,7 @@ Version 2.1.3, released September xx, 2002
   even with correct password
 - Don't display check box for edit with "Suppress email on edit = 1"
 - Implemented "Deny <command>" option
+- Fixed bug with config other user as admin user
 
 Version 2.1.2, released September 12th, 2002
 ============================================
