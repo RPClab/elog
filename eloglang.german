@@ -216,3 +216,9 @@ Expand = Erweitern
 Full = Ausfühlich
 Summary = Zusammenfassung
 Threaded = Antwortkette
+
+#
+# New strings for V2.2.6
+Filters = Filter
+Mode = Modus
+Options = Optionen
