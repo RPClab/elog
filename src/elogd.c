@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.202  2004/01/20 15:50:06  midas
+   Changed error return from receive_message()
+
    Revision 1.201  2004/01/19 21:34:14  midas
    Implemented receive_message
 
@@ -297,7 +300,6 @@ typedef int INT;
 #define EL_EMPTY       7
 #define EL_MEM_ERROR   8
 #define EL_DUPLICATE   9
-#define EL_LOCKED     10
 
 #define EL_FIRST       1
 #define EL_LAST        2
@@ -8020,7 +8022,7 @@ int submit_message(LOGBOOK * lbs, char *url, int message_id, char *error_str)
 
    if (status != EL_SUCCESS) {
       free(text);
-      strcpy(error_str, "cannot read message from local logbook");
+      strcpy(error_str, loc("Cannot read message from local logbook"));
       return -1;
    }
 
@@ -8029,7 +8031,7 @@ int submit_message(LOGBOOK * lbs, char *url, int message_id, char *error_str)
    /* create socket */
    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
       free(text);
-      strcpy(error_str, "cannot create socket");
+      strcpy(error_str, loc("Cannot create socket"));
       return -1;
    }
 
@@ -8046,7 +8048,7 @@ int submit_message(LOGBOOK * lbs, char *url, int message_id, char *error_str)
    if (phe == NULL) {
       closesocket(sock);
       free(text);
-      strcpy(error_str, "cannot get host name");
+      sprintf(error_str, loc("Cannot resolve host name \"%s\""), host_name);
       return -1;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
@@ -8056,7 +8058,7 @@ int submit_message(LOGBOOK * lbs, char *url, int message_id, char *error_str)
    if (status != 0) {
       closesocket(sock);
       free(text);
-      sprintf(error_str, "Cannot connect to host %s, port %d\n", host_name, port);
+      sprintf(error_str, loc("Cannot connect to host %s, port %d"), host_name, port);
       return -1;
    }
 
@@ -8081,7 +8083,7 @@ int submit_message(LOGBOOK * lbs, char *url, int message_id, char *error_str)
    if (content == NULL) {
       closesocket(sock);
       free(text);
-      strcpy(error_str, "Not enough memory\n");
+      strcpy(error_str, loc("Not enough memory"));
       return -1;
    }
 
@@ -8148,7 +8150,7 @@ int submit_message(LOGBOOK * lbs, char *url, int message_id, char *error_str)
             if (buffer == NULL) {
                closesocket(sock);
                free(text);
-               strcpy(error_str, "Not enough memory");
+               strcpy(error_str, loc("Not enough memory"));
                return -1;
             }
 
@@ -8261,9 +8263,9 @@ int submit_message(LOGBOOK * lbs, char *url, int message_id, char *error_str)
 
 /*------------------------------------------------------------------*/
 
-int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str)
+int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, BOOL bnew)
 {
-   int i;
+   int i, status, size;
    char str[256], *p, *p2, *message, date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
        in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
@@ -8278,14 +8280,16 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str)
    p = strstr(message, "\r\n\r\n");
    if (p == NULL) {
       free(message);
-      return EL_NO_MSG;
+      sprintf(error_str, loc("Cannot receive \"%s\""), str);
+      return -1;
    }
    p+= 4;
 
    /* check for correct ID */
    if (atoi(p + 8) != message_id) {
       free(message);
-      return EL_NO_MSG;
+      sprintf(error_str, loc("Received wrong message id \"%d\""), atoi(p+8));
+      return -1;
    }
 
    /* decode message */
@@ -8320,7 +8324,8 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str)
    el_decode(p, "Locked by: ", locked_by);
    if (locked_by[0]) {
       free(message);
-      return EL_LOCKED;
+      sprintf(error_str, loc("Message #%d is locked on remote server"), message_id);
+      return -1;
    }
 
    p = strstr(message, "========================================\n");
@@ -8332,17 +8337,35 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str)
    if (p != NULL) {
       p += 41;
 
-      /* el_submit(); */
+      status = el_submit(lbs, message_id, !bnew, date, attr_list,
+                         attrib, lbs->n_attr, p, in_reply_to, reply_to,
+                         encoding, attachment, FALSE, "");
+
+      free(message);
+
+      if (status != message_id) {
+         sprintf(error_str, loc("Cannot submit local message"));
+         return -1;
+      }
 
       for (i = 0; i < MAX_ATTACHMENTS; i++) {
          if (attachment[i][0]) {
-         /* el_submit_attachment() */
+
+            strlcpy(str, url, sizeof(str));
+            if (str[strlen(str) - 1] != '/')
+               strlcat(str, "/", sizeof(str));
+            sprintf(str + strlen(str), "%d/%s", message_id, attachment[i]);
+
+            size = retrieve_url(str, &message);
+            
+            el_submit_attachment(lbs, attachment[i], message, size, NULL);
          }
       }
-   } else
+   } else {
+      free(message);
       return -1;
+   }
 
-   free(message);
    return 1;
 }
 
@@ -8488,7 +8511,9 @@ void synchronize(LOGBOOK * lbs, char *path)
       rsprintf("<table width=\"100%%\" cellpadding=1 cellspacing=0");
       rsprintf("<tr><td class=\"title1\">%s <b>%s</b></td></tr>\n",
                loc("Synchronizing with"), list[index]);
-      rsprintf("</table><p><pre>\n");
+      rsprintf("</table><p>\n");
+
+      rsprintf("<pre>");
 
       /* send partial return buffer */
       flush_return_buffer();
@@ -8544,8 +8569,14 @@ void synchronize(LOGBOOK * lbs, char *path)
                    && equal_md5(md5_cache[i_cache].md5_digest,
                                 lbs->el_index[i_msg].md5_digest)) {
 
-               receive_message(lbs, list[index], message_id, error_str);
-            } else
+               receive_message(lbs, list[index], message_id, error_str, FALSE);
+             
+               if (error_str[0])
+                  rsprintf("Error receiving message: %s\n", error_str);
+               else
+                  rsprintf("Remote message received\n");
+
+             } else
                /* if message has been changed remotely and on this server, show conflict */
                if (!equal_md5
                    (md5_cache[i_cache].md5_digest, md5_remote[i_remote].md5_digest)
@@ -8593,7 +8624,13 @@ void synchronize(LOGBOOK * lbs, char *path)
       free(md5_remote);
    }
 
-   rsprintf("</pre></body></html>\n");
+   rsprintf("</pre>\n");
+
+   rsprintf("<table width=\"100%%\" cellpadding=1 cellspacing=0");
+   rsprintf("<tr><td class=\"seltitle\"><a href=\".\">%s</a></td></tr>\n", loc("Back"));
+   rsprintf("</table><p>\n");
+   
+   rsprintf("</body></html>\n");
    flush_return_buffer();
    keep_alive = 0;
 }
