@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.307  2004/03/21 20:01:48  midas
+   Version 2.5.2 beta
+
    Revision 1.306  2004/03/21 19:25:18  midas
    Implemented XML encoding
 
@@ -512,7 +515,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.1"
+#define VERSION "2.5.2"
 
 #include <stdio.h>
 #include <sys/types.h>
