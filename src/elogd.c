@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.389  2004/07/15 19:15:47  midas
+   Implemented 'preset on reply'
+
    Revision 1.388  2004/07/15 10:01:03  midas
    First attribute cannot be on same line
 
@@ -6999,6 +7002,30 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          }
       }
 
+      sprintf(str, "Preset on reply %s", attr_list[index]);
+      if ((i = getcfg(lbs->name, str, preset)) > 0 && breply) {
+
+         if (!breedit || (breedit && i == 2)) {   /* subst on reedit only if preset is under condition */
+
+            /* do not format date for date attributes */
+            i = build_subst_list(lbs, slist, svalue, attrib,
+                                 (attr_flags[index] & AF_DATE) == 0);
+            strsubst(preset, slist, svalue, i);
+
+            /* check for index substitution */
+            if (!bedit && strchr(preset, '%')) {
+               /* get index */
+               i = get_last_index(lbs, index);
+
+               strcpy(str, preset);
+               sprintf(preset, str, i + 1);
+            }
+
+            if (!strchr(preset, '%'))
+               strcpy(attrib[index], preset);
+         }
+      }
+
       /* display text box with optional tooltip */
       sprintf(str, "Tooltip %s", attr_list[index]);
       title[0] = 0;
@@ -7052,7 +7079,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             }
          } else {
             strencode2(str, attrib[index]);
-            rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\"></td></tr>\n",
+            rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\"></td>\n",
                      ua, str);
          }
       } else {
