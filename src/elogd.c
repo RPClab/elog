@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.290  2004/03/10 15:54:03  midas
+   Strip HTML from title bar and summary display
+
    Revision 1.289  2004/03/10 14:53:40  midas
    Fixed bug with MOptions and conditional attributes
 
@@ -4347,6 +4350,18 @@ int is_html(char *s)
 
    free(str);
    return FALSE;
+}
+
+/*------------------------------------------------------------------*/
+
+void strip_html(char *s)
+{
+   char *p;
+
+   while ((p = strchr(s, '<')) != NULL) {
+      if (strchr(p, '>'))
+         strcpy(p, strchr(p, '>')+1);
+   }
 }
 
 /*------------------------------------------------------------------*/
@@ -10614,8 +10629,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          }
          str[i] = 0;
 
-         /* always encode, not to rip apart HTML documents,
+         /* only show text, not to rip apart HTML documents,
             e.g. only the start of a table */
+         strip_html(str);
          strencode(str);
       } else {
          if (strieq(encoding, "plain")) {
@@ -10643,11 +10659,11 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       }
       str[i] = 0;
 
-      /* always encode, not to rip apart HTML documents,
+      /* only show text, not to rip apart HTML documents,
          e.g. only the start of a table */
+      strip_html(str);
       strencode(str);
-
-      rsprintf("&nbsp;</td>\n");
+      rsputs("</td>\n");
 
       if (strieq(mode, "Threaded"))
          rsprintf("</tr>\n");
@@ -12162,6 +12178,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       i = build_subst_list(lbs, (char (*)[NAME_LENGTH])slist, 
          (char (*)[NAME_LENGTH])svalue, NULL, TRUE);
       strsubst(str, (char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, i);
+      strip_html(str);
    } else
       sprintf(str, "ELOG %s", lbs->name);
 
@@ -13940,6 +13957,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
          add_subst_list(slist, svalue, "message id", mid, &i);
          add_subst_time(lbs, slist, svalue, "entry time", date, &i);
          strsubst(str, slist, svalue, i);
+         strip_html(str);
       } else
          strcpy(str, "ELOG");
 
@@ -14995,9 +15013,10 @@ void show_selection_page()
       if (!check_user_password(NULL, getparam("unm"), getparam("upwd"), ""))
          return;
 
-   if (getcfg("global", "Page Title", str))
+   if (getcfg("global", "Page Title", str)) {
+      strip_html(str);
       show_html_header(NULL, TRUE, str, TRUE);
-   else
+   } else
       show_html_header(NULL, TRUE, "ELOG Logbook Selection", TRUE);
    rsprintf("<body>\n\n");
    rsprintf("<table class=\"selframe\" cellspacing=0 align=center>\n");
