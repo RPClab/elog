@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.446  2004/08/06 13:39:49  midas
+   Changed CONFIG_FILE to CONFIG_PATH
+
    Revision 1.445  2004/08/06 07:52:51  midas
    Use macro CFGFILE instead of hard-wired elogd.cfg
 
@@ -20973,13 +20976,15 @@ int main(int argc, char *argv[])
     */
    redirect_to_stderr();
 
-   /* default config file */
-   strcpy(config_file, CFGFILE);
-
    /* evaluate predefined files and directories */
-#ifdef CONFIG_FILE
-   strlcpy(config_file, CONFIG_FILE, sizeof(config_file));
+#ifdef CONFIG_PATH
+   strcpy(config_file, CONFIG_PATH);
+   if (config_file[0] && config_file[strlen(config_file) - 1] != DIR_SEPARATOR)
+      strlcat(config_file, DIR_SEPARATOR_STR, sizeof(config_file));
 #endif
+   /* default config file */
+   strlcat(config_file, CFGFILE, sizeof(config_file));
+
 #ifdef RESOURCE_DIR
    strlcpy(resource_dir, RESOURCE_DIR, sizeof(resource_dir));
 #endif
