@@ -3,8 +3,8 @@
 # $Revision$
 #
 
-# ElogLang.French - French interface file for ELOG 2.3.4+
-# version 1.7 - 04/04/03 by Fred Pacquier <fredp@dial.oleane.com>
+# ElogLang.French - French interface file for ELOG 2.3.5+
+# version 1.8 - 10/04/03 by Fred Pacquier <fredp@dial.oleane.com>
 #
 
 #
@@ -255,3 +255,25 @@ Search text also in attributes = Text auch in Attributen suchen
 Goto logbook selection page = Aller à la page de sélection des registres
 Login as different user = Se connecter sous un compte différent
 User <i>"%s"</i> has no access to logbook <i>"%s"</i> = L'utilisateur <i>"%s"</i> n'a pas accès au registre <i>"%s"</i>
+
+#
+# New strings for V2.3.5
+Date = Date
+ID = ID
+Change elogd.cfg = Modifier elogd.cfg
+Remember me on this computer = Mémoriser mon identité sur cet ordinateur
+Forgot password? = Mot de passe oublié ?
+Enter your login name or email address = Indiquez votre nom d'utilisateur ou votre adresse mél.
+Email address <i>"%s"</i> not registered = L'adresse mél. <i>"%s"</i> n'est pas enregistrée sur ce serveur
+User name <i>\%s\</i> not registered = Le nom d'utilisateur <i>"%s"</i> n'est pas enregistré sur ce serveur
+ELOG password recovery = Récupération de mot de passe ELOG
+No Email address registered with user name <i>"%s"</i> = Il n'y a pas d'adresse mél. enregistrée pour le nom d'utilisateur <i>"%s"</i>
+Error sending Email = Erreur lors de l'envoi du mél.
+A new password for user <i>"%s"</i> has been sent to %s = Un nouveau mot de passe pour le nom d'utilisateur <i>"%s"</i> a été envoyé à l'adresse %s
+Forgot = Oublié
+User "%s" registered on host "%s" = Utilisateur "%s" enregistré sur l'ordinateur "%s"
+Registration request on host "%s" = Demande d'enregistrement sur l'ordinateur "%s"
+Please log on by clicking on following link and change your password = Merci de vous identifier et de changer votre mot de passe en cliquant sur le lien suivant
+A new password has been created for you on host %s = Un nouveau mot d epasse a été créé pour vous sur l'ordinateur %s
+Enter your user name or email address = Indiquez votre nom d'utilisateur ou votre adresse mél.
+Password recovery for ELOG %s = Récupération de mot de passe sur ELOG %s
