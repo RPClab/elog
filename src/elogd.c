@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.600  2005/03/29 07:19:37  ritt
+   Added add_special_xxx
+
    Revision 1.599  2005/03/27 19:57:23  ritt
    Adjusted code for mxml modifications
 
@@ -10057,16 +10060,16 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 
       if (new_user) {
          node = mxml_find_node(lbs->pwd_xml_tree, "/list");
-         node = mxml_add_node(node, ELEMENT_NODE, "user", NULL);
+         node = mxml_add_node(node, "user", NULL);
 
-         mxml_add_node(node, ELEMENT_NODE, "full_name", getparam("new_full_name"));
-         mxml_add_node(node, ELEMENT_NODE, "name", getparam("new_user_name"));
-         mxml_add_node(node, ELEMENT_NODE, "email", getparam("new_user_email"));
+         mxml_add_node(node, "full_name", getparam("new_full_name"));
+         mxml_add_node(node, "name", getparam("new_user_name"));
+         mxml_add_node(node, "email", getparam("new_user_email"));
 
          if (activate)
-            mxml_add_node(node, ELEMENT_NODE, "password", getparam("encpwd"));
+            mxml_add_node(node, "password", getparam("encpwd"));
          else
-            mxml_add_node(node, ELEMENT_NODE, "password", new_pwd);
+            mxml_add_node(node, "password", new_pwd);
 
       } else {
          /* replace record */
@@ -10079,12 +10082,12 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
       subnode = mxml_find_node(node, "email_notify");
       if (subnode)
          mxml_delete_node(subnode);
-      mxml_add_node(node, ELEMENT_NODE, "email_notify", NULL);
+      mxml_add_node(node, "email_notify", NULL);
       subnode = mxml_find_node(node, "email_notify");
       for (i = 0; lb_list[i].name[0]; i++) {
          sprintf(str, "sub_lb%d", i);
          if (getparam(str) && atoi(getparam(str)))
-            mxml_add_node(subnode, ELEMENT_NODE, "logbook", lb_list[i].name);
+            mxml_add_node(subnode, "logbook", lb_list[i].name);
       }
 
       if (get_password_file(lbs, file_name, sizeof(file_name)))
@@ -18547,7 +18550,7 @@ BOOL convert_password_file(char *file_name)
       p++;
 
    root = mxml_create_root_node();
-   list = mxml_add_node(root, ELEMENT_NODE, "list", NULL);
+   list = mxml_add_node(root, "list", NULL);
 
    while (*p) {
 
@@ -18596,12 +18599,12 @@ BOOL convert_password_file(char *file_name)
          while (*p && (*p == '\r' || *p == '\n'))
             p++;
 
-         node = mxml_add_node(list, ELEMENT_NODE, "user", NULL);
-         mxml_add_node(node, ELEMENT_NODE, "name", name);
-         mxml_add_node(node, ELEMENT_NODE, "password", password);
-         mxml_add_node(node, ELEMENT_NODE, "full_name", full_name);
-         mxml_add_node(node, ELEMENT_NODE, "email", email);
-         mxml_add_node(node, ELEMENT_NODE, "email_notify", email_notify);
+         node = mxml_add_node(list, "user", NULL);
+         mxml_add_node(node, "name", name);
+         mxml_add_node(node, "password", password);
+         mxml_add_node(node, "full_name", full_name);
+         mxml_add_node(node, "email", email);
+         mxml_add_node(node, "email_notify", email_notify);
       }
 
       while (*p && isspace(*p))
