@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.111  2002/12/10 07:53:21  midas
+  Implemented expand/collapse
+
   Revision 2.110  2002/12/02 16:38:57  midas
   Added parameter length check
 
@@ -856,7 +859,7 @@ int  i;
    *pD = '\0';
 }
 
-void url_encode(char *ps)
+void url_encode(char *ps, int size)
 /********************************************************************\
    Encode the given string in-place by adding %XX escapes
 \********************************************************************/
@@ -865,7 +868,7 @@ char *pd, *p, str[256];
 
   pd = str;
   p  = ps;
-  while (*p && (int)p < (int)str + 250)
+  while (*p && (int)pd < (int)str + 250)
     {
     if (strchr(" %&=#?", *p))
       {
@@ -879,7 +882,7 @@ char *pd, *p, str[256];
       }
     }
    *pd = '\0';
-   strcpy(ps, str);
+   strlcpy(ps, str, size);
 }
 
 /*-------------------------------------------------------------------*/
@@ -2051,7 +2054,7 @@ int  i, j, n, status;
 
     strcpy(lb_list[n].name, logbook);
     strcpy(lb_list[n].name_enc, logbook);
-    url_encode(lb_list[n].name_enc);
+    url_encode(lb_list[n].name_enc, sizeof(lb_list[n].name_enc));
 
     /* get data dir from configuration file */
     getcfg(logbook, "Data dir", str);
@@ -3766,7 +3769,7 @@ int  i, j;
         continue;
 
       strcpy(ref, str);
-      url_encode(ref);
+      url_encode(ref, sizeof(ref));
 
       if (equal_ustring(str, logbook))
         {
@@ -5532,9 +5535,9 @@ int    i, fh, size, self_register;
               sprintf(mail_text+strlen(mail_text), "\r\nURL                 : %s", url);
 
               strcpy(str, getparam("new_full_name"));
-              url_encode(str);
+              url_encode(str, sizeof(str));
               do_crypt(getparam("newpwd"), enc_pwd);
-              url_encode(enc_pwd);
+              url_encode(enc_pwd, sizeof(enc_pwd));
               sprintf(mail_text+strlen(mail_text), "?cmd=Activate&new_user_name=%s&new_full_name=%s&new_user_email=%s&email_notify=%s&encpwd=%s&unm=%s\r\n",
                       getparam("new_user_name"), 
                       str, 
@@ -6087,7 +6090,7 @@ struct tm *gmt;
 /*------------------------------------------------------------------*/
 
 void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
-                  int level, BOOL printable, int n_line, int show_attachments,
+                  int expand, int level, BOOL printable, int n_line, int show_attachments,
                   char *date, char *reply_to,
                   int n_attr_disp, char disp_attr[MAX_N_ATTR+4][NAME_LENGTH],
                   char attrib[MAX_N_ATTR][NAME_LENGTH],
@@ -6134,6 +6137,10 @@ FILE *f;
     
     for (i=0 ; i<level ; i++)
       rsprintf("&nbsp;&nbsp;&nbsp;");
+
+    /* display "+" if expandable */
+    if (expand == 0 && reply_to[0])
+      rsprintf("+&nbsp;");
     }
 
   size = printable ? 2 : 3;
@@ -6495,10 +6502,47 @@ FILE *f;
         rsprintf("</a>\n");
     }
 
-  if (equal_ustring(mode, "Threaded"))
+  if (equal_ustring(mode, "Threaded") && expand > 1)
+    {
     rsprintf("</td>\n");
 
-  if (equal_ustring(mode, "Summary") && n_line > 0)
+    rsprintf("<tr><td bgcolor=#FFFFFF><font size=%d>", size);
+
+    if (expand == 2)
+      {
+      for (i=i_line=0 ; i<sizeof(str)-1 ; i++)
+        {
+        str[i] = text[i];
+        if (str[i] == '\n')
+          i_line++;
+
+        if (i_line == n_line)
+          break;
+        }
+      str[i] = 0;
+
+      /* always encode, not to rip apart HTML documents,
+         e.g. only the start of a table */
+      strencode(str);
+      }
+    else
+      {
+      if (equal_ustring(encoding, "plain"))
+        {
+        rsputs("<pre>");
+        rsputs2(text);
+        rsputs("</pre>");
+        }
+      else
+        rsputs(text);
+
+      }
+
+    rsprintf("</font></td></tr>\n");
+    }
+
+
+  if ( (equal_ustring(mode, "Summary") && n_line > 0))
     {
     rsprintf("<td bgcolor=%s><font size=%d>", col, size);
     for (i=i_line=0 ; i<sizeof(str)-1 ; i++)
@@ -6517,6 +6561,9 @@ FILE *f;
     strencode(str);
 
     rsprintf("&nbsp;</font></td>\n");
+
+    if (equal_ustring(mode, "Threaded"))
+      rsprintf("</tr>\n");
     }
 
   rsprintf("</tr>\n");
@@ -6626,8 +6673,8 @@ FILE *f;
 
 /*------------------------------------------------------------------*/
 
-void display_reply(LOGBOOK *lbs, int message_id, int printable, int n_attr_disp,
-                   char disp_attr[MAX_N_ATTR+4][NAME_LENGTH], int level)
+void display_reply(LOGBOOK *lbs, int message_id, int printable, int expand, int n_line, 
+                   int n_attr_disp, char disp_attr[MAX_N_ATTR+4][NAME_LENGTH], int level)
 {
 char   date[80], *text, in_reply_to[80], reply_to[256], encoding[80],
        attachment[MAX_ATTACHMENTS][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
@@ -6648,16 +6695,16 @@ char   *p;
     return;
     }
 
-  display_line(lbs, message_id, 0, "threaded", level, printable, 0,
+  display_line(lbs, message_id, 0, "threaded", expand, level, printable, n_line,
                FALSE, date, reply_to, n_attr_disp, disp_attr,
-               attrib, lbs->n_attr, NULL, NULL, encoding, 0, NULL);
+               attrib, lbs->n_attr, text, NULL, encoding, 0, NULL);
 
   if (reply_to[0])
     {
     p = reply_to;
     do
       {
-      display_reply(lbs, atoi(p), printable, n_attr_disp, disp_attr, level+1);
+      display_reply(lbs, atoi(p), printable, expand, n_line, n_attr_disp, disp_attr, level+1);
 
       while (*p && isdigit(*p))
         p++;
@@ -6683,7 +6730,7 @@ int msg_compare_reverse(const void *m1, const void *m2)
 
 /*------------------------------------------------------------------*/
 
-void build_ref(char *ref, int size)
+void build_ref(char *ref, int size, char *mode, char *expand)
 {
 char *p1, *p2;
 
@@ -6693,6 +6740,28 @@ char *p1, *p2;
   /* eliminate old search */
   if (strstr(ref, "cmd=Search&"))
     strcpy(strstr(ref, "cmd=Search&"), strstr(ref, "cmd=Search&")+11);
+
+  /* eliminate old mode if new one is present */
+  if (mode[0])
+    {
+    if ((p1 = strstr(ref, "mode=")) != NULL)
+      {
+      for (p2 = p1+5 ; *p2 && *p2 != '&' ; p2++);
+      strcpy(p1-1, p2);
+      }
+    sprintf(ref+strlen(ref), "&mode=%s", mode);
+    }
+
+  /* eliminate old expand if new one is present */
+  if (expand[0])
+    {
+    if ((p1 = strstr(ref, "expand=")) != NULL)
+      {
+      for (p2 = p1+8 ; *p2 && *p2 != '&' ; p2++);
+      strcpy(p1-1, p2);
+      }
+    sprintf(ref+strlen(ref), "&expand=%s", expand);
+    }
 
   if (isparam("last"))
     {
@@ -6710,10 +6779,11 @@ char *p1, *p2;
     *strchr(ref, '&') = '?';
 }
 
-void show_page_navigation(int n_msg, int page_n, int n_page, BOOL top)
+void show_page_navigation(LOGBOOK *lbs, int n_msg, int page_n, int n_page, BOOL top, BOOL mode_commands,
+                          BOOL threaded)
 {
-int i;
-char ref[256];
+int  i, cur_exp;
+char ref[256], str[256];
 
   if (!(page_n && n_msg > n_page) && !top)
     return;
@@ -6721,6 +6791,72 @@ char ref[256];
   rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1>\n");
   rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=0>\n",
             gt("Border width"), gt("Categories cellpadding"));
+
+  if (mode_commands)
+    {
+    rsprintf("<tr><td align=left bgcolor=%s>\n", gt("Menu1 BGColor"));
+    rsprintf("<font size=1 face=verdana,arial,helvetica,sans-serif><b>");
+
+    if (page_n != 1)
+      sprintf(ref, "page%d", page_n);
+    else
+      ref[0] = 0;
+    build_ref(ref, sizeof(ref), "full", "");
+    rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;|", ref, loc("Full"));
+
+    if (page_n != 1)
+      sprintf(ref, "page%d", page_n);
+    else
+      ref[0] = 0;
+    build_ref(ref, sizeof(ref), "summary", "");
+    rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;|", ref, loc("Summary"));
+
+    if (page_n != 1)
+      sprintf(ref, "page%d", page_n);
+    else
+      ref[0] = 0;
+    build_ref(ref, sizeof(ref), "threaded", "");
+    rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;", ref, loc("Threaded"));
+
+    if (threaded)
+      {
+      if (page_n != 1)
+        sprintf(ref, "page%d", page_n);
+      else
+        ref[0] = 0;
+
+      cur_exp = 1;
+      if (getcfg(lbs->name, "Expand default", str))
+        cur_exp = atoi(str);
+      if (isparam("expand"))
+        cur_exp = atoi(getparam("expand"));
+
+      if (cur_exp > 0)
+        {
+        sprintf(str, "%d", max(0, cur_exp-1));
+        build_ref(ref, sizeof(ref), "", str);
+        rsprintf("|&nbsp;<a href=\"%s\">%s</a>&nbsp;", ref, loc("Collapse"));
+        }
+      else
+        rsprintf("|&nbsp;%s&nbsp;", loc("Collapse"));
+
+      if (cur_exp < 3)
+        {
+        if (page_n != 1)
+          sprintf(ref, "page%d", page_n);
+        else
+          ref[0] = 0;
+        sprintf(str, "%d", min(3, cur_exp+1));
+        build_ref(ref, sizeof(ref), "", str);
+        rsprintf("|&nbsp;<a href=\"%s\">%s</a>&nbsp;", ref, loc("Expand"));
+        }
+      else
+        rsprintf("|&nbsp;%s&nbsp;", loc("Expand"));
+      }
+
+    rsprintf("</font>");
+    rsprintf("</td></tr>\n");
+    }
 
   rsprintf("<tr>\n");
 
@@ -6734,7 +6870,7 @@ char ref[256];
   if (page_n > 1)
     {
     sprintf(ref, "page%d", page_n - 1);
-    build_ref(ref, sizeof(ref));
+    build_ref(ref, sizeof(ref), "", "");
 
     rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;", ref, loc("Previous"));
     }
@@ -6744,7 +6880,7 @@ char ref[256];
     for (i=0 ; i<(n_msg-1)/n_page+1 ; i++)
       {
       sprintf(ref, "page%d", i+1);
-      build_ref(ref, sizeof(ref));
+      build_ref(ref, sizeof(ref), "", "");
 
       if (i == (n_msg-1)/n_page)
         {
@@ -6763,10 +6899,10 @@ char ref[256];
       }
     }
 
-  if (page_n != -1 && page_n * n_page < n_msg)
+  if (page_n != -1 && n_page < n_msg && page_n * n_page < n_msg)
     {
     sprintf(ref, "page%d", page_n + 1);
-    build_ref(ref, sizeof(ref));
+    build_ref(ref, sizeof(ref), "", "");
 
     rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;", ref, loc("Next"));
     }
@@ -6774,7 +6910,7 @@ char ref[256];
   if (page_n != -1 && n_page < n_msg)
     {
     sprintf(ref, "page");
-    build_ref(ref, sizeof(ref));
+    build_ref(ref, sizeof(ref), "", "");
 
     rsprintf("<a href=\"%s\">%s</a>\n", ref, loc("All"));
     }
@@ -6942,7 +7078,7 @@ char   str[256], col[80], ref[256], img[80];
 char   mode[80];
 char   menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH];
 char   *p , *pt, *pt1, *pt2;
-BOOL   show_attachments, threaded;
+BOOL   show_attachments, threaded, mode_commands, expand;
 time_t ltime, ltime_start, ltime_end, now;
 struct tm tms, *ptms;
 MSG_LIST *msg_list;
@@ -7480,7 +7616,7 @@ LOGBOOK *lbs_cur;
     /* store current command line as hidden parameter for page navigation */
     if (str[0] && !equal_ustring(str, "?"))
       {
-      url_encode(str);
+      url_encode(str, sizeof(str));
       rsprintf("<input type=hidden name=lastcmd value=\"%s\">\n", str);
       }
 
@@ -7579,7 +7715,7 @@ LOGBOOK *lbs_cur;
           else
             {
             strcpy(str, loc(menu_item[i]));
-            url_encode(str);
+            url_encode(str, sizeof(str));
 
             if (i < n-1)
               rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;|\n", str, loc(menu_item[i]));
@@ -7689,10 +7825,15 @@ LOGBOOK *lbs_cur;
   if (getcfg(lbs->name, "Summary lines", str))
     n_line = atoi(str);
 
+  /* get mode commands flag */
+  mode_commands = TRUE;
+  if (getcfg(lbs->name, "Mode commands", str) && atoi(str) == 0)
+    mode_commands = FALSE;
+
   /*---- page navigation ----*/
 
   if (!printable)
-    show_page_navigation(n_msg, page_n, n_page, TRUE);
+    show_page_navigation(lbs, n_msg, page_n, n_page, TRUE, mode_commands, threaded);
 
   /*---- select navigation ----*/
 
@@ -7765,7 +7906,7 @@ LOGBOOK *lbs_cur;
         *strstr(ref, "?rsort=") = 0;
 
       strcpy(str, disp_attr[i]);
-      url_encode(str);
+      url_encode(str, sizeof(str));
       if (strcmp(getparam("sort"), disp_attr[i]) == 0)
         {
         if (strchr(ref, '?'))
@@ -7874,19 +8015,30 @@ LOGBOOK *lbs_cur;
 
     /*---- display line ----*/
 
+    expand = 1;
+    if (threaded)
+      {
+      if (getcfg(lbs->name, "Expand default", str))
+        expand = atoi(str);
+
+      if (isparam("expand"))
+        expand = atoi(getparam("expand"));
+      }
+
     display_line(msg_list[index].lbs, message_id, 
-                 index, mode, 0, printable, n_line,
+                 index, mode, expand, 0, printable, n_line,
                  show_attachments, date, reply_to, n_attr_disp, disp_attr,
                  attrib, lbs->n_attr, text, attachment, encoding, atoi(getparam("select")), &n_display);
 
     if (threaded)
       {
-      if (reply_to[0] && (!getcfg(msg_list[index].lbs->name, "Top level only", str) || atoi(str) == 0))
+      if (reply_to[0] && expand > 0)
         {
         p = reply_to;
         do
           {
-          display_reply(msg_list[index].lbs, atoi(p), printable, n_attr_disp, disp_attr, 1);
+          display_reply(msg_list[index].lbs, atoi(p), printable, expand, n_line, 
+                        n_attr_disp, disp_attr, 1);
 
           while (*p && isdigit(*p))
             p++;
@@ -7920,7 +8072,7 @@ LOGBOOK *lbs_cur;
   /*---- page navigation ----*/
 
   if (!printable)
-    show_page_navigation(n_msg, page_n, n_page, FALSE);
+    show_page_navigation(lbs, n_msg, page_n, n_page, FALSE, FALSE, threaded);
   
   rsprintf("</table>\n");
 
@@ -8854,7 +9006,7 @@ BOOL   first;
           for (j=0 ; j<n_log ; j++)
             {
             strcpy(ref, lbk_list[j]);
-            url_encode(ref);
+            url_encode(ref, sizeof(ref));
 
             if (equal_ustring(cmd, loc("Copy to")))
               rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&destc=%s\">%s \"%s\"</a>&nbsp|\n",
@@ -8878,8 +9030,8 @@ BOOL   first;
             if (equal_ustring(str, lbs->name))
               continue;
 
-            strcpy(ref, str);
-            url_encode(ref);
+            strlcpy(ref, str, sizeof(ref));
+            url_encode(ref, sizeof(ref));
             if (equal_ustring(cmd, "Copy to"))
               rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&destc=%s\">%s \"%s\"</a>&nbsp|\n",
                         lbs->name_enc, message_id, loc(cmd), ref, loc(cmd), str);
@@ -8892,7 +9044,7 @@ BOOL   first;
       else
         {
         strcpy(str, loc(menu_item[i]));
-        url_encode(str);
+        url_encode(str, sizeof(str));
 
         if (i < n-1)
           rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;|\n", message_id, str, loc(menu_item[i]));
@@ -9758,7 +9910,7 @@ FILE    *f;
   strcpy(dec_path, path);
   url_decode(dec_path);
   strcpy(enc_path, dec_path);
-  url_encode(enc_path);
+  url_encode(enc_path, sizeof(enc_path));
 
   strcpy(command, getparam("cmd"));
   experiment = getparam("exp");
@@ -9867,7 +10019,7 @@ FILE    *f;
       }
 
     strcpy(logbook_enc, logbook);
-    url_encode(logbook_enc);
+    url_encode(logbook_enc, sizeof(logbook_enc));
     }
 
   /* get logbook from list */
@@ -10814,7 +10966,7 @@ struct timeval       timeout;
     return;
     }
 
-  printf("Server listening...\n");
+  printf("Server listening on port %d...\n", tcp_port);
   do
     {
     FD_ZERO(&readfds);
@@ -11244,7 +11396,7 @@ struct timeval       timeout;
 
           strlcpy(logbook, str, sizeof(logbook));
           strlcpy(logbook_enc, logbook, sizeof(logbook_enc));
-          url_encode(logbook_enc);
+          url_encode(logbook_enc, sizeof(logbook_enc));
           strlcat(logbook_enc, "/", sizeof(logbook_enc));
 
           /* redirect to logbook, necessary to get optional cookies for that logbook */

@@ -971,10 +971,19 @@ supplied in an author attribute via the <i>"Preset xxxx"</i> option.
 The default is <b>0</b>.
 <p>
 
-<li><b><code>Top level only = 0|1</code></b>
+<li><b><code>Expand default = 0|1|2|3</code></b>
 </br>
-If this flag is <b>1</b>, only top level messages are displayed in the search
-result page for threaded display. No replies are shown. The default is <b>0</b>.
+This setting determines how messages are displayed in threaded mode. Following
+options are possible:
+<ul>
+<li><b>0</b>: Only message heads are displayed, no replies. A "+" indicates which message
+has one or more replies.
+<li><b>1</b>: Messages and replies are displayed, but no message body.
+<li><b>2</b>: Messages and replies are displayed together with the first few lines of the
+message body. The number of lines is controlled by the <b><code>Summary lines</b></code> option.
+<li><b>3</b>: Messages and replies are displayed together with the full message body.
+</ul>
+The default is <b>1</b>.
 <p>
 
 <li><b><code>Line as link = 0|1</code></b>
