@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.481  2004/09/23 22:06:31  midas
+   Added error when non-existing attachments get submitted
+
    Revision 1.480  2004/09/22 19:20:57  midas
    Fixed superfluous spaces
 
@@ -19262,6 +19265,14 @@ void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
                   } else
                      ptmp += strlen(ptmp);
                } while (TRUE);
+
+               /* check attachment size */
+               if ((int) (p - string) == 0) {
+                  sprintf(str, loc("Attachment file <b>\"%s\"</b> empty or not found"), file_name);
+                  show_error(str);
+                  return;
+               }
+
                /* save attachment */
                if (file_name[0]) {
                   el_submit_attachment(lbs, file_name, string, (int) (p - string), full_name);
