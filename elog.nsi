@@ -33,7 +33,9 @@ Section "ELOG system (required)"
   File README.txt
 
   File elog*.c
-  File nt\release\elog*.exe
+  File nt\release\elogd.exe
+  File nt\release\elog.exe
+  File nt\release\elconv.exe
   File elogd.cfg
   File eloghelp_en.html
 
@@ -112,6 +114,7 @@ Section "Uninstall"
   Delete $INSTDIR\elogd.c
   Delete $INSTDIR\elog.exe
   Delete $INSTDIR\elogd.exe
+  Delete $INSTDIR\elconv.exe
   Delete $INSTDIR\elogd.cfg
 
   Delete $INSTDIR\eloghelp_en.html
