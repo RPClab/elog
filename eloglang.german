@@ -219,6 +219,7 @@ Threaded = Antwortkette
 
 #
 # New strings for V2.2.6
+ELOG Entries = ELOG Einträge
 Filters = Filter
 Mode = Modus
 Options = Optionen
