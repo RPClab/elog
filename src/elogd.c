@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.10  2003/02/14 22:07:56  midas
+  Made most HTML pages pass validator.w3.org
+
   Revision 1.9  2003/02/14 19:17:36  midas
   Implemented quick filters for free-form attributes (without an options list)
 
@@ -3769,7 +3772,7 @@ char str[256];
   if (getcfg("global", "charset", str))
     rsprintf("Content-Type: text/html;charset=%s\r\n", str);
   else
-    rsprintf("Content-Type: text/html\r\n");
+    rsprintf("Content-Type: text/html;charset=iso-8859-1\r\n");
 
   if (use_keepalive)
     {
@@ -3791,6 +3794,9 @@ void show_html_header(LOGBOOK *lbs, BOOL expires, char *title)
 char css[256], str[256];
 
   show_http_header(expires);
+
+  /* DOCTYPE */
+  rsprintf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n"); 
 
   /* page title */
   rsprintf("<html><head><title>%s</title>\n", title);
@@ -4073,7 +4079,7 @@ LBLIST clb, flb, nlb, lbl;
 
   /*---- title row ----*/
 
-  rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=0>\n");
+  rsprintf("<tr><td><table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
 
   /* left cell */
   rsprintf("<tr><td class=\"title1\">");
@@ -4097,7 +4103,7 @@ LBLIST clb, flb, nlb, lbl;
   if (getcfg(logbook, "Title image URL", str))
     rsprintf("<a href=\"%s\">\n", str);
 
-  rsprintf("<img border=0 src=\"elog.gif\">");
+  rsprintf("<img border=0 src=\"elog.gif\" alt=\"ELOG logo\">");
 
   if (getcfg(logbook, "Title image URL", str))
     rsprintf("</a>\n");
@@ -4753,12 +4759,12 @@ time_t now;
  
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Submit"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
-  rsprintf("</td></tr>\n\n");
+  rsprintf("</span></td></tr>\n\n");
 
   /*---- entry form ----*/
 
   /* table for two-column items */
-  rsprintf("<tr><td><table class=\"listframe\" width=100%% cellspacing=1>");
+  rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=1>");
 
   /* print required message if one of the attributes has it set */
   for (i= 0 ; i < lbs->n_attr ; i++)
@@ -4806,7 +4812,7 @@ time_t now;
       strcpy(str, ctime(&now));
     }
 
-  rsprintf("<tr><td nowrap width=10%% class=\"attribname\">%s:</td>", loc("Entry date"));
+  rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Entry date"));
   rsprintf("<td class=\"attribvalue\">%s</td></tr>\n", str);
 
   /* display attributes */
@@ -5213,7 +5219,7 @@ time_t now;
   rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Submit"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
-  rsprintf("</td></tr>\n\n");
+  rsprintf("</span></td></tr>\n\n");
 
   rsprintf("</td></tr></table>\n");
   rsprintf("</form></body></html>\r\n");
@@ -5241,7 +5247,7 @@ char   str[256], mode[256];
   rsprintf("<input type=submit value=\"%s\">\n", loc("Search"));
   rsprintf("<input type=reset value=\"%s\">\n", loc("Reset Form"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
-  rsprintf("</td></tr>\n\n");
+  rsprintf("</span></td></tr>\n\n");
 
   /*---- entry form ----*/
 
@@ -5272,7 +5278,7 @@ char   str[256], mode[256];
 
   rsprintf("</td></tr>\n");
 
-  rsprintf("<td class=\"form2\"><b>%s:</b><br>", loc("Options"));
+  rsprintf("<tr><td class=\"form2\"><b>%s:</b><br>", loc("Options"));
 
   if (!getcfg(lbs->name, "Number attachments", str) || atoi(str) > 0)
     rsprintf("<input type=checkbox name=attach value=1>%s<br>\n", loc("Show attachments"));
@@ -5312,9 +5318,9 @@ char   str[256], mode[256];
   rsprintf("<tr><td class=\"form2\"><b>%s:</b><br>", loc("Filters"));
 
   /* table for two-column items */
-  rsprintf("<table width=100%% cellspacing=0>\n");
+  rsprintf("<table width=\"100%%\" cellspacing=0>\n");
 
-  rsprintf("<tr><td nowrap width=10%%>%s:</td>", loc("Start date"));
+  rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>", loc("Start date"));
   rsprintf("<td><select name=\"m1\">\n");
 
   rsprintf("<option value=\"\">\n");
@@ -5359,8 +5365,6 @@ char   str[256], mode[256];
   rsprintf("</select>\n");
 
   rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y2\">", loc("Year"));
-  rsprintf("</td></tr>\n");
-
   rsprintf("</td></tr>\n");
 
   for (i=0 ; i<lbs->n_attr ; i++)
@@ -5434,7 +5438,7 @@ char str[256];
   rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
-  rsprintf("</td></tr>\n\n");
+  rsprintf("</span></td></tr>\n\n");
 
   /*---- entry form ----*/
 
@@ -5481,7 +5485,7 @@ char str[256];
 
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
-  rsprintf("</td></tr>\n\n");
+  rsprintf("</span></td></tr>\n\n");
 
   rsprintf("</table>\n\n");
   rsprintf("</body></html>\r\n");
@@ -5900,11 +5904,11 @@ int  i;
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
   rsprintf("<input type=hidden name=config value=\"%s\">\n", user);
 
-  rsprintf("</td></tr>\n\n");
+  rsprintf("</span></td></tr>\n\n");
 
   /* table for two-column items */
   rsprintf("<tr><td class=\"form2\">");
-  rsprintf("<table width=100%% cellspacing=0>\n");
+  rsprintf("<table width=\"100%%\" cellspacing=0>\n");
 
   /*---- if admin user, show user list ----*/
 
@@ -5912,7 +5916,7 @@ int  i;
       strstr(str, getparam("unm")) != 0)
     {
     rsprintf("<input type=hidden name=admin value=1>\n");
-    rsprintf("<tr><td nowrap width=10%%>%s:</td>\n", loc("Select user"));
+    rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Select user"));
     rsprintf("<td><select name=cfg_user onChange=\"document.form1.submit()\">\n");
 
     for (i=0 ; ; i++)
@@ -5935,7 +5939,7 @@ int  i;
 
   /*---- entry form ----*/
 
-  rsprintf("<tr><td nowrap width=10%%>%s:</td>\n", loc("Login name"));
+  rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Login name"));
 
   if (get_user_line(lbs->name, user, password, full_name, user_email, email_notify) != 1)
     sprintf(str, loc("User [%s] has been deleted"), user);
@@ -5944,11 +5948,11 @@ int  i;
 
   rsprintf("<td><input type=text size=40 name=new_user_name value=\"%s\"></td></tr>\n", str);
 
-  rsprintf("<tr><td nowrap width=10%%>%s:</td>\n", loc("Full name"));
+  rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Full name"));
   rsprintf("<td><input type=text size=40 name=new_full_name value=\"%s\"></tr>\n", 
             full_name);
 
-  rsprintf("<tr><td nowrap width=10%%>Email:</td>\n");
+  rsprintf("<tr><td nowrap width=\"10%%\">Email:</td>\n");
   rsprintf("<td><input type=text size=40 name=new_user_email value=\"%s\">&nbsp;&nbsp;&nbsp;&nbsp;\n", 
             user_email);
 
@@ -5974,7 +5978,7 @@ int  i;
   /* hidden field for password */
   rsprintf("<input type=hidden name=hpwd value=\"%s\">\n", password);
   
-  rsprintf("</td></tr></table>\n\n");
+  rsprintf("</span></td></tr></table>\n\n");
   rsprintf("</body></html>\r\n");
 }
 
@@ -6000,31 +6004,31 @@ void show_new_user_page(LOGBOOK *lbs)
 
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
-  rsprintf("</td></tr>\n\n");
+  rsprintf("</span></td></tr>\n\n");
 
   /* table for two-column items */
   rsprintf("<tr><td class=\"form2\">");
-  rsprintf("<table width=100%% cellspacing=0>\n");
+  rsprintf("<table width=\"100%%\" cellspacing=0>\n");
 
   /*---- entry form ----*/
 
-  rsprintf("<tr><td nowrap width=10%%>%s:</td>\n", loc("Login name"));
+  rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Login name"));
   rsprintf("<td><input type=text size=40 name=new_user_name> <i>(%s)</i></td></tr>\n", 
             loc("name may not contain blanks"));
 
-  rsprintf("<tr><td nowrap width=10%%>%s:</td>\n", loc("Full name"));
+  rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Full name"));
   rsprintf("<td><input type=text size=40 name=new_full_name></tr>\n");
 
-  rsprintf("<tr><td nowrap width=10%%>Email:</td>\n");
+  rsprintf("<tr><td nowrap width=\"10%%\">Email:</td>\n");
   rsprintf("<td><input type=text size=40 name=new_user_email></tr>\n");
 
   rsprintf("<tr><td colspan=2>%s:&nbsp;\n", loc("Enable email notifications"));
   rsprintf("<input type=checkbox checked name=email_notify value=all></tr>\n");
 
-  rsprintf("<tr><td nowrap width=10%%>%s:</td>\n", loc("Password"));
+  rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Password"));
   rsprintf("<td><input type=password size=40 name=newpwd>\n");
 
-  rsprintf("<tr><td nowrap width=10%%>%s:</td>\n", loc("Retype password"));
+  rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Retype password"));
   rsprintf("<td><input type=password size=40 name=newpwd2>\n");
 
   rsprintf("</td></tr></table></td></tr>\n");
@@ -7056,7 +7060,7 @@ char ref[256], str[256];
 char list[MAX_N_LIST][NAME_LENGTH];
 
   rsprintf("<tr><td class=\"menuframe\">\n");
-  rsprintf("<table width=100%% border=0 cellpadding=0 cellspacing=0\n");
+  rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0\n");
 
   rsprintf("<tr>\n");
 
@@ -7179,7 +7183,7 @@ char list[MAX_N_LIST][NAME_LENGTH];
         
         if (attr_options[i][0][0] == 0)
           {
-          rsprintf("<input type=text onChange=\"document.form1.submit()\" name=%s value=%s>\n",
+          rsprintf("<input type=text onChange=\"document.form1.submit()\" name=\"%s\" value=\"%s\">\n",
                     list[index], getparam(list[index]));
           }
         else
@@ -7294,7 +7298,7 @@ char ref[256];
     rsprintf("<a href=\"%s\">%s</a>\n", ref, loc("All"));
     }
 
-  rsprintf("</td></tr>\n");
+  rsprintf("</span></td></tr>\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -8115,7 +8119,7 @@ LOGBOOK *lbs_cur;
     else
       rsprintf("<center><b>Error: file <i>\"%s\"</i> not found</b></center>", file_name);
 
-    rsprintf("</td></tr>");
+    rsprintf("</span></td></tr>");
     }
 
   /*---- display filters ----*/
@@ -8130,11 +8134,11 @@ LOGBOOK *lbs_cur;
   if (disp_filter)
     {
     rsprintf("<tr><td class=\"listframe\">\n");
-    rsprintf("<table width=100%% border=0 cellpadding=0 cellspacing=1>\n");
+    rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=1>\n");
 
     if (*getparam("m1") || *getparam("y1") || *getparam("d1"))
       {
-      rsprintf("<tr><td nowrap width=10%% class=\"attribname\">%s:</td>", loc("Start date"));
+      rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Start date"));
       rsprintf("<td class=\"attribvalue\">%s %d, %d</td></tr>", mname[m1-1], d1, y1);
       }
 
@@ -8153,7 +8157,7 @@ LOGBOOK *lbs_cur;
       ltime -= 3600*24;
       memcpy(&tms, localtime(&ltime), sizeof(struct tm));
 
-      rsprintf("<tr><td nowrap width=10%% class=\"attribname\">%s:</td>", loc("End date"));
+      rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("End date"));
       rsprintf("<td class=\"attribvalue\">%s %d, %d</td></tr>",
                 mname[tms.tm_mon], tms.tm_mday, tms.tm_year + 1900);
       }
@@ -8162,7 +8166,7 @@ LOGBOOK *lbs_cur;
       {
       if (*getparam(attr_list[i]))
         {
-        rsprintf("<tr><td nowrap width=10%% class=\"attribname\">%s:</td>", 
+        rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", 
                   attr_list[i]);
         rsprintf("<td class=\"attribvalue\">%s</td></tr>", getparam(attr_list[i]));
         }
@@ -8170,7 +8174,7 @@ LOGBOOK *lbs_cur;
 
     if (*getparam("subtext"))
       {
-      rsprintf("<tr><td nowrap width=10%% class=\"attribname\">%s:</td>", loc("Text"));
+      rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Text"));
       rsprintf("<td class=\"attribvalue\"><span style=\"color:black;background-color:#ffff66\">%s</span></td></tr>",
                 getparam("subtext"));
       }
@@ -8204,7 +8208,7 @@ LOGBOOK *lbs_cur;
   /*---- table titles ----*/
 
   /* overall listing table */
-  rsprintf("<tr><td><table class=\"listframe\" width=100%% cellspacing=1>\n");
+  rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=1>\n");
 
   size = printable ? 2 : 3;
 
@@ -8288,7 +8292,7 @@ LOGBOOK *lbs_cur;
       else if (strcmp(getparam("rsort"), disp_attr[i]) == 0)
         strcpy(img, "<img align=top src=\"down.gif\">");
 
-      rsprintf("<td class=\"listtitle\"><a href=\"%s\">%s</a></b>%s</td>\n", 
+      rsprintf("<td class=\"listtitle\"><a href=\"%s\">%s</a>%s</td>\n", 
                 ref, disp_attr[i], img);
       }
 
@@ -8408,7 +8412,7 @@ LOGBOOK *lbs_cur;
       }
     }
 
-  rsprintf("</td></tr></table></td></tr>\n");
+  rsprintf("</table></td></tr>\n");
 
   if (n_display)
     rsprintf("<input type=hidden name=nsel value=%d>\n", n_display);
@@ -8465,7 +8469,7 @@ LOGBOOK *lbs_cur;
     /* add little logo */
     rsprintf("<center><a class=\"bottomlink\" href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></center>", VERSION);
 
-  rsprintf("</body></html>\r\n");
+  rsprintf("</form></body></html>\r\n");
 
   free(msg_list);
 }
@@ -9034,7 +9038,7 @@ void show_elog_message(LOGBOOK *lbs, char *dec_path, char *command)
 int    size, i, j, n, n_log, status, fh, length, message_error, index;
 int    message_id, orig_message_id;
 char   str[1000], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
-char   date[80], text[TEXT_SIZE], menu_str[1000], cmd[256],
+char   date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], cmd_enc[256],
        orig_tag[80], reply_tag[256], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
 char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80], admin_user[80],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH], *p;
@@ -9247,7 +9251,7 @@ BOOL   first;
   /*---- menu buttons ----*/
 
   rsprintf("<tr><td class=\"menuframe\">\n");
-  rsprintf("<table width=100%% border=0 cellpadding=0 cellspacing=0>\n");
+  rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
   rsprintf("<tr><td class=\"menu1\">\n");
 
   n = strbreak(menu_str, menu_item, MAX_N_LIST);
@@ -9269,12 +9273,15 @@ BOOL   first;
           strcpy(ref, lbk_list[j]);
           url_encode(ref, sizeof(ref));
 
+          strcpy(cmd_enc, loc(cmd));
+          url_encode(cmd_enc, sizeof(cmd_enc));
+
           if (equal_ustring(cmd, loc("Copy to")))
             rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&destc=%s\">%s \"%s\"</a>&nbsp|\n",
-                      lbs->name_enc, message_id, loc(cmd), ref, loc(cmd), lbk_list[j]);
+                      lbs->name_enc, message_id, cmd_enc, ref, loc(cmd), lbk_list[j]);
           else
             rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&destm=%s\">%s \"%s\"</a>&nbsp|\n",
-                      lbs->name_enc, message_id, loc(cmd), ref, loc(cmd), lbk_list[j]);
+                      lbs->name_enc, message_id, cmd_enc, ref, loc(cmd), lbk_list[j]);
           }
         }
       else
@@ -9293,12 +9300,16 @@ BOOL   first;
 
           strlcpy(ref, str, sizeof(ref));
           url_encode(ref, sizeof(ref));
+
+          strcpy(cmd_enc, loc(cmd));
+          url_encode(cmd_enc, sizeof(cmd_enc));
+
           if (equal_ustring(cmd, "Copy to"))
-            rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&destc=%s\">%s \"%s\"</a>&nbsp|\n",
-                      lbs->name_enc, message_id, loc(cmd), ref, loc(cmd), str);
+            rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&amp;destc=%s\">%s \"%s\"</a>&nbsp|\n",
+                      lbs->name_enc, message_id, cmd_enc, ref, loc(cmd), str);
           else
-            rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&destm=%s\">%s \"%s\"</a>&nbsp|\n",
-                      lbs->name_enc, message_id, loc(cmd), ref, loc(cmd), str);
+            rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&amp;destm=%s\">%s \"%s\"</a>&nbsp|\n",
+                      lbs->name_enc, message_id, cmd_enc, ref, loc(cmd), str);
           }
         }
       }
@@ -9321,15 +9332,15 @@ BOOL   first;
   if (!getcfg(lbs->name, "Enable browsing", str) ||
        atoi(str) == 1)
     {
-    rsprintf("<td width=10%% nowrap align=right>\n");
+    rsprintf("<td width=\"10%%\" nowrap align=right>\n");
 
-    rsprintf("<input type=image name=cmd_first border=0 alt=\"%s\" src=\"first.gif\">\n",
+    rsprintf("<input type=image name=cmd_first alt=\"%s\" src=\"first.gif\">\n",
              loc("First entry"));
-    rsprintf("<input type=image name=cmd_previous border=0 alt=\"%s\" src=\"previous.gif\">\n",
+    rsprintf("<input type=image name=cmd_previous alt=\"%s\" src=\"previous.gif\">\n",
              loc("Previous entry"));
-    rsprintf("<input type=image name=cmd_next border=0 alt=\"%s\" src=\"next.gif\">\n",
+    rsprintf("<input type=image name=cmd_next alt=\"%s\" src=\"next.gif\">\n",
              loc("Next entry"));
-    rsprintf("<input type=image name=cmd_last border=0 alt=\"%s\" src=\"last.gif\">\n",
+    rsprintf("<input type=image name=cmd_last alt=\"%s\" src=\"last.gif\">\n",
              loc("Last entry"));
 
     rsprintf("</td></tr>\n");
@@ -9374,13 +9385,13 @@ BOOL   first;
     else
       rsprintf("<center><b>Error: file <i>\"%s\"</i> not found</b></center>", file_name);
 
-    rsprintf("</td></tr>");
+    rsprintf("</span></td></tr>");
     }
 
   /*---- message ----*/
 
   /* overall message table */
-  rsprintf("<tr><td><table class=\"listframe\" width=100%% cellspacing=1>\n");
+  rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=1>\n");
 
   if (message_error == EL_EMPTY)
     rsprintf("<tr><td class=\"errormsg\" colspan=2>%s</td></tr>\n", loc("Logbook is empty"));
@@ -9435,7 +9446,7 @@ BOOL   first;
 
     /*---- display message ID ----*/
 
-    rsprintf("<tr><td nowrap width=10%% class=\"attribname\">%s:</td><td class=\"attribvalue\">%d</td></tr>\n\n",
+    rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td><td class=\"attribvalue\">%d</td></tr>\n\n",
              loc("Message ID"), message_id);
 
     /*---- display date ----*/
@@ -9461,11 +9472,11 @@ BOOL   first;
       mktime(&ts);
       strftime(str, sizeof(str), format, &ts);
 
-      rsprintf("<tr><td nowrap width=10%% class=\"attribname\">%s:</td><td class=\"attribvalue\">%s\n\n",
+      rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td><td class=\"attribvalue\">%s\n\n",
                loc("Entry date"), str);
       }
     else
-      rsprintf("<tr><td nowrap width=10%% class=\"attribname\">%s:</td><td class=\"attribvalue\">%s\n\n",
+      rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td><td class=\"attribvalue\">%s\n\n",
                loc("Entry date"), date);
 
     for (i=0 ; i<lbs->n_attr ; i++)
@@ -9483,14 +9494,14 @@ BOOL   first;
 
       if (orig_tag[0])
         {
-        rsprintf("<tr><td nowrap width=10%% class=\"attribname\">");
+        rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">");
         sprintf(ref, "%s", orig_tag);
         rsprintf("%s:</td><td class=\"attribvalue\">", loc("In reply to"));
         rsprintf("<a href=\"%s\">%s</a></td></tr>\n", ref, orig_tag);
         }
       if (reply_tag[0])
         {
-        rsprintf("<tr><td nowrap width=10%% class=\"attribname\">");
+        rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">");
         rsprintf("%s:</td><td class=\"attribvalue\">", loc("Reply to this"));
 
         p = strtok(reply_tag, ",");
@@ -9514,7 +9525,7 @@ BOOL   first;
     for (i=0 ; i<lbs->n_attr ; i++)
       {
       sprintf(lattr, "l%s", attr_list[i]);
-      rsprintf("<tr><td nowrap width=10%% class=\"attribname\">");
+      rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">");
 
       if (!getcfg(lbs->name, "Filtered browsing", str) ||
           atoi(str) == 1)
@@ -9551,7 +9562,6 @@ BOOL   first;
         }
       }
 
-    rsprintf("</td></tr>\n");
     rsputs("</table></td></tr>\n");
 
     /*---- message text ----*/
@@ -9599,9 +9609,9 @@ BOOL   first;
         url_encode(ref, sizeof(ref)); /* for file names with special characters like "+" */
 
         /* overall table */
-        rsprintf("<tr><td><table class=\"listframe\" width=100%% cellspacing=1>\n");
+        rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=1>\n");
 
-        rsprintf("<tr><td nowrap width=10%% class=\"attribname\">%s %d:</td>\n", 
+        rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s %d:</td>\n", 
                  loc("Attachment"), index+1);
         
         rsprintf("<td class=\"attribvalue\"><a href=\"%s\">%s</a>\n",
@@ -9673,7 +9683,7 @@ BOOL   first;
     }
 
   /* overall table */
-  rsprintf("</td></tr></table></td></tr>\n");
+  rsprintf("</table>\n");
 
   if (getcfg(lbs->name, "bottom text", str))
     {
@@ -9708,7 +9718,7 @@ BOOL   first;
     /* add little logo */
     rsprintf("<center><a class=\"bottomlink\" href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></center>", VERSION);
 
-  rsprintf("</body></html>\r\n");
+  rsprintf("</form></body></html>\r\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -11886,7 +11896,7 @@ redir:
       if (return_length != -1)
         {
         if (return_length == 0)
-          return_length = strlen_retbuf+1;
+          return_length = strlen_retbuf;
 
         if (keep_alive && strstr(return_buffer, "Content-Length") == NULL ||
             strstr(return_buffer, "Content-Length") >
