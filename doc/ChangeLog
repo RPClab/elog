@@ -1,9 +1,12 @@
-Version 2.3.6, released April xxx, 2003
-=======================================
+Version 2.3.6, released April 23rd, 2003
+========================================
 
 - Eliminated WEB_BUFFER_SIZE, made memory allocation dynamically
 - Fixed bug that attachments were deleted on reply
 - Added flag "Hidden = 0|1"
+- Added warning if maximum number of attachments reached
+- Fixed bug: Upon login on a logbook with guest access, one got
+  back to the "not logged in" page if username or password was wrong
 
 Version 2.3.5, released April 9th, 2003
 =======================================

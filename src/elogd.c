@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.92  2003/04/23 10:40:21  midas
+  Version 2.3.6
+
   Revision 1.91  2003/04/23 09:59:46  midas
   Fixed bug that administrator could not change passwords of other users
 
@@ -794,7 +797,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.3.5"
+#define VERSION "2.3.6"
 
 #include <stdio.h>
 #include <sys/types.h>

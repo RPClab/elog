@@ -270,3 +270,4 @@ Host = Computer
 Your ELOG account has been activated = Ihr ELOG Konto wurde aktiviert
 Activate = Aktivieren
 Maximum number of attachments reached = Maximale Anzahl von Anhängen erreicht
+Invalid user name <i>"%s"</i> = Falscher Benutzer-Name <i>"%s"</i>
