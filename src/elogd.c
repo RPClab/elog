@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.258  2004/02/17 20:09:36  midas
+   Added 'debug' facility for synchronize
+
    Revision 1.257  2004/02/17 19:49:33  midas
    Fixed problem with date attributes in conjunction with conditional attributes
 
@@ -8644,12 +8647,16 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
    }
    p = strstr(text, "ELOG HTTP ");
    if (!p) {
+      if (isparam("debug"))
+         rsputs(text);
       sprintf(error_str, loc("Remote server is not an ELOG server"));
       free(text);
       return -1;
    }
    version = atoi(p + 10) * 100 + atoi(p + 12) * 10 + atoi(p + 14);
    if (version < 250) {
+      if (isparam("debug"))
+         rsputs(text);
       memset(str, 0, sizeof(str));
       strncpy(str, p + 10, 5);
       sprintf(error_str, loc("Incorrect remote ELOG server version %s"), str);
@@ -8659,6 +8666,9 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
 
    p = strstr(text, "Location: ");
    if (p) {
+      if (isparam("debug"))
+         rsputs(text);
+
       if (strstr(text, "?wusr="))
          sprintf(error_str, loc("User \"%s\" has no access to remote logbook"),
                  getparam("unm"));
@@ -8674,6 +8684,8 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
 
    p = strstr(text, "\r\n\r\n");
    if (!p) {
+      if (isparam("debug"))
+         rsputs(text);
       sprintf(error_str, loc("Invalid HTTP header"));
       free(text);
       return -1;
@@ -8706,6 +8718,8 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
    }
 
    if (n == 0) {
+      if (isparam("debug"))
+         rsputs(text);
       if (strstr(text, "Login"))
          sprintf(error_str, loc("No user name supplied to access remote logbook"));
       else
@@ -9031,6 +9045,9 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    } else
       sprintf(error_str, "Error transmitting message\n");
 
+   if (error_str[0] && isparam("debug"))
+      rsputs(text);
+
    free(text);
 
    if (error_str[0])
@@ -9057,6 +9074,8 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
    retrieve_url(str, &message);
    p = strstr(message, "\r\n\r\n");
    if (p == NULL) {
+      if (isparam("debug"))
+         rsputs(message);
       free(message);
       sprintf(error_str, loc("Cannot receive \"%s\""), str);
       return -1;
@@ -9065,6 +9084,8 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
 
    /* check for correct ID */
    if (atoi(p + 8) != message_id) {
+      if (isparam("debug"))
+         rsputs(message);
       free(message);
       sprintf(error_str, loc("Received wrong entry id \"%d\""), atoi(p + 8));
       return -1;
