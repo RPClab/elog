@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.607  2005/03/29 13:16:47  ritt
+   Subsittute ' ' in attachment file names by '_'
+
    Revision 1.606  2005/03/29 11:52:59  ritt
    Changed is_ascii() to accept umlaute
 
@@ -1936,12 +1939,24 @@ Do the same including '/' characters
 /*-------------------------------------------------------------------*/
 
 void btou(char *str)
-/* convert all blanks and dots to underscores in a string */
+/* convert all blanks to underscores in a string */
 {
    int i;
 
    for (i = 0; i < (int) strlen(str); i++)
-      if (str[i] == ' ' || str[i] == '.')
+      if (str[i] == ' ')
+         str[i] = '_';
+}
+
+/*-------------------------------------------------------------------*/
+
+void dtou(char *str)
+/* convert all dots to underscores in a string */
+{
+   int i;
+
+   for (i = 0; i < (int) strlen(str); i++)
+      if (str[i] == '.')
          str[i] = '_';
 }
 
@@ -8057,6 +8072,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          strcpy(ua, attr_list[i]);
          btou(ua);
 
+         /* convert dots to underscores */
+         dtou(ua);
+
          if (attr_flags[i] & AF_MULTI) {
             rsprintf("  if (\n");
             for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
@@ -8116,6 +8134,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          /* convert blanks to underscores */
          strcpy(ua, attr_list[i]);
          btou(ua);
+         /* convert dots to underscores */
+         dtou(ua);
 
          rsprintf("  for (var i=0 ; i<document.form1.%s.value.length ; i++)\n", ua);
          rsprintf("    if (document.form1.%s.value.charAt(i) != \",\" &&\n", ua);
@@ -8316,6 +8336,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       input_maxlen = NAME_LENGTH;
       strcpy(ua, attr_list[index]);
       btou(ua);
+      dtou(ua);
 
       sprintf(str, "Format %s", attr_list[index]);
       if (getcfg(lbs->name, str, format, sizeof(format))) {
@@ -10592,7 +10613,7 @@ void show_new_user_page(LOGBOOK * lbs)
 
    /*---- header ----*/
 
-   show_html_header(NULL, TRUE, loc("ELOG new user"), TRUE, FALSE);
+   show_html_header(lbs, TRUE, loc("ELOG new user"), TRUE, FALSE);
    rsprintf("<body><center><p><p>\n");
    show_top_text(lbs);
    rsprintf("<form name=form1 method=\"GET\" action=\"\">\n\n");
@@ -16888,6 +16909,7 @@ void submit_elog(LOGBOOK * lbs)
    for (i = 0; i < lbs->n_attr; i++) {
       strcpy(ua, attr_list[i]);
       btou(ua);
+      dtou(ua);
 
       if (attr_flags[i] & AF_REQUIRED) {
          if (attr_flags[i] & AF_DATE) {
@@ -16940,6 +16962,7 @@ void submit_elog(LOGBOOK * lbs)
       if (attr_flags[index] & AF_NUMERIC) {
          strcpy(ua, attr_list[index]);
          btou(ua);
+         dtou(ua);
          strlcpy(str, getparam(ua), sizeof(str));
 
          for (j = 0; i < (int) strlen(str); i++)
@@ -16965,6 +16988,7 @@ void submit_elog(LOGBOOK * lbs)
    for (i = 0; i < n_attr; i++) {
       strcpy(ua, attr_list[i]);
       btou(ua);
+      dtou(ua);
       if (attr_flags[i] & AF_MULTI)
          strcat(ua, "_0");
 
@@ -17030,6 +17054,7 @@ void submit_elog(LOGBOOK * lbs)
 
       strcpy(ua, attr_list[i]);
       btou(ua);
+      dtou(ua);
 
       if (attr_flags[i] & AF_MULTI) {
 
@@ -17211,6 +17236,7 @@ void submit_elog(LOGBOOK * lbs)
 
             strcpy(ua, attr_list[index]);
             btou(ua);
+            dtou(ua);
 
             if (index < n_attr) {
                strcpy(str, "Email ");
@@ -20584,6 +20610,9 @@ void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
                   *strchr(p, '\"') = 0;
                /* set attachment filename */
                strlcpy(file_name, p, sizeof(file_name));
+               
+               /* remove spaces */
+               btou(file_name);
                if (file_name[0]) {
                   if (verbose)
                      eprintf("decode_post: Found attachment %s\n", file_name);
