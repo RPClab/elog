@@ -6,8 +6,11 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.592  2005/03/21 16:22:31  ritt
+   Fixed typo
+
    Revision 1.591  2005/03/21 16:16:52  ritt
-   Version 2.8.1-1
+   Version 2.5.8-1
 
    Revision 1.590  2005/03/21 07:37:43  ritt
    Fixed warnings under cygwin
