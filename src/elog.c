@@ -3,9 +3,12 @@
   Name:         elog.c
   Created by:   Stefan Ritt
 
-  Contents:     Electronic logbook utility   
+  Contents:     Electronic logbook utility
 
   $Log$
+  Revision 1.23  2005/01/15 17:05:09  midas
+  Changed comment
+
   Revision 1.22  2004/11/02 16:46:55  midas
   Added -H flag for HTML submit
 
