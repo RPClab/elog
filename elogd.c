@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.92  2002/11/04 16:20:26  midas
+  Made 'allow <commdn> = <user>' work in localized versions
+
   Revision 2.91  2002/11/04 12:56:25  midas
   Fixed bug selecting messages in other languages
 
@@ -377,7 +380,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.2.1"
+#define VERSION "2.2.2"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -1363,6 +1366,31 @@ static char old_language[256];
       }
 
   printf("Language error: string \"%s\" not found for language \"%s\"\n", orig, language);
+
+  return orig;
+}
+
+/*-------------------------------------------------------------------*/
+
+/* translate back from localized string to english */
+
+char *unloc(char *orig)
+{
+int n;
+
+  if (!locbuffer)
+    return orig;
+
+  /* search string and return translation */
+  for (n = 0; ptrans[n] ; n++)
+    if (strcmp(orig, ptrans[n]) == 0)
+      {
+      if (*porig[n])
+        return porig[n];
+      return orig;
+      }
+
+  printf("Language error: string \"%s\" not found\n", orig);
 
   return orig;
 }
@@ -2668,7 +2696,8 @@ int  size, status;
 /*------------------------------------------------------------------*/
 
 INT el_delete_message(LOGBOOK *lbs, int message_id, BOOL delete_attachments,
-                      char attachment[MAX_ATTACHMENTS][256], BOOL delete_bw_ref)
+                      char attachment[MAX_ATTACHMENTS][256], BOOL delete_bw_ref,
+                      BOOL delete_reply_to)
 /********************************************************************\
 
   Routine: el_delete_message
@@ -2681,6 +2710,7 @@ INT el_delete_message(LOGBOOK *lbs, int message_id, BOOL delete_attachments,
       BOOL    delete_attachments   Delete attachments if TRUE
       char    attachment    Used to return attachments (on move)
       BOOL    delete_bw_ref If true, delete backward references
+      BOOL    delete_reply_to If true, delete replies to this message
 
   Output:
     <none>
@@ -2724,7 +2754,7 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
     /* file might have been edited, rebuild index */
     el_build_index(lbs, TRUE);
     return el_delete_message(lbs, message_id, delete_attachments,
-                             attachment, delete_bw_ref);
+                             attachment, delete_bw_ref, delete_reply_to);
     }
 
   /* check for correct ID */
@@ -2835,14 +2865,14 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
       lb_list[i].el_index = lbs->el_index;
 
   /* delete also replies to this message */
-  if (reply_to[0])
+  if (delete_reply_to && reply_to[0])
     {
     p = reply_to;
     if (isdigit(*p))
       do
         {
         if (atoi(p))
-          el_delete_message(lbs, atoi(p), TRUE, NULL, FALSE);
+          el_delete_message(lbs, atoi(p), TRUE, NULL, FALSE, TRUE);
 
         while (*p && isdigit(*p))
           p++;
@@ -4045,7 +4075,7 @@ int  i, n;
     }
 
   /* check for allow */
-  sprintf(str, "Allow %s", command);
+  sprintf(str, "Allow %s", unloc(command));
   if (!getcfg(lbs->name, str, users))
     return TRUE;
 
@@ -4090,7 +4120,7 @@ char   str[80], date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
 
 void show_elog_new(LOGBOOK *lbs, int message_id, BOOL bedit)
 {
-int    i, j, n, index, size, width, fh, length;
+int    i, j, n, index, size, width, height, fh, length;
 char   str[1000], preset[1000], *p, star[80], comment[10000];
 char   list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256];
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
@@ -4464,6 +4494,11 @@ time_t now;
   if (message_id && !bedit)
     width += 2;
 
+  /* set textarea height */
+  height = 20;
+  if (getcfg(lbs->name, "Message height", str))
+    height = atoi(str);
+
   rsprintf("<tr><td colspan=2 bgcolor=#FFFFFF>\n");
 
   if (getcfg(lbs->name, "Message comment", comment) && !bedit && !message_id)
@@ -4474,7 +4509,7 @@ time_t now;
 
   if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1)
     {
-    rsprintf("<textarea rows=20 cols=%d wrap=hard name=Text>", width);
+    rsprintf("<textarea rows=%d cols=%d wrap=hard name=Text>", height, width);
 
     if (message_id)
       {
@@ -5551,7 +5586,7 @@ char   str[256], in_reply_to[80], reply_to[256];
       if (message_id)
         {
         /* delete message */
-        status = el_delete_message(lbs, message_id, TRUE, NULL, TRUE);
+        status = el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
         if (status != EL_SUCCESS)
           {
           sprintf(str, "%s = %d", loc("Error deleting message: status"), status);
@@ -5576,7 +5611,7 @@ char   str[256], in_reply_to[80], reply_to[256];
           {
           sprintf(str, "s%d", i);
           if (isparam(str))
-            status = el_delete_message(lbs, atoi(getparam(str)), TRUE, NULL, TRUE);
+            status = el_delete_message(lbs, atoi(getparam(str)), TRUE, NULL, TRUE, TRUE);
           }
 
         redirect(getparam("lastcmd"));
@@ -7545,7 +7580,7 @@ MSG_LIST *msg_list;
 /*------------------------------------------------------------------*/
 
 int compose_mail(LOGBOOK *lbs, char *mail_to, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], 
-                 char *mail_param, int *n_mail)
+                 char *mail_param, int *n_mail, int old_mail)
 {
 int    j;
 char   str[256], mail_from[256], mail_text[TEXT_SIZE+1000], smtp_host[256], subject[256];
@@ -7565,7 +7600,11 @@ char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
   else
     sprintf(mail_from, "ELog@%s", host_name);
 
-  sprintf(mail_text, loc("A new entry has been submitted on %s"), host_name);
+  if (old_mail)
+    sprintf(mail_text, loc("A old entry has been updated on %s"), host_name);
+  else
+    sprintf(mail_text, loc("A new entry has been submitted on %s"), host_name);
+
   sprintf(mail_text+strlen(mail_text), "\r\n\r\n");
 
   sprintf(mail_text+strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), lbs->name);
@@ -7586,7 +7625,12 @@ char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
     strsubst(subject, slist, svalue, j);
     }
   else
-    strcpy(subject, "New ELOG entry");
+    {
+    if (old_mail)
+      strcpy(subject, "Updated ELOG entry");
+    else
+      strcpy(subject, "New ELOG entry");
+    }
 
   /* try to get URL from referer */
 
@@ -7644,7 +7688,7 @@ char   str[256], file_name[256], error[1000], date[80],
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
 char   att_file[MAX_ATTACHMENTS][256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
-int    i, j, n, missing, first, index, n_mail, suppress, message_id;
+int    i, j, n, missing, first, index, n_mail, suppress, message_id, resubmit_orig;
 
   /* check for required attributs */
   missing = 0;
@@ -7751,16 +7795,18 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id;
   reply_to[0] = 0;
   in_reply_to[0] = 0;
   date[0] = 0;
+  resubmit_orig = 0;
 
   if (*getparam("edit") &&
       *getparam("resubmit") &&
       atoi(getparam("resubmit")) == 1)
     {
     /* delete old message */
-    el_delete_message(lbs, atoi(getparam("orig")), FALSE, att_file, TRUE);
+    resubmit_orig = atoi(getparam("orig"));
+    el_delete_message(lbs, resubmit_orig, FALSE, att_file, TRUE, FALSE);
     unsetparam("orig");
-    strcpy(reply_to, "");
-    strcpy(in_reply_to, "");
+    strcpy(reply_to, "<keep>");
+    strcpy(in_reply_to, "<keep>");
     date[0] = 0;
     }
   else
@@ -7789,6 +7835,11 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id;
     strcat(str, loc("Please check that it exists and elogd has write access"));
     show_error(str);
     return;
+    }
+
+  /* correct links for resubmitted messages */
+  if (resubmit_orig)
+    {
     }
 
   /*---- email notifications ----*/
@@ -7835,7 +7886,7 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id;
             printf("\n%s to %s\n\n", str, list);
 
           for (i=0 ; i<n ; i++)
-            if (!compose_mail(lbs, mail_list[i], message_id, attrib, mail_param, &n_mail))
+            if (!compose_mail(lbs, mail_list[i], message_id, attrib, mail_param, &n_mail, *getparam("edit")))
               return;
           }
         }
@@ -7849,7 +7900,7 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id;
         get_user_line(lbs->name, user, NULL, NULL, user_email, email_notify);
 
         if (email_notify[0])
-          if (!compose_mail(lbs, user_email, message_id, attrib, mail_param, &n_mail))
+          if (!compose_mail(lbs, user_email, message_id, attrib, mail_param, &n_mail, *getparam("edit")))
             return;
         }
       }
@@ -7988,7 +8039,7 @@ LOGBOOK *lbs_dest;
     /* delete original message for move */
     if (move)
       {
-      el_delete_message(lbs, source_id, TRUE, NULL, TRUE);
+      el_delete_message(lbs, source_id, TRUE, NULL, TRUE, TRUE);
 
       /* check if this was the last message */
       source_id = el_search_message(lbs, EL_NEXT, source_id, FALSE);
