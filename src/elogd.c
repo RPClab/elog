@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.85  2003/04/16 19:17:35  midas
+  Added flag 'Hidden'
+
   Revision 1.84  2003/04/15 10:58:09  midas
   Added 'hide from selection' flag
 
@@ -4373,6 +4376,9 @@ LBLIST clb, flb, nlb, lbl;
       for (i=0 ; i<n_lb ; i++)
         {
         if (level == 0 && clb[i].subgroup)   // check for subgroup
+          continue;
+
+        if (getcfg(clb[i].name, "Hidden", str) && atoi(str) == 1)
           continue;
 
         strlcpy(str, clb[i].name, sizeof(str));
@@ -11004,7 +11010,7 @@ char str[10000];
     if (!lb_list[i].name[0])
       break;
 
-    if (!getcfg(lb_list[i].name, "Hide from selection", str) || atoi(str) == 0)
+    if (!getcfg(lb_list[i].name, "Hidden", str) || atoi(str) == 0)
       {
       rsprintf("<tr><td class=\"attribname\"><a href=\"%s/\">%s</a></td>", lb_list[i].name_enc, lb_list[i].name);
 
