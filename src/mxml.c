@@ -9,13 +9,13 @@
    reading XML files. For writing an XML file from scratch, following
    functions can be used:
 
-   writer = mxml_open_document(file_name);
+   writer = mxml_open_file(file_name);
      mxml_start_element(writer, name);
      mxml_write_attribute(writer, name, value);
      mxml_write_value(writer, value);
      mxml_end_element(writer); 
      ...
-   mxml_close_document(writer);
+   mxml_close_file(writer);
 
    To read an XML file, the function
 
