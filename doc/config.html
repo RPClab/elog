@@ -365,7 +365,11 @@ defined. Typical values are "<I>Author</I>", "<I>Subject</I>" or "<I>Type</I>".
 Usually, an text field is used for an attribute, where the user can fill in
 text of up to 100 characters. If instead a drop-down box with preset items is
 better for a given attribute, these items can be defined with this statement.
-Up to 100 items can be defined, separated by commas.
+Up to 100 items can be defined, separated by commas. To add an option including
+a comma, encose it in quotations marks like<p>
+<pre>
+Options town = San Francisco, "Paris, Texas", "Paris, France"
+</pre>
 <p>
 
 <LI><b><code>MOptions &lt;attribute&gt; = &lt;list&gt;</code></b>
