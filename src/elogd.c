@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.75  2003/04/08 08:31:00  midas
+  Made self_register=3 work with [global] password file
+
   Revision 1.74  2003/04/08 08:09:18  midas
   Check for existing user in self_register=3
 
@@ -6214,7 +6217,10 @@ int    i, fh, size, self_register;
             /* compose subject */
             if (self_register == 3)
               {
-              sprintf(subject, loc("Registration request on logbook \"%s\""), lbs->name);
+              if (lbs)
+                sprintf(subject, loc("Registration request on logbook \"%s\""), lbs->name);
+              else
+                sprintf(subject, loc("Registration request on host \"%s\""), host_name);
               sprintf(mail_text, loc("A new ELOG user wants to register on \"%s\""), host_name);
               }
             else
@@ -11162,6 +11168,20 @@ FILE    *f;
           return;
           }
 
+        /* check for save after activate */
+        if (equal_ustring(command, loc("Save")))
+          {
+          if (isparam("config"))
+            {
+            /* change existing user */
+            if (!save_user_config(NULL, getparam("config"), FALSE, FALSE))
+              return;
+            }
+
+          redirect(NULL, ".");
+          return;
+          }
+
         /* check for password recovery */
         if (isparam("cmd") || isparam("newpwd"))
           {
@@ -11701,7 +11721,11 @@ FILE    *f;
     else if (!save_admin_config()) /* save cfg file */
       return;
 
-    sprintf(str, "../%s/", lbs->name_enc);
+    if (lbs)
+      sprintf(str, "../%s/", lbs->name_enc);
+    else
+      sprintf(str, ".");
+
     redirect(lbs, str);
     return;
     }
