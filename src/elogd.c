@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.18  2003/02/17 18:51:55  midas
+  Fixed yet another bug with 'Location:'
+
   Revision 1.17  2003/02/17 15:53:44  midas
   Fixed absolute path for cookies
 
@@ -3497,8 +3500,8 @@ char *p, str2[256];
 
     strcpy(str2, p);
     strcpy(str, str2);
-    if (str[strlen(str)-1] != '/')
-      strcat(str, "/");
+    if (str[strlen(str)-1] == '/')
+      str[strlen(str)-1] = 0;
     }
 }
 
@@ -3528,7 +3531,10 @@ char str[NAME_LENGTH];
       if (strncmp(rel_path, "../", 3) == 0)
         rsprintf(rel_path+3);
       else if (strcmp(rel_path, ".") == 0)
-        rsprintf(lbs->name_enc);
+        {
+        if (lbs)
+          rsprintf(lbs->name_enc);
+        }
       else if (rel_path[0] == '/')
         rsprintf(rel_path+1);
       else
