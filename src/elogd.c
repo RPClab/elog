@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.193  2004/01/15 11:22:52  midas
+   Fixed bug that boolean attributes were not accepted
+
    Revision 1.192  2004/01/14 20:08:24  midas
    Added 'expand all' facility
 
@@ -10739,20 +10742,31 @@ void submit_elog(LOGBOOK * lbs)
    for (i = 0; i < lbs->n_attr; i++)
       if (isparam(attr_list[i]) && attr_options[i][0][0]) {
 
-         /* check if option exists */
-         for (j = 0; attr_options[i][j][0]; j++)
-            if (equal_ustring(attr_options[i][j], getparam(attr_list[i])))
-               break;
-
-         if (!attr_options[i][j][0] && *getparam(attr_list[i])) {
-            if (attr_flags[i] & AF_EXTENDABLE) {
-               if (!add_attribute_option(lbs, attr_list[i], getparam(attr_list[i])))
-                  return;
-            } else {
-               sprintf(error, loc("Error: Attribute option <b>%s</b> not existing"),
+         if (equal_ustring(attr_options[i][0], "boolean")) {
+            if (atoi(attr_list[i]) != 0 && atoi(attr_list[i]) != 1) {
+               sprintf(error, loc("Error: Value <b>%s</b> not allowed for boolean attributes"),
                        getparam(attr_list[i]));
                show_error(error);
                return;
+            }
+            
+         } else {
+
+            /* check if option exists */
+            for (j = 0; attr_options[i][j][0]; j++)
+               if (equal_ustring(attr_options[i][j], getparam(attr_list[i])))
+                  break;
+
+            if (!attr_options[i][j][0] && *getparam(attr_list[i])) {
+               if (attr_flags[i] & AF_EXTENDABLE) {
+                  if (!add_attribute_option(lbs, attr_list[i], getparam(attr_list[i])))
+                     return;
+               } else {
+                  sprintf(error, loc("Error: Attribute option <b>%s</b> not existing"),
+                          getparam(attr_list[i]));
+                  show_error(error);
+                  return;
+               }
             }
          }
       }
