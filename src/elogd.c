@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.333  2004/06/04 22:11:36  midas
+   Added missing loc() dummies
+
    Revision 1.332  2004/06/04 21:37:14  midas
    Fixed substring problem with admin user
 
@@ -13013,6 +13016,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             if (getcfg(lbs->name, "Mirror server", str))
                strcat(menu_str, "Synchronize, ");
 
+            strcpy(str, loc("Last x"));
             strcat(menu_str, "Last x, Help");
          }
 
@@ -16391,6 +16395,7 @@ void interprete(char *lbook, char *path)
       }
 
       /* check for activate */
+      strcpy(str, "Activate");
       if (strieq(getparam("cmd"), "Activate")) {
          if (!save_user_config(NULL, getparam("new_user_name"), TRUE, TRUE))
             return;
