@@ -1,3 +1,16 @@
+Version 1.3.4, released April 22nd, 2002
+========================================
+
+- Do bounds checking for long messages
+- Check for invalid characters (like ",") in attachment file names
+- Added "message width=" into configuration file to increase the text 
+  entry window
+- Added logging facility for user level login/logout/connect, thanks
+  to Heiko.Scheit@mpi-hd.mpg.de. Turned on by "logfile = ..." in 
+  [global] section
+- Fixed problems with search highlighting, thanks to 
+  Heiko.Scheit@mpi-hd.mpg.de
+
 Version 1.3.3, released April 2nd, 2002
 =======================================
 
