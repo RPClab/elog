@@ -41,8 +41,11 @@ all: $(EXECS)
 regex.o: src/regex.c src/regex.h
 	$(CC) $(CFLAGS) -c -o regex.o src/regex.c
 
-elogd: src/elogd.c regex.o
-	$(CC) $(CFLAGS) -o elogd src/elogd.c regex.o $(LIBS)
+mxml.o: src/mxml.c src/mxml.h
+	$(CC) $(CFLAGS) -c -o mxml.o src/mxml.c
+
+elogd: src/elogd.c regex.o mxml.o
+	$(CC) $(CFLAGS) -o elogd src/elogd.c regex.o mxml.o $(LIBS)
 
 %: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
