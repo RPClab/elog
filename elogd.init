@@ -16,14 +16,9 @@ fi
 case "$1" in
   start)
 	echo -n "Starting elogd: "
-	@PREFIX@/bin/elogd -D -c @PREFIX@/elog/elogd.cfg  > /dev/null 2>&1 
+	daemon @PREFIX@/bin/elogd -D -c @PREFIX@/elog/elogd.cfg
 	RETVAL=$?
-        if [ $RETVAL -eq 0  ] ; then 
-          touch /var/lock/subsys/elogd
-          echo_success
-        else
-          echo_failure
-        fi
+        [ $RETVAL -eq 0 ] && touch /var/lock/subsys/routeid
 	echo
 	;;
   stop)
