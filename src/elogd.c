@@ -6,6 +6,13 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.553  2005/02/12 16:06:03  ritt
+   - Added missing 'alt' tags to images
+   - Use admin user email in 'from' field if nothing else is availabe
+   - 'Preset attribute' now also works with conditional attributes
+   - Fixed wrong '%S' instead of '%s' in charset
+   - Use chkext() for checking extensions
+
    Revision 1.552  2005/02/11 11:59:48  ritt
    Do not display .EPS files inline as ASCII files
 
@@ -1171,6 +1178,8 @@ BOOL strieq(const char *str1, const char *str2)
       return TRUE;
    if (str1 == NULL || str2 == NULL)
       return FALSE;
+   if (strlen(str1) != strlen(str2))
+      return FALSE;
 
    while (*str1) {
       c1 = *str1++;
@@ -1213,6 +1222,28 @@ char *stristr(const char *str, const char *pattern)
    }
 
    return NULL;
+}
+
+static BOOL chkext(const char *str, const char *ext)
+{
+   int extl, strl;
+   char c1, c2;
+
+   if (ext == NULL || str == NULL)
+      return FALSE;
+
+   extl = strlen(ext);
+   strl = strlen(str);
+   if (extl >= strl)
+      return FALSE;
+   str = str+strl-extl;
+   while (*str) {
+      c1 = *str++;
+      c2 = *ext++;
+      if (my_toupper(c1) != my_toupper(c2))
+         return FALSE;
+   }
+   return TRUE;
 }
 
 /*---- Safe malloc wrappers with out of memory checking from GNU ---*/
@@ -3475,7 +3506,7 @@ void check_config()
 
 void retrieve_email_from(LOGBOOK * lbs, char *ret, char attrib[MAX_N_ATTR][NAME_LENGTH])
 {
-   char str[256], *p;
+   char str[256], *p, login_name[256];
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
    int i;
 
@@ -3493,6 +3524,17 @@ void retrieve_email_from(LOGBOOK * lbs, char *ret, char attrib[MAX_N_ATTR][NAME_
       /* remove possible 'mailto:' */
       if ((p = strstr(str, "mailto:")) != NULL)
          strcpy(p, p+7);
+   }
+
+   /* if nothing available, figure out email from an administrator */
+   if (strchr(str, '@') == NULL) {
+      for (i = 0;; i++) {
+         if (!enum_user_line(lbs, i, login_name))
+            break;
+         get_user_line(lbs->name, login_name, NULL, NULL, str, NULL);
+         if (is_admin_user(lbs->name, login_name) && strchr(str, '@'))
+            break;
+      }
    }
 
    strcpy(ret, str);
@@ -6181,7 +6223,7 @@ void show_http_header(BOOL expires)
    if (getcfg("global", "charset", str, sizeof(str)))
       rsprintf("Content-Type: text/html;charset=%s\r\n", str);
    else
-      rsprintf("Content-Type: text/html;charset=%S\r\n", DEFAULT_HTTP_CHARSET);
+      rsprintf("Content-Type: text/html;charset=%s\r\n", DEFAULT_HTTP_CHARSET);
 
    if (use_keepalive) {
       rsprintf("Connection: Keep-Alive\r\n");
@@ -7483,7 +7525,7 @@ void show_date_selector(int day, int month, int year, char *index)
 
    rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
    rsprintf("  document.write(\"<a href=\\\"javascript:opencal('%s')\\\">\");\n", index);
-   rsprintf("  document.writeln(\"<img src=\\\"cal.png\\\" border=\\\"0\\\"");
+   rsprintf("  document.writeln(\"<img src=\\\"cal.png\\\" alt=\\\"Calendar\\\" border=\\\"0\\\"");
    rsprintf("alt=\\\"%s\\\"></a>\");\n", loc("Pick a date"));
 
    rsprintf("//-->\n");
@@ -7621,6 +7663,62 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             }
          }
       }
+   }
+
+   for (index = 0 ; index < lbs->n_attr ; index++) {
+
+      /* check for preset string */
+      sprintf(str, "Preset %s", attr_list[index]);
+      if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0) {
+
+         if ((!bedit && !breply) ||     /* don't subst on edit or reply */
+             (breedit && i == 2)) {     /* subst on reedit only if preset is under condition */
+
+            /* do not format date for date attributes */
+            i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & AF_DATE) == 0);
+            strsubst(preset, slist, svalue, i);
+
+            /* check for index substitution */
+            if (!bedit && strchr(preset, '%')) {
+               /* get index */
+               i = get_last_index(lbs, index);
+
+               strcpy(str, preset);
+               sprintf(preset, str, i + 1);
+            }
+
+            if (!strchr(preset, '%'))
+               strcpy(attrib[index], preset);
+         }
+      }
+
+      sprintf(str, "Preset on reply %s", attr_list[index]);
+      if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0 && breply) {
+
+         if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
+
+            /* do not format date for date attributes */
+            i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & AF_DATE) == 0);
+            strsubst(preset, slist, svalue, i);
+
+            /* check for index substitution */
+            if (!bedit && strchr(preset, '%')) {
+               /* get index */
+               i = get_last_index(lbs, index);
+
+               strcpy(str, preset);
+               sprintf(preset, str, i + 1);
+            }
+
+            if (!strchr(preset, '%'))
+               strcpy(attrib[index], preset);
+         }
+      }
+
+      /* check for p<attribute> */
+      sprintf(str, "p%s", attr_list[index]);
+      if (isparam(str))
+         strlcpy(attrib[index], getparam(str), NAME_LENGTH);
    }
 
    /* evaluate conditional attributes */
@@ -8065,59 +8163,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       strcpy(star, (attr_flags[index] & AF_REQUIRED) ? "<font color=red>*</font>" : "");
 
-      /* check for preset string */
-      sprintf(str, "Preset %s", attr_list[index]);
-      if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0) {
-
-         if ((!bedit && !breply) ||     /* don't subst on edit or reply */
-             (breedit && i == 2)) {     /* subst on reedit only if preset is under condition */
-
-            /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & AF_DATE) == 0);
-            strsubst(preset, slist, svalue, i);
-
-            /* check for index substitution */
-            if (!bedit && strchr(preset, '%')) {
-               /* get index */
-               i = get_last_index(lbs, index);
-
-               strcpy(str, preset);
-               sprintf(preset, str, i + 1);
-            }
-
-            if (!strchr(preset, '%'))
-               strcpy(attrib[index], preset);
-         }
-      }
-
-      sprintf(str, "Preset on reply %s", attr_list[index]);
-      if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0 && breply) {
-
-         if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
-
-            /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & AF_DATE) == 0);
-            strsubst(preset, slist, svalue, i);
-
-            /* check for index substitution */
-            if (!bedit && strchr(preset, '%')) {
-               /* get index */
-               i = get_last_index(lbs, index);
-
-               strcpy(str, preset);
-               sprintf(preset, str, i + 1);
-            }
-
-            if (!strchr(preset, '%'))
-               strcpy(attrib[index], preset);
-         }
-      }
-
-      /* check for p<attribute> */
-      sprintf(str, "p%s", attr_list[index]);
-      if (isparam(str))
-         strlcpy(attrib[index], getparam(str), NAME_LENGTH);
-
       /* display text box with optional tooltip */
       sprintf(str, "Tooltip %s", attr_list[index]);
       title[0] = 0;
@@ -8357,7 +8402,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         rsprintf("<img src=\"icons/%s\" alt=\"%s\"></nobr>\n",
                                  attr_options[index][i], comment);
                      else
-                        rsprintf("<img src=\"icons/%s\"></nobr>\n", attr_options[index][i]);
+                        rsprintf("<img src=\"icons/%s\" alt=\"%s\"></nobr>\n", 
+                                 attr_options[index][i], attr_options[index][i]);
 
                      if (format_flags[index] & AFF_MULTI_LINE)
                         rsprintf("<br>");
@@ -8999,10 +9045,9 @@ void show_find_form(LOGBOOK * lbs)
 
                rsprintf("<nobr><input type=radio name=\"%s\" value=\"%s\">", attr_list[i], option);
 
-               if (comment[0])
-                  rsprintf("<img src=\"icons/%s\" alt=\"%s\"></nobr>\n", option, comment);
-               else
-                  rsprintf("<img src=\"icons/%s\"></nobr>\n", option);
+               if (comment[0] == 0)
+                  strcpy(comment, option);
+               rsprintf("<img src=\"icons/%s\" alt=\"%s\"></nobr>\n", option, comment);
             }
          }
 
@@ -11270,7 +11315,7 @@ int show_md5_page(LOGBOOK * lbs)
    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
    rsprintf("Accept-Ranges: bytes\r\n");
    rsprintf("Connection: close\r\n");
-   rsprintf("Content-Type: text/plain;charset=%S\r\n", DEFAULT_HTTP_CHARSET);
+   rsprintf("Content-Type: text/plain;charset=%s\r\n", DEFAULT_HTTP_CHARSET);
    rsprintf("Pragma: no-cache\r\n");
    rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
 
@@ -13319,17 +13364,17 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          rsprintf("<a href=\"%s\">", ref);
 
       if (attr_icon[0])
-         rsprintf("<img border=0 src=\"icons/%s\"></a>&nbsp;", attr_icon);
+         rsprintf("<img border=0 src=\"icons/%s\" alt=\"%s\"></a>&nbsp;", attr_icon, attr_icon);
       else {
          /* if top level only, display reply icon if message has a reply */
          if (getcfg(lbs->name, "Top level only", str, sizeof(str)) && atoi(str) == 1 && reply_to[0])
-            rsprintf("<img border=0 src=\"reply.png\">&nbsp;");
+            rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\">&nbsp;", loc("reply"));
          else {
             /* display standard icons */
             if (level == 0)
-               rsprintf("<img border=0 src=\"entry.png\">&nbsp;");
+               rsprintf("<img border=0 src=\"entry.png\" alt=\"%s\">&nbsp;", loc("entry"));
             else
-               rsprintf("<img border=0 src=\"reply.png\">&nbsp;");
+               rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\">&nbsp;", loc("reply"));
          }
       }
       if (highlight != message_id)
@@ -13381,9 +13426,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          if (strieq(disp_attr[index], loc("ID"))) {
             if (strieq(mode, "Threaded")) {
                if (level == 0)
-                  rsprintf("<img border=0 src=\"entry.png\">&nbsp;");
+                  rsprintf("<img border=0 src=\"entry.png\" alt=\"%s\">&nbsp;", loc("entry"));
                else
-                  rsprintf("<img border=0 src=\"reply.png\">&nbsp;");
+                  rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\">&nbsp;", loc("reply"));
 
                skip_comma = TRUE;
 
@@ -13478,7 +13523,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
                   else if (attr_flags[i] & AF_ICON) {
                      if (attrib[i][0])
-                        rsprintf("&nbsp;<img border=0 src=\"icons/%s\">&nbsp;", attrib[i]);
+                        rsprintf("&nbsp;<img border=0 src=\"icons/%s\" alt=\"%s\">&nbsp;", attrib[i], attrib[i]);
                   }
 
                   else {
@@ -13521,7 +13566,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   else if (attr_flags[i] & AF_ICON) {
                      rsprintf("<td class=\"%s\">", sclass);
                      if (attrib[i][0])
-                        rsprintf("<img border=0 src=\"icons/%s\">", attrib[i]);
+                        rsprintf("<img border=0 src=\"icons/%s\" alt=\"%s\">", attrib[i], attrib[i]);
                      rsprintf("&nbsp</td>");
                   }
 
@@ -13681,34 +13726,35 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[index] + 14);
             url_encode(ref, sizeof(ref));       /* for file names with special characters like "+" */
 
-            for (i = 0; i < (int) strlen(attachment[index]); i++)
-               str[i] = toupper(attachment[index][i]);
-            str[i] = 0;
-
             if (!show_attachments) {
                rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;&nbsp;&nbsp; ", ref, attachment[index] + 14);
             } else {
-               if (is_image(str)) {
+               if (is_image(attachment[index])) {
                   rsprintf
                       ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
                        colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
                   if (show_attachments)
                      rsprintf
-                         ("</td></tr><tr><td colspan=%d class=\"messagelist\"><img src=\"%s\"></td></tr>",
-                          colspan, ref);
+                         ("</td></tr><tr><td colspan=%d class=\"messagelist\"><img src=\"%s\" alt=\"%s\"></td></tr>",
+                          colspan, ref, attachment[index] + 14);
                } else {
                   rsprintf
                       ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
                        colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
 
-                  if ((strstr(str, ".TXT") || strstr(str, ".ASC") || strstr(str, ".CFG")
-                       || strstr(str, ".CONF")
-                       || strchr(str, '.') == NULL) && show_attachments) {
+                  strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+                  strlcat(file_name, attachment[index], sizeof(file_name));
+
+                  if (is_ascii(file_name) && 
+                      !chkext(attachment[index], ".PS") && 
+                      !chkext(attachment[index], ".PDF") && 
+                      !chkext(attachment[index], ".EPS") &&
+                      show_attachments) {
+
                      /* display attachment */
                      rsprintf("</td></tr><tr><td colspan=%d class=\"messagelist\"><pre>", colspan);
 
                      strlcpy(file_name, lbs->data_dir, sizeof(file_name));
-
                      strlcat(file_name, attachment[index], sizeof(file_name));
 
                      f = fopen(file_name, "rt");
@@ -15920,9 +15966,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
             img[0] = 0;
             if (strcmp(getparam("sort"), disp_attr[i]) == 0)
-               strcpy(img, "<img align=top src=\"up.png\">");
+               sprintf(img, "<img align=top src=\"up.png\" alt=\"%s\">", loc("up"));
             else if (strcmp(getparam("rsort"), disp_attr[i]) == 0)
-               strcpy(img, "<img align=top src=\"down.png\">");
+               sprintf(img, "<img align=top src=\"down.png\" alt=\"%s\">", loc("down"));
 
             if (strieq(disp_attr[i], "Edit") || strieq(disp_attr[i], "Delete"))
                rsprintf("<th class=\"listtitle\">%s</th>\n", disp_attr[i]);
@@ -17704,7 +17750,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
       if (locked_by && locked_by[0]) {
          sprintf(str, "%s %s", loc("Entry is currently edited by"), locked_by);
-         rsprintf("<tr><td nowrap colspan=2 class=\"errormsg\"><img src=\"stop.png\">\n");
+         rsprintf("<tr><td nowrap colspan=2 class=\"errormsg\"><img src=\"stop.png\" alt=\"%s\">\n", loc("stop"));
          rsprintf("%s<br>%s</td></tr>\n", str, loc("You can \"steal\" the lock by editing this entry"));
       }
 
@@ -18037,7 +18083,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
                /* determine if displayed inline */
                display_inline = is_image(file_name) || is_ascii(file_name);
-               if (strstr(att, ".PS") || strstr(att, ".PDF") || strstr(att, ".EPS"))
+               if (chkext(att, ".PS") || chkext(att, ".PDF") || chkext(att, ".EPS"))
                   display_inline = 0;
 
                if (display_inline) {
@@ -18093,7 +18139,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                   if (is_image(att)) {
                      rsprintf("<tr><td class=\"messageframe\">\n");
                      rsprintf("<a name=\"att%d\"></a>\n", index + 1);
-                     rsprintf("<img src=\"%s\"></td></tr>", ref);
+                     rsprintf("<img src=\"%s\" alt=\"%s\"></td></tr>", ref, attachment[index]+14);
                      rsprintf("</td></tr>\n\n");
                   } else {
                      if (is_ascii(file_name)) {
