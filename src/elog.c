@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.11  2003/11/11 12:31:34  midas
+  Added '-s' flag for email suppression
+
   Revision 1.10  2003/07/15 12:17:45  midas
   Removed BOOL
 
@@ -512,6 +515,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
                 char *uname, char *upwd,
                 int  reply,
                 int  edit,
+                int  suppress,
                 char attrib_name[MAX_N_ATTR][NAME_LENGTH],
                 char attrib[MAX_N_ATTR][NAME_LENGTH],
                 int  n_attr,
@@ -533,6 +537,8 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
     char   *uname           User name
     char   *upwd            User password
     int    reply            Reply to existing message
+    int    edit             Edit existing message
+    int    suppress         Suppress Email notification
     char   *attrib_name     Attribute names
     char   *attrib          Attribute values
     char   *text            Message text
@@ -777,6 +783,10 @@ char                 old_attrib_name[MAX_N_ATTR][NAME_LENGTH], old_attrib[MAX_N_
     sprintf(content+strlen(content), 
             "%s\r\nContent-Disposition: form-data; name=\"edit_id\"\r\n\r\n%d\r\n", boundary, edit);
 
+  if (suppress)
+    sprintf(content+strlen(content), 
+            "%s\r\nContent-Disposition: form-data; name=\"suppress\"\r\n\r\n1\r\n", boundary);
+
   for (i=0 ; i<n_attr ; i++)
     sprintf(content+strlen(content), 
             "%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n", boundary, attrib_name[i], attrib[i]);
@@ -930,10 +940,10 @@ char      str[1000], uname[80], upwd[80];
 char      host_name[256], logbook[32], textfile[256], password[80], subdir[256];
 char      *buffer[MAX_ATTACHMENTS], attachment[MAX_ATTACHMENTS][256];
 INT       att_size[MAX_ATTACHMENTS];
-INT       i, n, fh, n_att, n_attr, size, port, reply, edit;
+INT       i, n, fh, n_att, n_attr, size, port, reply, edit, suppress;
 char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH]; 
 
-  text[0] = textfile[0] = uname[0] = upwd[0] = 0;
+  text[0] = textfile[0] = uname[0] = upwd[0] = suppress = 0;
   host_name[0] = logbook[0] = password[0] = subdir[0] = n_att = n_attr = reply = edit = 0;
   port = 80;
 
@@ -949,6 +959,8 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
     {
     if (argv[i][0] == '-' && argv[i][1] == 'v')
       verbose = 1;
+    else if (argv[i][0] == '-' && argv[i][1] == 's')
+      suppress = 1;
     else
       {
       if (argv[i][0] == '-')
@@ -1008,6 +1020,7 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
           printf("           -a <attribute>=<value>   (up to %d times)\n", MAX_N_ATTR);
           printf("           [-r <id>]                Reply to existing message\n");
           printf("           [-e <id>]                Edit existing message\n");
+          printf("           [-s]                     Suppress email notification\n");
           printf("           -m <textfile>] | <text>\n");
           printf("\nArguments with blanks must be enclosed in quotes\n");
           printf("The elog message can either be submitted on the command line, piped in like\n");
@@ -1120,7 +1133,7 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 
   /* now submit message */
   submit_elog(host_name, port, subdir, logbook, password, 
-              uname, upwd, reply, edit,
+              uname, upwd, reply, edit, suppress,
               attr_name, attrib, n_attr, text,
               attachment, buffer, att_size); 
 
