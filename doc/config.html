@@ -386,6 +386,19 @@ In the "<I>find</I>" page only one of these values can be specified, which is th
 treated as a substring in the search filter.
 <p>
 
+<LI><b><code>IOptions &lt;attribute&gt; = &lt;list&gt;</code></b>
+<br>
+This list specifies a set of icons for an attribute. Some icons are contained in
+the <i>themes/default/icons</i> directory which can be used here like
+<p>
+<pre>
+Attributes = Author, Icon, Subject...
+IOptions Icon = icon1.gif, icon2.gif, icon3.gif, ...
+</pre>
+New icons are welcome and should be sent back to the author to be incorporated
+in the next version.
+<p>
+
 <LI><b><code>Options &lt;attribute&gt; = boolean</code></b>
 <br>
 If an attribute is marked "<I>boolean</I>" this way, a checkbox is displayed for
