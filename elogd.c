@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.1  2002/06/07 09:37:02  midas
+  Added 'HTML default = 3'
+
   Revision 2.0  2002/06/06 15:16:39  midas
   First version with new database scheme
 
@@ -104,7 +107,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.3.6"
+#define VERSION "2.0.0"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -3643,10 +3646,27 @@ time_t now;
     /* HTML check box */
     if (message_id)
       {
-      if (encoding[0] == 'H')
-        rsprintf("<input type=checkbox checked name=html value=1>%s\n", loc("Submit as HTML text"));
+      if (getcfg(lbs->name, "HTML default", str))
+        {
+        if (atoi(str) < 2)
+          {
+          if (encoding[0] == 'H')
+            rsprintf("<input type=checkbox checked name=html value=1>%s\n", loc("Submit as HTML text"));
+          else
+            rsprintf("<input type=checkbox name=html value=1>%s\n", loc("Submit as HTML text"));
+          }
+        else if (atoi(str) == 3)
+          {
+          rsprintf("<input type=hidden name=html value=1>\n");
+          }
+        }
       else
-        rsprintf("<input type=checkbox name=html value=1>%s\n", loc("Submit as HTML text"));
+        {
+        if (encoding[0] == 'H')
+          rsprintf("<input type=checkbox checked name=html value=1>%s\n", loc("Submit as HTML text"));
+        else
+          rsprintf("<input type=checkbox name=html value=1>%s\n", loc("Submit as HTML text"));
+        }
       }
     else
       {
@@ -3659,6 +3679,10 @@ time_t now;
         else if (atoi(str) == 1)
           {
           rsprintf("<input type=checkbox checked name=html value=1>%s\n", loc("Submit as HTML text"));
+          }
+        else if (atoi(str) == 3)
+          {
+          rsprintf("<input type=hidden name=html value=1>\n");
           }
         }
       else
