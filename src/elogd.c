@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.501  2004/10/26 19:13:14  midas
+   Implemented 'RSS Entries'
+
    Revision 1.500  2004/10/26 07:29:21  midas
    Added image to RSS feed
 
@@ -6043,7 +6046,7 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
    if (rss_feed) {
       rsprintf("<link rel=\"rss feed\" type=\"application/rss+xml\" ");
       rsprintf("title=\"ELOG %s\" ", lbs->name);
-      rsprintf("href=\"rss-feed\">\n");
+      rsprintf("href=\"elog.rdf\">\n");
    }
 
    if (close_head)
@@ -14227,7 +14230,7 @@ time_t retrieve_date(char *index, BOOL bstart)
 
 void show_rss_feed(LOGBOOK * lbs)
 {
-   int i, size, index, status, message_id;
+   int i, n, size, index, status, message_id;
    char str[256], url[256], attrib[MAX_N_ATTR][NAME_LENGTH], date[80], *text, title[2000],
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
 
@@ -14288,11 +14291,15 @@ void show_rss_feed(LOGBOOK * lbs)
    rsprintf("<link>%s</link>\n", url);
    rsprintf("</image>\n");
 
-   /*---- show last 15 items ----*/
+   /*---- show last <n> items ----*/
+
+   n = 15;
+   if (getcfg(lbs->name, "RSS Entries", str, sizeof(str)))
+      n = atoi(str);
 
    text = xmalloc(TEXT_SIZE);
    message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
-   for (index = 0 ; index < 15 ; index++) {
+   for (index = 0 ; index < n ; index++) {
       rsprintf("<item>\n");
 
       size = TEXT_SIZE;
@@ -18912,7 +18919,7 @@ void interprete(char *lbook, char *path)
    }
 
    /* check for rss-feed */
-   if (strieq(dec_path, "rss-feed")) {
+   if (strieq(dec_path, "elog.rdf")) {
       show_rss_feed(lbs);
       return;
    }
