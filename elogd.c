@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.83  2002/09/25 10:33:47  midas
+  Fixed URL problem with delete
+
   Revision 2.82  2002/09/24 15:16:05  midas
   Version 2.2.0
 
@@ -5570,7 +5573,10 @@ char   str[256], in_reply_to[80], reply_to[256];
       }
 
     /* header */
-    sprintf(str, "%d", message_id);
+    if (message_id)
+      sprintf(str, "%d", message_id);
+    else
+      str[0] = 0;
     show_standard_header("Delete ELog entry", str);
 
     rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
