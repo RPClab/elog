@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.54  2003/03/26 10:38:49  midas
+  Fixed error that logbook URL was wrong if messages are submitted via elog
+
   Revision 1.53  2003/03/26 10:15:21  midas
   Only ownwer can delete entry if 'restrict edit = 1'
 
@@ -8961,6 +8964,8 @@ char   list[MAX_PARAM][NAME_LENGTH], url[256];
         sprintf(str, "http://%s/", host_name);
       else
         sprintf(str, "http://%s:%d/", host_name, tcp_port);
+      strcat(str, lbs->name);
+      strcat(str, "/");
       }
     }
   else
