@@ -147,3 +147,10 @@ This message has been deleted = Dieser Eintrag wurde gelöscht
 Download = Herunterladen
 and all its replies = und alle Antworten
 Message ID = Nummer Eintrag
+
+#
+# New stgring for V2.xx
+Not logged in = Nicht eingeloggt
+Login = Einloggen
+Page %d of %d = Seite %d von %d
+all entries = alle Einträge
