@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.167  2003/12/15 09:36:23  midas
+  Added 'date on reply = 2' option
+
   Revision 1.166  2003/12/05 12:16:23  midas
   Added .selframe style class
 
@@ -5772,6 +5775,20 @@ struct tm *ts;
         {
         if (!getcfg(lbs->name, "Quote on reply", str) || atoi(str) > 0)
           {
+          if (getcfg(lbs->name, "Date on reply", str) && atoi(str) == 1)
+            {
+            time(&now);
+            ts = localtime(&now);
+            if (getcfg(lbs->name, "Date format", format))
+              strftime(str, sizeof(str), format, ts);
+            else
+              {
+              strcpy(str, ctime(&now));
+              str[strlen(str)-1] = 0;
+              }
+            rsprintf("%s\n\n", str);
+            }
+
           p = text;
 
           if (!getcfg(lbs->name, "Reply string", reply_string))
@@ -5816,7 +5833,7 @@ struct tm *ts;
 
             } while (TRUE);
 
-          if (getcfg(lbs->name, "Date on reply", str) && atoi(str) > 0)
+          if (getcfg(lbs->name, "Date on reply", str) && atoi(str) == 2)
             {
             time(&now);
             ts = localtime(&now);

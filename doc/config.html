@@ -1330,10 +1330,12 @@ resulting in all messages being locked. In those cases locking has to be turned 
 
 Default for "Use Lock" is <b>0</b>.<p>
 
-<li><b><code>Date on reply = 0|1</code></b>
+<li><b><code>Date on reply = 0|1|2</code></b>
 </br>
-If this flag is <b>1</b>, the current date is placed between the quoted original entry
-and the new entry. This can be useful for email notifications, if one wants to see the
+If this flag is nozero, the current date is placed between the quoted original entry
+and the new entry. <b>1</b> causes the date to appear on top of the quoted entry, 
+<b>2</b> cuses the date to appear below the quoted entry.
+This can be useful for email notifications, if one wants to see the
 time history of all replies in the email messages. Default is <b>0</b>.
 <p>
 
