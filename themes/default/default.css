@@ -52,6 +52,16 @@ td {
   text-align:center;
 }
 
+.selgroup {
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  background-color:red;
+  padding:3px;
+  text-align:left;
+  font-weight:bold;
+}
+
 .sellogbook {
   border:1px solid #308000;
   border-top:1px solid white;
