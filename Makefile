@@ -14,6 +14,10 @@ CC = gcc
 LIBS = -lsocket -lnsl
 endif
 
+ifeq ($(OSTYPE),darwin)
+CC = cc
+endif
+
 all: elogd elog
 
 elog: elog.c
