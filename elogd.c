@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.44  2002/07/11 08:49:49  midas
+  Fixed caching problem in Konqueror
+
   Revision 2.43  2002/07/11 08:13:31  midas
   Fixed problem of submitting messages with konqueror
 
@@ -233,7 +236,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.0.4"
+#define VERSION "2.0.5"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -450,6 +453,7 @@ LOGBOOK *lb_list = NULL;
 
 int scan_attributes(char *logbook);
 void show_error(char *error);
+void show_http_header();
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -3063,16 +3067,7 @@ void show_upgrade_page(LOGBOOK *lbs)
 {
 char str[1000];
 
-  rsprintf("HTTP/1.1 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-  rsprintf("Content-Type: text/html\r\n");
-  rsprintf("Pragma: no-cache\r\n");
-  if (use_keepalive)
-    {
-    rsprintf("Connection: Keep-Alive\r\n");
-    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
-    }
-  rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
+  show_http_header();
 
   rsprintf("<html><head>\n");
   rsprintf("<title>ELOG Electronic Logbook Upgrade Information</title>\n");
@@ -3123,12 +3118,11 @@ char str[1000];
 
 /*------------------------------------------------------------------*/
 
-void show_standard_header(char *title, char *path)
+void show_http_header()
 {
   rsprintf("HTTP/1.1 200 Document follows\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
   rsprintf("Content-Type: text/html\r\n");
-
   rsprintf("Pragma: no-cache\r\n");
   if (use_keepalive)
     {
@@ -3136,6 +3130,11 @@ void show_standard_header(char *title, char *path)
     rsprintf("Keep-Alive: timeout=60, max=10\r\n");
     }
   rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
+}
+
+void show_standard_header(char *title, char *path)
+{
+  show_http_header();
 
   rsprintf("<html><head><title>%s</title></head>\n", title);
 
@@ -3815,14 +3814,7 @@ time_t now;
     }
 
   /* header */
-  rsprintf("HTTP/1.1 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-  if (use_keepalive)
-    {
-    rsprintf("Connection: Keep-Alive\r\n");
-    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
-    }
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  show_http_header();
 
   rsprintf("<html><head><title>ELOG</title></head>\n");
   rsprintf("<body><form method=\"POST\" action=\".\" enctype=\"multipart/form-data\">\n");
@@ -4469,14 +4461,7 @@ char *buffer;
 
   /*---- header ----*/
 
-  rsprintf("HTTP/1.1 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-  if (use_keepalive)
-    {
-    rsprintf("Connection: Keep-Alive\r\n");
-    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
-    }
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  show_http_header();
 
   rsprintf("<html><head><title>ELOG config</title></head>\n");
   rsprintf("<body><form method=\"POST   \" action=\".\" enctype=\"multipart/form-data\">\n");
@@ -7582,14 +7567,7 @@ void show_selection_page()
 int  i;
 char str[10000], logbook[256];
 
-  rsprintf("HTTP/1.1 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-  if (use_keepalive)
-    {
-    rsprintf("Connection: Keep-Alive\r\n");
-    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
-    }
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  show_http_header();
 
   rsprintf("<html>\n");
   rsprintf("<head>\n");
