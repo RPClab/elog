@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.17  2004/03/14 16:43:29  midas
+  Implemented option 'guest display'
+
   Revision 1.16  2004/02/19 08:18:31  midas
   Changed '-p' for email suppress to '-x'
 
@@ -1023,7 +1026,7 @@ int main(int argc, char *argv[])
       size = lseek(fh, 0, SEEK_END);
       lseek(fh, 0, SEEK_SET);
 
-      if (size > (int)sizeof(text) - 1) {
+      if (size > (int) sizeof(text) - 1) {
          printf("Message file \"%s\" is too long (%d bytes max).\n", textfile,
                 sizeof(text));
          return 1;

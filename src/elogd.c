@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.294  2004/03/14 16:43:29  midas
+   Implemented option 'guest display'
+
    Revision 1.293  2004/03/13 21:07:58  midas
    Implemented and between conditions
 
@@ -2001,14 +2004,14 @@ BOOL match_param(char *str, char *param)
 {
    int ncl, npl, nand, i, j, k;
    char *p, pcond[256], clist[10][NAME_LENGTH], plist[10][NAME_LENGTH],
-      alist[10][NAME_LENGTH];
+       alist[10][NAME_LENGTH];
 
    if (!_condition[0] || str[0] != '{')
       return strieq(str, param);
 
    p = str;
    if (strchr(p, '}'))
-      p = strchr(p, '}')+1;
+      p = strchr(p, '}') + 1;
    while (*p == ' ')
       p++;
 
@@ -2021,19 +2024,19 @@ BOOL match_param(char *str, char *param)
    npl = strbreak(pcond, plist, 10, ",");
    ncl = strbreak(_condition, clist, 10, ",");
 
-   for (i=0 ; i<ncl ; i++)
-      for (j=0 ; j<npl ; j++)
+   for (i = 0; i < ncl; i++)
+      for (j = 0; j < npl; j++)
          if (strieq(clist[i], plist[j])) {
             /* condition matches */
             return strieq(p, param);
          }
 
    /* check and'ed conditions */
-   for (i=0 ; i<npl ; i++)
+   for (i = 0; i < npl; i++)
       if (strchr(plist[i], '&')) {
          nand = strbreak(plist[i], alist, 10, "&");
-         for (j=0 ; j<nand ; j++) {
-            for (k=0 ; k<ncl ; k++)
+         for (j = 0; j < nand; j++) {
+            for (k = 0; k < ncl; k++)
                if (strieq(clist[k], alist[j]))
                   break;
 
@@ -2628,7 +2631,7 @@ time_t date_to_ltime(char *date)
 
    if (tms.tm_year < 90)
       tms.tm_year += 100;
-   
+
    return mktime(&tms);
 }
 
@@ -2665,8 +2668,8 @@ void el_decode(char *message, char *key, char *result)
    } while (1);
 
    /* go through all lines */
-   for (pc = message ; pc < ph ; ) {
-      
+   for (pc = message; pc < ph;) {
+
       if (strncmp(pc, key, strlen(key)) == 0) {
          pc += strlen(key);
          while (*pc != '\n' && *pc != '\r')
@@ -4403,10 +4406,10 @@ int is_html(char *s)
    char *str;
    int i;
 
-   str = malloc(strlen(s)+1);
+   str = malloc(strlen(s) + 1);
    assert(str);
 
-   for (i=0 ; i<(int)strlen(s) ; i++)
+   for (i = 0; i < (int) strlen(s); i++)
       str[i] = toupper(s[i]);
    str[i] = 0;
 
@@ -4432,7 +4435,7 @@ void strip_html(char *s)
 
    while ((p = strchr(s, '<')) != NULL) {
       if (strchr(p, '>'))
-         strcpy(p, strchr(p, '>')+1);
+         strcpy(p, strchr(p, '>') + 1);
    }
 }
 
@@ -4477,8 +4480,8 @@ void rsputs2(const char *str)
             i--;
 
             /* link may not end with a '.' (like in a sentence) */
-            if (link[k-1] == '.') {
-               link[k-1] = 0;
+            if (link[k - 1] == '.') {
+               link[k - 1] = 0;
                k--;
                i--;
             }
@@ -4985,7 +4988,7 @@ and trailing blanks */
       } else {
          strlcpy(list[i], p, NAME_LENGTH);
 
-         for (j=0 ; j<(int)strlen(list[i]) ; j++)
+         for (j = 0; j < (int) strlen(list[i]); j++)
             if (strchr(brk, list[i][j]))
                list[i][j] = 0;
 
@@ -5454,8 +5457,8 @@ void show_standard_title(char *logbook, char *text, int printable)
             rsprintf("<span class=\"ltab\"><a href=\"../\">%s</a></span>\n", str);
 
          if (level == 1 && getcfg("global", "main tab", str) && getcfg_topgroup())
-            rsprintf("<span class=\"ltab\"><a href=\"../%s/\">%s</a></span>\n", 
-               getcfg_topgroup(), str);
+            rsprintf("<span class=\"ltab\"><a href=\"../%s/\">%s</a></span>\n",
+                     getcfg_topgroup(), str);
 
          /* iterate through members of this group */
          for (i = 0; i < pnode->n_members; i++) {
@@ -5763,7 +5766,7 @@ void send_file_direct(char *file_name)
       if (!getcfg("global", "charset", charset))
          strcpy(charset, "iso-8859-1");
 
-      if (filetype[i].ext[0]) 
+      if (filetype[i].ext[0])
          rsprintf("Content-Type: %s;charset=%s\r\n", filetype[i].type, charset);
       else if (strchr(str, '.') == NULL)
          rsprintf("Content-Type: text/plain;charset=%s\r\n", charset);
@@ -5944,7 +5947,7 @@ void add_subst_list(char list[][NAME_LENGTH], char value[][NAME_LENGTH],
    strcpy(value[(*i)++], str);
 }
 
-void add_subst_time(LOGBOOK *lbs, 
+void add_subst_time(LOGBOOK * lbs,
                     char list[][NAME_LENGTH], char value[][NAME_LENGTH],
                     char *item, char *date, int *i)
 {
@@ -6723,8 +6726,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          if (!bedit || (breedit && i == 2)) {   /* subst on reedit only if preset is under condition */
 
             /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib, 
-                   (attr_flags[index] & AF_DATE) == 0);
+            i = build_subst_list(lbs, slist, svalue, attrib,
+                                 (attr_flags[index] & AF_DATE) == 0);
             strsubst(preset, slist, svalue, i);
 
             /* check for index substitution */
@@ -6841,14 +6844,16 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      sprintf(str, "%s_%d", ua, i);
 
                      if (strstr(attrib[index], attr_options[index][i]))
-                        rsprintf("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" checked>\n",
+                        rsprintf
+                            ("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" checked>\n",
                              str, str, attr_options[index][i]);
                      else
-                        rsprintf("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\">\n",
+                        rsprintf
+                            ("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\">\n",
                              str, str, attr_options[index][i]);
 
-                     rsprintf("<label for=\"%s\">%s</label></nobr>\n", 
-                               str, attr_options[index][i]);
+                     rsprintf("<label for=\"%s\">%s</label></nobr>\n",
+                              str, attr_options[index][i]);
 
                      if (format_flags & AFF_MULTI_LINE)
                         rsprintf("<br>");
@@ -6861,14 +6866,16 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      if (strstr(attrib[index], attr_options[index][i]))
-                        rsprintf("<nobr><input type=radio id=\"%s\" name=\"%s\" value=\"%s\" checked>\n",
+                        rsprintf
+                            ("<nobr><input type=radio id=\"%s\" name=\"%s\" value=\"%s\" checked>\n",
                              attr_options[index][i], ua, attr_options[index][i]);
                      else
-                        rsprintf("<nobr><input type=radio id=\"%s\" name=\"%s\" value=\"%s\">\n",
+                        rsprintf
+                            ("<nobr><input type=radio id=\"%s\" name=\"%s\" value=\"%s\">\n",
                              attr_options[index][i], ua, attr_options[index][i]);
 
-                     rsprintf("<label for=\"%s\">%s</label></nobr>\n", 
-                               attr_options[index][i], attr_options[index][i]);
+                     rsprintf("<label for=\"%s\">%s</label></nobr>\n",
+                              attr_options[index][i], attr_options[index][i]);
 
                      if (format_flags & AFF_MULTI_LINE)
                         rsprintf("<br>");
@@ -7030,10 +7037,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       if (bedit) {
          if (bupload || (!bupload && !breedit)
-            || (breedit && !getcfg(lbs->name, "Preset text", str))) {
+             || (breedit && !getcfg(lbs->name, "Preset text", str))) {
 
             j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-            sprintf(mid, "%d", message_id);                    
+            sprintf(mid, "%d", message_id);
             add_subst_list(slist, svalue, "message id", mid, &j);
             add_subst_time(lbs, slist, svalue, "entry time", date, &j);
 
@@ -7058,7 +7065,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
              || atoi(str) > 0) {
             if (getcfg(lbs->name, "Prepend on reply", str)) {
                j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-               sprintf(mid, "%d", message_id);                    
+               sprintf(mid, "%d", message_id);
                add_subst_list(slist, svalue, "message id", mid, &j);
                add_subst_time(lbs, slist, svalue, "entry time", date, &j);
 
@@ -7107,7 +7114,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             if (getcfg(lbs->name, "Append on reply", str)) {
 
                j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-               sprintf(mid, "%d", message_id);                    
+               sprintf(mid, "%d", message_id);
                add_subst_list(slist, svalue, "message id", mid, &j);
                add_subst_time(lbs, slist, svalue, "entry time", date, &j);
                strsubst(str, slist, svalue, j);
@@ -7189,8 +7196,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* Suppress email check box */
-   if (!(bedit && !breedit && !bupload
-         && getcfg(lbs->name, "Suppress Email on edit", str)
+   if (!(bedit && !breedit && !bupload && getcfg(lbs->name, "Suppress Email on edit", str)
          && atoi(str) == 1)) {
       if (getcfg(lbs->name, "Suppress default", str)) {
          if (atoi(str) == 0) {
@@ -7371,10 +7377,12 @@ void show_find_form(LOGBOOK * lbs)
          rsprintf("<input type=radio id=\"full\" name=\"mode\" value=\"full\" checked>");
       else
          rsprintf("<input type=radio id=\"full\" name=\"mode\" value=\"full\">");
-      rsprintf("<label for=\"full\">%s&nbsp;&nbsp;</label>\n", loc("Display full entries"));
+      rsprintf("<label for=\"full\">%s&nbsp;&nbsp;</label>\n",
+               loc("Display full entries"));
 
       if (strieq(mode, "Summary"))
-         rsprintf("<input type=radio id=\"summary\" name=\"mode\" value=\"summary\" checked>");
+         rsprintf
+             ("<input type=radio id=\"summary\" name=\"mode\" value=\"summary\" checked>");
       else
          rsprintf("<input type=radio id=\"summary\" name=\"mode\" value=\"summary\">");
       rsprintf("<label for=\"summary\">%s&nbsp;&nbsp;</label>\n", loc("Summary only"));
@@ -7382,14 +7390,16 @@ void show_find_form(LOGBOOK * lbs)
 
    } else {
       if (strieq(mode, "Full") || strieq(mode, "Summary"))
-         rsprintf("<input type=radio id=\"summary\" name=\"mode\" value=\"summary\" checked>");
+         rsprintf
+             ("<input type=radio id=\"summary\" name=\"mode\" value=\"summary\" checked>");
       else
          rsprintf("<input type=radio id=\"summary\" name=\"mode\" value=\"summary\">");
       rsprintf("<label for=\"summary\">%s&nbsp;&nbsp;</label>\n", loc("Summary"));
    }
 
    if (strieq(mode, "Threaded"))
-      rsprintf("<input type=radio id=\"threaded\" name=\"mode\" value=\"threaded\" checked>");
+      rsprintf
+          ("<input type=radio id=\"threaded\" name=\"mode\" value=\"threaded\" checked>");
    else
       rsprintf("<input type=radio id=\"threaded\" name=\"mode\" value=\"threaded\">");
    rsprintf("<label for=\"threaded\">%s&nbsp;&nbsp;</label>\n", loc("Display threads"));
@@ -7398,8 +7408,9 @@ void show_find_form(LOGBOOK * lbs)
       rsprintf("<input type=radio id=\"CSV\" name=\"mode\" value=\"CSV\" checked>");
    else
       rsprintf("<input type=radio id=\"CSV\" name=\"mode\" value=\"CSV\">");
-               
-   rsprintf("<label for=\"CSV\">%s&nbsp;&nbsp;</label>\n", loc("Display comma-separated values (CSV)"));
+
+   rsprintf("<label for=\"CSV\">%s&nbsp;&nbsp;</label>\n",
+            loc("Display comma-separated values (CSV)"));
 
    rsprintf("</td></tr>\n");
 
@@ -8843,22 +8854,25 @@ void show_import_page(LOGBOOK * lbs)
 
    /*---- entry form ----*/
 
-   rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n", loc("CSV filename"));
+   rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n",
+            loc("CSV filename"));
    rsprintf("<td class=\"attribvalue\">");
    rsprintf("<input type=\"file\" size=\"60\" maxlength=\"200\" name=\"csvfile\" ");
    rsprintf("accept=\"filetype/*\"></td></tr>\n");
 
-   rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n", loc("Field separator"));
+   rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n",
+            loc("Field separator"));
    rsprintf("<td class=\"attribvalue\">");
    rsprintf("<input type=\"text\" size=\"1\" maxlength=\"1\" name=\"sep\" value=\",\">");
    rsprintf("</td></tr>\n");
 
-   rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n", loc("Options"));
+   rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n",
+            loc("Options"));
    rsprintf("<td class=\"attribvalue\">");
    rsprintf("<input type=checkbox id=\"head\" name=\"head\" value=\"1\">\n");
-   rsprintf("<label for=\"head\">%s</label>\n", loc("Derive attributes from CSV file")); 
+   rsprintf("<label for=\"head\">%s</label>\n", loc("Derive attributes from CSV file"));
    rsprintf("</td></tr>\n");
-   
+
    rsprintf("</table></td></tr></table>\n\n");
    show_bottom_text(lbs);
    rsprintf("</form></body></html>\r\n");
@@ -10089,10 +10103,10 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                md5_cache[i_cache].message_id = -1;
 
             } else {
-            
+
                /* if message exists only in cache, but not remotely, 
                   it must have been deleted remotely, so remove it locally */
-            
+
                if (_logging_level > 1)
                   logf(lbs, "MIRROR delete local entry #%d", message_id);
 
@@ -10222,9 +10236,9 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 
                } else {
 
-                  if (!equal_md5(md5_cache[i_cache].md5_digest, 
+                  if (!equal_md5(md5_cache[i_cache].md5_digest,
                                  md5_remote[i_remote].md5_digest)) {
-                  
+
                      /* if message has changed remotely, receive it */
                      if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
                         receive_message(lbs, list[index], message_id, error_str, TRUE);
@@ -10253,7 +10267,8 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                      if (_logging_level > 1)
                         logf(lbs, "MIRROR delete remote entry #%d", message_id);
 
-                     sprintf(str, "%d?cmd=%s&confirm=%s", message_id, loc("Delete"), loc("Yes"));
+                     sprintf(str, "%d?cmd=%s&confirm=%s", message_id, loc("Delete"),
+                             loc("Yes"));
                      combine_url(lbs, list[index], str, url, sizeof(url));
 
                      all_identical = FALSE;
@@ -10276,7 +10291,8 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 
                         free(buffer);
                      } else
-                        rsprintf("ID%d:\t%s\n", message_id, loc("Entry deleted remotely"));
+                        rsprintf("ID%d:\t%s\n", message_id,
+                                 loc("Entry deleted remotely"));
 
                      md5_cache[i_cache].message_id = -1;
                   }
@@ -10382,7 +10398,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   char *reply_to, int n_attr_disp,
                   char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH],
                   char attrib[MAX_N_ATTR][NAME_LENGTH], int n_attr,
-                  char *text,
+                  char *text, BOOL show_text,
                   char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], char *encoding,
                   BOOL select, int *n_display, char *locked_by)
 {
@@ -10395,8 +10411,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    struct tm *pts;
    time_t ltime;
 
-   slist = malloc((MAX_N_ATTR + 10)*NAME_LENGTH);
-   svalue = malloc((MAX_N_ATTR + 10)*NAME_LENGTH);
+   slist = malloc((MAX_N_ATTR + 10) * NAME_LENGTH);
+   svalue = malloc((MAX_N_ATTR + 10) * NAME_LENGTH);
 
    sprintf(ref, "../%s/%d", lbs->name_enc, message_id);
 
@@ -10471,16 +10487,15 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          }
       }
 
-      j = build_subst_list(lbs, (char (*)[NAME_LENGTH])slist, 
-                                (char (*)[NAME_LENGTH])svalue, attrib, TRUE);
+      j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
+                           (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
       sprintf(str, "%d", message_id);
-      add_subst_list((char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, 
-         "message id", str, &j);
-      add_subst_time(lbs, (char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, 
-         "entry time", date, &j);
+      add_subst_list((char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
+                     "message id", str, &j);
+      add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
+                     "entry time", date, &j);
 
-      strsubst(display, (char (*)[NAME_LENGTH])slist, 
-                        (char (*)[NAME_LENGTH])svalue, j);
+      strsubst(display, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
 
       rsprintf("<a href=\"%s\">", ref);
 
@@ -10488,7 +10503,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          rsputs(display);
       else
          rsputs2(display);
-      
+
       rsprintf("</a>\n");
    } else {
       /* show select box */
@@ -10516,7 +10531,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   rsprintf("<img border=0 src=\"reply.gif\">&nbsp;");
 
                skip_comma = TRUE;
-            
+
             } else {
                rsprintf("<td class=\"%s\">", sclass);
 
@@ -10526,16 +10541,16 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                }
 
                if (getcfg(lbs->name, "ID display", display)) {
-                  j = build_subst_list(lbs, (char (*)[NAME_LENGTH])slist, 
-                                            (char (*)[NAME_LENGTH])svalue, attrib, TRUE);
+                  j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
+                                       (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
                   sprintf(str, "%d", message_id);
-                  add_subst_list((char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, 
-                     "message id", str, &j);
-                  add_subst_time(lbs, (char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, 
-                     "entry time", date, &j);
+                  add_subst_list((char (*)[NAME_LENGTH]) slist,
+                                 (char (*)[NAME_LENGTH]) svalue, "message id", str, &j);
+                  add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
+                                 (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
 
-                  strsubst(display, (char (*)[NAME_LENGTH])slist, 
-                                    (char (*)[NAME_LENGTH])svalue, j);
+                  strsubst(display, (char (*)[NAME_LENGTH]) slist,
+                           (char (*)[NAME_LENGTH]) svalue, j);
 
                } else
                   sprintf(display, "%d", message_id);
@@ -10559,15 +10574,19 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
          if (strieq(disp_attr[index], loc("Edit"))) {
             if (!strieq(mode, "Threaded")) {
-               rsprintf("<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref, loc("Edit"));
-               rsprintf("<img src=\"edit.gif\" border=0 alt=\"%s\"></a></td>\n", loc("Edit entry"));
+               rsprintf("<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref,
+                        loc("Edit"));
+               rsprintf("<img src=\"edit.gif\" border=0 alt=\"%s\"></a></td>\n",
+                        loc("Edit entry"));
             }
          }
 
          if (strieq(disp_attr[index], loc("Delete"))) {
             if (!strieq(mode, "Threaded")) {
-               rsprintf("<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref, loc("Delete"));
-               rsprintf("<img src=\"delete.gif\" border=0 alt=\"%s\"></a></td>\n", loc("Delete entry"));
+               rsprintf("<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref,
+                        loc("Delete"));
+               rsprintf("<img src=\"delete.gif\" border=0 alt=\"%s\"></a></td>\n",
+                        loc("Delete entry"));
             }
          }
 
@@ -10669,7 +10688,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
                      if (is_html(attrib[i]))
                         rsputs(attrib[i]);
-                     else  {
+                     else {
                         rsprintf("<a href=\"%s\">", ref);
                         if (is_html(attrib[i]))
                            rsputs(attrib[i]);
@@ -10688,7 +10707,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          rsprintf("</a>\n");
    }
 
-   if (strieq(mode, "Threaded") && expand > 1) {
+   if (strieq(mode, "Threaded") && expand > 1 && show_text) {
       rsprintf("</td></tr>\n");
 
       rsprintf("<tr><td class=\"summary\">");
@@ -10722,7 +10741,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    }
 
 
-   if ((strieq(mode, "Summary") && n_line > 0)) {
+   if (strieq(mode, "Summary") && n_line > 0 && show_text) {
       rsprintf("<td class=\"summary\">");
       for (i = i_line = 0; i < (int) sizeof(str) - 1; i++) {
          str[i] = text[i];
@@ -10749,7 +10768,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    if (select)
       colspan++;
 
-   if (strieq(mode, "Full")) {
+   if (strieq(mode, "Full") && show_text) {
       if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1) {
          rsprintf("<tr><td class=\"messagelist\" colspan=%d>", colspan);
 
@@ -10843,7 +10862,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
 void display_reply(LOGBOOK * lbs, int message_id, int printable,
                    int expand, int n_line, int n_attr_disp,
-                   char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], int level)
+                   char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], BOOL show_text, int level)
 {
    char *date, *text, *in_reply_to, *reply_to, *encoding, *locked_by, *attachment,
        *attrib, *p;
@@ -10882,14 +10901,14 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable,
 
    display_line(lbs, message_id, 0, "threaded", expand, level, printable,
                 n_line, FALSE, date, in_reply_to, reply_to, n_attr_disp,
-                disp_attr, (void *) attrib, lbs->n_attr, text, NULL, encoding, 0, NULL,
+                disp_attr, (void *) attrib, lbs->n_attr, text, show_text, NULL, encoding, 0, NULL,
                 locked_by);
 
    if (reply_to[0]) {
       p = reply_to;
       do {
          display_reply(lbs, atoi(p), printable, expand, n_line, n_attr_disp, disp_attr,
-                       level + 1);
+                       show_text, level + 1);
 
          while (*p && isdigit(*p))
             p++;
@@ -11161,7 +11180,8 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          strlcat(menu_str, "Config, ", sizeof(menu_str));
    }
 
-   strcpy(other_str, "Update, Upload, Submit, Back, Search, Save, Download, CSV Import, ");
+   strcpy(other_str,
+          "Update, Upload, Submit, Back, Search, Save, Download, CSV Import, ");
    strcat(other_str, "Cancel, First, Last, Previous, Next, Requested, Forgot, ");
 
    /* admin commands */
@@ -11684,8 +11704,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH], mode[80], mid[80],
        menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH];
-   char *p, *pt, *pt1, *pt2, *slist, *svalue;
-   BOOL show_attachments, threaded, csv, mode_commands, expand, filtering, disp_filter;
+   char *p, *pt, *pt1, *pt2, *slist, *svalue, *gattr;
+   BOOL show_attachments, threaded, csv, mode_commands, expand, filtering, disp_filter,
+      show_text;
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2;
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
@@ -11761,8 +11782,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          return;
       }
 
-   slist = malloc((MAX_N_ATTR + 10)*NAME_LENGTH);
-   svalue = malloc((MAX_N_ATTR + 10)*NAME_LENGTH);
+   slist = malloc((MAX_N_ATTR + 10) * NAME_LENGTH);
+   svalue = malloc((MAX_N_ATTR + 10) * NAME_LENGTH);
+   gattr = malloc(MAX_N_ATTR * NAME_LENGTH);
    list = malloc(10000);
 
    printable = atoi(getparam("Printable"));
@@ -11826,6 +11848,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       if (ltime_start < 0) {
          free(slist);
          free(svalue);
+         free(gattr);
          free(list);
          return;
       }
@@ -11841,6 +11864,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       if (ltime_end < 0) {
          free(slist);
          free(svalue);
+         free(gattr);
          free(list);
          return;
       }
@@ -11852,6 +11876,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
             show_error(str);
             free(slist);
             free(svalue);
+            free(gattr);
             free(list);
             return;
          }
@@ -11867,6 +11892,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       show_error(loc("Error: start date after end date"));
       free(slist);
       free(svalue);
+      free(gattr);
       free(list);
       return;
    }
@@ -11998,6 +12024,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       show_error("Out of memory");
       free(slist);
       free(svalue);
+      free(gattr);
       free(list);
       return;
    }
@@ -12050,17 +12077,17 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
                /* if value starts with '$', substitute it */
                if (str[0] == '$') {
-                  j = build_subst_list(lbs, 
-                     (char (*)[NAME_LENGTH])slist, 
-                     (char (*)[NAME_LENGTH])svalue, attrib, TRUE);
-                  sprintf(mid, "%d", message_id);                    
-                  add_subst_list((char (*)[NAME_LENGTH])slist, 
-                                 (char (*)[NAME_LENGTH])svalue, "message id", mid, &j);
-                  add_subst_time(lbs, (char (*)[NAME_LENGTH])slist, 
-                                      (char (*)[NAME_LENGTH])svalue, "entry time", date, &j);
+                  j = build_subst_list(lbs,
+                                       (char (*)[NAME_LENGTH]) slist,
+                                       (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
+                  sprintf(mid, "%d", message_id);
+                  add_subst_list((char (*)[NAME_LENGTH]) slist,
+                                 (char (*)[NAME_LENGTH]) svalue, "message id", mid, &j);
+                  add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
+                                 (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
 
-                  strsubst(str, (char (*)[NAME_LENGTH])slist, 
-                                (char (*)[NAME_LENGTH])svalue, j);
+                  strsubst(str, (char (*)[NAME_LENGTH]) slist,
+                           (char (*)[NAME_LENGTH]) svalue, j);
                   setparam(attr_list[i], str);
                }
 
@@ -12250,9 +12277,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    /*---- header ----*/
 
    if (getcfg(lbs->name, "Summary Page Title", str)) {
-      i = build_subst_list(lbs, (char (*)[NAME_LENGTH])slist, 
-         (char (*)[NAME_LENGTH])svalue, NULL, TRUE);
-      strsubst(str, (char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, i);
+      i = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
+                           (char (*)[NAME_LENGTH]) svalue, NULL, TRUE);
+      strsubst(str, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, i);
       strip_html(str);
    } else
       sprintf(str, "ELOG %s", lbs->name);
@@ -12607,6 +12634,38 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          }
       }
 
+      /* evaluate Guest display list */
+      show_text = TRUE;
+      if (getcfg(lbs->name, "Password file", str) &&
+          getcfg(lbs->name, "Guest display", str) &&
+          !isparam("unm")) {
+
+         n = strbreak(str, (char (*)[NAME_LENGTH])gattr, MAX_N_ATTR, ",");
+         for (i=0 ; i<n_attr_disp ; i++) {
+            for (j=0 ; j<n ; j++)
+               if (strieq(gattr+NAME_LENGTH*j, disp_attr[i]))
+                  break;
+
+            if (j == n && 
+               !strieq(disp_attr[i], loc("Logbook")) &&
+               !strieq(disp_attr[i], loc("ID")) &&
+               !strieq(disp_attr[i], loc("Date"))) {
+
+               memcpy(disp_attr[i], disp_attr[i+1], (n_attr_disp-i-1)*NAME_LENGTH);
+               n_attr_disp--;
+               i--;
+            }
+         }
+
+         for (j=0 ; j<n ; j++)
+            if (strieq(gattr+j*NAME_LENGTH, "text"))
+               break;
+
+         if (j == n)
+            show_text = FALSE;
+      }
+
+
       if (threaded) {
       } else {
          rsprintf("<tr>\n");
@@ -12662,7 +12721,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                         disp_attr[i], img);
          }
 
-         if (!strieq(mode, "Full") && n_line > 0)
+         if (!strieq(mode, "Full") && n_line > 0 && show_text)
             rsprintf("<th class=\"listtitle\">%s</th>\n", loc("Text"));
 
          rsprintf("</tr>\n\n");
@@ -12770,7 +12829,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          display_line(msg_list[index].lbs, message_id,
                       index, mode, expand, 0, printable, n_line,
                       show_attachments, date, in_reply_to, reply_to,
-                      n_attr_disp, disp_attr, attrib, lbs->n_attr, text,
+                      n_attr_disp, disp_attr, attrib, lbs->n_attr, text, show_text,
                       attachment, encoding, atoi(getparam("select")), &n_display,
                       locked_by);
 
@@ -12779,7 +12838,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                p = reply_to;
                do {
                   display_reply(msg_list[index].lbs, atoi(p), printable, expand, n_line,
-                                n_attr_disp, disp_attr, 1);
+                                n_attr_disp, disp_attr, show_text, 1);
 
                   while (*p && isdigit(*p))
                      p++;
@@ -12814,6 +12873,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
    free(slist);
    free(svalue);
+   free(gattr);
    free(list);
    free(msg_list);
    free(text);
@@ -12890,22 +12950,22 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
 
          comment[0] = 0;
          if (attr_flags[j] & AF_ICON) {
-         
+
             sprintf(str2, "Icon comment %s", attrib[j]);
             getcfg(lbs->name, str2, comment);
-         
-         }  else if (attr_flags[j] & AF_DATE) {
 
-               if (!getcfg(lbs->name, "Date format", format))
-                  strcpy(format, DEFAULT_DATE_FORMAT);
+         } else if (attr_flags[j] & AF_DATE) {
 
-               ltime = atoi(attrib[j]);
-               pts = localtime(&ltime);
-               if (ltime == 0)
-                  strcpy(comment, "-");
-               else
-                  strftime(comment, sizeof(str), format, pts);
-            }
+            if (!getcfg(lbs->name, "Date format", format))
+               strcpy(format, DEFAULT_DATE_FORMAT);
+
+            ltime = atoi(attrib[j]);
+            pts = localtime(&ltime);
+            if (ltime == 0)
+               strcpy(comment, "-");
+            else
+               strftime(comment, sizeof(str), format, pts);
+         }
 
          if (!comment[0])
             strcpy(comment, attrib[j]);
@@ -13343,7 +13403,7 @@ void submit_elog(LOGBOOK * lbs)
          }
       }
    }
-   
+
    message_id = 0;
    reply_to[0] = 0;
    in_reply_to[0] = 0;
@@ -13856,13 +13916,13 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
    char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], cmd_enc[256],
        orig_tag[80], reply_tag[MAX_REPLY_TO * 10], display[256],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
-       att[256], lattr[256], mid[80];
-   char menu_item[MAX_N_LIST][NAME_LENGTH], format[80], admin_user[80],
-       slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], *p;
-   char lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256], class_name[80], class_value[80],
+       att[256], lattr[256], mid[80], menu_item[MAX_N_LIST][NAME_LENGTH], format[80],
+       admin_user[80], slist[MAX_N_ATTR + 10][NAME_LENGTH],
+       gattr[MAX_N_ATTR][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], *p,
+       lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256], class_name[80], class_value[80],
        fl[8][NAME_LENGTH];
    FILE *f;
-   BOOL first;
+   BOOL first, show_text;
    struct tm *pts;
    time_t ltime;
 
@@ -14256,16 +14316,16 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
       rsprintf("<input type=hidden name=browsing value=1>\n");
 
       if (getcfg(lbs->name, "ID display", display)) {
-         j = build_subst_list(lbs, (char (*)[NAME_LENGTH])slist, 
-                                   (char (*)[NAME_LENGTH])svalue, attrib, TRUE);
+         j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
+                              (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
          sprintf(str, "%d", message_id);
-         add_subst_list((char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, 
-            "message id", str, &j);
-         add_subst_time(lbs, (char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, 
-            "entry time", date, &j);
+         add_subst_list((char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
+                        "message id", str, &j);
+         add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
+                        (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
 
-         strsubst(display, (char (*)[NAME_LENGTH])slist, 
-                           (char (*)[NAME_LENGTH])svalue, j);
+         strsubst(display, (char (*)[NAME_LENGTH]) slist,
+                  (char (*)[NAME_LENGTH]) svalue, j);
 
       } else
          sprintf(display, "%d", message_id);
@@ -14326,6 +14386,20 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
       }
 
       for (i = 0; i < lbs->n_attr; i++) {
+         
+         if (getcfg(lbs->name, "Password file", str) &&
+             getcfg(lbs->name, "Guest display", str) &&
+             !isparam("unm")) {
+
+            n = strbreak(str, gattr, MAX_N_ATTR, ",");
+            for (j=0 ; j<n ; j++)
+               if (strieq(gattr[j], attr_list[i]))
+                  break;
+
+            if (j == n)
+               continue;
+         }
+         
          strcpy(class_name, "attribname");
          strcpy(class_value, "attribvalue");
 
@@ -14414,7 +14488,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
          } else {
             rsprintf("%s:</td><td class=\"%s\">\n", attr_list[i], class_value);
-            
+
             if (is_html(attrib[i]))
                rsputs(attrib[i]);
             else
@@ -14432,7 +14506,22 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
       /*---- message text ----*/
 
-      if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1) {
+      show_text = !getcfg(lbs->name, "Show text", str) || atoi(str) == 1;
+
+      if (getcfg(lbs->name, "Password file", str) &&
+          getcfg(lbs->name, "Guest display", str) &&
+          !isparam("unm")) {
+
+         n = strbreak(str, gattr, MAX_N_ATTR, ",");
+         for (j=0 ; j<n ; j++)
+            if (strieq(gattr[j], "text"))
+               break;
+
+         if (j == n)
+            show_text = FALSE;
+      }
+
+      if (show_text) {
          rsprintf("<tr><td class=\"messageframe\">\n");
 
          if (strieq(encoding, "plain")) {
@@ -14443,92 +14532,92 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
             rsputs(text);
 
          rsputs("</td></tr>\n");
-      }
 
-      for (index = 0; index < MAX_ATTACHMENTS; index++) {
-         if (attachment[index][0] && strlen(attachment[index]) > 14) {
-            for (i = 0; i < (int) strlen(attachment[index]); i++)
-               att[i] = toupper(attachment[index][i]);
-            att[i] = 0;
+         for (index = 0; index < MAX_ATTACHMENTS; index++) {
+            if (attachment[index][0] && strlen(attachment[index]) > 14) {
+               for (i = 0; i < (int) strlen(attachment[index]); i++)
+                  att[i] = toupper(attachment[index][i]);
+               att[i] = 0;
 
-            /* determine size of attachment */
-            strlcpy(file_name, lbs->data_dir, sizeof(file_name));
-            strlcat(file_name, attachment[index], sizeof(file_name));
+               /* determine size of attachment */
+               strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+               strlcat(file_name, attachment[index], sizeof(file_name));
 
-            length = 0;
-            fh = open(file_name, O_RDONLY | O_BINARY);
-            if (fh > 0) {
-               lseek(fh, 0, SEEK_END);
-               length = TELL(fh);
-               close(fh);
-            }
+               length = 0;
+               fh = open(file_name, O_RDONLY | O_BINARY);
+               if (fh > 0) {
+                  lseek(fh, 0, SEEK_END);
+                  length = TELL(fh);
+                  close(fh);
+               }
 
-            strcpy(str, attachment[index]);
-            str[13] = 0;
-            sprintf(ref, "%s/%s", str, attachment[index] + 14);
-            url_encode(ref, sizeof(ref));       /* for file names with special characters like "+" */
+               strcpy(str, attachment[index]);
+               str[13] = 0;
+               sprintf(ref, "%s/%s", str, attachment[index] + 14);
+               url_encode(ref, sizeof(ref));       /* for file names with special characters like "+" */
 
-            /* overall table */
-            rsprintf
-                ("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>\n");
+               /* overall table */
+               rsprintf
+                   ("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>\n");
 
-            rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s %d:</td>\n",
-                     loc("Attachment"), index + 1);
+               rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s %d:</td>\n",
+                        loc("Attachment"), index + 1);
 
-            rsprintf("<td class=\"attribvalue\"><a href=\"%s\">%s</a>\n", ref,
-                     attachment[index] + 14);
+               rsprintf("<td class=\"attribvalue\"><a href=\"%s\">%s</a>\n", ref,
+                        attachment[index] + 14);
 
-            rsprintf("&nbsp;<span class=\"bytes\">");
+               rsprintf("&nbsp;<span class=\"bytes\">");
 
-            if (length < 1024)
-               rsprintf("%d Bytes", length);
-            else if (length < 1024 * 1024)
-               rsprintf("%d kB", length / 1024);
-            else
-               rsprintf("%1.3lf MB", length / 1024.0 / 1024.0);
+               if (length < 1024)
+                  rsprintf("%d Bytes", length);
+               else if (length < 1024 * 1024)
+                  rsprintf("%d kB", length / 1024);
+               else
+                  rsprintf("%1.3lf MB", length / 1024.0 / 1024.0);
 
-            rsprintf("</span></td></tr></table></td></tr>\n");
+               rsprintf("</span></td></tr></table></td></tr>\n");
 
-            if (!getcfg(lbs->name, "Show attachments", str) || atoi(str) == 1) {
-               if (strstr(att, ".GIF") || strstr(att, ".JPG") || strstr(att, ".JPEG")
-                   || strstr(att, ".PNG")) {
-                  rsprintf("<tr><td class=\"messageframe\">\n");
-                  rsprintf("<a name=\"att%d\">\n", index + 1);
-                  rsprintf("<img src=\"%s\"></td></tr>", ref);
-                  rsprintf("</td></tr>\n\n");
-               } else {
-                  if (strstr(att, ".TXT") || strstr(att, ".ASC")
-                      || strchr(att, '.') == NULL) {
-                     /* display attachment */
+               if (!getcfg(lbs->name, "Show attachments", str) || atoi(str) == 1) {
+                  if (strstr(att, ".GIF") || strstr(att, ".JPG") || strstr(att, ".JPEG")
+                      || strstr(att, ".PNG")) {
                      rsprintf("<tr><td class=\"messageframe\">\n");
-
-                     /* anchor for references */
                      rsprintf("<a name=\"att%d\">\n", index + 1);
+                     rsprintf("<img src=\"%s\"></td></tr>", ref);
+                     rsprintf("</td></tr>\n\n");
+                  } else {
+                     if (strstr(att, ".TXT") || strstr(att, ".ASC")
+                         || strchr(att, '.') == NULL) {
+                        /* display attachment */
+                        rsprintf("<tr><td class=\"messageframe\">\n");
 
-                     if (!strstr(att, ".HTML"))
-                        rsprintf("<pre class=\"messagepre\">");
+                        /* anchor for references */
+                        rsprintf("<a name=\"att%d\">\n", index + 1);
 
-                     strlcpy(file_name, lbs->data_dir, sizeof(file_name));
-                     strlcat(file_name, attachment[index], sizeof(file_name));
+                        if (!strstr(att, ".HTML"))
+                           rsprintf("<pre class=\"messagepre\">");
 
-                     f = fopen(file_name, "rt");
-                     if (f != NULL) {
-                        while (!feof(f)) {
-                           str[0] = 0;
-                           fgets(str, sizeof(str), f);
+                        strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+                        strlcat(file_name, attachment[index], sizeof(file_name));
 
-                           if (!strstr(att, ".HTML"))
-                              rsputs2(str);
-                           else
-                              rsputs(str);
+                        f = fopen(file_name, "rt");
+                        if (f != NULL) {
+                           while (!feof(f)) {
+                              str[0] = 0;
+                              fgets(str, sizeof(str), f);
+
+                              if (!strstr(att, ".HTML"))
+                                 rsputs2(str);
+                              else
+                                 rsputs(str);
+                           }
+                           fclose(f);
                         }
-                        fclose(f);
-                     }
 
-                     if (!strstr(att, ".HTML"))
-                        rsprintf("</pre>");
-                     rsprintf("\n");
-                     rsprintf("</td></tr>\n");
+                        if (!strstr(att, ".HTML"))
+                           rsprintf("</pre>");
+                        rsprintf("\n");
+                        rsprintf("</td></tr>\n");
+                     }
                   }
                }
             }
@@ -15029,8 +15118,8 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
             lb_list[index].n_attr = scan_attributes(lb_list[index].name);
             message_id = el_search_message(&lb_list[index], EL_LAST, 0, FALSE);
             el_retrieve(&lb_list[index],
-                        message_id, date, attr_list, attrib, lb_list[index].n_attr, NULL, 0, NULL,
-                        NULL, NULL, NULL, NULL);
+                        message_id, date, attr_list, attrib, lb_list[index].n_attr, NULL,
+                        0, NULL, NULL, NULL, NULL, NULL);
             if (!getcfg(lb_list[index].name, "Last submission", str)) {
                sprintf(str, "$entry time");
                for (i = 0; i < lb_list[index].n_attr; i++)
