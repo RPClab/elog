@@ -24,7 +24,7 @@ case "$1" in
 	   fi
 	fi
 	echo -n "Starting elogd: "
-	@PREFIX@/bin/elogd -D -c @PREFIX@/elog/elogd.cfg  > /dev/null 2>&1 
+	@PREFIX@/sbin/elogd -D -c @PREFIX@/elog/elogd.cfg  > /dev/null 2>&1 
 	RETVAL=$?
         if [ $RETVAL -eq 0  ] ; then 
           touch /var/lock/subsys/elogd
