@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.378  2004/07/12 13:52:49  midas
+   Fixed problem with options list containing several quotation marks
+
    Revision 1.377  2004/07/12 08:01:15  midas
    Added 'fix text' flag
 
@@ -1970,7 +1973,8 @@ int getcfg_simple(char *group, char *param, char *value)
                      while (*pstr == ' ' || *pstr == '\t')
                         *pstr-- = 0;
 
-                     if (str[0] == '"' && str[strlen(str) - 1] == '"') {
+                     if (str[0] == '"' && str[strlen(str) - 1] == '"' &&
+                        strchr(str+1, '"') == str+strlen(str)-1) {
                         strcpy(value, str + 1);
                         value[strlen(value) - 1] = 0;
                      } else
@@ -19720,8 +19724,11 @@ int main(int argc, char *argv[])
    if (daemon)
       run_service();
    else
+      server_loop(tcp_port, daemon);
+#else
+   server_loop(tcp_port, daemon);
 #endif
 
-      server_loop(tcp_port, daemon);
+
    exit(EXIT_SUCCESS);
 }
