@@ -30,9 +30,8 @@ Section "ELOG system (required)"
   SetOutPath $INSTDIR
 
   File COPYING
-  File README.txt
+  File README
 
-  File elog*.c
   File nt\release\elogd.exe
   File nt\release\elog.exe
   File nt\release\elconv.exe
@@ -42,6 +41,10 @@ Section "ELOG system (required)"
   ; doc directory
   SetOutPath $INSTDIR\doc
   File doc\*.*
+
+  ; src directory
+  SetOutPath $INSTDIR\src
+  File src\*.c
   
   ; themes and demo logbook
   SetOutPath $INSTDIR\themes\default
@@ -109,9 +112,7 @@ Section "Uninstall"
 
   ; remove files
   Delete $INSTDIR\COPYING
-  Delete $INSTDIR\README.txt
-  Delete $INSTDIR\elog.c
-  Delete $INSTDIR\elogd.c
+  Delete $INSTDIR\README
   Delete $INSTDIR\elog.exe
   Delete $INSTDIR\elogd.exe
   Delete $INSTDIR\elconv.exe
@@ -129,6 +130,9 @@ Section "Uninstall"
 
   Delete $INSTDIR\doc\*
   RMDir $INSTDIR\doc
+
+  Delete $INSTDIR\src\*
+  RMDir $INSTDIR\src
 
   Delete $INSTDIR\themes\default\icons\*.*
   RMDir $INSTDIR\themes\default\icons
