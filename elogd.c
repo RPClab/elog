@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.113  2002/12/12 12:42:37  midas
+  Added 'quick filter' option
+
   Revision 2.112  2002/12/10 08:20:09  midas
   Hide wrong password from URL
 
@@ -6733,10 +6736,66 @@ int msg_compare_reverse(const void *m1, const void *m2)
 
 /*------------------------------------------------------------------*/
 
+void subst_param(char *str, int size, char *param, char *value)
+{
+int  len;
+char *p1, *p2, *s;
+
+  if (!value[0])
+    {
+    if (strstr(str, param) == NULL)
+      return;
+
+    /* remove parameter */
+    p1 = strstr(str, param)-1;
+
+    for (p2 = p1+strlen(param)+1 ; *p2 && *p2 != '&' ; p2++);
+    strlcpy(p1, p2, size - ((int)p1 - (int)str));
+
+    if (!strchr(str, '?') && strchr(str, '&'))
+      *strchr(str, '&') = '?';
+
+    return;
+    }
+
+  if (strstr(str, param) == NULL)
+    {
+    if (strchr(str, '?'))
+      strlcat(str, "&", size);
+    else
+      strlcat(str, "?", size);
+
+    strlcat(str, param, size);
+    strlcat(str, "=", size);
+    strlcat(str, value, size);
+    return;
+    }
+
+  p1 = strstr(str, param) + strlen(param) + 1;
+  for (p2 = p1 ; *p2 && *p2 != '&' ; p2++);
+  len = (int)p2 - (int)p1;
+  if (len > (int)strlen(value))
+    {
+    /* new value is shorter than old one */
+    strlcpy(p1, value, size - ((int)p1 - (int)str));
+    strlcpy(p1 + strlen(value), p2, size - ((int)p1 + strlen(value) - (int)str));
+    }
+  else
+    {
+    /* new value is longer than old one */
+    s = malloc(size);
+    strlcpy(s, p2, size);
+    strlcpy(p1, value, size - ((int)p1 - (int)str));
+    strlcat(p1, s, size - ((int)p1 + strlen(value) - (int)str));
+    free(s);
+    }
+
+}
+
+/*------------------------------------------------------------------*/
+
 void build_ref(char *ref, int size, char *mode, char *expand)
 {
-char *p1, *p2;
-
   if (strchr(getparam("cmdline"), '?'))
     strlcat(ref, strchr(getparam("cmdline"), '?'), size);
 
@@ -6746,58 +6805,34 @@ char *p1, *p2;
 
   /* eliminate old mode if new one is present */
   if (mode[0])
-    {
-    if ((p1 = strstr(ref, "mode=")) != NULL)
-      {
-      for (p2 = p1+5 ; *p2 && *p2 != '&' ; p2++);
-      strcpy(p1-1, p2);
-      }
-    sprintf(ref+strlen(ref), "&mode=%s", mode);
-    }
+    subst_param(ref, size, "mode", mode);
 
   /* eliminate old expand if new one is present */
   if (expand[0])
-    {
-    if ((p1 = strstr(ref, "expand=")) != NULL)
-      {
-      for (p2 = p1+8 ; *p2 && *p2 != '&' ; p2++);
-      strcpy(p1-1, p2);
-      }
-    sprintf(ref+strlen(ref), "&expand=%s", expand);
-    }
+    subst_param(ref, size, "expand", expand);
 
-  if (isparam("last"))
-    {
-    /* eliminate old last= */
-    if ((p1 = strstr(ref, "last=")) != NULL)
-      {
-      for (p2 = p1+5 ; *p2 && isdigit(*p2) ; p2++);
-      strcpy(p1-1, p2);
-      }
-    sprintf(ref+strlen(ref), "&last=%s", getparam("last"));
-    }
-
-  /* replace first '&' by '?' if not present */
-  if (!strchr(ref, '?') && strchr(ref, '&'))
-    *strchr(ref, '&') = '?';
+  /* eliminate old last= */
+  subst_param(ref, size, "last", getparam("last"));
 }
 
-void show_page_navigation(LOGBOOK *lbs, int n_msg, int page_n, int n_page, BOOL top, BOOL mode_commands,
-                          BOOL threaded)
-{
-int  i, cur_exp;
-char ref[256], str[256];
+/*------------------------------------------------------------------*/
 
-  if (!(page_n && n_msg > n_page) && !top)
-    return;
+void show_page_filters(LOGBOOK *lbs, int n_msg, int page_n, int n_page, BOOL top, BOOL mode_commands,
+                       BOOL threaded)
+{
+int  cur_exp, n, i, j, index;
+char ref[256], str[256];
+char list[MAX_N_LIST][NAME_LENGTH];
 
   rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1>\n");
   rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=0>\n",
             gt("Border width"), gt("Categories cellpadding"));
 
+  rsprintf("<tr>\n");
+
   if (mode_commands)
     {
-    rsprintf("<tr><td align=left bgcolor=%s>\n", gt("Menu1 BGColor"));
+    rsprintf("<td align=left bgcolor=%s>\n", gt("Menu1 BGColor"));
     rsprintf("<font size=1 face=verdana,arial,helvetica,sans-serif><b>");
 
     if (page_n != 1)
@@ -6836,7 +6871,7 @@ char ref[256], str[256];
 
       if (cur_exp > 0)
         {
-        sprintf(str, "%d", max(0, cur_exp-1));
+        sprintf(str, "%d", cur_exp > 0 ? cur_exp-1 : 0);
         build_ref(ref, sizeof(ref), "", str);
         rsprintf("|&nbsp;<a href=\"%s\">%s</a>&nbsp;", ref, loc("Collapse"));
         }
@@ -6849,7 +6884,7 @@ char ref[256], str[256];
           sprintf(ref, "page%d", page_n);
         else
           ref[0] = 0;
-        sprintf(str, "%d", min(3, cur_exp+1));
+        sprintf(str, "%d", cur_exp < 3 ? cur_exp+1 : 3);
         build_ref(ref, sizeof(ref), "", str);
         rsprintf("|&nbsp;<a href=\"%s\">%s</a>&nbsp;", ref, loc("Expand"));
         }
@@ -6858,8 +6893,100 @@ char ref[256], str[256];
       }
 
     rsprintf("</font>");
-    rsprintf("</td></tr>\n");
+    rsprintf("</td>\n");
     }
+
+  if (getcfg(lbs->name, "Quick filter", str))
+    {
+    rsprintf("<td align=right bgcolor=%s>\n", gt("Menu1 BGColor"));
+    n = strbreak(str, list, MAX_N_LIST);
+
+    for (index=0 ; index < n ; index++)
+      {
+      if (equal_ustring(list[index], "date"))
+        {
+        i = atoi(getparam("last"));
+
+        rsprintf("<input type=submit value=\"%s\">&nbsp;\n", loc("Show last"));
+
+        rsprintf("<select name=last onChange=\"document.form1.submit()\">\n");
+
+        rsprintf("<option value=\"_all_\">%s\n", loc("All entries"));
+
+        if (i == 1)
+          rsprintf("<option selected value=1>%s\n", loc("Day"));
+        else
+          rsprintf("<option value=1>%s\n", loc("Day"));
+        if (i == 7)
+          rsprintf("<option selected value=7>%s\n", loc("Week"));
+        else
+          rsprintf("<option value=7>%s\n", loc("Week"));
+        if (i == 31)
+          rsprintf("<option selected value=31>%s\n", loc("Month"));
+        else
+          rsprintf("<option value=31>%s\n", loc("Month"));
+        if (i == 92)
+          rsprintf("<option selected value=92>3 %s\n", loc("Months"));
+        else
+          rsprintf("<option value=92>3 %s\n", loc("Months"));
+        if (i == 182)
+          rsprintf("<option selected value=182>6 %s\n", loc("Months"));
+        else
+          rsprintf("<option value=182>6 %s\n", loc("Months"));
+        if (i == 364)
+          rsprintf("<option selected value=364>%s\n", loc("Year"));
+        else
+          rsprintf("<option value=364>%s\n", loc("Year"));
+  
+        rsprintf("</select> \n");
+        }
+      else
+        {
+        rsprintf("<input type=submit value=\"%s:\">&nbsp;\n", list[index]);
+
+        rsprintf("<select name=%s onChange=\"document.form1.submit()\">\n", list[index]);
+
+        rsprintf("<option value=\"_all_\">%s\n", loc("All entries"));
+
+        for (i=0 ; i<MAX_N_ATTR ; i++)
+          if (equal_ustring(attr_list[i], list[index]))
+            break;
+
+        if (i < MAX_N_ATTR)
+          {
+          for (j=0 ; j<MAX_N_LIST && attr_options[i][j][0] ; j++)
+            {
+            if (isparam(attr_list[i]) && equal_ustring(attr_options[i][j], getparam(attr_list[i])))
+              rsprintf("<option selected value=\"%s\">%s\n", attr_options[i][j], attr_options[i][j]);
+            else
+              rsprintf("<option value=\"%s\">%s\n", attr_options[i][j], attr_options[i][j]);
+            }
+          }
+
+        rsprintf("</select> \n");
+        }
+      }
+
+    rsprintf("</td>\n");
+    }
+
+  rsprintf("</tr></table></td></tr></table></td></tr>\n\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void show_page_navigation(LOGBOOK *lbs, int n_msg, int page_n, int n_page, BOOL top, BOOL mode_commands,
+                          BOOL threaded)
+{
+int  i;
+char ref[256];
+
+  if (!page_n || n_msg <= n_page)
+    return;
+
+  rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1>\n");
+  rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=0>\n",
+            gt("Border width"), gt("Categories cellpadding"));
 
   rsprintf("<tr>\n");
 
@@ -6921,46 +7048,6 @@ char ref[256], str[256];
   if (n_msg > n_page)
     rsprintf("</td>\n");
     
-  rsprintf("<td bgcolor=%s align=right>\n", gt("Menu1 BGColor"));
-
-  if (top)
-    {
-    i = atoi(getparam("last"));
-
-    rsprintf("<input type=submit value=\"%s\">&nbsp;\n", loc("Show last"));
-
-    rsprintf("<select name=last onChange=\"document.form1.submit()\">\n");
-
-    rsprintf("<option value=\"\">%s\n", loc("All entries"));
-
-    if (i == 1)
-      rsprintf("<option selected value=1>%s\n", loc("Day"));
-    else
-      rsprintf("<option value=1>%s\n", loc("Day"));
-    if (i == 7)
-      rsprintf("<option selected value=7>%s\n", loc("Week"));
-    else
-      rsprintf("<option value=7>%s\n", loc("Week"));
-    if (i == 31)
-      rsprintf("<option selected value=31>%s\n", loc("Month"));
-    else
-      rsprintf("<option value=31>%s\n", loc("Month"));
-    if (i == 92)
-      rsprintf("<option selected value=92>3 %s\n", loc("Months"));
-    else
-      rsprintf("<option value=92>3 %s\n", loc("Months"));
-    if (i == 182)
-      rsprintf("<option selected value=182>6 %s\n", loc("Months"));
-    else
-      rsprintf("<option value=182>6 %s\n", loc("Months"));
-    if (i == 364)
-      rsprintf("<option selected value=364>%s\n", loc("Year"));
-    else
-      rsprintf("<option value=364>%s\n", loc("Year"));
-    
-    rsprintf("</select>\n");
-    }
-
   rsprintf("</b></font></td></tr></table></td></tr></table></td></tr>\n\n");
 }
 
@@ -6989,7 +7076,7 @@ char lbk_list[MAX_N_LIST][NAME_LENGTH];
   rsprintf("//-->                                                             \n");
   rsprintf("</script>                                                         \n");
 
-  rsprintf("<b>Selected entries: </b>\n");
+  rsprintf("<b>%s: </b>\n", loc("Selected entries"));
 
   rsprintf("<input type=button value=\"%s\" onClick=\"ToggleAll();\">\n", loc("Toggle all"));
 
@@ -7119,26 +7206,51 @@ LOGBOOK *lbs_cur;
     return;
     }
 
-  /* redirect go command */
+  /* redirect "go" command */
   if (isparam("lastcmd"))  //## and not copy to / move to / delete ...
     {
     strlcpy(str, getparam("lastcmd"), sizeof(str));
     url_decode(str);
 
-    /* strip previous "last" */
-    if (strstr(str, "last="))
-      *(strstr(str, "last=")-1) = 0;
-    
-    /* add new "last" */
-    if (strchr(str, '?'))
-      sprintf(str+strlen(str), "&last=");
-    else
-      sprintf(str+strlen(str), "?last=");
+    /* subsitute "last" in command line from new parameter */
+    if (isparam("last"))
+      {
+      if (equal_ustring(getparam("last"), "_all_"))
+        subst_param(str, sizeof(str), "last", "");
+      else
+        subst_param(str, sizeof(str), "last", getparam("last"));
+      }
 
-    strlcat(str, getparam("last"), sizeof(str));
+    /* subsitute attributes in command line from new parameter */
+    for (i=0 ; i<MAX_N_ATTR ; i++)
+      if (isparam(attr_list[i]))
+        {
+        if (equal_ustring(getparam(attr_list[i]), "_all_"))
+          subst_param(str, sizeof(str), attr_list[i], "");
+        else
+          subst_param(str, sizeof(str), attr_list[i], getparam(attr_list[i]));
+        }
+
     redirect(str);
     return;
     }
+
+  /* remove remaining "_all_" in parameters */
+  if (equal_ustring(getparam("last"), "_all_"))
+    {
+    strlcpy(str, _cmdline, sizeof(str));
+    subst_param(str, sizeof(str), "last", "");
+    redirect(str);
+    return;
+    }
+  for (i=0 ; i<MAX_N_ATTR ; i++)
+    if (equal_ustring(getparam(attr_list[i]), "_all_"))
+      {
+      strlcpy(str, _cmdline, sizeof(str));
+      subst_param(str, sizeof(str), attr_list[i], "");
+      redirect(str);
+      return;
+      }
 
   printable = atoi(getparam("Printable"));
 
@@ -7619,7 +7731,7 @@ LOGBOOK *lbs_cur;
     /* store current command line as hidden parameter for page navigation */
     if (str[0] && !equal_ustring(str, "?"))
       {
-      url_encode(str, sizeof(str));
+      //##url_encode(str, sizeof(str));
       rsprintf("<input type=hidden name=lastcmd value=\"%s\">\n", str);
       }
 
@@ -7836,7 +7948,10 @@ LOGBOOK *lbs_cur;
   /*---- page navigation ----*/
 
   if (!printable)
+    {
+    show_page_filters(lbs, n_msg, page_n, n_page, TRUE, mode_commands, threaded);
     show_page_navigation(lbs, n_msg, page_n, n_page, TRUE, mode_commands, threaded);
+    }
 
   /*---- select navigation ----*/
 
