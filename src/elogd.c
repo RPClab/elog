@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.311  2004/03/22 21:13:07  midas
+   Improved speed of strieq()
+
    Revision 1.310  2004/03/22 14:17:31  midas
    Implemented 'display <attribute>' for single entry display
 
@@ -531,6 +534,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <string.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <locale.h>
@@ -831,18 +835,23 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
+#define my_toupper(_c)    ( ((_c)>='a' && (_c)<='z') ? ((_c)-'a'+'A') : (_c) )
+
 BOOL strieq(const char *str1, const char *str2)
 {
-   if (str1 == NULL && str2 != NULL)
-      return FALSE;
-   if (str1 != NULL && str2 == NULL)
-      return FALSE;
+   char c1, c2;
+
    if (str1 == NULL && str2 == NULL)
       return TRUE;
+   if (str1 == NULL || str2 == NULL)
+      return FALSE;
 
-   while (*str1)
-      if (toupper(*str1++) != toupper(*str2++))
+   while (*str1) {
+      c1 = *str1++;
+      c2 = *str2++;
+      if (my_toupper(c1) != my_toupper(c2))
          return FALSE;
+   }
 
    if (*str2)
       return FALSE;
@@ -12118,7 +12127,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    }
 
    /* redirect "go" command */
-   if (isparam("lastcmd")) {    //## and not copy to / move to / delete ...
+   if (isparam("lastcmd")) {
 
       strlcpy(str, getparam("lastcmd"), sizeof(str));
       url_decode(str);
@@ -18099,6 +18108,8 @@ int main(int argc, char *argv[])
    char read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256];
    time_t now;
    struct tm *tms;
+
+   chdir("c:\\program files\\elog\\");
 
    printf("elogd %s built %s, %s\n", VERSION, __DATE__, __TIME__);
 
