@@ -890,8 +890,10 @@ for example, makes the password expire after one day.<p>
 
 The <b><code>Admin user = &lt;user list&gt;</b></code> is a list of one or more user names,
 which have admin rights. They see a button <b><code>Change elogd.cfg</code></b> on the
-config page by which they can edit elogd.cfg through the web. They can also modify other 
-users on the <b><code>Config</code></b> page, change their passwords or remove them.<p>
+config page by which they can edit elogd.cfg through the web. They can also modify other
+users on the <b><code>Config</code></b> page, change their passwords or remove them. In
+addition, the admin user(s) can delete or edit entries from other users if
+<b><code>Restrict edit = 1</b></code>.<p>
 
 The <b><code>Login user = &lt;user list&gt;</b></code> is a list of users who can
 log in to a specific logbook. This option can be used with a global password file. If a
@@ -903,7 +905,7 @@ section in the configuration file. Only those users listed in this statement can
 to the logbook where the statement is defined. This method has the advantage over the
 option of definining individual password files for individual logbooks that only one
 central password file exists. So if a user changes her/his password, this becomes then
-valid for all logbooks. If there would be individual logbook password files, one would 
+valid for all logbooks. If there would be individual logbook password files, one would
 have to change the password in all logbooks individually.<p>
 
 <ul>
