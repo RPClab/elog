@@ -115,7 +115,6 @@ New passwords do not match, please retype = Kennwörter verschieden, bitte nochma
 Retype password = Kennwort erneut eingeben
 exists already = existiert bereits
 Register as new user = Als neuer Benutzer anmelden
-name may not contain blanks = Name darf keine Leerzeichen enthalten
 A new ELOG user has been registered on %s = Ein neuer Benutzer hat sich auf %s angemeldet
 Email = Email
 User "%s" registered on logbook "%s" = Benutzer "%s" im Logbuch "%s" registriert
@@ -165,7 +164,6 @@ Login as different user = Als anderer Benutzer anmelden
 User <i>"%s"</i> has no access to logbook <i>"%s"</i> = Benutzer <i>"%s"</i> hat keinen Zugriff auf Logbuch <i>"%s"</i>
 Date = Datum
 ID = ID
-Change elogd.cfg = elogd.cfg ändern
 Remember me on this computer = Auf diesem Computer eingeloggt bleiben
 Forgot password? = Kennwort vergessen?
 Email address <i>"%s"</i> not registered = Email-Adresse <i>"%s"</i> nicht registriert
@@ -209,7 +207,6 @@ Cannot read entry from local logbook = Kann Eintrag nicht aus lokalem Logbuch le
 Cannot create socket = Socket kann nicht erzeugt werden
 Cannot resolve host name "%s" = Computer Name "%s" kann nicht gefunden werden
 Cannot connect to host %s, port %d = Kann zum Computer %s, Port %d nicht verbinden
-Not enough memory = Nicht genügend Speicher
 Cannot receive "%s" = Kann "%s" nicht empfangen
 Received wrong entry id "%d" = Falscher Eintrag mit ID "%d" empfangen
 Entry #%d is locked on remote server = Eintrag #%d is auf anderem Computer in Bearbeitung
@@ -329,3 +326,18 @@ Several logbooks groups are defined on this host = Mehrere Logbuch-Gruppen sind 
 Please select one to list the logbooks in that group = Bitte eine auswählen, um die Logbücher in dieser Gruppe anzuzeigen
 No logbook defined on this server = Auf diesem Computer ist kein Logbuch eingerichtet
 
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Goto ELOG home page = 
+Please enter "%s" = 
+Change config file = 
+Please check that it exists and elogd has write access and disk is not full = 
+Show = 
+Hide = 
+Hide all = 
+Show all = 
+This logbook requires authentication = 
+Attachment file <b>"%s"</b> empty or not found = 
+Please increase <b>"Max content length"</b> in config file = 
