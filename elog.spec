@@ -42,6 +42,8 @@ access control, etc. Moreover, a single server can host several weblogs, and
 each weblog can be totally different from the rest. 
 
 %changelog
+* Thu Jan 30 2003 Stefan Ritt <stefan.ritt@psi.ch>
+- Added installation of man pages, thanks to Serge Droz <serge.droz@psi.ch>
 * Tue Aug 13 2002 Stefan Ritt <stefan.ritt@psi.ch>
 - Added elog group and user, thanks to Nicolas Chuche [nchuche@teaser.fr]
 * Tue Jun 18 2002 Stefan Ritt <stefan.ritt@psi.ch>
@@ -82,6 +84,12 @@ cp -r logbooks $RPM_BUILD_ROOT%{prefix}/elog
 install -m 0644 elogd.cfg $RPM_BUILD_ROOT%{prefix}/elog
 install -m 0755 elogd.init $RPM_BUILD_ROOT/etc/rc.d/init.d/elogd
 
+mkdir -p $RPM_BUILD_ROOT%{_mandir}/man1
+mkdir -p $RPM_BUILD_ROOT%{_mandir}/man8
+install -m 644 elog.1 $RPM_BUILD_ROOT%{_mandir}/man1
+install -m 644 elconv.1 $RPM_BUILD_ROOT%{_mandir}/man1
+install -m 644 elogd.8 $RPM_BUILD_ROOT%{_mandir}/man8
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -96,3 +104,5 @@ rm -rf $RPM_BUILD_ROOT
 %prefix/elog/logbooks
 %config(noreplace) %prefix/elog/elogd.cfg
 /etc/rc.d/init.d/elogd
+%{_mandir}/man8/*
+%{_mandir}/man8/*
