@@ -59,14 +59,14 @@ with = mit
 This is the last entry = Dies ist der letzte Eintrag
 This is the first entry = Dies ist der erste Eintrag
 Email sent to = Email gesendet an
-Email notification suppressed = Email-Benachrichtigung untedrückt
+Email notification suppressed = Email-Benachrichtigung unterdrückt
 please select = bitte auswählen
 Submit as HTML text = Als HTML-Text absenden
 Suppress Email notification = Email-Benachrichtigung unterdrücken
 Resubmit as new entry = Als neuen Eintrag absenden
 Attachment = Anhang
 Attachments = Anhänge
-No message available = Kein Entrag vorhanden
+No message available = Kein Eintrag vorhanden
 Reply to this = Antwort hierzu
 In reply to = Als Antwort auf
 
@@ -76,7 +76,7 @@ In reply to = Als Antwort auf
 ELOG Error = ELOG Fehler
 Fields marked with = Felder markiert mit
 are required = sind Pflichteinträge
-New message cannot be written to directory "%s" = Neuer Entrag kann nicht ins Verzeichnig "%s" geschrieben werden
+New message cannot be written to directory "%s" = Neuer Eintrag kann nicht ins Verzeichnig "%s" geschrieben werden
 Please check that it exists and elogd has write access = Bitte überprüfen, ob es existiert und ob elogd Schreibzugriff hat
 Error: Attribute <b>%s</b> not supplied = Fehler: Attribut <b>%s</b> nicht ausgefüllt
 Please go back and enter the <b>%s</b> field = Bitte zurückgehen und das Feld <b>%s</b> ausfüllen
@@ -121,7 +121,7 @@ Goto last message = Zum letzten Eintrag
 #
 # Error messages
 #
-Error: Command "<b>%s</b>" not allowed = Fehler: Kommando "<b>%s</b>" nicht erlaubt
+Error: Command "<b>%s</b>" not allowed = Fehler: Befehl "<b>%s</b>" nicht erlaubt
 Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = Fehler: Kommando "<b>%s</b>" nicht erlaubt für Benutzer "<b>%s</b>"
 Cannot open file <b>%s</b> = Datei <b>%s</b> kann nicht geöffnet werden
 Cannot write to <b>%s</b> = Datei <b>%s</b> kann nicht geschrieben werden
@@ -203,7 +203,7 @@ A old entry has been updated on %s = Ein alter Eintrag wurde von %s geändert
 # New strings for V2.2.4
 Collapse = eingeklappt
 Expand = erweitert
-Full = ausfühlich
+Full = ausführlich
 Summary = zusammengefasst
 Threaded = mit&nbsp;Antwortketten
 
@@ -260,7 +260,7 @@ User "%s" registered on host "%s" = Benutzer "%s" auf Computer "%s" registriert
 Registration request on host "%s" = Registrierungsanforderung auf Computer "%s"
 Please log on by clicking on following link and change your password = Bitte durch Anklicken des folgenden Links einloggen und das Kennwort ändern
 A new password has been created for you on host %s = Ein neues Kennwort wurde auf dem Computer %s registriert
-Enter your user name or email address = Bitte Benutzername oder Email-Adresse eingeben
+Enter your user name or email address = Bitte Benutzernamen oder Email-Adresse eingeben
 Password recovery for ELOG %s = Kennwort-Wiederherstellung für ELOG %s
 
 #
