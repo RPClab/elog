@@ -1,7 +1,22 @@
-Version 2.3.10, released July xxth, 2003
-========================================
+Version 2.4.0, released January 5th, 2004
+=========================================
 
 - Renames "Display search" to "List display"
+- Fixed various HTML errors
+- Increased timeout in SMTP conversation
+- Create password file if not existing
+- User cannot change login name if already existing
+- User cannot search in logbooks of which he has no access
+- Added date of last entry in logbook selection page
+- Fixed stack overflow on long reply-chains
+- Added MAX_REPLY_TO
+- Added 'restrict edit time' configuration option
+- Improved speed of long searches significantly
+- Added 'use email heading'
+- Changed email notification format
+- Added 'comment <attribute>'
+- Added 'date on reply' flag
+- Implemented conditional attributes
 
 Version 2.3.9, released July 15th, 2003
 =======================================
