@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.74  2002/09/12 10:08:25  midas
+  Fixed problem with 'self register = 3'
+
   Revision 2.73  2002/09/12 08:48:54  midas
   Fixed sorting bug
 
@@ -5031,7 +5034,7 @@ int    i, fh, size, self_register;
     }
 
   /* if requested, send notification email to admin user */
-  if (new_user && (self_register == 2 || self_register == 3))
+  if (new_user && (self_register == 2 || self_register == 3) && !isparam("admin"))
     {
     if (!getcfg("global", "SMTP host", smtp_host))
       {
@@ -5272,6 +5275,7 @@ int  i;
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
   rsprintf("<input type=hidden name=config value=\"%s\">\n", user);
+
   rsprintf("</td></tr></table></td></tr>\n\n");
 
   /* overall table for message giving blue frame */
@@ -5283,6 +5287,7 @@ int  i;
   if (getcfg(lbs->name, "Admin user", str) && 
       strstr(str, getparam("unm")) != 0)
     {
+    rsprintf("<input type=hidden name=admin value=1>\n");
     rsprintf("<tr><td width=10%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Select user"));
     rsprintf("<td bgcolor=%s><select name=cfg_user onChange=\"document.form1.submit()\">\n", gt("Categories bgcolor2"));
 
@@ -7764,23 +7769,6 @@ BOOL   first;
 
   strcpy(command, getparam("cmd"));
 
-  /* display account request notification */
-  if (equal_ustring(command, "Requested"))
-    {
-    show_standard_header(loc("ELOG registration"), "");
-
-    rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
-              gt("Border width"), gt("Frame color"));
-    rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
-    rsprintf("<tr><td bgcolor=#B0FFB0 align=center>");
-
-    rsprintf(loc("Your request has been forward the the administrator. You will be notified by email upon activation of your new account."));
-
-    rsprintf("</td></tr>\n</table></td></tr></table>\n");
-    rsprintf("</body></html>\n");
-    return;
-    }
-  
   /* correct for image buttons */
   if (*getparam("cmd_first.x"))
     strcpy(command, loc("First"));
@@ -9436,6 +9424,25 @@ LOGBOOK *cur_lb;
           sprintf(str, "../%s/", cur_lb->name_enc);
           redirect(str);
           return;
+          }
+        if (equal_ustring(command, "Requested"))
+          {
+          /* display account request notification */
+          if (equal_ustring(command, "Requested"))
+            {
+            show_standard_header(loc("ELOG registration"), "");
+
+            rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
+                      gt("Border width"), gt("Frame color"));
+            rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
+            rsprintf("<tr><td bgcolor=#B0FFB0 align=center>");
+
+            rsprintf(loc("Your request has been forward the the administrator. You will be notified by email upon activation of your new account."));
+
+            rsprintf("</td></tr>\n</table></td></tr></table>\n");
+            rsprintf("</body></html>\n");
+            return;
+            }
           }
         }
 
