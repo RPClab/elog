@@ -230,7 +230,10 @@ and keep the other options as they are. After pressing "OK" the daemon should be
 <li><code>-p &lt;port></code> : TCP port number to use for the http server (if other than 80)
 <li><code>-h &lt;hostname or IP address></code> : in the case of a "multihomed" server, host name or IP address of the interface ELOG should run on
 <li><code>-D</code> : become a daemon (Unix only)
-<li><code>-c &lt;file></code> : specify the configuration file (full path mandatory if -D is used)
+<li><code>-c &lt;file&gt;</code> : specify the configuration file (full path mandatory if -D is used)
+<li><code>-s &lt;dir&gt;</code> specify resource directory (themes, icons, ...)
+<li><code>-d &lt;dir&gt;</code> specify logbook root directory
+
 <li><code>-v </code> : verbose output for debugging
 <li><code>-k </code> : do not use TCP keep-alive
 </ul>
@@ -244,15 +247,25 @@ It may also be used to generate passwords :
 <li><code>-a &lt;pwd></code> : create/overwrite administrative password in config file
 <li><code>-l &lt;logbook></code> : specify logbook for -r and -w commands
 </ul>
+
+<p> The appearance, functionality and behaviour of the various logbooks on an <b>ELOG</b> server are
+determined by the single <b><code>elogd.cfg</code></b> file in the <b>ELOG</b> installation directory.
 <p>
-The appearance, functionality and behaviour of the various logbooks on an <b>ELOG</b> server are determined by the single <b><code>elogd.cfg</code></b> file in the <b>ELOG</b> installation directory.
-<p>
-This file may be edited directly from the file system, or from a form in the <b>ELOG</b> Web interface (when the <i>Config</i> menu item is available). In this case, changes are applied dynamically without having to restart the server.
-<p>
-The many options of this unique but very important file are documented on the separate <b><a href="config.html">elogd.cfg syntax page</a></b>.
-<p>
-To better control appearance and layout of the logbooks, <b><code>elogd.cfg</code></b> may optionally specify the use of additional files containing HTML code, and/or custom "<I>themes</I>" configurations. These need to be edited directly from the file system right now.
-<p>
+
+This file may be edited directly from the file system, or from a form in the <b>ELOG</b> Web interface
+(when the <i>Config</i> menu item is available). In this case, changes are applied dynamically without
+having to restart the server. <p>
+
+The many options of this unique but very important file are documented on the separate <b><a href=
+"config.html">elogd.cfg syntax page</a></b>.<p>
+
+To better control appearance and layout of the logbooks, <b><code>elogd.cfg</code></b> may
+optionally specify the use of additional files containing HTML code, and/or custom "<I>themes</I>"
+configurations. These need to be edited directly from the file system right now. <p>
+
+The meaning of the directory flags <b><code>-s</b></code> and <b><code>-d</b></code> is explained
+in the section covering the configuration options <b><code>Resource dir</b></code> and <b><code>
+Logbook dir</b></code> in the <b><a href="config.html">elogd.cfg description</a></b>.<p>
 
 <hr><a name="secure">
 <div class=section>&nbsp; Secure Connections HOWTO &nbsp;</div>

@@ -51,7 +51,6 @@ SMTP host = mailsend.your.domain
 [Linux]
 Theme = default
 Comment = General linux tips and tricks
-Data dir = /usr/local/elog/linux
 Attributes = Author, Type, Category, Subject
 Options Type = Routine, Software Installation, Problem Fixed, Configuration, Other
 Options Category = General, Hardware, Software, Network, Account, Other
@@ -60,7 +59,6 @@ Required Attributes = Author
 
 [PC]
 Comment = Database PC installations
-Data dir = /usr/local/elog/pc
 Attributes = Location, OS, Owner
 Options Location = Building1, Building2
 Options OS = Linux, Windows ME, Windows 2000
@@ -90,6 +88,20 @@ The following options are specific to the <b><code>[global]</code></b> section:
 Specifies the TCP port under which the server is listening. Default is 80. Can be superseeded
 via the '-p' command line flag.
 <p>
+
+<LI><b><code>Resource dir = &lt;directory&gt;</code></b>
+<br>
+Specifies the root directory for ELOG resources like help files, themes, icons and user HTML
+files. Can be overwritten with the <b><code>-s</code></b> flag when starting elogd. If not
+specified, use the directory where the configuration file <b><code>elogd.cfg</code></b> resides.
+<p>
+
+<LI><b><code>Logbook dir = &lt;directory&gt;</code></b>
+<br>
+Specifies the root directory for logbooks. Can be overwritten with the <b><code>-d</code></b> flag when
+starting elogd. If not specified, use the directory where the configuration file <b><code>elogd.cfg
+</code></b> resides. Each logbook data is stored in a separate directory under this root directory
+specified by the <b><code>Subdir</b></code> option. <p>
 
 <LI><b><code>Language = &lt;name&gt;</code></b>
 <br>
@@ -134,7 +146,7 @@ contents of the tab.
 <br>
 This optional HTML code gets displayed in the title of the logbook selection
 page. It can contain images via <b><code>&lt;img src="welcome.gif"&gt;</code></b>.
-These images must be in the same directory as the <b><code>elodg.cfg</b></code> file.
+These images must be stored in the resource directory.
 Alternatively, an absolute path can be used if the file name starts with a
 <b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or <b><code>"x:"</code></b>
 (Windows).<br><br>
@@ -155,8 +167,8 @@ used by most browsers for bookmark names.
 <LI><b><code>Selection page = &lt;file&gt;</code></b>
 <br>
 When this option is present, a user defined file is displayed instead of the logbook
-selection page. This file must be in the same directory as the <code><b>elogd.cfg</b></code>
-file. Alternatively, an absolute path can be used if the file name starts with a
+selection page. This file must be stored in the resource directory. Alternatively, an
+absolute path can be used if the file name starts with a
 <b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or <b><code>"x:"</code></b>
 (Windows).<br><br>
 
@@ -245,9 +257,19 @@ Here are the available options, by broad categories:<p>
 
 <LI><b><code>Data dir = &lt;directory&gt;</code></b>
 <br>
+This option is obsolete from version 2.2.5 on and should not be used. Use <b><code>Subdir = ...</b></code>
+instead.<p>
+
+<LI><b><code>Subdir = &lt;directory&gt;</code></b>
+<br>
 Each logbook has a separate directory where the logbook entries are stored, which
 is controlled by this statement. If the directory does not exist, it is created
-autmatically by the <code><b>elogd</b></code> program.
+autmatically by the <code><b>elogd</b></code> program. The subdirectory is relative
+to the logbook root directory specified with the <b><code>Logbook dir = ...</code></b>
+option. So if <b><code>Logbook dir = /usr/local/elog/logbooks</b></code> and
+<b><code>Subdir = Demo</b></code> then the logbook data is stored in <b><code>
+/user/local/elog/logbooks/Demo</b></code>. If the subdirectory starts with a "/"
+("\" under Windows), then it is used as an absolute path independent of the logbook dir.
 <p>
 
 <LI><b><code>Number Attachments = &lt;number&gt;</code></b>
@@ -268,9 +290,9 @@ explicitly specified in the URL.
 <br>
 A theme determines which layout and colors are used for a logbook, similar to
 <i>skins</i> in other programs. The <i>theme</i> option points to a subdirectory
-under the directory of the configuration file, which contains all files for
-that theme. The format of these files is described under the <i>Themes</i>
-section.
+under the <i>"themes"</i> directory which resides in the resource directory.
+It contains all files for that theme. The format of these files is described under
+the <i>Themes</i> section.
 <p>
 
 <LI><b><code>Date format = &lt;string&gt;</code></b>
@@ -297,7 +319,7 @@ messages of for logbook queries. Here is a simple example of such a file:
 &lt;/ul&gt;
 </pre>
 
-The file must be present in the same directory as the <code><b>elogd</b></code> file.
+The file must be present in the resource directory.
 Alternatively, an absolute path can be used if the file name starts with a
 <b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or <b><code>"x:"</code></b>
 (Windows).
@@ -328,7 +350,7 @@ Here is an example:
 &lt;a href="?cmd=New"&gt;Enter&lt;/a&gt; another message
 </pre>
 
-The file must be present in the same directory as the <code><b>elogd</b></code> file.
+The file must be present in the resource directory.
 Alternatively, an absolute path can be used if the file name starts with a
 <b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or <b><code>"x:"</code></b>
 (Windows).
@@ -451,20 +473,22 @@ example a link back to the main logbook selection page like:
 &lt;center&gt;&lt;a href="/"&gt;Main page&lt;/a&gt;&lt;/center&gt;
 </pre>
 
-Or it can contain other useful links. The file must be present in the same directory as the
-<code><b>elogd.cfg</b></code> file. Alternatively, an absolute path can be used if the file
+Or it can contain other useful links. The file must be present in the resource directory.
+Alternatively, an absolute path can be used if the file
 name starts with a <b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or <b><code>
 "x:"</code></b> (Windows).
 
 <p>
 
 <li><b><code>Help URL = &lt;URL&gt;</code></b>
+
 <br>
-This URL is used for the Help button. By default, the file <b>eloghelp_xx.html</b> is
-returned with the contents of the help page. Edit this file directly to add site-specific help for all logbooks. Alternatively, use the <b><code>Help URL</code></b> option to specify different help pages for different logbooks.
-It can point to a site-specific help page via <b><code>http://...</code></b> or to a local file like
-<b><code>file://c:/tmp/config.html</code></b>, or to the name of an HTML file which must be present in the same directory as the <code><b>elogd</b></code> file.
-<p>
+This URL is used for the Help button. By default, the file <b>eloghelp_xx.html</b> is returned with
+the contents of the help page. Edit this file directly to add site-specific help for all logbooks.
+Alternatively, use the <b><code>Help URL</code></b> option to specify different help pages for different
+logbooks. It can point to a site-specific help page via <b><code>http://...</code></b> or to a local
+file like <b><code>file://c:/tmp/config.html</code></b>, or to the name of an HTML file which must be
+present in the resource directory. <p>
 
 <li><b><code>Message Width = &lt;number&gt;</code></b>
 <br>
@@ -573,7 +597,7 @@ down box by default.
 <LI><b><code>Preset text = &lt;string&gt; or &lt;file&gt;</code></b>
 <br>
 This preset value is used for the main body text. It can be a string or a file,
-which must be present in the same directory as the <code><b>elogd.cfg</b></code> file.
+which must be present in the resource  directory.
 Alternatively, an absolute path can be used if the file name starts with a
 <b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or <b><code>"x:"</code></b>
 (Windows).
