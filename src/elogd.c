@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.368  2004/07/07 13:51:44  midas
+   Admin user has to supply own old password
+
    Revision 1.367  2004/07/07 13:27:09  midas
    Fixed problem of password change when using crypt()
 
@@ -6163,8 +6166,9 @@ void show_change_pwd_page(LOGBOOK * lbs)
    if (old_pwd[0] || new_pwd[0]) {
       if (user[0]
           && get_user_line(lbs->name, user, act_pwd, NULL, NULL, NULL)) {
-         /* administrator does not have to supply old password */
-         if (is_admin_user(lbs->name, getparam("unm")))
+         
+         /* administrator does not have to supply old password if changing other user's password*/
+         if (is_admin_user(lbs->name, getparam("unm")) && stricmp(getparam("unm"), user) != 0)
             wrong_pwd = 0;
          else {
             if (strcmp(old_pwd, act_pwd) != 0)
@@ -6214,7 +6218,7 @@ void show_change_pwd_page(LOGBOOK * lbs)
 
    /* do not ask for old pwasword if admin changes other user's password */
    if (!is_admin_user(lbs->name, getparam("unm")) || stricmp(getparam("unm"), user) == 0) {
-      if (isparam("oldpwd"))
+      if (isparam("oldpwd") && !(wrong_pwd == 1))
          rsprintf("<input type=hidden name=oldpwd value=\"%s\"", getparam("oldpwd"));
       else {
          rsprintf("<tr><td align=right class=\"dlgform\">%s:\n", loc("Old password"));
