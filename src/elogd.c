@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.40  2003/03/06 08:33:50  midas
+  Added 'X-Elog-URL' in mail header
+
   Revision 1.39  2003/03/05 20:29:21  midas
   Fixed status message for copy/move
 
@@ -1222,7 +1225,7 @@ struct timeval timeout;
 }
 
 
-INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text, BOOL email_to)
+INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text, BOOL email_to, char *url)
 {
 struct sockaddr_in   bind_addr;
 struct hostent       *phe;
@@ -1310,6 +1313,14 @@ char                 list[1024][NAME_LENGTH];
   if (verbose) puts(str);
 
   snprintf(str, strsize - 1, "From: %s\r\nSubject: %s\r\n", from, subject);
+  send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
+
+  snprintf(str, strsize - 1, "X-Elog-URL: %s\r\n", url);
+  send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
+
+  snprintf(str, strsize - 1, "X-Elog-submit-type: web|elog\r\n");
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
 
@@ -5897,7 +5908,7 @@ int    i, fh, size, self_register;
       sprintf(url+strlen(url), "?cmd=Login&unm=%s", getparam("new_user_name"));
       sprintf(mail_text+strlen(mail_text), "%s %s\r\n", loc("You can access it at"), url);
 
-      sendmail(smtp_host, mail_from, getparam("new_user_email"), subject, mail_text, TRUE);
+      sendmail(smtp_host, mail_from, getparam("new_user_email"), subject, mail_text, TRUE, url);
       }
     else
       {
@@ -5952,7 +5963,7 @@ int    i, fh, size, self_register;
                       loc("Logbook"), url, getparam("new_user_name"), pl);
               }
 
-            sendmail(smtp_host, mail_from, email_addr, subject, mail_text, TRUE);
+            sendmail(smtp_host, mail_from, email_addr, subject, mail_text, TRUE, url);
             }
 
           pl = strtok(NULL, " ,");
@@ -8672,7 +8683,7 @@ int compose_email(LOGBOOK *lbs, char *mail_to, int message_id, char attrib[MAX_N
 int    i, j, n;
 char   str[NAME_LENGTH+100], mail_from[256], *mail_text, smtp_host[256], subject[256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
-char   list[MAX_PARAM][NAME_LENGTH];
+char   list[MAX_PARAM][NAME_LENGTH], url[256];
 
   if (!getcfg("global", "SMTP host", smtp_host))
     {
@@ -8742,8 +8753,9 @@ char   list[MAX_PARAM][NAME_LENGTH];
     strlcat(str, "/", sizeof(str));
     }
 
-  sprintf(mail_text+strlen(mail_text), "\r\n%s URL         : %s%d\r\n",
-          loc("Logbook"), str, message_id);
+  sprintf(url, "%s%d", str, message_id);
+  sprintf(mail_text+strlen(mail_text), "\r\n%s URL         : %s\r\n",
+          loc("Logbook"), url);
 
   if (getcfg(lbs->name, "Email message body", str) &&
       atoi(str) == 1)
@@ -8753,9 +8765,9 @@ char   list[MAX_PARAM][NAME_LENGTH];
     }
 
   if (getcfg(lbs->name, "Omit Email to", str) && atoi(str) == 1)
-    sendmail(smtp_host, mail_from, mail_to, subject, mail_text, FALSE);
+    sendmail(smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url);
   else
-    sendmail(smtp_host, mail_from, mail_to, subject, mail_text, TRUE);
+    sendmail(smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url);
 
   if (!getcfg(lbs->name, "Display email recipients", str) ||
        atoi(str) == 1)
@@ -11359,6 +11371,11 @@ fd_set               readfds;
 struct timeval       timeout;
 struct stat          cfg_stat;
 
+#ifdef OS_UNIX
+uid_t                saved_uid;
+gid_t                saved_gid;
+#endif
+
 #ifdef OS_WINNT
   {
   WSADATA WSAData;
@@ -11486,6 +11503,10 @@ struct stat          cfg_stat;
   signal(SIGINT, ctrlc_handler);
   signal(SIGPIPE, SIG_IGN);
 
+  /* save gid/uid to regain later for deleting the PID file */
+  saved_gid = getegid();
+  saved_uid = geteuid();
+
   /* give up root privilege */
 
   if (geteuid() == 0)
@@ -11499,11 +11520,11 @@ struct stat          cfg_stat;
 
       if (gr == NULL)
         printf("Group \"%s\" not found\n", str);
-      else if (setgid(gr->gr_gid) < 0 || initgroups(gr->gr_name, gr->gr_gid) < 0)
-        printf("Cannot set GID to group \"%s\"\n", gr->gr_name);
+      else if (setegid(gr->gr_gid) < 0 || initgroups(gr->gr_name, gr->gr_gid) < 0)
+        printf("Cannot set effective GID to group \"%s\"\n", gr->gr_name);
       }
     else
-      setgid(getgid()); /* used for setuid programs */
+      setegid(getgid()); /* used for setuid programs */
 
     if (getcfg("global", "Usr", str))
       {
@@ -11511,11 +11532,11 @@ struct stat          cfg_stat;
 
       if (pw == NULL)
         printf("User \"%s\" not found\n", str);
-      else if (setuid(pw->pw_uid) < 0)
-        printf("Cannot set UID to user \"%s\\n", str);
+      else if (seteuid(pw->pw_uid) < 0)
+        printf("Cannot set effective UID to user \"%s\\n", str);
       }
     else
-      setuid(getuid()); /* used for setuid programs */
+      seteuid(getuid()); /* used for setuid programs */
 
     }
 #endif
@@ -12307,8 +12328,19 @@ finished:
   printf("Server aborted.\n");
 
 #ifdef OS_UNIX
+
+  /* regain original uid */
+  if (setegid(saved_gid) < 0 || seteuid(saved_uid) < 0)
+    printf("Cannot resotre original GID/UID.\n");
+
   if (pidfile[0])
-    unlink(pidfile);
+    {
+    if (remove(pidfile) < 0)
+      {
+      sprintf(str, "Cannot remove pidfile \"%s\"\n", pidfile);
+      perror(str);
+      }
+    }
 #endif
 
 }
