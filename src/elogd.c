@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.128  2003/07/04 18:06:44  midas
+  Changed order of attrib format params
+
   Revision 1.127  2003/07/04 16:06:50  midas
   Removed width from attrname cells (should be in CSS now)
 
@@ -5719,16 +5722,16 @@ char   fl[8][NAME_LENGTH];
     if (getcfg(lbs->name, str, format))
       {
       n = strbreak(format, fl, 8);
-      if (n > 0 && atoi(fl[0]) > 0)
-        input_size = atoi(fl[0]);
-      if (n > 1 && atoi(fl[1]) > 0)
-        input_maxlen = atoi(fl[1]);
+      if (n > 0)
+        format_flags = atoi(fl[0]);
+      if (n > 1)
+        strlcpy(class_name, fl[1], sizeof(class_name));
       if (n > 2)
-        format_flags = atoi(fl[2]);
-      if (n > 3)
-        strlcpy(class_name, fl[3], sizeof(class_name));
-      if (n > 4)
-        strlcpy(class_value, fl[4], sizeof(class_value));
+        strlcpy(class_value, fl[2], sizeof(class_value));
+      if (n > 3 && atoi(fl[3]) > 0)
+        input_size = atoi(fl[3]);
+      if (n > 4 && atoi(fl[4]) > 0)
+        input_maxlen = atoi(fl[4]);
       }
     
     strcpy(star, (attr_flags[index] & AF_REQUIRED) ? "<font color=red>*</font>" : "");
@@ -11050,10 +11053,10 @@ BOOL   first;
       if (getcfg(lbs->name, str, format))
         {
         n = strbreak(format, fl, 8);
-        if (n > 3)
-          strlcpy(class_name, fl[3], sizeof(class_name));
-        if (n > 4)
-          strlcpy(class_value, fl[4], sizeof(class_value));
+        if (n > 1)
+          strlcpy(class_name, fl[1], sizeof(class_name));
+        if (n > 2)
+          strlcpy(class_value, fl[2], sizeof(class_value));
         }
 
       if ((format_flags[i] & AFF_SAME_LINE) == 0)

@@ -817,10 +817,23 @@ listed here to display a date filter. Using that filter, the last day, week, mon
 on can be displayed.
 <p>
 
-<LI><b><code>Format &lt;attribute&gt; = &lt;width&gt;,&lt;size&gt;,&lt;flags&gt;,&lt;css_class_name&gt;,&lt;css_class_value&gt;</code></b>
+<LI><b><code>Format &lt;attribute&gt; = &lt;flags&gt;,&lt;css_class_name&gt;,&lt;css_class_value&gt;,&lt;width&gt;,&lt;size&gt;</code></b>
 <br>
 Optional formatting parameters for attributes. Following items can be defined in the 
 comma-separated list:<p>
+
+Values used for single message display page:
+<ul>
+  <li><b>&lt;flags&gt;</b> Sum of following flags:
+    <ul>
+	<li><b> 1</b>: Display attribute in same line as previous attribute
+	<li><b> 2</b>: Display radio buttons or check boxes in separate lines (if applicable)
+	</ul>
+  <li><b>&lt;css_class_name&gt;</b>,<b>&lt;css_class_value&gt;</b> Cascading Style Sheet class 
+  names used for cells containing attribute name or value, respectively. The classes must
+  be defined in the style sheet file (usually <i>themes/default/default.css</i>).
+</ul>
+<p>
 
 Values used for new message entry form:
 <ul>
@@ -829,19 +842,8 @@ Values used for new message entry form:
 </ul>
 <p>
 
-Values used for single message display page:
-<ul>
-  <li><b>&lt;flags&gt;</b> Sum of following flags:
-    <ul>
-	<li> 1:	Display attribute in same line as previous attribute
-	<li> 2: Display radio buttons or check boxes in separate lines (if applicable)
-	</ul>
-  <li><b>&lt;css_class_name&gt;</b>,<b>&lt;css_class_value&gt;</b> Cascading Style Sheet class 
-  names used for cells containing attribute name or value, respectively. The classes must
-  be defined in the style sheet file (usually <i>themes/default/default.css</i>).
-</ul>
-<p>
-Default is <i>"80, 500, 0, attribname, attribvalue"</i>. 
+Default is <i>"0, attribname, attribvalue, 80, 500"</i>. Trailing parameters can be ommitted,
+so specifying for example only the flags is possible.
 
 </UL>
 
