@@ -14,6 +14,7 @@ Version 2.3.9, released June xxth, 2003
 - Made default for "Filteres browsing" zero
 - Added "Format <attribute> = width, size, flags, css1, css2"
 - Display error if email notification fails
+- Added execute on new/edit/delete functionality, added -x flag
 
 Version 2.3.8, released June 4th, 2003
 ======================================

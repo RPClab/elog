@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.131  2003/07/10 16:02:19  midas
+  Added '-x' flag
+
   Revision 1.130  2003/07/06 13:28:55  midas
   Added shell execution facility
 
@@ -1048,7 +1051,7 @@ INT  _attachment_size;
 struct in_addr rem_addr;
 char rem_host[256];
 INT  _sock;
-BOOL verbose, use_keepalive;
+BOOL verbose, use_keepalive, enable_execute = FALSE;
 INT  _current_message_id;
 
 char *mname[] = {
@@ -10065,6 +10068,12 @@ int    i;
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
 char   shell_cmd[1000];
 
+  if (!enable_execute)
+    {
+    printf("Shell execution not enabled via -x flag.\n");
+    return SUCCESS;
+    }
+
   strlcpy(shell_cmd, sh_cmd, sizeof(shell_cmd));
 
   i = build_subst_list(lbs, slist, svalue, attrib);
@@ -14155,6 +14164,8 @@ struct tm *tms;
       verbose = TRUE;
     else if (argv[i][0] == '-' && argv[i][1] == 'k')
       use_keepalive = FALSE;
+    else if (argv[i][0] == '-' && argv[i][1] == 'x')
+      enable_execute = TRUE;
     else if (argv[i][1] == 't')
       {
       time(&now);
@@ -14204,7 +14215,8 @@ usage:
         printf("       -a create/overwrite admin password in config file\n");
         printf("       -l <logbook> specify logbook for -r and -w commands\n\n");
         printf("       -k do not use keep-alive\n");
-        printf("       -f path/filename for PID file\n\n");
+        printf("       -f path/filename for PID file\n");
+        printf("       -x enable execution of shell commands\n\n");
         exit(EXIT_SUCCESS);
         }
       }
