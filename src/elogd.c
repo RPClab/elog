@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.251  2004/02/16 20:27:28  midas
+   Implemented numeric attributes
+
    Revision 1.250  2004/02/16 16:28:46  midas
    Changed indentation
 
@@ -529,6 +532,7 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 #define AF_RADIO              (1<<6)
 #define AF_EXTENDABLE         (1<<7)
 #define AF_DATE               (1<<8)
+#define AF_NUMERIC            (1<<9)
 
 /* attribute format flags */
 #define AFF_SAME_LINE              1
@@ -569,38 +573,22 @@ struct {
 } filetype[] = {
 
    {
-   ".CSS", "text/css"}, 
- {
-   ".JPG", "image/jpeg"}, 
- {
-   ".JPEG", "image/jpeg"}, 
- {
-   ".GIF", "image/gif"}, 
- {
-   ".PNG", "image/png"}, 
- {
-   ".PS", "application/postscript"}, 
- {
-   ".EPS", "application/postscript"}, 
- {
-   ".HTML", "text/html"}, 
- {
-   ".HTM", "text/html"}, 
- {
-   ".XLS", "application/x-msexcel"}, 
- {
-   ".DOC", "application/msword"}, 
- {
-   ".PDF", "application/pdf"}, 
- {
-   ".JS", "application/x-javascript"}, 
- {
-   ".TXT", "text/plain"}, 
- {
-   ".ASC", "text/plain"}, 
- {
-   ".ZIP", "application/x-zip-compressed"}, 
- {
+   ".CSS", "text/css"}, {
+   ".JPG", "image/jpeg"}, {
+   ".JPEG", "image/jpeg"}, {
+   ".GIF", "image/gif"}, {
+   ".PNG", "image/png"}, {
+   ".PS", "application/postscript"}, {
+   ".EPS", "application/postscript"}, {
+   ".HTML", "text/html"}, {
+   ".HTM", "text/html"}, {
+   ".XLS", "application/x-msexcel"}, {
+   ".DOC", "application/msword"}, {
+   ".PDF", "application/pdf"}, {
+   ".JS", "application/x-javascript"}, {
+   ".TXT", "text/plain"}, {
+   ".ASC", "text/plain"}, {
+   ".ZIP", "application/x-zip-compressed"}, {
 "", ""},};
 
 typedef struct {
@@ -3483,10 +3471,10 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
    time_t now, ltime;
    char *message, *p, *buffer;
    char attachment_all[64 * MAX_ATTACHMENTS];
-   
-tail_size = orig_size = 0;
-   
-buffer = NULL;
+
+   tail_size = orig_size = 0;
+
+   buffer = NULL;
    message = malloc(TEXT_SIZE + 100);
    assert(message);
 
@@ -3902,8 +3890,8 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
    /* buffer tail of logfile */
    lseek(fh, 0, SEEK_END);
    tail_size = TELL(fh) - (lbs->el_index[index].offset + size);
-   
-buffer = NULL;
+
+   buffer = NULL;
    if (tail_size > 0) {
       buffer = malloc(tail_size);
       if (buffer == NULL) {
@@ -4871,6 +4859,8 @@ and attr_flags arrays */
          if (getcfg_cond(logbook, condition, str, type)) {
             if (strieq(type, "date"))
                attr_flags[i] |= AF_DATE;
+            if (strieq(type, "numeric"))
+               attr_flags[i] |= AF_NUMERIC;
          }
       }
 
@@ -6248,7 +6238,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("function chkform()\n");
    rsprintf("{\n");
 
-   for (i = 0; i < lbs->n_attr; i++)
+   for (i = 0; i < lbs->n_attr; i++) {
       if (attr_flags[i] & AF_REQUIRED) {
 
          /* convert blanks to underscores */
@@ -6309,6 +6299,23 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             rsprintf("  }\n");
          }
       }
+
+      if (attr_flags[i] & AF_NUMERIC) {
+         /* convert blanks to underscores */
+         strcpy(ua, attr_list[i]);
+         btou(ua);
+
+         rsprintf("  for (var i=0 ; i<document.form1.%s.value.length ; i++)\n", ua);
+         rsprintf("    if (document.form1.%s.value.charAt(i) < \"0\" ||\n", ua);
+         rsprintf("        document.form1.%s.value.charAt(i) > \"9\") { break }\n", ua);
+         rsprintf("  if (i<document.form1.%s.value.length) {\n", ua);
+         sprintf(str, loc("Please enter numeric value for '%s'"), attr_list[i]);
+         rsprintf("    alert(\"%s\");\n", str);
+         rsprintf("    document.form1.%s.focus();\n", ua);
+         rsprintf("    return false;\n");
+         rsprintf("  }\n");
+      }
+   }
 
    rsprintf("  return true;\n");
    rsprintf("}\n");
@@ -7523,8 +7530,8 @@ int save_admin_config(char *section, char *buffer, char *error)
 
    /* save tail */
    buf2 = NULL;
-   
-if (p2) {
+
+   if (p2) {
       buf2 = malloc(strlen(p2) + 1);
       assert(buf2);
       strlcpy(buf2, p2, strlen(p2) + 1);
@@ -9730,8 +9737,8 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 
             if (_logging_level > 1)
                logf(lbs, "MIRROR send entry #%d", message_id);
-            
-remote_id = 0;
+
+            remote_id = 0;
             if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
                remote_id = submit_message(lbs, list[index], message_id, error_str);
             all_identical = FALSE;
@@ -11367,10 +11374,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    current_day = ptms->tm_mday;
 
    ltime_end = ltime_start = 0;
-   
-d1 = m1 = y1 = d2 = m2 = y2 = 0;
-   
-if (!past_n && !last_n) {
+
+   d1 = m1 = y1 = d2 = m2 = y2 = 0;
+
+   if (!past_n && !last_n) {
 
       ltime_start = retrieve_date("a", TRUE);
       if (ltime_start < 0)
@@ -11744,8 +11751,8 @@ if (!past_n && !last_n) {
    qsort(msg_list, n_msg, sizeof(MSG_LIST), reverse ? msg_compare_reverse : msg_compare);
 
    /*---- number of messages per page ----*/
-   
-n_attr_disp = n_line = 0;
+
+   n_attr_disp = n_line = 0;
    n_page = 1000000;
    i_start = 0;
    i_stop = n_msg - 1;
@@ -12580,8 +12587,8 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue)
    if (*(p2 - 1) == '\r')
       p2--;
 
-   /* save tail */ 
-       buf2 = NULL;
+   /* save tail */
+   buf2 = NULL;
    if (p2) {
       buf2 = malloc(strlen(p2) + 1);
       assert(buf2);
@@ -12692,6 +12699,25 @@ void submit_elog(LOGBOOK * lbs)
       show_error(error);
       return;
    }
+
+   /* check for numeric attributes */
+   for (index = 0; index < lbs->n_attr; index++)
+      if (attr_flags[index] & AF_REQUIRED) {
+         strcpy(ua, attr_list[index]);
+         btou(ua);
+         strlcpy(str, getparam(ua), sizeof(str));
+
+         for (j = 0; i < (int) strlen(str); i++)
+            if (!isdigit(str[i]))
+               break;
+
+         if (i < (int) strlen(str)) {
+            sprintf(error, loc("Error: Attribute <b>%s</b> must be numeric"),
+                    attr_list[index]);
+            show_error(error);
+            return;
+         }
+      }
 
    /* check for extended attributs */
    for (i = 0; i < lbs->n_attr; i++) {
@@ -13474,8 +13500,8 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
    if (message_id == 0)
       message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
-   
-status = 0;
+
+   status = 0;
    if (message_id) {
       size = sizeof(text);
       status =
@@ -15917,7 +15943,7 @@ void ctrlc_handler(int sig)
 
 void hup_handler(int sig)
 {
-   if (sig) 
+   if (sig)
       _hup = TRUE;
 }
 
@@ -15944,8 +15970,8 @@ void server_loop(int tcp_port, int daemon)
    struct timeval timeout;
    char *net_buffer = NULL;
    int net_buffer_size;
-   
-i_conn = content_length = 0;
+
+   i_conn = content_length = 0;
    net_buffer_size = 100000;
    net_buffer = malloc(net_buffer_size);
    return_buffer_size = 100000;
@@ -16687,9 +16713,8 @@ i_conn = content_length = 0;
             if (return_length == 0)
                return_length = strlen_retbuf;
             if ((keep_alive && strstr(return_buffer, "Content-Length") == NULL)
-                || strstr(return_buffer, "Content-Length") > 
-strstr(return_buffer,
-                                                                     "\r\n\r\n")) {
+                || strstr(return_buffer, "Content-Length") >
+                strstr(return_buffer, "\r\n\r\n")) {
                /*---- add content-length ----*/
 
                p = strstr(return_buffer, "\r\n\r\n");
