@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.366  2004/07/07 13:21:58  midas
+   Removed puts(0)
+
    Revision 1.365  2004/07/07 11:59:41  midas
    Added $utcdate
 
@@ -18461,7 +18464,10 @@ void server_loop(int tcp_port, int daemon)
             } else if (strstr(net_buffer, "OPTIONS") != NULL)
                goto finished;
             else {
-               puts(net_buffer);
+               if (strlen(net_buffer) > 0 && verbose) {
+                  printf("Received unknown HTTP command:\n");
+                  puts(net_buffer);
+               }
                goto finished;
             }
 
