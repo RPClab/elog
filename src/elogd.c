@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.288  2004/03/09 09:56:04  midas
+   Implemented 'ID display'
+
    Revision 1.287  2004/03/08 21:24:43  midas
    Tried to reduce required stack size in threaded display
 
@@ -10429,8 +10432,23 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   rsprintf("<img src=\"stop.gif\" alt=\"%s\">&nbsp;", str);
                }
 
-               rsprintf("<a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></td>\n", ref,
-                        message_id);
+               if (getcfg(lbs->name, "ID display", display)) {
+                  j = build_subst_list(lbs, (char (*)[NAME_LENGTH])slist, 
+                                            (char (*)[NAME_LENGTH])svalue, attrib, TRUE);
+                  sprintf(str, "%d", message_id);
+                  add_subst_list((char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, 
+                     "message id", str, &j);
+                  add_subst_time(lbs, (char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, 
+                     "entry time", date, &j);
+
+                  strsubst(display, (char (*)[NAME_LENGTH])slist, 
+                                    (char (*)[NAME_LENGTH])svalue, j);
+
+               } else
+                  sprintf(display, "%d", message_id);
+
+               rsprintf("<a href=\"%s\">&nbsp;&nbsp;%s&nbsp;&nbsp;</a></td>\n", ref,
+                        display);
             }
          }
 
@@ -13741,7 +13759,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
    int message_id, orig_message_id, format_flags[MAX_N_ATTR];
    char str[1000], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
    char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], cmd_enc[256],
-       orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
+       orig_tag[80], reply_tag[MAX_REPLY_TO * 10], display[256],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        att[256], lattr[256], mid[80];
    char menu_item[MAX_N_LIST][NAME_LENGTH], format[80], admin_user[80],
@@ -14141,7 +14159,22 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
       /* browsing flag to distinguish "/../<attr>=<value>" from browsing */
       rsprintf("<input type=hidden name=browsing value=1>\n");
 
-      rsprintf("%s:&nbsp;<b>%d</b>\n", loc("Message ID"), message_id);
+      if (getcfg(lbs->name, "ID display", display)) {
+         j = build_subst_list(lbs, (char (*)[NAME_LENGTH])slist, 
+                                   (char (*)[NAME_LENGTH])svalue, attrib, TRUE);
+         sprintf(str, "%d", message_id);
+         add_subst_list((char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, 
+            "message id", str, &j);
+         add_subst_time(lbs, (char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, 
+            "entry time", date, &j);
+
+         strsubst(display, (char (*)[NAME_LENGTH])slist, 
+                           (char (*)[NAME_LENGTH])svalue, j);
+
+      } else
+         sprintf(display, "%d", message_id);
+
+      rsprintf("%s:&nbsp;<b>%s</b>\n", loc("Message ID"), display);
 
       /*---- display date ----*/
 

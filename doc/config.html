@@ -1018,6 +1018,19 @@ a logbook does not contain an <code><b>author</b></code> attribute, another stri
 be chosen.
 <p>
 
+<LI><b><code>ID display = &lt;string&gt;</b></code>
+<br>
+This option determines the display of the entry ID. In some applications, the entry ID 
+can be used as a tag, containing more than just the ID number. For example
+<p>
+
+<ul><pre>
+ID display = TAG-$message id
+</pre></ul>
+
+would display the entry ID as "TAG-1","TAG-2", ... and so on.
+<p>
+
 </UL>
 
 <a name="conditional"><hr>
