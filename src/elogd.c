@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.297  2004/03/16 08:48:30  midas
+   Fixed format compiler warnings
+
    Revision 1.296  2004/03/15 20:07:34  midas
    Conditional attributes get evaluated correctly during editing of existing entries
 
@@ -4891,7 +4894,7 @@ void set_redir(LOGBOOK * lbs, char *redir)
 
 void set_cookie(LOGBOOK * lbs, char *name, char *value, BOOL global, char *expiration)
 {
-   char lb_name[256], str[NAME_LENGTH];
+   char lb_name[256], str[NAME_LENGTH], format[80];
    double exp;
    time_t now;
    struct tm *gmt;
@@ -4939,7 +4942,8 @@ void set_cookie(LOGBOOK * lbs, char *name, char *value, BOOL global, char *expir
       time(&now);
       now += (int) (3600 * exp);
       gmt = gmtime(&now);
-      strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+      strcpy(format, "%A, %d-%b-%y %H:%M:%S GMT");
+      strftime(str, sizeof(str), format, gmt);
 
       rsprintf(" expires=%s;", str);
    }
@@ -5734,7 +5738,7 @@ int exist_file(char *file_name)
 void send_file_direct(char *file_name)
 {
    int fh, i, length, delta;
-   char str[MAX_PATH_LENGTH], charset[80];
+   char str[MAX_PATH_LENGTH], charset[80], format[80];
    time_t now;
    struct tm *gmt;
 
@@ -5752,7 +5756,8 @@ void send_file_direct(char *file_name)
       time(&now);
       now += (int) (3600 * 24);
       gmt = gmtime(&now);
-      strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+      strcpy(format, "%A, %d-%b-%y %H:%M:%S GMT");
+      strftime(str, sizeof(str), format, gmt);
       rsprintf("Expires: %s\r\n", str);
 
       if (use_keepalive) {
@@ -5937,7 +5942,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
 
       strftime(str, sizeof(str), format, ts);
    } else
-      sprintf(str, "%d", now);
+      sprintf(str, "%d", (int)now);
 
    strcpy(value[i++], str);
 
@@ -11716,7 +11721,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
        *list, *text, *text1, *text2, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH], mode[80], mid[80],
-       menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH];
+       menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH], format[80];
    char *p, *pt, *pt1, *pt2, *slist, *svalue, *gattr;
    BOOL show_attachments, threaded, csv, mode_commands, expand, filtering, disp_filter,
       show_text;
@@ -12002,6 +12007,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    /*---- filter message list ----*/
 
    filtering = FALSE;
+   show_text = TRUE;
 
    for (i = 0; i < lbs->n_attr; i++) {
       /* check if attribute filter */
@@ -12504,7 +12510,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
             if (tms.tm_year < 90)
                tms.tm_year += 100;
             mktime(&tms);
-            strftime(str, sizeof(str), "%x", &tms);
+            strcpy(format, "%x");
+            strftime(str, sizeof(str), format, &tms);
 
             rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>",
                      loc("Start date"));
@@ -12523,7 +12530,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
             ltime = mktime(&tms);
             ltime -= 3600 * 24;
             memcpy(&tms, localtime(&ltime), sizeof(struct tm));
-            strftime(str, sizeof(str), "%x", &tms);
+            strcpy(format, "%x");
+            strftime(str, sizeof(str), format, &tms);
 
             rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>",
                      loc("End date"));
@@ -12545,7 +12553,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                   rsprintf("<td class=\"attribvalue\">");
                   if (ltime1) {
                      memcpy(&tms, localtime(&ltime1), sizeof(struct tm));
-                     strftime(str, sizeof(str), "%x", &tms);
+                     strcpy(format, "%x");
+                     strftime(str, sizeof(str), format, &tms);
                      if (ltime2 > 0)
                         rsprintf("%s %s", loc("From"), str);
                      else
@@ -12553,7 +12562,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                   }
                   if (ltime2) {
                      memcpy(&tms, localtime(&ltime2), sizeof(struct tm));
-                     strftime(str, sizeof(str), "%x", &tms);
+                     strcpy(format, "%x");
+                     strftime(str, sizeof(str), format, &tms);
                      if (ltime1 > 0)
                         rsprintf(" %s %s", loc("to"), str);
                      else
@@ -12648,7 +12658,6 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       }
 
       /* evaluate Guest display list */
-      show_text = TRUE;
       if (getcfg(lbs->name, "Password file", str) &&
           getcfg(lbs->name, "Guest display", str) &&
           !isparam("unm")) {
