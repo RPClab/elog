@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.174  2004/01/07 14:28:58  midas
+  Added logging for SMTP communication
+
   Revision 1.173  2004/01/07 14:05:14  midas
   Fixed bug with permissions
 
@@ -1055,6 +1058,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
 
    if (verbose)
       printf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
+   logf(lbs, "Email from %s to %s, SMTP host %s:\n", from, to, smtp_host);
 
    /* count attachments */
    n_att = 0;
@@ -1087,6 +1091,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    recv_string(s, str, strsize, 10000);
    if (verbose)
       fputs(str, stdout);
+   logf(lbs, str);
 
    /* drain server messages */
    do {
@@ -1094,23 +1099,28 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       recv_string(s, str, strsize, 300);
       if (verbose)
          fputs(str, stdout);
+      logf(lbs, str);
    } while (str[0]);
 
    snprintf(str, strsize - 1, "HELO %s\r\n", host_name);
    send(s, str, strlen(str), 0);
    if (verbose)
       fputs(str, stdout);
+   logf(lbs, str);
    recv_string(s, str, strsize, 3000);
    if (verbose)
       fputs(str, stdout);
+   logf(lbs, str);
 
    snprintf(str, strsize - 1, "MAIL FROM: <%s>\r\n", from);
    send(s, str, strlen(str), 0);
    if (verbose)
       fputs(str, stdout);
+   logf(lbs, str);
    recv_string(s, str, strsize, 3000);
    if (verbose)
       fputs(str, stdout);
+   logf(lbs, str);
 
    /* break recipients into list */
    n = strbreak(to, list, 1024);
@@ -1120,20 +1130,24 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       send(s, str, strlen(str), 0);
       if (verbose)
          fputs(str, stdout);
+      logf(lbs, str);
 
       /* increased timeout for SMTP servers with long alias lists */
       recv_string(s, str, strsize, 30000);
       if (verbose)
          fputs(str, stdout);
+      logf(lbs, str);
    }
 
    snprintf(str, strsize - 1, "DATA\r\n");
    send(s, str, strlen(str), 0);
    if (verbose)
       fputs(str, stdout);
+   logf(lbs, str);
    recv_string(s, str, strsize, 3000);
    if (verbose)
       fputs(str, stdout);
+   logf(lbs, str);
 
    if (email_to)
       snprintf(str, strsize - 1, "To: %s\r\n", to);
@@ -1143,28 +1157,33 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    send(s, str, strlen(str), 0);
    if (verbose)
       fputs(str, stdout);
+   logf(lbs, str);
 
    snprintf(str, strsize - 1, "From: %s\r\nSubject: %s\r\n", from, subject);
    send(s, str, strlen(str), 0);
    if (verbose)
       fputs(str, stdout);
+   logf(lbs, str);
 
    snprintf(str, strsize - 1, "X-Mailer: Elog, Version %s\r\n", VERSION);
    send(s, str, strlen(str), 0);
    if (verbose)
       fputs(str, stdout);
+   logf(lbs, str);
 
    if (url) {
       snprintf(str, strsize - 1, "X-Elog-URL: %s\r\n", url);
       send(s, str, strlen(str), 0);
       if (verbose)
          fputs(str, stdout);
+      logf(lbs, str);
    }
 
    snprintf(str, strsize - 1, "X-Elog-submit-type: web|elog\r\n");
    send(s, str, strlen(str), 0);
    if (verbose)
       fputs(str, stdout);
+   logf(lbs, str);
 
    time(&now);
    ts = localtime(&now);
@@ -1177,12 +1196,14 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    send(s, str, strlen(str), 0);
    if (verbose)
       fputs(str, stdout);
+   logf(lbs, str);
 
    if (n_att > 0) {
       snprintf(str, strsize - 1, "MIME-Version: 1.0\r\n");
       send(s, str, strlen(str), 0);
       if (verbose)
          fputs(str, stdout);
+      logf(lbs, str);
 
       sprintf(boundary, "%04X-%04X=:%04X", rand(), rand(), rand());
       snprintf(str, strsize - 1, "Content-Type: MULTIPART/MIXED; BOUNDARY=\"%s\"\r\n\r\n",
@@ -1190,29 +1211,34 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       send(s, str, strlen(str), 0);
       if (verbose)
          fputs(str, stdout);
+      logf(lbs, str);
 
       snprintf(str, strsize - 1,
                "  This message is in MIME format.  The first part should be readable text,\r\n");
       send(s, str, strlen(str), 0);
       if (verbose)
          fputs(str, stdout);
+      logf(lbs, str);
 
       snprintf(str, strsize - 1,
                "  while the remaining parts are likely unreadable without MIME-aware tools.\r\n\r\n");
       send(s, str, strlen(str), 0);
       if (verbose)
          fputs(str, stdout);
+      logf(lbs, str);
 
       snprintf(str, strsize - 1,
                "--%s\r\nContent-Type: TEXT/PLAIN; charset=US-ASCII\r\n\r\n", boundary);
       send(s, str, strlen(str), 0);
       if (verbose)
          fputs(str, stdout);
+      logf(lbs, str);
    } else {
       snprintf(str, strsize - 1, "Content-Type: TEXT/PLAIN; charset=US-ASCII\r\n\r\n");
       send(s, str, strlen(str), 0);
       if (verbose)
          fputs(str, stdout);
+      logf(lbs, str);
    }
 
    /* analyze text for "." at beginning of line */
@@ -1235,6 +1261,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       send(s, str, strlen(str), 0);
       if (verbose)
          fputs(str, stdout);
+      logf(lbs, str);
 
       for (index = 0; index < n_att; index++) {
          /* return proper Content-Type for file type */
@@ -1260,11 +1287,13 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
          send(s, str, strlen(str), 0);
          if (verbose)
             fputs(str, stdout);
+         logf(lbs, str);
 
          snprintf(str, strsize - 1, "Content-Transfer-Encoding: BASE64\r\n");
          send(s, str, strlen(str), 0);
          if (verbose)
             fputs(str, stdout);
+         logf(lbs, str);
 
          snprintf(str, strsize - 1,
                   "Content-Disposition: attachment; filename=\"%s\"\r\n\r\n",
@@ -1272,6 +1301,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
          send(s, str, strlen(str), 0);
          if (verbose)
             fputs(str, stdout);
+         logf(lbs, str);
 
          /* encode file */
          strlcpy(file_name, lbs->data_dir, sizeof(file_name));
@@ -1303,6 +1333,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
          send(s, str, strlen(str), 0);
          if (verbose)
             fputs(str, stdout);
+         logf(lbs, str);
       }
    }
 
@@ -1311,18 +1342,22 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    send(s, str, strlen(str), 0);
    if (verbose)
       fputs(str, stdout);
+   logf(lbs, str);
 
    recv_string(s, str, strsize, 3000);
    if (verbose)
       fputs(str, stdout);
+   logf(lbs, str);
 
    snprintf(str, strsize - 1, "QUIT\r\n");
    send(s, str, strlen(str), 0);
    if (verbose)
       fputs(str, stdout);
+   logf(lbs, str);
    recv_string(s, str, strsize, 3000);
    if (verbose)
       fputs(str, stdout);
+   logf(lbs, str);
 
    closesocket(s);
    free(str);

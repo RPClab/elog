@@ -131,8 +131,7 @@ New message cannot be written to directory "%s" = Neuer Eintrag kann nicht ins V
 Only user <i>%s</i> can edit this entry = Nur Benutzer <i>%s</i> kann diesen Eintrag ändern
 
 #
-# New strings for V2.0
-#
+# V2.0
 Display full message = Ganzer Eintrag darstellen
 Display threads = Antwortkette darstellen
 Logbook is empty = Logbuch ist leer
@@ -142,7 +141,7 @@ and all its replies = und alle Antworten
 Message ID = Eintrag-ID
 
 #
-# New strings for V2.1.0
+# V2.1.0
 Not logged in = Nicht eingeloggt
 Login = Anmelden
 Page %d of %d = Seite %d von %d
@@ -165,7 +164,7 @@ Register as new user = Als neuer Benutzer anmelden
 name may not contain blanks = Name darf keine Leerzeichen enthalten
 
 #
-# New strings for V2.1.1
+# V2.1.1
 A new ELOG user has been registered on %s = Ein neuer Benutzer hat sich auf %s angemeldet
 Email = Email
 User "%s" registered on logbook "%s" = Benutzer "%s" im Logbuch "%s" registriert
@@ -178,7 +177,7 @@ Are you sure to delete these messages? = Diese Einträge wirklich löschen?
 Select = Auswählen
 
 #
-# New strings for V2.2.0
+# V2.2.0
 No message selected for deletion = Kein Eintrag zum löschen ausgewählt
 No message selected = Kein Eintrag ausgewählt
 All entries = Alle Einträge
@@ -196,11 +195,11 @@ Selected entries = Ausgewählte Einträge
 Enable email notifications = Email-Benachrichtigung	ermöglichen
 
 #
-# New strings for V2.2.2
+# V2.2.2
 A old entry has been updated on %s = Ein alter Eintrag wurde von %s geändert
 
 #
-# New strings for V2.2.4
+# V2.2.4
 Collapse = eingeklappt
 Expand = erweitert
 Full = ausführlich
@@ -208,7 +207,7 @@ Summary = zusammengefasst
 Threaded = mit&nbsp;Antwortketten
 
 #
-# New strings for V2.2.6
+# V2.2.6
 ELOG Entries = ELOG Einträge
 Filters = Filter
 Mode = Modus
@@ -218,14 +217,14 @@ and all their replies = und alle Antworten
 Your request has been forwarded to the administrator. You will be notified by email upon activation of your new account. = Ihr Gesuch wurde an den Administrator weitergeleitet. Sie werden per Email benachrichtigt, wenn Ihr Zugang aktiviert wurde.
 
 #
-# New strings for V2.3.1
+# V2.3.1
 Upload = Hochladen
 Requested = Erfordert
 Registration request on logbook "%s" = Registrierungsanforderung für Logbuch "%s"
 A new ELOG user wants to register on "%s" = Ein neuer Benutzer möchte sich auf "%s" registrieren
 
 #
-# New strings for V2.3.2
+# V2.3.2
 One message = Ein Eintrag
 %d messages = %d Einträge
 and its replies = mit Antworten
@@ -234,7 +233,7 @@ moved successfully from "%s" to "%s" = erfolgreich von "%s" nach "%s" verschoben
 copied successfully from "%s" to "%s" = erfolgreich von "%s" nach "%s" kopiert
 
 #
-# New strings for V2.3.4
+# V2.3.4
 Last x = Letzte x
 Only user <i>%s</i> can delete this entry = Dieser Eintrag kann nur von <i>%s</i> gelöscht werden
 Search text also in attributes = Text auch in Attributen suchen
@@ -243,7 +242,7 @@ Login as different user = Als anderer Benutzer anmelden
 User <i>"%s"</i> has no access to logbook <i>"%s"</i> = Benutzer <i>"%s"</i> hat keinen Zugriff auf Logbuch <i>"%s"</i>
 
 #
-# New strings for V2.3.5
+# V2.3.5
 Date = Datum
 ID = ID
 Change elogd.cfg = elogd.cfg ändern
@@ -264,7 +263,7 @@ Enter your user name or email address = Bitte Benutzernamen oder Email-Adresse e
 Password recovery for ELOG %s = Kennwort-Wiederherstellung für ELOG %s
 
 #
-# New string for V2.3.6
+# V2.3.6
 Host = Computer
 Your ELOG account has been activated = Ihr ELOG Konto wurde aktiviert
 Activate = Aktivieren
@@ -272,17 +271,23 @@ Maximum number of attachments reached = Maximale Anzahl von Anhängen erreicht
 Invalid user name <i>"%s"</i> = Falscher Benutzer-Name <i>"%s"</i>
 
 #
-# New string for V2.3.7
+# V2.3.7
 User = Benutzer
 on = auf
 computer = Computer
 Entry is currently edited by = Eintrag wird momentan bearbeitet von
 
 #
-# New string for V2.3.9
+# V2.3.9
 recipients = Empfänger
 Suppress shell execution = Kommando-Ausführung unterdrücken
 
 #
-# New string for V2.4.0
+# V2.4.0
 Maximum number of replies (%d) exceeded
+
+# V2.4.1
+by = von
+Change [global] = [global] ändern
+
+
