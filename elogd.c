@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.90  2002/10/25 04:21:19  midas
+  Made self registration work with global password file
+
   Revision 2.89  2002/10/18 05:36:20  midas
   Fixed bugs with 'Start page = ...'
 
@@ -601,7 +604,7 @@ LOGBOOK *lb_list = NULL;
 void show_error(char *error);
 void show_http_header();
 BOOL enum_user_line(LOGBOOK *lbs, int n, char *user);
-int  get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name, char *email, char *email_notify);
+int  get_user_line(char *logbook_name, char *user, char *password, char *full_name, char *email, char *email_notify);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -4868,7 +4871,7 @@ char   str[256], mode[256];
     }
 
   rsprintf("</table></td></tr></table>\n");
-  rsprintf("</body></html>\r\n");
+  rsprintf("</form></body></html>\r\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -5178,7 +5181,7 @@ int    i, fh, size, self_register;
         pl = strtok(admin_user, " ,");
         while (pl)
           {
-          get_user_line(lbs, pl, NULL, NULL, email_addr, NULL);
+          get_user_line(lbs->name, pl, NULL, NULL, email_addr, NULL);
           if (email_addr[0])
             {
             /* compose subject */
@@ -5410,7 +5413,7 @@ int  i;
 
   rsprintf("<tr><td width=10%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Login name"));
 
-  if (get_user_line(lbs, user, password, full_name, user_email, email_notify) != 1)
+  if (get_user_line(lbs->name, user, password, full_name, user_email, email_notify) != 1)
     sprintf(str, loc("User [%s] has been deleted"), user);
   else
     strcpy(str, user);
@@ -5464,7 +5467,10 @@ void show_new_user_page(LOGBOOK *lbs)
 
   /*---- title ----*/
 
-  show_standard_title(lbs->name, "", 0);
+  if (lbs)
+    show_standard_title(lbs->name, "", 0);
+  else
+    show_standard_title("ELOG", "", 0);
 
   /*---- menu buttons ----*/
 
@@ -7839,7 +7845,7 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id;
         if (!enum_user_line(lbs, index, user))
           break;
 
-        get_user_line(lbs, user, NULL, NULL, user_email, email_notify);
+        get_user_line(lbs->name, user, NULL, NULL, user_email, email_notify);
 
         if (email_notify[0])
           if (!compose_mail(lbs, user_email, message_id, attrib, mail_param, &n_mail))
@@ -8878,7 +8884,7 @@ char  str[256];
 
 /*------------------------------------------------------------------*/
 
-int get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name, char *email, char *email_notify)
+int get_user_line(char *logbook_name, char *user, char *password, char *full_name, char *email, char *email_notify)
 {
 char  str[256], line[256], file_name[256], *p;
 FILE  *f;
@@ -8889,10 +8895,7 @@ int   i;
   if (email) email[0] = 0;
   if (email_notify) email_notify[0] = 0;
 
-  if (lbs == NULL)
-    getcfg("global", "Password file", str);
-  else
-    getcfg(lbs->name, "Password file", str);
+  getcfg(logbook_name, "Password file", str);
 
   if (!str[0])
     return 1;
@@ -9031,11 +9034,11 @@ int   i;
 
 /*------------------------------------------------------------------*/
 
-BOOL check_user_password(LOGBOOK *lbs, char *user, char *password, char *redir)
+BOOL check_user_password(char *logbook_name, char *user, char *password, char *redir)
 {
 char  status, str[256], upwd[256], full_name[256], email[256];
 
-  status = get_user_line(lbs, user, upwd, full_name, email, NULL);
+  status = get_user_line(logbook_name, user, upwd, full_name, email, NULL);
   if (status == 1)
     {
     if (user[0] && strcmp(password, upwd) == 0)
@@ -9068,18 +9071,9 @@ char  status, str[256], upwd[256], full_name[256], email[256];
     rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;<input type=password name=upassword></td></tr>\n",
              gt("Cell BGColor"), loc("Password"));
 
-    if (lbs == NULL)
-      {
-      if (getcfg("global", "Self register", str) && atoi(str) > 0)
-        rsprintf("<tr><td align=center bgcolor=%s><a href=\"?cmd=New+user\">%s</td></tr>", 
-                  gt("Cell BGColor"), loc("Register as new user"));
-      }
-    else
-      {
-      if (getcfg(lbs->name, "Self register", str) && atoi(str) > 0)
-        rsprintf("<tr><td align=center bgcolor=%s><a href=\"?cmd=New+user\">%s</td></tr>", 
-                  gt("Cell BGColor"), loc("Register as new user"));
-      }
+    if (getcfg(logbook_name, "Self register", str) && atoi(str) > 0)
+      rsprintf("<tr><td align=center bgcolor=%s><a href=\"?cmd=New+user\">%s</td></tr>", 
+                gt("Cell BGColor"), loc("Register as new user"));
 
     rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=\"%s\"></td></tr>", 
               gt("Cell BGColor"), loc("Submit"));
@@ -9096,7 +9090,7 @@ char  status, str[256], upwd[256], full_name[256], email[256];
       sprintf(full_name, loc("Invalid user name <b>%s</b>"), user);
     else
       {
-      getcfg(lbs->name, "Password file", str);
+      getcfg(logbook_name, "Password file", str);
       sprintf(full_name, loc("Cannot open file <b>%s</b>"), str);
       }
     show_error(full_name);
@@ -9176,6 +9170,52 @@ static char last_password[32];
     strcpy(last_password, password+4);
   else
     strcpy(password, last_password);
+}
+
+/*------------------------------------------------------------------*/
+
+int do_self_register(LOGBOOK *lbs, char *command)
+/* evaluate self-registration commands */
+{
+char str[256];
+
+  /* display new user page if "self register" is clicked */
+  if (equal_ustring(command, loc("New user")))
+    {
+    show_new_user_page(lbs);
+    return 0;
+    }
+
+  /* save user info if "save" is pressed */
+  if (equal_ustring(command, loc("Save")) && isparam("new_user_name") && !isparam("config"))
+    {
+    if (!save_user_config(lbs, getparam("new_user_name"), TRUE, FALSE))
+      return 0;
+
+    sprintf(str, "../%s/", lbs->name_enc);
+    redirect(str);
+    return 0;
+    }
+        
+  /* display account request notification */
+  if (equal_ustring(command, "Requested"))
+    {
+    show_standard_header(loc("ELOG registration"), "");
+
+    rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
+              gt("Border width"), gt("Frame color"));
+    rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
+    rsprintf("<tr><td bgcolor=#B0FFB0 align=center>");
+
+    rsprintf(loc("Your request has been forward the the administrator. You will be notified by email upon activation of your new account."));
+
+    rsprintf("</td></tr>\n</table></td></tr></table>\n");
+    rsprintf("</body></html>\n");
+    return 0;
+    }
+
+  /* indicate continue */
+  return 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -9271,6 +9311,11 @@ FILE    *f;
       /* if password file is given in global section, protect also logbook selection page */
       if (getcfg("global", "password file", str))
         {
+        if (getcfg("global", "Self register", str) && atoi(str) > 0)
+          {
+          if (!do_self_register(NULL, command))
+            return;
+          }
 
         /* if data from login screen, evaluate it and set cookies */
         if (*getparam("uname") && getparam("upassword"))
@@ -9438,7 +9483,7 @@ FILE    *f;
     else
       strcpy(str, getparam("cmdline"));
 
-    if (!check_user_password(lbs, getparam("uname"), enc_pwd, str))
+    if (!check_user_password(lbs->name, getparam("uname"), enc_pwd, str))
       return;
 
     logf("Login of user \"%s\" (successful)", getparam("uname"));
@@ -9460,50 +9505,19 @@ FILE    *f;
       /* if no guest menu commands but self register, evaluate new user commands */
       if (getcfg(lbs->name, "Self register", str) && atoi(str) > 0)
         {
-        if (equal_ustring(command, loc("New user")))
-          {
-          show_new_user_page(lbs);
+        if (!do_self_register(lbs, command))
           return;
-          }
-        if (equal_ustring(command, loc("Save")) && isparam("new_user_name") && !isparam("config"))
-          {
-          if (!save_user_config(lbs, getparam("new_user_name"), TRUE, FALSE))
-            return;
-
-          sprintf(str, "../%s/", lbs->name_enc);
-          redirect(str);
-          return;
-          }
-        if (equal_ustring(command, "Requested"))
-          {
-          /* display account request notification */
-          if (equal_ustring(command, "Requested"))
-            {
-            show_standard_header(loc("ELOG registration"), "");
-
-            rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
-                      gt("Border width"), gt("Frame color"));
-            rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
-            rsprintf("<tr><td bgcolor=#B0FFB0 align=center>");
-
-            rsprintf(loc("Your request has been forward the the administrator. You will be notified by email upon activation of your new account."));
-
-            rsprintf("</td></tr>\n</table></td></tr></table>\n");
-            rsprintf("</body></html>\n");
-            return;
-            }
-          }
         }
 
       logf("Connection of user \"%s\"",getparam("unm"));
-      if (!check_user_password(lbs, getparam("unm"), getparam("upwd"), getparam("cmdline")))
+      if (!check_user_password(lbs->name, getparam("unm"), getparam("upwd"), getparam("cmdline")))
         return;
       }
     }
 
   if (equal_ustring(command, loc("Login")))
     {
-    check_user_password(lbs, "", "", path);
+    check_user_password(lbs->name, "", "", path);
     return;
     }
 
