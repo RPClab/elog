@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.363  2004/07/05 08:49:18  midas
+   Fixed compiler warnings
+
    Revision 1.362  2004/06/29 18:57:23  midas
    Made rename/create logbook work with groups
 
@@ -8363,6 +8366,8 @@ int create_logbook(LOGBOOK *oldlbs, char *logbook, char *templ)
    assert(buf);
    read(fh, buf, length);
    buf[length] = 0;
+   templ_length = 0;
+   p2 = NULL;
 
    /* find template logbook */
    if (templ[0]) {
@@ -8405,7 +8410,7 @@ int create_logbook(LOGBOOK *oldlbs, char *logbook, char *templ)
 #ifdef OS_UNIX
 
    /* under unix, convert CRLF to CR */
-   remove_crlf(buffer);
+   remove_crlf(buf);
 
 #endif
 
