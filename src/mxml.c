@@ -6,6 +6,9 @@
    Contents:     Midas XML Library
 
    $Log$
+   Revision 1.8  2005/03/22 14:26:19  ritt
+   Implemented mxml_find_nodes()
+
    Revision 1.7  2005/03/21 16:05:21  ritt
    Added STRLCPY_DEFINED
 
@@ -45,7 +48,7 @@
 #define TRUE 1
 #define FALSE 0
 
-typedef int BOOL;
+typedef int int;
 
 #ifndef O_TEXT
 #define O_TEXT 0
@@ -256,7 +259,7 @@ void mxml_decode(char *str)
 
 /*------------------------------------------------------------------*/
 
-BOOL mxml_start_element(MXML_WRITER *writer, const char *name)
+int mxml_start_element(MXML_WRITER *writer, const char *name)
 /* start a new XML element, must be followed by mxml_end_elemnt */
 {
    int i;
@@ -292,7 +295,7 @@ BOOL mxml_start_element(MXML_WRITER *writer, const char *name)
 
 /*------------------------------------------------------------------*/
 
-BOOL mxml_end_element(MXML_WRITER *writer)
+int mxml_end_element(MXML_WRITER *writer)
 /* close an open XML element */
 {
    int i;
@@ -332,7 +335,7 @@ BOOL mxml_end_element(MXML_WRITER *writer)
 
 /*------------------------------------------------------------------*/
 
-BOOL mxml_write_attribute(MXML_WRITER *writer, const char *name, const char *value)
+int mxml_write_attribute(MXML_WRITER *writer, const char *name, const char *value)
 /* write an attribute to the currently open XML element */
 {
    char name_enc[1000];
@@ -356,7 +359,7 @@ BOOL mxml_write_attribute(MXML_WRITER *writer, const char *name, const char *val
 
 /*------------------------------------------------------------------*/
 
-BOOL mxml_write_value(MXML_WRITER *writer, const char *data)
+int mxml_write_value(MXML_WRITER *writer, const char *data)
 /* write value of an XML element, like <[name]>[value]</[name]> */
 {
    int i, j;
@@ -389,7 +392,7 @@ BOOL mxml_write_value(MXML_WRITER *writer, const char *data)
 
 /*------------------------------------------------------------------*/
 
-BOOL mxml_close_document(MXML_WRITER *writer)
+int mxml_close_document(MXML_WRITER *writer)
 /* close a file opened with mxml_open_writer */
 {
    int i;
@@ -424,8 +427,8 @@ PMXML_NODE mxml_create_root_node()
 
 /*------------------------------------------------------------------*/
 
-PMXML_NODE mxml_add_node(PMXML_NODE parent, char *node_name, char *value)
-/* add a subnode (child) to an existing parent node */
+PMXML_NODE mxml_add_node_at(PMXML_NODE parent, char *node_name, char *value, int index)
+/* add a subnode (child) to an existing parent node as a specific position */
 {
    PMXML_NODE pnode, pchild;
    int i, j;
@@ -447,10 +450,18 @@ PMXML_NODE mxml_add_node(PMXML_NODE parent, char *node_name, char *value)
       }
    }
    assert(parent->child);
-   pnode = &parent->child[parent->n_children];
+
+   /* move following nodes one down */
+   if (index < parent->n_children) 
+      for (i=parent->n_children ; i > index ; i--)
+         memcpy(&parent->child[i], &parent->child[i-1], sizeof(MXML_NODE));
+
+   /* initialize new node */
+   pnode = &parent->child[index];
    memset(pnode, 0, sizeof(MXML_NODE));
    strlcpy(pnode->name, node_name, sizeof(pnode->name));
    pnode->parent = parent;
+   
    parent->n_children++;
 
    if (value) {
@@ -464,7 +475,15 @@ PMXML_NODE mxml_add_node(PMXML_NODE parent, char *node_name, char *value)
 
 /*------------------------------------------------------------------*/
 
-BOOL mxml_add_attribute(PMXML_NODE pnode, char *attrib_name, char *attrib_value)
+PMXML_NODE mxml_add_node(PMXML_NODE parent, char *node_name, char *value)
+/* add a subnode (child) to an existing parent node at the end */
+{
+   return mxml_add_node_at(parent, node_name, value, parent->n_children);
+}
+
+/*------------------------------------------------------------------*/
+
+int mxml_add_attribute(PMXML_NODE pnode, char *attrib_name, char *attrib_value)
 /* add an attribute to an existing node */
 {
    if (pnode->n_attributes == 0) {
@@ -508,10 +527,12 @@ PMXML_NODE mxml_subnode(PMXML_NODE pnode, int index)
 PMXML_NODE mxml_find_node(PMXML_NODE tree, char *xml_path)
 /*
    Search for a specific XML node with a subset of XPATH specifications.
+   Return first found node.
+
    Following elemets are possible
 
    /<node>/<node>/..../<node>          Find a node in the tree hierarchy
-   /<node>[index]                      Find child #[index] of node
+   /<node>[index]                      Find child #[index] of node (index starts from 1)
    /<node>[index]/<node>               Find subnode of the above
    /<node>[<subnode>=<value>]          Find a node which has a specific subnode
    /<node>[<subnode>=<value>]/<node>   Find subnode of the above
@@ -587,7 +608,7 @@ PMXML_NODE mxml_find_node(PMXML_NODE tree, char *xml_path)
                break;
          } else {
             if (strcmp(pnode->child[i].name, node_name) == 0)
-               if (j++ == index)
+               if (index == 0 || ++j == index)
                   break;
          }
       }
@@ -603,6 +624,153 @@ PMXML_NODE mxml_find_node(PMXML_NODE tree, char *xml_path)
    } while (*p2);
 
    return pnode;
+}
+
+/*------------------------------------------------------------------*/
+
+int mxml_find_nodes1(PMXML_NODE tree, char *xml_path, PMXML_NODE **nodelist, int *found);
+
+int mxml_add_resultnode(PMXML_NODE node, char *xml_path, PMXML_NODE **nodelist, int *found)
+{
+   /* if at end of path, add this node */
+   if (*xml_path == 0) {
+      if (*found == 0)
+         *nodelist = malloc(sizeof(PMXML_NODE));
+      else
+         *nodelist = realloc(*nodelist, sizeof(PMXML_NODE)*(*found + 1));
+
+      (*nodelist)[*found] = node;
+      (*found)++;
+   } else {
+      /* if not at end of path, branch into subtree */
+      return mxml_find_nodes1(node, xml_path, nodelist, found);
+   }
+
+   return 1;
+}
+
+/*------------------------------------------------------------------*/
+
+int mxml_find_nodes1(PMXML_NODE tree, char *xml_path, PMXML_NODE **nodelist, int *found)
+/*
+   Return list of XML nodes with a subset of XPATH specifications.
+   Following elemets are possible
+
+   /<node>/<node>/..../<node>          Find a node in the tree hierarchy
+   /<node>[index]                      Find child #[index] of node (index starts from 1)
+   /<node>[index]/<node>               Find subnode of the above
+   /<node>[<subnode>=<value>]          Find a node which has a specific subnode
+   /<node>[<subnode>=<value>]/<node>   Find subnode of the above
+*/
+{
+   PMXML_NODE pnode;
+   char *p1, *p2, *p3, node_name[256], condition[256], subnode[256], value[256];
+   int i, j, index;
+   size_t len;
+
+   p1 = xml_path;
+   pnode = tree;
+
+   /* skip leading '/' */
+   if (*p1 && *p1 == '/')
+      p1++;
+
+   do {
+      p2 = p1;
+      while (*p2 && *p2 != '/' && *p2 != '[')
+         p2++;
+      len = (size_t)p2 - (size_t)p1;
+      if (len >= sizeof(node_name))
+         return 0;
+
+      memcpy(node_name, p1, len);
+      node_name[len] = 0;
+      index = 0;
+      subnode[0] = value[0] = 0;
+      if (*p2 == '[') {
+         p2++;
+         if (isdigit(*p2)) {
+            /* evaluate [index] */
+            index = atoi(p2);
+            p2 = strchr(p2, ']');
+            if (p2 == NULL)
+               return 0;
+            p2++;
+         } else {
+            /* evaluate [<subnode>=<value>] */
+            while (*p2 && isspace(*p2))
+               p2++;
+            strlcpy(condition, p2, sizeof(condition));
+            if (strchr(condition, ']'))
+               *strchr(condition, ']') = 0;
+            else
+               return 0;
+            p2 = strchr(p2, ']')+1;
+            if ((p3 = strchr(condition, '=')) != NULL) {
+               strlcpy(subnode, condition, sizeof(subnode));
+               *strchr(subnode, '=') = 0;
+               while (subnode[0] && isspace(subnode[strlen(subnode)-1]))
+                  subnode[strlen(subnode)-1] = 0;
+               p3++;
+               while (*p3 && isspace(*p3))
+                  p3++;
+               if (*p3 == '\"') {
+                  strlcpy(value, p3+1, sizeof(value));
+                  while (value[0] && isspace(value[strlen(value)-1]))
+                     value[strlen(value)-1] = 0;
+                  if (value[0] && value[strlen(value)-1] == '\"')
+                     value[strlen(value)-1] = 0;
+               } else {
+                  strlcpy(value, p3, sizeof(value));
+                  while (value[0] && isspace(value[strlen(value)-1]))
+                     value[strlen(value)-1] = 0;
+               }
+            }
+         }
+      }
+
+      for (i=j=0 ; i<pnode->n_children ; i++) {
+         if (subnode[0]) {
+            /* search subnode */
+            for (j=0 ; j<pnode->child[i].n_children ; j++)
+               if (strcmp(pnode->child[i].child[j].name, subnode) == 0)
+                  if (strcmp(pnode->child[i].child[j].value, value) == 0)
+                     if (!mxml_add_resultnode(pnode->child+i, p2, nodelist, found))
+                        return 0;
+
+         } else {
+            if (strcmp(pnode->child[i].name, node_name) == 0)
+               if (index == 0 || ++j == index)
+                  if (!mxml_add_resultnode(pnode->child+i, p2, nodelist, found))
+                     return 0;
+         }
+      }
+
+      if (i == pnode->n_children)
+         return 1;
+
+      pnode = &pnode->child[i];
+      p1 = p2;
+      if (*p1 == '/')
+         p1++;
+
+   } while (*p2);
+
+   return 1;
+}
+
+/*------------------------------------------------------------------*/
+
+int mxml_find_nodes(PMXML_NODE tree, char *xml_path, PMXML_NODE **nodelist)
+{
+   int status, found = 0;
+   
+   status = mxml_find_nodes1(tree, xml_path, nodelist, &found);
+
+   if (status == 0)
+      return -1;
+
+   return found;
 }
 
 /*------------------------------------------------------------------*/
@@ -629,7 +797,7 @@ char *mxml_get_attribute(PMXML_NODE pnode, char *name)
 
 /*------------------------------------------------------------------*/
 
-BOOL mxml_replace_node_name(PMXML_NODE pnode, char *name)
+int mxml_replace_node_name(PMXML_NODE pnode, char *name)
 {
    strlcpy(pnode->name, name, sizeof(pnode->name));
    return TRUE;
@@ -637,7 +805,7 @@ BOOL mxml_replace_node_name(PMXML_NODE pnode, char *name)
 
 /*------------------------------------------------------------------*/
 
-BOOL mxml_replace_node_value(PMXML_NODE pnode, char *value)
+int mxml_replace_node_value(PMXML_NODE pnode, char *value)
 {
    if (pnode->value)
       pnode->value = realloc(pnode->value, strlen(value)+1);
@@ -650,7 +818,7 @@ BOOL mxml_replace_node_value(PMXML_NODE pnode, char *value)
 
 /*------------------------------------------------------------------*/
 
-BOOL mxml_replace_subvalue(PMXML_NODE pnode, char *name, char *value)
+int mxml_replace_subvalue(PMXML_NODE pnode, char *name, char *value)
 /* 
    replace value os a subnode, like
 
@@ -675,7 +843,7 @@ BOOL mxml_replace_subvalue(PMXML_NODE pnode, char *name, char *value)
 
 /*------------------------------------------------------------------*/
 
-BOOL mxml_replace_attribute_name(PMXML_NODE pnode, char *old_name, char *new_name)
+int mxml_replace_attribute_name(PMXML_NODE pnode, char *old_name, char *new_name)
 /* change the name of an attribute, keep its value */
 {
    int i;
@@ -693,7 +861,7 @@ BOOL mxml_replace_attribute_name(PMXML_NODE pnode, char *old_name, char *new_nam
 
 /*------------------------------------------------------------------*/
 
-BOOL mxml_replace_attribute_value(PMXML_NODE pnode, char *attrib_name, char *attrib_value)
+int mxml_replace_attribute_value(PMXML_NODE pnode, char *attrib_name, char *attrib_value)
 /* change the value of an attribute */
 {
    int i;
@@ -712,7 +880,7 @@ BOOL mxml_replace_attribute_value(PMXML_NODE pnode, char *attrib_name, char *att
 
 /*------------------------------------------------------------------*/
 
-BOOL mxml_delete_node(PMXML_NODE pnode)
+int mxml_delete_node(PMXML_NODE pnode)
 /* free memory of a node and remove it from the parent's child list */
 {
    PMXML_NODE parent;
@@ -746,7 +914,7 @@ BOOL mxml_delete_node(PMXML_NODE pnode)
 
 /*------------------------------------------------------------------*/
 
-BOOL mxml_delete_attribute(PMXML_NODE pnode, char *attrib_name)
+int mxml_delete_attribute(PMXML_NODE pnode, char *attrib_name)
 {
    int i, j;
 
@@ -809,7 +977,7 @@ PMXML_NODE mxml_parse_file(char *file_name, char *error, int error_size)
    char *buf, *p, *pv;
    int i, fh, length, line_number;
    PMXML_NODE root, ptree, pnew;
-   BOOL end_element;
+   int end_element;
    size_t len;
 
    fh = open(file_name, O_RDONLY | O_TEXT, 0644);
@@ -983,13 +1151,10 @@ PMXML_NODE mxml_parse_file(char *file_name, char *error, int error_size)
 
                   /* extract attribute value */
                   pv = p;
-                  while (*pv && *pv != '\"' && *pv != '<' && *pv != '>')
+                  while (*pv && *pv != '\"')
                      pv++;
                   if (!*pv)
                      return read_error(HERE, "Unexpected end of file");
-                  if (*pv == '<' || *pv == '>')
-                     return read_error(HERE, "Unexpected \'%c\' inside attribute value \"%s\" of element \"%s\"",
-                        *pv, attrib_name, node_name);
 
                   len = (size_t)pv - (size_t)p;
                   if (len > sizeof(attrib_value)-1)
@@ -1050,15 +1215,13 @@ PMXML_NODE mxml_parse_file(char *file_name, char *error, int error_size)
                   } else {
 
                      /* extract value */
-                     while (*pv && *pv != '<' && *pv != '>') {
+                     while (*pv && *pv != '<') {
                         if (*pv == '\n')
                            line_number++;
                         pv++;
                      }
                      if (!*pv)
                         return read_error(HERE, "Unexpected end of file");
-                     if (*pv == '>')
-                        return read_error(HERE, "Unexpected \'>\' inside element \"%s\"", node_name);
 
                      len = (size_t)pv - (size_t)p;
                      pnew->value = malloc(len+1);
@@ -1087,7 +1250,7 @@ PMXML_NODE mxml_parse_file(char *file_name, char *error, int error_size)
 
 /*------------------------------------------------------------------*/
 
-BOOL mxml_write_subtree(MXML_WRITER *writer, PMXML_NODE tree)
+int mxml_write_subtree(MXML_WRITER *writer, PMXML_NODE tree)
 /* write complete subtree recursively into file opened with mxml_open_document() */
 {
    int i;
@@ -1110,7 +1273,7 @@ BOOL mxml_write_subtree(MXML_WRITER *writer, PMXML_NODE tree)
 
 /*------------------------------------------------------------------*/
 
-BOOL mxml_write_tree(char *file_name, PMXML_NODE tree)
+int mxml_write_tree(char *file_name, PMXML_NODE tree)
 /* write a complete XML tree to a file */
 {
    MXML_WRITER *writer;
@@ -1141,6 +1304,9 @@ void mxml_debug_tree(PMXML_NODE tree, int level)
    for (i=0 ; i<level ; i++)
       printf("  ");
    printf("Name: %s\n", tree->name);
+   for (i=0 ; i<level ; i++)
+      printf("  ");
+   printf("Valu: %s\n", tree->value);
    for (i=0 ; i<level ; i++)
       printf("  ");
    printf("Addr: %08X\n", (size_t)tree);
@@ -1191,3 +1357,23 @@ void mxml_free_tree(PMXML_NODE tree)
 
 /*------------------------------------------------------------------*/
 
+/*
+void mxml_test()
+{
+   char err[256];
+   PMXML_NODE tree, *node;
+   int i, n;
+
+   tree = mxml_create_root_node();
+   tree = mxml_parse_file("c:\\elogdemo\\forum.xml", err, sizeof(err));
+
+   node = NULL;
+   n = mxml_find_nodes(tree, "/list/user/full_name", &node);
+   for (i=0 ; i<n ; i++)
+      printf("%s\n", node[i]->value);
+
+   free(node);
+   mxml_debug_tree(tree, 0);
+   mxml_free_tree(tree);
+}
+*/
