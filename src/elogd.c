@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.112  2003/05/22 22:07:52  midas
+  For printable output, display all pages
+
   Revision 1.111  2003/05/20 00:11:51  midas
   Check for .jpg & co files in resource dir, then in themes dir
 
@@ -8440,6 +8443,10 @@ LOGBOOK *lbs_cur;
       }
 
   printable = atoi(getparam("Printable"));
+
+  /* in printable mode, display all pages */
+  if (printable)
+    page_n = -1;
 
   if (*getparam("Reverse"))
     reverse = atoi(getparam("Reverse"));
