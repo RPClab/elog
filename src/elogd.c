@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.605  2005/03/29 11:45:46  ritt
+   Check for '.' in btou()
+
    Revision 1.604  2005/03/29 10:22:16  ritt
    Version 2.5.8-2
 
@@ -1930,12 +1933,12 @@ Do the same including '/' characters
 /*-------------------------------------------------------------------*/
 
 void btou(char *str)
-/* convert all blanks to underscores in a string */
+/* convert all blanks and dots to underscores in a string */
 {
    int i;
 
    for (i = 0; i < (int) strlen(str); i++)
-      if (str[i] == ' ')
+      if (str[i] == ' ' || str[i] == '.')
          str[i] = '_';
 }
 
@@ -10209,6 +10212,9 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 
                pl = strtok(NULL, " ,");
             }
+         } else {
+            show_error(loc("No admin user has been defined in configuration file"));
+            return 0;
          }
 
          if (self_register == 3) {
