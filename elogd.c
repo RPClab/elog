@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.128  2003/01/09 09:07:13  midas
+  Fixed bug with missing thread head
+
   Revision 2.127  2003/01/09 08:47:52  midas
   Added 'title bgcolor' and 'title fontcolor' in config file
 
@@ -7910,10 +7913,21 @@ LOGBOOK *lbs_cur;
           if (msg_list[index].lbs->el_index[i].message_id == message_id)
             break;
 
+        /* stop if not found */
+        if (i == *msg_list[index].lbs->n_el_index)
+          break;
+
         in_reply_to_id = msg_list[index].lbs->el_index[i].in_reply_to;
 
         } while (in_reply_to_id);
-        
+      
+      /* if head not found, skip message */
+      if (i == *msg_list[index].lbs->n_el_index)
+        {
+        msg_list[index].lbs = NULL;
+        continue;
+        }
+
       /* check if message head already in list */
       for (j=0 ; j<index ; j++)
         if (msg_list[j].lbs == msg_list[index].lbs &&
