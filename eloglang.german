@@ -179,3 +179,6 @@ ELOG registration = ELOG Registrierung
 Your ELOG account has been activated on host = Ihr ELOG Konto wurde aktiviert auf
 You can access it at = Der Zugriff erfolgt über
 Are you sure to delete these messages? = Diese Einträge wirklich löschen?
+%d message moved successfully from "%s" to "%s" = Eintrag erfolgreich von "%s" nach "%s" verschoben
+%d message copied successfully from "%s" to "%s" = Eintrag erfolgreich von "%s" nach "%s" kopiert
+Select = Auswählen
