@@ -1,3 +1,9 @@
+Version 1.3.5, released April 30nd, 2002
+========================================
+
+- Added icons via "IOptions" statement in configuration files
+- Added some standard icons in themes/default/icons
+
 Version 1.3.4, released April 22nd, 2002
 ========================================
 
