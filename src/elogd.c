@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.187  2004/01/13 16:37:27  midas
+   Fixed bug with elog:/<n> referencing
+
    Revision 1.186  2004/01/13 15:15:48  midas
    Fixed disappearing text on edit
 
@@ -12346,7 +12349,7 @@ void interprete(char *lbook, char *path)
    char str[NAME_LENGTH], str2[NAME_LENGTH], enc_pwd[80], file_name[256], command[80],
        ref[256];
    char enc_path[256], dec_path[256], logbook[256], logbook_enc[256];
-   char *experiment, *value, *group, css[256];
+   char *experiment, *value, *group, css[256], *pfile;
    char attachment[MAX_PATH_LENGTH];
    BOOL global;
    LOGBOOK *lbs;
@@ -12711,21 +12714,26 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-      /*---- check if file requested -----------------------------------*/
+   /*---- check if file requested -----------------------------------*/
 
-   if ((strlen(dec_path) > 13 && dec_path[6] == '_' && dec_path[13] == '_')
-       || (strlen(dec_path) > 13 && dec_path[6] == '_' && dec_path[13] == '/')
-       || strstr(dec_path, ".gif")
-       || strstr(dec_path, ".jpg") || strstr(dec_path, ".jpeg")
-       || strstr(dec_path, ".png") || strstr(dec_path, ".css")) {
-      if ((strlen(dec_path) > 13 && dec_path[6] == '_'
-           && dec_path[13] == '_') || (strlen(dec_path) > 13 && dec_path[6] == '_'
-                                       && dec_path[13] == '/')) {
-         if (dec_path[13] == '/')
-            dec_path[13] = '_';
+   /* stop elog message id in front of possible attachment */
+   pfile = dec_path;
+   if (strchr(pfile, '/') && pfile[13] != '/')
+      pfile = strchr(pfile, '/')+1;
+
+   if ((strlen(pfile) > 13 && pfile[6] == '_' && pfile[13] == '_')
+       || (strlen(pfile) > 13 && pfile[6] == '_' && pfile[13] == '/')
+       || strstr(pfile, ".gif")
+       || strstr(pfile, ".jpg") || strstr(pfile, ".jpeg")
+       || strstr(pfile, ".png") || strstr(pfile, ".css")) {
+      if ((strlen(pfile) > 13 && pfile[6] == '_'
+           && pfile[13] == '_') || (strlen(pfile) > 13 && pfile[6] == '_'
+                                       && pfile[13] == '/')) {
+         if (pfile[13] == '/')
+            pfile[13] = '_';
          /* file from data directory requested */
          strlcpy(file_name, lbs->data_dir, sizeof(file_name));
-         strlcat(file_name, dec_path, sizeof(file_name));
+         strlcat(file_name, pfile, sizeof(file_name));
       } else {
          /* file from theme directory requested */
          strlcpy(file_name, resource_dir, sizeof(file_name));
@@ -12739,14 +12747,14 @@ void interprete(char *lbook, char *path)
             strlcat(file_name, theme_name, sizeof(file_name));
             strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
          }
-         strlcat(file_name, dec_path, sizeof(file_name));
+         strlcat(file_name, pfile, sizeof(file_name));
       }
 
       send_file_direct(file_name);
       return;
    }
 
-      /*---- check if attachment requested -----------------------------*/
+   /*---- check if attachment requested -----------------------------*/
 
    if (strchr(dec_path, '/')) {
       message_id = atoi(dec_path);
@@ -12756,8 +12764,7 @@ void interprete(char *lbook, char *path)
          sprintf(str, "Attachment #%d of message #%d not found", n + 1, message_id);
          show_error(str);
       } else {
-         sprintf(str, "../%s", attachment);
-         redirect(lbs, str);
+         redirect(lbs, attachment);
       }
 
       return;
@@ -12795,7 +12802,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-      /*---- check for various commands --------------------------------*/
+   /*---- check for various commands --------------------------------*/
 
    if (equal_ustring(command, loc("Help"))) {
       if (getcfg(lbs->name, "Help URL", str)) {
