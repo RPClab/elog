@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.98  2003/05/02 06:57:40  midas
+  Increased MAX_ATTACHMENT to 50
+
   Revision 1.97  2003/05/01 08:34:04  midas
   Fixed bug with logbooks containing blanks in registration notification
 
@@ -929,7 +932,7 @@ char theme_name[80];
 
 #define MAX_GROUPS       32
 #define MAX_PARAM       100
-#define MAX_ATTACHMENTS  20
+#define MAX_ATTACHMENTS  50
 #define MAX_N_LIST      100
 #define MAX_N_ATTR       50
 #define CMD_SIZE      10000
