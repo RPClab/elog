@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.19  2003/02/19 08:05:49  midas
+  Changed permission of 'elogd.pid' file
+
   Revision 1.18  2003/02/17 18:51:55  midas
   Fixed yet another bug with 'Location:'
 
@@ -602,6 +605,8 @@
 
 #define DIR_SEPARATOR '/'
 #define DIR_SEPARATOR_STR "/"
+
+#define PIDPATH "/var/run/elogd.pid"
 
 #define __USE_XOPEN /* needed for crypt() */
 
@@ -2133,7 +2138,7 @@ int  i, j, n, status;
       else
         {
         perror("el_index_logbooks");
-        printf("Cannot create directlry \"%s\"\n", data_dir);
+        printf("Cannot create directory \"%s\"\n", data_dir);
         }
       }
     chdir(str);
@@ -11211,18 +11216,28 @@ struct timeval       timeout;
     }
 
 #ifdef OS_UNIX
-  /* crate /var/run/elogd.pid file */
+  /* create /var/run/elogd.pid file */
   {
-  int pid;
-  FILE *f;
+  int fd;
+  char buf[20];
 
-  pid = getpid();
-  f = fopen("/var/run/elogd.pid", "w");
-  if (f)
+  fd = open(PIDPATH, O_CREAT | O_RDWR, 0644);
+  if (fd < 0)
     {
-    fprintf(f, "%d\n", pid);
-    fclose(f);
+    perror("server_loop");
+    printf("Error created pid file \"PIDPATH\".\n");
+    exit(1);
     }
+
+  memset(buf, 0, sizeof(buf));
+  sprintf(buf, "%d\n", (int)getpid());
+  if (write(fd, buf, strlen(buf)) == -1)
+    {
+    perror("server_loop");
+    printf("Error writing to pid file \"PIDPATH\".\n");
+    exit(1);
+    }
+  close(fd);
   }
 
   /* install signal handler */
@@ -12360,7 +12375,7 @@ usage:
   server_loop(tcp_port, daemon);
 
 #ifdef OS_UNIX
-  unlink("/var/run/elogd.pid");
+  unlink(PIDPATH);
 #endif
 
   return 0;
