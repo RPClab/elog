@@ -36,6 +36,39 @@ td {
   background-color:white;
 }
 
+/* logbook selection page */
+.seltitle {
+  border:1px solid #0000FF;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  background-color:#CCCCFF;
+  color:#486090;
+  text-align:center;
+}
+
+.sellogbook {
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  background-color:#DDEEBB;
+  padding:3px;
+  text-align:left;
+  font-weight:bold;
+}
+
+.selcomment {
+  font-size:8pt;
+}
+
+.selentries {
+  background-color:#E0E0A0;
+  border:1px solid #0000FF;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  text-align:center;
+  font-size:10pt;
+}
+
 /* unselected and selected group tabs */
 
 .gtab a {
