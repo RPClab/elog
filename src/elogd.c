@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.324  2004/05/10 19:46:07  midas
+   Extendable options can now reside also in [globa] section
+
    Revision 1.323  2004/05/10 09:34:27  midas
    Fixed compiler warning
 
@@ -2274,8 +2277,11 @@ char *find_param(char *buf, char *group, char *param)
          p++;
    } while (p);
 
-
    free(str);
+
+   /* now search if in [global] section */
+   if (!strieq(group, "global")) 
+      return find_param(buf, "global", param);
 
    return NULL;
 }
