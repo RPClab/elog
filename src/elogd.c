@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.113  2003/06/04 08:17:35  midas
+  Fixed problem with registration notification
+
   Revision 1.112  2003/05/22 22:07:52  midas
   For printable output, display all pages
 
@@ -6381,7 +6384,7 @@ int    i, fh, size, self_register;
         strlcat(url, "/", sizeof(url));
       if (lbs)
         {
-        strlcat(url, lbs->name, sizeof(url));
+        strlcat(url, lbs->name_enc, sizeof(url));
         strlcat(url, "/", sizeof(url));
         }
       }
