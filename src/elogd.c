@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.303  2004/03/19 15:11:20  midas
+   Implemented 'guest list display'
+
    Revision 1.302  2004/03/19 11:12:00  midas
    Implemented 'extendable options' for MOptions
 
@@ -12660,10 +12663,26 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>\n");
 
       size = printable ? 2 : 3;
+      show_text = TRUE;
 
       list[0] = 0;
-      if (!getcfg(lbs->name, "List display", list))     /* new 2.3.10 format */
-         getcfg(lbs->name, "Display search", list);     /* old 2.3.9  format */
+      getcfg(lbs->name, "List display", list);
+
+      /* evaluate Guest display list */
+      if (getcfg(lbs->name, "Password file", str) &&
+          getcfg(lbs->name, "Guest list display", str) &&
+          !isparam("unm")) {
+
+         strcpy(list, str);
+
+         n = strbreak(list, (char (*)[NAME_LENGTH])gattr, MAX_N_ATTR, ",");
+         for (j=0 ; j<n ; j++)
+            if (strieq(gattr+j*NAME_LENGTH, "text"))
+               break;
+
+         if (j == n)
+            show_text = FALSE;
+      }
 
       if (list[0]) {
          n_attr_disp = strbreak(list, disp_attr, MAX_N_ATTR, ",");
@@ -12689,37 +12708,6 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
             memcpy(disp_attr + 2, attr_list, sizeof(attr_list));
          }
       }
-
-      /* evaluate Guest display list */
-      if (getcfg(lbs->name, "Password file", str) &&
-          getcfg(lbs->name, "Guest display", str) &&
-          !isparam("unm")) {
-
-         n = strbreak(str, (char (*)[NAME_LENGTH])gattr, MAX_N_ATTR, ",");
-         for (i=0 ; i<n_attr_disp ; i++) {
-            for (j=0 ; j<n ; j++)
-               if (strieq(gattr+NAME_LENGTH*j, disp_attr[i]))
-                  break;
-
-            if (j == n && 
-               !strieq(disp_attr[i], loc("Logbook")) &&
-               !strieq(disp_attr[i], loc("ID")) &&
-               !strieq(disp_attr[i], loc("Date"))) {
-
-               memcpy(disp_attr[i], disp_attr[i+1], (n_attr_disp-i-1)*NAME_LENGTH);
-               n_attr_disp--;
-               i--;
-            }
-         }
-
-         for (j=0 ; j<n ; j++)
-            if (strieq(gattr+j*NAME_LENGTH, "text"))
-               break;
-
-         if (j == n)
-            show_text = FALSE;
-      }
-
 
       if (threaded) {
       } else {
