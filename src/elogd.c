@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.309  2004/03/22 14:14:57  midas
+   Implemented 'display <attribute>'
+
    Revision 1.308  2004/03/22 10:30:37  midas
    Added CSV (;) export
 
@@ -8996,9 +8999,15 @@ void show_import_page(LOGBOOK * lbs)
             loc("Field separator"));
    rsprintf("<td class=\"attribvalue\">");
 
-   strcpy(str, ",");
+   str[0] = 0;
    if (isparam("sep"))
       strcpy(str, getparam("sep"));
+
+   if (str[0] == 0)
+      rsprintf("<input type=\"radio\" checked id=\"comma\" name=\"sep\" value=\"auto\">");
+   else
+      rsprintf("<input type=\"radio\" id=\"comma\" name=\"sep\" value=\"auto\">");
+   rsprintf("<label for=\"comma\">%s</label>\n", loc("Auto detect"));
 
    if (str[0] == ',')
       rsprintf("<input type=\"radio\" checked id=\"comma\" name=\"sep\" value=\",\">");
@@ -9007,9 +9016,9 @@ void show_import_page(LOGBOOK * lbs)
    rsprintf("<label for=\"comma\">%s (,)</label>\n", loc("Comma"));
 
    if (str[0] == ';')
-      rsprintf("<input type=\"radio\" checked id=\"semi\" name=\"sep\" value=\",\">");
+      rsprintf("<input type=\"radio\" checked id=\"semi\" name=\"sep\" value=\";\">");
    else
-      rsprintf("<input type=\"radio\" id=\"semi\" name=\"sep\" value=\",\">");
+      rsprintf("<input type=\"radio\" id=\"semi\" name=\"sep\" value=\";\">");
    rsprintf("<label for=\"semi\">%s (;)</label>\n", loc("Semicolon"));
 
    rsprintf("</td></tr>\n");
@@ -9067,7 +9076,6 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
       return;
    }
 
-   p = csv;
    first = TRUE;
    in_quotes = FALSE;
    iline = n_imported = 0;
@@ -9077,6 +9085,26 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
       strcpy(sep, getparam("sep"));
    if (sep[0] == 0)
       strcpy(sep, ",");
+   if (strieq(sep, "auto")) {
+
+      /* count commas */
+      for (i=0,p=csv ; p ; i++) {
+         p = strchr(p, ',');
+         if (p)
+            p++;
+      }
+      n = i;
+
+      /* count semicolon */
+      for (i=0,p=csv ; p ; i++) {
+         p = strchr(p, ';');
+         if (p)
+            p++;
+      }
+
+      strcpy(sep, i > n ? ";" : ",");
+   }
+
    n_attr = lbs->n_attr;
 
    if (isparam("preview")) {
@@ -9104,6 +9132,8 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
 
       rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>");
    }
+
+   p = csv;
 
    do {
       for (i = 0; i < 10000 && *p; i++) {
@@ -11014,10 +11044,28 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                         rsputs(attrib[i]);
                      else {
                         rsprintf("<a href=\"%s\">", ref);
-                        if (is_html(attrib[i]))
-                           rsputs(attrib[i]);
+                        
+                        sprintf(str, "Display %s", attr_list[i]);
+                        if (getcfg(lbs->name, str, display)) {
+                           j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
+                                                (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
+                           sprintf(str, "%d", message_id);
+                           add_subst_list((char (*)[NAME_LENGTH]) slist,
+                                          (char (*)[NAME_LENGTH]) svalue, "message id", str, &j);
+                           add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
+                                          (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
+
+                           strsubst(display, (char (*)[NAME_LENGTH]) slist,
+                                    (char (*)[NAME_LENGTH]) svalue, j);
+
+                        } else 
+                           strcpy(display, attrib[i]);
+
+                        if (is_html(display))
+                           rsputs(display);
                         else
-                           rsputs2(attrib[i]);
+                           rsputs2(display);
+
                         rsprintf("</a>");
                      }
 

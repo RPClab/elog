@@ -1016,6 +1016,32 @@ dates can be searched for via a start and end date. If date attributes are used 
 (see above), a drop-down quick filter box is displayed which lets the user select "last day",
 "last week", "next week", and so on.<p>
 
+<LI><b><code>Display &lt;attribute&gt; = &lt;string&gt;</b></code>
+<br>
+Instead of subsituting an attribute, the original attribute can be kept and just the
+output formatting can be changed. This can be very handy for constructing HTML links
+out of attributes. Presume that a company has a telephone book reachable under<br>
+<br>
+<pre>
+http://any.company.com/telbook.cgi?search=&lt;name&gt;
+</pre>
+
+where &lt;name&gt; has to be replaced by a search string.
+Now one can construct an automatic telephonebook lookup with following options:
+<br>
+<pre>
+Attributes = Name, Telephone, ...
+Display Telephone = &lt;a href="http://any.company.com/telbook.cgi?search=$Name"&gt;$Name's telephone number&lt;/a&gt;
+</pre>
+
+The attribute <b><code>Telephone</code></b> is now automatically constructed from
+the attribute <b><code>Name</code></b> and consists of a link to the company's 
+telephonebook. The advantage of this system is if the URL of the telephonebook
+changes one day, only one statement in the config file has to be changed, while
+otherways (like with the <b><code>Subst Telephone = ...</code></b> option) all
+entries would have to be changed manually.<p>
+
+
 <LI><b><code>Execute new | edit | delete = &lt;command&gt;</b></code>
 <br>
 It is possible to execute a shell command on the server side after a new message
