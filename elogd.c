@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.49  2002/07/26 08:40:56  midas
+  Fixed 'POST' statement containing some blanks
+
   Revision 2.48  2002/07/25 15:37:26  midas
   Fixed bug with ss_find_file under unix
 
@@ -4470,7 +4473,7 @@ char *buffer;
   show_http_header();
 
   rsprintf("<html><head><title>ELOG config</title></head>\n");
-  rsprintf("<body><form method=\"POST   \" action=\".\" enctype=\"multipart/form-data\">\n");
+  rsprintf("<body><form method=\"POST\" action=\".\" enctype=\"multipart/form-data\">\n");
 
   /*---- title ----*/
 
