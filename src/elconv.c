@@ -6,6 +6,9 @@
   Contents:     Conversion program for ELOG messages
 
   $Log$
+  Revision 1.1  2003/01/30 14:45:07  midas
+  Moved files to src/ subdirectory
+
   Revision 1.4  2002/06/07 10:00:26  midas
   Added some non-verbose messages
 

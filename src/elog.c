@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.1  2003/01/30 14:45:07  midas
+  Moved files to src/ subdirectory
+
   Revision 1.10  2002/10/14 08:26:26  midas
   Made attachment size variable
 
