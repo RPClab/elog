@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.29  2003/02/26 21:03:28  midas
+  Fixed problem that entry date changed on upload
+
   Revision 1.28  2003/02/26 08:17:22  midas
   Added 'attachment comment'
 
@@ -4682,12 +4685,9 @@ time_t now;
 
   if (upload)
     {
-    /* get date */
-    time(&now);
-    if (getcfg(lbs->name, "Date format", format))
-      strftime(date, sizeof(str), format, localtime(&now));
-    else
-      strcpy(date, ctime(&now));
+    /* get date from parameter */
+    if (*getparam("entry_date"))
+      strcpy(date, getparam("entry_date"));
 
     /* get attributes from parameters */
     for (i=0 ; i<lbs->n_attr ; i++)
@@ -4820,7 +4820,7 @@ time_t now;
     }
 
   /* subst attributes for edits */
-  if (message_id && bedit)
+  if (message_id && bedit && !upload)
     {
     for (index = 0 ; index < lbs->n_attr ; index++)
       {
@@ -4914,10 +4914,13 @@ time_t now;
       strftime(str, sizeof(str), format, localtime(&now));
     else
       strcpy(str, ctime(&now));
+    strcpy(date, ctime(&now));
+    date[24] = 0;
     }
 
   rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Entry date"));
-  rsprintf("<td class=\"attribvalue\">%s</td></tr>\n", str);
+  rsprintf("<td class=\"attribvalue\">%s\n", str);
+  rsprintf("<input type=hidden name=entry_date value=\"%s\"></td></tr>\n", date);
 
   /* display attributes */
   for (index = 0 ; index < lbs->n_attr ; index++)
