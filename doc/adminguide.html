@@ -39,16 +39,50 @@
 <b>ELOG</b> is being developed and tested under Linux, and is being used on (Sparc) Solaris
 workstations. It should also compile and run on other UNIX flavours.
 <p>
+
+<h3><hr><i>Installation from the RPM file</i>:</h3>
+
+Since version 2.0, ELOG contains a RPM file which eases the installation. Get the
+file <code><b>elog-x.x.x-x.i386.rpm</code></b> from the <a href="http://midas.psi.ch/elog/download/RPMS/">download</a>
+section and execute as root <code><b>"rpm -i elog-x.x.x-x.i386.rpm"</b></code>. This will
+install the <code><b>elogd</code></b> daemon in <code><b>/usr/local/sbin</code></b>
+and the <code><b>elog</code></b> and <code><b>elconv</code></b> programs in
+<code><b>/usr/local/bin</code></b>. The sample configuration file <code><b>elogd.cfg</code></b>
+together with the sample logbook will be installed under <code><b>/usr/local/elog</code></b>
+and the documentation goes to <code><b>/usr/share/doc</code></b>. The elogd startup script
+will be installed at <code><b>/etc/rc.d/init.d/elogd</code></b>. To start the daemon, enter
+
+<ul><code>/etc/rc.d/init.d/elogd start</code></ul>
+
+It will listen under the port specified in <code><b>/usr/local/elog/elogd.cfg</b></code>
+which is 8080 by default. So one can connect using any browser with the URL:
+
+<ul><code>http://localhost:8080</code></ul>
+
+To start the daemon automatically, enter:
+<br>
+<ul>
+<code>chkconfig --add elogd</code><br>
+<code>chkconfig --level 345 elogd on</code>
+</ul>
+
+which will start the daemon on run levels 3,4 and 5 after the next reboot.
+<p>
+
+<h3><hr><i>Installation from the tarball</i>:</h3>
+
 <a href="http://midas.psi.ch/elog/download/">Download</a> the latest <code><b>elog-x.x.x.tar.gz</code></b> package.
 <p>
 Expand the compressed TAR file with <code><b>tar -xzvf elog-x.x.x.tar.gz</code></b>.
 This creates a subdirectory <code><b>elog-x.x.x</b></code> where x.x.x is the
 version number. In that directory execute <code><b>make</b></code>, which
-creates the executables <code><b>elogd</b></code> and <code><b>elog</b>
-</code>. These executables can then be copied to a convenient place like
+creates the executables <code><b>elogd</b></code>, <code><b>elog</b></code> and
+<code><b>elconv</b></code>. These executables can then be copied to a convenient place like
 <code><b>/usr/local/bin</b></code> or <code><b>~/bin</b></code>. Alternatively,
-a <code><b>make install</b></code> will copy these files to <b><code>DESTDIR</code></b>
-which is defined in the Makefile.
+a <code><b>"make install"</b></code> will copy the daemon <code><b>elogd</b></code>
+to <b><code>SDESTDIR</code></b> (by default <b><code>/usr/local/sbin</code></b>) and
+the other files to <b><code>DESTDIR</code></b> (by default <b><code>/usr/local/bin</code></b>).
+These directories can be changed in the Makefile.
 
 The <code><b>elogd</b></code> executable can be started manually for testing with :
 <p>
@@ -64,7 +98,7 @@ could be that the network is not started on the Linux box. This can be
 checked with the <code><b>/sbin/ifconfig</b></code> program, which must
 show that <code><b>eth0</b></code> is up and running.
 <p>
-The distribution contains a sample configuration file <code><b>elogd</b></code> and
+The distribution contains a sample configuration file <code><b>elogd.cfg</b></code> and
 a demo logbook in the <i>demo</i> subdirectory. If the <code><b>elogd</b></code> server is
 started in the <i>elogd-x.x.x</i> directory, the demo logbook can be directly
 accessed with a browser by specifying the URL <b>http://localhost:8080</b>
@@ -72,7 +106,7 @@ accessed with a browser by specifying the URL <b>http://localhost:8080</b>
 started in some other directory, you must specify the full path of
 the <code><b>elogd</b></code> file with the <b>"-c"</b> flag and change the
 <b>Data dir = </b> option in the configuration file to a full path like
-<b>/usr/local/elogdata</b>.
+<b>/usr/local/elog</b>.
 <p>
 Once testing is complete, <code><b>elogd</b></code> will typically be started with the <b><code>-D</code></b> flag
 to run as a <I>daemon</I> in the background, like this :
@@ -94,12 +128,6 @@ where <code>&lt;logbook&gt;</code> is the name of the logbook.
 <p>
 The contents of the all-important configuration file <b><code>elogd.cfg</code></b> are
 described <a href="#config">below</a>.
-<p>
-To start the daemon automatically, it can be run from the <code><b>/etc/rc.d/init.d</code></b>
-system. Please consult your distribution to find out how to do that.
-<br>
-Under RedHat 6.x. I use a <a href="elogd.sh">script</a> which I put under <code><b>/etc/rc.d/init.d</code></b>. Then I call :
-<ul><code>chkconfig --add elogd</code></ul>
 <p>
 
 <div class=section>&nbsp; Running elogd under Apache &nbsp;</div>
