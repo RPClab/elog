@@ -10,6 +10,7 @@ Version 2.2.5, released Januar xxth, 2003
 - Do not display all pages for large logbooks
 - Added "Resource dir" and "Logbook dir"
 - Replaced "Data dir" by "Subdir" in elogd.cfg
+- Put colors for group and logbook tabs into theme file
 
 Version 2.2.4, released December 12th, 2002
 ===========================================
