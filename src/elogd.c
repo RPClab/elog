@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.241  2004/02/09 21:46:24  midas
+   Implemented 'type <attribute> = date'
+
    Revision 1.240  2004/02/06 14:34:11  midas
    Sorting now also works for logbooks
 
@@ -401,7 +404,8 @@ typedef int INT;
 
 #define NAME_LENGTH  500
 
-#define DEFAULT_DATE_FORMAT "%#c"
+#define DEFAULT_TIME_FORMAT "%#c"
+#define DEFAULT_DATE_FORMAT "%#x"
 
 #define SUCCESS        1
 
@@ -497,6 +501,7 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 #define AF_ICON               (1<<5)
 #define AF_RADIO              (1<<6)
 #define AF_EXTENDABLE         (1<<7)
+#define AF_DATE               (1<<8)
 
 /* attribute format flags */
 #define AFF_SAME_LINE              1
@@ -616,7 +621,7 @@ void show_bottom_text(LOGBOOK * lbs);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
-BOOL equal_ustring(const char *str1, const char *str2)
+BOOL strieq(const char *str1, const char *str2)
 {
    if (str1 == NULL && str2 != NULL)
       return FALSE;
@@ -1818,7 +1823,7 @@ int is_logbook(char *logbook)
 
    strlcpy(str, logbook, sizeof(str));
    str[6] = 0;
-   return !equal_ustring(str, "global");
+   return !strieq(str, "global");
 }
 
 /*-------------------------------------------------------------------*/
@@ -1859,7 +1864,7 @@ int getcfg_simple(char *group, char *param, char *value)
          while (*p && *p != ']' && *p != '\n')
             *pstr++ = *p++;
          *pstr = 0;
-         if (equal_ustring(str, group)) {
+         if (strieq(str, group)) {
             /* search parameter */
             p = strchr(p, '\n');
             if (p)
@@ -1872,7 +1877,7 @@ int getcfg_simple(char *group, char *param, char *value)
                while (pstr > str && (*pstr == ' ' || *pstr == '=' || *pstr == '\t'))
                   *pstr-- = 0;
 
-               if (equal_ustring(str, param)) {
+               if (strieq(str, param)) {
                   if (*p == '=') {
                      p++;
                      while (*p == ' ' || *p == '\t')
@@ -1935,7 +1940,7 @@ int getcfg(char *group, char *param, char *value)
    int status;
 
    /* if group is [global] and top group exists, read from there */
-   if (equal_ustring(group, "global") && getcfg_topgroup()) {
+   if (strieq(group, "global") && getcfg_topgroup()) {
       sprintf(str, "global %s", getcfg_topgroup());
       if (getcfg(str, param, value))
          return 1;
@@ -1968,7 +1973,7 @@ char *find_param(char *buf, char *group, char *param)
          while (*p && *p != ']' && *p != '\n')
             *pstr++ = *p++;
          *pstr = 0;
-         if (equal_ustring(str, group)) {
+         if (strieq(str, group)) {
             /* search parameter */
             p = strchr(p, '\n');
             if (p)
@@ -1982,7 +1987,7 @@ char *find_param(char *buf, char *group, char *param)
                while (pstr > str && (*pstr == ' ' || *pstr == '=' || *pstr == '\t'))
                   *pstr-- = 0;
 
-               if (equal_ustring(str, param)) {
+               if (strieq(str, param)) {
                   free(str);
                   return pstart;
                }
@@ -2022,7 +2027,7 @@ int is_group(char *group)
          while (*p && *p != ']' && *p != '\n')
             *pstr++ = *p++;
          *pstr = 0;
-         if (equal_ustring(str, group)) {
+         if (strieq(str, group)) {
             free(str);
             return 1;
          }
@@ -2080,7 +2085,7 @@ int enumcfg(char *group, char *param, char *value, int index)
          while (*p && *p != ']' && *p != '\n' && *p != '\r')
             *pstr++ = *p++;
          *pstr = 0;
-         if (equal_ustring(str, group)) {
+         if (strieq(str, group)) {
             /* enumerate parameters */
             i = 0;
             p = strchr(p, '\n');
@@ -2182,7 +2187,7 @@ int exist_top_group()
       if (!enumcfg("global", str, NULL, i))
          break;
       str[9] = 0;
-      if (equal_ustring(str, "top group"))
+      if (strieq(str, "top group"))
          return 1;
    }
 
@@ -2226,7 +2231,7 @@ int check_language()
       }
    }
 
-   if (equal_ustring(language, "english") || language[0] == 0) {
+   if (strieq(language, "english") || language[0] == 0) {
       if (_locbuffer) {
          free(_locbuffer);
          _locbuffer = NULL;
@@ -2447,12 +2452,12 @@ void el_enum_attr(char *message, int n, char *attr_name, char *attr_value)
          strcpy(tmp, str);
          *strchr(tmp, ':') = 0;
 
-         if (equal_ustring(tmp, "$@MID@$") ||
-             equal_ustring(tmp, "Date") ||
-             equal_ustring(tmp, "Attachment") ||
-             equal_ustring(tmp, "Reply To") ||
-             equal_ustring(tmp, "In Reply To") ||
-             equal_ustring(tmp, "Encoding") || equal_ustring(tmp, "Locked by"))
+         if (strieq(tmp, "$@MID@$") ||
+             strieq(tmp, "Date") ||
+             strieq(tmp, "Attachment") ||
+             strieq(tmp, "Reply To") ||
+             strieq(tmp, "In Reply To") ||
+             strieq(tmp, "Encoding") || strieq(tmp, "Locked by"))
             i--;
       }
    }
@@ -2621,10 +2626,10 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
 
    /* check if this logbook has same data dir as previous */
    for (i = 0; lb_list[i].name[0] && &lb_list[i] != lbs; i++)
-      if (equal_ustring(lb_list[i].data_dir, lbs->data_dir))
+      if (strieq(lb_list[i].data_dir, lbs->data_dir))
          break;
 
-   if (equal_ustring(lb_list[i].data_dir, lbs->data_dir)
+   if (strieq(lb_list[i].data_dir, lbs->data_dir)
        && &lb_list[i] != lbs) {
       if (verbose)
          printf("\n  Same index as logbook %s\n", lb_list[i].name);
@@ -2825,7 +2830,7 @@ int el_index_logbooks(BOOL reinit)
 
       /* check for duplicate name */
       for (j = 0; j < i; j++)
-         if (equal_ustring(lb_list[j].name, logbook)) {
+         if (strieq(lb_list[j].name, logbook)) {
             printf("Error in configuration file: Duplicate logbook \"%s\"\n", logbook);
             return EL_DUPLICATE;
          }
@@ -3490,11 +3495,11 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 
       message[size] = 0;
 
-      if (equal_ustring(date, "<keep>"))
+      if (strieq(date, "<keep>"))
          el_decode(message, "Date: ", date);
-      if (equal_ustring(reply_to, "<keep>"))
+      if (strieq(reply_to, "<keep>"))
          el_decode(message, "Reply to: ", reply_to);
-      if (equal_ustring(in_reply_to, "<keep>"))
+      if (strieq(in_reply_to, "<keep>"))
          el_decode(message, "In reply to: ", in_reply_to);
       el_decode(message, "Attachment: ", attachment_all);
 
@@ -3639,7 +3644,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 
          for (j = i + 1;
               j < *lbs->n_el_index
-              && equal_ustring(lbs->el_index[i].file_name, lbs->el_index[j].file_name);
+              && strieq(lbs->el_index[i].file_name, lbs->el_index[j].file_name);
               j++)
             lbs->el_index[j].offset += delta;
       }
@@ -3895,7 +3900,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
 
    /* correct all offsets after deleted message */
    for (i = 0; i < *lbs->n_el_index; i++)
-      if (equal_ustring(lbs->el_index[i].file_name, str) &&
+      if (strieq(lbs->el_index[i].file_name, str) &&
           lbs->el_index[i].offset > old_offset)
          lbs->el_index[i].offset -= size;
 
@@ -4373,7 +4378,7 @@ int setparam(char *param, char *value)
    int i;
    char str[10000];
 
-   if (equal_ustring(param, "text")) {
+   if (strieq(param, "text")) {
       if (strlen(value) >= TEXT_SIZE) {
          sprintf(str,
                  "Error: Entry text too big (%d bytes). Please increase TEXT_SIZE and recompile elogd\n",
@@ -4386,7 +4391,7 @@ int setparam(char *param, char *value)
       return 1;
    }
 
-   if (equal_ustring(param, "cmdline")) {
+   if (strieq(param, "cmdline")) {
       if (strlen(value) >= CMD_SIZE) {
          sprintf(str,
                  "Error: Command line too big (%d bytes). Please increase CMD_SIZE and recompile elogd\n",
@@ -4401,7 +4406,7 @@ int setparam(char *param, char *value)
 
    /* paremeters can be superseeded */
    for (i = 0; i < MAX_PARAM; i++)
-      if (_param[i][0] == 0 || equal_ustring(param, _param[i]))
+      if (_param[i][0] == 0 || strieq(param, _param[i]))
          break;
 
    if (i < MAX_PARAM) {
@@ -4433,14 +4438,14 @@ char *getparam(char *param)
 {
    int i;
 
-   if (equal_ustring(param, "text"))
+   if (strieq(param, "text"))
       return _mtext;
 
-   if (equal_ustring(param, "cmdline"))
+   if (strieq(param, "cmdline"))
       return _cmdline;
 
    for (i = 0; i < MAX_PARAM && _param[i][0]; i++)
-      if (equal_ustring(param, _param[i]))
+      if (strieq(param, _param[i]))
          break;
 
    if (i < MAX_PARAM)
@@ -4470,7 +4475,7 @@ BOOL isparam(char *param)
    int i;
 
    for (i = 0; i < MAX_PARAM && _param[i][0]; i++)
-      if (equal_ustring(param, _param[i]))
+      if (strieq(param, _param[i]))
          break;
 
    if (i < MAX_PARAM && _param[i][0])
@@ -4484,7 +4489,7 @@ void unsetparam(char *param)
    int i;
 
    for (i = 0; i < MAX_PARAM; i++)
-      if (equal_ustring(param, _param[i]))
+      if (strieq(param, _param[i]))
          break;
 
    if (i < MAX_PARAM) {
@@ -4730,7 +4735,7 @@ int scan_attributes(char *logbook, char *condition)
 /* scan configuration file for attributes and fill attr_list, attr_options
 and attr_flags arrays */
 {
-   char list[10000], str[NAME_LENGTH], tmp_list[MAX_N_ATTR][NAME_LENGTH];
+   char list[10000], str[NAME_LENGTH], type[NAME_LENGTH], tmp_list[MAX_N_ATTR][NAME_LENGTH];
    int i, j, n, m;
 
    if (getcfg_cond(logbook, condition, "Attributes", list)) {
@@ -4772,7 +4777,7 @@ and attr_flags arrays */
       m = strbreak(list, tmp_list, MAX_N_ATTR);
       for (i = 0; i < m; i++) {
          for (j = 0; j < n; j++)
-            if (equal_ustring(attr_list[j], tmp_list[i]))
+            if (strieq(attr_list[j], tmp_list[i]))
                attr_flags[j] |= AF_REQUIRED;
       }
 
@@ -4781,7 +4786,7 @@ and attr_flags arrays */
       m = strbreak(list, tmp_list, MAX_N_ATTR);
       for (i = 0; i < m; i++) {
          for (j = 0; j < n; j++)
-            if (equal_ustring(attr_list[j], tmp_list[i]))
+            if (strieq(attr_list[j], tmp_list[i]))
                attr_flags[j] |= AF_LOCKED;
       }
 
@@ -4790,7 +4795,7 @@ and attr_flags arrays */
       m = strbreak(list, tmp_list, MAX_N_ATTR);
       for (i = 0; i < m; i++) {
          for (j = 0; j < n; j++)
-            if (equal_ustring(attr_list[j], tmp_list[i]))
+            if (strieq(attr_list[j], tmp_list[i]))
                attr_flags[j] |= AF_FIXED_EDIT;
       }
 
@@ -4799,7 +4804,7 @@ and attr_flags arrays */
       m = strbreak(list, tmp_list, MAX_N_ATTR);
       for (i = 0; i < m; i++) {
          for (j = 0; j < n; j++)
-            if (equal_ustring(attr_list[j], tmp_list[i]))
+            if (strieq(attr_list[j], tmp_list[i]))
                attr_flags[j] |= AF_FIXED_REPLY;
       }
 
@@ -4808,8 +4813,17 @@ and attr_flags arrays */
       m = strbreak(list, tmp_list, MAX_N_ATTR);
       for (i = 0; i < m; i++) {
          for (j = 0; j < n; j++)
-            if (equal_ustring(attr_list[j], tmp_list[i]))
+            if (strieq(attr_list[j], tmp_list[i]))
                attr_flags[j] |= AF_EXTENDABLE;
+      
+      }
+
+      for (i = 0; i < n; i++) {
+         sprintf(str, "Type %s", attr_list[i]);
+         if (getcfg_cond(logbook, condition, str, type)) {
+            if (strieq(type, "date"))
+               attr_flags[i] |= AF_DATE;
+         }
       }
 
    } else {
@@ -4984,10 +4998,10 @@ LBLIST get_logbook_hierarchy(void)
       flag = 0;
       strlcpy(str, grpname, sizeof(str));
       str[9] = 0;
-      if (equal_ustring(str, "top group"))
+      if (strieq(str, "top group"))
          flag = 2;
       str[5] = 0;
-      if (equal_ustring(str, "group"))
+      if (strieq(str, "group"))
          flag = 1;
 
       if (flag) {
@@ -5030,14 +5044,13 @@ LBLIST get_logbook_hierarchy(void)
          for (j = 0; j < root->member[i]->n_members; j++) {
             /* check if node is valid logbook */
             for (k = 0; lb_list[k].name[0]; k++)
-               if (equal_ustring(root->member[i]->member[j]->name, lb_list[k].name))
+               if (strieq(root->member[i]->member[j]->name, lb_list[k].name))
                   break;
 
             /* check if node is subgroup of other node */
             if (!lb_list[k].name[0]) {
                for (k = 0; k < root->n_members; k++)
-                  if (equal_ustring
-                      (root->member[i]->member[j]->name, root->member[k]->name)) {
+                  if (strieq(root->member[i]->member[j]->name, root->member[k]->name)) {
 
                      /* node is allocated twice, so free one... */
                      free(root->member[i]->member[j]);
@@ -5112,11 +5125,11 @@ int is_logbook_in_group(LBLIST pgrp, char *logbook)
 {
    int i;
 
-   if (equal_ustring(pgrp->name, logbook))
+   if (strieq(pgrp->name, logbook))
       return 1;
 
    for (i = 0; i < pgrp->n_members; i++) {
-      if (equal_ustring(logbook, pgrp->member[i]->name))
+      if (strieq(logbook, pgrp->member[i]->name))
          return 1;
 
       if (pgrp->member[i]->n_members > 0 && is_logbook_in_group(pgrp->member[i], logbook))
@@ -5624,8 +5637,8 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
    strcpy(list[i], "date");
    time(&now);
    ts = localtime(&now);
-   if (!getcfg(lbs->name, "Date format", format))
-      strcpy(format, DEFAULT_DATE_FORMAT);
+   if (!getcfg(lbs->name, "Time format", format))
+      strcpy(format, DEFAULT_TIME_FORMAT);
 
    strftime(str, sizeof(str), format, ts);
 
@@ -5909,7 +5922,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                     BOOL breedit)
 {
    int i, j, n, index, size, width, height, fh, length, first, input_size, input_maxlen,
-       format_flags;
+       format_flags, year, month, day;
    char str[1000], preset[1000], *p, *pend, star[80], comment[10000], reply_string[256],
        list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80],
        attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE], orig_tag[80],
@@ -5917,7 +5930,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH],
        owner[256], locked_by[256], class_value[80], class_name[80], condition[256],
        ua[NAME_LENGTH];
-   time_t now;
+   time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts, ts;
 
@@ -5957,6 +5970,28 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                } else
                   break;
             }
+         } else if (attr_flags[i] & AF_DATE) {
+
+            sprintf(str, "y%d", i);
+            year = atoi(getparam(str));
+            if (year < 100)
+               year += 2000;
+
+            sprintf(str, "m%d", i);
+            month = atoi(getparam(str));
+
+            sprintf(str, "d%d", i);
+            day = atoi(getparam(str));
+
+            memset(&ts, 0, sizeof(struct tm));
+            ts.tm_year = year - 1900;
+            ts.tm_mon = month - 1;
+            ts.tm_mday = day;
+            ts.tm_hour = 12;
+
+            ltime = mktime(&ts);
+            sprintf(attrib[i], "%d", ltime);
+
          } else {
             strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
          }
@@ -6068,7 +6103,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       n = strbreak(str, list, MAX_N_ATTR);
       for (i = 0; i < n; i++)
          for (j = 0; j < lbs->n_attr; j++) {
-            if (equal_ustring(attr_list[j], list[i]))
+            if (strieq(attr_list[j], list[i]))
                attrib[j][0] = 0;
          }
    }
@@ -6215,8 +6250,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    time(&now);
    if (bedit) {
-      if (!getcfg_cond(lbs->name, condition, "Date format", format))
-         strcpy(format, DEFAULT_DATE_FORMAT);
+      if (!getcfg_cond(lbs->name, condition, "Time format", format))
+         strcpy(format, DEFAULT_TIME_FORMAT);
 
       memset(&ts, 0, sizeof(ts));
 
@@ -6235,7 +6270,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       mktime(&ts);
       strftime(str, sizeof(str), format, &ts);
    } else {
-      if (getcfg_cond(lbs->name, condition, "Date format", format))
+      if (getcfg_cond(lbs->name, condition, "Time format", format))
          strftime(str, sizeof(str), format, localtime(&now));
       else
          strcpy(str, ctime(&now));
@@ -6244,7 +6279,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>",
-            loc("Entry date"));
+            loc("Entry time"));
    rsprintf("<td class=\"attribvalue\">%s\n", str);
    rsprintf("<input type=hidden name=entry_date value=\"%s\"></td></tr>\n", date);
 
@@ -6350,11 +6385,75 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      ua, attrib[index]);
       } else {
          if (attr_options[index][0][0] == 0) {
+
+         if (attr_flags[index] & AF_DATE) {
+
+            year = month = day = 0;
+            if (attrib[index][0]) {
+               ltime = atoi(attrib[index]);
+               pts = localtime(&ltime);
+               year = pts->tm_year+1900;
+               month = pts->tm_mon+1;
+               day = pts->tm_mday;
+            }
+
+
+            /* display date selector */
+            rsprintf("<td class=\"attribvalue\"><select name=\"m%d\">\n", index);
+
+            rsprintf("<option value=\"\">\n");
+            for (i = 0; i < 12; i++)
+               if (i+1 == month)
+                  rsprintf("<option selected value=\"%d\">%s\n", i + 1, month_name(i));
+               else
+                  rsprintf("<option value=\"%d\">%s\n", i + 1, month_name(i));
+            rsprintf("</select>\n");
+
+            rsprintf("<select name=\"d%d\">", index);
+            rsprintf("<option selected value=\"\">\n");
+            for (i = 0; i < 31; i++)
+               if (i+1 == day)
+                  rsprintf("<option selected value=%d>%d\n", i + 1, i + 1);
+               else
+                  rsprintf("<option value=%d>%d\n", i + 1, i + 1);
+            rsprintf("</select>\n");
+
+            if (year)
+               rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y%d\" value=\"%d\">",
+                        loc("Year"), index, year);
+            else
+               rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y%d\">",
+                        loc("Year"), index);
+
+            rsprintf("\n<script language=\"javascript\" type=\"text/javascript\">\n");
+            rsprintf("<!--\n");
+            rsprintf("function opencal(i)\n");
+            rsprintf("{\n");
+            rsprintf("  window.open(\"cal.html?i=\"+i, \"\",\n");
+            rsprintf
+                ("  \"width=300,height=195,dependent=yes,menubar=no,scrollbars=no,location=no\");\n");
+            rsprintf("}\n\n");
+
+            rsprintf("if (navigator.javaEnabled()) {\n");
+            rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
+            rsprintf("  document.write(\"<a href=\\\"javascript:opencal(%d)\\\">\");\n", index);
+            rsprintf
+                ("  document.writeln(\"<img src=\\\"cal.gif\\\" border=\\\"0\\\" alt=\\\"%s\\\"></a>\");\n",
+                 loc("Pick a date"));
+            rsprintf("} \n");
+            rsprintf("//-->\n");
+            rsprintf("</script>\n");
+
+            rsprintf("</td></tr>\n");
+         } else
+
+            /* show normal edit field */
             rsprintf
                 ("<td class=\"attribvalue\"><input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n",
                  input_size, input_maxlen, ua, attrib[index]);
+
          } else {
-            if (equal_ustring(attr_options[index][0], "boolean")) {
+            if (strieq(attr_options[index][0], "boolean")) {
                /* display checkbox */
                if (atoi(attrib[index]) == 1)
                   rsprintf
@@ -6433,12 +6532,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   }
 
                   rsprintf("</td></tr>\n");
+
                } else {
 
                   rsprintf("<td class=\"attribvalue\">\n");
 
                   sprintf(str, loc("Add %s"), attr_list[index]);
-                  if (equal_ustring(getparam("extend"), str)) {
+                  if (strieq(getparam("extend"), str)) {
 
                      rsprintf("<i>");
                      rsprintf(loc("Add new option here"), attr_list[index]);
@@ -6467,8 +6567,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         if (strchr(str, '{'))
                            *strchr(str, '{') = 0;
 
-                        if (equal_ustring(attr_options[index][i], attrib[index])
-                            || equal_ustring(str, attrib[index]))
+                        if (strieq(attr_options[index][i], attrib[index])
+                            || strieq(str, attrib[index]))
                            rsprintf("<option selected value=\"%s\">%s\n",
                                     attr_options[index][i], str);
                         else
@@ -6578,7 +6678,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                    && atoi(str) == 1) {
                   time(&now);
                   pts = localtime(&now);
-                  if (getcfg_cond(lbs->name, condition, "Date format", format))
+                  if (getcfg_cond(lbs->name, condition, "Time format", format))
                      strftime(str, sizeof(str), format, pts);
                   else {
                      strcpy(str, ctime(&now));
@@ -6625,7 +6725,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                    && atoi(str) == 2) {
                   time(&now);
                   pts = localtime(&now);
-                  if (getcfg_cond(lbs->name, condition, "Date format", format))
+                  if (getcfg_cond(lbs->name, condition, "Time format", format))
                      strftime(str, sizeof(str), format, pts);
                   else {
                      strcpy(str, ctime(&now));
@@ -6878,14 +6978,14 @@ void show_find_form(LOGBOOK * lbs)
       strcpy(mode, "Full");
 
    if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1) {
-      if (equal_ustring(mode, "Full"))
+      if (strieq(mode, "Full"))
          rsprintf("<input type=radio name=mode value=\"full\" checked>%s&nbsp;&nbsp;\n",
                   loc("Display full entries"));
       else
          rsprintf("<input type=radio name=mode value=\"full\">%s&nbsp;&nbsp;\n",
                   loc("Display full entries"));
 
-      if (equal_ustring(mode, "Summary"))
+      if (strieq(mode, "Summary"))
          rsprintf
              ("<input type=radio name=mode value=\"summary\" checked>%s&nbsp;&nbsp;\n",
               loc("Summary only"));
@@ -6893,7 +6993,7 @@ void show_find_form(LOGBOOK * lbs)
          rsprintf("<input type=radio name=mode value=\"summary\">%s&nbsp;&nbsp;\n",
                   loc("Summary only"));
    } else {
-      if (equal_ustring(mode, "Full") || equal_ustring(mode, "Summary"))
+      if (strieq(mode, "Full") || strieq(mode, "Summary"))
          rsprintf
              ("<input type=radio name=mode value=\"summary\" checked>%s&nbsp;&nbsp;\n",
               loc("Summary"));
@@ -6903,14 +7003,14 @@ void show_find_form(LOGBOOK * lbs)
    }
 
 
-   if (equal_ustring(mode, "Threaded"))
+   if (strieq(mode, "Threaded"))
       rsprintf("<input type=radio name=mode value=\"threaded\" checked>%s&nbsp;&nbsp;\n",
                loc("Display threads"));
    else
       rsprintf("<input type=radio name=mode value=\"threaded\">%s&nbsp;&nbsp;\n",
                loc("Display threads"));
 
-   if (equal_ustring(mode, "CSV"))
+   if (strieq(mode, "CSV"))
       rsprintf("<input type=radio name=mode value=\"CSV\" checked>%s&nbsp;&nbsp;\n",
                loc("Display comma-separated values (CSV)"));
    else
@@ -7051,7 +7151,7 @@ void show_find_form(LOGBOOK * lbs)
                   attr_list[i]);
          rsprintf("<i>%s</i>\n", loc("(case insensitive substring)"));
       } else {
-         if (equal_ustring(attr_options[i][0], "boolean"))
+         if (strieq(attr_options[i][0], "boolean"))
             rsprintf("<input type=checkbox name=\"%s\" value=1>\n", attr_list[i]);
 
          /* display image for icon */
@@ -7118,7 +7218,7 @@ const char *find_section(const char *buf, const char *name)
          while (*buf && *buf != ']' && *buf != '\n' && *buf != '\r')
             *pstr++ = *buf++;
          *pstr = 0;
-         if (equal_ustring(str, name))
+         if (strieq(str, name))
             return pstart;
       }
 
@@ -7229,7 +7329,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
 
-   if (lbs->top_group[0] && (!top_group || equal_ustring(top_group, "global"))) {
+   if (lbs->top_group[0] && (!top_group || strieq(top_group, "global"))) {
       if (!getcfg("global", "Admin user", str) || strstr(str, getparam("unm")) != 0) {
          if (lbs->top_group[0]) {
 
@@ -7244,7 +7344,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
       }
    }
 
-   if (is_group("global") && !equal_ustring(top_group, "global")) {
+   if (is_group("global") && !strieq(top_group, "global")) {
       if (!getcfg_simple("global", "Admin user", str)
           || strstr(str, getparam("unm")) != 0) {
          sprintf(str, loc("Change %s"), "[global]");
@@ -7253,7 +7353,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
    }
 
    if (top_group) {
-      if (equal_ustring(top_group, "global")) {
+      if (strieq(top_group, "global")) {
          rsprintf("<input type=hidden name=global value=\"global\">\n");
          strcpy(str, "[global]");
       } else {
@@ -7271,7 +7371,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
 
    /* extract section of current logbook */
    if (top_group) {
-      if (equal_ustring(top_group, "global"))
+      if (strieq(top_group, "global"))
          strcpy(section, "global");
       else
          sprintf(section, "global %s", top_group);
@@ -7944,9 +8044,9 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
 
          get_user_line(lbs->name, login_name, NULL, full_name, user_email, NULL);
 
-         if (equal_ustring(name, login_name)
-             || equal_ustring(name, full_name)
-             || equal_ustring(name, user_email)) {
+         if (strieq(name, login_name)
+             || strieq(name, full_name)
+             || strieq(name, user_email)) {
             if (user_email[0] == 0) {
                sprintf(str,
                        loc("No Email address registered with user name <i>\"%s\"</i>"),
@@ -9771,7 +9871,7 @@ void synchronize(LOGBOOK * lbs, BOOL bcron)
 
             if (exist_top_group() && getcfg_topgroup())
                if (lb_list[i].top_group[0]
-                   && !equal_ustring(lb_list[i].top_group, getcfg_topgroup()))
+                   && !strieq(lb_list[i].top_group, getcfg_topgroup()))
                   continue;
 
             /* if called by cron, set user name and password */
@@ -9819,18 +9919,19 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    int i, j, i_line, index, colspan;
    BOOL skip_comma;
    FILE *f;
-   struct tm ts;
+   struct tm ts, *pts;
+   time_t ltime;
 
    sprintf(ref, "../%s/%d", lbs->name_enc, message_id);
 
-   if (equal_ustring(mode, "Summary")) {
+   if (strieq(mode, "Summary")) {
       if (number % 2 == 1)
          strcpy(sclass, "list1");
       else
          strcpy(sclass, "list2");
-   } else if (equal_ustring(mode, "Full"))
+   } else if (strieq(mode, "Full"))
       strcpy(sclass, "list1");
-   else if (equal_ustring(mode, "Threaded")) {
+   else if (strieq(mode, "Threaded")) {
       if (level == 0)
          strcpy(sclass, "thread");
       else
@@ -9840,7 +9941,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    rsprintf("<tr>");
 
    /* only single cell for threaded display */
-   if (equal_ustring(mode, "Threaded")) {
+   if (strieq(mode, "Threaded")) {
       rsprintf("<td align=left class=\"%s\">", sclass);
 
       if (locked_by && locked_by[0]) {
@@ -9864,13 +9965,13 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    nowrap = printable ? "" : "nowrap";
    skip_comma = FALSE;
 
-   if (equal_ustring(mode, "Threaded")
+   if (strieq(mode, "Threaded")
        && getcfg(lbs->name, "Thread display", display)) {
       /* check if to use icon from attributes */
       attr_icon[0] = 0;
       if (getcfg(lbs->name, "Thread icon", attr_icon)) {
          for (i = 0; i < n_attr; i++)
-            if (equal_ustring(attr_list[i], attr_icon))
+            if (strieq(attr_list[i], attr_icon))
                break;
          if (i < n_attr && attrib[i][0])
             strcpy(attr_icon, attrib[i]);
@@ -9896,14 +9997,14 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
       j = build_subst_list(lbs, slist, svalue, attrib);
 
-      /* add message id and entry date */
+      /* add message id and entry time */
       strcpy(slist[j], "Message ID");
       sprintf(svalue[j++], "%d", message_id);
 
-      strcpy(slist[j], "entry date");
+      strcpy(slist[j], "entry time");
 
-      if (!getcfg(lbs->name, "Date format", format))
-         strcpy(format, DEFAULT_DATE_FORMAT);
+      if (!getcfg(lbs->name, "Time format", format))
+         strcpy(format, DEFAULT_TIME_FORMAT);
 
       memset(&ts, 0, sizeof(ts));
 
@@ -9929,7 +10030,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       rsprintf("</a>\n");
    } else {
       /* show select box */
-      if (select && !equal_ustring(mode, "Threaded")) {
+      if (select && !strieq(mode, "Threaded")) {
          rsprintf("<td class=\"%s\">", sclass);
 
          if (in_reply_to[0] == 0)
@@ -9941,12 +10042,12 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          rsprintf("</td>\n");
       }
 
-      if (equal_ustring(mode, "Threaded"))
+      if (strieq(mode, "Threaded"))
          rsprintf("<a href=\"%s\">", ref);
 
       for (index = 0; index < n_attr_disp; index++) {
-         if (equal_ustring(disp_attr[index], loc("ID"))) {
-            if (equal_ustring(mode, "Threaded")) {
+         if (strieq(disp_attr[index], loc("ID"))) {
+            if (strieq(mode, "Threaded")) {
                if (level == 0)
                   rsprintf("<img border=0 src=\"entry.gif\">&nbsp;");
                else
@@ -9966,8 +10067,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             }
          }
 
-         if (equal_ustring(disp_attr[index], loc("Logbook"))) {
-            if (equal_ustring(mode, "Threaded")) {
+         if (strieq(disp_attr[index], loc("Logbook"))) {
+            if (strieq(mode, "Threaded")) {
                if (skip_comma) {
                   rsprintf(" %s", lbs->name);
                   skip_comma = FALSE;
@@ -9978,9 +10079,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                         nowrap, ref, lbs->name);
          }
 
-         if (equal_ustring(disp_attr[index], loc("Date"))) {
-            if (!getcfg(lbs->name, "Date format", format))
-               strcpy(format, DEFAULT_DATE_FORMAT);
+         if (strieq(disp_attr[index], loc("Date"))) {
+            if (!getcfg(lbs->name, "Time format", format))
+               strcpy(format, DEFAULT_TIME_FORMAT);
 
             memset(&ts, 0, sizeof(ts));
 
@@ -9999,7 +10100,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             mktime(&ts);
             strftime(str, sizeof(str), format, &ts);
 
-            if (equal_ustring(mode, "Threaded")) {
+            if (strieq(mode, "Threaded")) {
                if (skip_comma) {
                   rsprintf(" %s", str);
                   skip_comma = FALSE;
@@ -10011,9 +10112,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          }
 
          for (i = 0; i < n_attr; i++)
-            if (equal_ustring(disp_attr[index], attr_list[i])) {
-               if (equal_ustring(mode, "Threaded")) {
-                  if (equal_ustring(attr_options[i][0], "boolean")) {
+            if (strieq(disp_attr[index], attr_list[i])) {
+               if (strieq(mode, "Threaded")) {
+                  if (strieq(attr_options[i][0], "boolean")) {
                      if (atoi(attrib[i]) == 1) {
                         if (skip_comma) {
                            rsprintf(" ");
@@ -10043,7 +10144,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      rsputs2(attrib[i]);
                   }
                } else {
-                  if (equal_ustring(attr_options[i][0], "boolean")) {
+                  if (strieq(attr_options[i][0], "boolean")) {
                      if (atoi(attrib[i]) == 1)
                         rsprintf
                             ("<td class=\"%s\"><input type=checkbox checked disabled></td>\n",
@@ -10051,6 +10152,22 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      else
                         rsprintf("<td class=\"%s\"><input type=checkbox disabled></td>\n",
                                  sclass);
+                  }
+
+                  else if (attr_flags[i] & AF_DATE) {
+
+                     if (!getcfg(lbs->name, "Date format", format))
+                        strcpy(format, DEFAULT_DATE_FORMAT);
+
+                     ltime = atoi(attrib[i]);
+                     pts = localtime(&ltime);
+                     if (ltime == 0)
+                        strcpy(str, "-");
+                     else
+                        strftime(str, sizeof(str), format, pts);
+
+                     rsprintf("<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", sclass, ref, str);
+                  
                   }
 
                   else if (attr_flags[i] & AF_ICON) {
@@ -10069,11 +10186,11 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             }
       }
 
-      if (equal_ustring(mode, "Threaded"))
+      if (strieq(mode, "Threaded"))
          rsprintf("</a>\n");
    }
 
-   if (equal_ustring(mode, "Threaded") && expand > 1) {
+   if (strieq(mode, "Threaded") && expand > 1) {
       rsprintf("</td></tr>\n");
 
       rsprintf("<tr><td class=\"summary\">");
@@ -10093,7 +10210,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             e.g. only the start of a table */
          strencode(str);
       } else {
-         if (equal_ustring(encoding, "plain")) {
+         if (strieq(encoding, "plain")) {
             rsputs("<pre>");
             rsputs2(text);
             rsputs("</pre>");
@@ -10106,7 +10223,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    }
 
 
-   if ((equal_ustring(mode, "Summary") && n_line > 0)) {
+   if ((strieq(mode, "Summary") && n_line > 0)) {
       rsprintf("<td class=\"summary\">");
       for (i = i_line = 0; i < sizeof(str) - 1; i++) {
          str[i] = text[i];
@@ -10124,7 +10241,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
       rsprintf("&nbsp;</td>\n");
 
-      if (equal_ustring(mode, "Threaded"))
+      if (strieq(mode, "Threaded"))
          rsprintf("</tr>\n");
    }
 
@@ -10133,11 +10250,11 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    if (select)
       colspan++;
 
-   if (equal_ustring(mode, "Full")) {
+   if (strieq(mode, "Full")) {
       if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1) {
          rsprintf("<tr><td class=\"messagelist\" colspan=%d>", colspan);
 
-         if (equal_ustring(encoding, "plain")) {
+         if (strieq(encoding, "plain")) {
             rsputs("<pre>");
             rsputs2(text);
             rsputs("</pre>");
@@ -10400,7 +10517,7 @@ BOOL is_user_allowed(LOGBOOK * lbs, char *command)
       /* check if current user in list */
       n = strbreak(users, list, MAX_N_LIST);
       for (i = 0; i < n; i++)
-         if (equal_ustring(list[i], getparam("unm")))
+         if (strieq(list[i], getparam("unm")))
             break;
 
       if (i < n)
@@ -10408,7 +10525,7 @@ BOOL is_user_allowed(LOGBOOK * lbs, char *command)
    }
 
    /* check admin command */
-   if (equal_ustring(command, loc("Admin"))) {
+   if (strieq(command, loc("Admin"))) {
       if (getcfg(lbs->name, "Admin user", str)) {
          if (strstr(str, getparam("unm")) != 0)
             return TRUE;
@@ -10425,7 +10542,7 @@ BOOL is_user_allowed(LOGBOOK * lbs, char *command)
    /* check if current user in list */
    n = strbreak(users, list, MAX_N_LIST);
    for (i = 0; i < n; i++)
-      if (equal_ustring(list[i], getparam("unm")))
+      if (strieq(list[i], getparam("unm")))
          return TRUE;
 
    return FALSE;
@@ -10554,29 +10671,29 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
    }
 
    /* allow change password if "config" possible */
-   if (equal_ustring(command, loc("Change password")) && strstr(menu_str, "Config")) {
+   if (strieq(command, loc("Change password")) && strstr(menu_str, "Config")) {
       return TRUE;
    }
    /* exclude non-localized submit for elog */
-   else if (command[0] && equal_ustring(command, "Submit")) {
+   else if (command[0] && strieq(command, "Submit")) {
       return TRUE;
    }
    /* exclude other non-localized commands */
-   else if (command[0] && equal_ustring(command, "GetMD5")) {
+   else if (command[0] && strieq(command, "GetMD5")) {
       return TRUE;
    }
    /* check if command is present in the menu list */
    else if (command[0]) {
       n = strbreak(menu_str, menu_item, MAX_N_LIST);
       for (i = 0; i < n; i++)
-         if (equal_ustring(command, menu_item[i]) ||
-             equal_ustring(command, loc(menu_item[i])))
+         if (strieq(command, menu_item[i]) ||
+             strieq(command, loc(menu_item[i])))
             break;
 
       if (i == n) {
          n = strbreak(other_str, menu_item, MAX_N_LIST);
          for (i = 0; i < n; i++)
-            if (equal_ustring(command, loc(menu_item[i])))
+            if (strieq(command, loc(menu_item[i])))
                break;
 
          if (i == n)
@@ -10689,7 +10806,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, int n_page, BOOL to
       n = strbreak(str, list, MAX_N_LIST);
 
       for (index = 0; index < n; index++) {
-         if (equal_ustring(list[index], loc("Date"))) {
+         if (strieq(list[index], loc("Date"))) {
             i = atoi(getparam("last"));
 
             rsprintf("<input type=submit value=\"%s\">&nbsp;\n", loc("Show last"));
@@ -10728,7 +10845,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, int n_page, BOOL to
             rsprintf("<input type=submit value=\"%s:\">&nbsp;\n", list[index]);
 
             for (i = 0; i < MAX_N_ATTR; i++)
-               if (equal_ustring(attr_list[i], list[index]))
+               if (strieq(attr_list[i], list[index]))
                   break;
 
             if (attr_options[i][0][0] == 0) {
@@ -10757,7 +10874,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, int n_page, BOOL to
                         strcpy(comment, option);
 
                      if (isparam(attr_list[i])
-                         && equal_ustring(option, getparam(attr_list[i])))
+                         && strieq(option, getparam(attr_list[i])))
                         rsprintf("<option selected value=\"%s\">%s\n", option, comment);
                      else
                         rsprintf("<option value=\"%s\">%s\n", option, comment);
@@ -10907,7 +11024,7 @@ void show_select_navigation(LOGBOOK * lbs)
             if (!is_logbook(str))
                continue;
 
-            if (equal_ustring(str, lbs->name))
+            if (strieq(str, lbs->name))
                continue;
 
             rsprintf("<option value=\"%s\">%s\n", str, str);
@@ -10933,7 +11050,7 @@ void show_select_navigation(LOGBOOK * lbs)
             if (!is_logbook(str))
                continue;
 
-            if (equal_ustring(str, lbs->name))
+            if (strieq(str, lbs->name))
                continue;
 
             rsprintf("<option value=\"%s\">%s\n", str, str);
@@ -11002,7 +11119,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
       /* subsitute "last" in command line from new parameter */
       if (isparam("last")) {
-         if (equal_ustring(getparam("last"), "_all_"))
+         if (strieq(getparam("last"), "_all_"))
             subst_param(str, sizeof(str), "last", "");
          else
             subst_param(str, sizeof(str), "last", getparam("last"));
@@ -11011,7 +11128,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       /* subsitute attributes in command line from new parameter */
       for (i = 0; i < MAX_N_ATTR; i++)
          if (isparam(attr_list[i])) {
-            if (equal_ustring(getparam(attr_list[i]), "_all_"))
+            if (strieq(getparam(attr_list[i]), "_all_"))
                subst_param(str, sizeof(str), attr_list[i], "");
             else
                subst_param(str, sizeof(str), attr_list[i], getparam(attr_list[i]));
@@ -11022,14 +11139,14 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    }
 
    /* remove remaining "_all_" in parameters */
-   if (equal_ustring(getparam("last"), "_all_")) {
+   if (strieq(getparam("last"), "_all_")) {
       strlcpy(str, _cmdline, sizeof(str));
       subst_param(str, sizeof(str), "last", "");
       redirect(lbs, str);
       return;
    }
    for (i = 0; i < MAX_N_ATTR; i++)
-      if (equal_ustring(getparam(attr_list[i]), "_all_")) {
+      if (strieq(getparam(attr_list[i]), "_all_")) {
          strlcpy(str, _cmdline, sizeof(str));
          subst_param(str, sizeof(str), attr_list[i], "");
          redirect(lbs, str);
@@ -11067,8 +11184,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          strcpy(mode, "Full");
    }
 
-   threaded = equal_ustring(mode, "threaded");
-   csv = equal_ustring(mode, "CSV");
+   threaded = strieq(mode, "threaded");
+   csv = strieq(mode, "CSV");
 
    if (csv) {
       page_n = -1;              /* display all pages */
@@ -11207,7 +11324,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
             break;
 
          if (lbs->top_group[0]
-             && !equal_ustring(lbs->top_group, lb_list[n_logbook].top_group))
+             && !strieq(lbs->top_group, lb_list[n_logbook].top_group))
             continue;
 
          if (isparam("unm")
@@ -11228,7 +11345,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       if (search_all)
          lbs_cur = &lb_list[i];
 
-      if (lbs->top_group[0] && !equal_ustring(lbs->top_group, lbs_cur->top_group))
+      if (lbs->top_group[0] && !strieq(lbs->top_group, lbs_cur->top_group))
          continue;
 
       if (isparam("unm") && !check_login_user(lbs_cur, getparam("unm")))
@@ -11289,8 +11406,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          break;
 
       /* check if sort by attribute */
-      if (equal_ustring(getparam("sort"), attr_list[i])
-          || equal_ustring(getparam("rsort"), attr_list[i]))
+      if (strieq(getparam("sort"), attr_list[i])
+          || strieq(getparam("rsort"), attr_list[i]))
          break;
    }
 
@@ -11428,18 +11545,18 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
       /* add attribute for sorting */
       for (i = 0; i < lbs->n_attr; i++) {
-         if (equal_ustring(getparam("sort"), attr_list[i])
-             || equal_ustring(getparam("rsort"), attr_list[i])) {
+         if (strieq(getparam("sort"), attr_list[i])
+             || strieq(getparam("rsort"), attr_list[i])) {
             strlcpy(msg_list[index].string, attrib[i], 256);
          }
 
-         if (equal_ustring(getparam("sort"), loc("ID"))
-             || equal_ustring(getparam("rsort"), loc("ID"))) {
+         if (strieq(getparam("sort"), loc("ID"))
+             || strieq(getparam("rsort"), loc("ID"))) {
             sprintf(msg_list[index].string, "%08d", message_id);
          }
 
-         if (equal_ustring(getparam("sort"), loc("Logbook"))
-             || equal_ustring(getparam("rsort"), loc("Logbook"))) {
+         if (strieq(getparam("sort"), loc("Logbook"))
+             || strieq(getparam("rsort"), loc("Logbook"))) {
             strlcpy(msg_list[index].string, msg_list[index].lbs->name, 256);
          }
       }
@@ -11567,7 +11684,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          }
 
          /* store current command line as hidden parameter for page navigation */
-         if (str[0] && !equal_ustring(str, "?")) {
+         if (str[0] && !strieq(str, "?")) {
             rsprintf("<input type=hidden name=lastcmd value=\"%s\">\n", str);
          }
 
@@ -11594,7 +11711,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
          for (i = 0; i < n; i++) {
             if (is_user_allowed(lbs, menu_item[i])) {
-               if (equal_ustring(menu_item[i], "Last x")) {
+               if (strieq(menu_item[i], "Last x")) {
                   if (past_n) {
                      sprintf(str, loc("Last %d days"), past_n * 2);
                      rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n",
@@ -11606,7 +11723,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                      rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n",
                               last_n * 2, mode, str);
                   }
-               } else if (equal_ustring(menu_item[i], "Select")) {
+               } else if (strieq(menu_item[i], "Select")) {
                   strcpy(str, getparam("cmdline"));
                   if (atoi(getparam("select")) == 1) {
                      /* remove select switch */
@@ -11869,7 +11986,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                      disp_attr[i], img);
          }
 
-         if (!equal_ustring(mode, "Full") && n_line > 0)
+         if (!strieq(mode, "Full") && n_line > 0)
             rsprintf("<th class=\"listtitle\">%s</th>\n", loc("Text"));
 
          rsprintf("</tr>\n\n");
@@ -11935,8 +12052,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                   /* here: \001='<', \002='>', /003='"', and \004=' ' */
                   /* see also rsputs2(char* ) */
 
-                  if (equal_ustring(encoding, "plain")
-                      || !equal_ustring(mode, "Full"))
+                  if (strieq(encoding, "plain")
+                      || !strieq(mode, "Full"))
                      strcpy(pt2,
                             "\001B\004style=\003color:black;background-color:#ffff66\003\002");
                   else
@@ -11950,8 +12067,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
                   pt += strlen(str);
 
                   /* add coloring 2nd part */
-                  if (equal_ustring(encoding, "plain")
-                      || !equal_ustring(mode, "Full"))
+                  if (strieq(encoding, "plain")
+                      || !strieq(mode, "Full"))
                      strcpy(pt2, "\001/B\002");
                   else
                      strcpy(pt2, "</B>");
@@ -12096,7 +12213,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
          if (!comment[0])
             strcpy(comment, attrib[j]);
 
-         if (equal_ustring(attr_options[j][0], "boolean"))
+         if (strieq(attr_options[j][0], "boolean"))
             strcpy(comment, atoi(attrib[j]) ? loc("Yes") : loc("No"));
 
          for (k = strlen(str) - 1; k > 0; k--)
@@ -12326,8 +12443,9 @@ void submit_elog(LOGBOOK * lbs)
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH],
        ua[NAME_LENGTH];
    int i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_orig,
-       mail_to_size;
+       mail_to_size, ltime, year, month, day;
    BOOL bedit;
+   struct tm tms;
 
    /* check for required attributs */
    missing = 0;
@@ -12336,11 +12454,19 @@ void submit_elog(LOGBOOK * lbs)
       btou(ua);
 
       if (attr_flags[i] & AF_REQUIRED) {
-         if ((attr_flags[i] & AF_MULTI) == 0 && *getparam(ua) == 0) {
-            missing = 1;
-            break;
-         }
-         if ((attr_flags[i] & AF_MULTI)) {
+         if (attr_flags[i] & AF_DATE) {
+            sprintf(str, "d%d", i);
+            if (*getparam(str) == 0)
+               missing = 1;
+            sprintf(str, "m%d", i);
+            if (*getparam(str) == 0)
+               missing = 1;
+            sprintf(str, "y%d", i);
+            if (*getparam(str) == 0)
+               missing = 1;
+            if (missing)
+               break;
+         } else if ((attr_flags[i] & AF_MULTI)) {
             for (j = 0; j < MAX_N_LIST; j++) {
                sprintf(str, "%s_%d", ua, j);
                if (getparam(str) && *getparam(str))
@@ -12351,6 +12477,9 @@ void submit_elog(LOGBOOK * lbs)
                missing = 1;
                break;
             }
+         } else if (*getparam(ua) == 0) {
+            missing = 1;
+            break;
          }
       }
    }
@@ -12374,7 +12503,7 @@ void submit_elog(LOGBOOK * lbs)
       btou(ua);
       if (isparam(ua) && attr_options[i][0][0]) {
 
-         if (equal_ustring(attr_options[i][0], "boolean")) {
+         if (strieq(attr_options[i][0], "boolean")) {
             if (atoi(getparam(ua)) != 0 && atoi(getparam(ua)) != 1) {
                sprintf(error,
                        loc("Error: Value <b>%s</b> not allowed for boolean attributes"),
@@ -12387,7 +12516,7 @@ void submit_elog(LOGBOOK * lbs)
 
             /* check if option exists */
             for (j = 0; attr_options[i][j][0]; j++)
-               if (equal_ustring(attr_options[i][j], getparam(ua)))
+               if (strieq(attr_options[i][j], getparam(ua)))
                   break;
 
             /* check if option without {n} exists */
@@ -12396,7 +12525,7 @@ void submit_elog(LOGBOOK * lbs)
                   strcpy(str, attr_options[i][j]);
                   if (strchr(str, '{'))
                      *strchr(str, '{') = 0;
-                  if (equal_ustring(str, getparam(ua)))
+                  if (strieq(str, getparam(ua)))
                      break;
                }
             }
@@ -12450,6 +12579,28 @@ void submit_elog(LOGBOOK * lbs)
             } else
                break;
          }
+      } else if (attr_flags[i] & AF_DATE) {
+
+         sprintf(str, "y%d", i);
+         year = atoi(getparam(str));
+         if (year < 100)
+            year += 2000;
+
+         sprintf(str, "m%d", i);
+         month = atoi(getparam(str));
+
+         sprintf(str, "d%d", i);
+         day = atoi(getparam(str));
+
+         memset(&tms, 0, sizeof(struct tm));
+         tms.tm_year = year - 1900;
+         tms.tm_mon = month - 1;
+         tms.tm_mday = day;
+         tms.tm_hour = 12;
+
+         ltime = mktime(&tms);
+         sprintf(attrib[i], "%d", ltime);
+
       } else {
          strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
 
@@ -12697,22 +12848,22 @@ void submit_elog_mirror(LOGBOOK * lbs)
    for (i = 0; i < MAX_PARAM; i++) {
       if (enumparam(i, name, value)) {
 
-         if (equal_ustring(name, "mirror_id"))
+         if (strieq(name, "mirror_id"))
             message_id = atoi(value);
-         else if (equal_ustring(name, "entry_date"))
+         else if (strieq(name, "entry_date"))
             strlcpy(date, value, sizeof(date));
-         else if (equal_ustring(name, "reply_to"))
+         else if (strieq(name, "reply_to"))
             strlcpy(reply_to, value, sizeof(reply_to));
-         else if (equal_ustring(name, "in_reply_to"))
+         else if (strieq(name, "in_reply_to"))
             strlcpy(in_reply_to, value, sizeof(in_reply_to));
-         else if (equal_ustring(name, "encoding"))
+         else if (strieq(name, "encoding"))
             strlcpy(encoding, value, sizeof(encoding));
-         else if (!equal_ustring(name, "cmd") &&
-                  !equal_ustring(name, "full_name") &&
-                  !equal_ustring(name, "user_email") &&
-                  !equal_ustring(name, "unm") &&
-                  !equal_ustring(name, "upwd") &&
-                  !equal_ustring(name, "wpwd") && strncmp(name, "attachment", 10) != 0) {
+         else if (!strieq(name, "cmd") &&
+                  !strieq(name, "full_name") &&
+                  !strieq(name, "user_email") &&
+                  !strieq(name, "unm") &&
+                  !strieq(name, "upwd") &&
+                  !strieq(name, "wpwd") && strncmp(name, "attachment", 10) != 0) {
             strlcpy(attrib_name[n_attr], name, NAME_LENGTH);
             strlcpy(attrib_value[n_attr++], value, NAME_LENGTH);
          }
@@ -12763,7 +12914,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
    LOGBOOK *lbs_dest;
 
    for (i = 0; lb_list[i].name[0]; i++)
-      if (equal_ustring(lb_list[i].name, dest_logbook))
+      if (strieq(lb_list[i].name, dest_logbook))
          break;
    if (!lb_list[i].name[0])
       return;
@@ -12983,7 +13134,8 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
        fl[8][NAME_LENGTH];
    FILE *f;
    BOOL first;
-   struct tm ts;
+   struct tm ts, *pts;
+   time_t ltime;
 
    message_id = atoi(dec_path);
    message_error = EL_SUCCESS;
@@ -13023,16 +13175,16 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
    /*---- check next/previous message -------------------------------*/
 
-   if (equal_ustring(command, loc("Next"))
-       || equal_ustring(command, loc("Previous"))
-       || equal_ustring(command, loc("Last"))
-       || equal_ustring(command, loc("First"))) {
+   if (strieq(command, loc("Next"))
+       || strieq(command, loc("Previous"))
+       || strieq(command, loc("Last"))
+       || strieq(command, loc("First"))) {
       orig_message_id = message_id;
 
-      if (equal_ustring(command, loc("Last")))
+      if (strieq(command, loc("Last")))
          message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
 
-      if (equal_ustring(command, loc("First")))
+      if (strieq(command, loc("First")))
          message_id = el_search_message(lbs, EL_FIRST, 0, FALSE);
 
       if (!message_id) {
@@ -13042,24 +13194,24 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
       first = TRUE;
       do {
-         if (equal_ustring(command, loc("Next")))
+         if (strieq(command, loc("Next")))
             message_id = el_search_message(lbs, EL_NEXT, message_id, FALSE);
 
-         if (equal_ustring(command, loc("Previous")))
+         if (strieq(command, loc("Previous")))
             message_id = el_search_message(lbs, EL_PREV, message_id, FALSE);
 
          if (!first) {
-            if (equal_ustring(command, loc("First")))
+            if (strieq(command, loc("First")))
                message_id = el_search_message(lbs, EL_NEXT, message_id, FALSE);
 
 
-            if (equal_ustring(command, loc("Last")))
+            if (strieq(command, loc("Last")))
                message_id = el_search_message(lbs, EL_PREV, message_id, FALSE);
          } else
             first = FALSE;
 
          if (message_id == 0) {
-            if (equal_ustring(command, loc("Next")))
+            if (strieq(command, loc("Next")))
                message_error = EL_LAST_MSG;
             else
                message_error = EL_FIRST_MSG;
@@ -13076,7 +13228,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
          for (i = 0; i < lbs->n_attr; i++) {
             sprintf(lattr, "l%s", attr_list[i]);
             if (*getparam(lattr) == '1'
-                && !equal_ustring(getparam(attr_list[i]), attrib[i]))
+                && !strieq(getparam(attr_list[i]), attrib[i]))
                break;
          }
          if (i < lbs->n_attr)
@@ -13086,7 +13238,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
          if (!*getparam("browsing")) {
             for (i = 0; i < lbs->n_attr; i++) {
                if (*getparam(attr_list[i])
-                   && !equal_ustring(getparam(attr_list[i]), attrib[i]))
+                   && !strieq(getparam(attr_list[i]), attrib[i]))
                   break;
             }
             if (i < lbs->n_attr)
@@ -13180,7 +13332,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
       if (!is_user_allowed(lbs, cmd))
          continue;
 
-      if (equal_ustring(cmd, "Copy to") || equal_ustring(cmd, "Move to")) {
+      if (strieq(cmd, "Copy to") || strieq(cmd, "Move to")) {
          if (getcfg(lbs->name, cmd, str)) {
             n_log = strbreak(str, lbk_list, MAX_N_LIST);
 
@@ -13191,7 +13343,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
                strcpy(cmd_enc, loc(cmd));
                url_encode(cmd_enc, sizeof(cmd_enc));
 
-               if (equal_ustring(cmd, loc("Copy to")))
+               if (strieq(cmd, loc("Copy to")))
                   rsprintf
                       ("&nbsp;<a href=\"../%s/%d?cmd=%s&destc=%s\">%s \"%s\"</a>&nbsp|\n",
                        lbs->name_enc, message_id, cmd_enc, ref, loc(cmd), lbk_list[j]);
@@ -13209,7 +13361,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
                if (!is_logbook(str))
                   continue;
 
-               if (equal_ustring(str, lbs->name))
+               if (strieq(str, lbs->name))
                   continue;
 
                strlcpy(ref, str, sizeof(ref));
@@ -13218,7 +13370,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
                strcpy(cmd_enc, loc(cmd));
                url_encode(cmd_enc, sizeof(cmd_enc));
 
-               if (equal_ustring(cmd, "Copy to"))
+               if (strieq(cmd, "Copy to"))
                   rsprintf
                       ("&nbsp;<a href=\"../%s/%d?cmd=%s&amp;destc=%s\">%s \"%s\"</a>&nbsp|\n",
                        lbs->name_enc, message_id, cmd_enc, ref, loc(cmd), str);
@@ -13374,8 +13526,8 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
       /*---- display date ----*/
 
-      if (!getcfg(lbs->name, "Date format", format))
-         strcpy(format, DEFAULT_DATE_FORMAT);
+      if (!getcfg(lbs->name, "Time format", format))
+         strcpy(format, DEFAULT_TIME_FORMAT);
 
       memset(&ts, 0, sizeof(ts));
 
@@ -13394,7 +13546,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
       mktime(&ts);
       strftime(str, sizeof(str), format, &ts);
 
-      rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;%s:&nbsp;<b>%s</b>\n", loc("Entry date"), str);
+      rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;%s:&nbsp;<b>%s</b>\n", loc("Entry time"), str);
 
       /*---- link to original message or reply ----*/
 
@@ -13468,7 +13620,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
          }
 
          /* display checkbox for boolean attributes */
-         if (equal_ustring(attr_options[i][0], "boolean")) {
+         if (strieq(attr_options[i][0], "boolean")) {
             if (atoi(attrib[i]) == 1)
                rsprintf
                    ("%s:</td><td class=\"%s\"><input type=checkbox checked disabled></td>\n",
@@ -13510,6 +13662,20 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
             }
 
             rsprintf("</td>\n");
+         } else if (attr_flags[i] & AF_DATE) {
+
+            if (!getcfg(lbs->name, "Date format", format))
+               strcpy(format, DEFAULT_DATE_FORMAT);
+
+            ltime = atoi(attrib[i]);
+            pts = localtime(&ltime);
+            if (ltime == 0)
+               strcpy(str, "-");
+            else
+               strftime(str, sizeof(str), format, pts);
+
+            rsprintf("%s:</td><td class=\"%s\">%s&nbsp</td>\n", attr_list[i], class_value, str);
+
          } else {
             rsprintf("%s:</td><td class=\"%s\">\n", attr_list[i], class_value);
             rsputs2(attrib[i]);
@@ -13529,7 +13695,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
       if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1) {
          rsprintf("<tr><td class=\"messageframe\">\n");
 
-         if (equal_ustring(encoding, "plain")) {
+         if (strieq(encoding, "plain")) {
             rsputs("<pre class=\"messagepre\">");
             rsputs2(text);
             rsputs("</pre>");
@@ -14027,7 +14193,7 @@ int node_contains(LBLIST pn, char *logbook)
    for (i = 0; i < pn->n_members; i++) {
 
       /* check if logbook in this group */
-      if (equal_ustring(pn->member[i]->name, logbook))
+      if (strieq(pn->member[i]->name, logbook))
          return 1;
 
       /* check if loogbook is in subgroups */
@@ -14051,9 +14217,9 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
 
       expand = 0;
       if (isparam("gexp")) {
-         if (equal_ustring(plb->name, getparam("gexp")) ||
+         if (strieq(plb->name, getparam("gexp")) ||
              node_contains(plb, getparam("gexp")) ||
-             equal_ustring(getparam("gexp"), "all"))
+             strieq(getparam("gexp"), "all"))
             expand = 1;
       }
 
@@ -14090,7 +14256,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
 
          /* search logbook in list */
          for (index = 0; lb_list[index].name[0]; index++)
-            if (equal_ustring(plb->name, lb_list[index].name))
+            if (strieq(plb->name, lb_list[index].name))
                break;
          if (!lb_list[index].name[0])
             return;
@@ -14128,17 +14294,17 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
                         j, date, attr_list, attrib, lb_list[index].n_attr, NULL, 0, NULL,
                         NULL, NULL, NULL, NULL);
             if (!getcfg(lb_list[index].name, "Last submission", str)) {
-               sprintf(str, "$entry date");
+               sprintf(str, "$entry time");
                for (i = 0; i < lb_list[index].n_attr; i++)
-                  if (equal_ustring(attr_list[i], "Author"))
+                  if (strieq(attr_list[i], "Author"))
                      break;
                if (i < lb_list[index].n_attr)
                   sprintf(str + strlen(str), " %s $author", loc("by"));
             }
             j = build_subst_list(&lb_list[index], slist, svalue, attrib);
-            strcpy(slist[j], "entry date");
-            if (!getcfg(lb_list[index].name, "Date format", format))
-               strcpy(format, DEFAULT_DATE_FORMAT);
+            strcpy(slist[j], "entry time");
+            if (!getcfg(lb_list[index].name, "Time format", format))
+               strcpy(format, DEFAULT_TIME_FORMAT);
 
             memset(&ts, 0, sizeof(ts));
             for (i = 0; i < 12; i++)
@@ -14232,7 +14398,7 @@ void show_selection_page()
 
    if (getcfg_topgroup()) {
       for (i = 0; i < phier->n_members; i++)
-         if (equal_ustring(getcfg_topgroup(), phier->member[i]->name)) {
+         if (strieq(getcfg_topgroup(), phier->member[i]->name)) {
             if (phier->member[i]->n_members == 0)
                show_title = 1;
             else
@@ -14271,7 +14437,7 @@ void show_selection_page()
 
    if (getcfg_topgroup()) {
       for (i = 0; i < phier->n_members; i++)
-         if (equal_ustring(getcfg_topgroup(), phier->member[i]->name)) {
+         if (strieq(getcfg_topgroup(), phier->member[i]->name)) {
             show_logbook_node(phier->member[i], NULL, -1, 1);
             break;
          }
@@ -14304,13 +14470,13 @@ int do_self_register(LOGBOOK * lbs, char *command)
    char str[256];
 
    /* display new user page if "self register" is clicked */
-   if (equal_ustring(command, loc("New user"))) {
+   if (strieq(command, loc("New user"))) {
       show_new_user_page(lbs);
       return 0;
    }
 
    /* save user info if "save" is pressed */
-   if (equal_ustring(command, loc("Save")) && isparam("new_user_name")
+   if (strieq(command, loc("Save")) && isparam("new_user_name")
        && !isparam("config")) {
       if (!save_user_config(lbs, getparam("new_user_name"), TRUE, FALSE))
          return 0;
@@ -14323,7 +14489,7 @@ int do_self_register(LOGBOOK * lbs, char *command)
    }
 
    /* display account request notification */
-   if (equal_ustring(command, loc("Requested"))) {
+   if (strieq(command, loc("Requested"))) {
       show_standard_header(lbs, FALSE, loc("ELOG registration"), "");
       rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
       rsprintf("<tr><td colspan=2 class=\"dlgtitle\">\n");
@@ -14521,10 +14687,10 @@ void interprete(char *lbook, char *path)
       for (i = 0;; i++) {
          if (!enumgrp(i, str))
             break;
-         if (equal_ustring(logbook, str))
+         if (strieq(logbook, str))
             break;
       }
-      if (!equal_ustring(logbook, str)) {
+      if (!strieq(logbook, str)) {
          sprintf(str, "Error: logbook \"%s\" not defined in elogd.cfg", logbook);
          show_error(str);
          return;
@@ -14553,7 +14719,7 @@ void interprete(char *lbook, char *path)
 
       if (is_logbook(str)) {
          /* redo index if logbooks in cfg file do not match lb_list */
-         if (!equal_ustring(str, lb_list[j++].name)) {
+         if (!strieq(str, lb_list[j++].name)) {
             el_index_logbooks(TRUE);
             break;
          }
@@ -14575,7 +14741,7 @@ void interprete(char *lbook, char *path)
       }
 
       /* check for activate */
-      if (equal_ustring(getparam("cmd"), "Activate")) {
+      if (strieq(getparam("cmd"), "Activate")) {
          if (!save_user_config(NULL, getparam("new_user_name"), TRUE, TRUE))
             return;
          setparam("cfg_user", getparam("new_user_name"));
@@ -14584,7 +14750,7 @@ void interprete(char *lbook, char *path)
       }
 
       /* check for save after activate */
-      if (equal_ustring(getparam("cmd"), loc("Save"))) {
+      if (strieq(getparam("cmd"), loc("Save"))) {
          if (isparam("config")) {
             /* change existing user */
             if (!save_user_config(NULL, getparam("config"), FALSE, FALSE))
@@ -14597,7 +14763,7 @@ void interprete(char *lbook, char *path)
 
       /* check for password recovery */
       if (isparam("cmd") || isparam("newpwd")) {
-         if (equal_ustring(getparam("cmd"), loc("Change password"))
+         if (strieq(getparam("cmd"), loc("Change password"))
              || isparam("newpwd")) {
             show_change_pwd_page(NULL);
             return;
@@ -14643,7 +14809,7 @@ void interprete(char *lbook, char *path)
       }
 
       /* check for global synchronization */
-      if (equal_ustring(command, "Synchronize")) {
+      if (strieq(command, "Synchronize")) {
          synchronize(NULL, FALSE);
          return;
       }
@@ -14666,7 +14832,7 @@ void interprete(char *lbook, char *path)
 
    /* get logbook from list */
    for (i = 0; lb_list[i].name[0]; i++)
-      if (equal_ustring(logbook, lb_list[i].name))
+      if (strieq(logbook, lb_list[i].name))
          break;
    lbs = &lb_list[i];
 
@@ -14773,38 +14939,38 @@ void interprete(char *lbook, char *path)
       }
    }
 
-   if (equal_ustring(command, loc("Login"))) {
+   if (strieq(command, loc("Login"))) {
       check_user_password(lbs, "", "", path);
       return;
    }
 
-   if (equal_ustring(command, loc("New")) ||
-       equal_ustring(command, loc("Edit")) ||
-       equal_ustring(command, loc("Reply")) || equal_ustring(command, loc("Delete"))
-       || equal_ustring(command, loc("Upload"))
-       || equal_ustring(command, loc("Submit"))) {
+   if (strieq(command, loc("New")) ||
+       strieq(command, loc("Edit")) ||
+       strieq(command, loc("Reply")) || strieq(command, loc("Delete"))
+       || strieq(command, loc("Upload"))
+       || strieq(command, loc("Submit"))) {
       sprintf(str, "%s?cmd=%s", path, command);
       if (!check_password(lbs, "Write password", getparam("wpwd"), str))
          return;
    }
 
-   if (equal_ustring(command, loc("Delete")) || equal_ustring(command, loc("Config"))
-       || equal_ustring(command, loc("Copy to"))
-       || equal_ustring(command, loc("Move to"))) {
+   if (strieq(command, loc("Delete")) || strieq(command, loc("Config"))
+       || strieq(command, loc("Copy to"))
+       || strieq(command, loc("Move to"))) {
       sprintf(str, "%s?cmd=%s", path, command);
       if (!check_password(lbs, "Admin password", getparam("apwd"), str))
          return;
    }
 
    /* check for "Back" button */
-   if (equal_ustring(command, loc("Back"))
+   if (strieq(command, loc("Back"))
        && getcfg(lbs->name, "Back to main", str)
        && atoi(str) == 1) {
       redirect(lbs, "../");
       return;
    }
 
-   if (equal_ustring(command, loc("Back"))) {
+   if (strieq(command, loc("Back"))) {
       if (isparam("edit_id")) {
          /* unlock message */
          el_lock_message(lbs, atoi(getparam("edit_id")), NULL);
@@ -14817,7 +14983,7 @@ void interprete(char *lbook, char *path)
    }
 
    /* check for "Cancel" button */
-   if (equal_ustring(command, loc("Cancel"))) {
+   if (strieq(command, loc("Cancel"))) {
       sprintf(str, "../%s/%s", logbook_enc, path);
       redirect(lbs, str);
       return;
@@ -14849,7 +15015,7 @@ void interprete(char *lbook, char *path)
    }
 
    if (strncmp(path, "last", 4) == 0 && strstr(path, ".gif") == NULL &&
-       (!isparam("cmd") || equal_ustring(getparam("cmd"), loc("Select")))
+       (!isparam("cmd") || strieq(getparam("cmd"), loc("Select")))
        && !isparam("newpwd")) {
       show_elog_list(lbs, 0, atoi(path + 4), 0);
       return;
@@ -14954,7 +15120,7 @@ void interprete(char *lbook, char *path)
 
    /*---- check for various commands --------------------------------*/
 
-   if (equal_ustring(command, loc("Help"))) {
+   if (strieq(command, loc("Help"))) {
       if (getcfg(lbs->name, "Help URL", str)) {
          /* if file is given, add '/' to make absolute path */
          if (strchr(str, '/') == NULL)
@@ -14984,13 +15150,13 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (equal_ustring(command, loc("New"))) {
+   if (strieq(command, loc("New"))) {
       show_edit_form(lbs, 0, FALSE, FALSE, FALSE, FALSE);
       return;
    }
 
    message_id = atoi(dec_path);
-   if (equal_ustring(command, loc("Upload"))) {
+   if (strieq(command, loc("Upload"))) {
       show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE, FALSE);
       return;
    }
@@ -15021,25 +15187,25 @@ void interprete(char *lbook, char *path)
       }
    }
 
-   if (equal_ustring(command, loc("Edit"))) {
+   if (strieq(command, loc("Edit"))) {
       if (message_id) {
          show_edit_form(lbs, message_id, FALSE, TRUE, FALSE, FALSE);
          return;
       }
    }
 
-   if (equal_ustring(command, loc("Reply"))) {
+   if (strieq(command, loc("Reply"))) {
       show_edit_form(lbs, message_id, TRUE, FALSE, FALSE, FALSE);
       return;
    }
 
-   if (equal_ustring(command, loc("Update"))) {
+   if (strieq(command, loc("Update"))) {
       show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, FALSE, TRUE);
       return;
    }
 
-   if (equal_ustring(command, loc("Submit"))
-       || equal_ustring(command, "Submit")) {
+   if (strieq(command, loc("Submit"))
+       || strieq(command, "Submit")) {
 
       if (isparam("mirror_id"))
          submit_elog_mirror(lbs);
@@ -15048,7 +15214,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (equal_ustring(command, loc("Find"))) {
+   if (strieq(command, loc("Find"))) {
       /* stip message id */
       if (dec_path[0]) {
          sprintf(str, "../%s/?cmd=%s", lbs->name_enc, loc("Find"));
@@ -15059,7 +15225,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (equal_ustring(command, loc("Search"))) {
+   if (strieq(command, loc("Search"))) {
       if (dec_path[0] && atoi(dec_path) == 0 && strchr(dec_path, '/') != NULL) {
          sprintf(str, "Invalid URL: <b>%s</b>", dec_path);
          show_error(str);
@@ -15070,55 +15236,55 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (equal_ustring(command, loc("Last day"))) {
+   if (strieq(command, loc("Last day"))) {
       redirect(lbs, "past1");
       return;
    }
 
-   if (equal_ustring(command, loc("Last 10"))) {
+   if (strieq(command, loc("Last 10"))) {
       redirect(lbs, "last10");
       return;
    }
 
-   if (equal_ustring(command, loc("Copy to"))) {
+   if (strieq(command, loc("Copy to"))) {
       copy_to(lbs, message_id, getparam("destc"), 0, 0);
       return;
    }
 
-   if (equal_ustring(command, loc("Move to"))) {
+   if (strieq(command, loc("Move to"))) {
       copy_to(lbs, message_id, getparam("destm"), 1, 0);
       return;
    }
 
-   if (equal_ustring(command, loc("Admin"))
-       || equal_ustring(command, loc("Change elogd.cfg"))) {
+   if (strieq(command, loc("Admin"))
+       || strieq(command, loc("Change elogd.cfg"))) {
       show_admin_page(lbs, NULL);
       return;
    }
 
    sprintf(str, loc("Change %s"), "[global]");
-   if (equal_ustring(command, str)) {
+   if (strieq(command, str)) {
       show_admin_page(lbs, "global");
       return;
    }
 
    sprintf(str2, "[global %s]", lbs->top_group);
    sprintf(str, loc("Change %s"), str2);
-   if (equal_ustring(command, str)) {
+   if (strieq(command, str)) {
       show_admin_page(lbs, lbs->top_group);
       return;
    }
 
-   if (equal_ustring(command, loc("Change password"))
-       || (isparam("newpwd") && !equal_ustring(command, loc("Cancel"))
-           && !equal_ustring(command, loc("Save")))) {
+   if (strieq(command, loc("Change password"))
+       || (isparam("newpwd") && !strieq(command, loc("Cancel"))
+           && !strieq(command, loc("Save")))) {
       show_change_pwd_page(lbs);
       return;
    }
 
-   if (equal_ustring(command, loc("Save"))) {
+   if (strieq(command, loc("Save"))) {
       if (isparam("config")) {
-         if (!equal_ustring(getparam("config"), getparam("new_user_name"))) {
+         if (!strieq(getparam("config"), getparam("new_user_name"))) {
             if (get_user_line
                 (lbs->name, getparam("new_user_name"), NULL, NULL, NULL, NULL) == 1) {
                sprintf(str, "%s \"%s\" %s", loc("Login name"),
@@ -15138,7 +15304,7 @@ void interprete(char *lbook, char *path)
       } else {
 
          if (isparam("global")) {
-            if (equal_ustring(getparam("global"), "global"))
+            if (strieq(getparam("global"), "global"))
                strcpy(section, "global");
             else
                sprintf(section, "global %s", getparam("global"));
@@ -15167,7 +15333,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (equal_ustring(command, "Activate")) {
+   if (strieq(command, "Activate")) {
       if (!save_user_config(lbs, getparam("new_user_name"), TRUE, TRUE))
          return;
       setparam("cfg_user", getparam("new_user_name"));
@@ -15175,10 +15341,10 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (equal_ustring(command, loc("Remove user"))) {
+   if (strieq(command, loc("Remove user"))) {
       remove_user(lbs, getparam("config"));
       /* if removed user is current user, do logout */
-      if (equal_ustring(getparam("config"), getparam("unm"))) {
+      if (strieq(getparam("config"), getparam("unm"))) {
          /* log activity */
          logf(lbs, "LOGOUT");
          /* set cookies */
@@ -15191,17 +15357,17 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (equal_ustring(command, loc("New user"))) {
+   if (strieq(command, loc("New user"))) {
       show_new_user_page(lbs);
       return;
    }
 
-   if (equal_ustring(command, loc("Forgot"))) {
+   if (strieq(command, loc("Forgot"))) {
       show_forgot_pwd_page(lbs);
       return;
    }
 
-   if (equal_ustring(command, loc("Config"))) {
+   if (strieq(command, loc("Config"))) {
       if (!getcfg(lbs->name, "Password file", str))
          show_admin_page(lbs, NULL);
       else
@@ -15209,23 +15375,23 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (equal_ustring(command, loc("Download"))
-       || equal_ustring(command, "Download")) {
+   if (strieq(command, loc("Download"))
+       || strieq(command, "Download")) {
       show_download_page(lbs, dec_path);
       return;
    }
 
-   if (equal_ustring(command, "getmd5")) {
+   if (strieq(command, "getmd5")) {
       show_md5_page(lbs);
       return;
    }
 
-   if (equal_ustring(command, loc("Synchronize"))) {
+   if (strieq(command, loc("Synchronize"))) {
       synchronize(lbs, FALSE);
       return;
    }
 
-   if (equal_ustring(command, loc("Logout"))) {
+   if (strieq(command, loc("Logout"))) {
       /* log activity */
       logf(lbs, "LOGOUT");
       if (getcfg(lbs->name, "Logout to main", str) && atoi(str) == 1) {
@@ -15236,7 +15402,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (equal_ustring(command, loc("Delete"))) {
+   if (strieq(command, loc("Delete"))) {
       show_elog_delete(lbs, message_id);
       return;
    }
@@ -15261,7 +15427,7 @@ void interprete(char *lbook, char *path)
    }
 
    /* check for calender */
-   if (equal_ustring(dec_path, "cal.html")) {
+   if (strieq(dec_path, "cal.html")) {
       show_calendar(lbs);
       return;
    }
@@ -16050,7 +16216,7 @@ void server_loop(int tcp_port, int daemon)
          for (i = 0;; i++) {
             if (!enumgrp(i, str))
                break;
-            if (equal_ustring(logbook, str))
+            if (strieq(logbook, str))
                break;
          }
 
@@ -16086,7 +16252,7 @@ void server_loop(int tcp_port, int daemon)
 
             goto finished;
          } else {
-            if (!equal_ustring(logbook, str) && logbook[0]) {
+            if (!strieq(logbook, str) && logbook[0]) {
 
                /* check for top group */
                sprintf(str, "Top group %s", logbook);
@@ -16139,13 +16305,13 @@ void server_loop(int tcp_port, int daemon)
             n = strbreak(list, host_list, MAX_N_LIST);
             /* check if current connection matches anyone on the list */
             for (i = 0; i < n; i++) {
-               if (equal_ustring(rem_host, host_list[i]) ||
-                   equal_ustring(rem_host_ip, host_list[i])
-                   || equal_ustring(host_list[i], "all")) {
+               if (strieq(rem_host, host_list[i]) ||
+                   strieq(rem_host_ip, host_list[i])
+                   || strieq(host_list[i], "all")) {
                   if (verbose)
                      printf
                          ("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n",
-                          equal_ustring(rem_host_ip,
+                          strieq(rem_host_ip,
                                         host_list[i]) ? rem_host_ip : rem_host,
                           host_list[i]);
                   authorized = 0;
@@ -16153,7 +16319,7 @@ void server_loop(int tcp_port, int daemon)
                }
                if (host_list[i][0] == '.') {
                   if (strlen(rem_host) > strlen(host_list[i]) &&
-                      equal_ustring(host_list[i],
+                      strieq(host_list[i],
                                     rem_host + strlen(rem_host) - strlen(host_list[i]))) {
                      if (verbose)
                         printf
@@ -16167,7 +16333,7 @@ void server_loop(int tcp_port, int daemon)
                   strcpy(str, rem_host_ip);
                   if (strlen(str) > strlen(host_list[i]))
                      str[strlen(host_list[i])] = 0;
-                  if (equal_ustring(host_list[i], str)) {
+                  if (strieq(host_list[i], str)) {
                      if (verbose)
                         printf
                             ("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n",
@@ -16186,13 +16352,13 @@ void server_loop(int tcp_port, int daemon)
             n = strbreak(list, host_list, MAX_N_LIST);
             /* check if current connection matches anyone on the list */
             for (i = 0; i < n; i++) {
-               if (equal_ustring(rem_host, host_list[i]) ||
-                   equal_ustring(rem_host_ip, host_list[i])
-                   || equal_ustring(host_list[i], "all")) {
+               if (strieq(rem_host, host_list[i]) ||
+                   strieq(rem_host_ip, host_list[i])
+                   || strieq(host_list[i], "all")) {
                   if (verbose)
                      printf
                          ("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
-                          equal_ustring(rem_host_ip,
+                          strieq(rem_host_ip,
                                         host_list[i]) ? rem_host_ip : rem_host,
                           host_list[i]);
                   authorized = 1;
@@ -16200,7 +16366,7 @@ void server_loop(int tcp_port, int daemon)
                }
                if (host_list[i][0] == '.') {
                   if (strlen(rem_host) > strlen(host_list[i]) &&
-                      equal_ustring(host_list[i],
+                      strieq(host_list[i],
                                     rem_host + strlen(rem_host) - strlen(host_list[i]))) {
                      if (verbose)
                         printf
@@ -16214,7 +16380,7 @@ void server_loop(int tcp_port, int daemon)
                   strcpy(str, rem_host_ip);
                   if (strlen(str) > strlen(host_list[i]))
                      str[strlen(host_list[i])] = 0;
-                  if (equal_ustring(host_list[i], str)) {
+                  if (strieq(host_list[i], str)) {
                      if (verbose)
                         printf
                             ("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
@@ -16300,7 +16466,7 @@ void server_loop(int tcp_port, int daemon)
                   puts(net_buffer + header_length);
                /* get logbook from list (needed for attachment dir) */
                for (i = 0; lb_list[i].name[0]; i++)
-                  if (equal_ustring(logbook, lb_list[i].name))
+                  if (strieq(logbook, lb_list[i].name))
                      break;
                decode_post(&lb_list[i], net_buffer + header_length, boundary,
                            content_length);
