@@ -64,8 +64,9 @@ Section "ELOG system (required)" SecSystem
   File README
 
   ; stop service to replace elogd.exe
-  ExecWait 'net stop "elog server"'
-  Sleep 3000
+  ExecWait 'net stop "ELOG server"'
+  ExecWait 'net stop elogd'
+  Sleep 2000
 
   File nt\release\elogd.exe
   File nt\release\elog.exe
@@ -145,7 +146,7 @@ SectionEnd
 
 ; optional section
 Section "Register ELOG Server Service" SecService
-  ExecWait "$INSTDIR\elogd.exe -s -remove"
+;  WriteRegExpandStr HKLM SYSTEM\CurrentControlSet\Services\elogd ImagePath '"$INSTDIR\elogd.exe" -D -c "$INSTDIR\elogd.cfg"'
   ExecWait "$INSTDIR\elogd.exe -install"
 SectionEnd
 
