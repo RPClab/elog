@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.28  2003/02/26 08:17:22  midas
+  Added 'attachment comment'
+
   Revision 1.27  2003/02/24 16:07:43  midas
   Changed mode display with 'show text = 0'
 
@@ -5321,9 +5324,16 @@ time_t now;
           break;
       }
 
+    /* optional attachment comment */
+    if (getcfg(lbs->name, "Attachment comment", comment) && !bedit && !message_id)
+      {
+      rsprintf("<tr><td colspan=2 class=\"attribvalue\">\n");
+      rsputs(comment);
+      rsputs("</td></tr>\n");
+      }
+
     /* field for add attachment */
-    rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td>\n",  
-             loc("Attachment"), i+1);
+    rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), i+1);
     rsprintf("<td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile\" accept=\"filetype/*\">\n");
     rsprintf("&nbsp;&nbsp;<input type=submit name=cmd value=\"%s\">\n", loc("Upload"));
     rsprintf("</td></tr>\n");
