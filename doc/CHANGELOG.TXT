@@ -1,3 +1,15 @@
+Version 2.2.2, released Nobember xxth, 2002
+===========================================
+
+- "Select" command now works in non-english installations
+- Made self registration work with global password file
+- Fixed bugs when "Start page = ..." was present
+- Added "Message height = ..." option
+- Mail notification now distinguishes between new entry and updated entry
+- Made "Allow <command> = <user>" work in localized versions
+- Move whole thread when individual message is re-submitted
+- Do not display commands which are not allowed for the current user
+
 Version 2.2.1, released October 15th, 2002
 ==========================================
 
