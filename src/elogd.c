@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.367  2004/07/07 13:27:09  midas
+   Fixed problem of password change when using crypt()
+
    Revision 1.366  2004/07/07 13:21:58  midas
    Removed puts(0)
 
@@ -6142,9 +6145,14 @@ void show_change_pwd_page(LOGBOOK * lbs)
    char str[256], old_pwd[32], new_pwd[32], new_pwd2[32], act_pwd[32], user[80];
    int wrong_pwd;
 
-   do_crypt(getparam("oldpwd"), old_pwd);
-   do_crypt(getparam("newpwd"), new_pwd);
-   do_crypt(getparam("newpwd2"), new_pwd2);
+   old_pwd[0] = new_pwd[0] = new_pwd2[0] = 0;
+
+   if (isparam("oldpwd"))
+      do_crypt(getparam("oldpwd"), old_pwd);
+   if (isparam("newpwd"))
+      do_crypt(getparam("newpwd"), new_pwd);
+   if (isparam("newpwd2"))
+      do_crypt(getparam("newpwd2"), new_pwd2);
 
    strcpy(user, getparam("unm"));
    if (isparam("config"))
