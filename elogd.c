@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.27  2002/06/03 08:07:47  midas
+  elogd.pid is now created from child
+
   Revision 1.26  2002/06/03 07:32:27  midas
   Added 'Title image URL' in theme file
 
@@ -7514,6 +7517,25 @@ struct timeval       timeout;
     ss_daemon_init();
     }
 
+#ifdef OS_UNIX
+  {
+  int pid;
+  FILE *f;
+
+  /* crate /var/run/elogd.pid file */
+  pid = getpid();
+  f = fopen("/var/run/elogd.pid", "w");
+  if (f)
+    {
+    fprintf(f, "%d\n", pid);
+    fclose(f);
+    }
+  }
+
+  signal(SIGTERM, ctrlc_handler);
+  signal(SIGINT, ctrlc_handler);
+#endif
+
   /* listen for connection */
   status = listen(lsock, SOMAXCONN);
   if (status < 0)
@@ -8445,25 +8467,6 @@ usage:
     }
   close(fh);
 
-#ifdef OS_UNIX
-  {
-  int pid;
-  FILE *f;
-
-  /* crate /var/run/elogd.pid file */
-  pid = getpid();
-  f = fopen("/var/run/elogd.pid", "w");
-  if (f)
-    {
-    fprintf(f, "%d\n", pid);
-    fclose(f);
-    }
-  }
-
-  signal(SIGTERM, ctrlc_handler);
-  signal(SIGINT, ctrlc_handler);
-#endif
-  
   server_loop(tcp_port, daemon);
 
 #ifdef OS_UNIX
