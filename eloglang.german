@@ -267,3 +267,5 @@ Please enter numeric value for '%s' = Bitte numerischen Wert für '%s' eingeben
 Error: Attribute <b>%s</b> must be numeric = Fehler: Attribut <b>%s</b> muß numerisch sein
 3 Months = 3 Monate
 6 Months = 6 Monate
+Error sending local message = Fehler beim Versenden von lokalem Eintrag
+Error receiving message = Fehler beim Empfangen von Eintrag

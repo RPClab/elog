@@ -1580,12 +1580,15 @@ ELOG server calculates a MD5 checksum for each message, which gets exchanged dur
 Only when the MD5 checksum differs, entries are transferred.
 <p>
 
-To set-up mirroring, following configuration options are available. They should be put
+To set-up mirroring, start with two elogd servers on two machines (for testing purpose that also
+works on one machine with two elogd servers running on different ports). First, make sure that
+the elogd.cfg files are identical (except the port setting if you run two servers on the same
+machine). Then, add the following configuration options. They should be put
 into the [global] section of the cofiguration file:<p>
 
 <UL>
 <li><b><code>Mirror server = &lt;URL-list&gt;</code></b>
-<br>
+<br><br>
 This statement specifies one or more mirror servers. Each URL must contain the host, port and
 possible subdirectory of the remote server, as if you would access it through your browser.
 A typical statement looks like:<br><br>
@@ -1631,7 +1634,16 @@ local entries are used, since they will point afterwards to the wrong entry.
 
 </UL><br><br>
 
-<li><b><code>Mirror config = 0 | 1</code></b><br>
+By starting the synchronization on one elogd server, this server becomes the client
+and the other one becomes the server. This means that the local server actively compares
+the local and the remote messages, and updates one or the other if necessary.
+The other (remote) server does not need to have any mirror option in its configuration
+file, since the local server simulates a web browser to send and retrieve messages to
+the remote server. It is however allowed that the remote server also contains some
+mirror settings in the configuration file, this way the synchronization can be
+started from both servers.<p>  
+
+<li><b><code>Mirror config = 0 | 1</code></b><br><br>
 
 Normally, only the logbook entries are mirrored. One can also mirror the contents
 of the elogd.cfg configuration file for individual logbooks. This can be turned on
@@ -1641,7 +1653,7 @@ which are specific to one server, for example the <b><code>URL = </code></b> sta
 should then be kept in the [global] section, so that they are not mirrored between
 different servers.<br><br>
 
-<li><b><code>Mirror cron = Minute Hour Day Month Weekday</code></b><br>
+<li><b><code>Mirror cron = Minute Hour Day Month Weekday</code></b><br><br>
 
 This statement turns on periodic mirroring. The format is similar to the UNIX
 <b><code>cron</b></code> command. Each of the five values can either be an
@@ -1671,7 +1683,7 @@ If mirroring is turned on, it is advisable to use the <b><code>Logfile =</code><
 option to turn on logging, so that one can inspect the logfile to see if the mirroring
 works correctly.<br><br>
 
-<li><b><code>Mirror user = &lt;name&gt;</code></b><br>
+<li><b><code>Mirror user = &lt;name&gt;</code></b><br><br>
 
 If periodic mirroring is used via the <b><code>Mirror cron =</b></code> statement
 and the remote logbook uses user-level access, this statement specifies the
@@ -1680,7 +1692,7 @@ the local password file and has to match the password in the remote password fil
 otherwise the access is not allowed. The user name is typical the login name of
 the administrator.<br><br>
 
-<li><b><code>Mirror simulate = 0 | 1</code></b><br>
+<li><b><code>Mirror simulate = 0 | 1</code></b><br><br>
 
 If one wants to try out mirroring without causing any harm, one can turn on this flag.
 During synchronization, entries are compared and necessary transfers are displayed,
