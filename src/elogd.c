@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.492  2004/10/13 18:18:05  midas
+   Hot link can contain ';'
+
    Revision 1.491  2004/10/11 19:34:52  midas
    Fixed bug in xrealloc when deleting last entry
 
@@ -5194,13 +5197,13 @@ void rsputs2(const char *str)
          if (strncmp(str + i, key_list[l], strlen(key_list[l])) == 0) {
             p = (char *) (str + i + strlen(key_list[l]));
             i += strlen(key_list[l]);
-            for (k = 0; *p && strcspn(p, " ,;\t\n\r({[)}]") && k < (int) sizeof(link); k++, i++)
+            for (k = 0; *p && strcspn(p, " \t\n\r({[)}]") && k < (int) sizeof(link); k++, i++)
                link[k] = *p++;
             link[k] = 0;
             i--;
 
-            /* link may not end with a '.' (like in a sentence) */
-            if (link[k - 1] == '.') {
+            /* link may not end with a '.'/',' (like in a sentence) */
+            if (link[k - 1] == '.' || link[k - 1] == ',') {
                link[k - 1] = 0;
                k--;
                i--;
