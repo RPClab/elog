@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.126  2003/07/04 15:28:29  midas
+  Implemented attribute formats
+
   Revision 1.125  2003/07/03 15:04:11  midas
   Fixed bug with attachment redirection
 
@@ -1073,6 +1076,12 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 #define AF_FIXED_REPLY        (1<<4)
 #define AF_ICON               (1<<5)
 #define AF_RADIO              (1<<6)
+
+/* attribute format flags */
+#define AFF_SAME_LINE              1
+#define AFF_MULTI_LINE             2
+#define AFF_DATE                   4
+#define AFF_EXTENDABLE             8
 
 char attr_list[MAX_N_ATTR][NAME_LENGTH];
 char attr_options[MAX_N_ATTR][MAX_N_LIST][NAME_LENGTH];
@@ -5439,14 +5448,16 @@ int i;
 
 void show_edit_form(LOGBOOK *lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload)
 {
-int    i, j, n, index, size, width, height, fh, length, first;
+int    i, j, n, index, size, width, height, fh, length, first, input_size, input_maxlen,
+       format_flags;
 char   str[1000], preset[1000], *p, *pend, star[80], comment[10000], reply_string[256];
 char   list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256];
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
        orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH],
-       owner[256], locked_by[256];
+       owner[256], locked_by[256], class_value[80], class_name[80];
 time_t now;
+char   fl[8][NAME_LENGTH];
 
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     att[i][0] = 0;
@@ -5696,6 +5707,27 @@ time_t now;
   /* display attributes */
   for (index = 0 ; index < lbs->n_attr ; index++)
     {
+    strcpy(class_name, "attribname");
+    strcpy(class_value, "attribvalue");
+    input_size = 80;
+    input_maxlen = NAME_LENGTH;
+
+    sprintf(str, "Format %s", attr_list[index]);
+    if (getcfg(lbs->name, str, format))
+      {
+      n = strbreak(format, fl, 8);
+      if (n > 0 && atoi(fl[0]) > 0)
+        input_size = atoi(fl[0]);
+      if (n > 1 && atoi(fl[1]) > 0)
+        input_maxlen = atoi(fl[1]);
+      if (n > 2)
+        format_flags = atoi(fl[2]);
+      if (n > 3)
+        strlcpy(class_name, fl[3], sizeof(class_name));
+      if (n > 4)
+        strlcpy(class_value, fl[4], sizeof(class_value));
+      }
+    
     strcpy(star, (attr_flags[index] & AF_REQUIRED) ? "<font color=red>*</font>" : "");
 
     /* check for preset string */
@@ -5772,8 +5804,8 @@ time_t now;
       {
       if (attr_options[index][0][0] == 0)
         {
-        rsprintf("<td class=\"attribvalue\"><input type=\"text\" size=80 maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n",
-                  NAME_LENGTH, attr_list[index], attrib[index]);
+        rsprintf("<td class=\"%s\"><input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n",
+                  class_value, input_size, input_maxlen, attr_list[index], attrib[index]);
         }
       else
         {
@@ -5800,6 +5832,9 @@ time_t now;
               else
                 rsprintf("<nobr><input type=checkbox name=\"%s\" value=\"%s\">%s</nobr>\n",
                   str, attr_options[index][i], attr_options[index][i]);
+
+              if (format_flags & AFF_MULTI_LINE)
+                rsprintf("<br>");
               }
 
             rsprintf("</td></tr>\n");
@@ -5817,6 +5852,9 @@ time_t now;
               else
                 rsprintf("<nobr><input type=radio name=\"%s\" value=\"%s\">%s</nobr>\n",
                   attr_list[index], attr_options[index][i], attr_options[index][i]);
+
+              if (format_flags & AFF_MULTI_LINE)
+                rsprintf("<br>");
               }
 
             rsprintf("</td></tr>\n");
@@ -5840,6 +5878,9 @@ time_t now;
                 rsprintf("<img src=\"icons/%s\" alt=\"%s\"></nobr>\n", attr_options[index][i], comment);
               else
                 rsprintf("<img src=\"icons/%s\"></nobr>\n", attr_options[index][i]);
+              
+              if (format_flags & AFF_MULTI_LINE)
+                rsprintf("<br>");
               }
 
             rsprintf("</td></tr>\n");
@@ -9784,7 +9825,7 @@ LOGBOOK *lbs_cur;
 int compose_email(LOGBOOK *lbs, char *mail_to, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH],
                   char *mail_param, int old_mail, char att_file[MAX_ATTACHMENTS][256])
 {
-int    i, j, n, flags;
+int    i, j, n, flags, status;
 char   str[NAME_LENGTH+100], str2[256], mail_from[256], *mail_text, smtp_host[256], subject[256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
 char   list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
@@ -9897,50 +9938,60 @@ char   list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
       getparam("text"));
     }
 
+  status = 0;
   if (flags & 16)
     {
     if (getcfg(lbs->name, "Omit Email to", str) && atoi(str) == 1)
-      sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url, att_file);
+      status = sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url, att_file);
     else
-      sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url, att_file);
+      status = sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url, att_file);
     }
   else
     {
     if (getcfg(lbs->name, "Omit Email to", str) && atoi(str) == 1)
-      sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url, NULL);
+      status = sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url, NULL);
     else
-      sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url, NULL);
+      status = sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url, NULL);
     }
 
-  if (!getcfg(lbs->name, "Display email recipients", str) ||
-       atoi(str) == 1)
+  if (status < 0)
     {
-    if (mail_param[0] == 0)
-      strcpy(mail_param, "?");
-    else
-      strcat(mail_param, "&");
-
-    n = strbreak(mail_to, list, MAX_PARAM);
-
-    if (n < 10)
+    sprintf(str, loc("Error sending Email via <i>\"%s\"</i>"), smtp_host);
+    url_encode(str, sizeof(str));
+    sprintf(mail_param, "?error=%s", str);
+    }
+  else
+    {
+    if (!getcfg(lbs->name, "Display email recipients", str) ||
+         atoi(str) == 1)
       {
-      for (i=0 ; i<n && i<MAX_PARAM ; i++)
+      if (mail_param[0] == 0)
+        strcpy(mail_param, "?");
+      else
+        strcat(mail_param, "&");
+
+      n = strbreak(mail_to, list, MAX_PARAM);
+
+      if (n < 10)
         {
-        sprintf(mail_param+strlen(mail_param), "mail%d=%s", i, list[i]);
-        if (i<n-1)
-          strcat(mail_param, "&");
+        for (i=0 ; i<n && i<MAX_PARAM ; i++)
+          {
+          sprintf(mail_param+strlen(mail_param), "mail%d=%s", i, list[i]);
+          if (i<n-1)
+            strcat(mail_param, "&");
+          }
         }
-      }
-    else
-      {
-      sprintf(str, "%d%%20%s", n, loc("recipients"));
-      sprintf(mail_param+strlen(mail_param), "mail0=%s", str);
+      else
+        {
+        sprintf(str, "%d%%20%s", n, loc("recipients"));
+        sprintf(mail_param+strlen(mail_param), "mail0=%s", str);
+        }
       }
     }
 
   free(mail_text);
 
-  return 1;
+  return status;
 }
 
 /*------------------------------------------------------------------*/
@@ -10478,14 +10529,15 @@ LOGBOOK *lbs_dest;
 void show_elog_message(LOGBOOK *lbs, char *dec_path, char *command)
 {
 int    size, i, j, n, n_log, status, fh, length, message_error, index;
-int    message_id, orig_message_id;
+int    message_id, orig_message_id, format_flags[MAX_N_ATTR];
 char   str[1000], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char   date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], cmd_enc[256],
        orig_tag[80], reply_tag[256], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
        encoding[80], locked_by[256], att[256], lattr[256];
 char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80], admin_user[80],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH], *p;
-char   lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256];
+char   lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256], class_name[80], class_value[80],
+       fl[8][NAME_LENGTH];
 FILE   *f;
 BOOL   first;
 
@@ -10866,7 +10918,10 @@ BOOL   first;
     if (*getparam("suppress"))
       {
       rsprintf("<tr><td class=\"notifymsg\" colspan=2>%s</td></tr>\n", loc("Email notification suppressed"));
-      i = 1;
+      }
+    else if (isparam("error"))
+      {
+      rsprintf("<tr><td class=\"errormsg\" colspan=2>%s</td></tr>\n", getparam("error"));
       }
     else
       {
@@ -10882,10 +10937,9 @@ BOOL   first;
         else
           break;
         }
+      if (i>0)
+        rsprintf("</tr>\n");
       }
-
-    if (i>0)
-      rsprintf("</tr>\n");
 
     /*---- display message ID ----*/
 
@@ -10896,8 +10950,15 @@ BOOL   first;
       rsprintf("%s</td></tr>\n", str);
       }
 
-    rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td><td class=\"attribvalue\">%d</td></tr>\n\n",
-             loc("Message ID"), message_id);
+    rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribhead\">\n");
+
+    for (i=0 ; i<lbs->n_attr ; i++)
+      rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", attr_list[i], attrib[i]);
+
+    /* browsing flag to distinguish "/../<attr>=<value>" from browsing */
+    rsprintf("<input type=hidden name=browsing value=1>\n");
+
+    rsprintf("%s:&nbsp;<b>%d</b>\n", loc("Message ID"), message_id);
 
     /*---- display date ----*/
 
@@ -10922,20 +10983,12 @@ BOOL   first;
       mktime(&ts);
       strftime(str, sizeof(str), format, &ts);
 
-      rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td><td class=\"attribvalue\">%s\n\n",
+      rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;%s:&nbsp;<b>%s</b>\n",
                loc("Entry date"), str);
       }
     else
-      rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td><td class=\"attribvalue\">%s\n\n",
+      rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;%s:&nbsp;<b>%s</b>\n",
                loc("Entry date"), date);
-
-    for (i=0 ; i<lbs->n_attr ; i++)
-      rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", attr_list[i], attrib[i]);
-
-    /* browsing flag to distinguish "/../<attr>=<value>" from browsing */
-    rsprintf("<input type=hidden name=browsing value=1>\n");
-
-    rsprintf("</td></tr>\n\n");
 
     /*---- link to original message or reply ----*/
 
@@ -10944,15 +10997,13 @@ BOOL   first;
 
       if (orig_tag[0])
         {
-        rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">");
         sprintf(ref, "%s", orig_tag);
-        rsprintf("%s:</td><td class=\"attribvalue\">", loc("In reply to"));
-        rsprintf("<a href=\"%s\">%s</a></td></tr>\n", ref, orig_tag);
+        rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;%s:&nbsp;", loc("In reply to"));
+        rsprintf("<b><a href=\"%s\">%s</a></b>\n", ref, orig_tag);
         }
       if (reply_tag[0])
         {
-        rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">");
-        rsprintf("%s:</td><td class=\"attribvalue\">", loc("Reply to this"));
+        rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;%s:&nbsp;<b>", loc("Reply to this"));
 
         p = strtok(reply_tag, ",");
         do
@@ -10966,18 +11017,49 @@ BOOL   first;
 
           } while (p);
 
-        rsprintf("</td></tr>\n");
+        rsprintf("</b>\n");
         }
       }
 
+    rsprintf("</td></tr>\n");
+
     /*---- display attributes ----*/
+
+    /* retrieve attribute flags */
+    for (i=0 ; i<lbs->n_attr ; i++)
+      {
+      format_flags[i] = 0;
+      sprintf(str, "Format %s", attr_list[i]);
+      if (getcfg(lbs->name, str, format))
+        {
+        n = strbreak(format, fl, 8);
+        if (n > 2)
+          format_flags[i] = atoi(fl[2]);
+        }
+      }
 
     for (i=0 ; i<lbs->n_attr ; i++)
       {
-      sprintf(lattr, "l%s", attr_list[i]);
-      rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">");
+      strcpy(class_name, "attribname");
+      strcpy(class_value, "attribvalue");
 
-      if (!getcfg(lbs->name, "Filtered browsing", str) ||
+      sprintf(str, "Format %s", attr_list[i]);
+      if (getcfg(lbs->name, str, format))
+        {
+        n = strbreak(format, fl, 8);
+        if (n > 3)
+          strlcpy(class_name, fl[3], sizeof(class_name));
+        if (n > 4)
+          strlcpy(class_value, fl[4], sizeof(class_value));
+        }
+
+      if ((format_flags[i] & AFF_SAME_LINE) == 0)
+        rsprintf("<table width=100%% cellpadding=0 cellspacing=0><tr>");
+
+      sprintf(lattr, "l%s", attr_list[i]);
+      rsprintf("<td nowrap width=\"10%%\" class=\"%s\">", class_name);
+
+      if (getcfg(lbs->name, "Filtered browsing", str) &&
           atoi(str) == 1)
         {
         if (*getparam(lattr) == '1')
@@ -10990,16 +11072,16 @@ BOOL   first;
       if (equal_ustring(attr_options[i][0], "boolean"))
         {
         if (atoi(attrib[i]) == 1)
-          rsprintf("%s:</td><td class=\"attribvalue\"><input type=checkbox checked disabled></td></tr>\n",
-                   attr_list[i]);
+          rsprintf("%s:</td><td class=\"%s\"><input type=checkbox checked disabled></td>\n",
+                   class_value, attr_list[i]);
         else
-          rsprintf("%s:</td><td class=\"attribvalue\"><input type=checkbox disabled></td></tr>\n",
-                   attr_list[i]);
+          rsprintf("%s:</td><td class=\"%s\"><input type=checkbox disabled></td>\n",
+                   class_value, attr_list[i]);
         }
       /* display image for icon */
       else if (attr_flags[i] & AF_ICON)
         {
-        rsprintf("%s:</td><td class=\"attribvalue\">\n", attr_list[i]);
+        rsprintf("%s:</td><td class=\"%s\">\n", attr_list[i], class_value);
         if (attrib[i][0])
           {
           sprintf(str, "Icon comment %s", attrib[i]);
@@ -11010,14 +11092,39 @@ BOOL   first;
           else
             rsprintf("<img src=\"icons/%s\">", attrib[i]);
           }
-        rsprintf("&nbsp</td></tr>\n");
+        rsprintf("&nbsp</td>\n");
+        }
+      else if ((attr_flags[i] & AF_MULTI) && (format_flags[i] & AFF_MULTI_LINE))
+        {
+        rsprintf("%s:</td><td class=\"%s\">\n", attr_list[i], class_value);
+
+        /* separate options into individual lines */
+        strlcpy(str, attrib[i], sizeof(str));
+        p = strtok(str, "|");
+        while (p)
+          {
+          while (*p == ' ')
+            p++;
+
+          rsputs2(p);
+
+          p = strtok(NULL, "|");
+
+          if (p)
+            rsprintf("<br>");
+          }
+
+        rsprintf("</td>\n");
         }
       else
         {
-        rsprintf("%s:</td><td class=\"attribvalue\">\n", attr_list[i]);
+        rsprintf("%s:</td><td class=\"%s\">\n", attr_list[i], class_value);
         rsputs2(attrib[i]);
-        rsprintf("&nbsp</td></tr>\n");
+        rsprintf("&nbsp</td>\n");
         }
+
+      if (i == lbs->n_attr-1 || (format_flags[i+1] & AFF_SAME_LINE) == 0)
+        rsprintf("</tr></table>\n");
       }
 
     rsputs("</table></td></tr>\n");

@@ -11,6 +11,9 @@ Version 2.3.9, released June xxth, 2003
 - Replace 'Email message body' by 'Email format'
 - Send attachments as email attachments
 - Don't display more than 10 email recipients
+- Made default for "Filteres browsing" zero
+- Added "Format <attribute> = width, size, flags, css1, css2"
+- Display error if email notification fails
 
 Version 2.3.8, released June 4th, 2003
 ======================================

@@ -817,6 +817,32 @@ listed here to display a date filter. Using that filter, the last day, week, mon
 on can be displayed.
 <p>
 
+<LI><b><code>Format &lt;attribute&gt; = &lt;width&gt;,&lt;size&gt;,&lt;flags&gt;,&lt;css_class_name&gt;,&lt;css_class_value&gt;</code></b>
+<br>
+Optional formatting parameters for attributes. Following items can be defined in the 
+comma-separated list:<p>
+
+Values used for new message entry form:
+<ul>
+  <li><b>&lt;width&gt;</b> Width of the text entry field in characters
+  <li><b>&lt;size&gt;</b> Maximum number of characters allowed. 
+</ul>
+<p>
+
+Values used for single message display page:
+<ul>
+  <li><b>&lt;flags&gt;</b> Sum of following flags:
+    <ul>
+	<li> 1:	Display attribute in same line as previous attribute
+	<li> 2: Display radio buttons or check boxes in separate lines (if applicable)
+	</ul>
+  <li><b>&lt;css_class_name&gt;</b>,<b>&lt;css_class_value&gt;</b> Cascading Style Sheet class 
+  names used for cells containing attribute name or value, respectively. The classes must
+  be defined in the style sheet file (usually <i>themes/default/default.css</i>).
+</ul>
+<p>
+Default is <i>"80, 500, 0, attribname, attribvalue"</i>. 
+
 </UL>
 
 <a name="access"><hr>

@@ -223,6 +223,16 @@ td {
 }
 
 /* attribute names and values on single message page */
+.attribhead {
+  background-color:#E0E0A0;
+  border:1px solid #0000FF;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  padding:2px;
+  font-size:10pt;
+  font-family:sans-serif;
+}
+
 .attribname {
   background-color:#CCCCFF;
   border:1px solid #0000FF;
