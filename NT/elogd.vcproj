@@ -160,6 +160,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\mxml.c">
+			</File>
+			<File
 				RelativePath="..\src\regex.c">
 			</File>
 		</Filter>
