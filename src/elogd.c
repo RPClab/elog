@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.147  2003/09/29 13:14:33  midas
+  Create password file if not present
+
   Revision 1.146  2003/09/08 10:57:46  midas
   Fixed even more HTML errors
 
@@ -11914,7 +11917,7 @@ int get_user_line(char *logbook_name, char *user, char *password, char *full_nam
 {
 char  str[256], line[256], file_name[256], *p;
 FILE  *f;
-int   i;
+int   i, fd;
 
   if (password) password[0] = 0;
   if (full_name) full_name[0] = 0;
@@ -11935,6 +11938,17 @@ int   i;
     }
 
   f = fopen(file_name, "r");
+
+  /* if password file doen't exist, try to create it */
+  if (f == NULL)
+    {
+    fd = open(file_name, O_CREAT | O_RDWR, 0600);
+    if (fd < 0)
+      return 3;
+    close(fd);
+    f = fopen(file_name, "r");
+    }
+
   if (f != NULL)
     {
     if (!user[0])
