@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.115  2003/06/04 12:57:46  midas
+  Added attachment referencing
+
   Revision 1.114  2003/06/04 10:33:49  midas
   Added 'Guest Selection page' option
 
@@ -1001,6 +1004,7 @@ struct in_addr rem_addr;
 char rem_host[256];
 INT  _sock;
 BOOL verbose, use_keepalive;
+INT  _current_message_id;
 
 char *mname[] = {
   "January",
@@ -2983,6 +2987,85 @@ char str[MAX_PATH_LENGTH];
 
 /*------------------------------------------------------------------*/
 
+INT el_retrieve_attachment(LOGBOOK *lbs, int message_id, int n, char name[MAX_PATH_LENGTH])
+{
+int     i, index, size, fh;
+char    file_name[256], *p;
+char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
+
+  if (message_id == 0)
+    return EL_EMPTY;
+
+  for (index = 0 ; index < *lbs->n_el_index ; index++)
+    if (lbs->el_index[index].message_id == message_id)
+      break;
+
+  if (index == *lbs->n_el_index)
+    return EL_NO_MSG;
+
+  sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
+  fh = open(file_name, O_RDWR | O_BINARY, 0644);
+  if (fh < 0)
+    {
+    /* file might have been deleted, rebuild index */
+    el_build_index(lbs, TRUE);
+    return el_retrieve_attachment(lbs, message_id, n, name);
+    }
+
+  lseek(fh, lbs->el_index[index].offset, SEEK_SET);
+  i = read(fh, message, sizeof(message)-1);
+  if (i <= 0)
+    {
+    close(fh);
+    return EL_FILE_ERROR;
+    }
+
+  message[i] = 0;
+  close(fh);
+
+  if (strncmp(message, "$@MID@$:", 8) != 0)
+    {
+    /* file might have been edited, rebuild index */
+    el_build_index(lbs, TRUE);
+    return el_retrieve_attachment(lbs, message_id, n, name);
+    }
+
+  /* check for correct ID */
+  if (atoi(message+8) != message_id)
+    return EL_FILE_ERROR;
+
+  /* decode message size */
+  p = strstr(message+8, "$@MID@$:");
+  if (p == NULL)
+    size = strlen(message);
+  else
+    size = (int) p - (int) message;
+
+  message[size] = 0;
+
+  el_decode(message, "Attachment: ", attachment_all);
+
+  name[0] = 0;
+  
+  for (i=0 ; i<=n; i++)
+    {
+    if (i == 0)
+      p = strtok(attachment_all, ",");
+    else
+      p = strtok(NULL, ",");
+
+    if (p == NULL)
+      break;
+    }
+
+  if (p)
+    strlcpy(name, p, MAX_PATH_LENGTH);
+
+  return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 int el_submit(LOGBOOK *lbs, int message_id,
               char *date,
               char attr_name[MAX_N_ATTR][NAME_LENGTH],
@@ -3701,8 +3784,8 @@ char *list[] = { "http://", "https://", "ftp://", "mailto:", "elog:", "" };
 
 void rsputs2(const char *str)
 {
-int i, j, k, l;
-char *p, link[256];
+int i, j, k, l, m;
+char *p, link[256], tmp[256];
 
   if (strlen_retbuf + (int)strlen(str) > return_buffer_size)
     {
@@ -3727,9 +3810,19 @@ char *p, link[256];
 
         if (strcmp(list[l], "elog:") == 0)
           {
-          /* if link contains '/' (reference to other logbook), add ".." in front */
-          if (strchr(link, '/'))
+          strlcpy(tmp, link, sizeof(tmp));
+          if (strchr(tmp, '/'))
+            *strchr(tmp, '/') = 0;
+
+          for (m=0 ; m<(int)strlen(tmp) ; m++)
+            if (!isdigit(tmp[m]))
+              break;
+
+          if (m < (int)strlen(tmp))
+            /* if link contains reference to other logbook, add ".." in front */
             sprintf(return_buffer+j, "<a href=\"../%s\">elog:%s</a>", link, link);
+          else if (link[0] == '/')
+            sprintf(return_buffer+j, "<a href=\"%d%s\">elog:%s</a>", _current_message_id, link, link);
           else
             sprintf(return_buffer+j, "<a href=\"%s\">elog:%s</a>", link, link);
           }
@@ -10146,6 +10239,7 @@ BOOL   first;
 
   message_id = atoi(dec_path);
   message_error = EL_SUCCESS;
+  _current_message_id = message_id;
 
   /* check for guest access */
   if (!getcfg(lbs->name, "Guest Menu commands", menu_str) ||
@@ -11342,11 +11436,12 @@ void interprete(char *lbook, char *path)
 
 \********************************************************************/
 {
-int     i, j, n, index, lb_index, message_id;
+int     status, i, j, n, index, lb_index, message_id;
 char    exp[80];
 char    str[NAME_LENGTH], enc_pwd[80], file_name[256], command[80], ref[256];
 char    enc_path[256], dec_path[256], logbook[256], logbook_enc[256];
 char    *experiment, *value, *group, css[256];
+char    attachment[MAX_PATH_LENGTH];
 BOOL    global;
 LOGBOOK *lbs;
 FILE    *f;
@@ -11805,6 +11900,29 @@ FILE    *f;
       }
 
     send_file_direct(file_name);
+    return;
+    }
+
+  /*---- check if attachment requested -----------------------------*/
+
+  if (strchr(dec_path, '/'))
+    {
+    message_id = atoi(dec_path);
+    n = atoi(strchr(dec_path, '/')+1) - 1;
+
+    status = el_retrieve_attachment(lbs, message_id, n, attachment);
+
+    if (status != EL_SUCCESS || n >= MAX_ATTACHMENTS)
+      {
+      sprintf(str, "Attachment #%d of message #%d not found", n+1, message_id);
+      show_error(str);
+      }
+    else
+      {
+      sprintf(str, "../%s", attachment);
+      redirect(lbs, str);
+      }
+
     return;
     }
 

@@ -6,6 +6,8 @@ Version 2.3.8, released June xxth, 2003
 - Check for .gif & co files in resource directory, then in themes directory
 - for printable search result output, display all pages
 - Added "Guest selection page" option
+- Added possibility to reference attachment with elog:<id>/<n> with <n> the attachment
+  number starting with 1
 
 Version 2.3.7, released May 15th, 2003
 ======================================
