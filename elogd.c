@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.37  2002/07/02 07:33:48  midas
+  Added attribute lists with commas
+
   Revision 2.36  2002/07/01 09:32:32  midas
   Fixed problem with submitting '------' as only text
 
@@ -2898,23 +2901,47 @@ int i;
 char *p;
 
   memset(list, 0, size*NAME_LENGTH);
-  p = strtok(str, ",");
-  if (!p)
+  p = str;
+  if (!p || !*p)
     return 0;
+
   while (*p == ' ')
     p++;
 
-  for (i=0 ; p && i<size ; i++)
+  for (i=0 ; *p && i<size ; i++)
     {
-    strcpy(list[i], p);
+    if (*p == '"')
+      {
+      p++;
+
+      strncpy(list[i], p, NAME_LENGTH-1);
+      list[i][NAME_LENGTH-1] = 0;
+
+      if (strchr(list[i], '"'))
+        *strchr(list[i], '"') = 0;
+
+      p += strlen(list[i]) + 1;
+      while (*p == ' ' || *p == ',')
+        p++;
+      }
+    else
+      {
+      strncpy(list[i], p, NAME_LENGTH-1);
+      list[i][NAME_LENGTH-1] = 0;
+
+      if (strchr(list[i], ','))
+        *strchr(list[i], ',') = 0;
+
+      p += strlen(list[i]);
+      while (*p == ' ' || *p == ',')
+        p++;
+      }
+
     while (list[i][strlen(list[i])-1] == ' ')
       list[i][strlen(list[i])-1] = 0;
 
-    p = strtok(NULL, ",");
-    if (!p)
+    if (!*p)
       break;
-    while (*p == ' ')
-      p++;
     }
 
   if (i == size)
