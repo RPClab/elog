@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.94  2003/05/01 06:17:54  midas
+  Fixed bug in password recovery with logbooks containing blanks
+
   Revision 1.93  2003/04/28 12:52:58  midas
   Removed &nbsp; from logbook tabs
 
@@ -6617,7 +6620,7 @@ char str[1000], login_name[256], full_name[256], user_email[256], name[256], pwd
             strlcat(url, "/", sizeof(url));
           if (lbs)
             {
-            strlcat(url, lbs->name, sizeof(url));
+            strlcat(url, lbs->name_enc, sizeof(url));
             strlcat(url, "/", sizeof(url));
             }
           }
