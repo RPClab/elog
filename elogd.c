@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.14  2002/03/14 11:48:43  midas
+  Added .jpeg file extension
+
   Revision 1.13  2002/02/25 16:12:26  midas
   Added BGImage and BDTImage in themes
 
@@ -216,6 +219,7 @@ struct {
   } filetype[] = {
 
   { ".JPG",   "image/jpeg" },
+  { ".JPEG",  "image/jpeg" },
   { ".GIF",   "image/gif" },
   { ".PNG",   "image/png" },
   { ".PS",    "application/postscript" },
@@ -4859,6 +4863,7 @@ FILE   *f;
                 {
                 if (strstr(str, ".GIF") ||
                     strstr(str, ".JPG") ||
+                    strstr(str, ".JPEG") ||
                     strstr(str, ".PNG"))
                   {
                   rsprintf("<tr><td colspan=%d bgcolor=%s><b>%s %d:</b> <a href=\"%s\">%s</a>\n",
@@ -5760,7 +5765,8 @@ FILE   *f;
 
   if ((strlen(path) > 13 && path[6] == '_' && path[13] == '_') ||
       (strlen(path) > 13 && path[6] == '_' && path[13] == '/') ||
-      strstr(path, ".gif") || strstr(path, ".jpg") || strstr(path, ".png"))
+      strstr(path, ".gif") || strstr(path, ".jpg") || 
+      strstr(path, ".jpeg") || strstr(path, ".png"))
     {
     if ((strlen(path) > 13 && path[6] == '_' && path[13] == '_') ||
         (strlen(path) > 13 && path[6] == '_' && path[13] == '/'))
@@ -6319,6 +6325,7 @@ FILE   *f;
           {
           if (strstr(att, ".GIF") ||
               strstr(att, ".JPG") ||
+              strstr(att, ".JPEG") ||
               strstr(att, ".PNG"))
             {
             rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
@@ -7492,7 +7499,8 @@ struct timeval       timeout;
           break;
         }
 
-      if (strstr(logbook, ".gif") || strstr(logbook, ".jpg") || strstr(logbook, ".png") ||
+      if (strstr(logbook, ".gif") || strstr(logbook, ".jpg") || 
+          strstr(logbook, ".jpg") || strstr(logbook, ".png") ||
           strstr(logbook, ".htm"))
         {
         /* serve file directly */
