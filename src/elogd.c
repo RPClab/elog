@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.523  2004/12/18 16:18:58  midas
+   Changed locale to 'C' for email header date
+
    Revision 1.522  2004/12/17 22:18:29  midas
    Use hostname from -n parameter for redirection if given
 
@@ -2208,7 +2211,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       efputs(str);
    write_logfile(lbs, str);
 
-   snprintf(str, strsize - 1, "MAIL FROM: <%s>\r\n", from);
+   snprintf(str, strsize - 1, "MAIL FROM: %s\r\n", from);
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
@@ -2282,7 +2285,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    write_logfile(lbs, str);
 
    /* switch locale temporarily back to english to comply with RFC2822 date format */
-   setlocale(LC_ALL, "english");
+   setlocale(LC_ALL, "C");
 
    time(&now);
    ts = localtime(&now);
@@ -2291,7 +2294,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    if (ts->tm_isdst)
       offset += 3600;
    if (verbose) {
-      snprintf(str, strsize - 1, "timezone: %d, offset: %d", (int) timezone, (int) offset);
+      snprintf(str, strsize - 1, "timezone: %d, offset: %d\n", (int) timezone, (int) offset);
       efputs(str);
    }
    snprintf(str, strsize - 1, "Date: %s %+03d%02d\r\n", buf, (int) (offset / 3600),
@@ -3288,6 +3291,12 @@ char *loc(char *orig)
    /* special case: "Change %s" */
    if (strstr(orig, "Change ") && strcmp(orig, "Change %s") != 0) {
       sprintf(result, loc("Change %s"), orig + 7);
+      return result;
+   }
+
+   /* special case: some intrinsic commands */
+   if (strstr(orig, "GetPwdFile")) {
+      strcpy(result, orig);
       return result;
    }
 
@@ -10289,7 +10298,7 @@ void show_new_user_page(LOGBOOK * lbs)
    rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Login name"));
    rsprintf("<td><input type=text size=40 name=new_user_name></td>\n");
    rsprintf("<td align=left><i><font size=2>(%s)</i></font></td></tr>\n",
-            loc(" name may not contain blanks "));
+            loc("name may not contain blanks "));
 
    rsprintf("<tr><td nowrap width = \"10%%\">%s:</td>\n", loc("Full name"));
    rsprintf("<td colspan=2><input type=text size=40 name=new_full_name></tr>\n");
@@ -19359,7 +19368,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (strieq(command, loc("GetPwdFile"))) {
+   if (strieq(command, "GetPwdFile")) {
       getcfg(lbs->name, "Password file", str, sizeof(str));
 
       if (str[0] == DIR_SEPARATOR || str[1] == ':')
