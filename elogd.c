@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.26  2002/06/03 07:32:27  midas
+  Added 'Title image URL' in theme file
+
   Revision 1.25  2002/05/31 14:20:50  midas
   Added 'user' and 'group' statements in configuration file
 
@@ -977,6 +980,7 @@ THEME default_theme [] = {
   { "Title Fontcolor",        "#FFFFFF" },
   { "Title Cellpadding",      "0"       },
   { "Title Image",            ""        },
+  { "Title Image URL",        ""        },
 
   { "Merge menus",            "1"       },
   { "Use buttons",            "0"       },
@@ -2913,11 +2917,19 @@ int  i;
 
   /* right cell */
   rsprintf("<td bgcolor=%s align=right>", gt("Title BGColor"));
+
+  if (*gt("Title image URL"))
+    rsprintf("<a href=\"%s\">\n", gt("Title image URL"));
+                       
   if (*gt("Title image"))
-    rsprintf("<img src=\"%s\">", gt("Title image"));
+    rsprintf("<img border=0 src=\"%s\">", gt("Title image"));
   else
     rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif color=%s><b>ELOG V%s&nbsp;&nbsp</b></font>",
               gt("Title fontcolor"), VERSION);
+
+  if (*gt("Title image URL"))
+    rsprintf("</a>\n");
+
   rsprintf("</td>\n");
 
   rsprintf("</tr></table></td></tr>\n\n");
