@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.84  2003/04/15 10:58:09  midas
+  Added 'hide from selection' flag
+
   Revision 1.83  2003/04/14 08:43:11  midas
   Fixed bug that attachments got deleted if one replies to a message
 
@@ -11001,15 +11004,18 @@ char str[10000];
     if (!lb_list[i].name[0])
       break;
 
-    rsprintf("<tr><td class=\"attribname\"><a href=\"%s/\">%s</a></td>", lb_list[i].name_enc, lb_list[i].name);
+    if (!getcfg(lb_list[i].name, "Hide from selection", str) || atoi(str) == 0)
+      {
+      rsprintf("<tr><td class=\"attribname\"><a href=\"%s/\">%s</a></td>", lb_list[i].name_enc, lb_list[i].name);
 
-    str[0] = 0;
-    getcfg(lb_list[i].name, "Comment", str);
-    rsprintf("<td class=\"attribvalue\">%s&nbsp;</td>\n", str);
+      str[0] = 0;
+      getcfg(lb_list[i].name, "Comment", str);
+      rsprintf("<td class=\"attribvalue\">%s&nbsp;</td>\n", str);
 
-    rsprintf("<td nowrap class=\"attribvalue2\">");
-    rsprintf(loc("%d entries"), *lb_list[i].n_el_index);
-    rsprintf("</td></tr>\n");
+      rsprintf("<td nowrap class=\"attribvalue2\">");
+      rsprintf(loc("%d entries"), *lb_list[i].n_el_index);
+      rsprintf("</td></tr>\n");
+      }
     }
 
   rsprintf("</table></body>\n");
