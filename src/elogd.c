@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.580  2005/03/03 15:35:00  ritt
+   Removed debugging statements
+
    Revision 1.579  2005/03/03 15:33:05  ritt
    Keep parsed password files in memory
 
@@ -18503,15 +18506,12 @@ void load_password_files()
                setcfg_topgroup(lb_list[i].top_group);
             getcfg(lb_list[i].name, "Password file", str1, sizeof(str1));
 
-            printf("Logbook %s has password file %s\n", lb_list[i].name, str1);
-
             for (j=i+1 ; lb_list[j].name[0] ; j++) {
                if (lb_list[j].top_group[0])
                   setcfg_topgroup(lb_list[j].top_group);
                getcfg(lb_list[j].name, "Password file", str2, sizeof(str2));
                if (strieq(str1, str2)) {
                   lb_list[j].pwd_xml_tree = xml_tree;
-                  printf("  ==> assigned to logbook %s\n", lb_list[j].name);
                }
             }
          }
