@@ -1,4 +1,5 @@
 #
+# German message by stefan.ritt@psi.ch
 # $Revision$
 #
 
@@ -137,7 +138,7 @@ Messags %s cannot be read from logook "%s" = Eintrag %s kann nicht aus dem Logbu
 New message cannot be written to directory "%s" = Neuer Eintrag kann nicht ins Verzeichnis "%s" geschrieben werden
 
 #
-# New strings fro V2.0
+# New strings for V2.0
 #
 Display full message = Ganzer Eintrag darstellen
 Display threads = Antwortkette darstellen
