@@ -35,7 +35,6 @@ Section "ELOG system (required)"
   File nt\release\elogd.exe
   File nt\release\elog.exe
   File nt\release\elconv.exe
-  File elogd.cfg
   File eloghelp_en.html
 
   ; doc directory
@@ -45,16 +44,34 @@ Section "ELOG system (required)"
   ; src directory
   SetOutPath $INSTDIR\src
   File src\*.c
-  
-  ; themes and demo logbook
-  SetOutPath $INSTDIR\themes\default
-  File themes\default\*.css
-  File themes\default\*.gif
-  SetOutPath $INSTDIR\themes\default\icons
-  File themes\default\icons\*.*
 
-  SetOutPath $INSTDIR\logbooks\demo
-  File logbooks\demo\*
+  ; config file
+  SetOutPath $INSTDIR
+  IfFileExists $INSTDIR\elogd.cfg 0 cfgNotExist
+    MessageBox MB_YESNO|MB_ICONQUESTION "Would you like to overwrite your existing elogd.cfg?" IDNO cfgNotOverwrite
+  cfgNotExist:
+    File elogd.cfg ; overwrite file
+  cfgNotOverwrite:
+
+  ; themes 
+  SetOutPath $INSTDIR\themes\default
+
+  IfFileExists $INSTDIR\themes\default\default.css 0 themesNotExist
+    MessageBox MB_YESNO|MB_ICONQUESTION "Would you like to overwrite your existing theme files?" IDNO themesNotOverwrite
+  themesNotExist:
+    File themes\default\*.css
+    File themes\default\*.gif
+    SetOutPath $INSTDIR\themes\default\icons
+    File themes\default\icons\*.*
+  themesNotOverwrite:
+
+  ; demo logbook
+  IfFileExists $INSTDIR\logbooks\demo\011108a.log 0 logbNotExist
+    MessageBox MB_YESNO|MB_ICONQUESTION "Would you like to overwrite your existing demo logbook?" IDNO logbNotOverwrite
+  logbNotExist:
+    SetOutPath $INSTDIR\logbooks\demo
+    File logbooks\demo\*
+  logbNotOverwrite:
     
   SetOutPath $INSTDIR
   
