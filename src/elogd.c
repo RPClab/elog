@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.223  2004/02/02 16:28:04  midas
+   Added javascript for required attributes checking
+
    Revision 1.222  2004/02/02 16:00:01  midas
    Fixed bug that '<' was not correctly displayed in links
 
@@ -4786,7 +4789,7 @@ void show_plain_header(int size)
    rsprintf("\r\n");
 }
 
-void show_html_header(LOGBOOK * lbs, BOOL expires, char *title)
+void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head)
 {
    char css[256], str[256];
 
@@ -4807,14 +4810,15 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title)
    else if (lbs == NULL && getcfg("global", "CSS", str))
       strlcpy(css, str, sizeof(css));
 
-   rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">", css);
+   rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">\n", css);
 
-   rsprintf("</head>\n");
+   if (close_head)
+     rsprintf("</head>\n");
 }
 
 void show_standard_header(LOGBOOK * lbs, BOOL expires, char *title, char *path)
 {
-   show_html_header(lbs, expires, title);
+   show_html_header(lbs, expires, title, TRUE);
 
    rsprintf("<body>\n");
 
@@ -4832,7 +4836,7 @@ void show_upgrade_page(LOGBOOK * lbs)
 {
    char str[1000];
 
-   show_html_header(lbs, FALSE, "ELOG Upgrade Information");
+   show_html_header(lbs, FALSE, "ELOG Upgrade Information", TRUE);
 
    rsprintf("<body>\n");
 
@@ -5261,7 +5265,7 @@ void show_bottom_text(LOGBOOK * lbs)
 void show_error(char *error)
 {
    /* header */
-   show_html_header(NULL, FALSE, "ELOG error");
+   show_html_header(NULL, FALSE, "ELOG error", TRUE);
 
    rsprintf("<body><center>\n");
    rsprintf("<table class=\"dlgframe\" width=\"50%%\" cellpadding=1 cellspacing=0");
@@ -5404,7 +5408,7 @@ void send_file_direct(char *file_name)
 
       close(fh);
    } else {
-      show_html_header(NULL, FALSE, "404 Not Found");
+      show_html_header(NULL, FALSE, "404 Not Found", TRUE);
 
       rsprintf("<body><h1>Not Found</h1>\r\n");
       rsprintf("The requested file <b>%s</b> was not found on this server<p>\r\n",
@@ -6019,10 +6023,37 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* header */
-   show_html_header(lbs, FALSE, "ELOG");
+   show_html_header(lbs, FALSE, "ELOG", FALSE);
 
-   rsprintf
-       ("<body><form name=form1 method=\"POST\" action=\".\" enctype=\"multipart/form-data\">\n");
+   /* java script for checking required attributes */
+   rsprintf("<script type=\"text/javascript\">\n");
+   rsprintf("<!--\n");
+   rsprintf("function chkform()\n");
+   rsprintf("{\n");
+
+   for (i = 0; i < lbs->n_attr; i++)
+      if (attr_flags[i] & AF_REQUIRED) {
+         
+         if ((attr_flags[i] & AF_MULTI) == 0) {
+            rsprintf("  if (document.form1.%s.value == \"\") {\n", attr_list[i]);
+            sprintf(str, loc("Please enter attribute '%s'"), attr_list[i]);
+            rsprintf("    alert(\"%s\");\n", str);
+            rsprintf("    document.form1.%s.focus();\n", attr_list[i]);
+            rsprintf("    return false;\n");
+            rsprintf("  }\n");
+         } else {
+         }
+      }
+
+   rsprintf("  return true;\n");
+   rsprintf("}\n");
+   rsprintf("//-->\n");
+   rsprintf("</script>\n");
+   rsprintf("</head>\n");
+
+   rsprintf("<body>\n");
+   rsprintf("<form name=form1 method=\"POST\" action=\".\" ");
+   rsprintf("enctype=\"multipart/form-data\" onSubmit=\"return chkform();\">\n");
 
    /*---- add password in case cookie expires during edit ----*/
 
@@ -7052,7 +7083,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
    /*---- header ----*/
 
    sprintf(str, "ELOG %s", loc("Admin"));
-   show_html_header(lbs, FALSE, str);
+   show_html_header(lbs, FALSE, str, TRUE);
 
    rsprintf
        ("<body><form method=\"POST\" action=\".\" enctype=\"multipart/form-data\">\n");
@@ -9531,7 +9562,7 @@ void synchronize(LOGBOOK * lbs, BOOL bcron)
    char str[256], pwd[256];
 
    if (!bcron) {
-      show_html_header(NULL, FALSE, loc("Synchronization"));
+      show_html_header(NULL, FALSE, loc("Synchronization"), TRUE);
       rsprintf("<body>\n");
    }
 
@@ -13635,7 +13666,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
    /* display error message for invalid user */
    if (isparam("iusr")) {
       /* header */
-      show_html_header(NULL, FALSE, "ELOG error");
+      show_html_header(NULL, FALSE, "ELOG error", TRUE);
 
       rsprintf("<body><center>\n");
       rsprintf("<table class=\"dlgframe\" width=\"50%%\" cellpadding=1 cellspacing=0>");
@@ -13676,7 +13707,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
 
       /* show login password page */
       sprintf(str, "ELOG %s", loc("Login"));
-      show_html_header(lbs, TRUE, str);
+      show_html_header(lbs, TRUE, str, TRUE);
 
       /* set focus on name field */
       rsprintf("<body OnLoad=\"document.form1.uname.focus();\">\n");
@@ -13936,9 +13967,9 @@ void show_selection_page()
          return;
 
    if (getcfg("global", "Page Title", str))
-      show_html_header(NULL, TRUE, str);
+      show_html_header(NULL, TRUE, str, TRUE);
    else
-      show_html_header(NULL, TRUE, "ELOG Logbook Selection");
+      show_html_header(NULL, TRUE, "ELOG Logbook Selection", TRUE);
    rsprintf("<body>\n\n");
    rsprintf("<table class=\"selframe\" cellspacing=0 align=center>\n");
    rsprintf("<tr><td colspan=13 class=\"dlgtitle\">\n");
@@ -14120,7 +14151,7 @@ void show_calendar(LOGBOOK * lbs)
    else
       index = 1;
 
-   show_html_header(lbs, FALSE, loc("Calendar"));
+   show_html_header(lbs, FALSE, loc("Calendar"), TRUE);
    rsprintf("<body><form name=form1 method=\"GET\" action=\"\">\n");
    rsprintf("<input type=hidden name=\"y\" value=\"%d\">\n", cur_year);
 
