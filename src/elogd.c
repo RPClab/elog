@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.52  2003/03/25 19:55:15  midas
+  Sort threaded list correctly if replies are resubmitted
+
   Revision 1.51  2003/03/25 16:08:46  midas
   Fixed problem that uploading attachments on a reply deleted the original message
 
@@ -8237,6 +8240,10 @@ LOGBOOK *lbs_cur;
 
       if (j < index)
         {
+        /* set date from current message, if later */
+        if (strcmp(msg_list[j].string, msg_list[index].string) < 0)
+          strcpy(msg_list[j].string, msg_list[index].string);
+
         msg_list[index].lbs = NULL; // delete current message
         continue;
         }
