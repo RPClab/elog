@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.364  2004/07/05 08:51:33  midas
+   Fixed typo
+
    Revision 1.363  2004/07/05 08:49:18  midas
    Fixed compiler warnings
 
@@ -12352,7 +12355,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          strcat(menu_str, "Change elogd.cfg, ");
          strcat(menu_str, "Delete this logbook, ");
          strcat(menu_str, "Rename this logbook, ");
-         strcat(menu_str, "Create new logwook, ");
+         strcat(menu_str, "Create new logbook, ");
 
          if (is_admin_user("global", getparam("unm"))) {
 
