@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.573  2005/03/02 00:01:23  ritt
+   Fixed compiler warnings
+
    Revision 1.572  2005/03/01 23:48:17  ritt
    Implemented MXML for password file
 
@@ -880,6 +883,8 @@ static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
 
 #define TRUE 1
 #define FALSE 0
+
+#define O_TEXT 0
 
 #define DIR_SEPARATOR '/'
 #define DIR_SEPARATOR_STR "/"
@@ -18275,7 +18280,7 @@ BOOL convert_password_file(char *file_name)
 
       /* skip comment lines */
       if (*p != ';' && *p != '#') {
-         for (i=0 ; i<sizeof(name) && *p && *p != ':' ; i++)
+         for (i=0 ; i<(int)sizeof(name) && *p && *p != ':' ; i++)
             name[i] = *p++;
          name[i] = 0;
          if (*p++ != ':') {
@@ -18283,7 +18288,7 @@ BOOL convert_password_file(char *file_name)
             return FALSE;
          }
 
-         for (i=0 ; i<sizeof(password) && *p && *p != ':' ; i++)
+         for (i=0 ; i<(int)sizeof(password) && *p && *p != ':' ; i++)
             password[i] = *p++;
          password[i] = 0;
          if (*p++ != ':') {
@@ -18291,7 +18296,7 @@ BOOL convert_password_file(char *file_name)
             return FALSE;
          }
 
-         for (i=0 ; i<sizeof(full_name) && *p && *p != ':' ; i++)
+         for (i=0 ; i<(int)sizeof(full_name) && *p && *p != ':' ; i++)
             full_name[i] = *p++;
          full_name[i] = 0;
          if (*p++ != ':') {
@@ -18299,7 +18304,7 @@ BOOL convert_password_file(char *file_name)
             return FALSE;
          }
 
-         for (i=0 ; i<sizeof(email) && *p && *p != ':' ; i++)
+         for (i=0 ; i<(int)sizeof(email) && *p && *p != ':' ; i++)
             email[i] = *p++;
          email[i] = 0;
          if (*p++ != ':') {
@@ -18307,7 +18312,7 @@ BOOL convert_password_file(char *file_name)
             return FALSE;
          }
 
-         for (i=0 ; i<sizeof(email_notify) && *p && *p != '\n' ; i++)
+         for (i=0 ; i<(int)sizeof(email_notify) && *p && *p != '\n' ; i++)
             email_notify[i] = *p++;
          email_notify[i] = 0;
          if (*p++ != '\n') {
