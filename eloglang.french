@@ -1,5 +1,6 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
+# (for 2.5.3)
 # A more recent version may be available at :
 # http://midas.psi.ch/cgi-bin/cvsweb/elog/eloglang.french
 #
@@ -285,17 +286,13 @@ Preview import = Aperçu avant importation
 Too many attributes in CSV file = Trop d'attributs dans le fichier CSV
 %d entries successfully imported = %d entrées importées avec succès
 No 'Attributes' option present in %s = Il n'y a pas d'option 'Attributs' dans %s
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-CSV ("," separated) = 
-CSV (";" separated) = 
-Auto detect = 
-CSV import preview of %s = 
-text = 
-Column header '%s' must be present in CSV file = 
-Fill text body = 
-Please re-enter filename = 
-Last x = 
-Activate = 
+CSV ("," separated) = CSV (séparateur ",")
+CSV (";" separated) = CSV (séparateur ";") 
+Auto detect = Détection automatique
+CSV import preview of %s = Prévisualiser l'importation CSV de %s
+text = texte
+Column header '%s' must be present in CSV file = L'en-tête de la colonne '%s' doit être présent dans le fichier CSV
+Fill text body = Remplir le champ texte
+Please re-enter filename = Veuillez re-saisir le nom du fichier
+Last x = x derniers
+Activate = Activer
