@@ -38,12 +38,14 @@ typedef struct mxml_struct {
 
 /*------------------------------------------------------------------*/
 
-MXML_WRITER *mxml_open_document(const char *file_name);
+MXML_WRITER *mxml_open_file(const char *file_name);
+MXML_WRITER *mxml_open_buffer(void); 
 int mxml_start_element(MXML_WRITER *writer, const char *name);
 int mxml_end_element(MXML_WRITER *writer); 
 int mxml_write_attribute(MXML_WRITER *writer, const char *name, const char *value);
 int mxml_write_value(MXML_WRITER *writer, const char *value);
-char *mxml_close_document(MXML_WRITER *writer);
+char *mxml_close_buffer(MXML_WRITER *writer);
+int mxml_close_file(MXML_WRITER *writer);
 
 int mxml_get_number_of_children(PMXML_NODE pnode);
 PMXML_NODE mxml_subnode(PMXML_NODE pnode, int index);
@@ -67,6 +69,7 @@ int mxml_delete_attribute(PMXML_NODE, char *attrib_name);
 
 PMXML_NODE mxml_create_root_node();
 PMXML_NODE mxml_parse_file(char *file_name, char *error, int error_size);
+PMXML_NODE mxml_parse_buffer(char *buffer, char *error, int error_size, char *file_name);
 int mxml_write_tree(char *file_name, PMXML_NODE tree);
 void mxml_debug_tree(PMXML_NODE tree, int level);
 void mxml_free_tree(PMXML_NODE tree);
