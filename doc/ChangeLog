@@ -1,4 +1,4 @@
-Version 2.3.5, released April xxx, 2003
+Version 2.3.5, released April 9th, 2003
 =======================================
 
 - Added option "Summary page title"
@@ -6,6 +6,7 @@ Version 2.3.5, released April xxx, 2003
 - Changed "#" to "ID"
 - Added "Remember me" button
 - Added password recovery facility
+- Made "Self register = 3" work with languages other than English
 
 Version 2.3.4, released April 2nd, 2003
 =======================================

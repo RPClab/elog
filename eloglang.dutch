@@ -234,4 +234,20 @@ Requested = Verzocht
 Registration request on logbook "%s" = Registratie verzoek voor Logboek "%s"
 A new ELOG user wants to register on "%s" = Een nieuwe Elog gebruiker wil zich registreren voor "%s"
 
+# New strings for V2.3.2
+One message = Een bericht
+%d messages = %d berichten
+and its replies = met antwoorden
+and their replies = met antwoorden
+moved successfully from "%s" to "%s" = verplaatsing  van "%s" naar "%s" succesvol
+copied successfully from "%s" to "%s" = kopie van "%s" naar "%s" succesvol
+
+#
+# New strings for V2.3.4
+Last x = Laatste x
+Only user <i>%s</i> can delete this entry = Alleen gebruiker <i>%s</i> kan dit bericht wissen
+Search text also in attributes = Zoek ook in atributen
+Goto logbook selection page = Ga naar logboek selectie pagina
+Login as different user = Als een andere gebruiker aanmelden
+User <i>"%s"</i> has no access to logbook <i>"%s"</i> = Gebruiker <i>"%s"</i> heeft geen toegang tot logboek <i>"%s"</i>
 
