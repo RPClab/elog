@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.374  2004/07/08 19:48:09  midas
+   Implemented 'show top groups' flag
+
    Revision 1.373  2004/07/08 11:31:33  midas
    Fixed compiler warning
 
@@ -16669,6 +16672,54 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
 
 /*------------------------------------------------------------------*/
 
+void show_top_selection_page()
+{
+   int i;
+   char str[NAME_LENGTH], name[NAME_LENGTH], name_enc[NAME_LENGTH];
+   LBLIST phier;
+
+   /* if selection page protected, check password */
+   if (getcfg("global", "password file", str) &&
+       getcfg("global", "protect selection page", str) && atoi(str) == 1)
+      if (!check_user_password(NULL, getparam("unm"), getparam("upwd"), ""))
+         return;
+
+   if (getcfg("global", "Page Title", str)) {
+      strip_html(str);
+      show_html_header(NULL, TRUE, str, TRUE);
+   } else
+      show_html_header(NULL, TRUE, "ELOG Logbook Selection", TRUE);
+   rsprintf("<body>\n\n");
+   rsprintf("<table class=\"selframe\" cellspacing=0 align=center>\n");
+   rsprintf("<tr><td class=\"dlgtitle\">\n");
+
+   if (getcfg("global", "Welcome title", str)) {
+      rsputs(str);
+   } else {
+      rsprintf("%s.<BR>\n", loc("Several logbooks groups are defined on this host"));
+      rsprintf("%s:\n", loc("Please select one to list the logbooks in that group"));
+   }
+
+   rsprintf("</td></tr>\n");
+
+   phier = get_logbook_hierarchy();
+   for (i = 0; i < phier->n_members; i++)
+      if (phier->member[i]->is_top) {
+         rsprintf("<tr><td class=\"sellogbook\">");
+         strlcpy(name, phier->member[i]->name, sizeof(name));
+         strlcpy(name_enc, name, sizeof(name_enc));
+         url_encode(name_enc, sizeof(name_enc));
+         rsprintf("<a href=\"../%s/\">%s</a>", name_enc, name);
+         rsprintf("</td></tr>\n");
+      }
+
+   free_logbook_hierarchy(phier);
+   rsprintf("</table></body>\n");
+   rsprintf("</html>\r\n\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
 void show_selection_page()
 {
    int i, j, show_title;
@@ -16711,9 +16762,14 @@ void show_selection_page()
       return;
    }
 
-   /* top group present and no top group in URL -> abort connection */
-   if (exist_top_group() && getcfg_topgroup() == NULL)
-      return;
+   /* top group present and no top group in URL */
+   if (exist_top_group() && getcfg_topgroup() == NULL) {
+      if (getcfg("global", "show top groups", str) && atoi(str) == 1) {
+         show_top_selection_page();
+         return;
+      } else
+         return; /* abort connection */
+   }
 
    /* if selection page protected, check password */
    if (getcfg("global", "password file", str) &&

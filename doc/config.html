@@ -335,7 +335,8 @@ groups. Instead, one has to append the top group name to the URL, such as
 <b><code>http://your.host:8080/engineering</code></b> or
 <b><code>http://your.host:8080/administration</code></b>. If someone does not know the
 top group name, one cannot see the list of logbooks there, so the groups become completely
-independent of each other.<p>
+independent of each other. If this feature is not wanted, it can be disabled by setting
+<code><b>Show top groups = 1</b></code>.<p>
 
 
 <hr>
@@ -1660,6 +1661,14 @@ Same as before, but gets added after the previous entry.
 <li><b><code>Apend on edit = &lt;string&gt;</code></b>
 </br>
 Same as before, but for editing entries.
+<p>
+
+<li><b><code>Show top groups = 0|1</code></b>
+<br>
+When using top groups, the root of the elogd server is not accessible any more, to avoid
+cases where one group can "see" the logbooks of the other groups. If this feature is
+unwanted, the flag <code><b>Show top groups</b></code> can be set to <code><b>1</b></code>,
+in which case a list of available top groups is shown.
 <p>
 
 
