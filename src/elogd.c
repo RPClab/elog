@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.547  2005/01/26 19:25:15  ritt
+   Fixed bug yielding in wrong search results
+
    Revision 1.546  2005/01/25 21:06:56  ritt
    Version 2.5.6-1
 
@@ -15114,11 +15117,11 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             break;
 
          /* apply filter for AF_MULTI attributes */
+         searched = found = FALSE;
          for (i = 0; i < lbs->n_attr; i++) {
             if (attr_flags[i] & AF_MULTI) {
 
                /* OR of any of the values */
-               searched = found = FALSE;
                for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
                   sprintf(str, "%s_%d", attr_list[i], j);
                   if (*getparam(str)) {
