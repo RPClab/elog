@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.109  2002/12/02 07:48:08  midas
+  Implemented 'line as link'
+
   Revision 2.108  2002/11/29 14:49:12  midas
   Renamed _text to _mtext (problems under AIX)
 
@@ -770,14 +773,14 @@ char tmp[1000], str[256], uattr[256], *ps, *pt, *p;
     p++;
 
     /* extract name */
-    strcpy(str, p);
+    strlcpy(str, p, sizeof(str));
     for (j=0 ; j<(int)strlen(str) ; j++)
       str[j] = toupper(str[j]);
 
     /* search name */
     for (i=0 ; i<n ; i++)
       {
-      strcpy(uattr, name[i]);
+      strlcpy(uattr, name[i], sizeof(uattr));
       for (j=0 ; j<(int)strlen(uattr) ; j++)
         uattr[j] = toupper(uattr[j]);
 
@@ -1394,9 +1397,9 @@ static char old_language[256];
       }
     else
       {
-      strcpy(file_name, cfg_dir);
-      strcat(file_name, "eloglang.");
-      strcat(file_name, language);
+      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcat(file_name, "eloglang.", sizeof(file_name));
+      strlcat(file_name, language, sizeof(file_name));
 
       fh = open(file_name, O_RDONLY | O_BINARY);
       if (fh < 0)
@@ -1591,12 +1594,12 @@ int  i;
 
   memset(file_name, 0, sizeof(file_name));
 
-  strcpy(file_name, cfg_dir);
-  strcat(file_name, "themes");
-  strcat(file_name, DIR_SEPARATOR_STR);
-  strcat(file_name, tn);
-  strcat(file_name, DIR_SEPARATOR_STR);
-  strcat(file_name, "theme.cfg");
+  strlcpy(file_name, cfg_dir, sizeof(file_name));
+  strlcat(file_name, "themes", sizeof(file_name));
+  strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+  strlcat(file_name, tn, sizeof(file_name));
+  strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+  strlcat(file_name, "theme.cfg", sizeof(file_name));
 
   f = fopen(file_name, "r");
   if (f == NULL)
@@ -1787,9 +1790,9 @@ INT ss_file_find(char *path, char *pattern, char **plist)
   char str[255];
   int  i, first;
 
-  strcpy(str,path);
-  strcat(str,"\\");
-  strcat(str,pattern);
+  strlcpy(str, path, sizeof(str));
+  strlcat(str, "\\", sizeof(str));
+  strlcat(str, pattern, sizeof(str));
   first = 1;
   i = 0;
   lpfdata = malloc(sizeof(WIN32_FIND_DATA));
@@ -1884,8 +1887,8 @@ struct tm tms;
   /* go through all files */
   for (index=0 ; index<n ; index++)
     {
-    strcpy(file_name, dir);
-    strcat(file_name, file_list+index*MAX_PATH_LENGTH);
+    strlcpy(file_name, dir, sizeof(file_name));
+    strlcat(file_name, file_list+index*MAX_PATH_LENGTH, sizeof(file_name));
 
     fh = open(file_name, O_RDWR | O_BINARY, 0644);
 
@@ -2050,15 +2053,15 @@ int  i, j, n, status;
     /* get data dir from configuration file */
     getcfg(logbook, "Data dir", str);
     if (str[0] == DIR_SEPARATOR || str[1] == ':')
-      strcpy(data_dir, str);
+      strlcpy(data_dir, str, sizeof(data_dir));
     else
       {
-      strcpy(data_dir, cfg_dir);
-      strcat(data_dir, str);
+      strlcpy(data_dir, cfg_dir, sizeof(data_dir));
+      strlcat(data_dir, str, sizeof(data_dir));
       }
 
     if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
-      strcat(data_dir, DIR_SEPARATOR_STR);
+      strlcat(data_dir, DIR_SEPARATOR_STR, sizeof(data_dir));
 
     /* create data directory if not existing */
     getcwd(str, sizeof(str));
@@ -2366,14 +2369,13 @@ char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
       p += 41;
       if ((int) strlen(p) >= *textsize)
         {
-        strncpy(text, p, *textsize-1);
-        text[*textsize-1] = 0;
+        strlcpy(text, p, *textsize);
         show_error("Message too long to display. Please increase TEXT_SIZE and recompile elogd.");
         return EL_FILE_ERROR;
         }
       else
         {
-        strcpy(text, p);
+        strlcpy(text, p, *textsize);
 
         /* strip CR at end */
         if (text[strlen(text)-1] == '\n')
@@ -2686,8 +2688,8 @@ BOOL    bedit;
       if (p && (afile_name[i][0] || equal_ustring(afile_name[i], loc("<delete>"))))
         {
         /* delete old attachment */
-        strcpy(str, lbs->data_dir);
-        strcat(str, p);
+        strlcpy(str, lbs->data_dir, sizeof(str));
+        strlcat(str, p, sizeof(str));
         remove(str);
         }
 
@@ -2726,8 +2728,8 @@ BOOL    bedit;
 
   sprintf(message+strlen(message), "Encoding: %s\n", encoding);
   sprintf(message+strlen(message), "========================================\n");
-  strcat(message, text);
-  strcat(message, "\n");
+  strlcat(message, text, sizeof(message));
+  strlcat(message, "\n", sizeof(message));
 
   write(fh, message, strlen(message));
 
@@ -2931,8 +2933,8 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
       if (attachment[i][0] && p)
         {
         /* delete old attachment if new one exists */
-        strcpy(str, lbs->data_dir);
-        strcat(str, p);
+        strlcpy(str, lbs->data_dir, sizeof(str));
+        strlcat(str, p, sizeof(str));
         remove(str);
         }
 
@@ -2943,8 +2945,8 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
 
     if (delete_attachments && p)
       {
-      strcpy(str, lbs->data_dir);
-      strcat(str, p);
+      strlcpy(str, lbs->data_dir, sizeof(str));
+      strlcat(str, p, sizeof(str));
       remove(str);
       }
     }
@@ -3342,8 +3344,7 @@ char str[10000];
       return 0;
       }
 
-    strncpy(_mtext, value, TEXT_SIZE);
-    _mtext[TEXT_SIZE-1] = 0;
+    strlcpy(_mtext, value, TEXT_SIZE);
     return 1;
     }
 
@@ -3357,8 +3358,7 @@ char str[10000];
       return 0;
       }
 
-    strncpy(_cmdline, value, CMD_SIZE);
-    _cmdline[CMD_SIZE-1] = 0;
+    strlcpy(_cmdline, value, CMD_SIZE);
     return 1;
     }
 
@@ -3369,7 +3369,7 @@ char str[10000];
 
   if (i<MAX_PARAM)
     {
-    strcpy(_param[i], param);
+    strlcpy(_param[i], param, PARAM_LENGTH);
 
     if (strlen(value) >= VALUE_SIZE)
       {
@@ -3378,8 +3378,7 @@ char str[10000];
       return 0;
       }
 
-    strncpy(_value[i], value, VALUE_SIZE);
-    _value[i][VALUE_SIZE-1] = 0;
+    strlcpy(_value[i], value, VALUE_SIZE);
     }
   else
     {
@@ -3435,8 +3434,8 @@ int i;
     {
     for ( ; i<MAX_PARAM-1 ; i++)
       {
-      strcpy(_param[i], _param[i+1]);
-      strcpy(_value[i], _value[i+1]);
+      strlcpy(_param[i], _param[i+1], PARAM_LENGTH);
+      strlcpy(_value[i], _value[i+1], PARAM_LENGTH);
       }
     _param[MAX_PARAM-1][0] = 0;
     _value[MAX_PARAM-1][0] = 0;
@@ -3490,8 +3489,7 @@ char *p;
       {
       p++;
 
-      strncpy(list[i], p, NAME_LENGTH-1);
-      list[i][NAME_LENGTH-1] = 0;
+      strlcpy(list[i], p, NAME_LENGTH);
 
       if (strchr(list[i], '"'))
         *strchr(list[i], '"') = 0;
@@ -3502,8 +3500,7 @@ char *p;
       }
     else
       {
-      strncpy(list[i], p, NAME_LENGTH-1);
-      list[i][NAME_LENGTH-1] = 0;
+      strlcpy(list[i], p, NAME_LENGTH);
 
       if (strchr(list[i], ','))
         *strchr(list[i], ',') = 0;
@@ -3942,7 +3939,7 @@ struct tm *gmt;
       }
     }
 
-  sprintf(str, "%s", getparam("redir"));
+  strlcpy(str, getparam("redir"), sizeof(str));
   if (!str[0])
     {
     if (lbs)
@@ -4104,26 +4101,26 @@ struct tm      *ts;
 
   /* add remote host */
   strcpy(list[i], "remote_host");
-  strcpy(value[i++], rem_host);
+  strlcpy(value[i++], rem_host, NAME_LENGTH);
 
   /* add local host */
   strcpy(list[i], "host");
-  strcpy(value[i++], host_name);
+  strlcpy(value[i++], host_name, NAME_LENGTH);
 
   /* add user names */
   strcpy(list[i], "short_name");
-  strcpy(value[i++], getparam("unm"));
+  strlcpy(value[i++], getparam("unm"), NAME_LENGTH);
   strcpy(list[i], "long_name");
-  strcpy(value[i++], getparam("full_name"));
+  strlcpy(value[i++], getparam("full_name"), NAME_LENGTH);
 
   /* add email */
   strcpy(list[i], "user_email");
   strcpy(value[i], "mailto:");
-  strcat(value[i++], getparam("user_email"));
+  strlcat(value[i++], getparam("user_email"), NAME_LENGTH);
 
   /* add logbook */
   strcpy(list[i], "logbook");
-  strcpy(value[i++], lbs->name);
+  strlcpy(value[i++], lbs->name, NAME_LENGTH);
 
   /* add date */
   strcpy(list[i], "date");
@@ -4161,8 +4158,8 @@ int    i, fh, wrong_pwd, size;
     strcpy(file_name, str);
   else
     {
-    strcpy(file_name, cfg_dir);
-    strcat(file_name, str);
+    strlcpy(file_name, cfg_dir, sizeof(file_name));
+    strlcat(file_name, str, sizeof(file_name));
     }
 
   wrong_pwd = FALSE;
@@ -4827,8 +4824,8 @@ time_t now;
         strcpy(file_name, str);
       else
         {
-        strcpy(file_name, cfg_dir);
-        strcat(file_name, str);
+        strlcpy(file_name, cfg_dir, sizeof(file_name));
+        strlcat(file_name, str, sizeof(file_name));
         }
        
       /* check if file exists */
@@ -5350,8 +5347,8 @@ int    i, fh, size, self_register;
       strcpy(file_name, str);
     else
       {
-      strcpy(file_name, cfg_dir);
-      strcat(file_name, str);
+      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcat(file_name, str, sizeof(file_name));
       }
 
     fh = open(file_name, O_RDWR | O_BINARY | O_CREAT, 644);
@@ -5472,8 +5469,8 @@ int    i, fh, size, self_register;
       }
     else
       {
-      strcat(url, lbs->name);
-      strcat(url, "/");
+      strlcat(url, lbs->name, sizeof(url));
+      strlcat(url, "/", sizeof(url));
       }
 
     if (!getcfg(lbs->name, "Use Email from", mail_from))
@@ -5588,8 +5585,8 @@ int    i, fh, size;
     strcpy(file_name, str);
   else
     {
-    strcpy(file_name, cfg_dir);
-    strcat(file_name, str);
+    strlcpy(file_name, cfg_dir, sizeof(file_name));
+    strlcat(file_name, str, sizeof(file_name));
     }
 
   fh = open(file_name, O_RDWR | O_BINARY, 0644);
@@ -5849,7 +5846,7 @@ char   str[256], in_reply_to[80], reply_to[256];
       }
     else
       {
-      strcpy(str, getparam("lastcmd"));
+      strlcpy(str, getparam("lastcmd"), sizeof(str));
       url_decode(str);
       redirect(str);
       }
@@ -6072,7 +6069,7 @@ struct tm *gmt;
     }
 
   return_length = strlen(return_buffer)+size;
-  strcat(return_buffer, message);
+  strlcat(return_buffer, message, sizeof(return_buffer));
 
   return EL_SUCCESS;
 }
@@ -6091,7 +6088,7 @@ void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
 char str[256], ref[256], *nowrap, col[80], format[256], file_name[256];
 char slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
 char display[256], attr_icon[80], align[32];
-int  i, j, size, i_line, index, colspan;
+int  i, j, size, i_line, index, colspan, line_as_link;
 BOOL link_displayed, skip_comma;
 FILE *f;
 
@@ -6136,6 +6133,9 @@ FILE *f;
   strcpy(align, "center");
   if (getcfg(lbs->name, "Table align", str))
     strcpy(align, str);
+
+  line_as_link = (getcfg(lbs->name, "Line as link", str) && atoi(str) == 1 && 
+                 (equal_ustring(mode, "Threaded")));
 
   if (equal_ustring(mode, "Threaded") && getcfg(lbs->name, "Thread display", display))
     {
@@ -6220,13 +6220,24 @@ FILE *f;
       strcpy(svalue[j++], date);
     
     strsubst(display, slist, svalue, j);
-    rsputs2(display);
+    
+    if (getcfg(lbs->name, "Line as link", str) && atoi(str) == 1)
+      {
+      rsprintf("<a href=\"%s\">", ref);
+      rsputs(display);
+      rsprintf("</a>\n");
+      }
+    else
+      rsputs2(display);
     }
   else
     {
     /* show select box */
     if (select && !equal_ustring(mode, "Threaded"))
       rsprintf("<td bgcolor=%s><input type=checkbox name=\"s%d\" value=%d>\n", col, (*n_display)++, message_id);
+
+    if (line_as_link)
+      rsprintf("<a href=\"%s\">", ref);
 
     for (index=0 ; index<n_attr_disp ; index++)
       {
@@ -6237,18 +6248,40 @@ FILE *f;
           if (level == 0)
             {
             if (*gt("Thread image"))
-              rsprintf("<a href=\"%s\"><img border=0 src=\"%s\"></a>&nbsp;", ref, gt("Thread image"));
+              {
+              if (line_as_link)
+                rsprintf("<img border=0 src=\"%s\">&nbsp;", gt("Thread image"));
+              else
+                rsprintf("<a href=\"%s\"><img border=0 src=\"%s\"></a>&nbsp;", ref, gt("Thread image"));
+              }
             else
-              rsprintf("<font size=%d><a href=\"%s\">&nbsp;%d&nbsp;</a></font>",
-                        size, ref, message_id);
+              {
+              if (line_as_link)
+                rsprintf("<font size=%d>&nbsp;%d&nbsp;</font>",
+                         size, message_id);
+              else
+                rsprintf("<font size=%d><a href=\"%s\">&nbsp;%d&nbsp;</a></font>",
+                         size, ref, message_id);
+              }
             }
           else
             {
             if (*gt("Thread reply image"))
-              rsprintf("<a href=\"%s\"><img border=0 src=\"%s\"></a>&nbsp;", ref, gt("Thread reply image"));
+              {
+              if (line_as_link)
+                rsprintf("<img border=0 src=\"%s\">&nbsp;", gt("Thread reply image"));
+              else
+                rsprintf("<a href=\"%s\"><img border=0 src=\"%s\"></a>&nbsp;", ref, gt("Thread reply image"));
+              }
             else
-              rsprintf("<font size=%d><a href=\"%s\">&nbsp;%d&nbsp;</a></font>",
-                        size, ref, message_id);
+              {
+              if (line_as_link)
+                rsprintf("<font size=%d>&nbsp;%d&nbsp;</font>",
+                          size, message_id);
+              else
+                rsprintf("<font size=%d><a href=\"%s\">&nbsp;%d&nbsp;</a></font>",
+                          size, ref, message_id);
+              }
             }
 
           skip_comma = TRUE;
@@ -6264,7 +6297,7 @@ FILE *f;
         {
         if (equal_ustring(mode, "Threaded"))
           {
-          if (!link_displayed)
+          if (!link_displayed && !line_as_link)
             {
             rsprintf("<font size=%d><a href=\"%s\">%s</a></font>",
                      size, ref, lbs->name);
@@ -6320,7 +6353,7 @@ FILE *f;
 
         if (equal_ustring(mode, "Threaded"))
           {
-          if (!link_displayed)
+          if (!link_displayed && !line_as_link)
             {
             rsprintf("<font size=%d><a href=\"%s\">%s</a></font>",
                      size, ref, str);
@@ -6358,7 +6391,7 @@ FILE *f;
               if (atoi(attrib[i]) == 1)
                 {
                 rsprintf("<font size=%d>", size);
-                if (!link_displayed)
+                if (!link_displayed && !line_as_link)
                   {
                   rsprintf("<a href=\"%s\">", ref);
                   rsputs2(attr_list[i]);
@@ -6390,7 +6423,7 @@ FILE *f;
             else
               {
               rsprintf("<font size=%d>", size);
-              if (!link_displayed)
+              if (!link_displayed && !line_as_link)
                 {
                 rsprintf("<a href=\"%s\">", ref);
                 rsputs2(attrib[i]);
@@ -6447,6 +6480,9 @@ FILE *f;
             }
           }
         }
+
+      if (line_as_link)
+        rsprintf("</a>\n");
     }
 
   if (equal_ustring(mode, "Threaded"))
@@ -6549,9 +6585,9 @@ FILE *f;
               /* display attachment */
               rsprintf("<br><font size=%d><pre>", size);
 
-              strcpy(file_name, lbs->data_dir);
+              strlcpy(file_name, lbs->data_dir, sizeof(file_name));
 
-              strcat(file_name, attachment[index]);
+              strlcat(file_name, attachment[index], sizeof(file_name));
 
               f = fopen(file_name, "rt");
               if (f != NULL)
@@ -6637,12 +6673,12 @@ int msg_compare_reverse(const void *m1, const void *m2)
 
 /*------------------------------------------------------------------*/
 
-void build_ref(char *ref)
+void build_ref(char *ref, int size)
 {
 char *p1, *p2;
 
   if (strchr(getparam("cmdline"), '?'))
-    strcat(ref, strchr(getparam("cmdline"), '?'));
+    strlcat(ref, strchr(getparam("cmdline"), '?'), size);
 
   /* eliminate old search */
   if (strstr(ref, "cmd=Search&"))
@@ -6688,7 +6724,7 @@ char ref[256];
   if (page_n > 1)
     {
     sprintf(ref, "page%d", page_n - 1);
-    build_ref(ref);
+    build_ref(ref, sizeof(ref));
 
     rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;", ref, loc("Previous"));
     }
@@ -6698,7 +6734,7 @@ char ref[256];
     for (i=0 ; i<(n_msg-1)/n_page+1 ; i++)
       {
       sprintf(ref, "page%d", i+1);
-      build_ref(ref);
+      build_ref(ref, sizeof(ref));
 
       if (i == (n_msg-1)/n_page)
         {
@@ -6720,7 +6756,7 @@ char ref[256];
   if (page_n != -1 && page_n * n_page < n_msg)
     {
     sprintf(ref, "page%d", page_n + 1);
-    build_ref(ref);
+    build_ref(ref, sizeof(ref));
 
     rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;", ref, loc("Next"));
     }
@@ -6728,7 +6764,7 @@ char ref[256];
   if (page_n != -1 && n_page < n_msg)
     {
     sprintf(ref, "page");
-    build_ref(ref);
+    build_ref(ref, sizeof(ref));
 
     rsprintf("<a href=\"%s\">%s</a>\n", ref, loc("All"));
     }
@@ -6926,9 +6962,9 @@ LOGBOOK *lbs_cur;
         atoi(str) == 1)
       {
       if (strchr(_cmdline, '?'))
-        strcat(_cmdline, "&reverse=0");
+        strlcat(_cmdline, "&reverse=0", sizeof(_cmdline));
       else
-        strcat(_cmdline, "?reverse=0");
+        strlcat(_cmdline, "?reverse=0", sizeof(_cmdline));
       }
     redirect(_cmdline);
     return;
@@ -6937,7 +6973,7 @@ LOGBOOK *lbs_cur;
   /* redirect go command */
   if (isparam("lastcmd"))  //## and not copy to / move to / delete ...
     {
-    strcpy(str, getparam("lastcmd"));
+    strlcpy(str, getparam("lastcmd"), sizeof(str));
     url_decode(str);
 
     /* strip previous "last" */
@@ -6946,9 +6982,11 @@ LOGBOOK *lbs_cur;
     
     /* add new "last" */
     if (strchr(str, '?'))
-      sprintf(str+strlen(str), "&last=%s", getparam("last"));
+      sprintf(str+strlen(str), "&last=");
     else
-      sprintf(str+strlen(str), "?last=%s", getparam("last"));
+      sprintf(str+strlen(str), "?last=");
+
+    strlcat(str, getparam("last"), sizeof(str));
     redirect(str);
     return;
     }
@@ -7325,8 +7363,7 @@ LOGBOOK *lbs_cur;
       if (equal_ustring(getparam("sort"), attr_list[i]) ||
           equal_ustring(getparam("rsort"), attr_list[i]))
         {
-        strncpy(msg_list[index].string, attrib[i], 255);
-        msg_list[index].string[255] = 0;
+        strlcpy(msg_list[index].string, attrib[i], 256);
         }
 
       if (equal_ustring(getparam("sort"), "#") ||
@@ -7566,8 +7603,8 @@ LOGBOOK *lbs_cur;
       strcpy(file_name, str);
     else
       {
-      strcpy(file_name, cfg_dir);
-      strcat(file_name, str);
+      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcat(file_name, str, sizeof(file_name));
       }
 
     f = fopen(file_name, "rb");
@@ -7889,8 +7926,8 @@ LOGBOOK *lbs_cur;
       strcpy(file_name, str);
     else
       {
-      strcpy(file_name, cfg_dir);
-      strcat(file_name, str);
+      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcat(file_name, str, sizeof(file_name));
       }
 
     f = fopen(file_name, "rb");
@@ -7990,8 +8027,8 @@ char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
     }
   else
     {
-    strcat(str, lbs->name);
-    strcat(str, "/");
+    strlcat(str, lbs->name, sizeof(str));
+    strlcat(str, "/", sizeof(str));
     }
 
   sprintf(mail_text+strlen(mail_text), "\r\n%s URL         : %s%d\r\n",
@@ -8105,9 +8142,9 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id, resubmit_or
             if (first)
               first = 0;
             else
-              strcat(attrib[i], " | ");
+              strlcat(attrib[i], " | ", NAME_LENGTH);
             if (strlen(attrib[i]) + strlen(getparam(str)) < NAME_LENGTH-2)
-              strcat(attrib[i], getparam(str));
+              strlcat(attrib[i], getparam(str), NAME_LENGTH);
             else
               break;
             }
@@ -8118,8 +8155,7 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id, resubmit_or
       }
     else
       {
-      strncpy(attrib[i], getparam(attr_list[i]), NAME_LENGTH);
-      attrib[i][NAME_LENGTH-1] = 0;
+      strlcpy(attrib[i], getparam(attr_list[i]), NAME_LENGTH);
       }
 
     if (!*getparam("edit"))
@@ -8222,13 +8258,13 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id, resubmit_or
           if (strchr(attr_list[index], ' '))
             sprintf(str+strlen(str), "\"%s\"", attr_list[index]);
           else
-            strcat(str, attr_list[index]);
+            strlcat(str, attr_list[index], sizeof(str));
           strcat(str, " ");
 
           if (strchr(getparam(attr_list[index]), ' '))
             sprintf(str+strlen(str), "\"%s\"", getparam(attr_list[index]));
           else
-            strcat(str, getparam(attr_list[index]));
+            strlcat(str, getparam(attr_list[index]), sizeof(str));
           }
         else
           sprintf(str, "Email ALL");
@@ -8272,8 +8308,8 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id, resubmit_or
       strcpy(file_name, str);
     else
       {
-      strcpy(file_name, cfg_dir);
-      strcat(file_name, str);
+      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcat(file_name, str, sizeof(file_name));
       }
     send_file_direct(file_name);
     return;
@@ -8350,8 +8386,8 @@ LOGBOOK *lbs_dest;
     for (i=0 ; i<MAX_ATTACHMENTS ; i++)
       if (attachment[i][0])
         {
-        strcpy(file_name, lbs->data_dir);
-        strcat(file_name, attachment[i]);
+        strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+        strlcat(file_name, attachment[i], sizeof(file_name));
 
         fh = open(file_name, O_RDONLY | O_BINARY);
         if (fh > 0)
@@ -8370,8 +8406,8 @@ LOGBOOK *lbs_dest;
           }
 
         /* stip date/time from file name */
-        strcpy(str, attachment[i]);
-        strcpy(attachment[i], str+14);
+        strlcpy(str, attachment[i], sizeof(str));
+        strlcpy(attachment[i], str+14, NAME_LENGTH);
         }
 
     /* submit in destination logbook without links, submit all attributes from
@@ -8921,8 +8957,8 @@ BOOL   first;
       strcpy(file_name, str);
     else
       {
-      strcpy(file_name, cfg_dir);
-      strcat(file_name, str);
+      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcat(file_name, str, sizeof(file_name));
       }
 
     f = fopen(file_name, "rb");
@@ -9163,8 +9199,8 @@ BOOL   first;
         att[i] = 0;
 
         /* determine size of attachment */
-        strcpy(file_name, lbs->data_dir);
-        strcat(file_name, attachment[index]);
+        strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+        strlcat(file_name, attachment[index], sizeof(file_name));
 
         length = 0;
         fh = open(file_name, O_RDONLY | O_BINARY);
@@ -9220,8 +9256,8 @@ BOOL   first;
               if (!strstr(att, ".HTML"))
                 rsprintf("<br><pre>");
 
-              strcpy(file_name, lbs->data_dir);
-              strcat(file_name, attachment[index]);
+              strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+              strlcat(file_name, attachment[index], sizeof(file_name));
 
               f = fopen(file_name, "rt");
               if (f != NULL)
@@ -9266,8 +9302,8 @@ BOOL   first;
       strcpy(file_name, str);
     else
       {
-      strcpy(file_name, cfg_dir);
-      strcat(file_name, str);
+      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcat(file_name, str, sizeof(file_name));
       }
 
     f = fopen(file_name, "rb");
@@ -9364,11 +9400,11 @@ int   i;
     return 1;
 
   if (str[0] == DIR_SEPARATOR || str[1] == ':')
-    strcpy(file_name, str);
+    strlcpy(file_name, str, sizeof(file_name));
   else
     {
-    strcpy(file_name, cfg_dir);
-    strcat(file_name, str);
+    strlcpy(file_name, cfg_dir, sizeof(file_name));
+    strlcat(file_name, str, sizeof(file_name));
     }
 
   f = fopen(file_name, "r");
@@ -9410,7 +9446,7 @@ int   i;
       
       while (*p && *p == ' ')
         p++;
-      strncpy(str, p, sizeof(str)-1);
+      strlcpy(str, p, sizeof(str));
       if (strchr(str, ':'))
         *strchr(str, ':') = 0;
 
@@ -9457,8 +9493,8 @@ int   i;
     strcpy(file_name, str);
   else
     {
-    strcpy(file_name, cfg_dir);
-    strcat(file_name, str);
+    strlcpy(file_name, cfg_dir, sizeof(file_name));
+    strlcat(file_name, str, sizeof(file_name));
     }
 
   f = fopen(file_name, "r");
@@ -9759,11 +9795,11 @@ FILE    *f;
     {
     /* check if file starts with an absolute directory */
     if (str[0] == DIR_SEPARATOR || str[1] == ':')
-      strcpy(file_name, str);
+      strlcpy(file_name, str, sizeof(file_name));
     else
       {
-      strcpy(file_name, cfg_dir);
-      strcat(file_name, str);
+      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcat(file_name, str, sizeof(file_name));
       }
     send_file_direct(file_name);
     return;
@@ -10100,23 +10136,23 @@ FILE    *f;
         dec_path[13] = '_';
 
       /* file from data directory requested */
-      strcpy(file_name, lbs->data_dir);
-      strcat(file_name, dec_path);
+      strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+      strlcat(file_name, dec_path, sizeof(file_name));
       }
     else
       {
       /* file from theme directory requested */
-      strcpy(file_name, cfg_dir);
+      strlcpy(file_name, cfg_dir, sizeof(file_name));
       if (file_name[0])
-        strcat(file_name, DIR_SEPARATOR_STR);
-      strcat(file_name, "themes");
-      strcat(file_name, DIR_SEPARATOR_STR);
+        strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+      strlcat(file_name, "themes", sizeof(file_name));
+      strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
       if (theme_name[0])
         {
-        strcat(file_name, theme_name);
-        strcat(file_name, DIR_SEPARATOR_STR);
+        strlcat(file_name, theme_name, sizeof(file_name));
+        strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
         }
-      strcat(file_name, dec_path);
+      strlcat(file_name, dec_path, sizeof(file_name));
       }
 
     send_file_direct(file_name);
@@ -10166,17 +10202,17 @@ FILE    *f;
       }
 
     /* send local help file */
-    strcpy(file_name, cfg_dir);
-    strcat(file_name, "eloghelp_");
+    strlcpy(file_name, cfg_dir, sizeof(file_name));
+    strlcat(file_name, "eloghelp_", sizeof(file_name));
 
     if (getcfg("global", "Language", str))
       {
       str[2] = 0;
-      strcat(file_name, str);
+      strlcat(file_name, str, sizeof(file_name));
       }
     else
-      strcat(file_name, "en");
-    strcat(file_name, ".html");
+      strlcat(file_name, "en", sizeof(file_name));
+    strlcat(file_name, ".html", sizeof(file_name));
 
     f = fopen(file_name, "r");
     if (f == NULL)
@@ -10382,8 +10418,8 @@ FILE    *f;
       strcpy(file_name, str);
     else
       {
-      strcpy(file_name, cfg_dir);
-      strcat(file_name, str);
+      strlcpy(file_name, cfg_dir, sizeof(file_name));
+      strlcat(file_name, str, sizeof(file_name));
       }
     send_file_direct(file_name);
     return;
@@ -10414,7 +10450,7 @@ char *p, *pitem;
 
   setparam("cmdline", string);
 
-  strncpy(path, string, sizeof(path));
+  strlcpy(path, string, sizeof(path));
   path[255] = 0;
   if (strchr(path, '?'))
     *strchr(path, '?') = 0;
@@ -10472,8 +10508,7 @@ int  i, n;
     {
     if (strstr(string, "name="))
       {
-      strncpy(line, strstr(string, "name=") + 5, sizeof(line)-1);
-      line[sizeof(line)-1] = 0;
+      strlcpy(line, strstr(string, "name=") + 5, sizeof(line));
 
       if (strchr(line, '\r'))
         *strchr(line, '\r') = 0;
@@ -10949,11 +10984,11 @@ struct timeval       timeout;
           if (header_length == 0)
             {
             /* extract logbook */
-            strncpy(str, net_buffer+6, sizeof(str));
+            strlcpy(str, net_buffer+6, sizeof(str));
             if (strstr(str, "HTTP"))
               *(strstr(str, "HTTP")-1) = 0;
-            strcpy(logbook, str);
-            strcpy(logbook_enc, str);
+            strlcpy(logbook, str, sizeof(logbook));
+            strlcpy(logbook_enc, str, sizeof(logbook));
             url_decode(logbook);
 
             /* extract header and content length */
@@ -10965,7 +11000,7 @@ struct timeval       timeout;
             boundary[0] = 0;
             if (strstr(net_buffer, "boundary="))
               {
-              strncpy(boundary, strstr(net_buffer, "boundary=")+9, sizeof(boundary));
+              strlcpy(boundary, strstr(net_buffer, "boundary=")+9, sizeof(boundary));
               if (strchr(boundary, '\r'))
                 *strchr(boundary, '\r') = 0;
               }
@@ -11022,7 +11057,7 @@ struct timeval       timeout;
           p++;
           while (*p && *p == ' ')
             p++;
-          strncpy(str, p, sizeof(str));
+          strlcpy(str, p, sizeof(str));
 
           for (i=0 ; i<(int)strlen(str) ; i++)
             if (str[i] == '=' || str[i] == ';')
@@ -11056,7 +11091,7 @@ struct timeval       timeout;
         p += 9;
         while (*p && *p == ' ')
           p++;
-        strncpy(referer, p, sizeof(referer));
+        strlcpy(referer, p, sizeof(referer));
         if (strchr(referer, '\r'))
           *strchr(referer, '\r') = 0;
         if (strchr(referer, '?'))
@@ -11072,7 +11107,7 @@ struct timeval       timeout;
         p += 11;
         while (*p && *p == ' ')
           p++;
-        strncpy(browser, p, sizeof(browser));
+        strlcpy(browser, p, sizeof(browser));
         if (strchr(browser, '\r'))
           *strchr(browser, '\r') = 0;
         }
@@ -11153,8 +11188,8 @@ struct timeval       timeout;
           strstr(logbook, ".htm"))
         {
         /* serve file directly */
-        strcpy(str, cfg_dir);
-        strcat(str, logbook);
+        strlcpy(str, cfg_dir, sizeof(str));
+        strlcat(str, logbook, sizeof(str));
         send_file_direct(str);
         send(_sock, return_buffer, return_length, 0);
 
@@ -11197,10 +11232,10 @@ struct timeval       timeout;
           if (verbose)
             printf("\n\n\n%s\n", net_buffer);
 
-          strcpy(logbook, str);
-          strcpy(logbook_enc, logbook);
+          strlcpy(logbook, str, sizeof(logbook));
+          strlcpy(logbook_enc, logbook, sizeof(logbook_enc));
           url_encode(logbook_enc);
-          strcat(logbook_enc, "/");
+          strlcat(logbook_enc, "/", sizeof(logbook_enc));
 
           /* redirect to logbook, necessary to get optional cookies for that logbook */
           redirect(logbook_enc);
@@ -11663,7 +11698,7 @@ struct tm *tms;
       else if (argv[i][1] == 'l')
         strcpy(logbook, argv[++i]);
       else if (argv[i][1] == 'h')
-        strncpy(tcp_hostname, argv[++i], sizeof(tcp_hostname));
+        strlcpy(tcp_hostname, argv[++i], sizeof(tcp_hostname));
       else
         {
 usage:
