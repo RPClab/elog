@@ -1,0 +1,50 @@
+#!/bin/sh
+
+# chkconfig: 3 90 10
+# description: Start elog
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# Check for the config file
+if [ ! -f @PREFIX@/elog/elogd.cfg ]; then
+    exit 0
+fi
+
+
+# See how we were called.
+case "$1" in
+  start)
+	echo -n "Starting elogd: "
+	@PREFIX@/bin/elogd -D -c @PREFIX@/elog/elogd.cfg  > /dev/null 2>&1 
+	RETVAL=$?
+        if [ $RETVAL -eq 0  ] ; then 
+          touch /var/lock/subsys/elogd
+          echo_success
+        else
+          echo_failure
+        fi
+	echo
+	;;
+  stop)
+     echo ""
+      if [ -f /var/run/elogd.pid ] ; then
+        echo -n "Stoping elogd: "
+        /bin/kill `cat /var/run/elogd.pid`
+        rm -f /var/lock/subsys/elogd
+        echo_success
+        echo
+     fi
+     
+	;;
+  restart|reload)
+	$0 stop
+	$0 start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
+exit 0
+
