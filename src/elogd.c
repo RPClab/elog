@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.296  2004/03/15 20:07:34  midas
+   Conditional attributes get evaluated correctly during editing of existing entries
+
    Revision 1.295  2004/03/15 08:02:46  midas
    Fixed crashing elogd in threaded display
 
@@ -6413,17 +6416,26 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    /* evaluate conditional attributes */
    condition[0] = 0;
-   for (i = 0; i < lbs->n_attr; i++) {
-      if (strchr(attrib[i], '{') && strchr(attrib[i], '}')) {
-         strlcpy(str, strchr(attrib[i], '{') + 1, sizeof(str));
-         if (*strchr(str, '}'))
-            *strchr(str, '}') = 0;
+   for (index = 0; index < lbs->n_attr; index++) {
+      for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
 
-         if (condition[0] == 0)
-            strlcpy(condition, str, sizeof(condition));
-         else {
-            strlcat(condition, ",", sizeof(condition));
-            strlcat(condition, str, sizeof(condition));
+         if (strchr(attr_options[index][i], '{') && strchr(attr_options[index][i], '}')) {
+
+            strlcpy(str, attr_options[index][i], sizeof(str));
+            *strchr(str, '{') = 0;
+
+            if (strieq(str, attrib[index])) {
+               strlcpy(str, strchr(attr_options[index][i], '{') + 1, sizeof(str));
+               if (*strchr(str, '}'))
+                  *strchr(str, '}') = 0;
+
+               if (condition[0] == 0)
+                  strlcpy(condition, str, sizeof(condition));
+               else {
+                  strlcat(condition, ",", sizeof(condition));
+                  strlcat(condition, str, sizeof(condition));
+               }
+            }
          }
       }
    }
@@ -6950,11 +6962,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                         if (strieq(attr_options[index][i], attrib[index])
                             || strieq(str, attrib[index]))
-                           rsprintf("<option selected value=\"%s\">%s\n",
-                                    attr_options[index][i], str);
+                           rsprintf("<option selected value=\"%s\">%s\n", str, str);
                         else
-                           rsprintf("<option value=\"%s\">%s\n", attr_options[index][i],
-                                    str);
+                           rsprintf("<option value=\"%s\">%s\n", str, str);
                      }
 
                      rsprintf("</select>\n");
