@@ -1,3 +1,24 @@
+Version 2.5.8, released March 21st, 2005
+========================================
+
+- Fixed problem with MOptions and elog
+- Implemented option 'link display'
+- Show attributes as HTML if they contain '<b>' etc.
+- Fixed problem with multiple extendable options
+- Fixed bug with resubmit box and conditional attributes
+- Implemented email subscriptions for individual logbooks
+- Encode '&' correctly if present in 'Start page' option
+- Implemented support for thumbnail display
+- Implemented MXML for password file
+- Applied patch from Emiliano Gabrielli to use chkext()
+- Improved speed by pre-parsing configuration file
+- Applied patch from Heiko Scheit fixing problem with 'Show attributes' causing the 'Format ...' options to be ignored
+- Implemented $attachements subsitution in 'execute' command
+- Added web link to regular expressions
+- Test regular expressions for validity
+- Use 'attachmentframe' style
+- Fixed HTML code to pass validator
+
 Version 2.5.7, released Februar 14th, 2005
 ==========================================
 

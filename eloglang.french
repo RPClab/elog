@@ -334,7 +334,6 @@ Hide all = Cacher tout
 Show all = Montrer tout
 This logbook requires authentication = Ce registre nécessite une authentification
 Attachment file <b>"%s"</b> empty or not found = Fichier joint <b>"%s"</b> vide ou non trouvé
-Text fields may contain regular expressions = Les champs "texte" peuvent contenir des expressions régulières
 Case sensitive = Tient compte de la casse
 List = Liste
 From = De
@@ -344,3 +343,13 @@ down = bas
 stop = arrêter
 Entry = Entrée
 name may not contain blanks = le nom de doit pas contenir d'espace
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+regular expressions = 
+Text fields are treated as %s = 
+Subscribe to logbooks = 
+enable automatic email notifications = 
+Set all = 
+Set none = 

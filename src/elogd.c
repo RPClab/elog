@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.591  2005/03/21 16:16:52  ritt
+   Version 2.8.1-1
+
    Revision 1.590  2005/03/21 07:37:43  ritt
    Fixed warnings under cygwin
 
@@ -885,7 +888,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.7-1"
+#define VERSION "2.5.8-1"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -1258,33 +1261,33 @@ int run_service(void);
 #endif
 
 void show_error(char *error);
-BOOL enum_user_line(LOGBOOK *lbs, int n, char *user, int size);
-int get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name,
+BOOL enum_user_line(LOGBOOK * lbs, int n, char *user, int size);
+int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name,
                   char *email, BOOL email_notify[1000]);
 int strbreak(char *str, char list[][NAME_LENGTH], int size, char *brk);
-int execute_shell(LOGBOOK *lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], 
+int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH],
                   char att_file[MAX_ATTACHMENTS][256], char *sh_cmd);
 BOOL isparam(char *param);
 char *getparam(char *param);
-void write_logfile(LOGBOOK *lbs, const char *format, ...);
-BOOL check_login_user(LOGBOOK *lbs, char *user);
+void write_logfile(LOGBOOK * lbs, const char *format, ...);
+BOOL check_login_user(LOGBOOK * lbs, char *user);
 LBLIST get_logbook_hierarchy(void);
 BOOL is_logbook_in_group(LBLIST pgrp, char *logbook);
 BOOL is_admin_user(char *logbook, char *user);
 BOOL is_admin_user_global(char *user);
 void free_logbook_hierarchy(LBLIST root);
-void show_top_text(LOGBOOK *lbs);
-void show_bottom_text(LOGBOOK *lbs);
-int set_attributes(LOGBOOK *lbs, char attributes[][NAME_LENGTH], int n);
-void show_elog_list(LOGBOOK *lbs, INT past_n, INT last_n, INT page_n, char *info);
-int change_config_line(LOGBOOK *lbs, char *option, char *old_value, char *new_value);
+void show_top_text(LOGBOOK * lbs);
+void show_bottom_text(LOGBOOK * lbs);
+int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n);
+void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *info);
+int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_value);
 int read_password(char *pwd, int size);
 int getcfg(char *group, char *param, char *value, int vsize);
-int build_subst_list(LOGBOOK *lbs, char list[][NAME_LENGTH], char value[][NAME_LENGTH],
+int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_LENGTH],
                      char attrib[][NAME_LENGTH], BOOL format_date);
 void highlight_searchtext(regex_t * re_buf, char *src, char *dst, BOOL hidden);
 int parse_config_file(char *config_file);
-PMXML_NODE load_password_file(LOGBOOK *lbs);
+PMXML_NODE load_password_file(LOGBOOK * lbs);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -2394,7 +2397,7 @@ INT recv_string(int sock, char *buffer, INT buffer_size, INT millisec)
 
 /*-------------------------------------------------------------------*/
 
-INT sendmail(LOGBOOK *lbs, char *smtp_host, char *from, char *to,
+INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
              char *subject, char *text, BOOL email_to, char *url, char att_file[MAX_ATTACHMENTS][256])
 {
    struct sockaddr_in bind_addr;
@@ -2938,7 +2941,7 @@ typedef struct {
 
 typedef struct {
    char *section_name;
-   int  n_params;
+   int n_params;
    CONFIG_PARAM *config_param;
 } LB_CONFIG;
 
@@ -3062,7 +3065,7 @@ BOOL match_param(char *str, char *param, int conditional_only)
 
 int param_compare(const void *p1, const void *p2)
 {
-   return stricmp(((CONFIG_PARAM *)p1)->uparam, ((CONFIG_PARAM *)p2)->uparam);
+   return stricmp(((CONFIG_PARAM *) p1)->uparam, ((CONFIG_PARAM *) p2)->uparam);
 }
 
 /*------------------------------------------------------------------*/
@@ -3071,8 +3074,8 @@ void free_config()
 {
    int i, j;
 
-   for (i=0 ; i<n_lb_config ; i++) {
-      for (j=0 ; j<lb_config[i].n_params ; j++) {
+   for (i = 0; i < n_lb_config; i++) {
+      for (j = 0; j < lb_config[i].n_params; j++) {
          xfree(lb_config[i].config_param[j].param);
          xfree(lb_config[i].config_param[j].uparam);
          xfree(lb_config[i].config_param[j].value);
@@ -3107,7 +3110,7 @@ int parse_config_file(char *file_name)
    close(fh);
 
    /* release previously allocated memory */
-   if (lb_config) 
+   if (lb_config)
       free_config();
 
    /* search group */
@@ -3125,8 +3128,8 @@ int parse_config_file(char *file_name)
          if (!lb_config)
             lb_config = xmalloc(sizeof(LB_CONFIG));
          else
-            lb_config = xrealloc(lb_config, sizeof(LB_CONFIG)*(n_lb_config+1));
-         lb_config[n_lb_config].section_name = xmalloc(strlen(str)+1);
+            lb_config = xrealloc(lb_config, sizeof(LB_CONFIG) * (n_lb_config + 1));
+         lb_config[n_lb_config].section_name = xmalloc(strlen(str) + 1);
          lb_config[n_lb_config].n_params = 0;
          strcpy(lb_config[n_lb_config].section_name, str);
 
@@ -3148,13 +3151,14 @@ int parse_config_file(char *file_name)
                if (lb_config[n_lb_config].n_params == 0)
                   lb_config[n_lb_config].config_param = xmalloc(sizeof(CONFIG_PARAM));
                else
-                  lb_config[n_lb_config].config_param = xrealloc(lb_config[n_lb_config].config_param, 
-                     sizeof(CONFIG_PARAM)*(lb_config[n_lb_config].n_params+1));
-               lb_config[n_lb_config].config_param[i].param = xmalloc(strlen(str)+1);
-               lb_config[n_lb_config].config_param[i].uparam = xmalloc(strlen(str)+1);
-               
+                  lb_config[n_lb_config].config_param = xrealloc(lb_config[n_lb_config].config_param,
+                                                                 sizeof(CONFIG_PARAM) *
+                                                                 (lb_config[n_lb_config].n_params + 1));
+               lb_config[n_lb_config].config_param[i].param = xmalloc(strlen(str) + 1);
+               lb_config[n_lb_config].config_param[i].uparam = xmalloc(strlen(str) + 1);
+
                strcpy(lb_config[n_lb_config].config_param[i].param, str);
-               for (j=0 ; j<(int)strlen(str) ; j++)
+               for (j = 0; j < (int) strlen(str); j++)
                   lb_config[n_lb_config].config_param[i].uparam[j] = toupper(str[j]);
                lb_config[n_lb_config].config_param[i].uparam[j] = 0;
 
@@ -3168,7 +3172,7 @@ int parse_config_file(char *file_name)
                while (*pstr == ' ' || *pstr == '\t')
                   *pstr-- = 0;
 
-               lb_config[n_lb_config].config_param[i].value = xmalloc(strlen(str)+1);
+               lb_config[n_lb_config].config_param[i].value = xmalloc(strlen(str) + 1);
                strcpy(lb_config[n_lb_config].config_param[i].value, str);
 
                i++;
@@ -3183,7 +3187,8 @@ int parse_config_file(char *file_name)
          }
 
          /* sort parameter */
-         qsort(lb_config[n_lb_config].config_param, lb_config[n_lb_config].n_params, sizeof(CONFIG_PARAM), param_compare);
+         qsort(lb_config[n_lb_config].config_param, lb_config[n_lb_config].n_params, sizeof(CONFIG_PARAM),
+               param_compare);
 
          n_lb_config++;
          index++;
@@ -3214,14 +3219,14 @@ int getcfg_simple(char *group, char *param, char *value, int vsize, int conditio
    uparam[i] = 0;
    value[0] = 0;
 
-   for (i=0 ; i<n_lb_config ; i++)
+   for (i = 0; i < n_lb_config; i++)
       if (strieq(lb_config[i].section_name, group))
          break;
 
    if (i == n_lb_config)
       return 0;
 
-   for (j=0 ; j<lb_config[i].n_params ; j++)
+   for (j = 0; j < lb_config[i].n_params; j++)
       if (match_param(lb_config[i].config_param[j].uparam, uparam, conditional)) {
          status = strchr(lb_config[i].config_param[j].uparam, '{') ? 2 : 1;
          strlcpy(value, lb_config[i].config_param[j].value, vsize);
@@ -3236,7 +3241,7 @@ int getcfg_simple(char *group, char *param, char *value, int vsize, int conditio
 int enumgrp(int index, char *group)
 {
    if (index < n_lb_config) {
-      strcpy(group,lb_config[index].section_name);
+      strcpy(group, lb_config[index].section_name);
       return 1;
    }
 
@@ -3351,7 +3356,7 @@ int is_group(char *group)
 {
    int i;
 
-   for (i=0 ; i<n_lb_config ; i++)
+   for (i = 0; i < n_lb_config; i++)
       if (strieq(group, lb_config[i].section_name))
          return 1;
    return 0;
@@ -3363,7 +3368,7 @@ int enumcfg(char *group, char *param, int psize, char *value, int vsize, int ind
 {
    int i;
 
-   for (i=0 ; i<n_lb_config ; i++)
+   for (i = 0; i < n_lb_config; i++)
       if (strieq(group, lb_config[i].section_name)) {
 
          if (index < lb_config[i].n_params) {
@@ -3623,7 +3628,7 @@ void check_config()
 
 /*-------------------------------------------------------------------*/
 
-void retrieve_email_from(LOGBOOK *lbs, char *ret, char attrib[MAX_N_ATTR][NAME_LENGTH])
+void retrieve_email_from(LOGBOOK * lbs, char *ret, char attrib[MAX_N_ATTR][NAME_LENGTH])
 {
    char str[256], *p, login_name[256];
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
@@ -3886,7 +3891,7 @@ int eli_compare(const void *e1, const void *e2)
 
 /*------------------------------------------------------------------*/
 
-int el_build_index(LOGBOOK *lbs, BOOL rebuild)
+int el_build_index(LOGBOOK * lbs, BOOL rebuild)
 /* scan all ??????a.log files and build an index table in eli[] */
 {
    char *file_list, str[256], date[256], dir[256], file_name[MAX_PATH_LENGTH], *buffer,
@@ -4217,7 +4222,7 @@ int el_index_logbooks()
 
 /*------------------------------------------------------------------*/
 
-int el_search_message(LOGBOOK *lbs, int mode, int message_id, BOOL head_only)
+int el_search_message(LOGBOOK * lbs, int mode, int message_id, BOOL head_only)
 /********************************************************************\
 
  Routine: el_search_message
@@ -4313,7 +4318,7 @@ int el_search_message(LOGBOOK *lbs, int mode, int message_id, BOOL head_only)
 
 /*------------------------------------------------------------------*/
 
-INT el_retrieve(LOGBOOK *lbs,
+INT el_retrieve(LOGBOOK * lbs,
                 int message_id, char *date,
                 char attr_list[MAX_N_ATTR][NAME_LENGTH],
                 char attrib[MAX_N_ATTR][NAME_LENGTH], int n_attr,
@@ -4507,7 +4512,7 @@ INT el_retrieve(LOGBOOK *lbs,
 
 /*------------------------------------------------------------------*/
 
-int el_submit_attachment(LOGBOOK *lbs, char *afilename, char *buffer, int buffer_size, char *full_name)
+int el_submit_attachment(LOGBOOK * lbs, char *afilename, char *buffer, int buffer_size, char *full_name)
 {
    char file_name[MAX_PATH_LENGTH], ext_file_name[MAX_PATH_LENGTH + 100], str[MAX_PATH_LENGTH], *p;
    int fh;
@@ -4564,7 +4569,7 @@ int el_submit_attachment(LOGBOOK *lbs, char *afilename, char *buffer, int buffer
 
 /*------------------------------------------------------------------*/
 
-void el_delete_attachment(LOGBOOK *lbs, char *file_name)
+void el_delete_attachment(LOGBOOK * lbs, char *file_name)
 {
    char str[MAX_PATH_LENGTH];
 
@@ -4577,7 +4582,7 @@ void el_delete_attachment(LOGBOOK *lbs, char *file_name)
 
 /*------------------------------------------------------------------*/
 
-INT el_retrieve_attachment(LOGBOOK *lbs, int message_id, int n, char name[MAX_PATH_LENGTH])
+INT el_retrieve_attachment(LOGBOOK * lbs, int message_id, int n, char name[MAX_PATH_LENGTH])
 {
    int i, index, size, fh;
    char file_name[256], *p;
@@ -4652,7 +4657,7 @@ INT el_retrieve_attachment(LOGBOOK *lbs, int message_id, int n, char name[MAX_PA
 
 /*------------------------------------------------------------------*/
 
-int el_submit(LOGBOOK *lbs, int message_id, BOOL bedit,
+int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
               char *date,
               char attr_name[MAX_N_ATTR][NAME_LENGTH],
               char attr_value[MAX_N_ATTR][NAME_LENGTH],
@@ -4930,7 +4935,7 @@ int el_submit(LOGBOOK *lbs, int message_id, BOOL bedit,
 
 /*------------------------------------------------------------------*/
 
-void remove_reference(LOGBOOK *lbs, int message_id, int remove_id, BOOL reply_to_flag)
+void remove_reference(LOGBOOK * lbs, int message_id, int remove_id, BOOL reply_to_flag)
 {
    char date[80], attr[MAX_N_ATTR][NAME_LENGTH], enc[80], in_reply_to[80],
        reply_to[MAX_REPLY_TO * 10], att[MAX_ATTACHMENTS][256], lock[256], *p, *ps, *message;
@@ -4977,7 +4982,7 @@ void remove_reference(LOGBOOK *lbs, int message_id, int remove_id, BOOL reply_to
 
 /*------------------------------------------------------------------*/
 
-INT el_delete_message(LOGBOOK *lbs, int message_id,
+INT el_delete_message(LOGBOOK * lbs, int message_id,
                       BOOL delete_attachments,
                       char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
                       BOOL delete_bw_ref, BOOL delete_reply_to)
@@ -5176,7 +5181,7 @@ INT el_delete_message(LOGBOOK *lbs, int message_id,
 
 /*------------------------------------------------------------------*/
 
-int el_correct_links(LOGBOOK *lbs, int old_id, int new_id)
+int el_correct_links(LOGBOOK * lbs, int old_id, int new_id)
 /* If a message gets resubmitted, the links to that message are wrong.
 This routine corrects that. */
 {
@@ -5252,7 +5257,7 @@ This routine corrects that. */
 
 /*------------------------------------------------------------------*/
 
-int el_move_message_thread(LOGBOOK *lbs, int message_id)
+int el_move_message_thread(LOGBOOK * lbs, int message_id)
 {
    int i, n, size, new_id;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], *text,
@@ -5293,7 +5298,7 @@ int el_move_message_thread(LOGBOOK *lbs, int message_id)
 
 /*------------------------------------------------------------------*/
 
-int el_move_message(LOGBOOK *lbs, int old_id, int new_id)
+int el_move_message(LOGBOOK * lbs, int old_id, int new_id)
 {
    int status, size;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], *text, in_reply_to[80],
@@ -5327,7 +5332,7 @@ int el_move_message(LOGBOOK *lbs, int old_id, int new_id)
 
 /*------------------------------------------------------------------*/
 
-int el_lock_message(LOGBOOK *lbs, int message_id, char *user)
+int el_lock_message(LOGBOOK * lbs, int message_id, char *user)
 /* lock message for editing */
 {
    int size;
@@ -5349,7 +5354,7 @@ int el_lock_message(LOGBOOK *lbs, int message_id, char *user)
 
 /*------------------------------------------------------------------*/
 
-void write_logfile(LOGBOOK *lbs, const char *format, ...)
+void write_logfile(LOGBOOK * lbs, const char *format, ...)
 {
    char file_name[2000];
    va_list argptr;
@@ -5452,7 +5457,7 @@ int is_html(char *s)
    }
 
    if (strstr(str, "<BR>") || strstr(str, "<HR>") || strstr(str, "<B>") || strstr(str, "<I>") ||
-       strstr(str, "<P>")){
+       strstr(str, "<P>")) {
       xfree(str);
       return TRUE;
    }
@@ -5979,7 +5984,7 @@ void extract_host(char *str)
 
 /*------------------------------------------------------------------*/
 
-void set_location(LOGBOOK *lbs, char *rel_path)
+void set_location(LOGBOOK * lbs, char *rel_path)
 {
    char str[NAME_LENGTH];
 
@@ -6047,7 +6052,7 @@ void set_location(LOGBOOK *lbs, char *rel_path)
 
 /*------------------------------------------------------------------*/
 
-void set_redir(LOGBOOK *lbs, char *redir)
+void set_redir(LOGBOOK * lbs, char *redir)
 {
    char str[NAME_LENGTH];
 
@@ -6068,7 +6073,7 @@ void set_redir(LOGBOOK *lbs, char *redir)
 
 /*------------------------------------------------------------------*/
 
-void set_cookie(LOGBOOK *lbs, char *name, char *value, BOOL global, char *expiration)
+void set_cookie(LOGBOOK * lbs, char *name, char *value, BOOL global, char *expiration)
 {
    char lb_name[256], str[NAME_LENGTH], format[80];
    double exp;
@@ -6126,7 +6131,7 @@ void set_cookie(LOGBOOK *lbs, char *name, char *value, BOOL global, char *expira
 
 /*------------------------------------------------------------------*/
 
-void redirect(LOGBOOK *lbs, char *rel_path)
+void redirect(LOGBOOK * lbs, char *rel_path)
 {
    /* redirect */
    rsprintf("HTTP/1.1 302 Found\r\n");
@@ -6372,7 +6377,7 @@ void show_plain_header(int size, char *file_name)
    rsprintf("\r\n");
 }
 
-void show_html_header(LOGBOOK *lbs, BOOL expires, char *title, BOOL close_head, BOOL rss_feed)
+void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head, BOOL rss_feed)
 {
    char css[256], str[256];
 
@@ -6408,7 +6413,7 @@ void show_html_header(LOGBOOK *lbs, BOOL expires, char *title, BOOL close_head, 
       rsprintf("</head>\n");
 }
 
-void show_standard_header(LOGBOOK *lbs, BOOL expires, char *title, char *path, BOOL rss_feed)
+void show_standard_header(LOGBOOK * lbs, BOOL expires, char *title, char *path, BOOL rss_feed)
 {
    show_html_header(lbs, expires, title, TRUE, rss_feed);
 
@@ -6424,7 +6429,7 @@ void show_standard_header(LOGBOOK *lbs, BOOL expires, char *title, char *path, B
 
 /*------------------------------------------------------------------*/
 
-void show_upgrade_page(LOGBOOK *lbs)
+void show_upgrade_page(LOGBOOK * lbs)
 {
    char str[1000];
 
@@ -6648,7 +6653,7 @@ BOOL is_logbook_in_group(LBLIST pgrp, char *logbook)
 
 /*------------------------------------------------------------------*/
 
-void change_logbook_in_group(LOGBOOK *lbs, char *new_name)
+void change_logbook_in_group(LOGBOOK * lbs, char *new_name)
 {
    int i, j, n, flag;
    char str[1000], grpname[256], grpmembers[1000];
@@ -6684,7 +6689,7 @@ void change_logbook_in_group(LOGBOOK *lbs, char *new_name)
 
 /*------------------------------------------------------------------*/
 
-void add_logbook_to_group(LOGBOOK *lbs, char *new_name)
+void add_logbook_to_group(LOGBOOK * lbs, char *new_name)
 {
    int i, j, n, flag;
    char str[1000], grpname[256], grpmembers[1000];
@@ -6861,7 +6866,7 @@ void show_standard_title(char *logbook, char *text, int printable)
 
 /*------------------------------------------------------------------*/
 
-void show_top_text(LOGBOOK *lbs)
+void show_top_text(LOGBOOK * lbs)
 {
    char str[NAME_LENGTH];
    int size;
@@ -6897,7 +6902,7 @@ void show_top_text(LOGBOOK *lbs)
 
 /*------------------------------------------------------------------*/
 
-void show_bottom_text(LOGBOOK *lbs)
+void show_bottom_text(LOGBOOK * lbs)
 {
    char str[NAME_LENGTH];
    int size;
@@ -6968,7 +6973,7 @@ void show_error(char *error)
 
 /*------------------------------------------------------------------*/
 
-void set_login_cookies(LOGBOOK *lbs, char *user, char *enc_pwd)
+void set_login_cookies(LOGBOOK * lbs, char *user, char *enc_pwd)
 {
    char str[256], lb_name[256], exp[80];
    BOOL global;
@@ -7218,7 +7223,7 @@ void strencode2(char *b, char *text)
 
 /*------------------------------------------------------------------*/
 
-int build_subst_list(LOGBOOK *lbs, char list[][NAME_LENGTH], char value[][NAME_LENGTH],
+int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_LENGTH],
                      char attrib[][NAME_LENGTH], BOOL format_date)
 {
    int i;
@@ -7307,7 +7312,7 @@ void add_subst_list(char list[][NAME_LENGTH], char value[][NAME_LENGTH], char *i
    strcpy(value[(*i)++], str);
 }
 
-void add_subst_time(LOGBOOK *lbs,
+void add_subst_time(LOGBOOK * lbs,
                     char list[][NAME_LENGTH], char value[][NAME_LENGTH], char *item, char *date, int *i)
 {
    char format[80], str[256];
@@ -7325,7 +7330,7 @@ void add_subst_time(LOGBOOK *lbs,
 
 /*------------------------------------------------------------------*/
 
-BOOL get_password_file(LOGBOOK *lbs, char *file_name, int size)
+BOOL get_password_file(LOGBOOK * lbs, char *file_name, int size)
 {
    char str[256];
 
@@ -7346,7 +7351,7 @@ BOOL get_password_file(LOGBOOK *lbs, char *file_name, int size)
 
 /*------------------------------------------------------------------*/
 
-BOOL change_pwd(LOGBOOK *lbs, char *user, char *pwd)
+BOOL change_pwd(LOGBOOK * lbs, char *user, char *pwd)
 {
    char str[256], file_name[256];
    PMXML_NODE node;
@@ -7369,7 +7374,7 @@ BOOL change_pwd(LOGBOOK *lbs, char *user, char *pwd)
 
 /*------------------------------------------------------------------*/
 
-void show_change_pwd_page(LOGBOOK *lbs)
+void show_change_pwd_page(LOGBOOK * lbs)
 {
    char str[256], old_pwd[32], new_pwd[32], new_pwd2[32], act_pwd[32], user[80];
    int wrong_pwd;
@@ -7470,7 +7475,7 @@ void show_change_pwd_page(LOGBOOK *lbs)
 
 /*------------------------------------------------------------------*/
 
-int get_last_index(LOGBOOK *lbs, int index)
+int get_last_index(LOGBOOK * lbs, int index)
 /* return value of specific attribute of last entry, can be used to
 auto-increment tags */
 {
@@ -7497,7 +7502,7 @@ auto-increment tags */
 
 /*------------------------------------------------------------------*/
 
-BOOL is_author(LOGBOOK *lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], char *owner)
+BOOL is_author(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], char *owner)
 {
    char str[1000], preset[1000];
    int i;
@@ -7665,7 +7670,7 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
 
 /*------------------------------------------------------------------*/
 
-void show_edit_form(LOGBOOK *lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload, BOOL breedit)
+void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload, BOOL breedit)
 {
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
        format_flags[MAX_N_ATTR], year, month, day, n_attr, n_disp_attr, attr_index[MAX_N_ATTR];
@@ -8971,7 +8976,7 @@ void show_edit_form(LOGBOOK *lbs, int message_id, BOOL breply, BOOL bedit, BOOL 
 
 /*------------------------------------------------------------------*/
 
-void show_find_form(LOGBOOK *lbs)
+void show_find_form(LOGBOOK * lbs)
 {
    int i, j;
    char str[NAME_LENGTH], mode[NAME_LENGTH], comment[NAME_LENGTH], option[NAME_LENGTH];
@@ -9316,7 +9321,7 @@ void load_config_section(char *section, char **buffer, char *error)
 
 /*------------------------------------------------------------------*/
 
-void show_admin_page(LOGBOOK *lbs, char *top_group)
+void show_admin_page(LOGBOOK * lbs, char *top_group)
 {
    int rows, cols;
    char *buffer, error_str[256];
@@ -9565,7 +9570,7 @@ int save_admin_config(char *section, char *buffer, char *error)
 
 /*------------------------------------------------------------------*/
 
-int change_config_line(LOGBOOK *lbs, char *option, char *old_value, char *new_value)
+int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_value)
 {
    int fh, i, j, n, length, bufsize;
    char str[NAME_LENGTH], *buf, *buf2, *p1, *p2, *p3;
@@ -9678,7 +9683,7 @@ int change_config_line(LOGBOOK *lbs, char *option, char *old_value, char *new_va
 
 /*------------------------------------------------------------------*/
 
-int delete_logbook(LOGBOOK *lbs, char *error)
+int delete_logbook(LOGBOOK * lbs, char *error)
 {
    int fh, i, length;
    char *buf, *p1, *p2;
@@ -9737,7 +9742,7 @@ int delete_logbook(LOGBOOK *lbs, char *error)
 
 /*------------------------------------------------------------------*/
 
-int rename_logbook(LOGBOOK *lbs, char *new_name)
+int rename_logbook(LOGBOOK * lbs, char *new_name)
 {
    int fh, i, length, bufsize;
    char *buf, *buf2, *p1, *p2;
@@ -9955,12 +9960,12 @@ int save_config(char *buffer, char *error)
 
 /*------------------------------------------------------------------*/
 
-int save_user_config(LOGBOOK *lbs, char *user, BOOL new_user, BOOL activate)
+int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 {
    char file_name[256], str[256], *pl, new_pwd[80], new_pwd2[80];
    char smtp_host[256], email_addr[256], mail_from[256], subject[256], mail_text[2000];
    char admin_user[80], enc_pwd[80], url[256];
-   int  i, self_register;
+   int i, self_register;
    PMXML_NODE node, subnode;
 
    /* check for full name */
@@ -10027,7 +10032,7 @@ int save_user_config(LOGBOOK *lbs, char *user, BOOL new_user, BOOL activate)
             mxml_add_node(node, "password", getparam("encpwd"));
          else
             mxml_add_node(node, "password", new_pwd);
-         
+
       } else {
          /* replace record */
          mxml_replace_subvalue(node, "name", getparam("new_user_name"));
@@ -10041,7 +10046,7 @@ int save_user_config(LOGBOOK *lbs, char *user, BOOL new_user, BOOL activate)
          mxml_delete_node(subnode);
       mxml_add_node(node, "email_notify", NULL);
       subnode = mxml_find_node(node, "email_notify");
-      for (i=0 ; lb_list[i].name[0] ; i++) {
+      for (i = 0; lb_list[i].name[0]; i++) {
          sprintf(str, "sub_lb%d", i);
          if (getparam(str) && atoi(getparam(str)))
             mxml_add_node(subnode, "logbook", lb_list[i].name);
@@ -10181,7 +10186,7 @@ int save_user_config(LOGBOOK *lbs, char *user, BOOL new_user, BOOL activate)
 
 /*------------------------------------------------------------------*/
 
-int remove_user(LOGBOOK *lbs, char *user)
+int remove_user(LOGBOOK * lbs, char *user)
 {
    char file_name[256], str[256];
    PMXML_NODE node;
@@ -10211,7 +10216,7 @@ int ascii_compare(const void *s1, const void *s2)
 
 /*------------------------------------------------------------------*/
 
-void show_config_page(LOGBOOK *lbs)
+void show_config_page(LOGBOOK * lbs)
 {
    char str[256], user[80], password[80], full_name[80], user_email[80], logbook[256];
    char **user_list;
@@ -10309,14 +10314,12 @@ void show_config_page(LOGBOOK *lbs)
    rsprintf("<td><input type=text size=40 name=new_full_name value=\"%s\"></tr>\n", full_name);
 
    rsprintf("<tr><td nowrap width=\"15%%\">Email:</td>\n");
-   rsprintf
-       ("<td><input type=text size=40 name=new_user_email value=\"%s\"></td></tr>\n",
-        user_email);
+   rsprintf("<td><input type=text size=40 name=new_user_email value=\"%s\"></td></tr>\n", user_email);
 
    rsprintf("<tr><td width=\"15%%\">%s:\n", loc("Subscribe to logbooks"));
 
-   rsprintf("<br><span class=\"selcomment\"><b>(%s)</b></span>\n",  
-      loc("enable automatic email notifications"));
+   rsprintf("<br><span class=\"selcomment\"><b>(%s)</b></span>\n",
+            loc("enable automatic email notifications"));
 
    rsprintf("<td>\n");
 
@@ -10382,7 +10385,7 @@ void show_config_page(LOGBOOK *lbs)
 
 /*------------------------------------------------------------------*/
 
-void show_forgot_pwd_page(LOGBOOK *lbs)
+void show_forgot_pwd_page(LOGBOOK * lbs)
 {
    int i;
    char str[1000], login_name[256], full_name[256], user_email[256],
@@ -10528,7 +10531,7 @@ void show_forgot_pwd_page(LOGBOOK *lbs)
 
 /*------------------------------------------------------------------*/
 
-void show_new_user_page(LOGBOOK *lbs)
+void show_new_user_page(LOGBOOK * lbs)
 {
    int i;
 
@@ -10577,8 +10580,8 @@ void show_new_user_page(LOGBOOK *lbs)
 
    rsprintf("<tr><td nowrap>%s:\n", loc("Subscribe to logbooks"));
 
-   rsprintf("<br><span class=\"selcomment\"><b>(%s)</b></span>\n",  
-      loc("enable automatic email notifications"));
+   rsprintf("<br><span class=\"selcomment\"><b>(%s)</b></span>\n",
+            loc("enable automatic email notifications"));
 
    rsprintf("<td>\n");
 
@@ -10634,7 +10637,7 @@ void show_new_user_page(LOGBOOK *lbs)
 
 /*------------------------------------------------------------------*/
 
-void show_elog_delete(LOGBOOK *lbs, int message_id)
+void show_elog_delete(LOGBOOK * lbs, int message_id)
 {
    int i, status, reply, next;
    char str[256], in_reply_to[80], reply_to[MAX_REPLY_TO * 10], owner[256];
@@ -10791,7 +10794,7 @@ void show_elog_delete(LOGBOOK *lbs, int message_id)
 
 /*------------------------------------------------------------------*/
 
-void show_logbook_delete(LOGBOOK *lbs)
+void show_logbook_delete(LOGBOOK * lbs)
 {
    char str[256];
 
@@ -10844,7 +10847,7 @@ void show_logbook_delete(LOGBOOK *lbs)
 
 /*------------------------------------------------------------------*/
 
-void show_logbook_rename(LOGBOOK *lbs)
+void show_logbook_rename(LOGBOOK * lbs)
 {
    int i;
    char str[256], lbn[256];
@@ -10895,7 +10898,7 @@ void show_logbook_rename(LOGBOOK *lbs)
 
 /*------------------------------------------------------------------*/
 
-void show_logbook_new(LOGBOOK *lbs)
+void show_logbook_new(LOGBOOK * lbs)
 {
    char str[256], lbn[256];
    int i;
@@ -10957,7 +10960,7 @@ void show_logbook_new(LOGBOOK *lbs)
 
 /*------------------------------------------------------------------*/
 
-int show_download_page(LOGBOOK *lbs, char *path)
+int show_download_page(LOGBOOK * lbs, char *path)
 {
    char file_name[256], error_str[256];
    int index, message_id, fh, i, size, delta;
@@ -11085,7 +11088,7 @@ int download_config()
 
 /*------------------------------------------------------------------*/
 
-void show_import_page(LOGBOOK *lbs)
+void show_import_page(LOGBOOK * lbs)
 {
    char str[256], str2[256];
 
@@ -11189,7 +11192,7 @@ void show_import_page(LOGBOOK *lbs)
 
 /*------------------------------------------------------------------*/
 
-void csv_import(LOGBOOK *lbs, char *csv, char *csvfile)
+void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
 {
    char *list, *line, *p, str[256], date[80], sep[80];
    int i, j, n, n_attr, iline, n_imported, textcol;
@@ -11415,7 +11418,7 @@ void csv_import(LOGBOOK *lbs, char *csv, char *csvfile)
 
 /*------------------------------------------------------------------*/
 
-int show_md5_page(LOGBOOK *lbs)
+int show_md5_page(LOGBOOK * lbs)
 {
    int i, j;
    char *buffer, error_str[256];
@@ -11461,7 +11464,7 @@ int show_md5_page(LOGBOOK *lbs)
 
 /*------------------------------------------------------------------*/
 
-void combine_url(LOGBOOK *lbs, char *url, char *param, char *result, int size)
+void combine_url(LOGBOOK * lbs, char *url, char *param, char *result, int size)
 {
 
    if (strstr(url, "http://"))
@@ -11489,7 +11492,7 @@ void combine_url(LOGBOOK *lbs, char *url, char *param, char *result, int size)
 
 /*------------------------------------------------------------------*/
 
-int retrieve_remote_md5(LOGBOOK *lbs, char *host, MD5_INDEX ** md5_index, char *error_str)
+int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index, char *error_str)
 {
    int i, n, id, x, version;
    char *text, *p, url[256], str[1000];
@@ -11637,7 +11640,7 @@ INT send_tcp(int sock, char *buffer, unsigned int buffer_size, INT flags)
 
 /*------------------------------------------------------------------*/
 
-int submit_message(LOGBOOK *lbs, char *host, int message_id, char *error_str)
+int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 {
    int size, i, n, status, fh, port, sock, content_length, header_length, remote_id, n_attr;
    char str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
@@ -11898,7 +11901,7 @@ int submit_message(LOGBOOK *lbs, char *host, int message_id, char *error_str)
 
 /*------------------------------------------------------------------*/
 
-int receive_message(LOGBOOK *lbs, char *url, int message_id, char *error_str, BOOL bnew)
+int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, BOOL bnew)
 {
    int i, status, size, n_attr;
    char str[NAME_LENGTH], str2[NAME_LENGTH], *p, *p2, *message, date[80],
@@ -12028,7 +12031,7 @@ int receive_message(LOGBOOK *lbs, char *url, int message_id, char *error_str, BO
 
 /*------------------------------------------------------------------*/
 
-void submit_config(LOGBOOK *lbs, char *server, char *buffer, char *error_str)
+void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
 {
    int i, n, status, port, sock, content_length, header_length;
    char str[256];
@@ -12171,7 +12174,7 @@ void submit_config(LOGBOOK *lbs, char *server, char *buffer, char *error_str)
 
 /*------------------------------------------------------------------*/
 
-void receive_config(LOGBOOK *lbs, char *server, char *error_str)
+void receive_config(LOGBOOK * lbs, char *server, char *error_str)
 {
    char str[256], pwd[256], *buffer, *p;
    int status, version;
@@ -12361,7 +12364,7 @@ int adjust_config(char *url)
 
 /*------------------------------------------------------------------*/
 
-void receive_pwdfile(LOGBOOK *lbs, char *server, char *error_str)
+void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
 {
    char str[256], pwd[256], url[256], *buffer, *buf, *p;
    int i, status, version, fh;
@@ -12493,7 +12496,7 @@ void receive_pwdfile(LOGBOOK *lbs, char *server, char *error_str)
 
 /*------------------------------------------------------------------*/
 
-int save_md5(LOGBOOK *lbs, char *server, MD5_INDEX * md5_index, int n)
+int save_md5(LOGBOOK * lbs, char *server, MD5_INDEX * md5_index, int n)
 {
    char str[256], url[256], file_name[256];
    int i, j;
@@ -12536,7 +12539,7 @@ int save_md5(LOGBOOK *lbs, char *server, MD5_INDEX * md5_index, int n)
 
 /*------------------------------------------------------------------*/
 
-int load_md5(LOGBOOK *lbs, char *server, MD5_INDEX ** md5_index)
+int load_md5(LOGBOOK * lbs, char *server, MD5_INDEX ** md5_index)
 {
    char str[256], url[256], file_name[256], *p;
    int i, j, x;
@@ -12615,7 +12618,7 @@ BOOL equal_md5(unsigned char m1[16], unsigned char m2[16])
 #define SYNC_CRON   2
 #define SYNC_CLONE  3
 
-void mprint(LOGBOOK *lbs, int mode, char *str)
+void mprint(LOGBOOK * lbs, int mode, char *str)
 {
    char line[1000];
 
@@ -12630,7 +12633,7 @@ void mprint(LOGBOOK *lbs, int mode, char *str)
       eputs(str);
 }
 
-void synchronize_logbook(LOGBOOK *lbs, int mode, BOOL sync_all)
+void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 {
    int index, i, j, i_msg, i_remote, i_cache, n_remote, n_cache, nserver,
        remote_id, exist_remote, exist_cache, message_id, max_id;
@@ -13336,7 +13339,7 @@ void synchronize_logbook(LOGBOOK *lbs, int mode, BOOL sync_all)
 
 /*------------------------------------------------------------------*/
 
-void synchronize(LOGBOOK *lbs, int mode)
+void synchronize(LOGBOOK * lbs, int mode)
 {
    int i;
    char str[256], pwd[256];
@@ -13385,7 +13388,7 @@ void synchronize(LOGBOOK *lbs, int mode)
 
 /*------------------------------------------------------------------*/
 
-void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
+void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   int expand, int level, BOOL printable, int n_line,
                   int show_attachments, char *date, char *in_reply_to,
                   char *reply_to, int n_attr_disp,
@@ -13578,7 +13581,8 @@ void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
                   rsprintf(", %s", lbs->name);
             } else {
                if (disp_attr_link == NULL || disp_attr_link[index])
-                  rsprintf("<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", sclass, nowrap, ref, lbs->name);
+                  rsprintf("<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", sclass, nowrap, ref,
+                           lbs->name);
                else
                   rsprintf("<td class=\"%s\" %s>%s</td>\n", sclass, nowrap, lbs->name);
             }
@@ -13861,22 +13865,22 @@ void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
             if (!show_attachments) {
                rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;&nbsp;&nbsp; ", ref, attachment[index] + 14);
             } else {
-               
+
                if (file_exist(thumb_name)) {
                   rsprintf
-                     ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
-                     colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
+                      ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
+                       colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
                   if (show_attachments) {
                      rsprintf("<tr><td colspan=%d class=\"attachmentframe\">\n", colspan);
                      rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
-                     rsprintf("<img src=\"%s.thumb\" alt=\"%s\"></a>\n", ref, attachment[index]+14);
+                     rsprintf("<img src=\"%s.thumb\" alt=\"%s\"></a>\n", ref, attachment[index] + 14);
                      rsprintf("</td></tr>\n\n");
                   }
                } else {
                   if (is_image(attachment[index])) {
                      rsprintf
-                        ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
-                        colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
+                         ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
+                          colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
                      if (show_attachments) {
                         rsprintf("</td></tr><tr>");
                         rsprintf("<td colspan=%d class=\"attachmentframe\">", colspan);
@@ -13885,16 +13889,16 @@ void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
                      }
                   } else {
                      rsprintf
-                        ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
-                        colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
+                         ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
+                          colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
 
                      strlcpy(file_name, lbs->data_dir, sizeof(file_name));
                      strlcat(file_name, attachment[index], sizeof(file_name));
 
                      if (is_ascii(file_name) &&
-                        !chkext(attachment[index], ".PS") &&
-                        !chkext(attachment[index], ".PDF") &&
-                        !chkext(attachment[index], ".EPS") && show_attachments) {
+                         !chkext(attachment[index], ".PS") &&
+                         !chkext(attachment[index], ".PDF") &&
+                         !chkext(attachment[index], ".EPS") && show_attachments) {
 
                         /* display attachment */
                         rsprintf("</td></tr><tr><td colspan=%d class=\"messagelist\"><pre>", colspan);
@@ -13931,7 +13935,7 @@ void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
 
 /*------------------------------------------------------------------*/
 
-void display_reply(LOGBOOK *lbs, int message_id, int printable,
+void display_reply(LOGBOOK * lbs, int message_id, int printable,
                    int expand, int n_line, int n_attr_disp,
                    char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], BOOL show_text,
                    int level, int highlight, regex_t * re_buf)
@@ -14092,7 +14096,7 @@ void subst_param(char *str, int size, char *param, char *value)
 
 /*------------------------------------------------------------------*/
 
-BOOL is_user_allowed(LOGBOOK *lbs, char *command)
+BOOL is_user_allowed(LOGBOOK * lbs, char *command)
 {
    char str[1000], users[2000];
    char list[MAX_N_LIST][NAME_LENGTH];
@@ -14138,7 +14142,7 @@ BOOL is_user_allowed(LOGBOOK *lbs, char *command)
 
 /*------------------------------------------------------------------*/
 
-BOOL is_command_allowed(LOGBOOK *lbs, char *command)
+BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 {
    char str[1000], menu_str[1000], other_str[1000];
    char menu_item[MAX_N_LIST][NAME_LENGTH];
@@ -14334,7 +14338,7 @@ void build_ref(char *ref, int size, char *mode, char *expand)
 
 /*------------------------------------------------------------------*/
 
-void show_page_filters(LOGBOOK *lbs, int n_msg, int page_n, BOOL mode_commands, BOOL threaded)
+void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands, BOOL threaded)
 {
    int cur_exp, n, i, j, index;
    char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH], list[MAX_N_LIST][NAME_LENGTH], option[NAME_LENGTH];
@@ -14596,7 +14600,7 @@ void show_page_navigation(int n_msg, int page_n, int n_page)
 
 /*------------------------------------------------------------------*/
 
-void show_select_navigation(LOGBOOK *lbs)
+void show_select_navigation(LOGBOOK * lbs)
 {
    int i, n_log;
    char str[NAME_LENGTH];
@@ -14764,7 +14768,7 @@ time_t retrieve_date(char *index, BOOL bstart)
 
 /*------------------------------------------------------------------*/
 
-void show_rss_feed(LOGBOOK *lbs)
+void show_rss_feed(LOGBOOK * lbs)
 {
    int i, n, size, index, status, message_id, offset;
    char str[256], charset[256], url[256], attrib[MAX_N_ATTR][NAME_LENGTH], date[80], *text, title[2000],
@@ -14958,7 +14962,7 @@ void highlight_searchtext(regex_t * re_buf, char *src, char *dst, int hidden)
 
 /*------------------------------------------------------------------*/
 
-void show_elog_list(LOGBOOK *lbs, INT past_n, INT last_n, INT page_n, char *info)
+void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *info)
 {
    int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line, flags;
    int current_year, current_month, current_day, printable, n_logbook,
@@ -14972,7 +14976,7 @@ void show_elog_list(LOGBOOK *lbs, INT past_n, INT last_n, INT page_n, char *info
        sort_attr[MAX_N_ATTR + 4][NAME_LENGTH];
    char *p, *pt, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
    BOOL show_attachments, threaded, csv, xml, mode_commands, expand, filtering, disp_filter,
-       show_text, searched, found, disp_attr_link[MAX_N_ATTR+4];
+       show_text, searched, found, disp_attr_link[MAX_N_ATTR + 4];
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2;
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
@@ -16093,7 +16097,7 @@ void show_elog_list(LOGBOOK *lbs, INT past_n, INT last_n, INT page_n, char *info
       if (list[0]) {
          n = strbreak(list, (char (*)[NAME_LENGTH]) gattr, MAX_N_ATTR, ",");
 
-         for (i=0 ; i<n_attr_disp ; i++) {
+         for (i = 0; i < n_attr_disp; i++) {
             for (j = 0; j < n; j++)
                if (strieq(gattr + j * NAME_LENGTH, disp_attr[i]))
                   break;
@@ -16104,9 +16108,9 @@ void show_elog_list(LOGBOOK *lbs, INT past_n, INT last_n, INT page_n, char *info
                disp_attr_link[i] = FALSE;
          }
       } else
-         for (i=0 ; i<n_attr_disp ; i++)
+         for (i = 0; i < n_attr_disp; i++)
             disp_attr_link[i] = TRUE;
-              
+
       if (threaded) {
       } else {
          rsprintf("<tr>\n");
@@ -16334,7 +16338,7 @@ void show_elog_list(LOGBOOK *lbs, INT past_n, INT last_n, INT page_n, char *info
 
 /*------------------------------------------------------------------*/
 
-void show_elog_thread(LOGBOOK *lbs, int message_id)
+void show_elog_thread(LOGBOOK * lbs, int message_id)
 {
    int i, size, status, in_reply_to_id, head_id, n_display, n_attr_disp;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], *text, in_reply_to[80],
@@ -16410,7 +16414,7 @@ void show_elog_thread(LOGBOOK *lbs, int message_id)
 
 /*------------------------------------------------------------------*/
 
-int compose_email(LOGBOOK *lbs, char *mail_to, int message_id,
+int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
                   char attrib[MAX_N_ATTR][NAME_LENGTH], char *mail_param, int old_mail,
                   char att_file[MAX_ATTACHMENTS][256])
 {
@@ -16593,7 +16597,7 @@ int compose_email(LOGBOOK *lbs, char *mail_to, int message_id,
 
 /*------------------------------------------------------------------*/
 
-int execute_shell(LOGBOOK *lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], 
+int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH],
                   char att_file[MAX_ATTACHMENTS][256], char *sh_cmd)
 {
    int i;
@@ -16611,15 +16615,15 @@ int execute_shell(LOGBOOK *lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LEN
    sprintf(str, "%d", message_id);
    add_subst_list(slist, svalue, "message id", str, &i);
    strsubst(shell_cmd, slist, svalue, i);
-   
+
    if (att_file && stristr(shell_cmd, "$attachments")) {
       /* substitute attachments */
       p = stristr(shell_cmd, "$attachments");
       strlcpy(tail, p + strlen("$attachments"), sizeof(tail));
       *p = 0;
-      for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-         if (att_file[i][0] && 
-              strlen(shell_cmd)+strlen(lbs->data_dir)+strlen(att_file[i]) < sizeof(shell_cmd)+1) {
+      for (i = 0; i < MAX_ATTACHMENTS; i++)
+         if (att_file[i][0] &&
+             strlen(shell_cmd) + strlen(lbs->data_dir) + strlen(att_file[i]) < sizeof(shell_cmd) + 1) {
             strcpy(p, lbs->data_dir);
             strcat(p, att_file[i]);
             strcat(p, " ");
@@ -16637,7 +16641,7 @@ int execute_shell(LOGBOOK *lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LEN
 
 /*------------------------------------------------------------------*/
 
-int add_attribute_option(LOGBOOK *lbs, char *attrname, char *attrvalue, char *condition)
+int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue, char *condition)
 {
    int fh, i, length;
    char str[NAME_LENGTH], *buf, *buf2, *p1, *p2, *p3;
@@ -16724,7 +16728,7 @@ int add_attribute_option(LOGBOOK *lbs, char *attrname, char *attrvalue, char *co
 
 /*------------------------------------------------------------------*/
 
-int set_attributes(LOGBOOK *lbs, char attributes[][NAME_LENGTH], int n)
+int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
 {
    int fh, i, length, size;
    char str[NAME_LENGTH], *buf, *buf2, *p1, *p2, *p3;
@@ -16811,7 +16815,7 @@ int set_attributes(LOGBOOK *lbs, char attributes[][NAME_LENGTH], int n)
 
 /*------------------------------------------------------------------*/
 
-void submit_elog(LOGBOOK *lbs)
+void submit_elog(LOGBOOK * lbs)
 {
    char str[1000], str2[1000], file_name[256], error[1000], date[80],
        mail_list[MAX_N_LIST][NAME_LENGTH], list[10000], *p,
@@ -17215,7 +17219,7 @@ void submit_elog(LOGBOOK *lbs)
 
                get_user_line(lbs, user, NULL, NULL, user_email, email_notify);
 
-               for (i=0 ; lb_list[i].name[0] && i<1000 ; i++)
+               for (i = 0; lb_list[i].name[0] && i < 1000; i++)
                   if (strieq(lb_list[i].name, lbs->name))
                      break;
 
@@ -17276,7 +17280,7 @@ void submit_elog(LOGBOOK *lbs)
 
 /*------------------------------------------------------------------*/
 
-void submit_elog_mirror(LOGBOOK *lbs)
+void submit_elog_mirror(LOGBOOK * lbs)
 {
    char str[1000], date[80], attrib_value[MAX_N_ATTR][NAME_LENGTH],
        attrib_name[MAX_N_ATTR][NAME_LENGTH], in_reply_to[80], encoding[80],
@@ -17354,7 +17358,7 @@ void submit_elog_mirror(LOGBOOK *lbs)
 
 /*------------------------------------------------------------------*/
 
-void copy_to(LOGBOOK *lbs, int src_id, char *dest_logbook, int move, int orig_id)
+void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_id)
 {
    int size, i, n, n_done, n_done_reply, n_reply, index, status, fh, source_id, message_id;
    char str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
@@ -17562,7 +17566,7 @@ void copy_to(LOGBOOK *lbs, int src_id, char *dest_logbook, int move, int orig_id
 
 /*------------------------------------------------------------------*/
 
-void show_elog_entry(LOGBOOK *lbs, char *dec_path, char *command)
+void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 {
    int size, i, j, n, n_log, status, fh, length, message_error, index, n_hidden,
        message_id, orig_message_id, format_flags[MAX_N_ATTR], att_hide[MAX_ATTACHMENTS],
@@ -18358,12 +18362,12 @@ void show_elog_entry(LOGBOOK *lbs, char *dec_path, char *command)
                   if (file_exist(thumb_name)) {
                      rsprintf("<tr><td class=\"attachmentframe\">\n");
                      rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
-                     rsprintf("<img src=\"%s.thumb\" alt=\"%s\"></a>\n", ref, attachment[index]+14);
+                     rsprintf("<img src=\"%s.thumb\" alt=\"%s\"></a>\n", ref, attachment[index] + 14);
                      rsprintf("</td></tr>\n\n");
                   } else if (is_image(att)) {
                      rsprintf("<tr><td class=\"attachmentframe\">\n");
                      rsprintf("<a name=\"att%d\"></a>\n", index + 1);
-                     rsprintf("<img src=\"%s\" alt=\"%s\">\n", ref, attachment[index]+14);
+                     rsprintf("<img src=\"%s\" alt=\"%s\">\n", ref, attachment[index] + 14);
                      rsprintf("</td></tr>\n\n");
                   } else {
                      if (is_ascii(file_name)) {
@@ -18418,7 +18422,7 @@ void show_elog_entry(LOGBOOK *lbs, char *dec_path, char *command)
 
 /*------------------------------------------------------------------*/
 
-BOOL check_password(LOGBOOK *lbs, char *name, char *password, char *redir)
+BOOL check_password(LOGBOOK * lbs, char *name, char *password, char *redir)
 {
    char str[256];
 
@@ -18486,7 +18490,7 @@ BOOL convert_password_file(char *file_name)
       return FALSE;
    len = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   buf = malloc(len+1);
+   buf = malloc(len + 1);
    assert(buf);
    i = read(fh, buf, len);
    buf[i] = 0;
@@ -18514,7 +18518,7 @@ BOOL convert_password_file(char *file_name)
 
       /* skip comment lines */
       if (*p != ';' && *p != '#') {
-         for (i=0 ; i<(int)sizeof(name)-1 && *p && *p != ':' ; i++)
+         for (i = 0; i < (int) sizeof(name) - 1 && *p && *p != ':'; i++)
             name[i] = *p++;
          name[i] = 0;
          if (*p++ != ':') {
@@ -18522,7 +18526,7 @@ BOOL convert_password_file(char *file_name)
             return FALSE;
          }
 
-         for (i=0 ; i<(int)sizeof(password)-1 && *p && *p != ':' ; i++)
+         for (i = 0; i < (int) sizeof(password) - 1 && *p && *p != ':'; i++)
             password[i] = *p++;
          password[i] = 0;
          if (*p++ != ':') {
@@ -18530,7 +18534,7 @@ BOOL convert_password_file(char *file_name)
             return FALSE;
          }
 
-         for (i=0 ; i<(int)sizeof(full_name)-1 && *p && *p != ':' ; i++)
+         for (i = 0; i < (int) sizeof(full_name) - 1 && *p && *p != ':'; i++)
             full_name[i] = *p++;
          full_name[i] = 0;
          if (*p++ != ':') {
@@ -18538,7 +18542,7 @@ BOOL convert_password_file(char *file_name)
             return FALSE;
          }
 
-         for (i=0 ; i<(int)sizeof(email)-1 && *p && *p != ':' ; i++)
+         for (i = 0; i < (int) sizeof(email) - 1 && *p && *p != ':'; i++)
             email[i] = *p++;
          email[i] = 0;
          if (*p++ != ':') {
@@ -18546,7 +18550,7 @@ BOOL convert_password_file(char *file_name)
             return FALSE;
          }
 
-         for (i=0 ; i<(int)sizeof(email_notify)-1 && *p && *p != '\n' ; i++)
+         for (i = 0; i < (int) sizeof(email_notify) - 1 && *p && *p != '\n'; i++)
             email_notify[i] = *p++;
          email_notify[i] = 0;
          if (*p++ != '\n') {
@@ -18575,7 +18579,7 @@ BOOL convert_password_file(char *file_name)
 
 /*------------------------------------------------------------------*/
 
-PMXML_NODE load_password_file(LOGBOOK *lbs)
+PMXML_NODE load_password_file(LOGBOOK * lbs)
 {
    PMXML_NODE xml_tree;
    char str[256], line[256], file_name[256];
@@ -18633,7 +18637,7 @@ void load_password_files()
    char str1[256], str2[256];
    PMXML_NODE xml_tree;
 
-   for (i=0 ; lb_list[i].name[0] ; i++) {
+   for (i = 0; lb_list[i].name[0]; i++) {
       if (lb_list[i].pwd_xml_tree == NULL) {
          if (lb_list[i].top_group[0])
             setcfg_topgroup(lb_list[i].top_group);
@@ -18646,7 +18650,7 @@ void load_password_files()
                setcfg_topgroup(lb_list[i].top_group);
             getcfg(lb_list[i].name, "Password file", str1, sizeof(str1));
 
-            for (j=i+1 ; lb_list[j].name[0] ; j++) {
+            for (j = i + 1; lb_list[j].name[0]; j++) {
                if (lb_list[j].top_group[0])
                   setcfg_topgroup(lb_list[j].top_group);
                getcfg(lb_list[j].name, "Password file", str2, sizeof(str2));
@@ -18661,7 +18665,7 @@ void load_password_files()
 
 /*------------------------------------------------------------------*/
 
-int get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name,
+int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name,
                   char *email, BOOL email_notify[1000])
 {
    int i, j;
@@ -18685,12 +18689,12 @@ int get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name,
       if (*getcfg_topgroup())
          strcpy(orig_topgroup, getcfg_topgroup());
 
-      for (i=0 ; lb_list[i].name[0] ; i++) {
+      for (i = 0; lb_list[i].name[0]; i++) {
          if (lb_list[i].top_group[0])
             setcfg_topgroup(lb_list[i].top_group);
          getcfg(lb_list[i].name, "Password file", str, sizeof(str));
          if (strieq(str, global)) {
-            lbs = lb_list+i;
+            lbs = lb_list + i;
             break;
          }
       }
@@ -18722,12 +18726,12 @@ int get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name,
 
       if ((node = mxml_find_node(user_node, "email_notify")) != NULL && email_notify) {
          if (mxml_get_number_of_children(node)) {
-            for (i=0 ; i<1000 ; i++)
+            for (i = 0; i < 1000; i++)
                email_notify[i] = FALSE;
 
-            for (i=0 ; i<mxml_get_number_of_children(node) ; i++) {
+            for (i = 0; i < mxml_get_number_of_children(node); i++) {
                subnode = mxml_subnode(node, i);
-               for (j = 0; lb_list[j].name[0]; j++) 
+               for (j = 0; lb_list[j].name[0]; j++)
                   if (strieq(lb_list[j].name, mxml_get_value(subnode))) {
                      email_notify[j] = TRUE;
                      break;
@@ -18735,7 +18739,7 @@ int get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name,
             }
 
          } else {
-            for (i=0 ; i<1000 ; i++)
+            for (i = 0; i < 1000; i++)
                if (strieq(mxml_get_value(node), "all"))
                   email_notify[i] = TRUE;
                else
@@ -18754,7 +18758,7 @@ int get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name,
 
 /*------------------------------------------------------------------*/
 
-BOOL enum_user_line(LOGBOOK *lbs, int n, char *user, int size)
+BOOL enum_user_line(LOGBOOK * lbs, int n, char *user, int size)
 {
    char str[256];
    PMXML_NODE node;
@@ -18772,7 +18776,7 @@ BOOL enum_user_line(LOGBOOK *lbs, int n, char *user, int size)
 
 /*------------------------------------------------------------------*/
 
-BOOL check_login_user(LOGBOOK *lbs, char *user)
+BOOL check_login_user(LOGBOOK * lbs, char *user)
 {
    int i, n;
    char str[1000];
@@ -18843,7 +18847,7 @@ BOOL is_admin_user_global(char *user)
 
 /*------------------------------------------------------------------*/
 
-BOOL check_user_password(LOGBOOK *lbs, char *user, char *password, char *redir)
+BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
 {
    char str[1000], str2[256], upwd[256], full_name[256], email[256];
    int status;
@@ -19336,7 +19340,7 @@ void get_password(char *password)
 
 /*------------------------------------------------------------------*/
 
-int do_self_register(LOGBOOK *lbs, char *command)
+int do_self_register(LOGBOOK * lbs, char *command)
 /* evaluate self-registration commands */
 {
    char str[256];
@@ -19393,7 +19397,7 @@ void show_day(char *css_class, char *day)
    }
 }
 
-void show_calendar(LOGBOOK *lbs)
+void show_calendar(LOGBOOK * lbs)
 {
    int i, j, cur_mon, cur_day, cur_year, today_day, today_mon, today_year;
    time_t now, stime;
@@ -19896,7 +19900,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (strncmp(path, "last", 4) == 0 && !chkext(path, ".png")&&
+   if (strncmp(path, "last", 4) == 0 && !chkext(path, ".png") &&
        (!isparam("cmd") || strieq(getparam("cmd"), loc("Select")))
        && !isparam("newpwd")) {
       show_elog_list(lbs, 0, atoi(path + 4), 0, NULL);
@@ -19935,7 +19939,7 @@ void interprete(char *lbook, char *path)
        || chkext(pfile, ".gif") || chkext(pfile, ".ico")
        || chkext(pfile, ".jpg") || chkext(pfile, ".jpeg")
        || chkext(pfile, ".png") || chkext(pfile, ".css")
-       || chkext(pfile, ".js")  || chkext(pfile, ".html")) {
+       || chkext(pfile, ".js") || chkext(pfile, ".html")) {
       if ((strlen(pfile) > 13 && pfile[6] == '_'
            && pfile[13] == '_') || (strlen(pfile) > 13 && pfile[6] == '_' && pfile[13] == '/')) {
          if (pfile[13] == '/')
@@ -20409,7 +20413,7 @@ void decode_get(char *logbook, char *string)
 
 /*------------------------------------------------------------------*/
 
-void decode_post(LOGBOOK *lbs, char *string, char *boundary, int length)
+void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
 {
    int n_att;
    char *pinit, *p, *ptmp, file_name[MAX_PATH_LENGTH], full_name[MAX_PATH_LENGTH],
@@ -21491,7 +21495,7 @@ void server_loop(void)
                      while (*p == ' ')
                         p++;
                      i = 0;
-                     while (*p && *p != ' ' && *p != '\r' && i < (int)sizeof(cl_pwd) - 1)
+                     while (*p && *p != ' ' && *p != '\r' && i < (int) sizeof(cl_pwd) - 1)
                         str[i++] = *p++;
                      str[i] = 0;
                   }
@@ -22404,7 +22408,7 @@ int main(int argc, char *argv[])
       exit(EXIT_FAILURE);
    }
    close(fh);
-   
+
    /* parse contents of config file into internal structure */
    check_config();
 

@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility
 
   $Log$
+  Revision 1.25  2005/03/21 16:16:52  ritt
+  Version 2.8.1-1
+
   Revision 1.24  2005/03/21 16:06:48  ritt
   Added STRLCPY_DEFINED
 
@@ -263,7 +266,7 @@ size_t strlcat(char *dst, const char *src, size_t size)
    return (dlen + (s - src));   /* count does not include NUL */
 }
 
-#endif // STRLCPY_DEFINED
+#endif                          // STRLCPY_DEFINED
 
 /*-------------------------------------------------------------------*/
 

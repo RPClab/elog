@@ -334,7 +334,6 @@ Attachment file <b>"%s"</b> empty or not found = Archivo adjunto <b>"%s"</b> est
 #
 #---- please translate following items and then remove this comment ----#
 #
-Text fields may contain regular expressions = 
 Case sensitive = 
 From = 
 List = 
@@ -344,3 +343,9 @@ down =
 stop = 
 Entry = 
 name may not contain blanks = 
+regular expressions = 
+Text fields are treated as %s = 
+Subscribe to logbooks = 
+enable automatic email notifications = 
+Set all = 
+Set none = 
