@@ -176,6 +176,15 @@ been problems with <b>ELOG</b>'s <I>keep-alive</I> feature. In such a case you n
 the "<B>-k</B>" flag to the <code><b>elogd</b></code> command line to turn keep-alives off.
 <p>
 
+<h3><hr><i>Note for Mac OS X</i>:</h3>
+
+<p><a href="mailto:sak@essc.psu.edu">Sridhar Anandakrishnan</a> and
+<a href="mailto:roktas@emu.edu.tr">Recai Oktas</a> report that under Mac OS X there is a problem with
+the default stack size. The command <i><b>limit stacksize unlimited</b></i> (for tcsh) or
+<i><b>ulimit -s unlimited</b></i> (for bash) increases the stacksize and fixes this problem.
+Read the according <a href="http://midas.psi.ch/elogdemo/Forum/379">thread</a> in the forum.
+<p>
+
 <hr><a name="windows">
 <div class=section>&nbsp; Installing and running in Windows &nbsp;</div>
 <p>
