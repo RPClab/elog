@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.451  2004/08/08 16:00:34  midas
+   Renamed logf() to write_logfile()
+
    Revision 1.450  2004/08/08 15:32:51  midas
    Added automatic distinction between ASCII and binary files for attachment display
 
@@ -566,7 +569,7 @@ char pidfile[256];        /* Pidfile name                                     */
 #endif /* OS_UNIX */
 
 BOOL running_as_daemon;                      /* Running as a daemon/service? */
-int elog_tcp_port = DEFAULT_PORT;            /* Server's TCP port            */
+int elog_tcp_port = (int) DEFAULT_PORT;      /* Server's TCP port            */
 
 static void (*printf_handler) (const char *);/* Handler to printf for logging */
 static void (*fputs_handler) (const char *); /* Handler to fputs for logging  */
@@ -832,7 +835,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
                   char *sh_cmd);
 BOOL isparam(char *param);
 char *getparam(char *param);
-void logf(LOGBOOK * lbs, const char *format, ...);
+void write_logfile(LOGBOOK * lbs, const char *format, ...);
 BOOL check_login_user(LOGBOOK * lbs, char *user);
 LBLIST get_logbook_hierarchy(void);
 int is_logbook_in_group(LBLIST pgrp, char *logbook);
@@ -1909,7 +1912,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
 
    if (verbose)
       eprintf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
-   logf(lbs, "Email from %s to %s, SMTP host %s:\n", from, to, smtp_host);
+   write_logfile(lbs, "Email from %s to %s, SMTP host %s:\n", from, to, smtp_host);
 
    /* count attachments */
    n_att = 0;
@@ -1942,7 +1945,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    recv_string(s, str, strsize, 10000);
    if (verbose)
       efputs(str);
-   logf(lbs, str);
+   write_logfile(lbs, str);
 
    /* drain server messages */
    do {
@@ -1950,28 +1953,28 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       recv_string(s, str, strsize, 300);
       if (verbose)
          efputs(str);
-      logf(lbs, str);
+      write_logfile(lbs, str);
    } while (str[0]);
 
    snprintf(str, strsize - 1, "HELO %s\r\n", host_name);
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
-   logf(lbs, str);
+   write_logfile(lbs, str);
    recv_string(s, str, strsize, 3000);
    if (verbose)
       efputs(str);
-   logf(lbs, str);
+   write_logfile(lbs, str);
 
    snprintf(str, strsize - 1, "MAIL FROM: <%s>\r\n", from);
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
-   logf(lbs, str);
+   write_logfile(lbs, str);
    recv_string(s, str, strsize, 3000);
    if (verbose)
       efputs(str);
-   logf(lbs, str);
+   write_logfile(lbs, str);
 
    /* break recipients into list */
    n = strbreak(to, list, 1024, ",");
@@ -1981,24 +1984,24 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       send(s, str, strlen(str), 0);
       if (verbose)
          efputs(str);
-      logf(lbs, str);
+      write_logfile(lbs, str);
 
       /* increased timeout for SMTP servers with long alias lists */
       recv_string(s, str, strsize, 30000);
       if (verbose)
          efputs(str);
-      logf(lbs, str);
+      write_logfile(lbs, str);
    }
 
    snprintf(str, strsize - 1, "DATA\r\n");
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
-   logf(lbs, str);
+   write_logfile(lbs, str);
    recv_string(s, str, strsize, 3000);
    if (verbose)
       efputs(str);
-   logf(lbs, str);
+   write_logfile(lbs, str);
 
    if (email_to)
       snprintf(str, strsize - 1, "To: %s\r\n", to);
@@ -2008,33 +2011,33 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
-   logf(lbs, str);
+   write_logfile(lbs, str);
 
    snprintf(str, strsize - 1, "From: %s\r\nSubject: %s\r\n", from, subject);
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
-   logf(lbs, str);
+   write_logfile(lbs, str);
 
    snprintf(str, strsize - 1, "X-Mailer: Elog, Version %s\r\n", VERSION);
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
-   logf(lbs, str);
+   write_logfile(lbs, str);
 
    if (url) {
       snprintf(str, strsize - 1, "X-Elog-URL: %s\r\n", url);
       send(s, str, strlen(str), 0);
       if (verbose)
          efputs(str);
-      logf(lbs, str);
+      write_logfile(lbs, str);
    }
 
    snprintf(str, strsize - 1, "X-Elog-submit-type: web|elog\r\n");
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
-   logf(lbs, str);
+   write_logfile(lbs, str);
 
    time(&now);
    ts = localtime(&now);
@@ -2047,14 +2050,14 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
-   logf(lbs, str);
+   write_logfile(lbs, str);
 
    if (n_att > 0) {
       snprintf(str, strsize - 1, "MIME-Version: 1.0\r\n");
       send(s, str, strlen(str), 0);
       if (verbose)
          efputs(str);
-      logf(lbs, str);
+      write_logfile(lbs, str);
 
       sprintf(boundary, "%04X-%04X=:%04X", rand(), rand(), rand());
       snprintf(str, strsize - 1, "Content-Type: MULTIPART/MIXED; BOUNDARY=\"%s\"\r\n\r\n",
@@ -2062,34 +2065,34 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       send(s, str, strlen(str), 0);
       if (verbose)
          efputs(str);
-      logf(lbs, str);
+      write_logfile(lbs, str);
 
       snprintf(str, strsize - 1,
                "  This message is in MIME format.  The first part should be readable text,\r\n");
       send(s, str, strlen(str), 0);
       if (verbose)
          efputs(str);
-      logf(lbs, str);
+      write_logfile(lbs, str);
 
       snprintf(str, strsize - 1,
                "  while the remaining parts are likely unreadable without MIME-aware tools.\r\n\r\n");
       send(s, str, strlen(str), 0);
       if (verbose)
          efputs(str);
-      logf(lbs, str);
+      write_logfile(lbs, str);
 
       snprintf(str, strsize - 1,
                "--%s\r\nContent-Type: TEXT/PLAIN; charset=US-ASCII\r\n\r\n", boundary);
       send(s, str, strlen(str), 0);
       if (verbose)
          efputs(str);
-      logf(lbs, str);
+      write_logfile(lbs, str);
    } else {
       snprintf(str, strsize - 1, "Content-Type: TEXT/PLAIN; charset=US-ASCII\r\n\r\n");
       send(s, str, strlen(str), 0);
       if (verbose)
          efputs(str);
-      logf(lbs, str);
+      write_logfile(lbs, str);
    }
 
    /* analyze text for "." at beginning of line */
@@ -2112,7 +2115,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       send(s, str, strlen(str), 0);
       if (verbose)
          efputs(str);
-      logf(lbs, str);
+      write_logfile(lbs, str);
 
       for (index = 0; index < n_att; index++) {
          /* return proper Content-Type for file type */
@@ -2138,13 +2141,13 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
          send(s, str, strlen(str), 0);
          if (verbose)
             efputs(str);
-         logf(lbs, str);
+         write_logfile(lbs, str);
 
          snprintf(str, strsize - 1, "Content-Transfer-Encoding: BASE64\r\n");
          send(s, str, strlen(str), 0);
          if (verbose)
             efputs(str);
-         logf(lbs, str);
+         write_logfile(lbs, str);
 
          snprintf(str, strsize - 1,
                   "Content-Disposition: attachment; filename=\"%s\"\r\n\r\n",
@@ -2152,7 +2155,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
          send(s, str, strlen(str), 0);
          if (verbose)
             efputs(str);
-         logf(lbs, str);
+         write_logfile(lbs, str);
 
          /* encode file */
          strlcpy(file_name, lbs->data_dir, sizeof(file_name));
@@ -2184,7 +2187,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
          send(s, str, strlen(str), 0);
          if (verbose)
             efputs(str);
-         logf(lbs, str);
+         write_logfile(lbs, str);
       }
    }
 
@@ -2193,22 +2196,22 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
-   logf(lbs, str);
+   write_logfile(lbs, str);
 
    recv_string(s, str, strsize, 3000);
    if (verbose)
       efputs(str);
-   logf(lbs, str);
+   write_logfile(lbs, str);
 
    snprintf(str, strsize - 1, "QUIT\r\n");
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
-   logf(lbs, str);
+   write_logfile(lbs, str);
    recv_string(s, str, strsize, 3000);
    if (verbose)
       efputs(str);
-   logf(lbs, str);
+   write_logfile(lbs, str);
 
    closesocket(s);
    xfree(str);
@@ -4505,7 +4508,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
    }
 
    if (_logging_level > 1)
-      logf(lbs, "DELETE entry #%d", message_id);
+      write_logfile(lbs, "DELETE entry #%d", message_id);
 
    message[i] = 0;
 
@@ -4834,7 +4837,7 @@ int el_lock_message(LOGBOOK * lbs, int message_id, char *user)
 
 /*------------------------------------------------------------------*/
 
-void logf(LOGBOOK * lbs, const char *format, ...)
+void write_logfile(LOGBOOK * lbs, const char *format, ...)
 {
    char file_name[2000];
    va_list argptr;
@@ -12075,7 +12078,7 @@ void mprint(LOGBOOK * lbs, int mode, char *str)
    else if (mode == SYNC_CRON) {
       if (_logging_level > 1) {
          sprintf(line, "MIRROR: %s", str);
-         logf(lbs, line);
+         write_logfile(lbs, line);
       }
    } else
       eputs(str);
@@ -12205,7 +12208,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                 && equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)) {
 
                if (_logging_level > 1)
-                  logf(lbs, "MIRROR send config");
+                  write_logfile(lbs, "MIRROR send config");
 
                /* submit configuration section */
                if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
@@ -12227,7 +12230,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                    && equal_md5(md5_cache[0].md5_digest, digest)) {
 
                if (_logging_level > 1)
-                  logf(lbs, "MIRROR receive config");
+                  write_logfile(lbs, "MIRROR receive config");
 
                if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
                    || atoi(str) == 0) {
@@ -12249,7 +12252,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                    && !equal_md5(md5_remote[0].md5_digest, digest)) {
 
                if (_logging_level > 1)
-                  logf(lbs, "MIRROR config conflict");
+                  write_logfile(lbs, "MIRROR config conflict");
 
                sprintf(str, "%s. ",
                        loc("Configuration has been changed locally and remotely"));
@@ -12316,7 +12319,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                } else {
 
                   if (_logging_level > 1)
-                     logf(lbs, "MIRROR send entry #%d", message_id);
+                     write_logfile(lbs, "MIRROR send entry #%d", message_id);
 
                   /* submit local message */
                   if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
@@ -12364,7 +12367,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                }
 
                if (_logging_level > 1)
-                  logf(lbs, "MIRROR receive entry #%d", message_id);
+                  write_logfile(lbs, "MIRROR receive entry #%d", message_id);
 
                if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
                    || atoi(str) == 0) {
@@ -12411,7 +12414,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                } else {
 
                   if (_logging_level > 1)
-                     logf(lbs, "MIRROR conflict entry #%d", message_id);
+                     write_logfile(lbs, "MIRROR conflict entry #%d", message_id);
 
                   combine_url(lbs, list[index], "", str, sizeof(str));
 
@@ -12457,7 +12460,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                } else {
 
                   if (_logging_level > 1)
-                     logf(lbs, "MIRROR send entry #%d", message_id);
+                     write_logfile(lbs, "MIRROR send entry #%d", message_id);
 
                   /* submit local message */
                   if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
@@ -12507,7 +12510,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                   all_identical = FALSE;
 
                   if (_logging_level > 1)
-                     logf(lbs, "MIRROR delete local entry #%d", message_id);
+                     write_logfile(lbs, "MIRROR delete local entry #%d", message_id);
 
                   if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
                       || atoi(str) == 0) {
@@ -12545,7 +12548,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
             } else {
 
                if (_logging_level > 1)
-                  logf(lbs, "MIRROR send entry #%d", message_id);
+                  write_logfile(lbs, "MIRROR send entry #%d", message_id);
 
                remote_id = 0;
                if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
@@ -12597,7 +12600,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                      max_id = md5_remote[i].message_id;
 
                if (_logging_level > 1)
-                  logf(lbs, "MIRROR change entry #%d to #%d", message_id, max_id + 1);
+                  write_logfile(lbs, "MIRROR change entry #%d to #%d", message_id, max_id + 1);
 
                /* rearrange local message not to conflict with remote message */
                if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
@@ -12734,7 +12737,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                         if (isparam("confirm") || mode == SYNC_CRON) {
 
                            if (_logging_level > 1)
-                              logf(lbs, "MIRROR delete remote entry #%d", message_id);
+                              write_logfile(lbs, "MIRROR delete remote entry #%d", message_id);
 
                            sprintf(str, "%d?cmd=%s&confirm=%s", message_id, loc("Delete"),
                                    loc("Yes"));
@@ -15724,7 +15727,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
    add_subst_list(slist, svalue, "message id", str, &i);
    strsubst(shell_cmd, slist, svalue, i);
 
-   logf(lbs, "SHELL \"%s\"", shell_cmd);
+   write_logfile(lbs, "SHELL \"%s\"", shell_cmd);
 
    system(shell_cmd);
 
@@ -16178,9 +16181,9 @@ void submit_elog(LOGBOOK * lbs)
 
    if (_logging_level > 1) {
       if (isparam("edit_id"))
-         logf(lbs, "EDIT entry #%d", message_id);
+         write_logfile(lbs, "EDIT entry #%d", message_id);
       else
-         logf(lbs, "NEW entry #%d", message_id);
+         write_logfile(lbs, "NEW entry #%d", message_id);
    }
 
    message_id =
@@ -16799,7 +16802,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          message_error = status;
       else {
          if (_logging_level > 2)
-            logf(lbs, "READ entry #%d", message_id);
+            write_logfile(lbs, "READ entry #%d", message_id);
       }
    } else
       message_error = EL_EMPTY;
@@ -18484,7 +18487,7 @@ void interprete(char *lbook, char *path)
          /* check if password correct */
          do_crypt(getparam("upassword"), enc_pwd);
          /* log logins */
-         logf(NULL, "LOGIN user \"%s\" (attempt) for logbook selection page",
+         write_logfile(NULL, "LOGIN user \"%s\" (attempt) for logbook selection page",
               getparam("uname"));
          if (isparam("redir"))
             strcpy(str, getparam("redir"));
@@ -18492,7 +18495,7 @@ void interprete(char *lbook, char *path)
             strcpy(str, getparam("cmdline"));
          if (!check_user_password(NULL, getparam("uname"), enc_pwd, str))
             return;
-         logf(NULL, "LOGIN user \"%s\" (success)", getparam("uname"));
+         write_logfile(NULL, "LOGIN user \"%s\" (success)", getparam("uname"));
          /* set cookies */
          set_login_cookies(NULL, getparam("uname"), enc_pwd);
          return;
@@ -18609,14 +18612,14 @@ void interprete(char *lbook, char *path)
       /* check if password correct */
       do_crypt(getparam("upassword"), enc_pwd);
       /* log logins */
-      logf(lbs, "LOGIN user \"%s\" (attempt)", getparam("uname"));
+      write_logfile(lbs, "LOGIN user \"%s\" (attempt)", getparam("uname"));
       if (isparam("redir"))
          strcpy(str, getparam("redir"));
       else
          strcpy(str, getparam("cmdline"));
       if (!check_user_password(lbs, getparam("uname"), enc_pwd, str))
          return;
-      logf(lbs, "LOGIN user \"%s\" (success)", getparam("uname"));
+      write_logfile(lbs, "LOGIN user \"%s\" (success)", getparam("uname"));
       /* set cookies */
       set_login_cookies(lbs, getparam("uname"), enc_pwd);
       return;
@@ -19090,7 +19093,7 @@ void interprete(char *lbook, char *path)
       /* if removed user is current user, do logout */
       if (strieq(getparam("config"), getparam("unm"))) {
          /* log activity */
-         logf(lbs, "LOGOUT");
+         write_logfile(lbs, "LOGOUT");
          /* set cookies */
          set_login_cookies(lbs, "", "");
       }
@@ -19142,7 +19145,7 @@ void interprete(char *lbook, char *path)
 
    if (strieq(command, loc("Logout"))) {
       /* log activity */
-      logf(lbs, "LOGOUT");
+      write_logfile(lbs, "LOGOUT");
       if (getcfg(lbs->name, "Logout to main", str, sizeof(str)) && atoi(str) == 1) {
          sprintf(str, "../");
          setparam("redir", str);
@@ -19487,7 +19490,7 @@ void check_cron()
       if (min_flag && hour_flag && ((day_flag && mon_flag) || wday_flag)) {
 
          rem_host[0] = 0;
-         logf(NULL, "Cron job started");
+         write_logfile(NULL, "Cron job started");
 
          /* synchronize all logbooks */
          setcfg_topgroup("");
