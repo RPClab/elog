@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.5  2003/02/07 12:25:27  midas
+  Fixed bug with '\' in front of resource directory
+
   Revision 1.4  2003/01/31 20:29:27  midas
   Fixed typo
 
@@ -4097,10 +4100,8 @@ void send_file_direct(char *file_name)
 {
 int    fh, i, length;
 char   str[256];
-/*
 time_t now;
 struct tm *gmt;
-*/
 
   fh = open(file_name, O_RDONLY | O_BINARY);
   if (fh > 0)
@@ -4113,13 +4114,12 @@ struct tm *gmt;
     rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
     rsprintf("Accept-Ranges: bytes\r\n");
 
-    /*
+    /* set expiration time to one day */
     time(&now);
-    now += (int) (3600*3);
+    now += (int) (3600*24);
     gmt = gmtime(&now);
     strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
     rsprintf("Expires: %s\r\n", str);
-    */
 
     if (use_keepalive)
       {
@@ -10411,7 +10411,7 @@ FILE    *f;
       {
       /* file from theme directory requested */
       strlcpy(file_name, resource_dir, sizeof(file_name));
-      if (file_name[strlen(file_name)-1] != DIR_SEPARATOR)
+      if (file_name[0] && file_name[strlen(file_name)-1] != DIR_SEPARATOR)
         strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
       strlcat(file_name, "themes", sizeof(file_name));
       strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
