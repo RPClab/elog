@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.45  2003/03/10 11:56:07  midas
+  Don't create PID file when creating/changing passwords
+
   Revision 1.44  2003/03/10 08:08:11  midas
   Fallback to elog/elog added
 
@@ -2085,7 +2088,11 @@ struct tm tms;
     fh = open(file_name, O_RDWR | O_BINARY, 0644);
 
     if (fh < 0)
+      {
+      sprintf(str, "Cannot open file \"%s\":", file_name);
+      perror(str);
       return EL_FILE_ERROR;
+      }
 
     /* read file into buffer */
     length = lseek(fh, 0, SEEK_END);
@@ -12595,82 +12602,85 @@ usage:
 #ifdef OS_UNIX
   /* create PID file if given as command line parameter or if running under root */
 
-  if (geteuid() == 0 || pidfile[0])
+  if (!read_pwd[0] && !write_pwd[0] && !admin_pwd[0])
     {
-    int fd;
-    char buf[20];
-    struct stat finfo;
-
-    if (pidfile[0] == 0)
-      strcpy(pidfile, PIDFILE);
-
-    /* check if file exists */
-    if (stat(pidfile, &finfo) >= 0)
+    if (geteuid() == 0 || pidfile[0])
       {
-      printf("File \"%s\" exists, using \"%s.%d\" instead.\n", pidfile, pidfile, tcp_port);
-      sprintf(pidfile + strlen(pidfile), ".%d", tcp_port);
+      int fd;
+      char buf[20];
+      struct stat finfo;
 
-      /* check again for the new name */
+      if (pidfile[0] == 0)
+        strcpy(pidfile, PIDFILE);
+
+      /* check if file exists */
       if (stat(pidfile, &finfo) >= 0)
         {
-        /* never overwrite a file */
-        printf("Refuse to overwrite existing file \"%s\".\n", pidfile);
-        exit(EXIT_FAILURE);
-        }
-      }
+        printf("File \"%s\" exists, using \"%s.%d\" instead.\n", pidfile, pidfile, tcp_port);
+        sprintf(pidfile + strlen(pidfile), ".%d", tcp_port);
 
-    fd = open(pidfile, O_CREAT | O_RDWR, 0644);
-    if (fd < 0)
-      {
-      sprintf(str, "Error creating pid file \"%s\"", pidfile);
-      perror(str);
-      exit(EXIT_FAILURE);
-      }
-
-    sprintf(buf, "%d\n", (int)getpid());
-    if (write(fd, buf, strlen(buf)) == -1)
-      {
-      sprintf(str, "Error writing to pid file \"%s\"", pidfile);
-      perror(str);
-      exit(EXIT_FAILURE);
-      }
-    close(fd);
-    }
-
-  /* save gid/uid to regain later for deleting the PID file */
-  orig_gid = getegid();
-  orig_uid = geteuid();
- 
-  /* give up root privilege */
-
-  if (geteuid() == 0)
-    {
-    if (!getcfg("global", "Grp", str) || setgroup(str) < 0)
-      {
-      printf("Falling back to default group \"elog\"\n");
-      if (setgroup("elog") < 0)
-        {
-        printf("Falling back to default group \"%s\"\n", DEFAULT_GROUP);
-        if (setgroup(DEFAULT_GROUP) < 0)
+        /* check again for the new name */
+        if (stat(pidfile, &finfo) >= 0)
           {
-          printf("Refuse to run as setgid root.\n");
-          printf("Please consider to define a Grp statement in configuration file\n");
+          /* never overwrite a file */
+          printf("Refuse to overwrite existing file \"%s\".\n", pidfile);
           exit(EXIT_FAILURE);
           }
         }
+
+      fd = open(pidfile, O_CREAT | O_RDWR, 0644);
+      if (fd < 0)
+        {
+        sprintf(str, "Error creating pid file \"%s\"", pidfile);
+        perror(str);
+        exit(EXIT_FAILURE);
+        }
+
+      sprintf(buf, "%d\n", (int)getpid());
+      if (write(fd, buf, strlen(buf)) == -1)
+        {
+        sprintf(str, "Error writing to pid file \"%s\"", pidfile);
+        perror(str);
+        exit(EXIT_FAILURE);
+        }
+      close(fd);
       }
 
-    if (!getcfg("global", "Usr", str) || setuser(str) < 0)
+    /* save gid/uid to regain later for deleting the PID file */
+    orig_gid = getegid();
+    orig_uid = geteuid();
+ 
+    /* give up root privilege */
+
+    if (geteuid() == 0)
       {
-      printf("Falling back to default user \"elog\"\n");
-      if (setuser("elog") < 0)
+      if (!getcfg("global", "Grp", str) || setgroup(str) < 0)
         {
-        printf("Falling back to default user \"%s\"\n", DEFAULT_USER);
-        if (setuser(DEFAULT_USER) < 0)
+        printf("Falling back to default group \"elog\"\n");
+        if (setgroup("elog") < 0)
           {
-          printf("Refuse to run as setuid root.\n");
-          printf("Please consider to define a Usr statement in configuration file\n");
-          exit(EXIT_FAILURE);
+          printf("Falling back to default group \"%s\"\n", DEFAULT_GROUP);
+          if (setgroup(DEFAULT_GROUP) < 0)
+            {
+            printf("Refuse to run as setgid root.\n");
+            printf("Please consider to define a Grp statement in configuration file\n");
+            exit(EXIT_FAILURE);
+            }
+          }
+        }
+
+      if (!getcfg("global", "Usr", str) || setuser(str) < 0)
+        {
+        printf("Falling back to default user \"elog\"\n");
+        if (setuser("elog") < 0)
+          {
+          printf("Falling back to default user \"%s\"\n", DEFAULT_USER);
+          if (setuser(DEFAULT_USER) < 0)
+            {
+            printf("Refuse to run as setuid root.\n");
+            printf("Please consider to define a Usr statement in configuration file\n");
+            exit(EXIT_FAILURE);
+            }
           }
         }
       }
