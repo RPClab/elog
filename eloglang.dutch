@@ -1,6 +1,7 @@
 #
 # Dutch messages by djek@xs4all.nl
 # $Revision$
+# 29-9-2002
 #
 
 #
@@ -30,7 +31,7 @@ Next entry = Volgende bericht
 Copy to = Kopieren naar
 Move to = Verplaats naar
 Save = Opslaan
-Cancel = Afbreken
+Cancel = Annuleren
 Go to = Naar
 
 #
@@ -108,8 +109,8 @@ Text = Tekst
 (case insensitive substring) = (ongevoelig voor HOOFD -en kleineletters)
 Search all logbooks = Alle Logboeken doorzoeken
 Last %d days = Laatste %d dagen
-Last %d entries = Laatste %d bericht
-No entries found = Geen bericht gevonden
+Last %d entries = Laatste %d berichten
+No entries found = Geen berichten gevonden
 
 #
 # Email, Copy/Move, Delete
@@ -155,7 +156,7 @@ Login = Inloggen
 Page %d of %d = Pagina %d van de %d
 all entries = alle berichten
 %d entries = %d berichten
-Login name = Naam om in te loggen
+Login name = Loginnaam
 Full name = Gebruikersnaam
 ELOG user config = ELOG gebruikers configuratie
 Admin = Administratie
@@ -168,10 +169,9 @@ Retype password = Wachtwoord opnieuw opgeven
 exists already = bestaat al
 Register as new user = Als nieuwe gebruiker aanmelden
 
-#
 # New strings for V2.1.1
 A new ELOG user has been registered on %s = Een nieuwe gebruiker heeft zich aangemeld op %s 
-Email = Email
+Email = E-mail
 User "%s" registered on logbook "%s" = Gebruiker "%s" geregistreerd in logboek "%s"
 User [%s] has been deleted = Gebruiker [%s] is gewist
 Hit following URL to activate that account = Klik op de volgende URL om de gebruikers account te activeren
@@ -183,3 +183,19 @@ Are you sure to delete these messages? = Weet u zeker dat u deze boodschappen wi
 %d message copied successfully from "%s" to "%s" = Boodschap is succesvol gekopieerd "%s" naar "%s"
 Select = Kies
 
+# New strings for V2.2.0
+No message selected for deletion = Geen bericht geselecteerd om te wissen
+No message selected = Geen bericht geselecteerd
+All entries = Alle berichten
+Day = Dag
+Week = Week
+Month = Maand
+Months = Maanden
+Show last = Toon laatste
+Goto page = Ga naar pagina
+All = Alle
+Display = Toon
+entries per page = berichten per pagina
+Toggle all = Toon alles
+Automatic email notifications=Automatisch e-mail aankondiging
+Change password=Wijzig wachtwoord
