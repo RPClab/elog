@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.229  2004/02/03 10:36:17  midas
+   Do not renumber and entries if they are already identical
+
    Revision 1.228  2004/02/03 10:10:50  midas
    Fixed missing logbook when language!=english
 
@@ -9473,8 +9476,10 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
          }
 
          /* if message does not exist in cache but remotely, 
-            messages were added on both sides, so resubmit local one and retrieve remote one */
-         if (!exist_cache && exist_remote) {
+            messages were added on both sides, so resubmit local one and retrieve remote one
+            if messages are different */
+         if (!exist_cache && exist_remote &&
+             !equal_md5(md5_remote[i_remote].md5_digest, lbs->el_index[i_msg].md5_digest)) {
 
             /* find max id both locally and remotely */
             max_id = 1;
