@@ -263,3 +263,9 @@ Please log on by clicking on following link and change your password = Bitte dur
 A new password has been created for you on host %s = Ein neues Kennwort wurde auf dem Computer %s registriert
 Enter your user name or email address = Bitte Benutzername oder Email-Adresse eingeben
 Password recovery for ELOG %s = Kennwort-Wiederherstellung für ELOG %s
+
+#
+# New string for V2.3.6
+Host = Computer
+Your ELOG account has been activated = Ihr ELOG Konto wurde aktiviert
+Activate = Aktivieren

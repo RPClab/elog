@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.88  2003/04/22 09:57:23  midas
+  Fixed missing translation strings
+
   Revision 1.87  2003/04/22 07:50:05  midas
   Fixed crashes with user registration and password file in [global] section
 
@@ -6224,7 +6227,8 @@ int    i, fh, size, self_register;
     if (activate)
       {
       sprintf(subject, loc("Your ELOG account has been activated"));
-      sprintf(mail_text, loc("Your ELOG account has been activated on host %s"), host_name);
+      sprintf(mail_text, loc("Your ELOG account has been activated on host"));
+      sprintf(mail_text+strlen(mail_text), " %s", host_name);
       sprintf(mail_text+strlen(mail_text), ".\r\n\r\n");
       sprintf(url+strlen(url), "?cmd=Login&unm=%s", getparam("new_user_name"));
       sprintf(mail_text+strlen(mail_text), "%s %s\r\n", loc("You can access it at"), url);
@@ -11000,11 +11004,9 @@ int  i;
 char str[10000];
 
   if (getcfg("global", "Page Title", str))
-    {
-    show_html_header(NULL, FALSE, str);
-    }
+    show_html_header(NULL, TRUE, str);
   else
-    show_html_header(NULL, FALSE, "ELOG Logbook Selection");
+    show_html_header(NULL, TRUE, "ELOG Logbook Selection");
 
   rsprintf("<body>\n\n");
 
