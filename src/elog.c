@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility
 
   $Log$
+  Revision 1.24  2005/03/21 16:06:48  ritt
+  Added STRLCPY_DEFINED
+
   Revision 1.23  2005/01/15 17:05:09  midas
   Changed comment
 
@@ -195,6 +198,8 @@ int equal_ustring(char *str1, char *str2)
 
 /*---- strlcpy and strlcat to avoid buffer overflow ----------------*/
 
+#ifndef STRLCPY_DEFINED
+
 /*
  * Copy src to string dst of size siz.  At most siz-1 characters
  * will be copied.  Always NUL terminates (unless size == 0).
@@ -257,6 +262,8 @@ size_t strlcat(char *dst, const char *src, size_t size)
 
    return (dlen + (s - src));   /* count does not include NUL */
 }
+
+#endif // STRLCPY_DEFINED
 
 /*-------------------------------------------------------------------*/
 

@@ -6,6 +6,9 @@
    Contents:     Midas XML Library
 
    $Log$
+   Revision 1.7  2005/03/21 16:05:21  ritt
+   Added STRLCPY_DEFINED
+
    Revision 1.6  2005/03/21 16:02:08  ritt
    Added code for strlcpy/cat ifndef STRLCPY_DEFINED
 
@@ -66,7 +69,7 @@ typedef int BOOL;
 #ifdef STRLCPY_DEFINED
 
 extern size_t strlcpy(char *dst, const char *src, size_t size);
-extern size_t strlcat(char *dst, const char *src, size_t size)
+extern size_t strlcat(char *dst, const char *src, size_t size);
 
 #else
 

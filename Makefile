@@ -42,7 +42,7 @@ regex.o: src/regex.c src/regex.h
 	$(CC) $(CFLAGS) -c -o regex.o src/regex.c
 
 mxml.o: src/mxml.c src/mxml.h
-	$(CC) $(CFLAGS) -c -o mxml.o src/mxml.c
+	$(CC) $(CFLAGS) -DSTRLCPY_DEFINED -c -o mxml.o src/mxml.c
 
 elogd: src/elogd.c regex.o mxml.o
 	$(CC) $(CFLAGS) -o elogd src/elogd.c regex.o mxml.o $(LIBS)
