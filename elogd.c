@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.51  2002/07/27 14:09:24  midas
+  Fixed processing of password file
+
   Revision 2.50  2002/07/27 06:52:14  midas
   Added guest menu and user_email
 
@@ -3591,7 +3594,8 @@ struct tm *gmt;
         fseek(f, 0, SEEK_SET);
         fwrite(buf, 1, pl-buf, f);
 
-        fprintf(f, "%s:%s:%s\n", getparam("unm"), new_pwd, getparam("full_name"));
+        fprintf(f, "%s:%s:%s:%s\n", getparam("unm"), new_pwd, 
+                getparam("full_name"), getparam("user_email"));
 
         pl += strlen(line);
         while (*pl && (*pl == '\r' || *pl == '\n'))
@@ -7485,6 +7489,7 @@ BOOL get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name, ch
 {
 char  str[256], line[256], file_name[256], *p;
 FILE  *f;
+int   i;
 
   password[0] = full_name[0] = email[0] = 0;
   getcfg(lbs->name, "Password file", str);
@@ -7523,25 +7528,31 @@ FILE  *f;
     fclose(f);
 
     /* if user found, retrieve other info */
-    p = strtok(line, ":");
+    p = line;
 
-    if (p)
+    for (i=0 ; i<3 ; i++)
       {
-      p = strtok(NULL, ":");
-      if (p)
-        {
-        strcpy(password, p);
-        p = strtok(NULL, ":");
-        if (p)
-          {
-          strcpy(full_name, p);
-          p = strtok(NULL, ":");
-          if (p)
-            {
-            strcpy(email, p);
-            }
-          }
-        }
+      if (strchr(p, ':') == NULL)
+        break;
+      p = strchr(p, ':')+1;
+      
+      while (*p && *p == ' ')
+        p++;
+      strncpy(str, p, sizeof(str)-1);
+      if (strchr(str, ':'))
+        *strchr(str, ':') = 0;
+
+      while (str[strlen(str)-1] == ' ' ||
+             str[strlen(str)-1] == '\r' ||
+             str[strlen(str)-1] == '\n')
+        str[strlen(str)-1] = 0;
+
+      if (i==0)
+        strcpy(password, str);
+      else if (i==1)
+        strcpy(full_name, str);
+      else if (i==2)
+        strcpy(email, str);
       }
 
     return TRUE;
