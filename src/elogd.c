@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.478  2004/09/18 05:48:33  midas
+   Version 2.5.4-4
+
    Revision 1.477  2004/09/18 05:45:43  midas
    Fixed crash when running as windows service
 
@@ -545,7 +548,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.4-3"
+#define VERSION "2.5.4-4"
 
 /* ELOG identification */
 static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
