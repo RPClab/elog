@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.467  2004/09/10 11:21:34  midas
+   Version 2.5.4-3
+
    Revision 1.466  2004/09/09 19:35:34  midas
    Fixed bug with HUP signal going into accept()
 
@@ -512,7 +515,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.4-2"
+#define VERSION "2.5.4-3"
 
 /* ELOG identification */
 static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
