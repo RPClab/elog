@@ -1,4 +1,5 @@
 #
+# Brazilian Portuguese messages by Carlos Augusto Marcicano <caumg@ig.com.br>
 # $Revision$
 #
 
@@ -134,3 +135,12 @@ Cannot write to <b>%s</b> = Não foi possível gravar em <b>%s</b>
 No SMTP host defined in [global] section of configuration file = Não foi definido um servidor SMTP na seção [global] do arquivo de configuração
 Messages %s cannot be read from logook "%s" = Não foi possível ler a mensagem %s do logbook "%s"
 New message cannot be written to directory "%s" = Não foi possível gravar a nova mensagem no diretório "%s"
+
+#
+# New strings for V2.0
+#
+Display full message = Exibir mensagem completa 
+Display threads = Exibir threads
+Logbook is empty = O logbook está vazio
+This message has been deleted = Esta mensagem foi apagada
+
