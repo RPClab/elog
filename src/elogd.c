@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.231  2004/02/03 12:30:40  midas
+   Changed typo
+
    Revision 1.230  2004/02/03 12:26:55  midas
    Change CRLF -> CR when saving elogd.cfg under Unix
 
@@ -7276,7 +7279,7 @@ void remove_crlf(char *buffer)
 
    p = buffer;
    while ((p = strstr(p, "\r\n")) != NULL) {
-      strcpy(p+1, p+2);
+      strcpy(p, p+1);
    }
 }
 
