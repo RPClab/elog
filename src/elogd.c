@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.319  2004/04/30 22:17:29  midas
+   Implemented text body CSV import
+
    Revision 1.318  2004/04/08 14:21:14  midas
    Implemented 'protect selection page'
 
@@ -4434,6 +4437,39 @@ void strip_html(char *s)
          strcpy(p, strchr(p, '>') + 1);
       else
          *p = 0;
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+void insert_breaks(char *str, int n, int size)
+{
+   int i, j, i_last;
+
+   i_last = 0;
+   for (i = 0; i < (int) strlen(str); i++) {
+      if (str[i] == '\r')
+         i_last = i;
+
+      /* if more than n chars without return, insert one */
+      if (i - i_last >= n && (int) strlen(str) + 3 < size) {
+
+         /* find previous blank */
+         while (i > i_last && str[i] != ' ')
+            i--;
+         if (str[i] == ' ')
+            i++;
+
+         /* move trailing string one char further */
+         for (j = strlen(str) + 2; j > i; j--)
+            str[j] = str[j - 2];
+
+         /* set CR */
+         str[i++] = '\r';
+         str[i++] = '\n';
+
+         i_last = i;
+      }
    }
 }
 
@@ -8915,7 +8951,7 @@ int show_download_page(LOGBOOK * lbs, char *path)
 
 void show_import_page(LOGBOOK * lbs)
 {
-   char str[256];
+   char str[256], str2[256];
 
    /*---- header ----*/
 
@@ -8979,23 +9015,38 @@ void show_import_page(LOGBOOK * lbs)
       rsprintf("<input type=checkbox checked id=\"head\" name=\"head\" value=\"1\">\n");
    else
       rsprintf("<input type=checkbox id=\"head\" name=\"head\" value=\"1\">\n");
-   rsprintf("<label for=\"head\">%s</label>\n", loc("Derive attributes from CSV file"));
+   rsprintf("<label for=\"head\">%s</label><br>\n",
+            loc("Derive attributes from CSV file"));
 
    if (isparam("ignore"))
       rsprintf
           ("<input type=checkbox checked id=\"ignore\" name=\"ignore\" value=\"1\">\n");
    else
       rsprintf("<input type=checkbox id=\"ignore\" name=\"ignore\" value=\"1\">\n");
-   rsprintf("<label for=\"ignore\">%s</label>\n", loc("Ignore first line"));
+   rsprintf("<label for=\"ignore\">%s</label><br>\n", loc("Ignore first line"));
 
    rsprintf("<input type=checkbox id=\"preview\" name=\"preview\" value=\"1\">\n");
-   rsprintf("<label for=\"preview\">%s</label>\n", loc("Preview import"));
+   rsprintf("<label for=\"preview\">%s</label><br>\n", loc("Preview import"));
+
+   if (isparam("filltext"))
+      rsprintf
+          ("<input type=checkbox checked id=\"filltext\" name=\"filltext\" value=\"1\">\n");
+   else
+      rsprintf("<input type=checkbox id=\"filltext\" name=\"filltext\" value=\"1\">\n");
+   strcpy(str, loc("text"));
+   sprintf(str2, loc("Column header '%s' must be present in CSV file"), str);
+   rsprintf("<label for=\"filltext\">%s (%s)</label><br>\n", loc("Fill text body"), str2);
+
    rsprintf("</td></tr>\n");
 
    rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n",
             loc("CSV filename"));
 
    rsprintf("<td class=\"attribvalue\">");
+
+   if (isparam("csvfile"))
+      rsprintf("<b>%s</b>:<br>\n", loc("Please re-enter filename"));
+
    rsprintf("<input type=\"file\" size=\"60\" maxlength=\"200\" name=\"csvfile\" ");
    if (isparam("csvfile"))
       rsprintf(" value=\"%s\" ", getparam("csvfile"));
@@ -9012,8 +9063,8 @@ void show_import_page(LOGBOOK * lbs)
 void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
 {
    char *list, *line, *p, str[256], date[80], sep[80];
-   int i, n, n_attr, iline, n_imported;
-   BOOL first, in_quotes;
+   int i, j, n, n_attr, iline, n_imported, textcol;
+   BOOL first, in_quotes, filltext;
 
    list = malloc(MAX_N_ATTR * NAME_LENGTH);
    if (list == NULL)
@@ -9027,6 +9078,8 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
    first = TRUE;
    in_quotes = FALSE;
    iline = n_imported = 0;
+   filltext = FALSE;
+   textcol = -1;
 
    strcpy(sep, ",");
    if (isparam("sep"))
@@ -9074,6 +9127,9 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
          rsprintf("<input type=hidden name=head value=\"%s\">\n", getparam("head"));
       if (isparam("ignore"))
          rsprintf("<input type=hidden name=ignore value=\"%s\">\n", getparam("ignore"));
+      if (isparam("filltext"))
+         rsprintf("<input type=hidden name=filltext value=\"%s\">\n",
+                  getparam("filltext"));
       rsprintf("<input type=hidden name=csvfile value=\"%s\">\n", csvfile);
 
       rsprintf("</span></td></tr>\n\n");
@@ -9113,54 +9169,112 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
          continue;
       }
 
+      /* check if text column is present */
+      if (first && atoi(getparam("filltext"))) {
+         for (i = 0; i < n; i++)
+            if (strieq(list + i * NAME_LENGTH, loc("text"))) {
+               filltext = TRUE;
+               textcol = i;
+               break;
+            }
+      }
+
       /* derive attributes from first line */
       if (first && isparam("head")) {
          if (isparam("preview")) {
             rsprintf("<tr>\n");
             for (i = 0; i < n; i++)
-               rsprintf("<th class=\"listtitle\">%s</th>\n", list + i * NAME_LENGTH);
+               if (i != textcol)
+                  rsprintf("<th class=\"listtitle\">%s</th>\n", list + i * NAME_LENGTH);
+
+            if (filltext)
+               rsprintf("<th class=\"listtitle\">%s</th>\n", loc("text"));
+
             rsprintf("</tr>\n");
-            n_attr = n;
+
+            if (filltext)
+               n_attr = n - 1;
+            else
+               n_attr = n;
 
          } else {
-            for (i = 0; i < n; i++)
-               strlcpy(attr_list[i], list + i * NAME_LENGTH, NAME_LENGTH);
+            for (i = j = 0; i < n; i++)
+               if (i != textcol)
+                  strlcpy(attr_list[j++], list + i * NAME_LENGTH, NAME_LENGTH);
 
-            if (!set_attributes(lbs, attr_list, n))
-               return;
-            lbs->n_attr = n;
+            if (filltext) {
+               if (!set_attributes(lbs, attr_list, n - 1))
+                  return;
+               lbs->n_attr = n - 1;
+            } else {
+               if (!set_attributes(lbs, attr_list, n))
+                  return;
+               lbs->n_attr = n;
+            }
          }
 
       } else {
 
          if (isparam("preview")) {
             rsprintf("<tr>\n");
-            for (i = 0; i < n_attr; i++) {
+            for (i = j = 0; i < n_attr; i++) {
                if (iline % 2 == 0)
                   rsputs("<td class=\"list1\">");
                else
                   rsputs("<td class=\"list2\">");
 
-               if (i >= n || !list[i * NAME_LENGTH])
+               /* skip text column */
+               if (i == textcol)
+                  j++;
+
+               if (i >= n || !list[j * NAME_LENGTH])
                   rsputs("&nbsp;");
                else
-                  rsputs(list + i * NAME_LENGTH);
+                  rsputs(list + j * NAME_LENGTH);
 
-               rsputs("</td>");
+               rsputs("</td>\n");
+               j++;
             }
+
+            if (filltext) {
+               rsputs("<td class=\"summary\">");
+               if (list[textcol * NAME_LENGTH])
+                  rsputs(list + textcol * NAME_LENGTH);
+               else
+                  rsputs("&nbsp;");
+               rsputs("</td>\n");
+            }
+
             rsputs("</tr>\n");
             iline++;
 
          } else {
 
-            /* submit entry */
-            date[0] = 0;
-            if (el_submit(lbs, 0, FALSE, date, attr_list, (char (*)[NAME_LENGTH]) list,
-                          n_attr, "", "", "", "plain", NULL, TRUE, NULL))
-               n_imported++;
+            if (!filltext) {
+               /* submit entry */
+               date[0] = 0;
+               if (el_submit(lbs, 0, FALSE, date, attr_list, (char (*)[NAME_LENGTH]) list,
+                             n_attr, "", "", "", "plain", NULL, TRUE, NULL))
+                  n_imported++;
+            } else {
+               strlcpy(line, list + textcol * NAME_LENGTH, 10000);
+               insert_breaks(line, 78, 10000);
+
+               for (i = textcol; i < n_attr; i++)
+                  strlcpy(list + i * NAME_LENGTH, list + (i + 1) * NAME_LENGTH,
+                          NAME_LENGTH);
+
+               /* submit entry */
+               date[0] = 0;
+               if (el_submit(lbs, 0, FALSE, date, attr_list, (char (*)[NAME_LENGTH]) list,
+                             n_attr, line, "", "", "plain", NULL, TRUE, NULL))
+                  n_imported++;
+            }
          }
       }
+
       first = FALSE;
+
    } while (*p);
 
    free(line);
@@ -11058,14 +11172,22 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          /* only show text, not to rip apart HTML documents,
             e.g. only the start of a table */
          strip_html(str);
-         strencode(str);
+         if (str[0])
+            strencode(str);
+         else
+            rsputs("&nbsp;");
       } else {
          if (strieq(encoding, "plain")) {
             rsputs("<pre>");
-            rsputs2(text);
+            if (text[0])
+               rsputs2(text);
+            else
+               rsputs("&nbsp;");
             rsputs("</pre>");
-         } else
+         } else if (text[0])
             rsputs(text);
+         else
+            rsputs("&nbsp;");
 
       }
 
@@ -11088,7 +11210,10 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       /* only show text, not to rip apart HTML documents,
          e.g. only the start of a table */
       strip_html(str);
-      strencode(str);
+      if (str[0])
+         strencode(str);
+      else
+         rsputs("&nbsp;");
       rsputs("</td>\n");
 
       if (strieq(mode, "Threaded"))
@@ -12056,14 +12181,14 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             pt1--;
          pt1++;
          strcpy(param, pt1);
-         param[(int)pt2-(int)pt1] = 0;
-         strcpy(pt1, pt2+2);
+         param[(int) pt2 - (int) pt1] = 0;
+         strcpy(pt1, pt2 + 2);
 
          /* remove param from lastcmd if present */
          if ((pt1 = strstr(_cmdline, "lastcmd=")) != NULL) {
             sprintf(str, "%s%%3D", param);
             if (pt1 = strstr(_cmdline, str)) {
-               pt2 = pt1+strlen(str);
+               pt2 = pt1 + strlen(str);
                while (*pt2 && *pt2 != '%')
                   pt2++;
                if (*pt2 == '%')
@@ -12078,15 +12203,15 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             pt1--;
          pt1++;
          strcpy(param, pt1);
-         if (param[strlen(param)-1] == '=')
-            param[strlen(param)-1] = 0;
+         if (param[strlen(param) - 1] == '=')
+            param[strlen(param) - 1] = 0;
          *pt1 = 0;
 
          /* remove param from lastcmd if present */
          if ((pt1 = strstr(_cmdline, "lastcmd=")) != NULL) {
             sprintf(str, "%s%%3D", param);
             if (pt1 = strstr(_cmdline, str)) {
-               pt2 = pt1+strlen(str);
+               pt2 = pt1 + strlen(str);
                while (*pt2 && *pt2 != '%' && *pt2 != '&')
                   pt2++;
                if (*pt2 == '%')
@@ -12743,7 +12868,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
          /* default menu commands */
          if (menu_str[0] == 0) {
-            strcpy(menu_str, "New, Find, Select, ");
+            strcpy(menu_str, "New, Find, Select, CSV Import, ");
 
             if (getcfg(lbs->name, "Password file", str))
                strcat(menu_str, "Config, Logout, ");
@@ -15717,8 +15842,7 @@ void show_selection_page()
 
    /* if selection page protected, check password */
    if (getcfg("global", "password file", str) &&
-       getcfg("global", "protect selection page", str) &&
-       atoi(str) == 1)
+       getcfg("global", "protect selection page", str) && atoi(str) == 1)
       if (!check_user_password(NULL, getparam("unm"), getparam("upwd"), ""))
          return;
 
