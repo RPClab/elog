@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.14  2004/02/13 20:58:21  midas
+  Changed email suppression flag from '-s' to '-p'
+
   Revision 1.13  2004/01/07 11:14:53  midas
   Changed line length
 
@@ -913,7 +916,7 @@ int main(int argc, char *argv[])
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-' && argv[i][1] == 'v')
          verbose = 1;
-      else if (argv[i][0] == '-' && argv[i][1] == 's')
+      else if (argv[i][0] == '-' && argv[i][1] == 'p')
          suppress = 1;
       else {
          if (argv[i][0] == '-') {
@@ -971,7 +974,7 @@ int main(int argc, char *argv[])
                printf("           [-r <id>]                Reply to existing message\n");
                printf("           [-e <id>]                Edit existing message\n");
                printf
-                   ("           [-s]                     Suppress email notification\n");
+                   ("           [-p]                     Suppress email notification\n");
                printf("           -m <textfile>] | <text>\n");
                printf("\nArguments with blanks must be enclosed in quotes\n");
                printf
