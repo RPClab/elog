@@ -18,7 +18,7 @@ On PC5082:
 
 - cvs update
 - Increase version in elog.spec
-- build x.x.x
+- build x.x.x 1
 
 Declare new version at freshmeat.
 
