@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.93  2003/04/28 12:52:58  midas
+  Removed &nbsp; from logbook tabs
+
   Revision 1.92  2003/04/23 10:40:21  midas
   Version 2.3.6
 
@@ -4392,7 +4395,7 @@ LBLIST clb, flb, nlb, lbl;
       rsprintf("<tr><td class=\"tabs\">\n");
 
       if (level == 0 && getcfg("global", "main tab", str))
-        rsprintf("<span class=\"ltab\">&nbsp;<a href=\"../\">%s</a>&nbsp;</span>\n", str);
+        rsprintf("<span class=\"ltab\"><a href=\"../\">%s</a></span>\n", str);
 
       for (i=0 ; i<n_lb ; i++)
         {
@@ -4439,7 +4442,7 @@ LBLIST clb, flb, nlb, lbl;
           }
 
         // rsprintf("<span class=\"%s\">&nbsp;<a class=\"%s\" href=\"../%s/\">", sclass, sclass, ref);
-        rsprintf("<span class=\"%s\">&nbsp;<a href=\"../%s/\">", sclass, ref);
+        rsprintf("<span class=\"%s\"><a href=\"../%s/\">", sclass, ref);
 
         strlcpy(str, clb[i].name, sizeof(str));
 
@@ -4449,7 +4452,7 @@ LBLIST clb, flb, nlb, lbl;
           else
             rsprintf("%c", str[j]);
 
-        rsprintf("</a>&nbsp;</span>\n");
+        rsprintf("</a></span>\n");
         }
       rsprintf("</td></tr>\n\n");
 
