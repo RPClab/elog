@@ -24,32 +24,44 @@
 </div>
 <p>
 <div class=Sub><i>Frequently Asked Questions about usage and configuration</i></div>
-<hr>
 
+<hr>
+<OL>
+<LI><a href=#1>How does one configure elog to display the last message by default</a>
+<LI><a href=#2>Are there any plans to implement a MySQL back end?
+<LI><a href=#3>Can I run the ELOG daemon from inside Apache or any other Web server?
+<LI><a href=#4>I can access my logbook without any password, isn't that a security problem?
+<LI><a href=#5>I want a bookmark pointing to the last page where an attribute has a certain value
+<LI><a href=#6>I want a logbook with public read access (no password), but restricted write access
+<LI><a href=#7>I have many loogbooks with password files, so if I add a user or want to change
+a password I have to do this for all logbooks which is painful.
+<LI><a href=#8>How can I configure ELOG such that it displays something else than the message list by default?
+<LI><a href=#9>I want to have additional commands specific to my lookbook
+<LI><a href=#10>How does one configure elog to disable editing of existing messages? I want a logbook where one
+can enter messages but not change them afterwards.
+<LI><a href=#11>How can I track various revisions of a message using the "edit" command?
+</OL>
+
+<hr>
 <OL>
 
-<LI><b>How does one configure elog to display a listing of all messages by default instead the last message</b>
+<LI><a name=#1><b>How does one configure elog to display the last message by default</b>
 <p>
-Starting from version 2.2.0 on, a page with the last messages is displayed by default. To display
-something else, one can use the <b><code>Start page</code></b> option in elogd. The entry:<p>
+One can use the <b><code>Start page</code></b> option for that. The entry:<p>
 <code>
 Start page = 0?cmd=last
 </code><p>
-shows the last entry by default (pre-2.2.0 behaviour). To show all messages, one can use:
-<code><p>
-Start page = ?cmd=Search&mode=summary&all=1<p>
-</code><p>
-This shows all messages from all logbooks (<i>all=1</i>). To have the described behaviour for
+shows the last message entry by default. To have the described behaviour for
 all logbooks, the above statements can be placed in the <b><code>[global]</code></b> section.
 <p>
 
 
-<LI><b>Are there any plans to implement a MySQL back end?</b>
+<LI><a name=#2><b>Are there any plans to implement a MySQL back end?</b>
 <p>
 No. The idea behind <b>ELOG</b> is that it is a <I>simple to use, simple to install</I> application. Many people use <b>ELOG</b> under Windows, and they even don't know what MySQL means. Other people like the flat file database format, because it's simple, easily accessible from other programs, and it's easy to backup certain days or months of the database (since the filenames contain the date). Since <b>ELOG</b> should be independent of any other package, some "switchable" backend between native <b>ELOG</b> format and MySQL would be needed, which is lots of work and not planned right now.
 <p>
 
-<LI><b>Can I run the ELOG daemon from inside Apache or any other Web server?</b>
+<LI><a name=#3><b>Can I run the ELOG daemon from inside Apache or any other Web server?</b>
 <p>
 No. The <b>ELOG</b> daemon was designed as a standalone server and it will stay like that in the future.
 The reason for that is that <code><b>elogd</b></code> should not rely on any other software. This is for
@@ -59,7 +71,7 @@ therefore becomes much simpler. To run <code><b>elogd</b></code> in parallel to 
 port 80, use Apache as a proxy, following the instruction on the installation page
 ("Running elogd under Apache").<p>
 
-<LI><b>I can access my logbook without any password, isn't that a security problem?</b>
+<LI><a name=#4><b>I can access my logbook without any password, isn't that a security problem?</b>
 
 <p> By default, no password is used in <b>ELOG</b>. This can be useful for public directories etc. that
 anybody should be able to read. To add password security, read the documentation under <a href=
@@ -69,7 +81,7 @@ guest access.
 <p> Note that passwords are transferred over the network in plain text and therefore not secure. If this
 is a problem, a <a href="adminguide.html#secure">secure</a> network connection should be used. <p>
 
-<LI><b>I want a bookmark pointing to the last page where an attribute has a certain value</b>
+<LI><a name=#5><b>I want a bookmark pointing to the last page where an attribute has a certain value</b>
 <p>
 Use the URL:
 <p>
@@ -82,7 +94,7 @@ This executes the "<I>Last</I>" command using a filter with &lt;attribute&gt;=&l
 Note the "l" before the second attribute, as in "<I>lAuthor=1</I>".
 <p>
 
-<LI><b>I want a logbook with public read access (no password), but restricted write access</b>
+<LI><a name=#6><b>I want a logbook with public read access (no password), but restricted write access</b>
 <p>
 In an old version of the FAQ it has been stated here that one has to use two logbooks pointing to
 the same data directory. From Version 2.0.6 on, this can be accomplished much easier by the usage
@@ -107,41 +119,30 @@ Self register = 1
 
 in the configuration file. New users can then create their own accounts.<p>
 
-<LI><b>I have many loogbooks with password files, so if I add a user or want to change
+<LI><a name=#7><b>I have many loogbooks with password files, so if I add a user or want to change
 a password I have to do this for all logbooks which is painful.</b>
 <p>
 You can have several logbooks point to the same password file. So if you change a user or
 password in that file, it becomes automatically available in all logbooks which use that file.
 <p>
 
-<LI><b>By default, ELOG displays the last entry from a logbook. How can I configure it to
-display the last 10 messages instead?</b>
+<LI><a name=#8><b>How can I configure ELOG such that it displays something else than the message list by default?</b>
 <p>
-There is a simple trick. You use the <b>"<I>Welcome page</I>"</b> option in the <code><b>elogd</b></code> file
-to redirect the start page to the <b>last 10</b> command. Put the statement:
-<p>
-<pre>
-Welcome page = redir.html
-</pre>
-into <code><b>elogd</b></code> and create that file with following contents:
+There is a simple trick. You use the <b>"<I>Start page</I>"</b> option in the <code><b>elogd</b></code> file
+to redirect the start page to something else. Here are some examples:
 <p>
 <pre>
-&lt;head&gt;
-&lt;meta http-equiv="refresh" content="0; URL=/logbook/last10"&gt;
-&lt;/head&gt;
-</pre>
-This causes the welcome page being redirected to <b>/logbook/last10</b>, where <b>logbook</b> must be replaced by the current logbook name. Following other redirections are possible:
-<p>
-<pre>
-/logbook/last20                         for the last 20 messages and so on
-/logbook/past1                          for the last day
-/logbook/past2                          for the last two days and so on
-/logbook?cmd=New                        for the new message entry form
-/logbook?cmd=Find                       for the "find" page
-/logbook?cmd=Search&amp;&lt;attrib&gt;=&lt;value&gt;    for a search with &lt;attrib&gt;=&lt;value&gt;
+?npp=5                                  for the last 5 messages
+?last=7                                 show last 7 days (week)
+?cmd=New                                show the new message entry form
+?cmd=Find                               Show the "find" page
+?cmd=Search&amp;&lt;attrib&gt;=&lt;value&gt;            for a search with &lt;attrib&gt;=&lt;value&gt;
 </pre>
 
-<LI><b>I want to have additional command specific to my lookbook</b>
+The various URLs can be copied from the browser's address bar when doint various things there.
+<p>
+
+<LI><a name=#9><b>I want to have additional commands specific to my lookbook</b>
 <p>
 New commands can be added for example with the <b><code>"Bottom text = bottom.html"</b></code> option.
 To display all messages from last week and month of with "category = info", one can put
@@ -154,11 +155,11 @@ following HTML code in bottom.html:
 &lt;/center>
 </pre>
 <p>
-Note that the parameters <b><code>"last=7&Category=Info"</b></code> apply a filter on the display. You can learn
+Note that the parameters <b><code>"last=7&Category=Info"</b></code> applies a filter on the display. You can learn
 how to make these filters by looking at the URL in your browser when you submit a find
 command with certain options.<p>
 
-<LI><b>How does one configure elog to disable editing of existing messages? I want a logbook where one
+<LI><a name=#10><b>How does one configure elog to disable editing of existing messages? I want a logbook where one
 can enter messages but not change them afterwards.</b>
 <p>
 This works with the option <b><code>Menu commands</code></b>. By default, the menu commands <b><code>
@@ -171,13 +172,45 @@ statement into <b><code>elogd.cfg</b></code>:
 This prohibits the execution of the commands "Edit" and "Delete".
 <p>
 
+<LI><a name=#11><b>How can I track various revisions of a message using the "edit" command?</b>
+<p>
+There are two ways:
+<p>
+
+<UL>
+<LI>Add an attribute which keeps the revision dates and names as follows:
+<pre>
+Attributes = Author, ..., Revisions
+Locked attributes = Revisions
+Subst on Edit Revisions = $Revisions&lt;br&gt;$date by $long_name
+</pre>
+
+The "Revisions" attribute cannot be modified manually (since it's locked). On each edit, the
+date and the current author is appedned to the previous revisions. The "&lt;br&gt;" puts a
+line break between the entries.<p>
+
+<LI>Create a thread for each entry. In addition of having the date and author of different
+revisions, the message content is kept. To revise and entry, one hits "Reply" instead of "Edit"
+(one can disable the "Edit" command for example). If one puts following option into the
+configuration file:<p>
+
+<pre>
+Reply string = ""
+</pre>
+
+then the reply contains the original message without the usual "&gt; " at the beginning of
+each line. One can then edit the message and submit it. In the threaded message list display,
+one sees then the different revisions as a message thread.<p>
+
+</UL>
+
 </OL>
 
 <HR>
 <div class=footer>&nbsp;
 Content by <a class=nav href="mailto:Stefan.Ritt@psi.ch">Stefan Ritt</a>,
 Web pages by <a class=nav href="mailto:fredp@mygale.org">Fred Pacquier</a>
- - last modified on 19/12/2001
+ - last modified on 17/02/2003
 &nbsp;</div>
 </BODY>
 </HTML>
