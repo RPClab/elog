@@ -192,6 +192,7 @@ td {
   border-right:1px solid black;
   background-color:#486090;
   text-align:right;
+  width:100px;
 }
 
 /* main menu row */
@@ -358,6 +359,22 @@ td {
 .messagepre {
   font-family:'lucida console',courier,monospace;
   font-size:10pt;
+}
+
+/* frame around attachments */
+
+.attachmentframe {
+  border:1px solid grey;
+  border-top:1px solid lightgrey;
+  border-left:1px solid lightgrey;
+  background-color:white;
+  padding:5px;
+}
+
+/* maximal attachment img width */
+
+.attachmentframe img {
+	max-width:100%;
 }
 
 /* attachment size */
