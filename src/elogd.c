@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.541  2005/01/21 22:06:02  ritt
+   Implemented OR'ing of MOptions values in find page
+
    Revision 1.540  2005/01/21 20:17:20  ritt
    Display current entry in thread bold
 
@@ -8957,6 +8960,18 @@ void show_find_form(LOGBOOK * lbs)
             }
          }
 
+         /* display check boxes (or'ed) */
+         else if (attr_flags[i] & AF_MULTI) {
+            for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
+               sprintf(str, "%s_%d", attr_list[i], j);
+
+               rsprintf("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\"\">\n",
+                        str, str, attr_options[i][j]);
+
+               rsprintf("<label for=\"%s\">%s</label></nobr>\n", str, attr_options[i][j]);
+            }
+         }
+
          else {
             rsprintf("<select name=\"%s\">\n", attr_list[i]);
             rsprintf("<option value=\"\">\n");
@@ -14647,8 +14662,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
        str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH], mode[80], mid[80],
        menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH], format[80],
        sort_attr[MAX_N_ATTR + 4][NAME_LENGTH];
-   char *p, *pt, *pt1, *pt2, *slist, *svalue, *gattr;
-   BOOL show_attachments, threaded, csv, xml, mode_commands, expand, filtering, disp_filter, show_text;
+   char *p, *pt, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
+   BOOL show_attachments, threaded, csv, xml, mode_commands, expand, filtering, disp_filter, 
+      show_text, searched, found;
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2;
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
@@ -14986,6 +15002,17 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             break;
       }
 
+      if (attr_flags[i] & AF_MULTI) {
+         for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
+            sprintf(str, "%s_%d", attr_list[i], j);
+            if (*getparam(str)) {
+               filtering = TRUE;
+               break;
+            }
+         }
+      }
+         
+         
       /* check if sort by attribute */
       if (strieq(getparam("sort"), attr_list[i])
           || strieq(getparam("rsort"), attr_list[i]))
@@ -15058,70 +15085,81 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                               text, &size, in_reply_to, reply_to, attachment, encoding, locked_by);
          if (status != EL_SUCCESS)
             break;
-      }
 
-      for (i = 0; i < lbs->n_attr; i++) {
-         if (*getparam(attr_list[i])) {
-
-            if (attr_flags[i] & AF_DATE) {
-               ltime = atoi(getparam(attr_list[i]));
-
-               /* today 12h noon */
-               time(&now);
-               memcpy(&tms, localtime(&now), sizeof(struct tm));
-               tms.tm_hour = 12;
-               tms.tm_min = 0;
-               tms.tm_sec = 0;
-               now = mktime(&tms);
-
-               /* negative i: last [i] days */
-               if (ltime < 0)
-                  if (atoi(attrib[i]) < now + ltime * 3600 * 24 || atoi(attrib[i]) > now)
-                     break;
-
-               /* positive i: next [i] days */
-               if (ltime > 0)
-                  if (atoi(attrib[i]) > now + ltime * 3600 * 24 || atoi(attrib[i]) < now)
-                     break;
-
-            } else {
-               strcpy(str, getparam(attr_list[i]));
-
-               /* if value starts with '$', substitute it */
-               if (str[0] == '$') {
-                  j = build_subst_list(lbs,
-                                       (char (*)[NAME_LENGTH]) slist,
-                                       (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
-                  sprintf(mid, "%d", message_id);
-                  add_subst_list((char (*)[NAME_LENGTH]) slist,
-                                 (char (*)[NAME_LENGTH]) svalue, "message id", mid, &j);
-                  add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
-                                 (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
-
-                  strsubst(str, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
-                  setparam(attr_list[i], str);
+         /* apply filter for AF_MULTI attributes */
+         for (i = 0; i < lbs->n_attr; i++) {
+            if (attr_flags[i] & AF_MULTI) {
+            
+               /* OR of any of the values */
+               searched = found = FALSE;
+               for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
+                  sprintf(str, "%s_%d", attr_list[i], j);
+                  if (*getparam(str)) {
+                     searched = TRUE;
+                     if (strstr(attrib[i], getparam(str))) {
+                        found = TRUE;
+                        break;
+                     }
+                  }
                }
 
-               for (j = 0; j < (int) strlen(str); j++)
-                  str[j] = toupper(str[j]);
-               str[j] = 0;
-               for (j = 0; j < (int) strlen(attrib[i]); j++)
-                  text1[j] = toupper(attrib[i][j]);
-               text1[j] = 0;
+               if (found)
+                  break;
 
-               status = regexec(re_buf + 1 + i, attrib[i], 10, pmatch, 0);
-               if (status == REG_NOMATCH)
+               if (searched && !found)
                   break;
             }
          }
-      }
-      if (i < lbs->n_attr) {
-         msg_list[index].lbs = NULL;
-         continue;
-      }
 
-      /* apply filter for AF_DATE attributes */
-      if (filtering)
+         if (searched && !found) {
+            msg_list[index].lbs = NULL;
+            continue;
+            break;
+         }
+
+
+         searched = found = 0;
+
+         for (i = 0; i < lbs->n_attr; i++) {
+            
+            if (*getparam(attr_list[i])) {
+
+               /* check non-multi attributes */
+               if ((attr_flags[i] & AF_MULTI) == 0) {
+
+                  searched = TRUE;
+                  strcpy(str, getparam(attr_list[i]));
+
+                  /* if value starts with '$', substitute it */
+                  if (str[0] == '$') {
+                     j = build_subst_list(lbs,
+                                          (char (*)[NAME_LENGTH]) slist,
+                                          (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
+                     sprintf(mid, "%d", message_id);
+                     add_subst_list((char (*)[NAME_LENGTH]) slist,
+                                    (char (*)[NAME_LENGTH]) svalue, "message id", mid, &j);
+                     add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
+                                    (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
+
+                     strsubst(str, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
+                     setparam(attr_list[i], str);
+                  }
+
+                  status = regexec(re_buf + 1 + i, attrib[i], 10, pmatch, 0);
+                  if (status != REG_NOMATCH) {
+                     found = TRUE;
+                     break;
+                  }
+               }
+            }
+         }
+
+         if (searched && !found) {
+            msg_list[index].lbs = NULL;
+            continue;
+         }
+
+         /* apply filter for AF_DATE attributes */
          for (i = 0; i < lbs->n_attr; i++)
             if (attr_flags[i] & AF_DATE) {
 
@@ -15140,27 +15178,28 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                }
             }
 
-      if (*getparam("subtext")) {
+         if (*getparam("subtext")) {
 
-         status = regexec(re_buf, text, 10, pmatch, 0);
-         if (atoi(getparam("sall")) && status == REG_NOMATCH) {
+            status = regexec(re_buf, text, 10, pmatch, 0);
+            if (atoi(getparam("sall")) && status == REG_NOMATCH) {
 
-            // search text in attributes
-            for (i = 0; i < lbs->n_attr; i++) {
-               status = regexec(re_buf, attrib[i], 10, pmatch, 0);
-               if (status != REG_NOMATCH)
-                  break;
-            }
+               // search text in attributes
+               for (i = 0; i < lbs->n_attr; i++) {
+                  status = regexec(re_buf, attrib[i], 10, pmatch, 0);
+                  if (status != REG_NOMATCH)
+                     break;
+               }
 
-            if (i == lbs->n_attr) {
+               if (i == lbs->n_attr) {
+                  msg_list[index].lbs = NULL;
+                  continue;
+               }
+            } else if (status == REG_NOMATCH) {
                msg_list[index].lbs = NULL;
                continue;
             }
-         } else if (status == REG_NOMATCH) {
-            msg_list[index].lbs = NULL;
-            continue;
          }
-      }
+      }  /* if (filtering) */
 
       /* in threaded mode, find message head */
       if (threaded && in_reply_to_id) {
@@ -15505,7 +15544,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          if (*getparam(attr_list[i]) && (attr_flags[i] & AF_DATE) == 0)
             disp_filter = TRUE;
 
-      for (i = 0; i < lbs->n_attr; i++)
+      for (i = 0; i < lbs->n_attr; i++) {
          if (attr_flags[i] & AF_DATE) {
             sprintf(str, "%da", i);
             ltime = retrieve_date(str, TRUE);
@@ -15516,6 +15555,14 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             if (ltime > 0)
                disp_filter = TRUE;
          }
+         if (attr_flags[i] & AF_MULTI) {
+            for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
+               sprintf(str, "%s_%d", attr_list[i], j);
+               if (*getparam(str))
+                  disp_filter = TRUE;
+            }
+         }
+      }
 
       if (disp_filter) {
          rsprintf("<tr><td class=\"listframe\">\n");
@@ -15589,6 +15636,35 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                         rsprintf("%s %s", loc("Before"), str);
                   }
                   rsprintf("</td></tr>", comment);
+               }
+
+            } else if (attr_flags[i] & AF_MULTI) {
+
+               line[0] = 0;
+
+               for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
+                  sprintf(iattr, "%s_%d", attr_list[i], j);
+                  if (*getparam(iattr)) {
+
+                     comment[0] = 0;
+                     if (attr_flags[i] & AF_ICON) {
+                        sprintf(str, "Icon comment %s", getparam(iattr));
+                        getcfg(lbs->name, str, comment, sizeof(comment));
+                     }
+
+                     if (line[0])
+                        strlcat(line, " | ", sizeof(line));
+
+                     if (comment[0] == 0)
+                        strlcat(line, getparam(iattr), sizeof(line));
+                     else
+                        strlcat(line, comment, sizeof(line));
+                  }
+               }
+
+               if (line[0]) {
+                  rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", attr_list[i]);
+                  rsprintf("<td class=\"attribvalue\">%s</td></tr>", line);
                }
 
             } else if (*getparam(attr_list[i])) {
