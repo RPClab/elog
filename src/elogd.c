@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.585  2005/03/14 08:36:56  ritt
+   Added thumbnail display for list display
+
    Revision 1.584  2005/03/08 08:51:25  ritt
    Fixed bug with resubmit box and conditional attributes
 
@@ -13378,7 +13381,7 @@ void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
                   char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], char *encoding,
                   BOOL select, int *n_display, char *locked_by, int highlight, regex_t * re_buf)
 {
-   char str[NAME_LENGTH], ref[256], *nowrap, sclass[80], format[256],
+   char str[NAME_LENGTH], ref[256], thumb_name[256], *nowrap, sclass[80], format[256],
        file_name[MAX_PATH_LENGTH], *slist, *svalue;
    char display[NAME_LENGTH], attr_icon[80];
    int i, j, i_line, index, colspan;
@@ -13819,51 +13822,68 @@ void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
             sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[index] + 14);
             url_encode(ref, sizeof(ref));       /* for file names with special characters like "+" */
 
+            strlcpy(thumb_name, lbs->data_dir, sizeof(thumb_name));
+            strlcat(thumb_name, attachment[index], sizeof(thumb_name));
+            strlcat(thumb_name, ".thumb", sizeof(thumb_name));
+
             if (!show_attachments) {
                rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;&nbsp;&nbsp; ", ref, attachment[index] + 14);
             } else {
-               if (is_image(attachment[index])) {
+               
+               if (file_exist(thumb_name)) {
                   rsprintf
-                      ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
-                       colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
+                     ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
+                     colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
                   if (show_attachments) {
-                     rsprintf("</td></tr><tr>");
-                     rsprintf("<td colspan=%d class=\"attachmentframe\">", colspan);
-                     rsprintf("<img src=\"%s\" alt=\"%s\">", ref, attachment[index] + 14);
-                     rsprintf("</td></tr>\n");
+                     rsprintf("<tr><td colspan=%d class=\"attachmentframe\">\n", colspan);
+                     rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
+                     rsprintf("<img src=\"%s.thumb\" alt=\"%s\"></a>\n", ref, attachment[index]+14);
+                     rsprintf("</td></tr>\n\n");
                   }
                } else {
-                  rsprintf
-                      ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
-                       colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
-
-                  strlcpy(file_name, lbs->data_dir, sizeof(file_name));
-                  strlcat(file_name, attachment[index], sizeof(file_name));
-
-                  if (is_ascii(file_name) &&
-                      !chkext(attachment[index], ".PS") &&
-                      !chkext(attachment[index], ".PDF") &&
-                      !chkext(attachment[index], ".EPS") && show_attachments) {
-
-                     /* display attachment */
-                     rsprintf("</td></tr><tr><td colspan=%d class=\"messagelist\"><pre>", colspan);
+                  if (is_image(attachment[index])) {
+                     rsprintf
+                        ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
+                        colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
+                     if (show_attachments) {
+                        rsprintf("</td></tr><tr>");
+                        rsprintf("<td colspan=%d class=\"attachmentframe\">", colspan);
+                        rsprintf("<img src=\"%s\" alt=\"%s\">", ref, attachment[index] + 14);
+                        rsprintf("</td></tr>\n");
+                     }
+                  } else {
+                     rsprintf
+                        ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
+                        colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
 
                      strlcpy(file_name, lbs->data_dir, sizeof(file_name));
                      strlcat(file_name, attachment[index], sizeof(file_name));
 
-                     f = fopen(file_name, "rt");
-                     if (f != NULL) {
-                        while (!feof(f)) {
-                           str[0] = 0;
-                           fgets(str, sizeof(str), f);
-                           rsputs2(str);
-                        }
-                        fclose(f);
-                     }
+                     if (is_ascii(file_name) &&
+                        !chkext(attachment[index], ".PS") &&
+                        !chkext(attachment[index], ".PDF") &&
+                        !chkext(attachment[index], ".EPS") && show_attachments) {
 
-                     rsprintf("</pre>\n");
+                        /* display attachment */
+                        rsprintf("</td></tr><tr><td colspan=%d class=\"messagelist\"><pre>", colspan);
+
+                        strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+                        strlcat(file_name, attachment[index], sizeof(file_name));
+
+                        f = fopen(file_name, "rt");
+                        if (f != NULL) {
+                           while (!feof(f)) {
+                              str[0] = 0;
+                              fgets(str, sizeof(str), f);
+                              rsputs2(str);
+                           }
+                           fclose(f);
+                        }
+
+                        rsprintf("</pre>\n");
+                     }
+                     rsprintf("</td></tr>\n");
                   }
-                  rsprintf("</td></tr>\n");
                }
             }
          }
