@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.88  2002/10/15 08:49:02  midas
+  Version 2.2.1
+
   Revision 2.87  2002/10/15 08:07:13  midas
   Fixed display of multiple messages in threaded find
 
@@ -365,7 +368,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.2.0"
+#define VERSION "2.2.1"
 
 #include <stdio.h>
 #include <sys/types.h>

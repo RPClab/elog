@@ -1,3 +1,9 @@
+Version 2.2.1, released October 15th, 2002
+==========================================
+
+- elog program can now handle large attachments
+- find result in threaded mode does not display messages multiple times
+
 Version 2.2.0, released September 25th, 2002
 ============================================
 
