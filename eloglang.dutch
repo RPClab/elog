@@ -144,6 +144,28 @@ Display full message =Toon volledig bericht
 Display threads = Toon draden
 Logbook is empty = logboek is leeg
 This message has been deleted = Het bericht is gewist
-Download =
-and all its replies =
-Message ID =
+Download = Download
+and all its replies = en al de antwoorden
+Message ID =Bericht ID
+
+#
+# New string for V2.1.0
+Not logged in = Niet ingelogd
+Login = Inloggen
+Page %d of %d = Pagina %d van de %d
+all entries = alle berichten
+%d entries = %d berichten
+Login name = Naam om in te loggen
+Full name = Gebruikersnaam
+ELOG user config = ELOG gebruikers configuratie
+Admin = Administratie
+Select user = Gebruiker selecteren
+Remove user = Gebruiker Verwijderen
+New user = Nieuwe gebruiker aanmaken
+Retype new password = Nieuw wachtwoord opnieuw opgeven
+New passwords do not match, please retype = Wachtwoorden verschillen, AUB opnieuw opgeven
+Retype password = Wachtwoord opnieuw opgeven
+exists already = bestaat al
+Register as new user = Als nieuwe gebruiker aanmelden
+
+
