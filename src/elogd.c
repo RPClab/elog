@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.35  2003/02/28 15:21:00  midas
+  On 'restrict edit' check long_name only if short_name is not present
+
   Revision 1.34  2003/02/28 14:43:53  midas
   Do not overwrite existing pidfile
 
@@ -4783,7 +4786,7 @@ time_t now;
   /* check for author */
   if (bedit && getcfg(lbs->name, "Restrict edit", str) && atoi(str) == 1)
     {
-    /* search attribute which contains author */
+    /* search attribute which contains short_name of author */
     for (i=0 ; i<lbs->n_attr ; i++)
       {
       sprintf(str, "Preset %s", attr_list[i]);
@@ -4797,14 +4800,28 @@ time_t now;
             show_error(str);
             return;
             }
+          else
+            break;
           }
-        if (strstr(preset, "$long_name"))
+        }
+      }
+
+    if (i == lbs->n_attr)
+      {
+      /* if not found, search attribute which contains full_name of author */
+      for (i=0 ; i<lbs->n_attr ; i++)
+        {
+        sprintf(str, "Preset %s", attr_list[i]);
+        if (getcfg(lbs->name, str, preset))
           {
-          if (strstr(attrib[i], getparam("full_name")) == NULL)
+          if (strstr(preset, "$long_name"))
             {
-            sprintf(str, loc("Only user <b>%s</b> can edit this entry"), attrib[i]);
-            show_error(str);
-            return;
+            if (strstr(attrib[i], getparam("full_name")) == NULL)
+              {
+              sprintf(str, loc("Only user <b>%s</b> can edit this entry"), attrib[i]);
+              show_error(str);
+              return;
+              }
             }
           }
         }
