@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.398  2004/07/23 07:42:57  midas
+   Fixed bug in extract_host()
+
    Revision 1.397  2004/07/23 07:31:32  midas
    Fixed typo
 
@@ -5004,21 +5007,22 @@ void extract_path(char *str)
 
 void extract_host(char *str)
 {
-   char *p, str2[256];
+   char *p, *ph, str2[256];
 
    p = NULL;
 
    if (strstr(str, "http://")) 
       p = str + 7;
-   if (strstr(str, "https://")) 
+   else if (strstr(str, "https://")) 
       p = str + 8;
    
    if (p) {
+      ph = p;
       while (*p && *p != '/' && *p != ':')
          p++;
       *p = 0;
 
-      strcpy(str2, str + 7);
+      strcpy(str2, ph);
       strcpy(str, str2);
    }
 }
