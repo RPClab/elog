@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.331  2004/06/04 15:05:01  midas
+   Adjusted indentation
+
    Revision 1.330  2004/06/04 14:51:40  midas
    Implemented stristr
 
@@ -839,7 +842,7 @@ char *stristr(const char *str, const char *pattern)
       return NULL;
 
    while (*str) {
-      ps = (char *)str;
+      ps = (char *) str;
       c1 = *str;
       c2 = *pattern;
       if (my_toupper(c1) == my_toupper(c2)) {
@@ -852,7 +855,7 @@ char *stristr(const char *str, const char *pattern)
          }
 
          if (!*pattern)
-            return (char *)str;
+            return (char *) str;
       }
       str++;
    }
@@ -1407,20 +1410,19 @@ void _MD5_decode(unsigned int *pout, unsigned char *pin, unsigned int len)
 
 void serialdate2date(double days, int *day, int *month, int *year)
 /* convert days since 1.1.1900 to date */
-
 {
-   int i,j, l, n;
+   int i, j, l, n;
 
-   l = (int)days + 68569 + 2415019;
-   n = (int)(( 4 * l ) / 146097);
-   l = l - (int)(( 146097 * n + 3 ) / 4);
-   i = (int)(( 4000 * ( l + 1 ) ) / 1461001);
-   l = l - (int)(( 1461 * i ) / 4) + 31;
-   j = (int)(( 80 * l ) / 2447);
-   *day = l - (int)(( 2447 * j ) / 80);
-   l = (int)(j / 11);
-   *month = j + 2 - ( 12 * l );
-   *year = 100 * ( n - 49 ) + i + l;
+   l = (int) days + 68569 + 2415019;
+   n = (int) ((4 * l) / 146097);
+   l = l - (int) ((146097 * n + 3) / 4);
+   i = (int) ((4000 * (l + 1)) / 1461001);
+   l = l - (int) ((1461 * i) / 4) + 31;
+   j = (int) ((80 * l) / 2447);
+   *day = l - (int) ((2447 * j) / 80);
+   l = (int) (j / 11);
+   *month = j + 2 - (12 * l);
+   *year = 100 * (n - 49) + i + l;
 }
 
 double date2serialdate(int day, int month, int year)
@@ -1428,10 +1430,10 @@ double date2serialdate(int day, int month, int year)
 {
    int serialdate;
 
-   serialdate = (int)(( 1461 * ( year + 4800 + (int)(( month - 14 ) / 12) ) ) / 4) +
-                (int)(( 367 * ( month - 2 - 12 * ( ( month - 14 ) / 12 ) ) ) / 12) -
-                (int)(( 3 * ( (int)(( year + 4900 + (int)(( month - 14 ) / 12) ) / 100) ) ) / 4) +
-                day - 2415019 - 32075;
+   serialdate = (int) ((1461 * (year + 4800 + (int) ((month - 14) / 12))) / 4) +
+       (int) ((367 * (month - 2 - 12 * ((month - 14) / 12))) / 12) -
+       (int) ((3 * ((int) ((year + 4900 + (int) ((month - 14) / 12)) / 100))) / 4) +
+       day - 2415019 - 32075;
 
    return serialdate;
 }
@@ -2327,7 +2329,7 @@ char *find_param(char *buf, char *group, char *param)
    free(str);
 
    /* now search if in [global] section */
-   if (!strieq(group, "global")) 
+   if (!strieq(group, "global"))
       return find_param(buf, "global", param);
 
    return NULL;
@@ -4283,23 +4285,25 @@ int el_correct_links(LOGBOOK * lbs, int old_id, int new_id)
 This routine corrects that. */
 {
    int i, i1, n, n1, size;
-   char date[80], *attrib, *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10], encoding[80], locked_by[256];
+   char date[80], *attrib, *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
+       encoding[80], locked_by[256];
    char list[MAX_N_ATTR][NAME_LENGTH], list1[MAX_N_ATTR][NAME_LENGTH];
    char *att_file;
 
    attrib = malloc(MAX_N_ATTR * NAME_LENGTH);
    text = malloc(TEXT_SIZE);
    att_file = malloc(MAX_ATTACHMENTS * 256);
-   
-   el_retrieve(lbs, new_id, date, attr_list, (void *) attrib, lbs->n_attr, NULL, 0, in_reply_to,
-               reply_to, (void *)att_file, encoding, locked_by);
+
+   el_retrieve(lbs, new_id, date, attr_list, (void *) attrib, lbs->n_attr, NULL, 0,
+               in_reply_to, reply_to, (void *) att_file, encoding, locked_by);
 
    /* go through in_reply_to list */
    n = strbreak(in_reply_to, list, MAX_N_ATTR, ",");
    for (i = 0; i < n; i++) {
       size = TEXT_SIZE;
-      el_retrieve(lbs, atoi(list[i]), date, attr_list, (void *)attrib, lbs->n_attr,
-                  text, &size, in_reply_to, reply_to, (void *)att_file, encoding, locked_by);
+      el_retrieve(lbs, atoi(list[i]), date, attr_list, (void *) attrib, lbs->n_attr,
+                  text, &size, in_reply_to, reply_to, (void *) att_file, encoding,
+                  locked_by);
 
       n1 = strbreak(reply_to, list1, MAX_N_ATTR, ",");
       reply_to[0] = 0;
@@ -4314,19 +4318,21 @@ This routine corrects that. */
             strcat(reply_to, ", ");
       }
 
-      el_submit(lbs, atoi(list[i]), TRUE, date, attr_list, (void *)attrib, lbs->n_attr,
-                text, in_reply_to, reply_to, encoding, (void *)att_file, TRUE, locked_by);
+      el_submit(lbs, atoi(list[i]), TRUE, date, attr_list, (void *) attrib, lbs->n_attr,
+                text, in_reply_to, reply_to, encoding, (void *) att_file, TRUE,
+                locked_by);
    }
 
-   el_retrieve(lbs, new_id, date, attr_list, (void *)attrib, lbs->n_attr, NULL, 0, in_reply_to,
-               reply_to, (void *)att_file, encoding, locked_by);
+   el_retrieve(lbs, new_id, date, attr_list, (void *) attrib, lbs->n_attr, NULL, 0,
+               in_reply_to, reply_to, (void *) att_file, encoding, locked_by);
 
    /* go through reply_to list */
    n = strbreak(reply_to, list, MAX_N_ATTR, ",");
    for (i = 0; i < n; i++) {
       size = sizeof(text);
-      el_retrieve(lbs, atoi(list[i]), date, attr_list, (void *)attrib, lbs->n_attr,
-                  text, &size, in_reply_to, reply_to, (void *)att_file, encoding, locked_by);
+      el_retrieve(lbs, atoi(list[i]), date, attr_list, (void *) attrib, lbs->n_attr,
+                  text, &size, in_reply_to, reply_to, (void *) att_file, encoding,
+                  locked_by);
 
       n1 = strbreak(in_reply_to, list1, MAX_N_ATTR, ",");
       in_reply_to[0] = 0;
@@ -4341,8 +4347,9 @@ This routine corrects that. */
             strcat(in_reply_to, ", ");
       }
 
-      el_submit(lbs, atoi(list[i]), TRUE, date, attr_list, (void *)attrib, lbs->n_attr,
-                text, in_reply_to, reply_to, encoding, (void *)att_file, TRUE, locked_by);
+      el_submit(lbs, atoi(list[i]), TRUE, date, attr_list, (void *) attrib, lbs->n_attr,
+                text, in_reply_to, reply_to, encoding, (void *) att_file, TRUE,
+                locked_by);
    }
 
    free(text);
@@ -4970,7 +4977,7 @@ void set_location(LOGBOOK * lbs, char *rel_path)
       if (!str[0] && strstr(http_host, "localhost")) {
          strcpy(str, "http://localhost");
          if (tcp_port != 80)
-            sprintf(str+strlen(str), ":%d", tcp_port);
+            sprintf(str + strlen(str), ":%d", tcp_port);
          strcat(str, "/");
       }
 
@@ -4978,7 +4985,7 @@ void set_location(LOGBOOK * lbs, char *rel_path)
          /* assemble absolute path from host name and port */
          sprintf(str, "http://%s", host_name);
          if (tcp_port != 80)
-            sprintf(str+strlen(str), ":%d", tcp_port);
+            sprintf(str + strlen(str), ":%d", tcp_port);
          strcat(str, "/");
       }
 
@@ -6713,7 +6720,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                /* do not format date for date attributes */
                i = build_subst_list(lbs, slist, svalue, attrib,
-                     (attr_flags[index] & AF_DATE) == 0);
+                                    (attr_flags[index] & AF_DATE) == 0);
                sprintf(str, "%d", message_id);
                add_subst_list(slist, svalue, "message id", str, &i);
                add_subst_time(lbs, slist, svalue, "entry time", date, &i);
@@ -6731,8 +6738,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          if (getcfg(lbs->name, str, preset)) {
 
             /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib, 
-                 (attr_flags[index] & AF_DATE) == 0);
+            i = build_subst_list(lbs, slist, svalue, attrib,
+                                 (attr_flags[index] & AF_DATE) == 0);
 
             sprintf(str, "%d", message_id);
             add_subst_list(slist, svalue, "message id", str, &i);
@@ -12360,8 +12367,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          else
             strlcat(_cmdline, "?reverse=0", sizeof(_cmdline));
       }
-      if (_cmdline[strlen(_cmdline)-1] == '&')
-         _cmdline[strlen(_cmdline)-1] = 0;
+      if (_cmdline[strlen(_cmdline) - 1] == '&')
+         _cmdline[strlen(_cmdline) - 1] = 0;
       redirect(lbs, _cmdline);
       return;
    }
@@ -12408,7 +12415,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          while (p > str && *p != '&')
             p--;
          strcpy(p, pt);
-      }  
+      }
       if (strchr(str, '&') && !strchr(str, '?'))
          *strchr(str, '&') = '?';
       redirect(lbs, str);
