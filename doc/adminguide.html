@@ -1,7 +1,7 @@
 <HTML>
 <HEAD>
   <TITLE>ELOG Administrator's Guide</TITLE>
-  <LINK REV="made" HREF="mailto:fredp&#64;mygale.org">
+  <LINK REV="made" HREF="mailto:fredp@mygale.org">
   <META NAME="generator" CONTENT="NoteTab Light 4.86c">
   <META NAME="author" CONTENT="Fred Pacquier">
   <META NAME="description" CONTENT="Home of the Electronic Logbook (ELOG) package">
@@ -9,7 +9,7 @@
 <LINK REL="stylesheet" TYPE="text/css" HREF="elog.css">
 </HEAD>
 
-<BODY BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#0000FF" VLINK="#800080" ALINK="#FF0000">
+<BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#0000ff" VLINK="#800080" ALINK="#ff0000">
 
 <div class=title>&nbsp; ELOG Administrator's Guide &nbsp;</div>
 <p>
@@ -46,14 +46,14 @@ workstations. It should also compile and run on other UNIX flavours.
 
 <p>
 Since version 2.0, ELOG contains a RPM file which eases the installation. Get the
-file <code><b>elog-x.x.x-x.i386.rpm</code></b> from the <a href="http://midas.psi.ch/elog/download/RPMS/">download</a>
+file <code><b>elog-x.x.x-x.i386.rpm</code></B> from the <a href="http://midas.psi.ch/elog/download/RPMS/">download</a>
 section and execute as root <code><b>"rpm -i elog-x.x.x-x.i386.rpm"</b></code>. This will
-install the <code><b>elogd</code></b> daemon in <code><b>/usr/local/sbin</code></b>
-and the <code><b>elog</code></b> and <code><b>elconv</code></b> programs in
-<code><b>/usr/local/bin</code></b>. The sample configuration file <code><b>elogd.cfg</code></b>
-together with the sample logbook will be installed under <code><b>/usr/local/elog</code></b>
-and the documentation goes to <code><b>/usr/share/doc</code></b>. The elogd startup script
-will be installed at <code><b>/etc/rc.d/init.d/elogd</code></b>. To start the daemon, enter
+install the <code><b>elogd</code></B> daemon in <code><b>/usr/local/sbin</code></B>
+and the <code><b>elog</code></B> and <code><b>elconv</code></B> programs in
+<code><b>/usr/local/bin</code></B>. The sample configuration file <code><b>elogd.cfg</code></B>
+together with the sample logbook will be installed under <code><b>/usr/local/elog</code></B>
+and the documentation goes to <code><b>/usr/share/doc</code></B>. The elogd startup script
+will be installed at <code><b>/etc/rc.d/init.d/elogd</code></B>. To start the daemon, enter
 
 <ul><code>/etc/rc.d/init.d/elogd start</code></ul>
 
@@ -78,9 +78,9 @@ which the daemon runs.
 <h3><hr><i>Installation from the tarball</i>:</h3>
 
 <p>
-<a href="http://midas.psi.ch/elog/download/">Download</a> the latest <code><b>elog-x.x.x.tar.gz</code></b> package.
+<a href="http://midas.psi.ch/elog/download/">Download</a> the latest <code><b>elog-x.x.x.tar.gz</code></B> package.
 <p>
-Expand the compressed TAR file with <code><b>tar -xzvf elog-x.x.x.tar.gz</code></b>.
+Expand the compressed TAR file with <code><b>tar -xzvf elog-x.x.x.tar.gz</code></B>.
 This creates a subdirectory <code><b>elog-x.x.x</b></code> where x.x.x is the
 version number. In that directory execute <code><b>make</b></code>, which
 creates the executables <code><b>elogd</b></code>, <code><b>elog</b></code> and
@@ -105,7 +105,7 @@ and tries to fall-back to a non-root account. This is necessary to avoid securit
 It looks in the configuration file for the statements <b><code>Usr</code></b> and
 <b><code>Grp.</code></b>. If found, <b><code>elogd</code></b> uses that user and goupe
 name to run under. The names must of course be present on the system (usually
-<b><code>/etc/passwd</b></code> and <b><code>/etc/group</b></code>). If the statements
+<b><code>/etc/passwd</b></CODE> and <b><code>/etc/group</b></CODE>). If the statements
 <b><code>Usr</code></b> and <b><code>Grp.</code></b> are not present, <b><code>elogd</code></b>
 tries user and group <b><code>elog</code></b>, then the default user and group (normally
 <b><code>nogroup</code></b> and <b><code>nobody</code></b>). Care has to be taken
@@ -162,10 +162,10 @@ Redirect permanent /elog http://your.host.domain/elog/
 ProxyPass /elog/ http://your.host.domain:8080/
 </pre></ul>
 <p>
-Make sure that the Apache modules mod_proxy.c and mod_alias.c are activated. Justin Dieters &lt;enderak&#64yahoo.com&gt;
+Make sure that the Apache modules mod_proxy.c and mod_alias.c are activated. Justin Dieters &lt;enderak@yahoo.com&gt;
 reports that mod_proxy_http.c is also required. The <i>Redirect</i>
 statement is necessary to automatically append a "/" to a request like <code><b>
-http://your.host.domain/elog</code></b>. Apache then works as a proxy and forwards all requests
+http://your.host.domain/elog</code></B>. Apache then works as a proxy and forwards all requests
 staring with <code><b>/elog</b></code> to the elogd daemon.<p>
 
 <b>Note: Do not put <code>"ProxyRequests On"</code> into your configuration file. This option is not necessary
@@ -188,7 +188,7 @@ the proxy host (anybody knows how to fix that???).<p>
 
 <h3><hr><i>Notes for the Solaris platform</i>:</h3>
 
-<p><a href="mailto:huber&#64;secaron.de">Martin Huber</a> reports that
+<p><a href="mailto:huber@secaron.de">Martin Huber</a> reports that
 under Solaris 7 the following command line is needed to compile elog:
 <P>
 <ul><code>gcc -L/usr/lib/ -ldl -lresolv -lm -ldl -lnsl -lsocket  elogd.c -o elogd</code></ul>
@@ -200,8 +200,8 @@ the "<B>-k</B>" flag to the <code><b>elogd</b></code> command line to turn keep-
 
 <h3><hr><i>Note for Mac OS X</i>:</h3>
 
-<p><a href="mailto:sak&#64;essc.psu.edu">Sridhar Anandakrishnan</a> and
-<a href="mailto:roktas&#64;emu.edu.tr">Recai Oktas</a> report that under Mac OS X there is a problem with
+<p><a href="mailto:sak@essc.psu.edu">Sridhar Anandakrishnan</a> and
+<a href="mailto:roktas@emu.edu.tr">Recai Oktas</a> report that under Mac OS X there is a problem with
 the default stack size. The command <i><b>limit stacksize unlimited</b></i> (for tcsh) or
 <i><b>ulimit -s unlimited</b></i> (for bash) increases the stacksize and fixes this problem.
 Read the according <a href="http://midas.psi.ch/elogs/Forum/379">thread</a> in the forum.
@@ -226,37 +226,42 @@ are still possible, they are not recommended any more.<p>
 Under Windows, the ports below 1024 can be used
 without restriction. So if no web server is running on the same PC the <b>ELOG</b> daemon can
 be started under the standard Web port 80. This is achieved by changing the <code><b>port=8080</b></code>
-option in <code>elogd.cfg</code> to <code><b>port=80</code></b> and restarting elogd.<p>
+option in <code>elogd.cfg</code> to <code><b>port=80</code></B> and restarting elogd.<p>
 
 <hr><a name="config">
 <div class=section>&nbsp; Server Configuration &nbsp;</div>
 <p>
 <a name="config">The <b>ELOG</b> daemon <b><code>elogd</code></b> can be executed with the following options :
-<ul><code><pre>elogd [-p port] [-h hostname/IP] [-D] [-c file] [-v] [-k]</code></pre></ul>
+<ul><code><pre>elogd [-p port] [-h hostname/IP] [-C] [-m] [-M] [-D] [-c file] [-s dir] [-d dir] [-v] [-k] [-f file] [-x]</code></PRE></ul>
 <p>with :
 <ul>
-<li><code>-p &lt;port></code> : TCP port number to use for the http server (if other than 80)
-<li><code>-h &lt;hostname or IP address></code> : in the case of a "multihomed" server, host name or IP address of the interface ELOG should run on
-<li><code>-D</code> : become a daemon (Unix only)
-<li><code>-c &lt;file&gt;</code> : specify the configuration file (full path mandatory if -D is used)
+<li><code>-p &lt;port&gt;</code>&nbsp; TCP port number to use for the http server (if other than 80)
+<li><code>-h &lt;hostname or IP address&gt;</code> in the case of a "multihomed" server, host name or IP 
+  address of the interface ELOG should run on
+<LI><code>-C &lt;url&gt;</code>&nbsp; clone remote elogd configuration&nbsp;
+<LI><code>-m</code>&nbsp; synchronize logbook(s) with remote server
+<LI><code>-M</code>&nbsp; synchronize with removing deleted entries
+<li><code>-l &lt;logbook&gt;</code>&nbsp; optionally specify logbook for -m and -M commands</li>
+<li><code>-D</code>&nbsp;&nbsp; become a daemon (Unix only)
+<li><code>-c &lt;file&gt;</code>&nbsp; specify the configuration file (full path mandatory if -D is used)
 <li><code>-s &lt;dir&gt;</code> specify resource directory (themes, icons, ...)
 <li><code>-d &lt;dir&gt;</code> specify logbook root directory
 
-<li><code>-v </code> : verbose output for debugging
-<li><code>-k </code> : do not use TCP keep-alive
-<li><code>-f &lt;file&gt;</code> : specify PID file where elogd process ID is written when server is started
-<li><code>-x </code> : enables execution of shell commands
+<li><code>-v&nbsp; </code>  verbose output for debugging
+<li><code>-k&nbsp; </code>  do not use TCP keep-alive
+<li><code>-f &lt;file&gt;</code>&nbsp;specify PID file where elogd process ID is written when server is started
+<li><code>-x&nbsp; </code>enables execution of shell commands</li>
 
 </ul>
 <p>
 It may also be used to generate passwords :
-<ul><code><pre>elogd [-r pwd] [-w pwd] [-a pwd] [-l logbook]</code></pre></ul>
+<ul><code><pre>elogd [-r pwd] [-w pwd] [-a pwd] [-l logbook]</code></PRE></ul>
 <p>with :
 <ul>
-<li><code>-r &lt;pwd></code> : create/overwrite read password in config file
-<li><code>-w &lt;pwd></code> : create/overwrite write password in config file
-<li><code>-a &lt;pwd></code> : create/overwrite administrative password in config file
-<li><code>-l &lt;logbook></code> : specify logbook for -r and -w commands
+<li><code>-r &lt;pwd&gt;</code>&nbsp;create/overwrite read password in config file
+<li><code>-w &lt;pwd&gt;</code>&nbsp;create/overwrite write password in config file
+<li><code>-a &lt;pwd&gt;</code>&nbsp;create/overwrite administrative password in config file
+<li><code>-l &lt;logbook&gt;</code>&nbsp;specify logbook for -r and -w commands</li>
 </ul>
 
 <p> The appearance, functionality and behaviour of the various logbooks on an <b>ELOG</b> server are
@@ -269,15 +274,15 @@ having to restart the server. Instead of restarting the server, under Unix one c
 like <b><code>"killall -HUP elogd"</code></b> to tell the server to re-read its configuration.<p>
 
 The many options of this unique but very important file are documented on the separate <b><a href=
-"config.html">elogd.cfg syntax page</a></b>.<p>
+"config.html" config.html??>elogd.cfg syntax page</a></b>.<p>
 
 To better control appearance and layout of the logbooks, <b><code>elogd.cfg</code></b> may
 optionally specify the use of additional files containing HTML code, and/or custom "<I>themes</I>"
 configurations. These need to be edited directly from the file system right now. <p>
 
-The meaning of the directory flags <b><code>-s</b></code> and <b><code>-d</b></code> is explained
-in the section covering the configuration options <b><code>Resource dir</b></code> and <b><code>
-Logbook dir</b></code> in the <b><a href="config.html">elogd.cfg description</a></b>.<p>
+The meaning of the directory flags <b><code>-s</b></CODE> and <b><code>-d</b></CODE> is explained
+in the section covering the configuration options <b><code>Resource dir</b></CODE> and <b><code>
+Logbook dir</b></CODE> in the <b><a href="config.html">elogd.cfg description</a></b>.<p>
 
 <hr><a name="secure">
 <div class=section>&nbsp; Secure Connections HOWTO &nbsp;</div>
@@ -294,11 +299,11 @@ To use <code><b>elogd</b></code> togethwer with
 <OL>
 <LI>Start <code><b>elogd</b></code>. If another Web server is running
 on port 80, use a different port.
-<P>
+<P></P>
 <LI>Configure stunnel. This requires the creation of a certificate. See
 the <a href="http://www.stunnel.org/faq/certs.html">manual</a> for
 details.
-<P>
+<P></P>
 <LI>Start the <b><code>stunnel</code></b> program if not already done
     and start it with:
 <P>
@@ -306,14 +311,14 @@ details.
     Substitute the port 80 if you started <code><b>elogd</b></code> on another port. This
     causes <b><code>stunnel</code></b> to receive requests on the https port 443 and
     forward them to the <code><b>elogd</b></code> port.
-<P>
+<P></P>
 <LI>Put the URL under which <code><b>elogd</b></code> runs into elogd.cfg:<p>
     <pre>URL = https://your.host.name/</pre>
 
     Note the <b><code>https</code></b> at the beginning of the URL, which is
     mandatory. Once you use the <b><code>https</code></b> URL, elog won't work correctly when
     accessed not through stunnel via <b><code>http://..</code></b>, since any
-    redirection would always bring you back to https://...).<p>
+    redirection would always bring you back to https://...).<p></p>
 
 <LI>Connect to your logbook with a browser which supports SSL via:
 <P>
@@ -322,7 +327,7 @@ details.
 <P>
     <pre>stunnel -f -d 443 -r your.host.name:80</pre>
 
-This reveals any potential error.<p>
+This reveals any potential error.<p></p></LI>
 </OL>
 <p>
 
@@ -363,7 +368,7 @@ reads logbook entries from its database and formats them into HTML. Since
 only forms and tables are used, no Java or Javascript is necessary, which makes the logbook display very fast. The system does not use any images on purpose to reduce the amount of data to be transferred. Since the <b>ELOG</b> daemon contains its own <i>http</i> server, no additional server like Apache is required.
 <p>
 The "<I>database</I>" in which <b>ELOG</b> saves its entries is in plain ASCII format.
-One file is created for each day in the form <b><code>YYMMDDa.log</b></code>
+One file is created for each day in the form <b><code>YYMMDDa.log</b></CODE>
 (where YY is the year, MM the month and DD the day). For ELOG versions 1.x.x,
 the format was <b><code>YYMMDD.log</code></b>. Messages are separated internally
 by the string <b><code>$@MID@$</code></b>. If this string is entered in a message
@@ -381,10 +386,10 @@ files from March 2001, just select them with <b><code>0103??a.log</code>
 
 <HR>
 <div class=footer>&nbsp;
-Content by <a class=nav href="mailto:Stefan.Ritt&#64;psi.ch">Stefan Ritt</a>,
-Web pages by <a class=nav href="mailto:fredp&#64;mygale.org">Fred Pacquier</a>
+Content by <a class=nav href="mailto:Stefan.Ritt@psi.ch">Stefan Ritt</a>,
+Web pages by <a class=nav href="mailto:fredp@mygale.org">Fred Pacquier</a>
  - last modified on 16/01/2002
 &nbsp;</div>
 
-</body>
-</html>
+</BODY>
+</HTML>

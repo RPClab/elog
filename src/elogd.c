@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.504  2004/10/29 19:32:56  midas
+   Added -m and -M command line switches
+
    Revision 1.503  2004/10/27 07:00:44  midas
    Version 2.5.4-6
 
@@ -12315,10 +12318,10 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                      mprint(lbs, mode, error_str);
                   else
                      mprint(lbs, mode, "Local config submitted");
+                  md5_cache[0].message_id = -1;
                } else
                   mprint(lbs, mode, "Local config should be submitted");
 
-               md5_cache[0].message_id = -1;
 
             } else
                /* if config has been changed remotely, but not on this server, receive it */
@@ -12336,10 +12339,10 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                      mprint(lbs, mode, error_str);
                   else
                      mprint(lbs, mode, "Remote config received");
+   
+                  md5_cache[0].message_id = -1;
                } else
                   mprint(lbs, mode, loc("Remote config should be received"));
-
-               md5_cache[0].message_id = -1;
 
             } else
                /* if config has been changed remotely and on this server, show conflict */
@@ -12403,35 +12406,30 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                 && equal_md5(md5_cache[i_cache].md5_digest, md5_remote[i_remote].md5_digest)) {
 
                all_identical = FALSE;
-               if (mode == SYNC_CLONE) {
 
-                  eprintf("Warning: Entry #%d has been changed locally, will not be retrieved\n", message_id);
+               if (_logging_level > 1)
+                  write_logfile(lbs, "MIRROR send entry #%d", message_id);
 
-               } else {
+               /* submit local message */
+               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                     || atoi(str) == 0) {
+                  submit_message(lbs, list[index], message_id, error_str);
 
-                  if (_logging_level > 1)
-                     write_logfile(lbs, "MIRROR send entry #%d", message_id);
+                  /* not that submit_message() may have changed attr_list !!! */
 
-                  /* submit local message */
-                  if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                      || atoi(str) == 0) {
-                     submit_message(lbs, list[index], message_id, error_str);
-
-                     /* not that submit_message() may have changed attr_list !!! */
-
-                     if (error_str[0])
-                        sprintf(str, "%s: %s", loc("Error sending local entry"), error_str);
-                     else
-                        sprintf(str, "ID%d:\t%s", message_id, loc("Local entry submitted"));
-                     mprint(lbs, mode, str);
-                  } else {
-                     sprintf(str, "ID%d:\t%s", message_id, loc("Local entry should be submitted"));
-                     mprint(lbs, mode, str);
-                  }
+                  if (error_str[0])
+                     sprintf(str, "%s: %s", loc("Error sending local entry"), error_str);
+                  else
+                     sprintf(str, "ID%d:\t%s", message_id, loc("Local entry submitted"));
+                  mprint(lbs, mode, str);
 
                   md5_cache[i_cache].message_id = -1;
+               } else {
+                  sprintf(str, "ID%d:\t%s", message_id, loc("Local entry should be submitted"));
+                  mprint(lbs, mode, str);
                }
 
+ 
             } else
                /* if message has been changed remotely, but not on this server, receive it */
                if (!equal_md5(md5_cache[i_cache].md5_digest, md5_remote[i_remote].md5_digest)
@@ -12440,7 +12438,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                all_identical = FALSE;
 
                if (mode == SYNC_CLONE) {
-                  eprintf("ID%s:\t", message_id);
+                  eprintf("ID%d:\t", message_id);
                } else if (mode == SYNC_HTML) {
                   if (getcfg_topgroup())
                      rsprintf("<a href=\"../%s/%d\">ID%d:</a>\t", lbs->name_enc, message_id, message_id);
@@ -12470,12 +12468,13 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                      sprintf(str, "ID%d:\t%s", message_id, loc("Remote entry received"));
                      mprint(lbs, mode, str);
                   }
+
+                  md5_cache[i_cache].message_id = -1;
+
                } else {
                   sprintf(str, "ID%d:\t%s", message_id, loc("Remote entry should be received"));
                   mprint(lbs, mode, str);
                }
-
-               md5_cache[i_cache].message_id = -1;
 
             } else
                /* if message has been changed remotely and on this server, show conflict */
@@ -12526,33 +12525,27 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                all_identical = FALSE;
 
-               if (mode == SYNC_CLONE) {
+               if (_logging_level > 1)
+                  write_logfile(lbs, "MIRROR send entry #%d", message_id);
 
-                  eprintf("Warning: Entry #%d has been changed locally, will not be retrieved\n", message_id);
+               /* submit local message */
+               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                     || atoi(str) == 0) {
+                  submit_message(lbs, list[index], message_id, error_str);
 
-               } else {
+                  /* not that submit_message() may have changed attr_list !!! */
 
-                  if (_logging_level > 1)
-                     write_logfile(lbs, "MIRROR send entry #%d", message_id);
-
-                  /* submit local message */
-                  if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                      || atoi(str) == 0) {
-                     submit_message(lbs, list[index], message_id, error_str);
-
-                     /* not that submit_message() may have changed attr_list !!! */
-
-                     if (error_str[0])
-                        sprintf(str, "%s: %s", loc("Error sending local message"), error_str);
-                     else
-                        sprintf(str, "ID%d:\t%s", message_id, loc("Local entry submitted"));
-                     mprint(lbs, mode, str);
-                  } else {
-                     sprintf(str, "ID%d:\t%s", message_id, loc("Local entry should be submitted"));
-                     mprint(lbs, mode, str);
-                  }
+                  if (error_str[0])
+                     sprintf(str, "%s: %s", loc("Error sending local message"), error_str);
+                  else
+                     sprintf(str, "ID%d:\t%s", message_id, loc("Local entry submitted"));
+                  mprint(lbs, mode, str);
 
                   md5_cache[i_cache].message_id = -1;
+
+               } else {
+                  sprintf(str, "ID%d:\t%s", message_id, loc("Local entry should be submitted"));
+                  mprint(lbs, mode, str);
                }
 
             } else {
@@ -12573,15 +12566,17 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                   rsprintf("ID%d:\t%s\n", message_id, str);
                   n_delete++;
 
-               } else {
+               } if (!isparam("confirm") && mode == SYNC_CLONE) {
 
+                  sprintf(str, "ID%d:\t%s", message_id, loc("Entry should be deleted locally"));
+                  mprint(lbs, mode, str);
+
+               } else {
+               
                   all_identical = FALSE;
 
-                  if (_logging_level > 1)
-                     write_logfile(lbs, "MIRROR delete local entry #%d", message_id);
+                  if (mode == SYNC_CLONE) {
 
-                  if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                      || atoi(str) == 0) {
                      el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
 
                      sprintf(str, "ID%d:\t%s", message_id, loc("Entry deleted locally"));
@@ -12589,9 +12584,25 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                      /* message got deleted from local message list, so redo current index */
                      i_msg--;
+
                   } else {
-                     sprintf(str, "ID%d:\t%s", message_id, loc("Entry should be deleted locally"));
-                     mprint(lbs, mode, str);
+
+                     if (_logging_level > 1)
+                        write_logfile(lbs, "MIRROR delete local entry #%d", message_id);
+
+                     if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                        || atoi(str) == 0) {
+                        el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
+
+                        sprintf(str, "ID%d:\t%s", message_id, loc("Entry deleted locally"));
+                        mprint(lbs, mode, str);
+
+                        /* message got deleted from local message list, so redo current index */
+                        i_msg--;
+                     } else {
+                        sprintf(str, "ID%d:\t%s", message_id, loc("Entry should be deleted locally"));
+                        mprint(lbs, mode, str);
+                     }
                   }
 
                   /* mark message non-conflicting */
@@ -12606,33 +12617,26 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
             all_identical = FALSE;
 
-            if (mode == SYNC_CLONE) {
+            if (_logging_level > 1)
+               write_logfile(lbs, "MIRROR send entry #%d", message_id);
 
-               eprintf("Warning: Entry #%d exists only locally, should be sent to server\n", message_id);
+            remote_id = 0;
+            if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                  || atoi(str) == 0) {
+               remote_id = submit_message(lbs, list[index], message_id, error_str);
 
+               if (error_str[0])
+                  sprintf(str, "%s: %s", loc("Error sending local entry"), error_str);
+               else if (remote_id != message_id)
+                  sprintf(str,
+                           "Error: Submitting entry #%d resulted in remote entry #%d\n",
+                           message_id, remote_id);
+               else
+                  sprintf(str, "ID%d:\t%s", message_id, loc("Local entry submitted"));
+               mprint(lbs, mode, str);
             } else {
-
-               if (_logging_level > 1)
-                  write_logfile(lbs, "MIRROR send entry #%d", message_id);
-
-               remote_id = 0;
-               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                   || atoi(str) == 0) {
-                  remote_id = submit_message(lbs, list[index], message_id, error_str);
-
-                  if (error_str[0])
-                     sprintf(str, "%s: %s", loc("Error sending local entry"), error_str);
-                  else if (remote_id != message_id)
-                     sprintf(str,
-                             "Error: Submitting entry #%d resulted in remote entry #%d\n",
-                             message_id, remote_id);
-                  else
-                     sprintf(str, "ID%d:\t%s", message_id, loc("Local entry submitted"));
-                  mprint(lbs, mode, str);
-               } else {
-                  sprintf(str, "ID%d:\t%s", message_id, loc("Local entry should be submitted"));
-                  mprint(lbs, mode, str);
-               }
+               sprintf(str, "ID%d:\t%s", message_id, loc("Local entry should be submitted"));
+               mprint(lbs, mode, str);
             }
          }
 
@@ -12644,41 +12648,34 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
             all_identical = FALSE;
 
-            if (mode == SYNC_CLONE) {
+            /* find max id both locally and remotely */
+            max_id = 1;
+            for (i = 0; i < *lbs->n_el_index; i++)
+               if (lbs->el_index[i].message_id > max_id)
+                  max_id = lbs->el_index[i].message_id;
 
-               eprintf("Warning: Entry #%d is new locally and remotely, will not be retrieved\n", message_id);
+            for (i = 0; i < n_remote; i++)
+               if (md5_remote[i].message_id > max_id)
+                  max_id = md5_remote[i].message_id;
 
+            if (_logging_level > 1)
+               write_logfile(lbs, "MIRROR change entry #%d to #%d", message_id, max_id + 1);
+
+            /* rearrange local message not to conflict with remote message */
+            if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                  || atoi(str) == 0) {
+               el_move_message(lbs, message_id, max_id + 1);
+
+               sprintf(str, "ID%d:\t", message_id);
+               sprintf(str + strlen(str), loc("Changed local entry ID to %d"), max_id + 1);
+               mprint(lbs, mode, str);
+
+               /* current message has been changed, so start over */
+               i_msg--;
             } else {
-
-               /* find max id both locally and remotely */
-               max_id = 1;
-               for (i = 0; i < *lbs->n_el_index; i++)
-                  if (lbs->el_index[i].message_id > max_id)
-                     max_id = lbs->el_index[i].message_id;
-
-               for (i = 0; i < n_remote; i++)
-                  if (md5_remote[i].message_id > max_id)
-                     max_id = md5_remote[i].message_id;
-
-               if (_logging_level > 1)
-                  write_logfile(lbs, "MIRROR change entry #%d to #%d", message_id, max_id + 1);
-
-               /* rearrange local message not to conflict with remote message */
-               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                   || atoi(str) == 0) {
-                  el_move_message(lbs, message_id, max_id + 1);
-
-                  sprintf(str, "ID%d:\t", message_id);
-                  sprintf(str + strlen(str), loc("Changed local entry ID to %d"), max_id + 1);
-                  mprint(lbs, mode, str);
-
-                  /* current message has been changed, so start over */
-                  i_msg--;
-               } else {
-                  sprintf(str, "ID%d:\t", message_id);
-                  sprintf(str + strlen(str), loc("Local entry ID should be changed to %d"), max_id + 1);
-                  mprint(lbs, mode, str);
-               }
+               sprintf(str, "ID%d:\t", message_id);
+               sprintf(str + strlen(str), loc("Local entry ID should be changed to %d"), max_id + 1);
+               mprint(lbs, mode, str);
             }
          }
 
@@ -12773,50 +12770,49 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                      all_identical = FALSE;
 
-                     if (mode != SYNC_CLONE) {
+                     if (!isparam("confirm") && mode == SYNC_HTML) {
 
-                        if (!isparam("confirm") && mode == SYNC_HTML) {
+                        combine_url(lbs, list[index], "", str, sizeof(str));
+                        sprintf(rem_ref, "<a href=\"http://%s%d\">%s</a>", str,
+                                 message_id, loc("Remote entry"));
 
-                           combine_url(lbs, list[index], "", str, sizeof(str));
-                           sprintf(rem_ref, "<a href=\"http://%s%d\">%s</a>", str,
-                                   message_id, loc("Remote entry"));
+                        sprintf(str, loc("%s should be deleted"), rem_ref);
+                        rsprintf("ID%d:\t%s\n", message_id, str);
+                        n_delete++;
 
-                           sprintf(str, loc("%s should be deleted"), rem_ref);
-                           rsprintf("ID%d:\t%s\n", message_id, str);
-                           n_delete++;
+                     } else if (!isparam("confirm") && mode == SYNC_CLONE) {
 
-                        }
+                        sprintf(str, "ID%d:\t%s", message_id, loc("Entry should be deleted remotely"));
+                        mprint(lbs, mode, str);
 
-                        if (isparam("confirm") || mode == SYNC_CRON) {
+                     } else {
 
-                           if (_logging_level > 1)
-                              write_logfile(lbs, "MIRROR delete remote entry #%d", message_id);
+                        if (_logging_level > 1)
+                           write_logfile(lbs, "MIRROR delete remote entry #%d", message_id);
 
-                           sprintf(str, "%d?cmd=%s&confirm=%s", message_id, loc("Delete"), loc("Yes"));
-                           combine_url(lbs, list[index], str, url, sizeof(url));
+                        sprintf(str, "%d?cmd=%s&confirm=%s", message_id, loc("Delete"), loc("Yes"));
+                        combine_url(lbs, list[index], str, url, sizeof(url));
 
-                           if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
-                               || atoi(str) == 0) {
-                              retrieve_url(url, &buffer, NULL);
+                        if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
+                              || atoi(str) == 0) {
+                           retrieve_url(url, &buffer, NULL);
 
-                              if (strstr(buffer, "Location: ")) {
-                                 if (mode == SYNC_HTML)
-                                    rsprintf("ID%d:\t%s\n", message_id, loc("Entry deleted remotely"));
-                              } else {
-
-                                 if (mode == SYNC_HTML && isparam("debug"))
-                                    rsputs(buffer);
-
-                                 mprint(lbs, mode, loc("Error deleting remote entry"));
-                              }
-
-                              xfree(buffer);
+                           if (strstr(buffer, "Location: ")) {
+                              if (mode == SYNC_HTML)
+                                 rsprintf("ID%d:\t%s\n", message_id, loc("Entry deleted remotely"));
                            } else {
-                              sprintf(str, "ID%d:\t%s", message_id, loc("Entry should be deleted remotely"));
-                              mprint(lbs, mode, str);
+
+                              if (mode == SYNC_HTML && isparam("debug"))
+                                 rsputs(buffer);
+
+                              mprint(lbs, mode, loc("Error deleting remote entry"));
                            }
 
                            md5_cache[i_cache].message_id = -1;
+                           xfree(buffer);
+                        } else {
+                           sprintf(str, "ID%d:\t%s", message_id, loc("Entry should be deleted remotely"));
+                           mprint(lbs, mode, str);
                         }
                      }
                   }
@@ -21182,7 +21178,7 @@ int run_service(void)
 
 int main(int argc, char *argv[])
 {
-   int i, j, n, fh, tcp_port_cl, silent;
+   int i, j, n, fh, tcp_port_cl, silent, sync_flag;
    char read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256],
        clone_url[256], error_str[256], file_name[256];
    time_t now;
@@ -21204,7 +21200,7 @@ int main(int argc, char *argv[])
    /* initialize variables */
    read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = clone_url[0] = 0;
    logbook_dir[0] = resource_dir[0] = logbook_dir[0] = 0;
-   silent = tcp_port_cl = 0;
+   silent = tcp_port_cl = sync_flag = 0;
    use_keepalive = TRUE;
    running_as_daemon = FALSE;
 
@@ -21244,6 +21240,10 @@ int main(int argc, char *argv[])
          use_keepalive = FALSE;
       else if (argv[i][0] == '-' && argv[i][1] == 'x')
          enable_execute = TRUE;
+      else if (argv[i][0] == '-' && argv[i][1] == 'm')
+         sync_flag = 1;
+      else if (argv[i][0] == '-' && argv[i][1] == 'M')
+         sync_flag = 2;
       else if (argv[i][1] == 't') {
          time(&now);
          tms = localtime(&now);
@@ -21308,6 +21308,8 @@ int main(int argc, char *argv[])
             printf("       -a <pwd> create/overwrite admin password in config file\n");
             printf("       -c <file> specify configuration file\n");
             printf("       -C <url> clone remote elogd configuration\n");
+            printf("       -m synchronize logbook(s) with remote server\n");
+            printf("       -M synchronize with removing deleted entries\n");
             printf("       -D become a daemon\n");
             printf("       -d <dir> specify logbook root directory\n");
 #ifdef OS_UNIX
@@ -21315,7 +21317,7 @@ int main(int argc, char *argv[])
 #endif
             printf("       -h this help\n");
             printf("       -k do not use keep-alive\n");
-            printf("       -l <logbook> specify logbook for -r and -w commands\n");
+            printf("       -l <logbook> specify logbook for -r, -w and -m commands\n");
             printf("       -n <hostname> TCP/IP hostname\n");
             printf("       -p <port> TCP/IP port\n");
             printf("       -r <pwd> create/overwrite read password in config file\n");
@@ -21455,6 +21457,28 @@ int main(int argc, char *argv[])
    if (logbook_dir[0]
        && logbook_dir[strlen(logbook_dir) - 1] != DIR_SEPARATOR)
       strlcat(logbook_dir, DIR_SEPARATOR_STR, sizeof(logbook_dir));
+
+   if (sync_flag) {
+      el_index_logbooks();
+
+      if (sync_flag == 2)
+         setparam("confirm", "yes");
+
+      if (logbook[0]) {
+         for (i=0 ; lb_list[i].name[0] ; i++)
+            if (stricmp(lb_list[i].name, logbook))
+               break;
+         if (!lb_list[i].name[0]) {
+            eprintf("Logbook \"%s\" not defined in configuration file\n", logbook);
+            exit(EXIT_FAILURE);
+         }
+
+         synchronize(&lb_list[i], SYNC_CLONE);
+      } else
+         synchronize(NULL, SYNC_CLONE);
+
+      exit(EXIT_SUCCESS);
+   }
 
    if (clone_url[0]) {
 
