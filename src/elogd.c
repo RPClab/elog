@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.403  2004/07/23 23:06:59  midas
+   Fixed problem with delete recommendation
+
    Revision 1.402  2004/07/23 22:49:02  midas
    Improved cloning message display
 
@@ -5198,7 +5201,7 @@ void set_cookie(LOGBOOK * lbs, char *name, char *value, BOOL global, char *expir
       exp = -24;
 
    /* add expriation date */
-   if (exp != 0) {
+   if (exp != 0 && exp < 100000) {
       time(&now);
       now += (int) (3600 * exp);
       gmt = gmtime(&now);
@@ -11905,10 +11908,10 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                      sprintf(loc_ref, "<a href=\"../%s/%d\">%s</a>", lbs->name_enc,
                              message_id, loc("local"));
                   else
-                     sprintf(loc_ref, "<a href=\"%d\">%s</a>", message_id, loc("local"));
+                     sprintf(loc_ref, "<a href=\"%d\">%s</a>", message_id, loc("Local entry"));
 
-                  rsprintf("ID%d:\t%s\n", message_id,
-                           loc("Local entry %s should be deleted"), loc_ref);
+                  sprintf(str, loc("%s should be deleted"), loc_ref);
+                  rsprintf("ID%d:\t%s\n", message_id, str);
 
                } else {
 
@@ -12104,10 +12107,11 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
 
                            combine_url(lbs, list[index], "", str, sizeof(str));
                            sprintf(rem_ref, "<a href=\"http://%s%d\">%s</a>", str,
-                                   message_id, loc("remote"));
+                                   message_id, loc("Remote entry"));
 
-                           rsprintf("ID%d:\t%s\n", message_id,
-                                    loc("Remote entry %s should be deleted"), rem_ref);
+                           sprintf(str, loc("%s should be deleted"), rem_ref);
+                           rsprintf("ID%d:\t%s\n", message_id, str);
+
                         }
 
                         if (isparam("confirm") || mode == SYNC_CRON) {
@@ -19024,8 +19028,12 @@ void server_loop(int tcp_port)
    check_config();
 
    /* build logbook indices */
+   if (!verbose)
+      eprintf("Indexing logbooks ... ");
    if (el_index_logbooks() != EL_SUCCESS)
       exit(EXIT_FAILURE);
+   if (!verbose)
+      eputs("done");
 
    /* listen for connection */
    status = listen(lsock, SOMAXCONN);
@@ -19034,7 +19042,7 @@ void server_loop(int tcp_port)
       return;
    }
 
-   eprintf("Server listening on port %d...\n", tcp_port);
+   eprintf("Server listening on port %d ...\n", tcp_port);
    do {
       FD_ZERO(&readfds);
       FD_SET(lsock, &readfds);
