@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.263  2004/02/25 10:22:22  midas
+   Made 'subst <attrib> = $<attrib>' work correctly
+
    Revision 1.262  2004/02/24 19:05:16  midas
    Removed javaEnabled()
 
@@ -12873,9 +12876,6 @@ void submit_elog(LOGBOOK * lbs)
       strcpy(att_file[i], getparam(str));
    }
 
-   /* compile substitution list */
-   n = build_subst_list(lbs, slist, svalue, NULL);
-
    /* retrieve attributes */
    for (i = 0; i < lbs->n_attr; i++) {
 
@@ -12935,6 +12935,13 @@ void submit_elog(LOGBOOK * lbs)
             *strchr(attrib[i], '{') = 0;
       }
 
+   }
+
+   /* compile substitution list */
+   n = build_subst_list(lbs, slist, svalue, attrib);
+
+   /* substitute attributes */
+   for (i = 0; i < lbs->n_attr; i++) {
       if (!*getparam("edit_id")) {
          sprintf(str, "Subst %s", attr_list[i]);
          if (getcfg(lbs->name, str, subst_str)) {
@@ -12943,7 +12950,7 @@ void submit_elog(LOGBOOK * lbs)
          }
       }
    }
-
+   
    message_id = 0;
    reply_to[0] = 0;
    in_reply_to[0] = 0;
