@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.460  2004/08/12 19:27:59  midas
+   Added more debugging info
+
    Revision 1.459  2004/08/11 14:03:35  midas
    Implemented possibility to server .html files through elog
 
@@ -19778,7 +19781,9 @@ void server_loop(void)
                exit(EXIT_FAILURE);
             }
          }
-      }
+      } else
+         if (verbose)
+            eprintf("Falling back to group \"%s\"", str);
 
       if (!getcfg("global", "Usr", str, sizeof(str)) || setuser(str) < 0) {
          eprintf("Falling back to default user \"elog\"\n");
@@ -19791,7 +19796,9 @@ void server_loop(void)
                exit(EXIT_FAILURE);
             }
          }
-      }
+      } else
+         if (verbose)
+            eprintf("Falling back to user \"%s\"", str);   
    }
 #endif
 
