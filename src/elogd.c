@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.295  2004/03/15 08:02:46  midas
+   Fixed crashing elogd in threaded display
+
    Revision 1.294  2004/03/14 16:43:29  midas
    Implemented option 'guest display'
 
@@ -10481,7 +10484,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          else {
             /* display standard icons */
             if (level == 0)
-               rsprintf("<a href=\"%s\"><img border=0 src=\"entry.gif\"></a>&nbsp;");
+               rsprintf("<a href=\"%s\"><img border=0 src=\"entry.gif\"></a>&nbsp;", ref);
             else
                rsprintf("<a href=\"%s\"><img border=0 src=\"reply.gif\"></a>&nbsp;", ref);
          }
