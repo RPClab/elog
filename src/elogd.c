@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.218  2004/01/29 09:53:27  midas
+   Use \r\n in save_admin_config()
+
    Revision 1.217  2004/01/29 09:41:28  midas
    Implemented CSV output
 
@@ -7152,9 +7155,9 @@ int save_admin_config(LOGBOOK * lbs, char *section, char *buffer, char *error)
    }
 
    /* combine old and new config */
-   sprintf(p1, "[%s]\n", section);
+   sprintf(p1, "[%s]\r\n", section);
    strcat(p1, buffer);
-   strcat(p1, "\n\n");
+   strcat(p1, "\r\n\r\n");
    if (p2) {
       strlcat(p1, buf2, length + strlen(buffer) + 1);
       free(buf2);
