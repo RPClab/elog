@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.79  2002/09/16 08:27:20  midas
+  Fixed problem with Konqueror and 'Cancel'
+
   Revision 2.78  2002/09/16 07:02:54  midas
   Version 2.1.3
 
@@ -5311,7 +5314,7 @@ int  i;
 
   /*---- header ----*/
 
-  show_standard_header(loc("ElOG user config"), "");
+  show_standard_header(loc("ElOG user config"), ".");
 
   /*---- title ----*/
 
@@ -9612,6 +9615,14 @@ LOGBOOK *cur_lb;
   if (equal_ustring(command, loc("Back")))
     {
     sprintf(str, "../%s/", logbook_enc);
+    redirect(str);
+    return;
+    }
+
+  /* check for "Cancel" button */
+  if (equal_ustring(command, loc("Cancel")))
+    {
+    sprintf(str, "../%s/%s", logbook_enc, path);
     redirect(str);
     return;
     }
