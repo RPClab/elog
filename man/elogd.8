@@ -22,7 +22,7 @@ elogd \- web server program for Electronic Logbook ELOG
 \fBelog\fR [ \fB-a \fIpassword\fB\fR ] [ \fB-c \fIfile\fB\fR ] [ \fB-D\fR ]
 [ \fB-d \fIdirectory\fB\fR ] [ \fB-k\fR ] [ \fB-l \fIlogbook\fB\fR ]
 [ \fB-p \fIport\fB\fR ] [ \fB-r \fIpassword\fB\fR ] [ \fB-s \fIdirectory\fB\fR ]
-[ \fB-v\fR ] [ \fB-w \fIpassword\fB\fR ] 
+[ \fB-v\fR ] [ \fB-w \fIpassword\fB\fR ] [ \fB-f \fIfile\fB\fR ] 
 .SH DESCRIPTION
 .PP
 The Electronic Logbook
@@ -78,6 +78,9 @@ debugging output
 .TP
 .BI -w " password"
 create/overwrite write password in config file
+.TP
+.BI -f " file"
+specify PID file
 .SH SEE ALSO
 .BR elog (1).
 .PP
