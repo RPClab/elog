@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.477  2004/09/18 05:45:43  midas
+   Fixed crash when running as windows service
+
    Revision 1.476  2004/09/18 04:54:17  midas
    Fixed problem withe missing attachment images
 
@@ -19474,12 +19477,7 @@ void server_loop(void)
       /* Redirect all messages handled with eprintf/efputs to syslog */
       redirect_to_syslog();
 
-#ifdef OS_WINNT
-      if (!run_service()) {
-         eprintf("Couldn't run the service; aborting\n");
-         exit(EXIT_FAILURE);
-      }
-#else
+#ifdef OS_UNIX
       if (!ss_daemon_init()) {
          eprintf("Couldn't initiate the daemon; aborting\n");
          exit(EXIT_FAILURE);
@@ -20303,17 +20301,24 @@ void server_loop(void)
 
    } while (!_abort);
 
+   eprintf("elogd server aborted.\n");
+
    /* free all allocated memory */
    for (i = 0; lb_list[i].name[0]; i++) {
-      xfree(lb_list[i].el_index);
-      xfree(lb_list[i].n_el_index);
+      if (lb_list[i].el_index) {
+         xfree(lb_list[i].el_index);
+         lb_list[i].el_index = NULL;
+      }
+
+      if (lb_list[i].n_el_index) {
+         xfree(lb_list[i].n_el_index);
+         lb_list[i].n_el_index = NULL;
+      }
    }
 
    xfree(net_buffer);
    xfree(return_buffer);
    xfree(cfgbuffer);
-
-   eprintf("elogd server aborted.\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -20547,6 +20552,7 @@ void create_password(char *logbook, char *name, char *pwd)
             /* write remainder of file */
             write(fh, p, strlen(p));
             xfree(cfgbuffer);
+            cfgbuffer = NULL;
             close(fh);
             return;
          }
@@ -20567,6 +20573,7 @@ void create_password(char *logbook, char *name, char *pwd)
          /* write remainder of file */
          write(fh, p, strlen(p));
          xfree(cfgbuffer);
+         cfgbuffer = NULL;
          close(fh);
          return;
       }
@@ -20579,6 +20586,7 @@ void create_password(char *logbook, char *name, char *pwd)
    }
 
    xfree(cfgbuffer);
+   cfgbuffer = NULL;
    close(fh);
 }
 
@@ -21224,7 +21232,22 @@ int main(int argc, char *argv[])
    if (getcfg("global", "Max content length", str, sizeof(str)))
       _max_content_length = atoi(str);
 
+#ifdef OS_WINNT
+   /* if running as a service, server_loop gets called from the service main routine */
+   if (running_as_daemon) {
+      redirect_to_syslog();
+
+      if (!run_service()) {
+         eprintf("Couldn't run the service; aborting\n");
+         exit(EXIT_FAILURE);
+      }
+   } else
+      server_loop();
+#else
+
    server_loop();
+
+#endif
 
    exit(EXIT_SUCCESS);
 }
