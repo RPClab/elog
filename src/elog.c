@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.18  2004/03/25 19:47:48  midas
+  Fixed problem with attributes containing spaces
+
   Revision 1.17  2004/03/14 16:43:29  midas
   Implemented option 'guest display'
 
@@ -238,6 +241,18 @@ size_t strlcat(char *dst, const char *src, size_t size)
    *d = '\0';
 
    return (dlen + (s - src));   /* count does not include NUL */
+}
+
+/*-------------------------------------------------------------------*/
+
+void btou(char *str)
+/* convert all blanks to underscores in a string */
+{
+   int i;
+
+   for (i = 0; i < (int) strlen(str); i++)
+      if (str[i] == ' ')
+         str[i] = '_';
 }
 
 /*------------------------------------------------------------------*/
@@ -764,10 +779,13 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
               "%s\r\nContent-Disposition: form-data; name=\"suppress\"\r\n\r\n1\r\n",
               boundary);
 
-   for (i = 0; i < n_attr; i++)
+   for (i = 0; i < n_attr; i++) {
+      strcpy(str, attrib_name[i]);
+      btou(str);
       sprintf(content + strlen(content),
               "%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n", boundary,
-              attrib_name[i], attrib[i]);
+              str, attrib[i]);
+   }
 
    sprintf(content + strlen(content),
            "%s\r\nContent-Disposition: form-data; name=\"Text\"\r\n\r\n%s\r\n%s\r\n",
@@ -912,8 +930,8 @@ int main(int argc, char *argv[])
    char attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 
    text[0] = textfile[0] = uname[0] = upwd[0] = suppress = 0;
-   host_name[0] = logbook[0] = password[0] = subdir[0] = n_att = n_attr = reply = edit =
-       0;
+   host_name[0] = logbook[0] = password[0] = subdir[0] = 0;
+   n_att = n_attr = reply = edit = 0;
    port = 80;
 
    for (i = 0; i < MAX_ATTACHMENTS; i++) {
@@ -966,7 +984,7 @@ int main(int argc, char *argv[])
             else if (argv[i][1] == 'm')
                strcpy(textfile, argv[++i]);
             else {
-             usage:
+               usage:
                printf("\nusage: elog\n");
                printf("           -h <hostname> [-p port] [-s subdir]\n");
                printf
@@ -1058,7 +1076,7 @@ int main(int argc, char *argv[])
          text[n - 1] = 0;
    }
 
-  /*---- open attachment file ----*/
+   /*---- open attachment file ----*/
 
    for (i = 0; i < MAX_ATTACHMENTS; i++) {
       if (!attachment[i][0])

@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.313  2004/03/25 19:47:48  midas
+   Fixed problem with attributes containing spaces
+
    Revision 1.312  2004/03/24 20:44:21  midas
    Improved synchronization speed
 
@@ -7547,15 +7550,13 @@ void show_find_form(LOGBOOK * lbs)
       rsprintf("<input type=radio id=\"CSV1\" name=\"mode\" value=\"CSV1\" checked>");
    else
       rsprintf("<input type=radio id=\"CSV1\" name=\"mode\" value=\"CSV1\">");
-   rsprintf("<label for=\"CSV1\">%s&nbsp;&nbsp;</label>\n",
-            loc("CSV (\",\" separated)"));
+   rsprintf("<label for=\"CSV1\">%s&nbsp;&nbsp;</label>\n", loc("CSV (\",\" separated)"));
 
    if (strieq(mode, "CSV2"))
       rsprintf("<input type=radio id=\"CSV2\" name=\"mode\" value=\"CSV2\" checked>");
    else
       rsprintf("<input type=radio id=\"CSV2\" name=\"mode\" value=\"CSV2\">");
-   rsprintf("<label for=\"CSV2\">%s&nbsp;&nbsp;</label>\n",
-            loc("CSV (\";\" separated)"));
+   rsprintf("<label for=\"CSV2\">%s&nbsp;&nbsp;</label>\n", loc("CSV (\";\" separated)"));
 
    if (strieq(mode, "XML"))
       rsprintf("<input type=radio id=\"XML\" name=\"mode\" value=\"XML\" checked>");
@@ -9103,7 +9104,7 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
    if (strieq(sep, "auto")) {
 
       /* count commas */
-      for (i=0,p=csv ; p ; i++) {
+      for (i = 0, p = csv; p; i++) {
          p = strchr(p, ',');
          if (p)
             p++;
@@ -9111,7 +9112,7 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
       n = i;
 
       /* count semicolon */
-      for (i=0,p=csv ; p ; i++) {
+      for (i = 0, p = csv; p; i++) {
          p = strchr(p, ';');
          if (p)
             p++;
@@ -10424,10 +10425,10 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                   logf(lbs, "MIRROR conflict entry #%d", message_id);
 
                combine_url(lbs, list[index], "", str, sizeof(str));
-               
+
                if (getcfg_topgroup())
-                  sprintf(loc_ref, "<a href=\"../%s/%d\">%s</a>", lbs->name_enc, 
-                                    message_id, loc("local"));
+                  sprintf(loc_ref, "<a href=\"../%s/%d\">%s</a>", lbs->name_enc,
+                          message_id, loc("local"));
                else
                   sprintf(loc_ref, "<a href=\"%d\">%s</a>", message_id, loc("local"));
 
@@ -11068,21 +11069,24 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                         rsputs(attrib[i]);
                      else {
                         rsprintf("<a href=\"%s\">", ref);
-                        
+
                         sprintf(str, "Display %s", attr_list[i]);
                         if (getcfg(lbs->name, str, display)) {
                            j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
-                                                (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
+                                                (char (*)[NAME_LENGTH]) svalue, attrib,
+                                                TRUE);
                            sprintf(str, "%d", message_id);
                            add_subst_list((char (*)[NAME_LENGTH]) slist,
-                                          (char (*)[NAME_LENGTH]) svalue, "message id", str, &j);
+                                          (char (*)[NAME_LENGTH]) svalue, "message id",
+                                          str, &j);
                            add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
-                                          (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
+                                          (char (*)[NAME_LENGTH]) svalue, "entry time",
+                                          date, &j);
 
                            strsubst(display, (char (*)[NAME_LENGTH]) slist,
                                     (char (*)[NAME_LENGTH]) svalue, j);
 
-                        } else 
+                        } else
                            strcpy(display, attrib[i]);
 
                         if (is_html(display))
@@ -15059,7 +15063,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
                strsubst(display, (char (*)[NAME_LENGTH]) slist,
                         (char (*)[NAME_LENGTH]) svalue, j);
 
-            } else 
+            } else
                strcpy(display, attrib[i]);
 
             if (is_html(display))
