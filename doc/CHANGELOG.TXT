@@ -1,3 +1,24 @@
+Version 2.0.4, released July 8th, 2002
+======================================
+
+- Fixed problem with "?cmd=Search" and wrong colors
+- Propagage "mode=threaded" though "lastxxx"
+- Fixed problem with submission of may "-----" lines
+- Added attributes with commas like 'Options = item1, "item2, 3", item2'
+  which can be enclosed in ""													
+- Return code for elog is zero for success and 1 for error
+- Fixed problem where only first line got ">" on replied to entries
+  submitted via "elog".
+- Fixed bug with reverse sort in threaded display
+- Fixed problem with "0207 1a.log" filenames containing a blank
+
+Version 2.0.3, released June 25th, 2002
+=======================================
+
+- Fixed problem that "Change password" didn't work if 
+  "Start page = ?cmd=Last 10" was set in configuration file
+- Updated browser URL to http://localhost:8080/demo in windows installer
+
 Version 2.0.2, released June 21st, 2002
 =======================================
 
