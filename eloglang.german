@@ -83,6 +83,7 @@ New message cannot be written to directory "%s" = Neuer Entrag kann nicht ins Ve
 Please check that it exists and elogd has write access = Bitte überprüfen, ob es existiert und ob elogd Schreibzugriff hat
 Error: Attribute <b>%s</b> not supplied = Fehler: Attribut <b>%s</b> nicht ausgefüllt
 Please go back and enter the <b>%s</b> field = Bitte zurückgehen und das Feld <b>%s</b> ausfüllen
+Please use your browser's back button to go back = Bitte die Zurück-Taste Ihres Browsers betätigen
 Original attachment = Alter Anhang
 New attachment = Neuer Anhang
 
