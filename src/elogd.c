@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.111  2003/05/20 00:11:51  midas
+  Check for .jpg & co files in resource dir, then in themes dir
+
   Revision 1.110  2003/05/17 16:00:31  midas
   Remove message lock on 'Back' button; on config user page, don't go back after 'Save'
 
@@ -4682,6 +4685,21 @@ BOOL   global;
   set_cookie(lbs, "upwd", enc_pwd, global, exp);
 
   set_redir(lbs, getparam("redir"));
+}
+
+/*------------------------------------------------------------------*/
+
+int exist_file(char *file_name)
+{
+int fh;
+  
+  fh = open(file_name, O_RDONLY | O_BINARY);
+  if (fh > 0)
+    {
+    close(fh);
+    return 1;
+    }
+  return 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -12940,19 +12958,28 @@ int                  net_buffer_size;
           strstr(logbook, ".jpg") || strstr(logbook, ".png") ||
           strstr(logbook, ".htm") || strstr(logbook, ".css"))
         {
-        /* serve file directly from themes directory */
+        /* check if file in resource directory */
         strlcpy(str, resource_dir, sizeof(str));
-        strlcat(str, "themes", sizeof(str));
-        strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
-        
-        if (getcfg("global", "theme", theme))
-          strlcat(str, theme, sizeof(str));
-        else
-          strlcat(str, "default", sizeof(str));
-
-        strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
         strlcat(str, logbook, sizeof(str));
-        send_file_direct(str);
+        if (exist_file(str))
+          send_file_direct(str);
+        else
+          {
+          /* else search file in themes directory */
+          strlcpy(str, resource_dir, sizeof(str));
+          strlcat(str, "themes", sizeof(str));
+          strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
+        
+          if (getcfg("global", "theme", theme))
+            strlcat(str, theme, sizeof(str));
+          else
+            strlcat(str, "default", sizeof(str));
+
+          strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
+          strlcat(str, logbook, sizeof(str));
+          send_file_direct(str);
+          }
+
         send(_sock, return_buffer, return_length, 0);
 
         if (verbose)
