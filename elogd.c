@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.127  2003/01/09 08:47:52  midas
+  Added 'title bgcolor' and 'title fontcolor' in config file
+
   Revision 2.126  2003/01/08 16:01:57  midas
   Fixed bug with style sheet
 
@@ -3951,7 +3954,7 @@ int i;
 
 void show_standard_title(char *logbook, char *text, int printable)
 {
-char   str[256], ref[256];
+char   str[256], ref[256], bgcolor[32], fontcolor[32];
 int    i, j, n_grp, n_lb, nnum, level;
 LBLIST clb, flb, nlb, lbl;
 
@@ -4006,9 +4009,19 @@ LBLIST clb, flb, nlb, lbl;
 
           if (clb[i].member == NULL)
             {
+            if (getcfg(clb[i].name, "Title BGcolor", str))
+              strlcpy(bgcolor, str, sizeof(bgcolor));
+            else
+              strlcpy(bgcolor, gt("LTab1 BGColor"), sizeof(bgcolor));
+
+            if (getcfg(clb[i].name, "Title Fontcolor", str))
+              strlcpy(fontcolor, str, sizeof(fontcolor));
+            else
+              strlcpy(fontcolor, gt("LTab1 Fontcolor"), sizeof(fontcolor));
+
             rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"color:%s;background-color:%s\">&nbsp;",
-                      gt("LTab1 Fontcolor"), gt("LTab1 BGColor"));
-            rsprintf("<a style=\"text-decoration:none;color:%s\" href=\"../%s/\">", gt("LTab1 Fontcolor"), ref);
+                      fontcolor, bgcolor);
+            rsprintf("<a style=\"text-decoration:none;color:%s\" href=\"../%s/\">", fontcolor, ref);
             }
           else
             {
@@ -4033,6 +4046,7 @@ LBLIST clb, flb, nlb, lbl;
             }
           }
 
+        strlcpy(str, clb[i].name, sizeof(str));
 
         for (j=0 ; j<(int)strlen(str) ; j++)
           if (str[j] == ' ')
@@ -4062,26 +4076,36 @@ LBLIST clb, flb, nlb, lbl;
 
   /*---- title row ----*/
 
+  if (getcfg(logbook, "Title BGcolor", str))
+    strlcpy(bgcolor, str, sizeof(bgcolor));
+  else
+    strlcpy(bgcolor, gt("Title BGColor"), sizeof(bgcolor));
+
+  if (getcfg(logbook, "Title Fontcolor", str))
+    strlcpy(fontcolor, str, sizeof(fontcolor));
+  else
+    strlcpy(fontcolor, gt("Title Fontcolor"), sizeof(fontcolor));
+
   rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=0 bgcolor=#FFFFFF>\n",
             gt("Title cellpadding"));
 
   /* left cell */
-  rsprintf("<tr><td bgcolor=%s align=left>", gt("Title BGColor"));
+  rsprintf("<tr><td bgcolor=%s align=left>", bgcolor);
 
   /* use comment as title if available, else logbook name */
   if (!getcfg(logbook, "Comment", str))
     strcpy(str, logbook);
 
   rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif color=%s><b>&nbsp;&nbsp;%s%s<b></font>\n",
-            gt("Title fontcolor"), str, text);
+            fontcolor, str, text);
   rsprintf("&nbsp;</td>\n");
 
   /* middle cell */
   if (*getparam("full_name"))
     {
-    rsprintf("<td bgcolor=%s align=center>", gt("Title BGColor"));
+    rsprintf("<td bgcolor=%s align=center>", bgcolor);
     rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif color=%s><b>&nbsp;&nbsp;%s \"%s\"<b></font></td>\n",
-              gt("Title fontcolor"), loc("Logged in as"), getparam("full_name"));
+              fontcolor, loc("Logged in as"), getparam("full_name"));
     }
   else
     {
@@ -4089,12 +4113,12 @@ LBLIST clb, flb, nlb, lbl;
       {
       rsprintf("<td bgcolor=%s align=center>", gt("Title BGColor"));
       rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif color=%s><b>&nbsp;&nbsp;%s<b></font></td>\n",
-                gt("Title fontcolor"), loc("Not logged in"));
+                fontcolor, loc("Not logged in"));
       }
     }
 
   /* right cell */
-  rsprintf("<td bgcolor=%s align=right>", gt("Title BGColor"));
+  rsprintf("<td bgcolor=%s align=right>", bgcolor);
 
   if (*gt("Title image URL"))
     rsprintf("<a href=\"%s\">\n", gt("Title image URL"));
@@ -4103,7 +4127,7 @@ LBLIST clb, flb, nlb, lbl;
     rsprintf("<img border=0 src=\"%s\">", gt("Title image"));
   else
     rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif color=%s><b>ELOG V%s&nbsp;&nbsp</b></font>",
-              gt("Title fontcolor"), VERSION);
+              fontcolor, VERSION);
 
   if (*gt("Title image URL"))
     rsprintf("</a>\n");
