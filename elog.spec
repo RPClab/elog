@@ -1,6 +1,10 @@
+# OpenSSH privilege separation requires a user & group ID
+%define elog_uid    105
+%define elog_gid    105
+
 Name:       elog
 Summary:    elog is a standalone electronic web logbook
-Version:    2.0.3
+Version:    2.1.0
 Release:    1
 Copyright:  GPL
 Group:      Applications/Networking
@@ -38,6 +42,8 @@ access control, etc. Moreover, a single server can host several weblogs, and
 each weblog can be totally different from the rest. 
 
 %changelog
+* Tue Aug 13 2002 Stefan Ritt <stefan.ritt@psi.ch>
+- Added elog group and user, thanks to Nicolas Chuche [nchuche@teaser.fr]
 * Tue Jun 18 2002 Stefan Ritt <stefan.ritt@psi.ch>
 - Put elogd.init into TAR file, add logbooks directory, put elogd in sbin/
 * Tue Jun 18 2002 Serge Droz <serge.droz@psi.ch>
@@ -50,6 +56,9 @@ each weblog can be totally different from the rest.
 
 %prep
 %setup -q
+%{_sbindir}/groupadd -r -g %{elog_gid} elog 2>/dev/null || :
+%{_sbindir}/useradd -d /no/such/path -s /bin/false -u %{elog_uid} \
+   -g elog -M -r elog 2>/dev/null || :
 
 %build
 make
