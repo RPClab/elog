@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.103  2002/11/22 07:56:53  midas
+  Fixed bug with self register in German
+
   Revision 2.102  2002/11/21 09:25:05  midas
   Fixed bug with 'hosts allow'
 
@@ -9544,7 +9547,7 @@ int do_self_register(LOGBOOK *lbs, char *command)
 char str[256];
 
   /* display new user page if "self register" is clicked */
-  if (equal_ustring(command, loc("New user")))
+  if (equal_ustring(command, "New user"))
     {
     show_new_user_page(lbs);
     return 0;
