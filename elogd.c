@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.28  2002/06/03 08:12:24  midas
+  Reversed setuid() and creation of elogd.pid
+
   Revision 1.27  2002/06/03 08:07:47  midas
   elogd.pid is now created from child
 
@@ -7480,7 +7483,31 @@ struct timeval       timeout;
   /* open configuration file */
   getcfg("dummy", "dummy", str);
 
+  if (daemon)
+    {
+    printf("Becoming a daemon...\n");
+    ss_daemon_init();
+    }
+
 #ifdef OS_UNIX
+  /* crate /var/run/elogd.pid file */
+  {
+  int pid;
+  FILE *f;
+
+  pid = getpid();
+  f = fopen("/var/run/elogd.pid", "w");
+  if (f)
+    {
+    fprintf(f, "%d\n", pid);
+    fclose(f);
+    }
+  }
+
+  /* install signal handler */
+  signal(SIGTERM, ctrlc_handler);
+  signal(SIGINT, ctrlc_handler);
+
   /* give up root privilege */
 
   if (geteuid() == 0)
@@ -7509,31 +7536,6 @@ struct timeval       timeout;
       setuid(getuid()); /* used for setuid programs */
   
     }
-#endif
-
-  if (daemon)
-    {
-    printf("Becoming a daemon...\n");
-    ss_daemon_init();
-    }
-
-#ifdef OS_UNIX
-  {
-  int pid;
-  FILE *f;
-
-  /* crate /var/run/elogd.pid file */
-  pid = getpid();
-  f = fopen("/var/run/elogd.pid", "w");
-  if (f)
-    {
-    fprintf(f, "%d\n", pid);
-    fclose(f);
-    }
-  }
-
-  signal(SIGTERM, ctrlc_handler);
-  signal(SIGINT, ctrlc_handler);
 #endif
 
   /* listen for connection */
