@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.191  2004/01/14 10:16:44  midas
+   Added new translated strings
+
    Revision 1.190  2004/01/14 10:14:05  midas
    Changed layout when adding new options
 
@@ -5976,7 +5979,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   if (equal_ustring(getparam("extend"), str)) {
 
                      rsprintf("<i>");
-                     rsprintf(loc("Add new %s here"), attr_list[index]);
+                     rsprintf(loc("Add new option here"), attr_list[index]);
                      rsprintf("&nbsp;:&nbsp;</i>\n");
 
                      rsprintf

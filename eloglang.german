@@ -289,4 +289,6 @@ Update = Aktualisieren
 
 # V2.4.1
 by = von
-Change [global] = [global] ändern
+Change %s = %s ändern
+Add new option here = Neue Option hier eingeben
+
