@@ -457,7 +457,8 @@ td {
 }
 
 .calhead {
-  background-color:#AAAAFF;
+  background-color:#468284;
+  color:white;
   padding:0px;
   font-size:12px;
   text-align:center;
@@ -484,7 +485,7 @@ td {
 }
 
 .calsel {
-  background-color:#40A040;
+  background-color:#208020;
   padding:0px;
   font-size:16px;
   text-align:center;
