@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.594  2005/03/24 09:38:15  ritt
+   Fixed bug with crashing elog on 'protect selection page'
+
    Revision 1.593  2005/03/24 09:22:38  ritt
    XPath starts now with index 1
 
@@ -18692,7 +18695,7 @@ int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name,
    orig_topgroup[0] = 0;
    if (lbs == NULL) {
       getcfg("global", "Password file", global, sizeof(global));
-      if (*getcfg_topgroup())
+      if (getcfg_topgroup() && *getcfg_topgroup())
          strcpy(orig_topgroup, getcfg_topgroup());
 
       for (i = 0; lb_list[i].name[0]; i++) {
