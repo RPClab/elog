@@ -6,6 +6,9 @@
   Contents:     Conversion program for ELOG messages
 
   $Log$
+  Revision 1.6  2004/07/28 18:51:57  midas
+  Fixed error with gcc 3.4, thanks to Recai Oktas
+
   Revision 1.5  2004/04/15 06:48:43  midas
   Fixed bug with unterminated string
 
@@ -293,7 +296,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
    struct tm *tms, ltms;
    time_t lt, ltime, lact;
    char str[256], file_name[256], dir[256];
-   char *file_list;
+   char *file_list, *tag_dir;
 
    did_walk = 0;
    ltime = lfh = 0;
@@ -303,9 +306,10 @@ INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
 
    /* check tag for direction */
    direction = 0;
-   if (strpbrk(tag, "+-")) {
-      direction = atoi(strpbrk(tag, "+-"));
-      *strpbrk(tag, "+-") = 0;
+   tag_dir = strpbrk(tag, "+-");
+   if (tag_dir) {
+      direction = atoi(tag_dir);
+      *tag_dir = 0;
    }
 
    /* if tag is given, open file directly */
