@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.520  2004/12/17 21:32:50  midas
+   Fixed problem with invalid RFC2822 date in email header for different locale
+
    Revision 1.519  2004/12/13 20:53:12  midas
    Fixed problem with conditional attributes and edit
 
@@ -1055,6 +1058,7 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n);
 void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *info);
 int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_value);
 int read_password(char *pwd, int size);
+int getcfg(char *group, char *param, char *value, int vsize);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -2269,6 +2273,9 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       efputs(str);
    write_logfile(lbs, str);
 
+   /* switch locale temporarily back to english to comply with RFC2822 date format */
+   setlocale(LC_ALL, "english");
+
    time(&now);
    ts = localtime(&now);
    strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S", ts);
@@ -2285,6 +2292,10 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    if (verbose)
       efputs(str);
    write_logfile(lbs, str);
+
+   getcfg("global", "Language", str, sizeof(str));
+   if (str[0])
+      setlocale(LC_ALL, str);
 
    if (n_att > 0) {
       snprintf(str, strsize - 1, "MIME-Version: 1.0\r\n");
@@ -19333,7 +19344,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (strieq(command, "GetPwdFile")) {
+   if (strieq(command, loc("GetPwdFile"))) {
       getcfg(lbs->name, "Password file", str, sizeof(str));
 
       if (str[0] == DIR_SEPARATOR || str[1] == ':')
