@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.513  2004/11/17 14:39:16  midas
+   Implemented USERLIST as attribute type
+
    Revision 1.512  2004/11/16 15:35:17  midas
    Version 2.5.5-2
 
@@ -878,6 +881,7 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 #define AF_EXTENDABLE         (1<<7)
 #define AF_DATE               (1<<8)
 #define AF_NUMERIC            (1<<9)
+#define AF_USERLIST          (1<<10)
 
 /* attribute format flags */
 #define AFF_SAME_LINE              1
@@ -5988,6 +5992,8 @@ and attr_flags arrays */
                attr_flags[i] |= AF_DATE;
             if (strieq(type, "numeric"))
                attr_flags[i] |= AF_NUMERIC;
+            if (strieq(type, "userlist"))
+               attr_flags[i] |= AF_USERLIST;
          }
       }
 
@@ -7318,7 +7324,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        reply_tag[MAX_REPLY_TO * 10], att[MAX_ATTACHMENTS][256], encoding[80],
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH],
        owner[256], locked_by[256], class_value[80], class_name[80], condition[256],
-       ua[NAME_LENGTH], mid[80], title[256];
+       ua[NAME_LENGTH], mid[80], title[256], login_name[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts, ts;
@@ -7978,6 +7984,32 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf("<td%s class=\"attribvalue\">", title);
                sprintf(str, "%d", index);
                show_date_selector(day, month, year, str);
+               rsprintf("</td>\n");
+
+            } else if (attr_flags[index] & AF_USERLIST) {
+               
+               rsprintf("<td%s class=\"attribvalue\">\n", title);
+
+               /* display drop-down box with list of users */
+               rsprintf("<select name=\"%s\"", ua);
+               rsprintf(" onChange=\"mod();\">\n");
+
+               /* display emtpy option */
+               rsprintf("<option value=\"\">- %s -\n", loc("please select"));
+
+               for (i = 0; ; i++) {
+                  if (!enum_user_line(lbs, i, login_name))
+                     break;
+                  get_user_line(lbs->name, login_name, NULL, str, NULL, NULL);
+
+                  if (strieq(str, attrib[index]))
+                     rsprintf("<option selected value=\"%s\">%s\n", str, str);
+                  else
+                     rsprintf("<option value=\"%s\">%s\n", str, str);
+               }
+
+               rsprintf("</select>\n");
+
                rsprintf("</td>\n");
 
             } else {

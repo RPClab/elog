@@ -93,7 +93,7 @@ BSC32_SBRS= \
 <<
 
 LINK32=link.exe
-LINK32_FLAGS=wsock32.lib advapi32.lib /nologo /subsystem:console /incremental:no /pdb:"$(OUTDIR)\elogd.pdb" /machine:I386 /out:"$(OUTDIR)\elogd.exe" 
+LINK32_FLAGS=wsock32.lib advapi32.lib /nologo /subsystem:console /stack:4000000 /incremental:no /pdb:"$(OUTDIR)\elogd.pdb" /machine:I386 /out:"$(OUTDIR)\elogd.exe" 
 LINK32_OBJS= \
 	"$(INTDIR)\elogd.obj" "$(INTDIR)\regex.obj"
 
@@ -173,7 +173,7 @@ BSC32_SBRS= \
 <<
 
 LINK32=link.exe
-LINK32_FLAGS=wsock32.lib advapi32.lib /nologo /subsystem:console /incremental:yes /pdb:"$(OUTDIR)\elogd.pdb" /debug /machine:I386 /out:"$(OUTDIR)\elogd.exe" /pdbtype:sept 
+LINK32_FLAGS=wsock32.lib advapi32.lib /nologo /subsystem:console /stack:4000000 /incremental:yes /pdb:"$(OUTDIR)\elogd.pdb" /debug /machine:I386 /out:"$(OUTDIR)\elogd.exe" /pdbtype:sept 
 LINK32_OBJS= \
 	"$(INTDIR)\elogd.obj" "$(INTDIR)\regex.obj"
 
