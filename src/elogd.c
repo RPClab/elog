@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.114  2003/06/04 10:33:49  midas
+  Added 'Guest Selection page' option
+
   Revision 1.113  2003/06/04 08:17:35  midas
   Fixed problem with registration notification
 
@@ -11491,6 +11494,29 @@ FILE    *f;
           /* set cookies */
           set_login_cookies(NULL, getparam("uname"), enc_pwd);
 
+          return;
+          }
+        
+        /* check for Guest Selection Page */
+        if (getcfg("global", "Guest Selection Page", str) &&
+            !(isparam("unm") && isparam("upwd")))
+          {
+          /* check for URL */
+          if (strstr(str, "http://"))
+            {
+            redirect(NULL, str);
+            return;
+            }
+
+          /* check if file starts with an absolute directory */
+          if (str[0] == DIR_SEPARATOR || str[1] == ':')
+            strlcpy(file_name, str, sizeof(file_name));
+          else
+            {
+            strlcpy(file_name, resource_dir, sizeof(file_name));
+            strlcat(file_name, str, sizeof(file_name));
+            }
+          send_file_direct(file_name);
           return;
           }
         

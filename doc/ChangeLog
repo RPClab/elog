@@ -5,6 +5,7 @@ Version 2.3.8, released June xxth, 2003
 - On config user page, don't go back to logbook page after changing a user as admin
 - Check for .gif & co files in resource directory, then in themes directory
 - for printable search result output, display all pages
+- Added "Guest selection page" option
 
 Version 2.3.7, released May 15th, 2003
 ======================================
