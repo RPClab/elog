@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.284  2004/03/08 12:52:51  midas
+   Filter entries with invalid date
+
    Revision 1.283  2004/03/08 09:41:23  midas
    Substitutions now also work with 'preset test'
 
@@ -11924,6 +11927,12 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       if (filtering)
          for (i = 0; i < lbs->n_attr; i++)
             if (attr_flags[i] & AF_DATE) {
+
+               /* remove entry if no valid date */
+               if (atoi(attrib[i]) == 0) {
+                  msg_list[index].lbs = NULL;
+                  continue;
+               }
 
                sprintf(str, "%da", i);
                ltime = retrieve_date(str, TRUE);
