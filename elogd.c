@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.108  2002/11/29 14:49:12  midas
+  Renamed _text to _mtext (problems under AIX)
+
   Revision 2.107  2002/11/29 10:37:10  midas
   Added strlcpy and strlcat
 
@@ -531,7 +534,7 @@ int  tcp_port = 80;
 
 char _param[MAX_PARAM][PARAM_LENGTH];
 char _value[MAX_PARAM][VALUE_SIZE];
-char _text[TEXT_SIZE];
+char _mtext[TEXT_SIZE];
 char _cmdline[CMD_SIZE];
 char *_attachment_buffer[MAX_ATTACHMENTS];
 INT  _attachment_size[MAX_ATTACHMENTS];
@@ -3320,7 +3323,7 @@ void initparam()
 {
   memset(_param, 0, sizeof(_param));
   memset(_value, 0, sizeof(_value));
-  _text[0] = 0;
+  _mtext[0] = 0;
   _cmdline[0] = 0;
 }
 
@@ -3339,8 +3342,8 @@ char str[10000];
       return 0;
       }
 
-    strncpy(_text, value, TEXT_SIZE);
-    _text[TEXT_SIZE-1] = 0;
+    strncpy(_mtext, value, TEXT_SIZE);
+    _mtext[TEXT_SIZE-1] = 0;
     return 1;
     }
 
@@ -3391,7 +3394,7 @@ char *getparam(char *param)
 int i;
 
   if (equal_ustring(param, "text"))
-    return _text;
+    return _mtext;
 
   if (equal_ustring(param, "cmdline"))
     return _cmdline;
@@ -5289,8 +5292,8 @@ char str[80];
     show_error(str);
     return 0;
     }
-  i = write(fh, _text, strlen(_text));
-  if (i < (int)strlen(_text))
+  i = write(fh, _mtext, strlen(_mtext));
+  if (i < (int)strlen(_mtext))
     {
     sprintf(str, loc("Cannot write to <b>%s</b>"), cfg_file);
     strcat(str, ": ");
