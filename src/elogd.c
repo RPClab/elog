@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.528  2005/01/04 10:31:10  midas
+   Changed date format to RFC-822 in RSS feed
+
    Revision 1.527  2004/12/29 13:42:38  midas
    Patch from Recai
 
@@ -14384,9 +14387,11 @@ time_t retrieve_date(char *index, BOOL bstart)
 
 void show_rss_feed(LOGBOOK * lbs)
 {
-   int i, n, size, index, status, message_id;
+   int i, n, size, index, status, message_id, offset;
    char str[256], charset[256], url[256], attrib[MAX_N_ATTR][NAME_LENGTH], date[80], *text, title[2000],
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
+   time_t ltime;
+   struct tm *ts;
 
    rsprintf("HTTP/1.1 200 Document follows\r\n");
    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
@@ -14479,6 +14484,18 @@ void show_rss_feed(LOGBOOK * lbs)
          }
 
       }
+
+      /* convert date to RFC-822 date */
+      setlocale(LC_ALL, "C");
+      ltime = date_to_ltime(date);
+      ts = localtime(&ltime);
+      strftime(str, sizeof(str), "%a, %d %b %Y %H:%M:%S", ts);
+      offset = (-(int) timezone);
+      snprintf(date, sizeof(date) - 1, "%s %+03d%02d", str, (int) (offset / 3600),
+               (int) ((abs((int) offset) / 60) % 60));
+      getcfg("global", "Language", str, sizeof(str));
+      if (str[0])
+         setlocale(LC_ALL, str);
 
       rsprintf("<title>");
       xmlencode(title);
