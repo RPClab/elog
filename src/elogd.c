@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.598  2005/03/24 22:58:32  ritt
+   Create root node 'list'
+
    Revision 1.597  2005/03/24 18:41:16  ritt
    Fixed small pointer bug
 
@@ -18512,7 +18515,7 @@ BOOL convert_password_file(char *file_name)
    char name[256], password[256], full_name[256], email[256], email_notify[256];
    int i, len, fh;
    char *buf, *p;
-   PMXML_NODE root, list, node;
+   PMXML_NODE root, node;
 
    fh = open(file_name, O_RDONLY | O_TEXT);
    if (fh < 0)
@@ -18540,8 +18543,7 @@ BOOL convert_password_file(char *file_name)
    while (*p && isspace(*p))
       p++;
 
-   root = mxml_create_root_node();
-   list = mxml_add_node(root, "list", NULL);
+   root = mxml_create_root_node("list");
 
    while (*p) {
 
@@ -18587,7 +18589,7 @@ BOOL convert_password_file(char *file_name)
             return FALSE;
          }
 
-         node = mxml_add_node(list, "user", NULL);
+         node = mxml_add_node(root, "user", NULL);
          mxml_add_node(node, "name", name);
          mxml_add_node(node, "password", password);
          mxml_add_node(node, "full_name", full_name);
