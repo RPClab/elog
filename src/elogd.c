@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.41  2003/03/06 10:51:51  midas
+  Added 'X-Mailer: Elog'
+
   Revision 1.40  2003/03/06 08:33:50  midas
   Added 'X-Elog-URL' in mail header
 
@@ -1313,6 +1316,10 @@ char                 list[1024][NAME_LENGTH];
   if (verbose) puts(str);
 
   snprintf(str, strsize - 1, "From: %s\r\nSubject: %s\r\n", from, subject);
+  send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
+
+  snprintf(str, strsize - 1, "X-Mailer: Elog, Version %s\r\n", VERSION);
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
 
