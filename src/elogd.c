@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.197  2004/01/17 15:37:06  midas
+   Display months on find page localized
+
    Revision 1.196  2004/01/16 20:41:34  midas
    Fixed language bug with 'change [global]'
 
@@ -2143,6 +2146,7 @@ char *loc(char *orig)
 {
    int n;
    char language[256];
+   static char result[256];
 
    if (!_locbuffer)
       return orig;
@@ -2154,6 +2158,13 @@ char *loc(char *orig)
             return _ptrans[n];
          return orig;
       }
+
+   /* special case: "Change %s" */
+   if (strstr(orig, "Change ")) {
+      sprintf(result, loc("Change %s"), orig + 7);
+      return result;
+   }
+
 
    getcfg("global", "Language", language);
    printf("Language error: string \"%s\" not found for language \"%s\"\n", orig,
@@ -2181,9 +2192,27 @@ char *unloc(char *orig)
          return orig;
       }
 
-   printf("Language error: string \"%s\" not found\n", orig);
+   printf("Language error: string \"%s\" not found in English\n", orig);
 
    return orig;
+}
+
+/*-------------------------------------------------------------------*/
+
+char *month_name(int m)
+/* return name of month in current locale, m=0..11 */
+{
+   struct tm ts;
+   static char name[32];
+
+   memset(&ts, 0, sizeof(ts));
+   ts.tm_mon = m;
+   ts.tm_mday = 15;
+   ts.tm_year = 2000;
+
+   mktime(&ts);
+   strftime(name, sizeof(name), "%B", &ts);
+   return name;
 }
 
 /*-------------------------------------------------------------------*/
@@ -6517,7 +6546,7 @@ void show_find_form(LOGBOOK * lbs)
 
    rsprintf("<option value=\"\">\n");
    for (i = 0; i < 12; i++)
-      rsprintf("<option value=\"%s\">%s\n", mname[i], mname[i]);
+      rsprintf("<option value=\"%s\">%s\n", mname[i], month_name(i));
    rsprintf("</select>\n");
 
    rsprintf("<select name=\"d1\">");
@@ -6548,7 +6577,7 @@ void show_find_form(LOGBOOK * lbs)
 
    rsprintf("<option value=\"\">\n");
    for (i = 0; i < 12; i++)
-      rsprintf("<option value=\"%s\">%s\n", mname[i], mname[i]);
+      rsprintf("<option value=\"%s\">%s\n", mname[i], month_name(i));
    rsprintf("</select>\n");
 
    rsprintf("<select name=\"d2\">");
@@ -8861,7 +8890,7 @@ BOOL is_user_allowed(LOGBOOK * lbs, char *command)
       return TRUE;
 
    /* check for deny */
-   sprintf(str, "Deny %s", unloc(command));
+   sprintf(str, "Deny %s", command);
    if (getcfg(lbs->name, str, users)) {
       /* check if current user in list */
       n = strbreak(users, list, MAX_N_LIST);
@@ -8884,7 +8913,7 @@ BOOL is_user_allowed(LOGBOOK * lbs, char *command)
    }
 
    /* check for allow */
-   sprintf(str, "Allow %s", unloc(command));
+   sprintf(str, "Allow %s", command);
    if (!getcfg(lbs->name, str, users))
       return TRUE;
 
@@ -8901,7 +8930,7 @@ BOOL is_user_allowed(LOGBOOK * lbs, char *command)
 
 BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 {
-   char str[1000], menu_str[1000], other_str[1000], grp[NAME_LENGTH];
+   char str[1000], menu_str[1000], other_str[1000];
    char menu_item[MAX_N_LIST][NAME_LENGTH], admin_user[80];
    int i, n;
 
@@ -8928,8 +8957,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
                 || strstr(str, getparam("unm")) != 0) {
 
                if (lbs->top_group[0]) {
-                  sprintf(grp, "[global %s]", lbs->top_group);
-                  sprintf(str, loc("Change %s"), grp);
+                  sprintf(str, "Change [global %s]", lbs->top_group);
                   strcat(menu_str, str);
                   strcat(menu_str, ", ");
                }
@@ -8937,8 +8965,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
                if (!lbs->top_group[0] || (!getcfg_simple("global", "Admin user", str)
                                           || strstr(str, getparam("unm")) != 0)) {
 
-                  sprintf(str, loc("Change %s"), "[global]");
-                  strcat(menu_str, str);
+                  strcat(menu_str, "Change [global]");
                   strcat(menu_str, ", ");
                }
             }
@@ -8946,8 +8973,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          strcat(menu_str, "Config, Logout, ");
       } else {
          strcat(menu_str, "Config, ");
-         sprintf(str, loc("Change %s"), "[global]");
-         strcat(menu_str, str);
+         strcat(menu_str, "Change [global]");
          strcat(menu_str, ", ");
       }
 
@@ -8975,8 +9001,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
              || strstr(str, getparam("unm")) != 0) {
 
             if (lbs->top_group[0]) {
-               sprintf(grp, "[global %s]", lbs->top_group);
-               sprintf(str, loc("Change %s"), grp);
+               sprintf(str, "Change [global %s]", lbs->top_group);
                strcat(menu_str, str);
                strcat(menu_str, ", ");
             }
@@ -8984,8 +9009,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
             if (!lbs->top_group[0] || (!getcfg_simple("global", "Admin user", str)
                                        || strstr(str, getparam("unm")) != 0)) {
 
-               sprintf(str, loc("Change %s"), "[global]");
-               strcat(menu_str, str);
+               strcat(menu_str, "Change [global]");
                strcat(menu_str, ", ");
             }
          }
@@ -10125,9 +10149,21 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
 
       if (*getparam("m1") || *getparam("y1") || *getparam("d1")) {
+
+
+         memset(&tms, 0, sizeof(struct tm));
+         tms.tm_year = y1 % 100;
+         tms.tm_mon = m1 - 1;
+         tms.tm_mday = d1;
+         tms.tm_hour = 12;
+         if (tms.tm_year < 90)
+            tms.tm_year += 100;
+         mktime(&tms);
+         strftime(str, sizeof(str), "%#x", &tms);
+
          rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>",
                   loc("Start date"));
-         rsprintf("<td class=\"attribvalue\">%s %d, %d</td></tr>", mname[m1 - 1], d1, y1);
+         rsprintf("<td class=\"attribvalue\">%s</td></tr>", str);
       }
 
       if (*getparam("m2") || *getparam("y2") || *getparam("d2")) {
@@ -10137,17 +10173,17 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          tms.tm_mon = m2 - 1;
          tms.tm_mday = d2;
          tms.tm_hour = 12;
-
          if (tms.tm_year < 90)
             tms.tm_year += 100;
          ltime = mktime(&tms);
          ltime -= 3600 * 24;
          memcpy(&tms, localtime(&ltime), sizeof(struct tm));
+         strftime(str, sizeof(str), "%#x", &tms);
 
          rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>",
                   loc("End date"));
-         rsprintf("<td class=\"attribvalue\">%s %d, %d</td></tr>", mname[tms.tm_mon],
-                  tms.tm_mday, tms.tm_year + 1900);
+
+         rsprintf("<td class=\"attribvalue\">%s</td></tr>", str);
       }
 
       for (i = 0; i < lbs->n_attr; i++) {
@@ -13054,7 +13090,7 @@ void interprete(char *lbook, char *path)
    if (*getparam("cmd_last.x"))
       strcpy(command, loc("Last"));
    /* check if command allowed for current user */
-   if (!is_user_allowed(lbs, command)) {
+   if (command[0] && !is_user_allowed(lbs, command)) {
       sprintf(str,
               loc
               ("Error: Command \"<b>%s</b>\" is not allowed for user \"<b>%s</b>\""),
