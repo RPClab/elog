@@ -1,3 +1,9 @@
+Version 2.2.6, released Januar xxth, 2003
+=========================================
+
+- Fixed problem with attachment names containing a "+"
+- Fixed small initialization problem with logbook directory
+
 Version 2.2.5, released Januar 9th, 2003
 ========================================
 
