@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.46  2003/03/10 15:15:57  midas
+  Fixed bug with parameter filter
+
   Revision 1.45  2003/03/10 11:56:07  midas
   Don't create PID file when creating/changing passwords
 
@@ -7088,6 +7091,32 @@ int msg_compare_reverse(const void *m1, const void *m2)
 
 /*------------------------------------------------------------------*/
 
+char *param_in_str(char *str, char *param)
+{
+char *p;
+
+  p = str;
+  do
+    {
+    if (strstr(p, param) == NULL)
+      return NULL;
+
+    p = strstr(str, param);
+  
+    /* if parameter is value of another parameter, skip it */
+    if (p > str+1 && *(p-1) == '=')
+      p = strstr(p, param)+strlen(param);
+    else
+      return p;
+
+    if (*p == 0)
+      return NULL;
+
+    } while (1);
+}
+
+/*------------------------------------------------------------------*/
+
 void subst_param(char *str, int size, char *param, char *value)
 {
 int  len;
@@ -7095,11 +7124,14 @@ char *p1, *p2, *s;
 
   if (!value[0])
     {
-    if (strstr(str, param) == NULL)
+    /* remove parameter */
+    s = param_in_str(str, param);
+    
+    if (s == NULL)
       return;
 
     /* remove parameter */
-    p1 = strstr(str, param)-1;
+    p1 = s-1;
 
     for (p2 = p1+strlen(param)+1 ; *p2 && *p2 != '&' ; p2++);
     strlcpy(p1, p2, size - ((int)p1 - (int)str));
@@ -7110,7 +7142,7 @@ char *p1, *p2, *s;
     return;
     }
 
-  if (strstr(str, param) == NULL)
+  if (param_in_str(str, param) == NULL)
     {
     if (strchr(str, '?'))
       strlcat(str, "&", size);
