@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.89  2002/10/18 05:36:20  midas
+  Fixed bugs with 'Start page = ...'
+
   Revision 2.88  2002/10/15 08:49:02  midas
   Version 2.2.1
 
@@ -9884,7 +9887,7 @@ FILE    *f;
     }
 
   /* check for welcome page */
-  if (!message_id && getcfg(lbs->name, "Welcome page", str) && str[0])
+  if (!_cmdline[0] && getcfg(lbs->name, "Welcome page", str) && str[0])
     {
     strcpy(file_name, cfg_dir);
     strcat(file_name, str);
@@ -9893,7 +9896,7 @@ FILE    *f;
     }
 
   /* check for start page */
-  if (!message_id && getcfg(lbs->name, "Start page", str) && str[0])
+  if (!_cmdline[0] && getcfg(lbs->name, "Start page", str) && str[0])
     {
     redirect(str);
     return;
