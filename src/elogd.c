@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.175  2004/01/07 15:04:03  midas
+  Check for duplicate logbooks
+
   Revision 1.174  2004/01/07 14:28:58  midas
   Added logging for SMTP communication
 
@@ -212,6 +215,7 @@ typedef int INT;
 #define EL_UPGRADE     6
 #define EL_EMPTY       7
 #define EL_MEM_ERROR   8
+#define EL_DUPLICATE   9
 
 #define EL_FIRST       1
 #define EL_LAST        2
@@ -2368,6 +2372,14 @@ int el_index_logbooks(BOOL reinit)
       if (equal_ustring(logbook, "global"))
          continue;
 
+      /* check for duplicate name */
+      for (j=0 ; j<i ; j++)
+         if (equal_ustring(lb_list[j].name, logbook)) {
+            printf("Error in configuration file: Duplicate logbook \"%s\"\n", logbook);
+            return EL_DUPLICATE;
+         }
+
+      /* store logbook in list */
       strcpy(lb_list[n].name, logbook);
       strcpy(lb_list[n].name_enc, logbook);
       url_encode(lb_list[n].name_enc, sizeof(lb_list[n].name_enc));
