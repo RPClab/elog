@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.549  2005/01/30 16:43:21  ritt
+   Added highlighting for search results in attributes
+
    Revision 1.548  2005/01/26 20:32:50  ritt
    Fixed other problem in searching
 
@@ -755,7 +758,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.6-1"
+#define VERSION "2.5.6-2"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -1145,6 +1148,7 @@ int read_password(char *pwd, int size);
 int getcfg(char *group, char *param, char *value, int vsize);
 int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_LENGTH],
                      char attrib[][NAME_LENGTH], BOOL format_date);
+void highlight_searchtext(regex_t *re_buf, char *src, char *dst, BOOL hidden);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -13220,7 +13224,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   char attrib[MAX_N_ATTR][NAME_LENGTH], int n_attr,
                   char *text, BOOL show_text,
                   char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], char *encoding,
-                  BOOL select, int *n_display, char *locked_by, int highlight)
+                  BOOL select, int *n_display, char *locked_by, int highlight,
+                  regex_t *re_buf)
 {
    char str[NAME_LENGTH], ref[256], *nowrap, sclass[80], format[256],
        file_name[MAX_PATH_LENGTH], *slist, *svalue;
@@ -13533,8 +13538,16 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
                         if (is_html(display))
                            rsputs(display);
-                        else
+                        else {
+                           if (*getparam(attr_list[i])) {
+                              highlight_searchtext(re_buf+1+i, display, str, TRUE);
+                              strlcpy(display, str, sizeof(display));
+                           } else if (*getparam("subtext") && atoi(getparam("sall"))) {
+                              highlight_searchtext(re_buf, display, str, TRUE);
+                              strlcpy(display, str, sizeof(display));
+                           }
                            rsputs2(display);
+                        }
 
                         rsprintf("</a>");
                      }
@@ -13715,7 +13728,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
 void display_reply(LOGBOOK * lbs, int message_id, int printable,
                    int expand, int n_line, int n_attr_disp,
-                   char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], BOOL show_text, int level, int highlight)
+                   char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], BOOL show_text, 
+                   int level, int highlight, regex_t *re_buf)
 {
    char *date, *text, *in_reply_to, *reply_to, *encoding, *locked_by, *attachment, *attrib, *p;
    int status, size;
@@ -13753,13 +13767,13 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable,
    display_line(lbs, message_id, 0, "threaded", expand, level, printable,
                 n_line, FALSE, date, in_reply_to, reply_to, n_attr_disp,
                 disp_attr, (void *) attrib, lbs->n_attr, text, show_text,
-                NULL, encoding, 0, NULL, locked_by, highlight);
+                NULL, encoding, 0, NULL, locked_by, highlight, &re_buf[0]);
 
    if (reply_to[0]) {
       p = reply_to;
       do {
          display_reply(lbs, atoi(p), printable, expand, n_line, n_attr_disp,
-                       disp_attr, show_text, level + 1, highlight);
+                       disp_attr, show_text, level + 1, highlight, &re_buf[0]);
 
          while (*p && isdigit(*p))
             p++;
@@ -14682,6 +14696,57 @@ void show_rss_feed(LOGBOOK * lbs)
 
 /*------------------------------------------------------------------*/
 
+void highlight_searchtext(regex_t *re_buf, char *src, char *dst, int hidden)
+{
+   char *pt, *pt1;
+   int size, status;
+   regmatch_t pmatch[10];
+
+   dst[0] = 0;
+   pt = src;          /* original text */
+   pt1 = dst;        /* text with inserted coloring */
+   do {
+      status = regexec(re_buf, pt, 10, pmatch, 0);
+      if (status != REG_NOMATCH) {
+         size = pmatch[0].rm_so;
+
+         /* copy first part original text */
+         memcpy(pt1, pt, size);
+         pt1 += size;
+         pt += size;
+
+         /* add coloring 1st part */
+
+         /* here: \001='<', \002='>', /003='"', and \004=' ' */
+         /* see also rsputs2(char* ) */
+
+         if (hidden)
+            strcpy(pt1, "\001B\004style=\003color:black;background-color:#ffff66\003\002");
+         else
+            strcpy(pt1, "<B style=\"color:black;background-color:#ffff66\">");
+
+         pt1 += strlen(pt1);
+
+         /* copy origial search text */
+         size = pmatch[0].rm_eo - pmatch[0].rm_so;
+         memcpy(pt1, pt, size);
+         pt1 += size;
+         pt += size;
+
+         /* add coloring 2nd part */
+         if (hidden)
+            strcpy(pt1, "\001/B\002");
+         else
+            strcpy(pt1, "</B>");
+         pt1 += strlen(pt1);
+      }
+   } while (status != REG_NOMATCH);
+
+   strcpy(pt1, pt);
+}
+
+/*------------------------------------------------------------------*/
+
 void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *info)
 {
    int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line, flags;
@@ -15597,8 +15662,6 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
 
          if (*getparam("ma") || *getparam("ya") || *getparam("da")) {
-
-
             memset(&tms, 0, sizeof(struct tm));
             tms.tm_year = y1 - 1900;
             tms.tm_mon = m1 - 1;
@@ -15692,7 +15755,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
                if (line[0]) {
                   rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", attr_list[i]);
-                  rsprintf("<td class=\"attribvalue\">%s</td></tr>", line);
+                  rsprintf("<td class=\"attribvalue\"><span style=\"color:black;background-color:#ffff66\">");
+                  rsprintf("%s</span></td></tr>", line);
                }
 
             } else if (*getparam(attr_list[i])) {
@@ -15706,15 +15770,15 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                   strcpy(comment, getparam(attr_list[i]));
 
                rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", attr_list[i]);
-               rsprintf("<td class=\"attribvalue\">%s</td></tr>", comment);
+               rsprintf("<td class=\"attribvalue\"><span style=\"color:black;background-color:#ffff66\">");
+               rsprintf("%s</span></td></tr>", comment);
             }
          }
 
          if (*getparam("subtext")) {
             rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Text"));
-            rsprintf
-                ("<td class=\"attribvalue\"><span style=\"color:black;background-color:#ffff66\">%s</span></td></tr>",
-                 getparam("subtext"));
+            rsprintf("<td class=\"attribvalue\"><span style=\"color:black;background-color:#ffff66\">");
+            rsprintf("%s</span></td></tr>", getparam("subtext"));
          }
 
          rsprintf("</table></td></tr>\n\n");
@@ -15947,50 +16011,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                text1[i] = 0;
              */
 
-            text1[0] = 0;
-            pt = text;          /* original text */
-            pt1 = text1;        /* text with inserted coloring */
-            do {
-               status = regexec(re_buf, pt, 10, pmatch, 0);
-               if (status != REG_NOMATCH) {
-                  size = pmatch[0].rm_so;
-
-                  /* copy first part original text */
-                  memcpy(pt1, pt, size);
-                  pt1 += size;
-                  pt += size;
-
-                  /* add coloring 1st part */
-
-                  /* here: \001='<', \002='>', /003='"', and \004=' ' */
-                  /* see also rsputs2(char* ) */
-
-                  if (strieq(encoding, "plain")
-                      || !strieq(mode, "Full"))
-                     strcpy(pt1, "\001B\004style=\003color:black;background-color:#ffff66\003\002");
-                  else
-                     strcpy(pt1, "<B style=\"color:black;background-color:#ffff66\">");
-
-                  pt1 += strlen(pt1);
-
-                  /* copy origial search text */
-                  size = pmatch[0].rm_eo - pmatch[0].rm_so;
-                  memcpy(pt1, pt, size);
-                  pt1 += size;
-                  pt += size;
-
-                  /* add coloring 2nd part */
-                  if (strieq(encoding, "plain")
-                      || !strieq(mode, "Full"))
-                     strcpy(pt1, "\001/B\002");
-                  else
-                     strcpy(pt1, "</B>");
-                  pt1 += strlen(pt1);
-               }
-            } while (status != REG_NOMATCH);
-
-            strcpy(pt1, pt);
-            strcpy(text, text1);
+            highlight_searchtext(re_buf, text, text1, 
+               strieq(encoding, "plain") || !strieq(mode, "Full"));
+            strlcpy(text, text1, TEXT_SIZE);
          }
 
          /*---- display line ----*/
@@ -16008,14 +16031,14 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                       index, mode, expand, 0, printable, n_line,
                       show_attachments, date, in_reply_to, reply_to,
                       n_attr_disp, disp_attr, attrib, lbs->n_attr, text, show_text,
-                      attachment, encoding, atoi(getparam("select")), &n_display, locked_by, 0);
+                      attachment, encoding, atoi(getparam("select")), &n_display, locked_by, 0, re_buf);
 
          if (threaded) {
             if (reply_to[0] && expand > 0) {
                p = reply_to;
                do {
                   display_reply(msg_list[index].lbs, atoi(p), printable, expand, n_line,
-                                n_attr_disp, disp_attr, show_text, 1, 0);
+                                n_attr_disp, disp_attr, show_text, 1, 0, re_buf);
 
                   while (*p && isdigit(*p))
                      p++;
@@ -16122,12 +16145,12 @@ void show_elog_thread(LOGBOOK * lbs, int message_id)
                 0, "Threaded", 1, 0, FALSE, 0,
                 FALSE, date, in_reply_to, reply_to,
                 n_attr_disp, disp_attr, attrib, lbs->n_attr, text, FALSE,
-                attachment, encoding, 0, &n_display, locked_by, message_id);
+                attachment, encoding, 0, &n_display, locked_by, message_id, NULL);
 
    if (reply_to[0]) {
       p = reply_to;
       do {
-         display_reply(lbs, atoi(p), FALSE, 1, 0, n_attr_disp, disp_attr, FALSE, 1, message_id);
+         display_reply(lbs, atoi(p), FALSE, 1, 0, n_attr_disp, disp_attr, FALSE, 1, message_id, NULL);
 
          while (*p && isdigit(*p))
             p++;
