@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.136  2003/01/29 16:34:35  midas
+  More CSS stuff
+
   Revision 2.135  2003/01/29 12:05:15  midas
   CSS half finished
 
@@ -3846,14 +3849,11 @@ char str[1000];
 
   rsprintf("<body>\n");
 
-  rsprintf("<table border=%s width=100%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
-            gt("Border width"), gt("Frame color"));
-  rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
+  rsprintf("<table class=\"frame\" cellpadding=0 cellspacing=0>\n\n");
 
-  rsprintf("<tr><td align=center bgcolor=%s><font size=5 color=%s>ELog Electronic Logbook Upgrade Information</font></td></tr>\n",
-            gt("Title bgcolor"), gt("Title fontcolor"));
+  rsprintf("<tr><td class=\"title2\">ELog Electronic Logbook Upgrade Information</font></td></tr>\n");
 
-  rsprintf("<tr><td bgcolor=#FFFFFF><br>\n");
+  rsprintf("<tr><td class=\"form1\"><br>\n");
 
   rsprintf("You probably use an <b>elogd.cfg</b> configuration file for a ELOG version\n");
   rsprintf("1.1.x, since it contains a <b><code>\"Types = ...\"</code></b> entry. From version\n");
@@ -3876,8 +3876,7 @@ char str[1000];
   rsprintf("http://midas.psi.ch/elog/config.html\">http://midas.psi.ch/elog/config.html\n");
   rsprintf("</a>.\n");
 
-  rsprintf("</td></tr>\n");
-  rsprintf("</td></tr></table></td></tr></table>\n\n");
+  rsprintf("</td></tr></table>\n\n");
 
   rsprintf("<hr>\n");
   rsprintf("<address>\n");
@@ -4059,7 +4058,8 @@ LBLIST clb, flb, nlb, lbl;
             strcpy(sclass, "gtab");
           }
 
-        rsprintf("<span class=\"%s\">&nbsp;<a class=\"%s\" href=\"../%s/\">", sclass, sclass, ref);
+        // rsprintf("<span class=\"%s\">&nbsp;<a class=\"%s\" href=\"../%s/\">", sclass, sclass, ref);
+        rsprintf("<span class=\"%s\">&nbsp;<a href=\"../%s/\">", sclass, ref);
 
         strlcpy(str, clb[i].name, sizeof(str));
 
@@ -4793,17 +4793,16 @@ time_t now;
 
   /*---- entry form ----*/
 
-  /* overall table for message giving blue frame */
-  rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n",
-           gt("Categories border"), gt("Categories cellpadding"), gt("Frame color"));
+  /* table for two-column items */
+  rsprintf("<tr><td><table class=\"listframe\" width=100%% cellspacing=1>");
 
   /* print required message if one of the attributes has it set */
   for (i= 0 ; i < lbs->n_attr ; i++)
     {
     if (attr_flags[i] & AF_REQUIRED)
       {
-      rsprintf("<tr><td colspan=2 bgcolor=%s>%s <font color=red>*</font> %s</td></tr>\n",
-               gt("Categories bgcolor1"), loc("Fields marked with"), loc("are required"));
+      rsprintf("<tr><td colspan=2 class=\"attribvalue\">%s <font color=red>*</font> %s</td></tr>\n",
+                loc("Fields marked with"), loc("are required"));
       break;
       }
     }
@@ -4834,9 +4833,6 @@ time_t now;
       }
     else
       strcpy(str, date);
-
-    rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>%s:</b></td><td bgcolor=%s>%s</td></tr>\n\n",
-             gt("Categories bgcolor1"), loc("Entry date"), gt("Categories bgcolor2"), str);
     }
   else
     {
@@ -4844,10 +4840,10 @@ time_t now;
       strftime(str, sizeof(str), format, localtime(&now));
     else
       strcpy(str, ctime(&now));
-
-    rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>%s:</b></td><td bgcolor=%s>%s</td></tr>\n\n",
-             gt("Categories bgcolor1"), loc("Entry date"), gt("Categories bgcolor2"), str);
     }
+
+  rsprintf("<tr><td nowrap width=10%% class=\"attribname\">%s:</td>", loc("Entry date"));
+  rsprintf("<td class=\"attribvalue\">%s</td></tr>\n", str);
 
   /* display attributes */
   for (index = 0 ; index < lbs->n_attr ; index++)
@@ -4879,14 +4875,14 @@ time_t now;
       }
 
     /* display text box */
-    rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td>", gt("Categories bgcolor1"), attr_list[index], star);
+    rsprintf("<tr><td nowrap class=\"attribname\"><b>%s%s:</b></td>", attr_list[index], star);
 
     /* if attribute cannot be changed, just display text */
     if ((attr_flags[index] & AF_LOCKED) || 
         (bedit && (attr_flags[index] & AF_FIXED_EDIT)) ||
         (message_id && !bedit && (attr_flags[index] & AF_FIXED_REPLY)))
       {
-      rsprintf("<td bgcolor=%s>\n", gt("Categories bgcolor2"));
+      rsprintf("<td class=\"attribvalue\">\n");
       rsputs2(attrib[index]);
 
       if (attr_flags[index] & AF_MULTI)
@@ -4927,23 +4923,23 @@ time_t now;
       {
       if (attr_options[index][0][0] == 0)
         {
-        rsprintf("<td bgcolor=%s><input type=\"text\" size=80 maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n",
-                  gt("Categories bgcolor2"), NAME_LENGTH, attr_list[index], attrib[index]);
+        rsprintf("<td class=\"attribvalue\"><input type=\"text\" size=80 maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n",
+                  NAME_LENGTH, attr_list[index], attrib[index]);
         }
       else
         {
         if (equal_ustring(attr_options[index][0], "boolean"))
           {
           /* display checkbox */
-          rsprintf("<td bgcolor=%s><input type=checkbox name=\"%s\" value=1>\n",
-                   gt("Categories bgcolor2"), attr_list[index]);
+          rsprintf("<td class=\"attribvalue\"><input type=checkbox name=\"%s\" value=1>\n",
+                    attr_list[index]);
           }
         else
           {
           if (attr_flags[index] & AF_MULTI)
             {
             /* display multiple check boxes */
-            rsprintf("<td bgcolor=%s>\n", gt("Categories bgcolor2"));
+            rsprintf("<td class=\"attribvalue\">\n");
 
             for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
               {
@@ -4962,7 +4958,7 @@ time_t now;
           else if (attr_flags[index] & AF_RADIO)
             {
             /* display radio buttons */
-            rsprintf("<td bgcolor=%s>\n", gt("Categories bgcolor2"));
+            rsprintf("<td class=\"attribvalue\">\n");
 
             for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
               {
@@ -4979,7 +4975,7 @@ time_t now;
           else if (attr_flags[index] & AF_ICON)
             {
             /* display icons */
-            rsprintf("<td bgcolor=%s>\n", gt("Categories bgcolor2"));
+            rsprintf("<td class=\"attribvalue\">\n");
 
             for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
               {
@@ -4996,8 +4992,7 @@ time_t now;
           else
             {
             /* display drop-down box */
-            rsprintf("<td bgcolor=%s><select name=\"%s\">\n",
-                     gt("Categories bgcolor2"), attr_list[index]);
+            rsprintf("<td class=\"attribvalue\"><select name=\"%s\">\n", attr_list[index]);
 
             /* display emtpy option */
             rsprintf("<option value=\"\">- %s -\n", loc("please select"));
@@ -5043,7 +5038,7 @@ time_t now;
   if (getcfg(lbs->name, "Message height", str))
     height = atoi(str);
 
-  rsprintf("<tr><td colspan=2 bgcolor=#FFFFFF>\n");
+  rsprintf("<tr><td colspan=2 class=\"form1\">\n");
 
   if (getcfg(lbs->name, "Message comment", comment) && !bedit && !message_id)
     {
@@ -5303,17 +5298,9 @@ char   str[256], mode[256];
 
   /*---- entry form ----*/
 
-  rsprintf("<tr><td class=\"attribname\">\n");
+  rsprintf("<tr><td class=\"form1\">\n");
   
-  /* overall table for message giving blue frame */
-  /*
-  rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n",
-           gt("Categories border"), gt("Categories cellpadding"), gt("Frame color"));
-
-  rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
-  */
-  
-  rsprintf("<b>Mode:</b>&nbsp;&nbsp;");
+  rsprintf("<b>%s:</b>&nbsp;&nbsp;", loc("Mode"));
 
   if (!getcfg(lbs->name, "Display mode", mode))
     strcpy(mode, "Full");
@@ -5338,21 +5325,17 @@ char   str[256], mode[256];
 
   rsprintf("</td></tr>\n");
 
+  rsprintf("<td class=\"form2\"><b>%s:</b><br>", loc("Options"));
+
   if (!getcfg(lbs->name, "Number attachments", str) || atoi(str) > 0)
-    {
-    rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
-    rsprintf("<input type=checkbox name=attach value=1>%s</td></tr>\n", loc("Show attachments"));
-    }
+    rsprintf("<input type=checkbox name=attach value=1>%s<br>\n", loc("Show attachments"));
 
-  rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
-  rsprintf("<input type=checkbox name=printable value=1>%s</td></tr>\n", loc("Printable output"));
-
-  rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
+  rsprintf("<input type=checkbox name=printable value=1>%s<br>\n", loc("Printable output"));
 
   if (getcfg(lbs->name, "Reverse sort", str) && atoi(str) == 1)
-    rsprintf("<input type=checkbox checked name=reverse value=1>%s</td></tr>\n", loc("Sort in reverse order"));
+    rsprintf("<input type=checkbox checked name=reverse value=1>%s<br>\n", loc("Sort in reverse order"));
   else
-    rsprintf("<input type=checkbox name=reverse value=1>%s</td></tr>\n", loc("Sort in reverse order"));
+    rsprintf("<input type=checkbox name=reverse value=1>%s<br>\n", loc("Sort in reverse order"));
 
   /* count logbooks */
   for (i=0 ;  ; i++)
@@ -5367,21 +5350,25 @@ char   str[256], mode[256];
   if (i > 2)
     {
     if (!getcfg(lbs->name, "Search all logbooks", str) || atoi(str) == 1)
-      {
-      rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
-      rsprintf("<input type=checkbox name=all value=1>%s</td></tr>\n", loc("Search all logbooks"));
-      }
+      rsprintf("<input type=checkbox name=all value=1>%s<br>\n", loc("Search all logbooks"));
     }
 
-  rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
   rsprintf(loc("Display"));
   if (!getcfg(lbs->name, "Entries per page", str))
     strcpy(str, "20");
   rsprintf(" <input type=text name=npp size=3 value=%s> ", str);
   rsprintf(loc("entries per page"));
 
-  rsprintf("<tr><td nowrap width=10%% bgcolor=%s>%s:</td>", gt("Categories bgcolor1"), loc("Start date"));
-  rsprintf("<td bgcolor=%s><select name=\"m1\">\n", gt("Categories bgcolor2"));
+  rsprintf("</td></tr>\n");
+
+
+  rsprintf("<tr><td class=\"form2\"><b>%s:</b><br>", loc("Filters"));
+
+  /* table for two-column items */
+  rsprintf("<table width=100%% cellspacing=0>\n");
+
+  rsprintf("<tr><td nowrap width=10%%>%s:</td>", loc("Start date"));
+  rsprintf("<td><select name=\"m1\">\n");
 
   rsprintf("<option value=\"\">\n");
   for (i=0 ; i<12 ; i++)
@@ -5395,10 +5382,23 @@ char   str[256], mode[256];
   rsprintf("</select>\n");
 
   rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y1\">", loc("Year"));
+
+  rsprintf("&nbsp;&nbsp;/&nbsp;&nbsp;%s:&nbsp;", loc("Show last"));
+
+  rsprintf("<select name=last>\n");
+  rsprintf("<option value=\"\">\n");
+  rsprintf("<option value=1>%s\n", loc("Day"));
+  rsprintf("<option value=7>%s\n", loc("Week"));
+  rsprintf("<option value=31>%s\n", loc("Month"));
+  rsprintf("<option value=92>3 %s\n", loc("Months"));
+  rsprintf("<option value=182>6 %s\n", loc("Months"));
+  rsprintf("<option value=364>%s\n", loc("Year"));
+  rsprintf("</select> \n");
+
   rsprintf("</td></tr>\n");
 
-  rsprintf("<tr><td bgcolor=%s>%s:</td>", gt("Categories bgcolor1"), loc("End date"));
-  rsprintf("<td bgcolor=%s><select name=\"m2\">\n", gt("Categories bgcolor2"));
+  rsprintf("<tr><td>%s:</td>", loc("End date"));
+  rsprintf("<td><select name=\"m2\">\n");
 
   rsprintf("<option value=\"\">\n");
   for (i=0 ; i<12 ; i++)
@@ -5418,8 +5418,8 @@ char   str[256], mode[256];
 
   for (i=0 ; i<lbs->n_attr ; i++)
     {
-    rsprintf("<tr><td nowrap bgcolor=%s>%s:</td>", gt("Categories bgcolor1"), attr_list[i]);
-    rsprintf("<td bgcolor=%s>", gt("Categories bgcolor2"));
+    rsprintf("<tr><td nowrap>%s:</td>", attr_list[i]);
+    rsprintf("<td>");
     if (attr_options[i][0][0] == 0)
       {
       rsprintf("<input type=\"text\" size=\"30\" maxlength=\"80\" name=\"%s\">\n", attr_list[i]);
@@ -5454,9 +5454,8 @@ char   str[256], mode[256];
 
   if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1)
     {
-    rsprintf("<tr><td bgcolor=%s>%s:</td>",  gt("Categories bgcolor1"), loc("Text"));
-    rsprintf("<td bgcolor=%s><input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\">\n",
-               gt("Categories bgcolor2"));
+    rsprintf("<tr><td>%s:</td>", loc("Text"));
+    rsprintf("<td><input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\">\n");
     rsprintf("<i>%s</i></td></tr>\n", loc("(case insensitive substring)"));
     }
 
@@ -5486,18 +5485,13 @@ char str[256];
   /*---- menu buttons ----*/
 
   rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
-
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
   rsprintf("</td></tr>\n\n");
 
   /*---- entry form ----*/
 
-  /* overall table for message giving blue frame */
-  rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n",
-           gt("Categories border"), gt("Categories cellpadding"), gt("Frame color"));
-
-  rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
+  rsprintf("<tr><td class=\"form1\">\n");
 
   fh = open(config_file, O_RDONLY | O_BINARY);
   if (fh < 0)
@@ -5532,20 +5526,17 @@ char str[256];
   /* put link for config page */
   rsprintf("<a target=\"_blank\" href=\"http://midas.psi.ch/elog/config.html\">Syntax Help</a>");
 
-  rsprintf("</table></td></tr>\n");
+  rsprintf("</td></tr>\n");
 
   /*---- menu buttons ----*/
 
-  rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=1 bgcolor=%s>\n",
-           gt("Menu1 cellpadding"), gt("Frame color"));
-
-  rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
+  rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
 
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
-  rsprintf("</td></tr></table>\n\n");
+  rsprintf("</td></tr>\n\n");
 
-  rsprintf("</td></tr></table>\n\n");
+  rsprintf("</table>\n\n");
   rsprintf("</body></html>\r\n");
 }
 
@@ -5962,9 +5953,10 @@ int  i;
 
   rsprintf("</td></tr>\n\n");
 
-  /* overall table for message giving blue frame */
-  rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n",
-           gt("Categories border"), gt("Categories cellpadding"), gt("Frame color"));
+
+  /* table for two-column items */
+  rsprintf("<tr><td class=\"form2\">");
+  rsprintf("<table width=100%% cellspacing=0>\n");
 
   /*---- if admin user, show user list ----*/
 
@@ -5972,8 +5964,8 @@ int  i;
       strstr(str, getparam("unm")) != 0)
     {
     rsprintf("<input type=hidden name=admin value=1>\n");
-    rsprintf("<tr><td width=10%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Select user"));
-    rsprintf("<td bgcolor=%s><select name=cfg_user onChange=\"document.form1.submit()\">\n", gt("Categories bgcolor2"));
+    rsprintf("<tr><td width=10%%>%s:</td>\n", loc("Select user"));
+    rsprintf("<td><select name=cfg_user onChange=\"document.form1.submit()\">\n");
 
     for (i=0 ; ; i++)
       {
@@ -5995,23 +5987,22 @@ int  i;
 
   /*---- entry form ----*/
 
-  rsprintf("<tr><td width=10%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Login name"));
+  rsprintf("<tr><td nowrap width=10%%>%s:</td>\n", loc("Login name"));
 
   if (get_user_line(lbs->name, user, password, full_name, user_email, email_notify) != 1)
     sprintf(str, loc("User [%s] has been deleted"), user);
   else
     strcpy(str, user);
 
-  rsprintf("<td bgcolor=%s><input type=text size=40 name=new_user_name value=\"%s\"></td></tr>\n", 
-            gt("Categories bgcolor2"), str);
+  rsprintf("<td><input type=text size=40 name=new_user_name value=\"%s\"></td></tr>\n", str);
 
-  rsprintf("<tr><td width=10%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Full name"));
+  rsprintf("<tr><td nowrap width=10%%>%s:</td>\n", loc("Full name"));
   rsprintf("<td bgcolor=%s><input type=text size=40 name=new_full_name value=\"%s\"></tr>\n", 
             gt("Categories bgcolor2"), full_name);
 
-  rsprintf("<tr><td width=10%% bgcolor=%s>Email:</td>\n", gt("Categories bgcolor1"));
-  rsprintf("<td bgcolor=%s><input type=text size=40 name=new_user_email value=\"%s\">&nbsp;&nbsp;&nbsp;&nbsp;\n", 
-            gt("Categories bgcolor2"), user_email);
+  rsprintf("<tr><td nowrap width=10%%>Email:</td>\n");
+  rsprintf("<td><input type=text size=40 name=new_user_email value=\"%s\">&nbsp;&nbsp;&nbsp;&nbsp;\n", 
+            user_email);
 
   rsprintf("%s:\n", loc("Automatic email notifications"));
   
@@ -6020,9 +6011,10 @@ int  i;
   else
     rsprintf("<input type=checkbox name=email_notify value=all></td></tr>\n");
 
-  rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
-  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change password"));
+  rsprintf("</table></td></tr>\n");
 
+  rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change password"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Remove user"));
 
   if (getcfg(lbs->name, "Admin user", str) && 
@@ -6034,8 +6026,6 @@ int  i;
   /* hidden field for password */
   rsprintf("<input type=hidden name=hpwd value=\"%s\">\n", password);
   
-  rsprintf("</td></tr></table></td></tr>\n");
-
   rsprintf("</td></tr></table>\n\n");
   rsprintf("</body></html>\r\n");
 }
@@ -6500,7 +6490,9 @@ FILE *f;
       rsprintf("<td class=\"%s\"><input type=checkbox name=\"s%d\" value=%d>\n", 
                 sclass, (*n_display)++, message_id);
 
-    rsprintf("<a href=\"%s\">", ref);
+
+    if (equal_ustring(mode, "Threaded"))
+      rsprintf("<a href=\"%s\">", ref);
 
     for (index=0 ; index<n_attr_disp ; index++)
       {
@@ -6657,7 +6649,8 @@ FILE *f;
           }
         }
 
-      rsprintf("</a>\n");
+      if (equal_ustring(mode, "Threaded"))
+        rsprintf("</a>\n");
     }
 
   if (equal_ustring(mode, "Threaded") && expand > 1)
@@ -6765,7 +6758,7 @@ FILE *f;
         {
         strcpy(str, attachment[index]);
         str[13] = 0;
-        sprintf(ref, "../%s/%s/%s", lbs->name_enc, str, attachment[index]+14);
+        sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[index]+14);
         url_encode(ref, sizeof(ref)); /* for file names with special characters like "+" */
 
         for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
@@ -6774,7 +6767,7 @@ FILE *f;
 
         if (!show_attachments)
           {
-          rsprintf("<a href=\"%s\"><b>%s</b></a>&nbsp;&nbsp;&nbsp;&nbsp; ",
+          rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;&nbsp;&nbsp; ",
                     ref, attachment[index]+14);
           }
         else
@@ -6784,14 +6777,14 @@ FILE *f;
               strstr(str, ".JPEG") ||
               strstr(str, ".PNG"))
             {
-            rsprintf("<tr><td colspan=%d class=\"list2\"><b>%s %d:</b> <a href=\"%s\">%s</a>\n",
+            rsprintf("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
                       colspan, loc("Attachment"), index+1, ref, attachment[index]+14);
             if (show_attachments)
               rsprintf("</td></tr><tr><td colspan=%d class=\"messagelist\"><img src=\"%s\"></td></tr>", colspan, ref);
             }
           else
             {
-            rsprintf("<tr><td colspan=%d class=\"list2\"><b>%s %d:</b> <a href=\"%s\">%s</a>\n",
+            rsprintf("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
                       colspan, loc("Attachment"), index+1, ref, attachment[index]+14);
 
             if ((strstr(str, ".TXT") ||
@@ -7423,6 +7416,7 @@ LOGBOOK *lbs_cur;
 
   /* default mode */
   strcpy(mode, "Summary");
+  show_attachments = FALSE;
 
   /* for page display, get mode from config file */
   if (past_n || last_n || page_n)
@@ -7431,7 +7425,6 @@ LOGBOOK *lbs_cur;
       strcpy(mode, str);
     if (*getparam("mode"))
       strcpy(mode, getparam("mode"));
-    show_attachments = FALSE;
     }
   else
     {
@@ -7439,9 +7432,11 @@ LOGBOOK *lbs_cur;
     strcpy(mode, getparam("mode"));
     if (mode[0] == 0)
       strcpy(mode, "Full");
-
-    show_attachments = (*getparam("attach") > 0);
     }
+
+  /* supersede mode if in parameter */
+  if (*getparam("attach"))
+    show_attachments = (*getparam("attach") > 0);
 
   threaded = equal_ustring(mode, "threaded");
 
