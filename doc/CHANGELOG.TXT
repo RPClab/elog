@@ -8,6 +8,7 @@ Version 2.0.6, released August xx, 2002
 - Date sorting now works over all logbooks 
 - Added sorting by columns
 - Added page wise display with navigation bar
+- Show number of entries in logbook selection page
 
 Version 2.0.5, released July 23rd, 2002
 =======================================
