@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.450  2004/08/08 15:32:51  midas
+   Added automatic distinction between ASCII and binary files for attachment display
+
    Revision 1.449  2004/08/08 14:55:09  midas
    Removed all null pointer checking after xmalloc since this is now handled inside xmalloc
 
@@ -726,24 +729,51 @@ struct {
 } filetype[] = {
 
    {
-   ".CSS", "text/css"}, {
-   ".JPG", "image/jpeg"}, {
-   ".JPEG", "image/jpeg"}, {
-   ".GIF", "image/gif"}, {
-   ".PNG", "image/png"}, {
-   ".ICO", "text/plain"}, {
-   ".PS", "application/postscript"}, {
-   ".EPS", "application/postscript"}, {
-   ".HTML", "text/html"}, {
-   ".HTM", "text/html"}, {
-   ".XLS", "application/x-msexcel"}, {
-   ".DOC", "application/msword"}, {
-   ".PDF", "application/pdf"}, {
-   ".JS", "application/x-javascript"}, {
-   ".TXT", "text/plain"}, {
+   ".AI", "application/postscript"}, {
    ".ASC", "text/plain"}, {
+   ".BZ2", "application/x-bzip2"}, {
    ".CFG", "text/plain"}, {
+   ".CHRT", "application/x-kchart"}, {
    ".CONF", "text/plain"}, {
+   ".CSH", "application/x-csh"}, {
+   ".CSS", "text/css"}, {
+   ".DOC", "application/msword"}, {
+   ".DVI", "application/x-dvi"}, {
+   ".EPS", "application/postscript"}, {
+   ".GIF", "image/gif"}, {
+   ".GZ", "application/x-gzip"}, {
+   ".HTM", "text/html"}, {
+   ".HTML", "text/html"}, {
+   ".ICO", "text/plain"}, {
+   ".JPEG", "image/jpeg"}, {
+   ".JPG", "image/jpeg"}, {
+   ".JS", "application/x-javascript"}, {
+   ".KPR", "application/x-kpresenter"}, {
+   ".KSP", "application/x-kspread"}, {
+   ".KWD", "application/x-kword"}, {
+   ".MP3", "audio/mpeg"}, {
+   ".OGG", "application/x-ogg"}, {
+   ".PDF", "application/pdf"}, {
+   ".PNG", "image/png"}, {
+   ".PS", "application/postscript"}, {
+   ".RAM", "audio/x-pn-realaudio"}, {
+   ".RM", "audio/x-pn-realaudio"}, {
+   ".RM", "audio/x-pn-realaudio"}, {
+   ".RM", "audio/x-pn-realaudio"}, {
+   ".RPM", "application/x-rpm"}, {
+   ".RTF", "application/rtf"}, {
+   ".SH", "application/x-sh"}, {
+   ".TAR", "application/x-tar"}, {
+   ".TCL", "application/x-tcl"}, {
+   ".TEX", "application/x-tex"}, {
+   ".TGZ", "application/x-gzip"}, {
+   ".TIF", "image/tiff"}, {
+   ".TIFF", "image/tiff"}, {
+   ".TXT", "text/plain"}, {
+   ".WAV", "audio/x-wav"}, {
+   ".XLS", "application/x-msexcel"}, {
+   ".XML", "text/xml"}, {
+   ".XSL", "text/xml"}, {
    ".ZIP", "application/x-zip-compressed"}, {
 "", ""},};
 
@@ -4922,6 +4952,43 @@ int is_html(char *s)
 
 /*------------------------------------------------------------------*/
 
+int is_ascii(char *file_name)
+{
+   int  i, fh, length;
+   unsigned char *buf;
+
+   fh = open(file_name, O_RDONLY | O_BINARY);
+   if (fh < 0)
+      return FALSE;
+   lseek(fh, 0, SEEK_END);
+   length = TELL(fh);
+   lseek(fh, 0, SEEK_SET);
+   if (length > 1000)
+      length = 1000;
+   buf = xmalloc(length);
+   read(fh, buf, length);
+   close(fh);
+
+   for (i=0 ; i<length ; i++) {
+      if (buf[i] < 32 && 
+         buf[i] != '\r' &&
+         buf[i] != '\n' &&
+         buf[i] != '\t') {
+            xfree(buf);
+            return FALSE;
+         }
+      if (buf[i] > 128) {
+         xfree(buf);
+         return FALSE;
+      }
+   }
+
+   xfree(buf);
+   return TRUE;
+}
+
+/*------------------------------------------------------------------*/
+
 void strip_html(char *s)
 {
    char *p;
@@ -6456,7 +6523,7 @@ void send_file_direct(char *file_name)
 
       if (filetype[i].ext[0])
          rsprintf("Content-Type: %s;charset=%s\r\n", filetype[i].type, charset);
-      else if (strchr(str, '.') == NULL)
+      else if (is_ascii(file_name))
          rsprintf("Content-Type: text/plain;charset=%s\r\n", charset);
       else
          rsprintf("Content-Type: application/octet-stream;charset=%s\r\n", charset);
