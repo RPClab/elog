@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.466  2004/09/09 19:35:34  midas
+   Fixed bug with HUP signal going into accept()
+
    Revision 1.465  2004/09/08 14:41:23  midas
    Fixed crash on deleting entries during synchronization
 
@@ -19890,94 +19893,364 @@ void server_loop(void)
       if (_abort)
          break;
 
-      if (FD_ISSET(lsock, &readfds)) {
-         len = sizeof(acc_addr);
-         _sock = accept(lsock, (struct sockaddr *) &acc_addr, &len);
-         /* find new entry in socket table */
-         for (i = 0; i < N_MAX_CONNECTION; i++)
-            if (ka_sock[i] == 0)
-               break;
-         /* recycle last connection */
-         if (i == N_MAX_CONNECTION) {
-            for (i = i_min = 0, min = ka_time[0]; i < N_MAX_CONNECTION; i++)
-               if (ka_time[i] < min) {
-                  min = ka_time[i];
-                  i_min = i;
+      if (status == 0) { // if no HUP signal is received
+         if (FD_ISSET(lsock, &readfds)) {
+            len = sizeof(acc_addr);
+            _sock = accept(lsock, (struct sockaddr *) &acc_addr, &len);
+            /* find new entry in socket table */
+            for (i = 0; i < N_MAX_CONNECTION; i++)
+               if (ka_sock[i] == 0)
+                  break;
+            /* recycle last connection */
+            if (i == N_MAX_CONNECTION) {
+               for (i = i_min = 0, min = ka_time[0]; i < N_MAX_CONNECTION; i++)
+                  if (ka_time[i] < min) {
+                     min = ka_time[i];
+                     i_min = i;
+                  }
+
+               closesocket(ka_sock[i_min]);
+               ka_sock[i_min] = 0;
+               i = i_min;
+   #ifdef DEBUG_CONN
+               eprintf("## close connection %d\n", i_min);
+   #endif
+            }
+
+            i_conn = i;
+            ka_sock[i_conn] = _sock;
+            ka_time[i_conn] = (int) time(NULL);
+            /* save remote host address */
+            memcpy(&remote_addr[i_conn], &(acc_addr.sin_addr), sizeof(rem_addr));
+            memcpy(&rem_addr, &(acc_addr.sin_addr), sizeof(rem_addr));
+            phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
+            if (phe != NULL)
+               strcpy(remote_host[i_conn], phe->h_name);
+            else
+               strcpy(remote_host[i_conn], (char *) inet_ntoa(rem_addr));
+            strcpy(rem_host, remote_host[i_conn]);
+   #ifdef DEBUG_CONN
+            eprintf("## open new connection %d\n", i_conn);
+   #endif
+         }
+
+         else {
+            /* check if open connection received data */
+            for (i = 0; i < N_MAX_CONNECTION; i++)
+               if (ka_sock[i] > 0 && FD_ISSET(ka_sock[i], &readfds))
+                  break;
+            if (i == N_MAX_CONNECTION) {
+               _sock = 0;
+            } else {
+               i_conn = i;
+               _sock = ka_sock[i_conn];
+               ka_time[i_conn] = (int) time(NULL);
+               memcpy(&rem_addr, &remote_addr[i_conn], sizeof(rem_addr));
+               strcpy(rem_host, remote_host[i_conn]);
+   #ifdef DEBUG_CONN
+               eprintf("## received request on connection %d\n", i_conn);
+   #endif
+            }
+         }
+
+         /* turn off keep_alive by default */
+         keep_alive = FALSE;
+         if (_sock > 0) {
+            memset(net_buffer, 0, net_buffer_size);
+            len = 0;
+            header_length = 0;
+            n_error = 0;
+            do {
+               FD_ZERO(&readfds);
+               FD_SET(_sock, &readfds);
+               timeout.tv_sec = 6;
+               timeout.tv_usec = 0;
+               status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+               if (FD_ISSET(_sock, &readfds))
+                  i = recv(_sock, net_buffer + len, net_buffer_size - len, 0);
+               else
+                  goto finished;
+               /* abort if connection got broken */
+               if (i < 0)
+                  goto finished;
+               if (i > 0)
+                  len += i;
+               /* check if net_buffer needs to be increased */
+               if (len == net_buffer_size) {
+                  net_buffer = xrealloc(net_buffer, net_buffer_size + 100000);
+                  if (net_buffer == NULL) {
+                     sprintf(str,
+                           "Error: Cannot increase net_buffer, out of memory, net_buffer_size = %d",
+                           net_buffer_size);
+                     show_error(str);
+                     send(_sock, return_buffer, strlen_retbuf + 1, 0);
+                     keep_alive = 0;
+                     if (verbose) {
+                        eprintf("==== Return ================================\n");
+                        eputs(return_buffer);
+                        eprintf("\n\n");
+                     }
+                     goto finished;
+                  }
+
+                  memset(net_buffer + net_buffer_size, 0, 100000);
+                  net_buffer_size += 100000;
                }
 
-            closesocket(ka_sock[i_min]);
-            ka_sock[i_min] = 0;
-            i = i_min;
-#ifdef DEBUG_CONN
-            eprintf("## close connection %d\n", i_min);
-#endif
-         }
+               if (i == 0) {
+                  n_error++;
+                  if (n_error == 100)
+                     goto finished;
+               }
 
-         i_conn = i;
-         ka_sock[i_conn] = _sock;
-         ka_time[i_conn] = (int) time(NULL);
-         /* save remote host address */
-         memcpy(&remote_addr[i_conn], &(acc_addr.sin_addr), sizeof(rem_addr));
-         memcpy(&rem_addr, &(acc_addr.sin_addr), sizeof(rem_addr));
-         phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
-         if (phe != NULL)
-            strcpy(remote_host[i_conn], phe->h_name);
-         else
-            strcpy(remote_host[i_conn], (char *) inet_ntoa(rem_addr));
-         strcpy(rem_host, remote_host[i_conn]);
-#ifdef DEBUG_CONN
-         eprintf("## open new connection %d\n", i_conn);
-#endif
-      }
+               /* finish when empty line received */
+               if (strstr(net_buffer, "GET") != NULL && strstr(net_buffer, "POST") == NULL) {
+                  if (len > 4 && strcmp(&net_buffer[len - 4], "\r\n\r\n") == 0)
+                     break;
+                  if (len > 6 && strcmp(&net_buffer[len - 6], "\r\r\n\r\r\n") == 0)
+                     break;
+               } else if (strstr(net_buffer, "POST") != NULL) {
+                  if (header_length == 0) {
+                     /* extract logbook */
+                     strlcpy(str, net_buffer + 6, sizeof(str));
+                     if (strstr(str, "HTTP"))
+                        *(strstr(str, "HTTP") - 1) = 0;
+                     strlcpy(logbook, str, sizeof(logbook));
+                     strlcpy(logbook_enc, str, sizeof(logbook));
+                     url_decode(logbook);
+                     /* extract header and content length */
+                     if (strstr(net_buffer, "Content-Length:"))
+                        content_length = atoi(strstr(net_buffer, "Content-Length:") + 15);
+                     else if (strstr(net_buffer, "Content-length:"))
+                        content_length = atoi(strstr(net_buffer, "Content-length:") + 15);
+                     boundary[0] = 0;
+                     if (strstr(net_buffer, "boundary=")) {
+                        strlcpy(boundary, strstr(net_buffer, "boundary=") + 9,
+                              sizeof(boundary));
+                        if (strchr(boundary, '\r'))
+                           *strchr(boundary, '\r') = 0;
+                     }
 
-      else {
-         /* check if open connection received data */
-         for (i = 0; i < N_MAX_CONNECTION; i++)
-            if (ka_sock[i] > 0 && FD_ISSET(ka_sock[i], &readfds))
-               break;
-         if (i == N_MAX_CONNECTION) {
-            _sock = 0;
-         } else {
-            i_conn = i;
-            _sock = ka_sock[i_conn];
-            ka_time[i_conn] = (int) time(NULL);
-            memcpy(&rem_addr, &remote_addr[i_conn], sizeof(rem_addr));
-            strcpy(rem_host, remote_host[i_conn]);
-#ifdef DEBUG_CONN
-            eprintf("## received request on connection %d\n", i_conn);
-#endif
-         }
-      }
+                     if (strstr(net_buffer, "\r\n\r\n"))
+                        header_length =
+                           (INT) strstr(net_buffer, "\r\n\r\n") - (INT) net_buffer + 4;
+                     if (strstr(net_buffer, "\r\r\n\r\r\n"))
+                        header_length =
+                           (INT) strstr(net_buffer, "\r\r\n\r\r\n") - (INT) net_buffer + 6;
+                     if (header_length)
+                        net_buffer[header_length - 1] = 0;
 
-      /* turn off keep_alive by default */
-      keep_alive = FALSE;
-      if (_sock > 0) {
-         memset(net_buffer, 0, net_buffer_size);
-         len = 0;
-         header_length = 0;
-         n_error = 0;
-         do {
-            FD_ZERO(&readfds);
-            FD_SET(_sock, &readfds);
-            timeout.tv_sec = 6;
-            timeout.tv_usec = 0;
-            status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
-            if (FD_ISSET(_sock, &readfds))
-               i = recv(_sock, net_buffer + len, net_buffer_size - len, 0);
-            else
+                     if (content_length > _max_content_length) {
+
+                        /* drain socket connection */
+                        do {
+                           FD_ZERO(&readfds);
+                           FD_SET(_sock, &readfds);
+                           timeout.tv_sec = 6;
+                           timeout.tv_usec = 0;
+                           status =
+                              select(FD_SETSIZE, (void *) &readfds, NULL, NULL,
+                                    (void *) &timeout);
+                           if (FD_ISSET(_sock, &readfds))
+                              i = recv(_sock, net_buffer, net_buffer_size, 0);
+                           else
+                              break;
+                        } while (i > 0);
+
+                        /* return error */
+                        memset(return_buffer, 0, return_buffer_size);
+                        strlen_retbuf = 0;
+                        return_length = 0;
+
+                        sprintf(str,
+                              loc
+                              ("Error: Content length (%d) larger than maximum content length (%d)"),
+                              content_length, _max_content_length);
+                        strcat(str, "<br>");
+                        strcat(str,
+                              loc
+                              ("Please increase <b>\"Max content length\"</b> in config file"));
+                        keep_alive = FALSE;
+                        show_error(str);
+                        goto redir;
+                     }
+                  }
+
+                  if (header_length > 0 && len >= header_length + content_length)
+                     break;
+               } else if (strstr(net_buffer, "HEAD") != NULL) {
+                  /* just return header */
+                  rsprintf("HTTP/1.1 200 OK\r\n");
+                  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+                  rsprintf("Connection: close\r\n");
+                  rsprintf("Content-Type: text/html\r\n\r\n");
+                  keep_alive = FALSE;
+                  return_length = strlen_retbuf + 1;
+                  send(_sock, return_buffer, return_length, 0);
+                  goto finished;
+               } else if (strstr(net_buffer, "OPTIONS") != NULL)
+                  goto finished;
+               else {
+                  if (strlen(net_buffer) > 0 && verbose) {
+                     eprintf("Received unknown HTTP command:\n");
+                     eputs(net_buffer);
+                  }
+                  goto finished;
+               }
+
+            } while (1);
+            if (!strchr(net_buffer, '\r'))
                goto finished;
-            /* abort if connection got broken */
-            if (i < 0)
+            if (verbose) {
+               eputs("\n");
+               eputs(net_buffer);
+            }
+
+            /* initialize parametr array */
+            initparam();
+            /* extract cookies */
+            if ((p = strstr(net_buffer, "Cookie:")) != NULL) {
+               p += 6;
+               do {
+                  p++;
+                  while (*p && *p == ' ')
+                     p++;
+                  strlcpy(str, p, sizeof(str));
+                  for (i = 0; i < (int) strlen(str); i++)
+                     if (str[i] == '=' || str[i] == ';')
+                        break;
+                  if (str[i] == '=') {
+                     str[i] = 0;
+                     p += i + 1;
+                     for (i = 0; *p && *p != ';' && *p != '\r' && *p != '\n'; i++)
+                        cookie[i] = *p++;
+                     cookie[i] = 0;
+                  } else {
+                     /* empty cookie */
+                     str[i] = 0;
+                     cookie[0] = 0;
+                     p += i;
+                  }
+
+                  /* store cookie as parameter */
+                  setparam(str, cookie);
+               } while (*p && *p == ';');
+            }
+
+            /* extract referer */
+            referer[0] = 0;
+            if ((p = strstr(net_buffer, "Referer:")) != NULL) {
+               p += 9;
+               while (*p && *p == ' ')
+                  p++;
+               strlcpy(referer, p, sizeof(referer));
+               if (strchr(referer, '\r'))
+                  *strchr(referer, '\r') = 0;
+               if (strchr(referer, '?'))
+                  *strchr(referer, '?') = 0;
+               for (p = referer + strlen(referer) - 1; p > referer && *p != '/'; p--)
+                  *p = 0;
+               if (strchr(referer, ' '))
+                  url_encode(referer, sizeof(referer));
+            }
+
+            /* extract browser */
+            browser[0] = 0;
+            if ((p = strstr(net_buffer, "User-Agent:")) != NULL) {
+               p += 11;
+               while (*p && *p == ' ')
+                  p++;
+               strlcpy(browser, p, sizeof(browser));
+               if (strchr(browser, '\r'))
+                  *strchr(browser, '\r') = 0;
+            }
+
+            /* extract host */
+            http_host[0] = 0;
+            if ((p = strstr(net_buffer, "Host:")) != NULL) {
+               p += 5;
+               while (*p && *p == ' ')
+                  p++;
+               strlcpy(http_host, p, sizeof(http_host));
+               if (strchr(http_host, '\r'))
+                  *strchr(http_host, '\r') = 0;
+            }
+
+            /* extract X-Forwarded-Host, overwrite "Host:" if found */
+            if ((p = strstr(net_buffer, "X-Forwarded-Host:")) != NULL) {
+               p += 17;
+               while (*p && *p == ' ')
+                  p++;
+               strlcpy(http_host, p, sizeof(http_host));
+               if (strchr(http_host, '\r'))
+                  *strchr(http_host, '\r') = 0;
+            }
+
+            /* extract "X-Forwarded-For:" */
+            if ((p = strstr(net_buffer, "X-Forwarded-For:")) != NULL) {
+               p += 16;
+               while (*p && *p == ' ')
+                  p++;
+               strlcpy(str, p, sizeof(str));
+               if (strchr(str, '\r'))
+                  *strchr(str, '\r') = 0;
+   #ifdef OS_WINNT
+               rem_addr.S_un.S_addr = inet_addr(str);
+   #else
+               rem_addr.s_addr = inet_addr(str);
+   #endif
+               phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
+               if (phe != NULL) {
+                  strcpy(remote_host[i_conn], phe->h_name);
+                  strcpy(rem_host, remote_host[i_conn]);
+               }
+            }
+
+            memset(return_buffer, 0, return_buffer_size);
+            strlen_retbuf = 0;
+            if (strncmp(net_buffer, "GET", 3) != 0 && strncmp(net_buffer, "POST", 4) != 0)
                goto finished;
-            if (i > 0)
-               len += i;
-            /* check if net_buffer needs to be increased */
-            if (len == net_buffer_size) {
-               net_buffer = xrealloc(net_buffer, net_buffer_size + 100000);
-               if (net_buffer == NULL) {
-                  sprintf(str,
-                          "Error: Cannot increase net_buffer, out of memory, net_buffer_size = %d",
-                          net_buffer_size);
+            return_length = 0;
+
+            /* extract logbook */
+            if (strchr(net_buffer, '/') == NULL || strchr(net_buffer, '\r') == NULL
+               || strstr(net_buffer, "HTTP") == NULL) {
+               /* invalid request, make valid */
+               strcpy(net_buffer, "GET / HTTP/1.0\r\n\r\n");
+            }
+
+            /* initialize topgroups */
+            setcfg_topgroup("");
+
+            p = strchr(net_buffer, '/') + 1;
+            logbook[0] = 0;
+            for (i = 0; *p && *p != '/' && *p != '?' && *p != ' '; i++)
+               logbook[i] = *p++;
+            logbook[i] = 0;
+            strcpy(logbook_enc, logbook);
+            url_decode(logbook);
+            /* check for trailing '/' after logbook */
+            if (strstr(net_buffer, "POST") == NULL) {      // fix for konqueror
+               if (logbook[0] && *p == ' ') {
+                  if (!strstr(logbook, ".css") && !strstr(logbook, ".htm")
+                     && !strstr(logbook, ".gif") && !strstr(logbook, ".jpg")
+                     && !strstr(logbook, ".png")) {
+                     sprintf(str, "%s/", logbook_enc);
+                     redirect(NULL, str);
+                     goto redir;
+                  }
+               }
+            }
+
+            /* check for trailing '/' after logbook/ID */
+            if (logbook[0] && *p == '/' && *(p + 1) != ' ') {
+               sprintf(url, "%s", logbook_enc);
+               pd = url + strlen(url);
+               while (*p && *p != ' ')
+                  *pd++ = *p++;
+               *pd = 0;
+               if (*(p - 1) == '/') {
+                  sprintf(str, "Invalid URL: %s", url);
                   show_error(str);
                   send(_sock, return_buffer, strlen_retbuf + 1, 0);
                   keep_alive = 0;
@@ -19988,336 +20261,94 @@ void server_loop(void)
                   }
                   goto finished;
                }
-
-               memset(net_buffer + net_buffer_size, 0, 100000);
-               net_buffer_size += 100000;
             }
 
-            if (i == 0) {
-               n_error++;
-               if (n_error == 100)
-                  goto finished;
+            /* check for global command */
+            global_cmd[0] = 0;
+            if ((p = strstr(net_buffer, "?cmd=")) != NULL) {
+               p += 5;
+               strlcpy(global_cmd, p, sizeof(global_cmd));
+               if (strchr(global_cmd, ' '))
+                  *strchr(global_cmd, ' ') = 0;
+               if (strchr(global_cmd, '\r'))
+                  *strchr(global_cmd, '\r') = 0;
             }
 
-            /* finish when empty line received */
-            if (strstr(net_buffer, "GET") != NULL && strstr(net_buffer, "POST") == NULL) {
-               if (len > 4 && strcmp(&net_buffer[len - 4], "\r\n\r\n") == 0)
+            /* check if logbook exists */
+            for (i = 0;; i++) {
+               if (!enumgrp(i, str))
                   break;
-               if (len > 6 && strcmp(&net_buffer[len - 6], "\r\r\n\r\r\n") == 0)
+               if (strieq(logbook, str))
                   break;
-            } else if (strstr(net_buffer, "POST") != NULL) {
-               if (header_length == 0) {
-                  /* extract logbook */
-                  strlcpy(str, net_buffer + 6, sizeof(str));
-                  if (strstr(str, "HTTP"))
-                     *(strstr(str, "HTTP") - 1) = 0;
-                  strlcpy(logbook, str, sizeof(logbook));
-                  strlcpy(logbook_enc, str, sizeof(logbook));
-                  url_decode(logbook);
-                  /* extract header and content length */
-                  if (strstr(net_buffer, "Content-Length:"))
-                     content_length = atoi(strstr(net_buffer, "Content-Length:") + 15);
-                  else if (strstr(net_buffer, "Content-length:"))
-                     content_length = atoi(strstr(net_buffer, "Content-length:") + 15);
-                  boundary[0] = 0;
-                  if (strstr(net_buffer, "boundary=")) {
-                     strlcpy(boundary, strstr(net_buffer, "boundary=") + 9,
-                             sizeof(boundary));
-                     if (strchr(boundary, '\r'))
-                        *strchr(boundary, '\r') = 0;
-                  }
+            }
 
-                  if (strstr(net_buffer, "\r\n\r\n"))
-                     header_length =
-                         (INT) strstr(net_buffer, "\r\n\r\n") - (INT) net_buffer + 4;
-                  if (strstr(net_buffer, "\r\r\n\r\r\n"))
-                     header_length =
-                         (INT) strstr(net_buffer, "\r\r\n\r\r\n") - (INT) net_buffer + 6;
-                  if (header_length)
-                     net_buffer[header_length - 1] = 0;
-
-                  if (content_length > _max_content_length) {
-
-                     /* drain socket connection */
-                     do {
-                        FD_ZERO(&readfds);
-                        FD_SET(_sock, &readfds);
-                        timeout.tv_sec = 6;
-                        timeout.tv_usec = 0;
-                        status =
-                            select(FD_SETSIZE, (void *) &readfds, NULL, NULL,
-                                   (void *) &timeout);
-                        if (FD_ISSET(_sock, &readfds))
-                           i = recv(_sock, net_buffer, net_buffer_size, 0);
-                        else
-                           break;
-                     } while (i > 0);
-
-                     /* return error */
-                     memset(return_buffer, 0, return_buffer_size);
-                     strlen_retbuf = 0;
-                     return_length = 0;
-
-                     sprintf(str,
-                             loc
-                             ("Error: Content length (%d) larger than maximum content length (%d)"),
-                             content_length, _max_content_length);
-                     strcat(str, "<br>");
-                     strcat(str,
-                            loc
-                            ("Please increase <b>\"Max content length\"</b> in config file"));
-                     keep_alive = FALSE;
-                     show_error(str);
-                     goto redir;
-                  }
+            if (strstr(logbook, ".gif") || strstr(logbook, ".jpg") ||
+               strstr(logbook, ".jpg") || strstr(logbook, ".png") ||
+               strstr(logbook, ".ico") || strstr(logbook, ".htm")
+               || strstr(logbook, ".css")) {
+               /* check if file in resource directory */
+               strlcpy(str, resource_dir, sizeof(str));
+               strlcat(str, logbook, sizeof(str));
+               if (exist_file(str))
+                  send_file_direct(str);
+               else {
+                  /* else search file in themes directory */
+                  strlcpy(str, resource_dir, sizeof(str));
+                  strlcat(str, "themes", sizeof(str));
+                  strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
+                  if (getcfg("global", "theme", theme, sizeof(theme)))
+                     strlcat(str, theme, sizeof(str));
+                  else
+                     strlcat(str, "default", sizeof(str));
+                  strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
+                  strlcat(str, logbook, sizeof(str));
+                  send_file_direct(str);
                }
 
-               if (header_length > 0 && len >= header_length + content_length)
-                  break;
-            } else if (strstr(net_buffer, "HEAD") != NULL) {
-               /* just return header */
-               rsprintf("HTTP/1.1 200 OK\r\n");
-               rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-               rsprintf("Connection: close\r\n");
-               rsprintf("Content-Type: text/html\r\n\r\n");
-               keep_alive = FALSE;
-               return_length = strlen_retbuf + 1;
                send(_sock, return_buffer, return_length, 0);
-               goto finished;
-            } else if (strstr(net_buffer, "OPTIONS") != NULL)
-               goto finished;
-            else {
-               if (strlen(net_buffer) > 0 && verbose) {
-                  eprintf("Received unknown HTTP command:\n");
-                  eputs(net_buffer);
-               }
-               goto finished;
-            }
-
-         } while (1);
-         if (!strchr(net_buffer, '\r'))
-            goto finished;
-         if (verbose) {
-            eputs("\n");
-            eputs(net_buffer);
-         }
-
-         /* initialize parametr array */
-         initparam();
-         /* extract cookies */
-         if ((p = strstr(net_buffer, "Cookie:")) != NULL) {
-            p += 6;
-            do {
-               p++;
-               while (*p && *p == ' ')
-                  p++;
-               strlcpy(str, p, sizeof(str));
-               for (i = 0; i < (int) strlen(str); i++)
-                  if (str[i] == '=' || str[i] == ';')
-                     break;
-               if (str[i] == '=') {
-                  str[i] = 0;
-                  p += i + 1;
-                  for (i = 0; *p && *p != ';' && *p != '\r' && *p != '\n'; i++)
-                     cookie[i] = *p++;
-                  cookie[i] = 0;
-               } else {
-                  /* empty cookie */
-                  str[i] = 0;
-                  cookie[0] = 0;
-                  p += i;
-               }
-
-               /* store cookie as parameter */
-               setparam(str, cookie);
-            } while (*p && *p == ';');
-         }
-
-         /* extract referer */
-         referer[0] = 0;
-         if ((p = strstr(net_buffer, "Referer:")) != NULL) {
-            p += 9;
-            while (*p && *p == ' ')
-               p++;
-            strlcpy(referer, p, sizeof(referer));
-            if (strchr(referer, '\r'))
-               *strchr(referer, '\r') = 0;
-            if (strchr(referer, '?'))
-               *strchr(referer, '?') = 0;
-            for (p = referer + strlen(referer) - 1; p > referer && *p != '/'; p--)
-               *p = 0;
-            if (strchr(referer, ' '))
-               url_encode(referer, sizeof(referer));
-         }
-
-         /* extract browser */
-         browser[0] = 0;
-         if ((p = strstr(net_buffer, "User-Agent:")) != NULL) {
-            p += 11;
-            while (*p && *p == ' ')
-               p++;
-            strlcpy(browser, p, sizeof(browser));
-            if (strchr(browser, '\r'))
-               *strchr(browser, '\r') = 0;
-         }
-
-         /* extract host */
-         http_host[0] = 0;
-         if ((p = strstr(net_buffer, "Host:")) != NULL) {
-            p += 5;
-            while (*p && *p == ' ')
-               p++;
-            strlcpy(http_host, p, sizeof(http_host));
-            if (strchr(http_host, '\r'))
-               *strchr(http_host, '\r') = 0;
-         }
-
-         /* extract X-Forwarded-Host, overwrite "Host:" if found */
-         if ((p = strstr(net_buffer, "X-Forwarded-Host:")) != NULL) {
-            p += 17;
-            while (*p && *p == ' ')
-               p++;
-            strlcpy(http_host, p, sizeof(http_host));
-            if (strchr(http_host, '\r'))
-               *strchr(http_host, '\r') = 0;
-         }
-
-         /* extract "X-Forwarded-For:" */
-         if ((p = strstr(net_buffer, "X-Forwarded-For:")) != NULL) {
-            p += 16;
-            while (*p && *p == ' ')
-               p++;
-            strlcpy(str, p, sizeof(str));
-            if (strchr(str, '\r'))
-               *strchr(str, '\r') = 0;
-#ifdef OS_WINNT
-            rem_addr.S_un.S_addr = inet_addr(str);
-#else
-            rem_addr.s_addr = inet_addr(str);
-#endif
-            phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
-            if (phe != NULL) {
-               strcpy(remote_host[i_conn], phe->h_name);
-               strcpy(rem_host, remote_host[i_conn]);
-            }
-         }
-
-         memset(return_buffer, 0, return_buffer_size);
-         strlen_retbuf = 0;
-         if (strncmp(net_buffer, "GET", 3) != 0 && strncmp(net_buffer, "POST", 4) != 0)
-            goto finished;
-         return_length = 0;
-
-         /* extract logbook */
-         if (strchr(net_buffer, '/') == NULL || strchr(net_buffer, '\r') == NULL
-             || strstr(net_buffer, "HTTP") == NULL) {
-            /* invalid request, make valid */
-            strcpy(net_buffer, "GET / HTTP/1.0\r\n\r\n");
-         }
-
-         /* initialize topgroups */
-         setcfg_topgroup("");
-
-         p = strchr(net_buffer, '/') + 1;
-         logbook[0] = 0;
-         for (i = 0; *p && *p != '/' && *p != '?' && *p != ' '; i++)
-            logbook[i] = *p++;
-         logbook[i] = 0;
-         strcpy(logbook_enc, logbook);
-         url_decode(logbook);
-         /* check for trailing '/' after logbook */
-         if (strstr(net_buffer, "POST") == NULL) {      // fix for konqueror
-            if (logbook[0] && *p == ' ') {
-               if (!strstr(logbook, ".css") && !strstr(logbook, ".htm")
-                   && !strstr(logbook, ".gif") && !strstr(logbook, ".jpg")
-                   && !strstr(logbook, ".png")) {
-                  sprintf(str, "%s/", logbook_enc);
-                  redirect(NULL, str);
-                  goto redir;
-               }
-            }
-         }
-
-         /* check for trailing '/' after logbook/ID */
-         if (logbook[0] && *p == '/' && *(p + 1) != ' ') {
-            sprintf(url, "%s", logbook_enc);
-            pd = url + strlen(url);
-            while (*p && *p != ' ')
-               *pd++ = *p++;
-            *pd = 0;
-            if (*(p - 1) == '/') {
-               sprintf(str, "Invalid URL: %s", url);
-               show_error(str);
-               send(_sock, return_buffer, strlen_retbuf + 1, 0);
-               keep_alive = 0;
                if (verbose) {
                   eprintf("==== Return ================================\n");
                   eputs(return_buffer);
                   eprintf("\n\n");
                }
+
                goto finished;
-            }
-         }
+            } else {
+               if (!strieq(logbook, str) && logbook[0]) {
 
-         /* check for global command */
-         global_cmd[0] = 0;
-         if ((p = strstr(net_buffer, "?cmd=")) != NULL) {
-            p += 5;
-            strlcpy(global_cmd, p, sizeof(global_cmd));
-            if (strchr(global_cmd, ' '))
-               *strchr(global_cmd, ' ') = 0;
-            if (strchr(global_cmd, '\r'))
-               *strchr(global_cmd, '\r') = 0;
-         }
+                  /* check for top group */
+                  sprintf(str, "Top group %s", logbook);
+                  if (!getcfg("global", str, list, sizeof(list))) {
 
-         /* check if logbook exists */
-         for (i = 0;; i++) {
-            if (!enumgrp(i, str))
-               break;
-            if (strieq(logbook, str))
-               break;
-         }
-
-         if (strstr(logbook, ".gif") || strstr(logbook, ".jpg") ||
-             strstr(logbook, ".jpg") || strstr(logbook, ".png") ||
-             strstr(logbook, ".ico") || strstr(logbook, ".htm")
-             || strstr(logbook, ".css")) {
-            /* check if file in resource directory */
-            strlcpy(str, resource_dir, sizeof(str));
-            strlcat(str, logbook, sizeof(str));
-            if (exist_file(str))
-               send_file_direct(str);
-            else {
-               /* else search file in themes directory */
-               strlcpy(str, resource_dir, sizeof(str));
-               strlcat(str, "themes", sizeof(str));
-               strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
-               if (getcfg("global", "theme", theme, sizeof(theme)))
-                  strlcat(str, theme, sizeof(str));
-               else
-                  strlcat(str, "default", sizeof(str));
-               strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
-               strlcat(str, logbook, sizeof(str));
-               send_file_direct(str);
+                     sprintf(str, "Error: logbook \"%s\" not defined in %s", logbook, CFGFILE);
+                     show_error(str);
+                     send(_sock, return_buffer, strlen(return_buffer), 0);
+                     if (verbose) {
+                        eprintf("==== Return ================================\n");
+                        eputs(return_buffer);
+                        eprintf("\n\n");
+                     }
+                     goto finished;
+                  }
+               }
             }
 
-            send(_sock, return_buffer, return_length, 0);
-            if (verbose) {
-               eprintf("==== Return ================================\n");
-               eputs(return_buffer);
-               eprintf("\n\n");
-            }
+            /* if no logbook is given and only one logbook defined, use this one */
+            if (!logbook[0] && !global_cmd[0]) {
+               for (i = n = 0;; i++) {
+                  if (!enumgrp(i, str))
+                     break;
+                  if (is_logbook(str))
+                     n++;
+               }
 
-            goto finished;
-         } else {
-            if (!strieq(logbook, str) && logbook[0]) {
-
-               /* check for top group */
-               sprintf(str, "Top group %s", logbook);
-               if (!getcfg("global", str, list, sizeof(list))) {
-
-                  sprintf(str, "Error: logbook \"%s\" not defined in %s", logbook, CFGFILE);
-                  show_error(str);
+               if (n == 1) {
+                  strlcpy(logbook, str, sizeof(logbook));
+                  strlcpy(logbook_enc, logbook, sizeof(logbook_enc));
+                  url_encode(logbook_enc, sizeof(logbook_enc));
+                  strlcat(logbook_enc, "/", sizeof(logbook_enc));
+                  /* redirect to logbook, necessary to get optional cookies for that logbook */
+                  redirect(NULL, logbook_enc);
                   send(_sock, return_buffer, strlen(return_buffer), 0);
                   if (verbose) {
                      eprintf("==== Return ================================\n");
@@ -20327,258 +20358,232 @@ void server_loop(void)
                   goto finished;
                }
             }
-         }
 
-         /* if no logbook is given and only one logbook defined, use this one */
-         if (!logbook[0] && !global_cmd[0]) {
-            for (i = n = 0;; i++) {
-               if (!enumgrp(i, str))
-                  break;
-               if (is_logbook(str))
-                  n++;
+            /*---- check "hosts deny" ----*/
+
+            authorized = 1;
+            if (getcfg(logbook, "Hosts deny", list, sizeof(list))) {
+               strcpy(rem_host_ip, (char *) inet_ntoa(rem_addr));
+               n = strbreak(list, host_list, MAX_N_LIST, ",");
+               /* check if current connection matches anyone on the list */
+               for (i = 0; i < n; i++) {
+                  if (strieq(rem_host, host_list[i]) || strieq(rem_host_ip, host_list[i])
+                     || strieq(host_list[i], "all")) {
+                     if (verbose)
+                        eprintf
+                           ("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n",
+                           strieq(rem_host_ip,
+                                    host_list[i]) ? rem_host_ip : rem_host, host_list[i]);
+                     authorized = 0;
+                     break;
+                  }
+                  if (host_list[i][0] == '.') {
+                     if (strlen(rem_host) > strlen(host_list[i]) &&
+                        strieq(host_list[i],
+                              rem_host + strlen(rem_host) - strlen(host_list[i]))) {
+                        if (verbose)
+                           eprintf
+                              ("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n",
+                              rem_host, host_list[i]);
+                        authorized = 0;
+                        break;
+                     }
+                  }
+                  if (host_list[i][strlen(host_list[i]) - 1] == '.') {
+                     strcpy(str, rem_host_ip);
+                     if (strlen(str) > strlen(host_list[i]))
+                        str[strlen(host_list[i])] = 0;
+                     if (strieq(host_list[i], str)) {
+                        if (verbose)
+                           eprintf
+                              ("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n",
+                              rem_host_ip, host_list[i]);
+                        authorized = 0;
+                        break;
+                     }
+                  }
+               }
             }
 
-            if (n == 1) {
-               strlcpy(logbook, str, sizeof(logbook));
-               strlcpy(logbook_enc, logbook, sizeof(logbook_enc));
-               url_encode(logbook_enc, sizeof(logbook_enc));
-               strlcat(logbook_enc, "/", sizeof(logbook_enc));
-               /* redirect to logbook, necessary to get optional cookies for that logbook */
-               redirect(NULL, logbook_enc);
-               send(_sock, return_buffer, strlen(return_buffer), 0);
-               if (verbose) {
-                  eprintf("==== Return ================================\n");
-                  eputs(return_buffer);
-                  eprintf("\n\n");
+            /*---- check "hosts allow" ----*/
+
+            if (getcfg(logbook, "Hosts allow", list, sizeof(list))) {
+               strcpy(rem_host_ip, (char *) inet_ntoa(acc_addr.sin_addr));
+               n = strbreak(list, host_list, MAX_N_LIST, ",");
+               /* check if current connection matches anyone on the list */
+               for (i = 0; i < n; i++) {
+                  if (strieq(rem_host, host_list[i]) || strieq(rem_host_ip, host_list[i])
+                     || strieq(host_list[i], "all")) {
+                     if (verbose)
+                        eprintf
+                           ("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
+                           strieq(rem_host_ip,
+                                    host_list[i]) ? rem_host_ip : rem_host, host_list[i]);
+                     authorized = 1;
+                     break;
+                  }
+                  if (host_list[i][0] == '.') {
+                     if (strlen(rem_host) > strlen(host_list[i]) &&
+                        strieq(host_list[i],
+                              rem_host + strlen(rem_host) - strlen(host_list[i]))) {
+                        if (verbose)
+                           eprintf
+                              ("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
+                              rem_host, host_list[i]);
+                        authorized = 1;
+                        break;
+                     }
+                  }
+                  if (host_list[i][strlen(host_list[i]) - 1] == '.') {
+                     strcpy(str, rem_host_ip);
+                     if (strlen(str) > strlen(host_list[i]))
+                        str[strlen(host_list[i])] = 0;
+                     if (strieq(host_list[i], str)) {
+                        if (verbose)
+                           eprintf
+                              ("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
+                              rem_host_ip, host_list[i]);
+                        authorized = 1;
+                        break;
+                     }
+                  }
                }
+            }
+
+            if (!authorized) {
+               keep_alive = 0;
                goto finished;
             }
-         }
 
-         /*---- check "hosts deny" ----*/
-
-         authorized = 1;
-         if (getcfg(logbook, "Hosts deny", list, sizeof(list))) {
-            strcpy(rem_host_ip, (char *) inet_ntoa(rem_addr));
-            n = strbreak(list, host_list, MAX_N_LIST, ",");
-            /* check if current connection matches anyone on the list */
-            for (i = 0; i < n; i++) {
-               if (strieq(rem_host, host_list[i]) || strieq(rem_host_ip, host_list[i])
-                   || strieq(host_list[i], "all")) {
-                  if (verbose)
-                     eprintf
-                         ("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n",
-                          strieq(rem_host_ip,
-                                 host_list[i]) ? rem_host_ip : rem_host, host_list[i]);
-                  authorized = 0;
-                  break;
-               }
-               if (host_list[i][0] == '.') {
-                  if (strlen(rem_host) > strlen(host_list[i]) &&
-                      strieq(host_list[i],
-                             rem_host + strlen(rem_host) - strlen(host_list[i]))) {
-                     if (verbose)
-                        eprintf
-                            ("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n",
-                             rem_host, host_list[i]);
-                     authorized = 0;
-                     break;
+            /* ask for password if configured */
+            authorized = 1;
+            if (getcfg(logbook, "Read Password", pwd, sizeof(pwd))) {
+               authorized = 0;
+               /* decode authorization */
+               if (strstr(net_buffer, "Authorization:")) {
+                  p = strstr(net_buffer, "Authorization:") + 14;
+                  if (strstr(p, "Basic")) {
+                     p = strstr(p, "Basic") + 6;
+                     while (*p == ' ')
+                        p++;
+                     i = 0;
+                     while (*p && *p != ' ' && *p != '\r')
+                        str[i++] = *p++;
+                     str[i] = 0;
                   }
-               }
-               if (host_list[i][strlen(host_list[i]) - 1] == '.') {
-                  strcpy(str, rem_host_ip);
-                  if (strlen(str) > strlen(host_list[i]))
-                     str[strlen(host_list[i])] = 0;
-                  if (strieq(host_list[i], str)) {
-                     if (verbose)
-                        eprintf
-                            ("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n",
-                             rem_host_ip, host_list[i]);
-                     authorized = 0;
-                     break;
+                  base64_decode(str, cl_pwd);
+                  if (strchr(cl_pwd, ':')) {
+                     p = strchr(cl_pwd, ':') + 1;
+                     do_crypt(p, str);
+                     strcpy(cl_pwd, str);
+                     /* check authorization */
+                     if (strcmp(str, pwd) == 0)
+                        authorized = 1;
                   }
                }
             }
-         }
 
-         /*---- check "hosts allow" ----*/
-
-         if (getcfg(logbook, "Hosts allow", list, sizeof(list))) {
-            strcpy(rem_host_ip, (char *) inet_ntoa(acc_addr.sin_addr));
-            n = strbreak(list, host_list, MAX_N_LIST, ",");
-            /* check if current connection matches anyone on the list */
-            for (i = 0; i < n; i++) {
-               if (strieq(rem_host, host_list[i]) || strieq(rem_host_ip, host_list[i])
-                   || strieq(host_list[i], "all")) {
-                  if (verbose)
-                     eprintf
-                         ("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
-                          strieq(rem_host_ip,
-                                 host_list[i]) ? rem_host_ip : rem_host, host_list[i]);
-                  authorized = 1;
-                  break;
-               }
-               if (host_list[i][0] == '.') {
-                  if (strlen(rem_host) > strlen(host_list[i]) &&
-                      strieq(host_list[i],
-                             rem_host + strlen(rem_host) - strlen(host_list[i]))) {
-                     if (verbose)
-                        eprintf
-                            ("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
-                             rem_host, host_list[i]);
-                     authorized = 1;
-                     break;
-                  }
-               }
-               if (host_list[i][strlen(host_list[i]) - 1] == '.') {
-                  strcpy(str, rem_host_ip);
-                  if (strlen(str) > strlen(host_list[i]))
-                     str[strlen(host_list[i])] = 0;
-                  if (strieq(host_list[i], str)) {
-                     if (verbose)
-                        eprintf
-                            ("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
-                             rem_host_ip, host_list[i]);
-                     authorized = 1;
-                     break;
-                  }
-               }
-            }
-         }
-
-         if (!authorized) {
-            keep_alive = 0;
-            goto finished;
-         }
-
-         /* ask for password if configured */
-         authorized = 1;
-         if (getcfg(logbook, "Read Password", pwd, sizeof(pwd))) {
-            authorized = 0;
-            /* decode authorization */
-            if (strstr(net_buffer, "Authorization:")) {
-               p = strstr(net_buffer, "Authorization:") + 14;
-               if (strstr(p, "Basic")) {
-                  p = strstr(p, "Basic") + 6;
-                  while (*p == ' ')
-                     p++;
-                  i = 0;
-                  while (*p && *p != ' ' && *p != '\r')
-                     str[i++] = *p++;
-                  str[i] = 0;
-               }
-               base64_decode(str, cl_pwd);
-               if (strchr(cl_pwd, ':')) {
-                  p = strchr(cl_pwd, ':') + 1;
-                  do_crypt(p, str);
-                  strcpy(cl_pwd, str);
-                  /* check authorization */
-                  if (strcmp(str, pwd) == 0)
-                     authorized = 1;
-               }
-            }
-         }
-
-         /* check for Keep-alive */
-         if (strstr(net_buffer, "Keep-Alive") != NULL && use_keepalive)
-            keep_alive = TRUE;
-         if (!authorized) {
-            /* return request for authorization */
-            rsprintf("HTTP/1.1 401 Authorization Required\r\n");
-            rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-            rsprintf("WWW-Authenticate: Basic realm=\"%s\"\r\n", logbook);
-            rsprintf("Connection: close\r\n");
-            rsprintf("Content-Type: text/html\r\n\r\n");
-            rsprintf("<HTML><HEAD>\r\n");
-            rsprintf("<TITLE>401 Authorization Required</TITLE>\r\n");
-            rsprintf("</HEAD><BODY>\r\n");
-            rsprintf("<H1>Authorization Required</H1>\r\n");
-            rsprintf("This server could not verify that you\r\n");
-            rsprintf("are authorized to access the document\r\n");
-            rsprintf("requested. Either you supplied the wrong\r\n");
-            rsprintf("credentials (e.g., bad password), or your\r\n");
-            rsprintf("browser doesn't understand how to supply\r\n");
-            rsprintf("the credentials required.<P>\r\n");
-            rsprintf("</BODY></HTML>\r\n");
-            keep_alive = FALSE;
-         } else {
-
-            if (!logbook[0] && global_cmd[0] && stricmp(global_cmd, "GetConfig") == 0) {
-               download_config();
-               goto redir;
-            } else if (strncmp(net_buffer, "GET", 3) == 0) {
-               /* extract path and commands */
-               *strchr(net_buffer, '\r') = 0;
-               if (!strstr(net_buffer, "HTTP"))
-                  goto finished;
-               *(strstr(net_buffer, "HTTP") - 1) = 0;
-               /* strip logbook from path */
-               p = net_buffer + 5;
-               for (i = 0; *p && *p != '/' && *p != '?'; p++);
-               while (*p && *p == '/')
-                  p++;
-               /* decode command and return answer */
-               decode_get(logbook, p);
-            } else if (strncmp(net_buffer, "POST", 4) == 0) {
-               if (verbose)
-                  eputs(net_buffer + header_length);
-               /* get logbook from list (needed for attachment dir) */
-               for (i = 0; lb_list[i].name[0]; i++)
-                  if (strieq(logbook, lb_list[i].name))
-                     break;
-               decode_post(&lb_list[i], net_buffer + header_length, boundary,
-                           content_length);
+            /* check for Keep-alive */
+            if (strstr(net_buffer, "Keep-Alive") != NULL && use_keepalive)
+               keep_alive = TRUE;
+            if (!authorized) {
+               /* return request for authorization */
+               rsprintf("HTTP/1.1 401 Authorization Required\r\n");
+               rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+               rsprintf("WWW-Authenticate: Basic realm=\"%s\"\r\n", logbook);
+               rsprintf("Connection: close\r\n");
+               rsprintf("Content-Type: text/html\r\n\r\n");
+               rsprintf("<HTML><HEAD>\r\n");
+               rsprintf("<TITLE>401 Authorization Required</TITLE>\r\n");
+               rsprintf("</HEAD><BODY>\r\n");
+               rsprintf("<H1>Authorization Required</H1>\r\n");
+               rsprintf("This server could not verify that you\r\n");
+               rsprintf("are authorized to access the document\r\n");
+               rsprintf("requested. Either you supplied the wrong\r\n");
+               rsprintf("credentials (e.g., bad password), or your\r\n");
+               rsprintf("browser doesn't understand how to supply\r\n");
+               rsprintf("the credentials required.<P>\r\n");
+               rsprintf("</BODY></HTML>\r\n");
+               keep_alive = FALSE;
             } else {
-               net_buffer[50] = 0;
-               sprintf(str, "Unknown request:<p>%s", net_buffer);
-               show_error(str);
+
+               if (!logbook[0] && global_cmd[0] && stricmp(global_cmd, "GetConfig") == 0) {
+                  download_config();
+                  goto redir;
+               } else if (strncmp(net_buffer, "GET", 3) == 0) {
+                  /* extract path and commands */
+                  *strchr(net_buffer, '\r') = 0;
+                  if (!strstr(net_buffer, "HTTP"))
+                     goto finished;
+                  *(strstr(net_buffer, "HTTP") - 1) = 0;
+                  /* strip logbook from path */
+                  p = net_buffer + 5;
+                  for (i = 0; *p && *p != '/' && *p != '?'; p++);
+                  while (*p && *p == '/')
+                     p++;
+                  /* decode command and return answer */
+                  decode_get(logbook, p);
+               } else if (strncmp(net_buffer, "POST", 4) == 0) {
+                  if (verbose)
+                     eputs(net_buffer + header_length);
+                  /* get logbook from list (needed for attachment dir) */
+                  for (i = 0; lb_list[i].name[0]; i++)
+                     if (strieq(logbook, lb_list[i].name))
+                        break;
+                  decode_post(&lb_list[i], net_buffer + header_length, boundary,
+                              content_length);
+               } else {
+                  net_buffer[50] = 0;
+                  sprintf(str, "Unknown request:<p>%s", net_buffer);
+                  show_error(str);
+               }
             }
-         }
 
-       redir:
-         if (return_length != -1) {
-            if (return_length == 0)
-               return_length = strlen_retbuf;
-            if ((keep_alive && strstr(return_buffer, "Content-Length") == NULL)
-                || strstr(return_buffer, "Content-Length") >
-                strstr(return_buffer, "\r\n\r\n")) {
-               /*---- add content-length ----*/
+         redir:
+            if (return_length != -1) {
+               if (return_length == 0)
+                  return_length = strlen_retbuf;
+               if ((keep_alive && strstr(return_buffer, "Content-Length") == NULL)
+                  || strstr(return_buffer, "Content-Length") >
+                  strstr(return_buffer, "\r\n\r\n")) {
+                  /*---- add content-length ----*/
 
-               p = strstr(return_buffer, "\r\n\r\n");
-               if (p != NULL) {
-                  length = strlen(p + 4);
-                  header_length = (int) (p - return_buffer);
-                  memcpy(header_buffer, return_buffer, header_length);
-                  sprintf(header_buffer + header_length,
-                          "\r\nContent-Length: %d\r\n\r\n", length);
-                  send(_sock, header_buffer, strlen(header_buffer), 0);
-                  send(_sock, p + 4, length, 0);
-                  if (verbose) {
-                     eprintf("==== Return ================================\n");
-                     eputs(header_buffer);
-                     eputs(p + 2);
-                     eprintf("\n");
+                  p = strstr(return_buffer, "\r\n\r\n");
+                  if (p != NULL) {
+                     length = strlen(p + 4);
+                     header_length = (int) (p - return_buffer);
+                     memcpy(header_buffer, return_buffer, header_length);
+                     sprintf(header_buffer + header_length,
+                           "\r\nContent-Length: %d\r\n\r\n", length);
+                     send(_sock, header_buffer, strlen(header_buffer), 0);
+                     send(_sock, p + 4, length, 0);
+                     if (verbose) {
+                        eprintf("==== Return ================================\n");
+                        eputs(header_buffer);
+                        eputs(p + 2);
+                        eprintf("\n");
+                     }
+                  } else {
+                     eprintf("Internal error, no valid header!\n");
+                     keep_alive = 0;
                   }
                } else {
-                  eprintf("Internal error, no valid header!\n");
-                  keep_alive = 0;
+                  send(_sock, return_buffer, return_length, 0);
+                  if (verbose) {
+                     eprintf("==== Return ================================\n");
+                     eputs(return_buffer);
+                     eprintf("\n\n");
+                  }
                }
-            } else {
-               send(_sock, return_buffer, return_length, 0);
-               if (verbose) {
-                  eprintf("==== Return ================================\n");
-                  eputs(return_buffer);
-                  eprintf("\n\n");
-               }
-            }
-          finished:
+            finished:
 
-            if (!keep_alive) {
-               closesocket(_sock);
-               ka_sock[i_conn] = 0;
-#ifdef DEBUG_CONN
-               eprintf("## close connection %d\n", i_conn);
-#endif
+               if (!keep_alive) {
+                  closesocket(_sock);
+                  ka_sock[i_conn] = 0;
+   #ifdef DEBUG_CONN
+                  eprintf("## close connection %d\n", i_conn);
+   #endif
+               }
             }
          }
       }
