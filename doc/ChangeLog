@@ -1,3 +1,22 @@
+Version 2.5.7, released Februar 14th, 2005
+==========================================
+
+- Fixed buffer overflow which was already exploited to obtain
+  shell access
+- Fixed security bug which allowed to download a config file
+  containing a write password without supplying this password
+  first
+- Solved bug with 'fixed' ROptions attributes
+- Added missing 'alt' tags to images
+- Use admin user email in 'from' field if nothing else is availabe
+- 'Preset attribute' now also works with conditional attributes
+- Fixed wrong '%S' instead of '%s' in charset
+- Do not display .EPS files inline as ASCII files
+- Fixed problem with conditional attributes in French
+- Removed superfloous 'mailto:' in substitution
+- Added highlighting for search results in attributes
+- Fixed bug yielding in wrong search results
+
 Version 2.5.6, released Januar 25th, 2005
 =========================================
 

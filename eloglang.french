@@ -339,3 +339,12 @@ Case sensitive = Tient compte de la casse
 List = Liste
 From = De
 Date must be between 1970 and 2037 = La date doit être comprise entre 1970 et 2037
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+up = 
+down = 
+stop = 
+Entry = 
+name may not contain blanks = 

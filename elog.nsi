@@ -96,7 +96,7 @@ Section "ELOG system (required)" SecSystem
     MessageBox MB_YESNO|MB_ICONQUESTION "Would you like to overwrite your existing theme files?" IDNO themesNotOverwrite
   themesNotExist:
     File themes\default\*.css
-    File themes\default\*.gif
+    File themes\default\*.png
     File themes\default\*.ico
     File themes\default\*.png
     SetOutPath $INSTDIR\themes\default\icons

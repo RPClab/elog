@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.557  2005/02/14 10:52:36  ritt
+   Version 2.5.7-1
+
    Revision 1.556  2005/02/14 10:44:16  ritt
    Fixed buffer overflow in decode_post()
 
@@ -1173,7 +1176,7 @@ int read_password(char *pwd, int size);
 int getcfg(char *group, char *param, char *value, int vsize);
 int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_LENGTH],
                      char attrib[][NAME_LENGTH], BOOL format_date);
-void highlight_searchtext(regex_t *re_buf, char *src, char *dst, BOOL hidden);
+void highlight_searchtext(regex_t * re_buf, char *src, char *dst, BOOL hidden);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -1245,7 +1248,7 @@ static BOOL chkext(const char *str, const char *ext)
    strl = strlen(str);
    if (extl >= strl)
       return FALSE;
-   str = str+strl-extl;
+   str = str + strl - extl;
    while (*str) {
       c1 = *str++;
       c2 = *ext++;
@@ -3532,7 +3535,7 @@ void retrieve_email_from(LOGBOOK * lbs, char *ret, char attrib[MAX_N_ATTR][NAME_
 
       /* remove possible 'mailto:' */
       if ((p = strstr(str, "mailto:")) != NULL)
-         strcpy(p, p+7);
+         strcpy(p, p + 7);
    }
 
    /* if nothing available, figure out email from an administrator */
@@ -4399,7 +4402,7 @@ INT el_retrieve(LOGBOOK * lbs,
 
 int el_submit_attachment(LOGBOOK * lbs, char *afilename, char *buffer, int buffer_size, char *full_name)
 {
-   char file_name[MAX_PATH_LENGTH], ext_file_name[MAX_PATH_LENGTH+100], str[MAX_PATH_LENGTH], *p;
+   char file_name[MAX_PATH_LENGTH], ext_file_name[MAX_PATH_LENGTH + 100], str[MAX_PATH_LENGTH], *p;
    int fh;
    time_t now;
    struct tm tms;
@@ -4439,7 +4442,7 @@ int el_submit_attachment(LOGBOOK * lbs, char *afilename, char *buffer, int buffe
       /* save attachment */
       fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
       if (fh < 0) {
-         strlcpy(file_name, str, sizeof(str)-40);
+         strlcpy(file_name, str, sizeof(str) - 40);
          sprintf(str, "Cannot write attachment file \"%s\"", file_name);
          show_error(str);
          return -1;
@@ -7675,7 +7678,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
    }
 
-   for (index = 0 ; index < lbs->n_attr ; index++) {
+   for (index = 0; index < lbs->n_attr; index++) {
 
       /* check for preset string */
       sprintf(str, "Preset %s", attr_list[index]);
@@ -8405,7 +8408,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         rsprintf("<img src=\"icons/%s\" alt=\"%s\"></nobr>\n",
                                  attr_options[index][i], comment);
                      else
-                        rsprintf("<img src=\"icons/%s\" alt=\"%s\"></nobr>\n", 
+                        rsprintf("<img src=\"icons/%s\" alt=\"%s\"></nobr>\n",
                                  attr_options[index][i], attr_options[index][i]);
 
                      if (format_flags[index] & AFF_MULTI_LINE)
@@ -10500,7 +10503,7 @@ void show_new_user_page(LOGBOOK * lbs)
    rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Login name"));
    rsprintf("<td><input type=text size=40 name=new_user_name></td>\n");
    rsprintf("<td align=left><i><font size=2>(%s)</i></font></td></tr>\n",
-            loc("name may not contain blanks "));
+            loc("name may not contain blanks"));
 
    rsprintf("<tr><td nowrap width = \"10%%\">%s:</td>\n", loc("Full name"));
    rsprintf("<td colspan=2><input type=text size=40 name=new_full_name></tr>\n");
@@ -13285,8 +13288,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   char attrib[MAX_N_ATTR][NAME_LENGTH], int n_attr,
                   char *text, BOOL show_text,
                   char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], char *encoding,
-                  BOOL select, int *n_display, char *locked_by, int highlight,
-                  regex_t *re_buf)
+                  BOOL select, int *n_display, char *locked_by, int highlight, regex_t * re_buf)
 {
    char str[NAME_LENGTH], ref[256], *nowrap, sclass[80], format[256],
        file_name[MAX_PATH_LENGTH], *slist, *svalue;
@@ -13371,13 +13373,13 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       else {
          /* if top level only, display reply icon if message has a reply */
          if (getcfg(lbs->name, "Top level only", str, sizeof(str)) && atoi(str) == 1 && reply_to[0])
-            rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\">&nbsp;", loc("reply"));
+            rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\">&nbsp;", loc("Reply"));
          else {
             /* display standard icons */
             if (level == 0)
-               rsprintf("<img border=0 src=\"entry.png\" alt=\"%s\">&nbsp;", loc("entry"));
+               rsprintf("<img border=0 src=\"entry.png\" alt=\"%s\">&nbsp;", loc("Entry"));
             else
-               rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\">&nbsp;", loc("reply"));
+               rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\">&nbsp;", loc("Reply"));
          }
       }
       if (highlight != message_id)
@@ -13429,9 +13431,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          if (strieq(disp_attr[index], loc("ID"))) {
             if (strieq(mode, "Threaded")) {
                if (level == 0)
-                  rsprintf("<img border=0 src=\"entry.png\" alt=\"%s\">&nbsp;", loc("entry"));
+                  rsprintf("<img border=0 src=\"entry.png\" alt=\"%s\">&nbsp;", loc("Entry"));
                else
-                  rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\">&nbsp;", loc("reply"));
+                  rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\">&nbsp;", loc("Reply"));
 
                skip_comma = TRUE;
 
@@ -13526,7 +13528,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
                   else if (attr_flags[i] & AF_ICON) {
                      if (attrib[i][0])
-                        rsprintf("&nbsp;<img border=0 src=\"icons/%s\" alt=\"%s\">&nbsp;", attrib[i], attrib[i]);
+                        rsprintf("&nbsp;<img border=0 src=\"icons/%s\" alt=\"%s\">&nbsp;", attrib[i],
+                                 attrib[i]);
                   }
 
                   else {
@@ -13601,7 +13604,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                            rsputs(display);
                         else {
                            if (*getparam(attr_list[i])) {
-                              highlight_searchtext(re_buf+1+i, display, str, TRUE);
+                              highlight_searchtext(re_buf + 1 + i, display, str, TRUE);
                               strlcpy(display, str, sizeof(display));
                            } else if (*getparam("subtext") && atoi(getparam("sall"))) {
                               highlight_searchtext(re_buf, display, str, TRUE);
@@ -13748,11 +13751,10 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   strlcpy(file_name, lbs->data_dir, sizeof(file_name));
                   strlcat(file_name, attachment[index], sizeof(file_name));
 
-                  if (is_ascii(file_name) && 
-                      !chkext(attachment[index], ".PS") && 
-                      !chkext(attachment[index], ".PDF") && 
-                      !chkext(attachment[index], ".EPS") &&
-                      show_attachments) {
+                  if (is_ascii(file_name) &&
+                      !chkext(attachment[index], ".PS") &&
+                      !chkext(attachment[index], ".PDF") &&
+                      !chkext(attachment[index], ".EPS") && show_attachments) {
 
                      /* display attachment */
                      rsprintf("</td></tr><tr><td colspan=%d class=\"messagelist\"><pre>", colspan);
@@ -13790,8 +13792,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
 void display_reply(LOGBOOK * lbs, int message_id, int printable,
                    int expand, int n_line, int n_attr_disp,
-                   char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], BOOL show_text, 
-                   int level, int highlight, regex_t *re_buf)
+                   char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], BOOL show_text,
+                   int level, int highlight, regex_t * re_buf)
 {
    char *date, *text, *in_reply_to, *reply_to, *encoding, *locked_by, *attachment, *attrib, *p;
    int status, size;
@@ -14758,15 +14760,15 @@ void show_rss_feed(LOGBOOK * lbs)
 
 /*------------------------------------------------------------------*/
 
-void highlight_searchtext(regex_t *re_buf, char *src, char *dst, int hidden)
+void highlight_searchtext(regex_t * re_buf, char *src, char *dst, int hidden)
 {
    char *pt, *pt1;
    int size, status;
    regmatch_t pmatch[10];
 
    dst[0] = 0;
-   pt = src;          /* original text */
-   pt1 = dst;        /* text with inserted coloring */
+   pt = src;                    /* original text */
+   pt1 = dst;                   /* text with inserted coloring */
    do {
       status = regexec(re_buf, pt, 10, pmatch, 0);
       if (status != REG_NOMATCH) {
@@ -15247,7 +15249,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
          /* apply filter for attributes */
          for (i = 0; i < lbs->n_attr; i++) {
-            
+
             /* check for multi attributes */
             if (attr_flags[i] & AF_MULTI) {
 
@@ -16073,8 +16075,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                text1[i] = 0;
              */
 
-            highlight_searchtext(re_buf, text, text1, 
-               strieq(encoding, "plain") || !strieq(mode, "Full"));
+            highlight_searchtext(re_buf, text, text1, strieq(encoding, "plain") || !strieq(mode, "Full"));
             strlcpy(text, text1, TEXT_SIZE);
          }
 
@@ -16987,7 +16988,7 @@ void submit_elog(LOGBOOK * lbs)
 
                   /* remove possible 'mailto:' */
                   if ((p = strstr(mail_list[i], "mailto:")) != NULL)
-                     strcpy(p, p+7);
+                     strcpy(p, p + 7);
 
                   if ((int) strlen(mail_to) + (int) strlen(mail_list[i]) >= mail_to_size) {
                      mail_to_size += 256;
@@ -17753,7 +17754,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
       if (locked_by && locked_by[0]) {
          sprintf(str, "%s %s", loc("Entry is currently edited by"), locked_by);
-         rsprintf("<tr><td nowrap colspan=2 class=\"errormsg\"><img src=\"stop.png\" alt=\"%s\">\n", loc("stop"));
+         rsprintf("<tr><td nowrap colspan=2 class=\"errormsg\"><img src=\"stop.png\" alt=\"%s\">\n",
+                  loc("stop"));
          rsprintf("%s<br>%s</td></tr>\n", str, loc("You can \"steal\" the lock by editing this entry"));
       }
 
@@ -18142,7 +18144,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                   if (is_image(att)) {
                      rsprintf("<tr><td class=\"messageframe\">\n");
                      rsprintf("<a name=\"att%d\"></a>\n", index + 1);
-                     rsprintf("<img src=\"%s\" alt=\"%s\"></td></tr>", ref, attachment[index]+14);
+                     rsprintf("<img src=\"%s\" alt=\"%s\"></td></tr>", ref, attachment[index] + 14);
                      rsprintf("</td></tr>\n\n");
                   } else {
                      if (is_ascii(file_name)) {
@@ -20054,8 +20056,8 @@ void decode_get(char *logbook, char *string)
 void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
 {
    int n_att;
-   char *pinit, *p, *ptmp, file_name[MAX_PATH_LENGTH], full_name[MAX_PATH_LENGTH], 
-      str[NAME_LENGTH], line[NAME_LENGTH], item[NAME_LENGTH];
+   char *pinit, *p, *ptmp, file_name[MAX_PATH_LENGTH], full_name[MAX_PATH_LENGTH],
+       str[NAME_LENGTH], line[NAME_LENGTH], item[NAME_LENGTH];
 
    n_att = 0;
    pinit = string;
@@ -21130,7 +21132,7 @@ void server_loop(void)
                      while (*p == ' ')
                         p++;
                      i = 0;
-                     while (*p && *p != ' ' && *p != '\r' && i < sizeof(cl_pwd)-1)
+                     while (*p && *p != ' ' && *p != '\r' && i < sizeof(cl_pwd) - 1)
                         str[i++] = *p++;
                      str[i] = 0;
                   }

@@ -343,3 +343,8 @@ Attachment file <b>"%s"</b> empty or not found = Прикаченият файл <b>"%s"</b> е 
 #
 #---- please translate following items and then remove this comment ----#
 #
+up = 
+down = 
+stop = 
+Entry = 
+name may not contain blanks = 

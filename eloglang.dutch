@@ -346,3 +346,8 @@ Date must be between 1970 and 2037 = Datum moet tussen 1970 en 2037 liggen
 #
 #---- please translate following items and then remove this comment ----#
 #
+up = 
+down = 
+stop = 
+Entry = 
+name may not contain blanks = 
