@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.287  2004/03/08 21:24:43  midas
+   Tried to reduce required stack size in threaded display
+
    Revision 1.286  2004/03/08 20:49:18  midas
    Fixed bug with supressed email notification box and conditional attributes
 
@@ -6063,6 +6066,9 @@ auto-increment tags */
    str[0] = 0;
    message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
 
+   if (!message_id)
+      return 0;
+
    el_retrieve(lbs, message_id, NULL, attr_list, attrib, lbs->n_attr, NULL, 0, NULL, NULL,
                att, NULL, NULL);
 
@@ -6193,7 +6199,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        format_flags, year, month, day;
    char str[1000], preset[1000], *p, *pend, star[80], comment[10000], reply_string[256],
        list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80],
-       attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE], orig_tag[80],
+       attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80],
        reply_tag[MAX_REPLY_TO * 10], att[MAX_ATTACHMENTS][256], encoding[80],
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH],
        owner[256], locked_by[256], class_value[80], class_name[80], condition[256],
@@ -6208,6 +6214,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    for (i = 0; i < lbs->n_attr; i++)
       attrib[i][0] = 0;
 
+   text = malloc(TEXT_SIZE);
    text[0] = 0;
 
    if (breedit || bupload) {
@@ -6282,7 +6289,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       if (message_id) {
          /* get message for reply/edit */
 
-         size = sizeof(text);
+         size = TEXT_SIZE;
          el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
                      text, &size, orig_tag, reply_tag, att, encoding, locked_by);
 
@@ -6333,6 +6340,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       if (i >= MAX_REPLY_TO) {
          sprintf(str, loc("Maximum number of replies (%d) exceeded"), MAX_REPLY_TO);
          show_error(str);
+         free(text);
          return;
       }
    }
@@ -6343,6 +6351,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       if (!is_author(lbs, attrib, owner)) {
          sprintf(str, loc("Only user <i>%s</i> can edit this entry"), owner);
          show_error(str);
+         free(text);
          return;
       }
    }
@@ -6358,6 +6367,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          sprintf(str, loc("Entry can only be edited %1.2lg hours after creation"),
                  atof(str));
          show_error(str);
+         free(text);
          return;
       }
    }
@@ -6964,37 +6974,39 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
             p = text;
 
-            if (!getcfg_cond(lbs->name, condition, "Reply string", reply_string))
-               strcpy(reply_string, "> ");
+            if (text[0]) {
+               if (!getcfg_cond(lbs->name, condition, "Reply string", reply_string))
+                  strcpy(reply_string, "> ");
 
-            do {
-               if (strchr(p, '\n')) {
-                  *strchr(p, '\n') = 0;
+               do {
+                  if (strchr(p, '\n')) {
+                     *strchr(p, '\n') = 0;
 
-                  if (encoding[0] == 'H') {
-                     rsputs2(reply_string);
-                     rsprintf("%s<br>\n", p);
+                     if (encoding[0] == 'H') {
+                        rsputs2(reply_string);
+                        rsprintf("%s<br>\n", p);
+                     } else {
+                        rsputs(reply_string);
+                        rsprintf("%s\n", p);
+                     }
+
+                     p += strlen(p) + 1;
+                     if (*p == '\n')
+                        p++;
                   } else {
-                     rsputs(reply_string);
-                     rsprintf("%s\n", p);
+                     if (encoding[0] == 'H') {
+                        rsputs2(reply_string);
+                        rsprintf("%s<p>\n", p);
+                     } else {
+                        rsputs(reply_string);
+                        rsprintf("%s\n\n", p);
+                     }
+
+                     break;
                   }
 
-                  p += strlen(p) + 1;
-                  if (*p == '\n')
-                     p++;
-               } else {
-                  if (encoding[0] == 'H') {
-                     rsputs2(reply_string);
-                     rsprintf("%s<p>\n", p);
-                  } else {
-                     rsputs(reply_string);
-                     rsprintf("%s\n\n", p);
-                  }
-
-                  break;
-               }
-
-            } while (TRUE);
+               } while (TRUE);
+            }
 
             if (getcfg_cond(lbs->name, condition, "Append on reply", str)) {
 
@@ -7221,6 +7233,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* rescan unconditional attributes */
    if (condition[0])
       scan_attributes(lbs->name, NULL);
+
+   free(text);
 }
 
 /*------------------------------------------------------------------*/
@@ -11554,16 +11568,15 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
        n_display, reverse, n_attr_disp, total_n_msg, n_msg, search_all, message_id,
        n_page, i_start, i_stop, in_reply_to_id;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH],
-       list[10000], *text, *text1, *text2, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
+       *list, *text, *text1, *text2, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH], mode[80], mid[80],
        menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH];
-   char *p, *pt, *pt1, *pt2;
+   char *p, *pt, *pt1, *pt2, *slist, *svalue;
    BOOL show_attachments, threaded, csv, mode_commands, expand, filtering, disp_filter;
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2;
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
-   char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
    LOGBOOK *lbs_cur;
 
    /* redirect if enpty parameters */
@@ -11636,6 +11649,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
          return;
       }
 
+   slist = malloc((MAX_N_ATTR + 10)*NAME_LENGTH);
+   svalue = malloc((MAX_N_ATTR + 10)*NAME_LENGTH);
+   list = malloc(10000);
+
    printable = atoi(getparam("Printable"));
 
    /* in printable mode, display all pages */
@@ -11694,8 +11711,12 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    if (!past_n && !last_n) {
 
       ltime_start = retrieve_date("a", TRUE);
-      if (ltime_start < 0)
+      if (ltime_start < 0) {
+         free(slist);
+         free(svalue);
+         free(list);
          return;
+      }
 
       if (ltime_start) {
          memcpy(&tms, localtime(&ltime_start), sizeof(struct tm));
@@ -11705,14 +11726,21 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       }
 
       ltime_end = retrieve_date("b", FALSE);
-      if (ltime_end < 0)
+      if (ltime_end < 0) {
+         free(slist);
+         free(svalue);
+         free(list);
          return;
+      }
 
       if (ltime_end) {
 
          if (ltime_end <= ltime_start) {
             sprintf(str, "Error: Start date after end date");
             show_error(str);
+            free(slist);
+            free(svalue);
+            free(list);
             return;
          }
 
@@ -11725,6 +11753,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
    if (ltime_start && ltime_end && ltime_start > ltime_end) {
       show_error(loc("Error: start date after end date"));
+      free(slist);
+      free(svalue);
+      free(list);
       return;
    }
 
@@ -11853,6 +11884,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    text2 = malloc(TEXT_SIZE);
    if (text2 == NULL) {
       show_error("Out of memory");
+      free(slist);
+      free(svalue);
+      free(list);
       return;
    }
 
@@ -11904,12 +11938,17 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
                /* if value starts with '$', substitute it */
                if (str[0] == '$') {
-                  j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+                  j = build_subst_list(lbs, 
+                     (char (*)[NAME_LENGTH])slist, 
+                     (char (*)[NAME_LENGTH])svalue, attrib, TRUE);
                   sprintf(mid, "%d", message_id);                    
-                  add_subst_list(slist, svalue, "message id", mid, &j);
-                  add_subst_time(lbs, slist, svalue, "entry time", date, &j);
+                  add_subst_list((char (*)[NAME_LENGTH])slist, 
+                                 (char (*)[NAME_LENGTH])svalue, "message id", mid, &j);
+                  add_subst_time(lbs, (char (*)[NAME_LENGTH])slist, 
+                                      (char (*)[NAME_LENGTH])svalue, "entry time", date, &j);
 
-                  strsubst(str, slist, svalue, j);
+                  strsubst(str, (char (*)[NAME_LENGTH])slist, 
+                                (char (*)[NAME_LENGTH])svalue, j);
                   setparam(attr_list[i], str);
                }
 
@@ -12099,8 +12138,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    /*---- header ----*/
 
    if (getcfg(lbs->name, "Summary Page Title", str)) {
-      i = build_subst_list(lbs, slist, svalue, NULL, TRUE);
-      strsubst(str, slist, svalue, i);
+      i = build_subst_list(lbs, (char (*)[NAME_LENGTH])slist, 
+         (char (*)[NAME_LENGTH])svalue, NULL, TRUE);
+      strsubst(str, (char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, i);
    } else
       sprintf(str, "ELOG %s", lbs->name);
 
@@ -12659,6 +12699,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
       rsprintf("</form></body></html>\r\n");
    }
 
+   free(slist);
+   free(svalue);
+   free(list);
    free(msg_list);
    free(text);
    free(text1);
