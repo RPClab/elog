@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.242  2004/02/13 20:32:34  midas
+   Attributes can now contain quotation marks
+
    Revision 1.241  2004/02/09 21:46:24  midas
    Implemented 'type <attribute> = date'
 
@@ -4302,7 +4305,7 @@ void rsputs2(const char *str)
                j += 4;
                break;
 
-               /* the translation for the search highliting */
+            /* the translation for the search highliting */
             case '\001':
                strcat(return_buffer, "<");
                j++;
@@ -5539,7 +5542,7 @@ void strencode(char *text)
          rsprintf("&nbsp;");
          break;
 
-         /* the translation for the search highliting */
+      /* the translation for the search highliting */
       case '\001':
          rsprintf("<");
          break;
@@ -5565,28 +5568,28 @@ void strencode2(char *b, char *text)
 {
    int i;
 
-   for (i = 0; i < (int) strlen(text); b++, i++) {
+   *b = 0;
+   for (i = 0; i < (int) strlen(text); i++) {
       switch (text[i]) {
       case '\n':
-         sprintf(b, "<br>\n");
+         strcat(b, "<br>\n");
          break;
       case '<':
-         sprintf(b, "&lt;");
+         strcat(b, "&lt;");
          break;
       case '>':
-         sprintf(b, "&gt;");
+         strcat(b, "&gt;");
          break;
       case '&':
-         sprintf(b, "&amp;");
+         strcat(b, "&amp;");
          break;
       case '\"':
-         sprintf(b, "&quot;");
+         strcat(b, "&quot;");
          break;
       default:
-         sprintf(b, "%c", text[i]);
+         sprintf(b+strlen(b), "%c", text[i]);
       }
    }
-   *b = 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -6397,7 +6400,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                day = pts->tm_mday;
             }
 
-
             /* display date selector */
             rsprintf("<td class=\"attribvalue\"><select name=\"m%d\">\n", index);
 
@@ -6445,12 +6447,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             rsprintf("</script>\n");
 
             rsprintf("</td></tr>\n");
-         } else
+         } else {
 
             /* show normal edit field */
-            rsprintf
-                ("<td class=\"attribvalue\"><input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n",
-                 input_size, input_maxlen, ua, attrib[index]);
+            rsprintf("<td class=\"attribvalue\">");
+
+            strencode2(str, attrib[index]);
+            rsprintf("<input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\">\n",
+                      input_size, input_maxlen, ua, str);
+
+            rsprintf("</td></tr>\n");
+         }
 
          } else {
             if (strieq(attr_options[index][0], "boolean")) {
