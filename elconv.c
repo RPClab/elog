@@ -6,6 +6,9 @@
   Contents:     Conversion program for ELOG messages
 
   $Log$
+  Revision 1.4  2002/06/07 10:00:26  midas
+  Added some non-verbose messages
+
   Revision 1.3  2002/06/07 09:30:37  midas
   Fixed thread_list re-allocation
 
@@ -968,7 +971,7 @@ char    str[256];
 void scan_messages()
 {
 int         size, status, fh, message_id, i, n, n_messages;
-char        file_name[256], tag[256], str[256];
+char        file_name[256], tag[256], str[256], last_file[256];
 char        message[TEXT_SIZE+1000]; 
 char        *ps, *pd, *file_list;
 THREAD      *thread_list;
@@ -1042,6 +1045,7 @@ THREAD      *thread_list;
   /* convert messages */
 
   tag[0] = 0;
+  last_file[0] = 0;
   message_id = 1;
 
   /* search first message */
@@ -1061,6 +1065,14 @@ THREAD      *thread_list;
 
     if (verbose)
       printf("Converting %s -> %s, ID %d\n", tag, str, message_id);
+    else
+      {
+      if (!equal_ustring(str, last_file))
+        {
+        printf("Converting %s.log to %sa.log\n", str, str);
+        strcpy(last_file, str);
+        }
+      }
 
     fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
     if (fh < 0)
