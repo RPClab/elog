@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.108  2003/05/15 11:22:10  midas
+  Get remote host from X-Forwarded-For:
+
   Revision 1.107  2003/05/15 10:39:47  midas
   Sort correctly upper and lower case
 
@@ -12789,6 +12792,25 @@ int                  net_buffer_size;
         strlcpy(browser, p, sizeof(browser));
         if (strchr(browser, '\r'))
           *strchr(browser, '\r') = 0;
+        }
+
+      /* extract "X-Forwarded-For:" */
+      if ((p = strstr(net_buffer, "X-Forwarded-For:")) != NULL)
+        {
+        p += 16;
+        while (*p && *p == ' ')
+          p++;
+        strlcpy(str, p, sizeof(str));
+        if (strchr(str, '\r'))
+          *strchr(str, '\r') = 0;
+
+        rem_addr.S_un.S_addr = inet_addr(str);
+        phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
+        if (phe != NULL)
+          {
+          strcpy(remote_host[i_conn], phe->h_name);
+          strcpy(rem_host, remote_host[i_conn]);
+          }
         }
 
       memset(return_buffer, 0, return_buffer_size);
