@@ -7,6 +7,10 @@ Version 2.0.0, released June 7th, 2002
 - Messages can now be edited without destroying "reply-to:" links
 - Messages can now have multiple replies
 - Added "HTML default = 3" option
+- Deleting a message now also deletes its replies
+- Added "Download" command
+- Added "-s" flag to elog for subdirectories (when running elogd 
+  under a proxy)
 
 Version 1.3.6, released June 3rd, 2002
 ======================================
