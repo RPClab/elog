@@ -139,6 +139,11 @@ Section "Start Menu Shortcuts" SecStart
   CreateShortCut "$SMPROGRAMS\ELOG\Uninstall ELOG.lnk" "$INSTDIR\uninst_elog.exe" "" "$INSTDIR\uninst_elog.exe" 0
 SectionEnd
 
+; optional section
+Section "Register ELOG Server Service" SecService
+  ExecWait "$INSTDIR\elogd.exe -install"
+SectionEnd
+
 ; display readme file
 
 Function .onInstSuccess
@@ -218,6 +223,7 @@ SectionEnd
   !insertmacro MUI_DESCRIPTION_TEXT ${SecSystem} "Installs ELOG system, documentation, source code and an example logbook"
   !insertmacro MUI_DESCRIPTION_TEXT ${SecLang} "Installs support for different languages which can be switched during runtime"
   !insertmacro MUI_DESCRIPTION_TEXT ${SecStart} "Installs start menu shortcuts for ELOG"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SecService} "Installs ELOG server as a Windows Service, so that it gets started automatically when Windows boots"
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 ; eof
