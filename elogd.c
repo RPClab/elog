@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.110  2002/12/02 16:38:57  midas
+  Added parameter length check
+
   Revision 2.109  2002/12/02 07:48:08  midas
   Implemented 'line as link'
 
@@ -862,7 +865,7 @@ char *pd, *p, str[256];
 
   pd = str;
   p  = ps;
-  while (*p)
+  while (*p && (int)p < (int)str + 250)
     {
     if (strchr(" %&=#?", *p))
       {
@@ -3369,6 +3372,13 @@ char str[10000];
 
   if (i<MAX_PARAM)
     {
+    if (strlen(param) >= PARAM_LENGTH)
+      {
+      sprintf(str, "Error: Parameter name too big (%d bytes).\n", strlen(param));
+      show_error(str);
+      return 0;
+      }
+
     strlcpy(_param[i], param, PARAM_LENGTH);
 
     if (strlen(value) >= VALUE_SIZE)
