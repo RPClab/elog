@@ -6,6 +6,9 @@
    Contents:     Header file for mxml.c
 
    $Log$
+   Revision 1.4  2005/03/22 15:06:11  ritt
+   Added mxml_add_node_at()
+
    Revision 1.3  2005/03/22 14:26:22  ritt
    Implemented mxml_find_nodes()
 
@@ -61,6 +64,7 @@ char *mxml_get_attribute(PMXML_NODE pnode, char *name);
 
 int mxml_add_attribute(PMXML_NODE pnode, char *attrib_name, char *attrib_value);
 PMXML_NODE mxml_add_node(PMXML_NODE parent, char *node_name, char *value);
+PMXML_NODE mxml_add_node_at(PMXML_NODE parent, char *node_name, char *value, int index);
 
 int mxml_replace_node_name(PMXML_NODE pnode, char *new_name);
 int mxml_replace_node_value(PMXML_NODE pnode, char *value);
