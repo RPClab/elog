@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.48  2002/07/25 15:37:26  midas
+  Fixed bug with ss_find_file under unix
+
   Revision 2.47  2002/07/25 09:22:05  midas
   Removed scandir() for Solaris compatibility
 
@@ -1397,6 +1400,7 @@ INT ss_file_find(char *path, char *pattern, char **plist)
 #ifdef OS_UNIX
   DIR *dir_pointer;
   struct dirent *dp;
+  int i;
 
   if ((dir_pointer = opendir(path)) == NULL)
     return 0;
@@ -1414,6 +1418,7 @@ INT ss_file_find(char *path, char *pattern, char **plist)
       }
     }
   closedir(dir_pointer);
+  return i;
 #endif
 
 #ifdef OS_WINNT
@@ -1562,7 +1567,7 @@ struct tm tms;
 
           strcpy(str, file_list+index*MAX_PATH_LENGTH);
           strcpy(lbs->el_index[*lbs->n_el_index].file_name, str);
-          
+
           el_decode(p, "Date: ", date);
           el_decode(p, "In reply to: ", in_reply_to);
 
@@ -1585,7 +1590,7 @@ struct tm tms;
           ltime = mktime(&tms);
 
           lbs->el_index[*lbs->n_el_index].file_time = ltime;
-            
+
           lbs->el_index[*lbs->n_el_index].message_id = atoi(p+8);
           lbs->el_index[*lbs->n_el_index].offset = (int) p - (int) buffer;
           lbs->el_index[*lbs->n_el_index].thread_head = (in_reply_to[0] == 0);
@@ -1593,8 +1598,8 @@ struct tm tms;
           if (lbs->el_index[*lbs->n_el_index].message_id > 0)
             {
             if (verbose)
-              printf("  ID %3d in %s, offset %5d, %s\n", 
-                lbs->el_index[*lbs->n_el_index].message_id, str, 
+              printf("  ID %3d in %s, offset %5d, %s\n",
+                lbs->el_index[*lbs->n_el_index].message_id, str,
                 lbs->el_index[*lbs->n_el_index].offset,
                 lbs->el_index[*lbs->n_el_index].thread_head ? "thread head" : "reply");
 
@@ -1621,8 +1626,8 @@ struct tm tms;
     {
     printf("After sort:\n");
     for (i=0 ; i<*lbs->n_el_index ; i++)
-      printf("  ID %3d in %s, offset %5d\n", 
-        lbs->el_index[i].message_id, lbs->el_index[i].file_name, 
+      printf("  ID %3d in %s, offset %5d\n",
+        lbs->el_index[i].message_id, lbs->el_index[i].file_name,
         lbs->el_index[i].offset);
     }
 
@@ -1674,7 +1679,7 @@ int i;
       for (i=*lbs->n_el_index-1 ; i>=0 ; i--)
         if (lbs->el_index[i].thread_head)
           return lbs->el_index[i].message_id;
-      
+
       return 0;
       }
     if (*lbs->n_el_index == 0)
@@ -1699,7 +1704,7 @@ int i;
       for (i++ ; i<*lbs->n_el_index ; i++)
         if (lbs->el_index[i].thread_head)
           return lbs->el_index[i].message_id;
-      
+
       return 0;
       }
 
@@ -1723,7 +1728,7 @@ int i;
       for (i-- ; i>=0 ; i--)
         if (lbs->el_index[i].thread_head)
           return lbs->el_index[i].message_id;
-      
+
       return 0;
       }
 
@@ -1798,7 +1803,7 @@ char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
     {
     /* file might have been deleted, rebuild index */
     el_build_index(lbs, TRUE);
-    return el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr, text, 
+    return el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr, text,
                        textsize, in_reply_to, reply_to, attachment, encoding);
     }
 
@@ -1817,7 +1822,7 @@ char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
     {
     /* file might have been edited, rebuild index */
     el_build_index(lbs, TRUE);
-    return el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr, text, 
+    return el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr, text,
                        textsize, in_reply_to, reply_to, attachment, encoding);
     }
 
@@ -1926,7 +1931,7 @@ int el_submit(LOGBOOK *lbs, int message_id,
               char *date,
               char attr_name[MAX_N_ATTR][NAME_LENGTH],
               char attr_value[MAX_N_ATTR][NAME_LENGTH],
-              int n_attr, char *text, 
+              int n_attr, char *text,
               char *in_reply_to, char *reply_to,
               char *encoding,
               char afilename[MAX_ATTACHMENTS][256],
@@ -2065,7 +2070,7 @@ BOOL    bedit;
 
       /* file might have been edited, rebuild index */
       el_build_index(lbs, TRUE);
-      return el_submit(lbs, message_id, date, attr_name, attr_value, n_attr, text, 
+      return el_submit(lbs, message_id, date, attr_name, attr_value, n_attr, text,
                        in_reply_to, reply_to, encoding, afilename, buffer, buffer_size);
       }
 
@@ -2265,7 +2270,7 @@ BOOL    bedit;
         if (lbs->el_index[i].message_id == message_id)
           break;
 
-      for (j = i+1 ; j<*lbs->n_el_index && 
+      for (j = i+1 ; j<*lbs->n_el_index &&
            equal_ustring(lbs->el_index[i].file_name, lbs->el_index[j].file_name); j++)
         lbs->el_index[j].offset += delta;
       }
@@ -2283,7 +2288,7 @@ BOOL    bedit;
   /* if reply, mark original message */
   if (in_reply_to[0] && !bedit && atoi(in_reply_to) > 0)
     {
-    char date[80], attr[MAX_N_ATTR][NAME_LENGTH], enc[80], 
+    char date[80], attr[MAX_N_ATTR][NAME_LENGTH], enc[80],
          att[MAX_ATTACHMENTS][256], reply_to[256];
 
     reply_id = atoi(in_reply_to);
@@ -2410,7 +2415,7 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
   if (strncmp(message, "$@MID@$:", 8) != 0)
     {
     close(fh);
-    
+
     /* file might have been edited, rebuild index */
     el_build_index(lbs, TRUE);
     return el_delete_message(lbs, message_id, delete_attachments,
@@ -3191,7 +3196,7 @@ int  i, j;
         {
         rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif style=\"color:%s;background-color:%s\">&nbsp;",
                  gt("Title fontcolor"), gt("Title BGColor"));
-        
+
         for (j=0 ; j<(int)strlen(str) ; j++)
           if (str[j] == ' ')
             rsprintf("&nbsp;");
@@ -3215,7 +3220,7 @@ int  i, j;
         }
       }
     rsprintf("</td></tr>\n\n");
-    
+
     }
 
   /*---- title row ----*/
@@ -4648,7 +4653,7 @@ int show_download_page(LOGBOOK *lbs, char *path)
 {
 char   file_name[256], str[256];
 int    index, message_id, fh, i, size;
-char   message[TEXT_SIZE+1000], *p;  
+char   message[TEXT_SIZE+1000], *p;
 time_t now;
 struct tm *gmt;
 
@@ -4721,10 +4726,10 @@ struct tm *gmt;
 
 /*------------------------------------------------------------------*/
 
-void display_line(LOGBOOK *lbs, int message_id, int number, char *mode, 
-                  int level, BOOL printable, int n_line, int show_attachments, 
+void display_line(LOGBOOK *lbs, int message_id, int number, char *mode,
+                  int level, BOOL printable, int n_line, int show_attachments,
                   char *date, char *reply_to,
-                  int n_attr_disp, char disp_attr[MAX_N_ATTR+4][NAME_LENGTH], 
+                  int n_attr_disp, char disp_attr[MAX_N_ATTR+4][NAME_LENGTH],
                   char attrib[MAX_N_ATTR][NAME_LENGTH],
                   int n_attr, char *text,
                   char attachment[MAX_ATTACHMENTS][256], char *encoding)
@@ -4864,7 +4869,7 @@ FILE *f;
           {
           if (!link_displayed)
             {
-            rsprintf("<font size=%d><a href=\"%s\">%s</a></font>", 
+            rsprintf("<font size=%d><a href=\"%s\">%s</a></font>",
                      size, ref, lbs->name);
             link_displayed = TRUE;
             }
@@ -4881,7 +4886,7 @@ FILE *f;
           {
           if (!link_displayed)
             {
-            rsprintf("<td align=center %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>", 
+            rsprintf("<td align=center %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>",
               nowrap, col, size, ref, lbs->name);
             link_displayed = TRUE;
             }
@@ -4920,7 +4925,7 @@ FILE *f;
           {
           if (!link_displayed)
             {
-            rsprintf("<font size=%d><a href=\"%s\">%s</a></font>", 
+            rsprintf("<font size=%d><a href=\"%s\">%s</a></font>",
                      size, ref, str);
             link_displayed = TRUE;
             }
@@ -4937,7 +4942,7 @@ FILE *f;
           {
           if (!link_displayed)
             {
-            rsprintf("<td align=center %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>", 
+            rsprintf("<td align=center %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>",
               nowrap, col, size, ref, str);
             link_displayed = TRUE;
             }
@@ -5175,10 +5180,10 @@ FILE *f;
 
 /*------------------------------------------------------------------*/
 
-void display_reply(LOGBOOK *lbs, int message_id, int printable, int n_attr_disp, 
+void display_reply(LOGBOOK *lbs, int message_id, int printable, int n_attr_disp,
                    char disp_attr[MAX_N_ATTR+4][NAME_LENGTH], int level)
 {
-char   date[80], *text, in_reply_to[80], reply_to[256], encoding[80], 
+char   date[80], *text, in_reply_to[80], reply_to[256], encoding[80],
        attachment[MAX_ATTACHMENTS][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 int    status, size;
 char   *p;
@@ -5198,7 +5203,7 @@ char   *p;
     }
 
   display_line(lbs, message_id, 0, "threaded", level, printable, 0,
-               FALSE, date, reply_to, n_attr_disp, disp_attr, 
+               FALSE, date, reply_to, n_attr_disp, disp_attr,
                attrib, lbs->n_attr, NULL, NULL, encoding);
 
   if (reply_to[0])
@@ -5640,19 +5645,19 @@ struct tm tms, *ptms;
   else
     {
     rsprintf("<tr>\n");
-  
+
     for (i=0 ; i<n_attr_disp ; i++)
       {
       if (equal_ustring(disp_attr[i], "#"))
-        rsprintf("<td width=10%% align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>#</b></td>", 
+        rsprintf("<td width=10%% align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>#</b></td>",
                  col, size);
 
       if (equal_ustring(disp_attr[i], "Logbook"))
-        rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Logbook</b></td>", 
+        rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Logbook</b></td>",
                  col, size);
 
       if (equal_ustring(disp_attr[i], "Date"))
-        rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Date</b></td>", 
+        rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Date</b></td>",
                  col, size);
 
       for (j=0 ; j<lbs->n_attr ; j++)
@@ -5904,7 +5909,7 @@ struct tm tms, *ptms;
         n_found++;
 
         display_line(lbs, message_id, n_found, mode, 0, printable, n_line,
-                     show_attachments, date, reply_to, n_attr_disp, disp_attr, 
+                     show_attachments, date, reply_to, n_attr_disp, disp_attr,
                      attrib, lbs->n_attr, text, attachment, encoding);
 
         if (threaded)
@@ -6301,7 +6306,7 @@ void copy_to(LOGBOOK *lbs, int src_id, char *dest_logbook, int move)
 {
 int     size, i, status, fh, message_id;
 char    str[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
-char    date[80], text[TEXT_SIZE], msg_str[32], in_reply_to[80], reply_to[256], 
+char    date[80], text[TEXT_SIZE], msg_str[32], in_reply_to[80], reply_to[256],
         attachment[MAX_ATTACHMENTS][256], encoding[80];
 LOGBOOK *lbs_dest;
 
@@ -6713,7 +6718,7 @@ BOOL   first;
 
     if (equal_ustring(command, loc("Last")))
       message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
-      
+
     if (equal_ustring(command, loc("First")))
       message_id = el_search_message(lbs, EL_FIRST, 0, FALSE);
 
@@ -6737,7 +6742,7 @@ BOOL   first;
         if (equal_ustring(command, loc("First")))
           message_id = el_search_message(lbs, EL_NEXT, message_id, FALSE);
 
-      
+
         if (equal_ustring(command, loc("Last")))
           message_id = el_search_message(lbs, EL_PREV, message_id, FALSE);
         }
@@ -7693,7 +7698,7 @@ LOGBOOK *cur_lb;
     strcpy(logbook_enc, experiment);
     strcpy(logbook, experiment);
     url_decode(logbook);
-    }                 
+    }
   else
     {
     strcpy(logbook_enc, lbook);
@@ -9435,7 +9440,7 @@ usage:
 
     printf("Indexing logbook \"%s\"...\n", logbook);
     status = el_build_index(&lb_list[n], FALSE);
-    
+
     if (status == EL_EMPTY)
       printf("Found empty logbook \"%s\"\n", logbook);
     else if (status == EL_UPGRADE)
