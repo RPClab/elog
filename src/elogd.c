@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.397  2004/07/23 07:31:32  midas
+   Fixed typo
+
    Revision 1.396  2004/07/23 07:30:26  midas
    Fixed compiler warnings
 
@@ -1057,13 +1060,13 @@ void base64_decode(char *s, char *d)
    unsigned int t;
 
    while (*s) {
-      t =   (cind(*s) << 18;
+      t =  cind(*s) << 18;
       s++;
-      t |=  (cind(*s) << 12; 
+      t |= cind(*s) << 12; 
       s++;
-      t |=  (cind(*s) << 6; 
+      t |= cind(*s) << 6; 
       s++;
-      t |=  (cind(*s) << 0;
+      t |= cind(*s) << 0;
       s++;
 
       *(d + 2) = (char) (t & 0xFF);
