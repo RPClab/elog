@@ -45,7 +45,7 @@ Section "ELOG system (required)"
   
   ; themes and demo logbook
   SetOutPath $INSTDIR\themes\default
-  File themes\default\*.cfg
+  File themes\default\*.css
   File themes\default\*.gif
   SetOutPath $INSTDIR\themes\default\icons
   File themes\default\icons\*.*
