@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.346  2004/06/16 12:27:00  midas
+   Submit (unlock) unmodified entry upon unload
+
    Revision 1.345  2004/06/16 12:15:58  midas
    Mark re-edited entries as modified in jscript
 
@@ -6555,13 +6558,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("  if (!submitted && modified) {\n");
    rsprintf("    var subm = confirm('%s');\n", loc("Submit modified ELOG entry?"));
    rsprintf("    if (subm) {\n");
-   rsprintf("       document.form1.jcmd.value = '%s';\n", loc("Submit"));
-   rsprintf("       document.form1.submit();\n");
+   rsprintf("      document.form1.jcmd.value = '%s';\n", loc("Submit"));
+   rsprintf("      document.form1.submit();\n");
    rsprintf("    } else {\n");
-   rsprintf("       document.form1.jcmd.value = '%s';\n", loc("Back"));
-   rsprintf("       document.form1.submit();\n");
+   rsprintf("      document.form1.jcmd.value = '%s';\n", loc("Back"));
+   rsprintf("      document.form1.submit();\n");
    rsprintf("    }\n");
    rsprintf("  }\n");
+   rsprintf("  if (!submitted && !modified) {\n");
+   rsprintf("    document.form1.jcmd.value = '%s';\n", loc("Back"));
+   rsprintf("    document.form1.submit();\n");
+   rsprintf("    }\n");
    rsprintf("}\n\n");
 
    /* mod() gets called via throuch "onchange" event */
