@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.552  2005/02/11 11:59:48  ritt
+   Do not display .EPS files inline as ASCII files
+
    Revision 1.551  2005/02/03 15:46:10  ritt
    Fixed problem with conditional attributes in French
 
@@ -18034,7 +18037,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
                /* determine if displayed inline */
                display_inline = is_image(file_name) || is_ascii(file_name);
-               if (strstr(att, ".PS") || strstr(att, ".PDF"))
+               if (strstr(att, ".PS") || strstr(att, ".PDF") || strstr(att, ".EPS"))
                   display_inline = 0;
 
                if (display_inline) {
