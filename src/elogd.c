@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.431  2004/08/04 11:59:12  midas
+   Added -s(ilent) option
+
    Revision 1.430  2004/08/04 10:34:16  midas
    Fixed compiler warning
 
@@ -20686,7 +20689,7 @@ int install_service(void)
    return 1;
 }
 
-int remove_service(void)
+int remove_service(int silent)
 {
    SC_HANDLE hservice;
    SC_HANDLE hsrvmanager;
@@ -20695,13 +20698,15 @@ int remove_service(void)
    /* Open the SCM */
    hsrvmanager = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
    if (hsrvmanager == NULL) {
-      eprintf("Cannot connect to Service Control Manager.\n");
+      if (!silent)
+         eprintf("Cannot connect to Service Control Manager.\n");
       return -1;
    }
 
    hservice = OpenService(hsrvmanager, ELOGDSERVICENAME, SERVICE_ALL_ACCESS);
    if (hservice == NULL) {
-      eprintf("The elogd service could not be found.\n");
+      if (!silent)
+         eprintf("The elogd service could not be found.\n");
       return -1;
    }
 
@@ -20714,20 +20719,24 @@ int remove_service(void)
             break;
       }
 
-      if (status.dwCurrentState != SERVICE_STOPPED) {
-         eprintf("The elogd service could not be stopped.\n");
-      } else
-         eprintf("elogd service stopped successfully.\n");
+      if (!silent) {
+         if (status.dwCurrentState != SERVICE_STOPPED) {
+            eprintf("The elogd service could not be stopped.\n");
+         } else
+            eprintf("elogd service stopped successfully.\n");
+      }
    }
 
    /* Now remove the service from the SCM */
-   if (!DeleteService(hservice)) {
-      if (GetLastError() == ERROR_SERVICE_MARKED_FOR_DELETE)
-         eprintf("The elogd service is already marked to be unregistered.\n");
-      else
-         eprintf("The elogd service could not be unregistered.\n");
-   } else
-      eprintf("The elogd service hass been unregistered successfully.\n");
+   if (!silent) {
+      if (!DeleteService(hservice)) {
+         if (GetLastError() == ERROR_SERVICE_MARKED_FOR_DELETE)
+            eprintf("The elogd service is already marked to be unregistered.\n");
+         else
+            eprintf("The elogd service could not be unregistered.\n");
+      } else
+         eprintf("The elogd service hass been unregistered successfully.\n");
+   }
 
    CloseServiceHandle(hservice);
    CloseServiceHandle(hsrvmanager);
@@ -20825,7 +20834,7 @@ int run_service(void)
 
 int main(int argc, char *argv[])
 {
-   int i, j, n, fh, tcp_port_cl;
+   int i, j, n, fh, tcp_port_cl, silent;
    char read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256],
        clone_url[256], error_str[256], file_name[256];
    time_t now;
@@ -20846,7 +20855,7 @@ int main(int argc, char *argv[])
    /* initialize variables */
    read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = clone_url[0] = 0;
    logbook_dir[0] = resource_dir[0] = logbook_dir[0] = pidfile[0] = 0;
-   tcp_port_cl = 0;
+   silent = tcp_port_cl = 0;
    use_keepalive = TRUE;
    running_as_daemon = FALSE;
 
@@ -20878,6 +20887,8 @@ int main(int argc, char *argv[])
          running_as_daemon = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'v')
          verbose = TRUE;
+      else if (argv[i][0] == '-' && argv[i][1] == 's')
+         silent = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'k')
          use_keepalive = FALSE;
       else if (argv[i][0] == '-' && argv[i][1] == 'x')
@@ -20893,13 +20904,17 @@ int main(int argc, char *argv[])
 #ifdef OS_WINNT
       else if (stricmp(argv[i], "-install") == 0) {
          install_service();
-         printf("Please hit any key ...");
-         fgets(str, sizeof(str), stdin);
+         if (!silent) {
+            printf("Please hit any key ...");
+            fgets(str, sizeof(str), stdin);
+         }
          exit(EXIT_SUCCESS);
       } else if (stricmp(argv[i], "-remove") == 0) {
-         remove_service();
-         printf("Please hit any key ...");
-         fgets(str, sizeof(str), stdin);
+         remove_service(silent);
+         if (!silent) {
+            printf("Please hit any key ...");
+            fgets(str, sizeof(str), stdin);
+         }
          exit(EXIT_SUCCESS);
       }
 #endif
@@ -21033,8 +21048,10 @@ int main(int argc, char *argv[])
        && !resource_dir[0]) {
       strcpy(resource_dir, config_file);
       for (i = strlen(resource_dir) - 1; i > 0; i--) {
-         if (resource_dir[i] == DIR_SEPARATOR)
+         if (resource_dir[i] == DIR_SEPARATOR) {
+            resource_dir[i] = 0;
             break;
+         }
          resource_dir[i] = 0;
       }
    }
