@@ -241,3 +241,9 @@ Search text also in attributes = Text auch in Attributen suchen
 Goto logbook selection page = Zur Logbuch-Auswahlseite
 Login as different user = Als anderer Benutzer anmelden
 User <i>"%s"</i> has no access to logbook <i>"%s"</i> = Benutzer <i>"%s"</i> hat keinen Zugriff auf Logbuch <i>"%s"</i>
+
+#
+# New strings for V2.3.5
+Date = Datum
+ID = ID
+

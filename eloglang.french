@@ -3,8 +3,8 @@
 # $Revision$
 #
 
-# ElogLang.French - French interface file for ELOG 2.3.3+
-# version 1.6 - 14/03/03 by Fred Pacquier <fredp@dial.oleane.com>
+# ElogLang.French - French interface file for ELOG 2.3.4+
+# version 1.7 - 04/04/03 by Fred Pacquier <fredp@dial.oleane.com>
 #
 
 #
@@ -246,3 +246,12 @@ and its replies = avec ses réponses
 and their replies =	avec leurs réponses
 moved successfully from "%s" to "%s" = déplacés avec succès de "%s" à "%s"
 copied successfully from "%s" to "%s" = copiés avec succès de "%s" à "%s"
+
+#
+# New strings for V2.3.4
+Last x = X derniers
+Only user <i>%s</i> can delete this entry = Seul l'utilisateur <i>%s</i> peut supprimer cette entrée
+Search text also in attributes = Text auch in Attributen suchen
+Goto logbook selection page = Aller à la page de sélection des registres
+Login as different user = Se connecter sous un compte différent
+User <i>"%s"</i> has no access to logbook <i>"%s"</i> = L'utilisateur <i>"%s"</i> n'a pas accès au registre <i>"%s"</i>
