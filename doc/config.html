@@ -94,6 +94,7 @@ via the '-p' command line flag.
 Specifies the root directory for ELOG resources like help files, themes, icons and user HTML
 files. Can be overwritten with the <b><code>-s</code></b> flag when starting elogd. If not
 specified, use the directory where the configuration file <b><code>elogd.cfg</code></b> resides.
+<i>Changing this option requires a restart of the elogd server<i>.
 <p>
 
 <LI><b><code>Logbook dir = &lt;directory&gt;</code></b>
@@ -101,7 +102,9 @@ specified, use the directory where the configuration file <b><code>elogd.cfg</co
 Specifies the root directory for logbooks. Can be overwritten with the <b><code>-d</code></b> flag when
 starting elogd. If not specified, use the directory where the configuration file <b><code>elogd.cfg
 </code></b> resides. Each logbook data is stored in a separate directory under this root directory
-specified by the <b><code>Subdir</b></code> option. <p>
+specified by the <b><code>Subdir</b></code> option.
+<i>Changing this option requires a restart of the elogd server<i>.
+<p>
 
 <LI><b><code>Language = &lt;name&gt;</code></b>
 <br>
