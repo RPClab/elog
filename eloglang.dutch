@@ -1,6 +1,6 @@
 #
 # Dutch translation by djek@xs4all.nl
-# 28-01-2004
+# 17-02-2004
 #
 
 New = Nieuw
@@ -159,7 +159,7 @@ and their replies = met antwoorden
 moved successfully from "%s" to "%s" = verplaatsing  van "%s" naar "%s" succesvol
 copied successfully from "%s" to "%s" = kopie van "%s" naar "%s" succesvol
 Only user <i>%s</i> can delete this entry = Alleen gebruiker <i>%s</i> kan dit bericht wissen
-Search text also in attributes = Zoek ook in atributen
+Search text also in attributes = Zoek ook in attributen
 Goto logbook selection page = Ga naar logboek selectie pagina
 Login as different user = Als een andere gebruiker aanmelden
 User <i>"%s"</i> has no access to logbook <i>"%s"</i> = Gebruiker <i>"%s"</i> heeft geen toegang tot logboek <i>"%s"</i>
@@ -247,30 +247,26 @@ Entry deleted remotely =Bericht op andere server gewist
 All entries identical =Alle berichten identiek
 Invalid mirror_id or entry_date = Ongeldige mirror_id of entry_date
 Synchronize all logbooks = Synchroniseer alle logboeken
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Pick a date = 
-Please select at least one '%s' = 
-Please select a '%s' = 
-Please enter month for attribute '%s' = 
-Please enter day for attribute '%s' = 
-Please enter year for attribute '%s' = 
-Please enter attribute '%s' = 
-Entry time = 
-Display comma-separated values (CSV) = 
-Start = 
-End = 
-Remote entry received = 
-From = 
-After = 
-to = 
-Before = 
-Calendar = 
-Previous Year = 
-Next Year = 
-Please enter numeric value for '%s' = 
-Error: Attribute <b>%s</b> must be numeric = 
-3 Months = 
-6 Months = 
+Pick a date = Kies een datum
+Please select at least one '%s' = Kies minstens een '%s'
+Please select a '%s' =  Kies een '%s'
+Please enter month for attribute '%s' = Geef een maand voor attribuut '%s'
+Please enter day for attribute '%s' = Geef een dag voor attribuut '%s'
+Please enter year for attribute '%s' = Geef een jaar voor attribuut '%s'
+Please enter attribute '%s' = Geef een attribuut '%s'
+Entry time = Geef de tijd op
+Display comma-separated values (CSV) = Toon komma gescheiden waarden (CSV)
+Start = Start
+End = Eind
+Remote entry received = Bericht van andere server ontvangen
+From = Van
+After = Na
+to = aan
+Before = Voor
+Calendar = Kalender
+Previous Year = Vorig Jaar
+Next Year = Volgend jaar
+Please enter numeric value for '%s' = Geef een numerieke waarde voor '%s'
+Error: Attribute <b>%s</b> must be numeric = Fout Attribuut <b>%s</b> moet numeriek zijn
+3 Months = 3 Maanden
+6 Months = 6 Maanden
