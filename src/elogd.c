@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.462  2004/09/08 10:18:37  midas
+   Use rsput3 to display config page
+
    Revision 1.461  2004/09/08 09:36:16  midas
    Made 'move to' menu command case insensitive
 
@@ -5245,6 +5248,36 @@ void rsputs2(const char *str)
 
 /*------------------------------------------------------------------*/
 
+void rsputs3(const char *text)
+{
+   int i;
+   char str[2];
+
+   str[1] = 0;
+   for (i = 0; i < (int) strlen(text); i++) {
+      switch (text[i]) {
+         case '<':
+            rsputs("&lt;");
+            break;
+         case '>':
+            rsputs("&gt;");
+            break;
+         case '&':
+            rsputs("&amp;");
+            break;
+         case '\"':
+            rsputs("&quot;");
+            break;
+
+         default:
+            str[0] = text[i];
+            rsputs(str);
+      }
+   }
+}
+
+/*------------------------------------------------------------------*/
+
 void rsprintf(const char *format, ...)
 {
    va_list argptr;
@@ -6615,7 +6648,8 @@ void strencode(char *text)
          rsprintf("&nbsp;");
          break;
 
-         /* the translation for the search highliting */
+      /* the translation for the search highliting */
+     
       case '\001':
          rsprintf("<");
          break;
@@ -8825,7 +8859,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
 
    rsprintf("<textarea cols=%d rows=%d wrap=virtual name=Text>", cols, rows);
 
-   rsputs2(buffer);
+   rsputs3(buffer);
    xfree(buffer);
 
    rsprintf("</textarea>\n");
