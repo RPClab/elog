@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.326  2004/05/18 21:46:08  midas
+   Allow ',' and '.' and '-' for numeric format
+
    Revision 1.325  2004/05/11 09:16:03  midas
    Fixed typo
 
@@ -6761,8 +6764,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          btou(ua);
 
          rsprintf("  for (var i=0 ; i<document.form1.%s.value.length ; i++)\n", ua);
-         rsprintf("    if (document.form1.%s.value.charAt(i) < \"0\" ||\n", ua);
-         rsprintf("        document.form1.%s.value.charAt(i) > \"9\") { break }\n", ua);
+         rsprintf("    if (document.form1.%s.value.charAt(i) != \",\" &&\n", ua);
+         rsprintf("        document.form1.%s.value.charAt(i) != \".\" &&\n", ua);
+         rsprintf("        document.form1.%s.value.charAt(i) != \"-\" &&\n", ua);
+         rsprintf("        (document.form1.%s.value.charAt(i) < \"0\" ||\n", ua);
+         rsprintf("         document.form1.%s.value.charAt(i) > \"9\")) { break }\n", ua);
          rsprintf("  if (i<document.form1.%s.value.length) {\n", ua);
          sprintf(str, loc("Please enter numeric value for '%s'"), attr_list[i]);
          rsprintf("    alert(\"%s\");\n", str);
