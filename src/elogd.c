@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.118  2003/06/23 11:22:42  midas
+  Added option 'Title image'
+
   Revision 1.117  2003/06/18 14:26:11  midas
   Added option 'Use lock'
 
@@ -4711,7 +4714,10 @@ LBLIST clb, flb, nlb, lbl;
   if (getcfg(logbook, "Title image URL", str))
     rsprintf("<a href=\"%s\">\n", str);
 
-  rsprintf("<img border=0 src=\"elog.gif\" alt=\"ELOG logo\">");
+  if (getcfg(logbook, "Title image", str))
+    rsprintf(str);
+  else
+    rsprintf("<img border=0 src=\"elog.gif\" alt=\"ELOG logo\">");
 
   if (getcfg(logbook, "Title image URL", str))
     rsprintf("</a>\n");
@@ -6540,7 +6546,7 @@ int    i, fh, size, self_register;
             sprintf(mail_text+strlen(mail_text), "\r\n\r\n");
 
             if (lbs)
-              sprintf(mail_text+strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), lbs->name_enc);
+              sprintf(mail_text+strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), lbs->name);
             else
               sprintf(mail_text+strlen(mail_text), "%s                : %s\r\n", loc("Host"), host_name);
 
@@ -10028,7 +10034,7 @@ void copy_to(LOGBOOK *lbs, int src_id, char *dest_logbook, int move, int orig_id
 {
 int     size, i, n, n_done, n_done_reply, n_reply, index, status, fh, source_id, message_id;
 char    str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
-char    date[80], text[TEXT_SIZE], msg_str[32], in_reply_to[80], reply_to[256],
+char    date[80], *text, msg_str[32], in_reply_to[80], reply_to[256],
         attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
         *buffer, list[MAX_N_ATTR][NAME_LENGTH];
 LOGBOOK *lbs_dest;
@@ -10045,6 +10051,8 @@ LOGBOOK *lbs_dest;
   else
     n = atoi(getparam("nsel"));
 
+  text = malloc(TEXT_SIZE);
+
   n_done = n_done_reply = 0;
   for (index=0 ; index<n ; index++)
     {
@@ -10060,7 +10068,7 @@ LOGBOOK *lbs_dest;
       }
 
     /* get message */
-    size = sizeof(text);
+    size = TEXT_SIZE;
     status = el_retrieve(lbs, source_id, date, attr_list, attrib, lbs->n_attr,
                          text, &size, in_reply_to, reply_to,
                          attachment, encoding, locked_by);
@@ -10070,6 +10078,7 @@ LOGBOOK *lbs_dest;
       sprintf(msg_str, "%d", source_id);
       sprintf(str, loc("Message %s cannot be read from logbook \"%s\""), msg_str, lbs->name);
       show_error(str);
+      free(text);
       return;
       }
 
@@ -10079,7 +10088,7 @@ LOGBOOK *lbs_dest;
       while (atoi(in_reply_to) > 0)
         {
         source_id = atoi(in_reply_to);
-        size = sizeof(text);
+        size = TEXT_SIZE;
         status = el_retrieve(lbs, source_id, date, attr_list, attrib, lbs->n_attr,
                              text, &size, in_reply_to, reply_to,
                              attachment, encoding, locked_by);
@@ -10089,6 +10098,7 @@ LOGBOOK *lbs_dest;
           sprintf(msg_str, "%d", source_id);
           sprintf(str, loc("Message %s cannot be read from logbook \"%s\""), msg_str, lbs->name);
           show_error(str);
+          free(text);
           return;
           }
         }
@@ -10109,7 +10119,6 @@ LOGBOOK *lbs_dest;
           size = TELL(fh);
           lseek(fh, 0, SEEK_SET);
 
-     
           buffer = malloc(size);
 
           if (buffer)
@@ -10149,6 +10158,7 @@ LOGBOOK *lbs_dest;
       strcat(str, "\n<p>");
       strcat(str, loc("Please check that it exists and elogd has write access"));
       show_error(str);
+      free(text);
       return;
       }
 
@@ -10176,6 +10186,8 @@ LOGBOOK *lbs_dest;
         source_id = el_search_message(lbs, EL_LAST, 0, FALSE);
       }
     }
+
+  free(text);
 
   if (orig_id)
     return;
@@ -10462,6 +10474,10 @@ BOOL   first;
     {
     /* display menu item */
     strcpy(cmd, menu_item[i]);
+
+    /* only display allowed commands */
+    if (!is_user_allowed(lbs, cmd))
+      continue;
 
     if (equal_ustring(cmd, "Copy to") ||
         equal_ustring(cmd, "Move to"))
@@ -12989,6 +13005,9 @@ int                  net_buffer_size;
           *strchr(referer, '?') = 0;
         for (p=referer+strlen(referer)-1 ; p>referer && *p != '/' ; p--)
           *p = 0;
+
+        if (strchr(referer, ' '))
+          url_encode(referer, sizeof(referer));
         }
 
       /* extract browser */
