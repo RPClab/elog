@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.210  2004/01/26 14:52:26  midas
+   Added cron facility
+
    Revision 1.209  2004/01/23 16:35:18  midas
    Mirroring now works with top groups
 
@@ -2313,7 +2316,7 @@ void el_enum_attr(char *message, int n, char *attr_name, char *attr_value)
    int i;
 
    p = message;
-   for (i=0 ; i<=n ; i++) {
+   for (i = 0; i <= n; i++) {
       strlcpy(str, p, sizeof(str));
       if (strchr(str, '\n'))
          *strchr(str, '\n') = 0;
@@ -2331,16 +2334,15 @@ void el_enum_attr(char *message, int n, char *attr_name, char *attr_value)
 
       if (strchr(str, ':')) {
          strcpy(tmp, str);
-      *strchr(tmp, ':') = 0;
+         *strchr(tmp, ':') = 0;
 
-      if (equal_ustring(tmp, "$@MID@$") ||
-          equal_ustring(tmp, "Date") ||
-          equal_ustring(tmp, "Attachment") ||
-          equal_ustring(tmp, "Reply To") ||
-          equal_ustring(tmp, "In Reply To") ||
-          equal_ustring(tmp, "Encoding") ||
-          equal_ustring(tmp, "Locked by"))
-          i--;
+         if (equal_ustring(tmp, "$@MID@$") ||
+             equal_ustring(tmp, "Date") ||
+             equal_ustring(tmp, "Attachment") ||
+             equal_ustring(tmp, "Reply To") ||
+             equal_ustring(tmp, "In Reply To") ||
+             equal_ustring(tmp, "Encoding") || equal_ustring(tmp, "Locked by"))
+            i--;
       }
    }
 
@@ -2349,7 +2351,7 @@ void el_enum_attr(char *message, int n, char *attr_name, char *attr_value)
    if (strchr(str, ':')) {
       strcpy(attr_name, str);
       *strchr(attr_name, ':') = 0;
-      strcpy(attr_value, strchr(str, ':')+2);
+      strcpy(attr_value, strchr(str, ':') + 2);
    }
 
 }
@@ -3050,7 +3052,7 @@ INT el_retrieve(LOGBOOK * lbs,
 
    if (n_attr == -1) {
       /* derive attribute names from message */
-      for (i = 0 ; ; i++) {
+      for (i = 0;; i++) {
          el_enum_attr(message, i, attr_list[i], attrib[i]);
          if (!attr_list[i][0])
             break;
@@ -3063,7 +3065,7 @@ INT el_retrieve(LOGBOOK * lbs,
             sprintf(str, "%s: ", attr_list[i]);
             el_decode(message, str, attrib[i]);
          }
-      }
+   }
 
    el_decode(message, "Attachment: ", attachment_all);
    if (encoding)
@@ -3940,7 +3942,10 @@ void logf(LOGBOOK * lbs, const char *format, ...)
    time_t now;
    char buf[256];
 
-   if (!getcfg(lbs->name, "logfile", str))
+   if (lbs == NULL) {
+      if (!getcfg("global", "logfile", str))
+         return;
+   } else if (!getcfg(lbs->name, "logfile", str))
       return;
 
    if (str[0] == DIR_SEPARATOR || str[1] == ':')
@@ -4256,6 +4261,22 @@ char *getparam(char *param)
       return _value[i];
 
    return NULL;
+}
+
+BOOL enumparam(int n, char *param, char *value)
+{
+   param[0] = value[0] = 0;
+
+   if (n >= MAX_PARAM)
+      return FALSE;
+
+   if (_param[n][0] == 0)
+      return FALSE;
+
+   strcpy(param, _param[n]);
+   strcpy(value, _value[n]);
+
+   return TRUE;
 }
 
 BOOL isparam(char *param)
@@ -8135,9 +8156,12 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
    p = strstr(text, "Location: ");
    if (p) {
       if (strstr(text, "?wusr="))
-         sprintf(error_str, loc("User \"%s\" has no access to remote logbook"), getparam("unm"));
+         sprintf(error_str, loc("User \"%s\" has no access to remote logbook"),
+                 getparam("unm"));
       else if (strstr(text, "?wpwd="))
-         sprintf(error_str, loc("Passwords for user \"%s\" do not match locally and remotely"), getparam("unm"));
+         sprintf(error_str,
+                 loc("Passwords for user \"%s\" do not match locally and remotely"),
+                 getparam("unm"));
       else
          sprintf(error_str, loc("Error accessing remote logbook"));
 
@@ -8198,7 +8222,8 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
 
 int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 {
-   int size, i, n, status, fh, port, sock, content_length, header_length, remote_id, n_attr;
+   int size, i, n, status, fh, port, sock, content_length, header_length, remote_id,
+       n_attr;
    char str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
    char host_name[256], subdir[256], param[256], local_host_name[256], url[256];
    char date[80], *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
@@ -8224,7 +8249,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    }
 
    /* count attributes */
-   for (n_attr=0 ; attr_list[n_attr][0] ; n_attr++);
+   for (n_attr = 0; attr_list[n_attr][0]; n_attr++);
 
    combine_url(lbs, host, "", url, sizeof(url));
    split_url(url, host_name, &port, subdir, param);
@@ -8331,6 +8356,10 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    sprintf(content + strlen(content),
            "%s\r\nContent-Disposition: form-data; name=\"entry_date\"\r\n\r\n%s\r\n",
            boundary, date);
+
+   sprintf(content + strlen(content),
+           "%s\r\nContent-Disposition: form-data; name=\"encoding\"\r\n\r\n%s\r\n",
+           boundary, encoding);
 
    sprintf(content + strlen(content),
            "%s\r\nContent-Disposition: form-data; name=\"Text\"\r\n\r\n%s\r\n%s\r\n",
@@ -8480,11 +8509,10 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 
 int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, BOOL bnew)
 {
-   int i, status, size;
+   int i, status, size, n_attr;
    char str[256], str2[245], *p, *p2, *message, date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
-       in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
-       attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
-       attachment_all[64 * MAX_ATTACHMENTS];
+       in_reply_to[80], reply_to[MAX_REPLY_TO * 10], encoding[80], locked_by[256],
+       attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], attachment_all[64 * MAX_ATTACHMENTS];
 
    error_str[0] = 0;
 
@@ -8512,10 +8540,13 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
    el_decode(p, "Reply to: ", reply_to);
    el_decode(p, "In reply to: ", in_reply_to);
 
-   for (i = 0; i < lbs->n_attr; i++) {
-      sprintf(str, "%s: ", attr_list[i]);
-      el_decode(p, str, attrib[i]);
+   /* derive attribute names from message */
+   for (i = 0;; i++) {
+      el_enum_attr(p, i, attr_list[i], attrib[i]);
+      if (!attr_list[i][0])
+         break;
    }
+   n_attr = i;
 
    el_decode(p, "Attachment: ", attachment_all);
    el_decode(p, "Encoding: ", encoding);
@@ -8557,7 +8588,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
          p[strlen(p) - 1] = 0;
 
       status = el_submit(lbs, message_id, !bnew, date, attr_list,
-                         attrib, lbs->n_attr, p, in_reply_to, reply_to,
+                         attrib, n_attr, p, in_reply_to, reply_to,
                          encoding, attachment, FALSE, "");
 
       free(message);
@@ -8879,7 +8910,7 @@ BOOL equal_md5(unsigned char m1[16], unsigned char m2[16])
 
 /*------------------------------------------------------------------*/
 
-void synchronize_logbook(LOGBOOK * lbs)
+void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 {
    int index, i, j, i_msg, i_remote, i_cache, n_remote, n_cache, nserver,
        remote_id, exist_remote, exist_cache, message_id;
@@ -8897,21 +8928,31 @@ void synchronize_logbook(LOGBOOK * lbs)
    nserver = strbreak(str, list, MAX_N_LIST);
 
    for (index = 0; index < nserver; index++) {
-      rsprintf("<table width=\"100%%\" cellpadding=1 cellspacing=0");
-      sprintf(str, loc("Synchronizing logbook \"%s\" with server \"%s\""), lbs->name,
-              list[index]);
-      rsprintf("<tr><td class=\"title1\">%s</td></tr>\n", str);
-      rsprintf("</table><p>\n");
 
-      rsprintf("<pre>");
+      if (!bcron) {
+         rsprintf("<table width=\"100%%\" cellpadding=1 cellspacing=0");
+         sprintf(str, loc("Synchronizing logbook \"%s\" with server \"%s\""), lbs->name,
+                 list[index]);
+         rsprintf("<tr><td class=\"title1\">%s</td></tr>\n", str);
+         rsprintf("</table><p>\n");
+
+         rsprintf("<pre>");
+      }
 
       /* send partial return buffer */
       flush_return_buffer();
 
+      md5_remote = NULL;
       n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote, error_str);
       if (n_remote < 0) {
-         rsprintf(error_str);
-         free(md5_remote);
+
+         if (bcron)
+            logf(lbs, error_str);
+         else
+            rsprintf(error_str);
+
+         if (md5_remote)
+            free(md5_remote);
          continue;
       }
 
@@ -8929,9 +8970,12 @@ void synchronize_logbook(LOGBOOK * lbs)
       /*---- check for configuration file ----*/
 
       load_config_section(lbs->name, &buffer, error_str);
-      if (error_str[0])
-         rsprintf("Error loading configuration file: %s", error_str);
-      else
+      if (error_str[0]) {
+         if (bcron)
+            logf(lbs, "Error loading configuration file: %s", error_str);
+         else
+            rsprintf("Error loading configuration file: %s", error_str);
+      } else
          MD5_checksum(buffer, strlen(buffer), digest);
 
       /* compare MD5s */
@@ -8953,13 +8997,21 @@ void synchronize_logbook(LOGBOOK * lbs)
          if (!equal_md5(md5_cache[0].md5_digest, digest)
              && equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)) {
 
+            if (_logging_level > 1)
+               logf(lbs, "MIRROR send config");
+
             /* submit configuration section */
             submit_config(lbs, list[index], buffer, error_str);
 
-            if (error_str[0])
-               rsprintf("Error sending config file: %s\n", error_str);
-            else
-               rsprintf("Local config submitted\n");
+            if (error_str[0]) {
+               if (bcron)
+                  logf(lbs, "Error sending config file: %s", error_str);
+               else
+                  rsprintf("Error sending config file: %s\n", error_str);
+            } else {
+               if (!bcron)
+                  rsprintf("Local config submitted\n");
+            }
 
             md5_cache[0].message_id = -1;
 
@@ -8968,13 +9020,20 @@ void synchronize_logbook(LOGBOOK * lbs)
             if (!equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)
                 && equal_md5(md5_cache[0].md5_digest, digest)) {
 
+            if (_logging_level > 1)
+               logf(lbs, "MIRROR receive config");
+
             receive_config(lbs, list[index], error_str);
 
-            if (error_str[0])
-               rsprintf("Error receiving config file: %s\n", error_str);
-            else
-               rsprintf("Remote config received\n");
-
+            if (error_str[0]) {
+               if (bcron)
+                  logf(lbs, "Error receiving config file: %s\n", error_str);
+               else
+                  rsprintf("Error receiving config file: %s\n", error_str);
+            } else {
+               if (!bcron)
+                  rsprintf("Remote config received\n");
+            }
             md5_cache[0].message_id = -1;
 
          } else
@@ -8983,19 +9042,28 @@ void synchronize_logbook(LOGBOOK * lbs)
                 && !equal_md5(md5_cache[0].md5_digest, digest)
                 && !equal_md5(md5_remote[0].md5_digest, digest)) {
 
-            rsprintf("%s.\n", loc("Configuration has been changed locally and remotely"));
-            rsprintf(loc("Please merge manually to resolve conflict"));
-            rsprintf(".\n");
-         } else {
+            if (_logging_level > 1)
+               logf(lbs, "MIRROR config conflict");
 
+            if (!bcron) {
+               rsprintf("%s.\n",
+                        loc("Configuration has been changed locally and remotely"));
+               rsprintf(loc("Please merge manually to resolve conflict"));
+               rsprintf(".\n");
+            }
+
+         } else {
             /* messages are identical */
-            rsprintf("%s\n", loc("Config identical"));
+            if (!bcron)
+               rsprintf("%s\n", loc("Config identical"));
             md5_cache[0].message_id = -1;
          }
       } else {                  /* n_remote == 0 */
 
-         rsprintf(loc("Logbook \"%s\" does not exist on remote server"), lbs->name);
-         rsprintf("\n");
+         sprintf(str, loc("Logbook \"%s\" does not exist on remote server"), lbs->name);
+         if (bcron)
+            logf(lbs, str);
+         rsprintf("%s\n", str);
          continue;
 
       }
@@ -9010,7 +9078,8 @@ void synchronize_logbook(LOGBOOK * lbs)
       for (i_msg = 0; i_msg < *lbs->n_el_index; i_msg++) {
 
          message_id = lbs->el_index[i_msg].message_id;
-         rsprintf("ID%d:\t", message_id);
+         if (!bcron)
+            rsprintf("ID%d:\t", message_id);
 
          /* look for message id in MD5s */
          for (i_remote = 0; i_remote < n_remote; i_remote++)
@@ -9026,29 +9095,38 @@ void synchronize_logbook(LOGBOOK * lbs)
          /* if message exists in both lists, compare MD5s */
          if (exist_remote && exist_cache) {
 
-            //##
-            printf("ID%02d:   ", message_id);
-            for (j = 0; j < 16; j++)
+            /*
+               printf("ID%02d:   ", message_id);
+               for (j = 0; j < 16; j++)
                printf("%02X", lbs->el_index[i_msg].md5_digest[j]);
-            printf("\nCache : ");
-            for (j = 0; j < 16; j++)
+               printf("\nCache : ");
+               for (j = 0; j < 16; j++)
                printf("%02X", md5_cache[i_cache].md5_digest[j]);
-            printf("\nRemote: ");
-            for (j = 0; j < 16; j++)
+               printf("\nRemote: ");
+               for (j = 0; j < 16; j++)
                printf("%02X", md5_remote[i_remote].md5_digest[j]);
-            printf("\n\n");
+               printf("\n\n");
+             */
 
             /* if message has been changed on this server, but not remotely, send it */
             if (!equal_md5(md5_cache[i_cache].md5_digest, lbs->el_index[i_msg].md5_digest)
                 && equal_md5(md5_cache[i_cache].md5_digest,
                              md5_remote[i_remote].md5_digest)) {
 
+               if (_logging_level > 1)
+                  logf(lbs, "MIRROR send entry #%d", message_id);
+
                /* submit local message */
                submit_message(lbs, list[index], message_id, error_str);
 
-               if (error_str[0])
-                  rsprintf("Error sending local message: %s\n", error_str);
-               else
+               /* not that submit_message() may have changed attr_list !!! */
+
+               if (error_str[0]) {
+                  if (bcron)
+                     logf(lbs, "Error sending local message: %s\n", error_str);
+                  else
+                     rsprintf("Error sending local message: %s\n", error_str);
+               } else if (!bcron)
                   rsprintf("Local entry submitted\n");
 
                md5_cache[i_cache].message_id = -1;
@@ -9060,11 +9138,17 @@ void synchronize_logbook(LOGBOOK * lbs)
                    && equal_md5(md5_cache[i_cache].md5_digest,
                                 lbs->el_index[i_msg].md5_digest)) {
 
+               if (_logging_level > 1)
+                  logf(lbs, "MIRROR receive entry #%d", message_id);
+
                receive_message(lbs, list[index], message_id, error_str, FALSE);
 
-               if (error_str[0])
-                  rsprintf("Error receiving message: %s\n", error_str);
-               else
+               if (error_str[0]) {
+                  if (bcron)
+                     logf(lbs, "Error receiving message: %s\n", error_str);
+                  else
+                     rsprintf("Error receiving message: %s\n", error_str);
+               } else if (!bcron)
                   rsprintf("Remote entry received\n");
 
                md5_cache[i_cache].message_id = -1;
@@ -9078,18 +9162,26 @@ void synchronize_logbook(LOGBOOK * lbs)
                    && !equal_md5(md5_remote[i_remote].md5_digest,
                                  lbs->el_index[i_msg].md5_digest)) {
 
+               if (_logging_level > 1)
+                  logf(lbs, "MIRROR conflict entry #%d", message_id);
+
                combine_url(lbs, list[index], "", str, sizeof(str));
                sprintf(loc_ref, "<a href=\"%d\">%s</a>", message_id, loc("local"));
                sprintf(rem_ref, "<a href=\"http://%s%d\">%s</a>", str, message_id,
                        loc("remote"));
-               rsprintf("%s.\n\t", loc("Entry has been changed locally and remotely"));
-               rsprintf(loc("Please delete %s or %s entry to resolve conflict"),
-                        loc_ref, rem_ref);
-               rsprintf(".\n");
+
+               if (!bcron) {
+                  rsprintf("%s.\n\t", loc("Entry has been changed locally and remotely"));
+                  rsprintf(loc("Please delete %s or %s entry to resolve conflict"),
+                           loc_ref, rem_ref);
+                  rsprintf(".\n");
+               }
+
             } else {
 
                /* messages are identical */
-               rsprintf("%s\n", loc("Entry identical"));
+               if (!bcron)
+                  rsprintf("%s\n", loc("Entry identical"));
                md5_cache[i_cache].message_id = -1;
             }
          }
@@ -9097,9 +9189,14 @@ void synchronize_logbook(LOGBOOK * lbs)
          /* if message exists only in cache, but not remotely, 
             it must have been deleted remotely, so remove it locally */
          if (exist_cache && !exist_remote) {
+
+            if (_logging_level > 1)
+               logf(lbs, "MIRROR delete local entry #%d", message_id);
+
             el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
-            rsprintf("%s\n", loc("Entry deleted locally"));
-            md5_cache[i_cache].message_id = -1;
+
+            if (!bcron)
+               rsprintf("%s\n", loc("Entry deleted locally"));
 
             /* message got deleted from local message list, so redo current index */
             i_msg--;
@@ -9108,15 +9205,27 @@ void synchronize_logbook(LOGBOOK * lbs)
          /* if message does not exist in cache and remotely, 
             it must be new, so send it  */
          if (!exist_cache && !exist_remote) {
+
+            if (_logging_level > 1)
+               logf(lbs, "MIRROR send entry #%d", message_id);
+
             remote_id = submit_message(lbs, list[index], message_id, error_str);
 
-            if (remote_id != message_id)
-               rsprintf("Error: Submitting entry #%d resulted in remote entry #%d\n",
-                        message_id, remote_id);
-            else if (error_str[0])
-               rsprintf("%s: %s\n", loc("Error sending local entry"), error_str);
-            else
+            if (remote_id != message_id) {
+               if (bcron)
+                  logf(lbs, "Error: Submitting entry #%d resulted in remote entry #%d\n",
+                       message_id, remote_id);
+               else
+                  rsprintf("Error: Submitting entry #%d resulted in remote entry #%d\n",
+                           message_id, remote_id);
+            } else if (error_str[0]) {
+               if (bcron)
+                  logf(lbs, "%s: %s\n", loc("Error sending local entry"), error_str);
+               else
+                  rsprintf("%s: %s\n", loc("Error sending local entry"), error_str);
+            } else if (!bcron)
                rsprintf("%s\n", loc("Local entry submitted"));
+            md5_cache[i_cache].message_id = -1;
          }
 
          flush_return_buffer();
@@ -9134,7 +9243,8 @@ void synchronize_logbook(LOGBOOK * lbs)
 
             if (i_msg == *lbs->n_el_index) {
 
-               rsprintf("ID%d:\t", message_id);
+               if (!bcron)
+                  rsprintf("ID%d:\t", message_id);
 
                for (i_cache = 0; i_cache < n_cache; i_cache++)
                   if (md5_cache[i_cache].message_id == message_id)
@@ -9143,24 +9253,39 @@ void synchronize_logbook(LOGBOOK * lbs)
 
                if (!exist_cache) {
 
+                  if (_logging_level > 1)
+                     logf(lbs, "MIRROR receive entry #%d", message_id);
+
                   /* if message does not exist locally and in cache, it is new, so retrieve it */
                   receive_message(lbs, list[index], message_id, error_str, TRUE);
 
-                  if (error_str[0])
-                     rsprintf("Error receiving message: %s\n", error_str);
-                  else
+                  if (error_str[0]) {
+                     if (bcron)
+                        logf(lbs, "Error receiving message: %s\n", error_str);
+                     else
+                        rsprintf("Error receiving message: %s\n", error_str);
+                  } else if (!bcron)
                      rsprintf("Remote entry received\n");
 
                } else {
                   /* if message does not exist locally but in cache, delete remote message */
+                  if (_logging_level > 1)
+                     logf(lbs, "MIRROR delete remote entry #%d", message_id);
+
                   sprintf(str, "%d?cmd=Delete&confirm=Yes", message_id);
                   combine_url(lbs, list[index], str, url, sizeof(url));
                   retrieve_url(url, &buffer);
 
-                  if (strstr(buffer, "Location: "))
-                     rsprintf("%s\n", loc("Entry deleted remotely"));
-                  else
-                     rsprintf("%s\n", loc("Error deleting remote entry"));
+                  if (strstr(buffer, "Location: ")) {
+                     if (!bcron)
+                        rsprintf("%s\n", loc("Entry deleted remotely"));
+                  } else {
+                     if (bcron)
+                        logf(lbs, "%s", loc("Error deleting remote entry"));
+                     else
+                        rsprintf("%s\n", loc("Error deleting remote entry"));
+                  }
+                  md5_cache[i_cache].message_id = -1;
 
                   free(buffer);
                }
@@ -9176,12 +9301,16 @@ void synchronize_logbook(LOGBOOK * lbs)
 
       /* keep conflicting messages in cache */
       for (i = 0; i < n_cache; i++)
-         if (md5_cache[i].message_id == -1) {
-            for (j = 0; j < n_remote; j++)
-               if (md5_remote[j].message_id == md5_cache[i].message_id) {
-                  memcpy(md5_remote[j].md5_digest, md5_cache[j].md5_digest, 16);
-                  break;
-               }
+         if (md5_cache[i].message_id != -1) {
+
+            if (i == 0)
+               memcpy(md5_remote[0].md5_digest, md5_cache[0].md5_digest, 16);
+            else
+               for (j = 0; j < n_remote; j++)
+                  if (md5_remote[j].message_id == md5_cache[i].message_id) {
+                     memcpy(md5_remote[j].md5_digest, md5_cache[j].md5_digest, 16);
+                     break;
+                  }
          }
 
       save_md5(lbs, list[index], md5_remote, n_remote);
@@ -9191,7 +9320,8 @@ void synchronize_logbook(LOGBOOK * lbs)
          free(md5_cache);
    }
 
-   rsprintf("</pre>\n");
+   if (!bcron)
+      rsprintf("</pre>\n");
 
    flush_return_buffer();
    keep_alive = 0;
@@ -9199,13 +9329,15 @@ void synchronize_logbook(LOGBOOK * lbs)
 
 /*------------------------------------------------------------------*/
 
-void synchronize(LOGBOOK * lbs)
+void synchronize(LOGBOOK * lbs, BOOL bcron)
 {
    int i;
    char str[256];
 
-   show_html_header(NULL, FALSE, loc("Synchronization"));
-   rsprintf("<body>\n");
+   if (!bcron) {
+      show_html_header(NULL, FALSE, loc("Synchronization"));
+      rsprintf("<body>\n");
+   }
 
    if (lbs == NULL) {
       for (i = 0; lb_list[i].name[0]; i++)
@@ -9216,18 +9348,21 @@ void synchronize(LOGBOOK * lbs)
                    && !equal_ustring(lb_list[i].top_group, getcfg_topgroup()))
                   continue;
 
-            synchronize_logbook(&lb_list[i]);
+            synchronize_logbook(&lb_list[i], bcron);
          }
    } else
-      synchronize_logbook(lbs);
+      synchronize_logbook(lbs, bcron);
 
-   rsprintf("<table width=\"100%%\" cellpadding=1 cellspacing=0");
-   rsprintf("<tr><td class=\"seltitle\"><a href=\".\">%s</a></td></tr>\n", loc("Back"));
-   rsprintf("</table><p>\n");
+   if (!bcron) {
+      rsprintf("<table width=\"100%%\" cellpadding=1 cellspacing=0");
+      rsprintf("<tr><td class=\"seltitle\"><a href=\".\">%s</a></td></tr>\n",
+               loc("Back"));
+      rsprintf("</table><p>\n");
 
-   rsprintf("</body></html>\n");
-   flush_return_buffer();
-   keep_alive = 0;
+      rsprintf("</body></html>\n");
+      flush_return_buffer();
+      keep_alive = 0;
+   }
 }
 
 /*------------------------------------------------------------------*/
@@ -11702,7 +11837,7 @@ void submit_elog(LOGBOOK * lbs)
    char att_file[MAX_ATTACHMENTS][256];
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
    int i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_orig,
-       mail_to_size, n_attr;
+       mail_to_size;
    BOOL bedit;
 
    /* check for required attributs */
@@ -11838,83 +11973,48 @@ void submit_elog(LOGBOOK * lbs)
    date[0] = 0;
    resubmit_orig = 0;
    bedit = FALSE;
-   n_attr = lbs->n_attr;
 
-   /* evaluate parameters from mirror submission */
-   if (isparam("mirror_id")) {
+   if (*getparam("edit_id") && *getparam("resubmit")
+       && atoi(getparam("resubmit")) == 1) {
+      resubmit_orig = atoi(getparam("edit_id"));
 
-      message_id = atoi(getparam("mirror_id"));
+      /* get old links */
+      el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0, NULL, 0, in_reply_to,
+                  reply_to, NULL, NULL, NULL);
 
-      /* check if message already exists */
-      for (i = 0; i < *lbs->n_el_index; i++)
-         if (lbs->el_index[i].message_id == message_id) {
-            bedit = TRUE;
-            break;
+      /* if not message head, move all preceeding messages */
+      /* outcommented, users want only resubmitted message occur at end (see what's new)
+         if (in_reply_to[0])
+         {
+         do
+         {
+         resubmit_orig = atoi(in_reply_to);
+         el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0,
+         NULL, 0, in_reply_to, reply_to, NULL, NULL);
+         } while (in_reply_to[0]);
          }
+       */
 
-      if (isparam("entry_date"))
-         strcpy(date, getparam("entry_date"));
-
-      if (isparam("reply_to"))
-         strcpy(reply_to, getparam("reply_to"));
-
-      if (isparam("in_reply_to"))
-         strcpy(in_reply_to, getparam("in_reply_to"));
-
-      if (_logging_level > 1)
-         logf(lbs, "MIRROR entry #%d", message_id);
-
-      /* retrieve attribute names from submission */
-      
-      /*
-         ...enum...
-      n_attr = 
-      */
-
+      message_id = atoi(getparam("edit_id"));
+      strcpy(in_reply_to, "<keep>");
+      strcpy(reply_to, "<keep>");
+      date[0] = 0;
    } else {
-
-      if (*getparam("edit_id") && *getparam("resubmit")
-          && atoi(getparam("resubmit")) == 1) {
-         resubmit_orig = atoi(getparam("edit_id"));
-
-         /* get old links */
-         el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0, NULL, 0, in_reply_to,
-                     reply_to, NULL, NULL, NULL);
-
-         /* if not message head, move all preceeding messages */
-         /* outcommented, users want only resubmitted message occur at end (see what's new)
-            if (in_reply_to[0])
-            {
-            do
-            {
-            resubmit_orig = atoi(in_reply_to);
-            el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0,
-            NULL, 0, in_reply_to, reply_to, NULL, NULL);
-            } while (in_reply_to[0]);
-            }
-          */
-
+      if (*getparam("edit_id")) {
+         bedit = TRUE;
          message_id = atoi(getparam("edit_id"));
          strcpy(in_reply_to, "<keep>");
          strcpy(reply_to, "<keep>");
-         date[0] = 0;
-      } else {
-         if (*getparam("edit_id")) {
-            bedit = TRUE;
-            message_id = atoi(getparam("edit_id"));
-            strcpy(in_reply_to, "<keep>");
-            strcpy(reply_to, "<keep>");
-            strcpy(date, "<keep>");
-         } else
-            strcpy(in_reply_to, getparam("reply_to"));
-      }
+         strcpy(date, "<keep>");
+      } else
+         strcpy(in_reply_to, getparam("reply_to"));
+   }
 
-      if (_logging_level > 1) {
-         if (isparam("edit_id"))
-            logf(lbs, "EDIT entry #%d", message_id);
-         else
-            logf(lbs, "NEW entry #%d", message_id);
-      }
+   if (_logging_level > 1) {
+      if (isparam("edit_id"))
+         logf(lbs, "EDIT entry #%d", message_id);
+      else
+         logf(lbs, "NEW entry #%d", message_id);
    }
 
    message_id =
@@ -12058,6 +12158,195 @@ void submit_elog(LOGBOOK * lbs)
       }
       send_file_direct(file_name);
       return;
+   }
+
+   sprintf(str, "%d%s", message_id, mail_param);
+   redirect(lbs, str);
+}
+
+/*------------------------------------------------------------------*/
+
+void submit_elog_mirror(LOGBOOK * lbs)
+{
+   char str[1000], str2[1000], date[80], mail_list[MAX_N_LIST][NAME_LENGTH], list[10000],
+       attrib_value[MAX_N_ATTR][NAME_LENGTH], attrib_name[MAX_N_ATTR][NAME_LENGTH],
+       in_reply_to[80], encoding[80], reply_to[MAX_REPLY_TO * 10], user[256],
+       user_email[256], email_notify[256], slist[MAX_N_ATTR + 10][NAME_LENGTH],
+       svalue[MAX_N_ATTR + 10][NAME_LENGTH], mail_param[1000], *mail_to,
+       att_file[MAX_ATTACHMENTS][256], name[NAME_LENGTH], value[NAME_LENGTH];
+   int i, j, n, index, mindex, suppress, message_id, mail_to_size, n_attr;
+   BOOL bedit;
+
+   /* get attachments */
+   for (i = 0; i < MAX_ATTACHMENTS; i++) {
+      sprintf(str, "attachment%d", i);
+      strcpy(att_file[i], getparam(str));
+   }
+
+   reply_to[0] = 0;
+   in_reply_to[0] = 0;
+   date[0] = 0;
+   encoding[0] = 0;
+   bedit = FALSE;
+   n_attr = 0;
+   message_id = 0;
+
+   /* retrieve attributes */
+   for (i = 0; i < MAX_PARAM; i++) {
+      if (enumparam(i, name, value)) {
+
+         if (equal_ustring(name, "mirror_id"))
+            message_id = atoi(value);
+         else if (equal_ustring(name, "entry_date"))
+            strlcpy(date, value, sizeof(date));
+         else if (equal_ustring(name, "reply_to"))
+            strlcpy(reply_to, value, sizeof(reply_to));
+         else if (equal_ustring(name, "in_reply_to"))
+            strlcpy(in_reply_to, value, sizeof(in_reply_to));
+         else if (equal_ustring(name, "encoding"))
+            strlcpy(encoding, value, sizeof(encoding));
+         else if (!equal_ustring(name, "cmd")) {
+            strlcpy(attrib_name[n_attr], name, NAME_LENGTH);
+            strlcpy(attrib_value[n_attr++], value, NAME_LENGTH);
+         }
+      } else
+         break;
+   }
+
+   if (message_id == 0 || date[0] == 0) {
+      show_error(loc("Invalid mirror_id or entry_date"));
+      return;
+   }
+
+   /* check if message already exists */
+   for (i = 0; i < *lbs->n_el_index; i++)
+      if (lbs->el_index[i].message_id == message_id) {
+         bedit = TRUE;
+         break;
+      }
+
+   message_id =
+       el_submit(lbs, message_id, bedit, date, attrib_name, attrib_value, n_attr,
+                 getparam("text"), in_reply_to, reply_to, encoding, att_file,
+                 FALSE, NULL);
+
+   if (message_id <= 0) {
+      sprintf(str, loc("New entry cannot be written to directory \"%s\""), lbs->data_dir);
+      strcat(str, "\n<p>");
+      strcat(str, loc("Please check that it exists and elogd has write access"));
+      show_error(str);
+      return;
+   }
+
+   /*---- email notifications ----*/
+
+   suppress = atoi(getparam("suppress"));
+
+   /* check for mail submissions */
+   mail_param[0] = 0;
+   mail_to = malloc(256);
+   mail_to[0] = 0;
+   mail_to_size = 256;
+
+   if (suppress) {
+      strcpy(mail_param, "?suppress=1");
+   } else {
+      if (!(*getparam("edit_id")
+            && getcfg(lbs->name, "Suppress Email on edit", str)
+            && atoi(str) == 1)) {
+         /* go throuch "Email xxx" in configuration file */
+         for (index = mindex = 0; index <= n_attr; index++) {
+            if (index < n_attr) {
+               strcpy(str, "Email ");
+               if (strchr(attr_list[index], ' '))
+                  sprintf(str + strlen(str), "\"%s\"", attr_list[index]);
+               else
+                  strlcat(str, attr_list[index], sizeof(str));
+               strcat(str, " ");
+
+               if (attr_flags[index] & AF_MULTI) {
+                  sprintf(str2, "%s#%d", attr_list[index], mindex);
+
+                  mindex++;
+                  if (mindex == MAX_N_LIST)
+                     mindex = 0;
+                  else
+                     index--;   /* repeat this loop */
+               } else
+                  strcpy(str2, attr_list[index]);
+
+               if (strchr(getparam(str2), ' '))
+                  sprintf(str + strlen(str), "\"%s\"", getparam(str2));
+               else
+                  strlcat(str, getparam(str2), sizeof(str));
+            } else
+               sprintf(str, "Email ALL");
+
+            if (getcfg(lbs->name, str, list)) {
+               n = strbreak(list, mail_list, MAX_N_LIST);
+
+               if (verbose)
+                  printf("\n%s to %s\n\n", str, list);
+
+               for (i = 0; i < n; i++) {
+                  j = build_subst_list(lbs, slist, svalue, attrib_value);
+                  strsubst(mail_list[i], slist, svalue, j);
+
+                  if ((int) strlen(mail_to) + (int) strlen(mail_list[i]) >= mail_to_size) {
+                     mail_to_size += 256;
+                     mail_to = realloc(mail_to, mail_to_size);
+                  }
+                  strcat(mail_to, mail_list[i]);
+                  strcat(mail_to, ",");
+               }
+            }
+         }
+
+         if (!getcfg(lbs->name, "Suppress Email to users", str) || atoi(str) == 0) {
+            /* go through password file */
+            for (index = 0;; index++) {
+               if (!enum_user_line(lbs, index, user))
+                  break;
+
+               get_user_line(lbs->name, user, NULL, NULL, user_email, email_notify);
+
+               if (email_notify[0]) {
+                  /* check if user has access to this logbook */
+                  if (!check_login_user(lbs, user))
+                     continue;
+
+                  if ((int) strlen(mail_to) + (int) strlen(user_email) >= mail_to_size) {
+                     mail_to_size += 256;
+                     mail_to = realloc(mail_to, mail_to_size);
+                  }
+                  strcat(mail_to, user_email);
+                  strcat(mail_to, ",");
+               }
+            }
+         }
+      }
+   }
+
+   if (strlen(mail_to) > 0) {
+      mail_to[strlen(mail_to) - 1] = 0; /* strip last ',' */
+      if (compose_email
+          (lbs, mail_to, message_id, attrib_value, mail_param, *getparam("edit_id"),
+           att_file) == 0)
+         return;
+   }
+
+   free(mail_to);
+
+   /*---- shell execution ----*/
+
+   if (!atoi(getparam("shell_suppress"))) {
+      if (!*getparam("edit_id")) {
+         if (getcfg(lbs->name, "Execute new", str))
+            execute_shell(lbs, message_id, attrib_value, str);
+      } else {
+         if (getcfg(lbs->name, "Execute edit", str))
+            execute_shell(lbs, message_id, attrib_value, str);
+      }
    }
 
    sprintf(str, "%d%s", message_id, mail_param);
@@ -13690,7 +13979,7 @@ void interprete(char *lbook, char *path)
    if (getcfg(lbook, "Logging Level", str))
       _logging_level = atoi(str);
    else
-      _logging_level = 1;
+      _logging_level = 2;
 
    /* if experiment given, use it as logbook (for elog!) */
    if (experiment && experiment[0]) {
@@ -13824,7 +14113,7 @@ void interprete(char *lbook, char *path)
 
       /* check for global synchronization */
       if (equal_ustring(command, "Synchronize")) {
-         synchronize(NULL);
+         synchronize(NULL, FALSE);
          return;
       }
 
@@ -14219,7 +14508,11 @@ void interprete(char *lbook, char *path)
 
    if (equal_ustring(command, loc("Submit"))
        || equal_ustring(command, "Submit")) {
-      submit_elog(lbs);
+
+      if (isparam("mirror_id"))
+         submit_elog_mirror(lbs);
+      else
+         submit_elog(lbs);
       return;
    }
 
@@ -14396,7 +14689,7 @@ void interprete(char *lbook, char *path)
    }
 
    if (equal_ustring(command, loc("Synchronize"))) {
-      synchronize(lbs);
+      synchronize(lbs, FALSE);
       return;
    }
 
@@ -14598,7 +14891,101 @@ void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
 
 /*------------------------------------------------------------------*/
 
+void check_cron()
+/* check 'mirror cron' etnry in configuration file
+
+   minute         (0-59)
+   hour           (0-23)
+   day of month   (1-31)
+   month of year  (1-12)
+   day of week    (0-6, 0 is Sunday)
+
+   Each of these patterns might be an asterisk (meaning all legal values)
+   or a list of elements separated by commas.
+*/
+{
+   int i, j, n;
+   BOOL flag[5];
+   time_t now;
+   char *p, str[256], cron[5][256];
+   struct tm *ts;
+   static struct tm last_time;
+   char list[60][NAME_LENGTH];
+
+   if (!getcfg("global", "mirror cron", str))
+      return;
+
+   for (i = 0; i < 5; i++)
+      strcpy(cron[i], "*");
+
+   i = 0;
+   p = strtok(str, " ");
+   while (p) {
+      strcpy(cron[i++], p);
+      p = strtok(NULL, " ");
+   }
+
+   time(&now);
+   ts = localtime(&now);
+
+   strcpy(str, ctime(&now));
+   str[24] = 0;
+   printf("Cron: %s\r", str);
+
+   /* check if last_time is initialized */
+   if (last_time.tm_year) {
+
+      for (i = 0; i < 5; i++)
+         flag[i] = FALSE;
+
+      for (i = 0; i < 5; i++) {
+         n = strbreak(cron[i], list, 60);
+         if (cron[i][0] == '*')
+            flag[i] = TRUE;
+         else
+            for (j = 0; j < n; j++) {
+               /* minutes */
+               if (i == 0 && ts->tm_min != last_time.tm_min
+                   && ts->tm_min == atoi(list[j]))
+                  flag[i] = TRUE;
+               /* hours */
+               if (i == 1 && ts->tm_hour != last_time.tm_hour
+                   && ts->tm_hour == atoi(list[j]))
+                  flag[i] = TRUE;
+               /* day of month */
+               if (i == 2 && ts->tm_mday != last_time.tm_mday
+                   && ts->tm_mday == atoi(list[j]))
+                  flag[i] = TRUE;
+               /* month of year */
+               if (i == 3 && ts->tm_mon != last_time.tm_mon
+                   && ts->tm_mon + 1 == atoi(list[j]))
+                  flag[i] = TRUE;
+               /* weekday */
+               if (i == 4 && ts->tm_wday != last_time.tm_wday
+                   && ts->tm_wday == atoi(list[j]))
+                  flag[i] = TRUE;
+            }
+      }
+
+      if (flag[0] && flag[1] && flag[2] && flag[3] && flag[4]) {
+
+         logf(NULL, "Cron job started");
+
+         /* synchronize all logbooks */
+         setcfg_topgroup("");
+         synchronize(NULL, TRUE);
+      }
+   }
+
+
+   memcpy(&last_time, ts, sizeof(struct tm));
+}
+
+/*------------------------------------------------------------------*/
+
 BOOL _abort = FALSE;
+BOOL _hup = FALSE;
+
 void ctrlc_handler(int sig)
 {
    _abort = TRUE;
@@ -14606,9 +14993,7 @@ void ctrlc_handler(int sig)
 
 void hup_handler(int sig)
 {
-   /* reload configuration */
-   check_config();
-   check_language();
+   _hup = TRUE;
 }
 
 /*------------------------------------------------------------------*/
@@ -14797,11 +15182,14 @@ void server_loop(int tcp_port, int daemon)
       for (i = 0; i < N_MAX_CONNECTION; i++)
          if (ka_sock[i] > 0)
             FD_SET(ka_sock[i], &readfds);
-      timeout.tv_sec = 0;
-      timeout.tv_usec = 100000;
+      timeout.tv_sec = 1;
+      timeout.tv_usec = 0;
       status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+
+      /* check UNIX signal flags */
       if (_abort)
          break;
+
       if (FD_ISSET(lsock, &readfds)) {
          len = sizeof(acc_addr);
          _sock = accept(lsock, (struct sockaddr *) &acc_addr, &len);
@@ -15106,12 +15494,7 @@ void server_loop(int tcp_port, int daemon)
                goto finished;
             }
          }
-#ifdef OS_WINNT
 
-         /* under windows, check if configuration changed (via stat()) once each access */
-         check_config();
-         /* under unix, rely on "kill -HUP elogd" */
-#endif
          /* check if logbook exists */
          for (i = 0;; i++) {
             if (!enumgrp(i, str))
@@ -15425,9 +15808,26 @@ void server_loop(int tcp_port, int daemon)
             }
          }
       }
+#ifdef OS_WINNT
 
-   }
-   while (!_abort);
+      /* under windows, check if configuration changed (via stat()) once each access */
+      check_config();
+
+#else
+
+      /* under unix, rely on "kill -HUP elogd" */
+      if (_hup) {
+         /* reload configuration */
+         check_config();
+         _hup = FALSE;
+      }
+#endif
+
+      /* check for periodic tasks */
+      check_cron();
+
+   } while (!_abort);
+
    printf("Server aborted.\n");
 }
 
