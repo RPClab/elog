@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.458  2004/08/11 06:41:35  midas
+   Release 2.5.4-2
+
    Revision 1.457  2004/08/10 07:51:08  midas
    Fixed bug in error display on too long content length
 
@@ -485,7 +488,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.4"
+#define VERSION "2.5.4-2"
 
 /* ELOG identification */
 static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
