@@ -1,5 +1,5 @@
-Version 2.3.4, released March xxth, 2003
-========================================
+Version 2.3.4, released April 2nd, 2003
+=======================================
 
 - Added option "Quote on reply"
 - Added option "Admin textarea"
@@ -11,6 +11,9 @@ Version 2.3.4, released March xxth, 2003
 - Fixed error that logbook URL was wrong if messages are submitted via elog
 - Added "Icon comment" option
 - Added text search in all attributes
+- Removed borders around icons in threaded display
+- Added option 'Login user'
+- Added notification about invalid user
 
 Version 2.3.3, released March 14th, 2003
 ========================================
