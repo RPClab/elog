@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.141  2003/07/28 15:24:27  midas
+  Fixed bug with elog:/n reference
+
   Revision 1.140  2003/07/25 08:34:52  midas
   Fixed bugs in HTML code
 
@@ -12823,7 +12826,10 @@ FILE    *f;
       show_error(str);
       }
     else
-      redirect(lbs, attachment);
+      {
+      sprintf(str, "../%s", attachment);
+      redirect(lbs, str);
+      }
 
     return;
     }
