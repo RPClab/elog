@@ -250,7 +250,9 @@ Change elogd.cfg = elogd.cfg ändern
 Remember me on this computer = Auf diesem Computer eingeloggt bleiben
 Forgot password? = Kennwort vergessen?
 Enter your login name or email address = Bitte Benutzernamen oder Email-Adresse eingeben
-Login name not registered = Benutzername nicht registriert
-Email address not registered = Email-Adresse nicht registriert
-A new password for user %s is sent to %s = Ein neues Kennwort für Benutzer %s wurde and %s geschickt
-
+Email address <i>"%s"</i> not registered = Email-Adresse <i>"%s"</i> nicht registriert
+User name <i>\%s\</i> not registered = Benutzername <i>"%s"</i> nicht registriert
+ELOG password recovery = ELOG Kennwort Wiederherstellung
+No Email address registered with user name <i>"%s"</i> = Für Benuter-Name <i>"%s"</i> wurde keine Email-Adresse registriert
+Error sending Email = Fehler beim Versenden der Email
+A new password for user <i>"%s"</i> has been sent to %s = Ein neues Kennwort für Benutzer <i>"%s"</i> wurde and %s geschickt
