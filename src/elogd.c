@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.358  2004/06/25 18:50:52  midas
+   Do a el_index_logbooks on HUP signal
+
    Revision 1.357  2004/06/23 08:04:10  midas
    Fixed small bug with 'X-Forwarded-Host:'
 
@@ -8982,16 +8985,66 @@ void show_logbook_delete(LOGBOOK * lbs)
       sprintf(str, loc("Are you sure to delete logbook \"%s\"?"), lbs->name);
       rsprintf("%s</td></tr>\n", str);
 
-      rsprintf("<tr><td align=center class=\"dlgform\">\n");
-
-      rsprintf("</td></tr>\n");
-
-      rsprintf
-          ("<tr><td align=center class=\"dlgform\"><input type=submit name=confirm value=\"%s\">\n",
-           loc("Yes"));
+      rsprintf("<tr><td align=center class=\"dlgform\">");
+      rsprintf("<input type=submit name=confirm value=\"%s\">\n", loc("Yes"));
       rsprintf("<input type=submit name=confirm value=\"%s\">\n", loc("No"));
       rsprintf("</td></tr>\n\n");
    }
+
+   rsprintf("</table>\n");
+   show_bottom_text(lbs);
+   rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void show_logbook_new(LOGBOOK * lbs)
+{
+   char str[256], lbn[256];
+   int i;
+
+   if (getparam("lbname") && *getparam("lbname")) {
+
+      strcpy(lbn, getparam("lbname"));
+      for (i = 0; lb_list[i].name[0]; i++)
+         if (strieq(lbn, lb_list[i].name)) {
+            sprintf(str, loc("Logbook \"%s\" exists already, please choose different name"), lbn);
+            show_error(str);
+            return;
+      }
+
+      /* create new logbook */
+      redirect(NULL, "../?cmd=Config");
+      return;
+   }
+
+   show_standard_header(lbs, TRUE, "Delete Logbook", "");
+
+   rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
+   rsprintf("<tr><td class=\"dlgtitle\">\n");
+
+   /* define hidden field for command */
+   rsprintf("<input type=hidden name=cmd value=\"%s\">\n", loc("Create new logbook"));
+   rsprintf("%s</td></tr>\n", loc("Create new logbook"));
+
+   rsprintf("<tr><td align=center class=\"dlgform\">\n");
+   rsprintf("%s :&nbsp;&nbsp;", loc("Logbook name"));
+   rsprintf("<input type=text name=lbname>\n");
+   rsprintf("</td></tr>\n");
+
+   rsprintf("<tr><td align=center class=\"dlgform\">\n");
+   rsprintf("%s : \n", loc("Use existing logbook as template"));
+   rsprintf("<select name=template>\n");
+   rsprintf("<option value=\"\">- %s -\n", loc("none"));
+   for (i = 0; lb_list[i].name[0]; i++)
+      rsprintf("<option value=\"%s\">%s\n", lb_list[i].name, lb_list[i].name);
+   rsprintf("</select>\n");
+   rsprintf("</td></tr>\n\n");
+
+   rsprintf("<tr><td align=center class=\"dlgform\">\n");
+   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Create new logbook"));
+   rsprintf("<input type=submit name=tmp value=\"%s\">\n", loc("Cancel"));
+   rsprintf("</td></tr>\n\n");
 
    rsprintf("</table>\n");
    show_bottom_text(lbs);
@@ -17066,7 +17119,7 @@ void interprete(char *lbook, char *path)
    }
 
    if (strieq(command, loc("Create new logbook"))) {
-      show_error("This functionality is not yet implemented");
+      show_logbook_new(lbs);
       return;
    }
 
@@ -18425,6 +18478,7 @@ void server_loop(int tcp_port, int daemon)
       if (_hup) {
          /* reload configuration */
          check_config();
+         el_index_logbooks(TRUE);
          _hup = FALSE;
       }
 #endif
