@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.614  2005/03/31 20:43:45  ritt
+   Added 'Duplicate' to default menu commands
+
    Revision 1.613  2005/03/31 20:37:05  ritt
    Implemented 'Duplicate' command
 
@@ -17972,7 +17975,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
    /* default menu commands */
    if (menu_str[0] == 0) {
-      strcpy(menu_str, "List, New, Edit, Delete, Reply, Find, ");
+      strcpy(menu_str, "List, New, Edit, Delete, Reply, Duplicate, Find, ");
 
       if (getcfg(lbs->name, "Password file", str, sizeof(str))) {
          strcat(menu_str, "Config, Logout, ");
