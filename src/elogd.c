@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.359  2004/06/27 12:16:37  midas
+   Implemented renaming of logbooks
+
    Revision 1.358  2004/06/25 18:50:52  midas
    Do a el_index_logbooks on HUP signal
 
@@ -7896,17 +7899,11 @@ int save_admin_config(char *section, char *buffer, char *error)
       strcat(error, strerror(errno));
       return 0;
    }
-#ifdef OS_UNIX
-
-   /* under unix, convert CRLF to CR */
-   remove_crlf(buffer);
-
-#endif
 
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   buf = malloc(length + strlen(buffer) + 1);
+   buf = malloc(length + strlen(buffer) + 10);
    assert(buf);
    read(fh, buf, length);
    buf[length] = 0;
@@ -7925,20 +7922,21 @@ int save_admin_config(char *section, char *buffer, char *error)
    }
 
    /* combine old and new config */
-#ifdef OS_UNIX
-   sprintf(p1, "[%s]\n", section);
-   strcat(p1, buffer);
-   strcat(p1, "\n\n");
-#else
    sprintf(p1, "[%s]\r\n", section);
    strcat(p1, buffer);
    strcat(p1, "\r\n\r\n");
-#endif
 
    if (p2) {
       strlcat(p1, buf2, length + strlen(buffer) + 1);
       free(buf2);
    }
+
+#ifdef OS_UNIX
+
+   /* under unix, convert CRLF to CR */
+   remove_crlf(buf);
+
+#endif
 
    lseek(fh, 0, SEEK_SET);
    i = write(fh, buf, strlen(buf));
@@ -7998,6 +7996,182 @@ int delete_logbook(char *logbook, char *error)
       strlcpy(p1, p2, strlen(p2) + 1);
    else
       *p1 = 0;
+
+   lseek(fh, 0, SEEK_SET);
+   i = write(fh, buf, strlen(buf));
+   if (i < (int) strlen(buf)) {
+      sprintf(error, loc("Cannot write to <b>%s</b>"), config_file);
+      strcat(error, ": ");
+      strcat(error, strerror(errno));
+      close(fh);
+      free(buf);
+      return 0;
+   }
+
+#ifdef _MSC_VER
+   chsize(fh, TELL(fh));
+#else
+   ftruncate(fh, TELL(fh));
+#endif
+
+   close(fh);
+   free(buf);
+
+   /* force re-read of config file */
+   check_config();
+   el_index_logbooks(TRUE);
+   
+   return 1;
+}
+
+/*------------------------------------------------------------------*/
+
+int rename_logbook(char *logbook, char *newname, char *error)
+{
+   int fh, i, length;
+   char *buf, *buf2, *p1, *p2;
+
+   error[0] = 0;
+
+   fh = open(config_file, O_RDWR | O_BINARY, 644);
+   if (fh < 0) {
+      sprintf(error, loc("Cannot open file <b>%s</b>"), config_file);
+      strcat(error, ": ");
+      strcat(error, strerror(errno));
+      return 0;
+   }
+   /* read previous contents */
+   length = lseek(fh, 0, SEEK_END);
+   lseek(fh, 0, SEEK_SET);
+   buf = malloc(length + strlen(newname) + 10);
+   assert(buf);
+   read(fh, buf, length);
+   buf[length] = 0;
+
+   /* find logbook config */
+   p1 = (char *) find_section(buf, logbook);
+   p2 = strchr(p1, ']');
+   if (p2 == NULL) {
+      close(fh);
+      free(buf);
+      strcpy(error, loc("Syntax error in config file"));
+      return 0;
+   }
+   p2 ++;
+
+   /* save tail */
+   buf2 = malloc(strlen(p2) + 1);
+   assert(buf2);
+   strlcpy(buf2, p2, strlen(p2) + 1);
+
+   /* replace logbook name */
+   sprintf(p1, "[%s]", newname);
+
+   strlcat(p1, buf2, length + strlen(newname) + 1);
+   free(buf2);
+
+#ifdef OS_UNIX
+
+   /* under unix, convert CRLF to CR */
+   remove_crlf(buf);
+
+#endif
+
+   lseek(fh, 0, SEEK_SET);
+   i = write(fh, buf, strlen(buf));
+   if (i < (int) strlen(buf)) {
+      sprintf(error, loc("Cannot write to <b>%s</b>"), config_file);
+      strcat(error, ": ");
+      strcat(error, strerror(errno));
+      close(fh);
+      free(buf);
+      return 0;
+   }
+#ifdef _MSC_VER
+   chsize(fh, TELL(fh));
+#else
+   ftruncate(fh, TELL(fh));
+#endif
+
+   close(fh);
+   free(buf);
+
+   /* force re-read of config file */
+   check_config();
+   el_index_logbooks(TRUE);
+   
+   return 1;
+}
+
+/*------------------------------------------------------------------*/
+
+int create_logbook(char *logbook, char *templ, char *error)
+{
+   int fh, i, length, templ_length;
+   char *buf, *p1, *p2;
+
+   error[0] = 0;
+
+   fh = open(config_file, O_RDWR | O_BINARY, 644);
+   if (fh < 0) {
+      sprintf(error, loc("Cannot open file <b>%s</b>"), config_file);
+      strcat(error, ": ");
+      strcat(error, strerror(errno));
+      return 0;
+   }
+
+   /* read previous contents */
+   length = lseek(fh, 0, SEEK_END);
+   lseek(fh, 0, SEEK_SET);
+   buf = malloc(2*length + 1);
+   assert(buf);
+   read(fh, buf, length);
+   buf[length] = 0;
+
+   /* find template logbook */
+   if (templ[0]) {
+      p1 = (char *) find_section(buf, templ);
+      p2 = (char *) find_next_section(p1 + 1);
+   } else
+      p1 = NULL;
+
+   if (p1) {
+      p1 = strchr(p1, ']');
+      if (p1) 
+         while (*p1 == ']' || *p1 == '\r' || *p1 == '\n')
+            p1++;
+
+      if (p2)
+         templ_length = (int)p2 - (int)p1;
+      else
+         templ_length = strlen(p1);
+   }
+
+   /* insert single blank line after last logbook */
+   p2 = buf+strlen(buf)-1;
+
+   while (p2 > buf && (*p2 == '\r' || *p2 == '\n' || *p2 == ' ' || *p2 == '\t')) {
+     *p2 = 0;
+     p2--;
+   }
+   if (p2 > buf)
+      p2++;
+
+   strcat(p2, "\r\n\r\n[");
+   strcat(p2, logbook);
+   strcat(p2, "]\r\n");
+   if (p1) {
+      p2 = buf+strlen(buf);
+      strncpy(p2, p1, templ_length);
+      p2[templ_length] = 0;
+   }
+
+#ifdef OS_UNIX
+
+   /* under unix, convert CRLF to CR */
+   remove_crlf(buffer);
+
+#endif
 
    lseek(fh, 0, SEEK_SET);
    i = write(fh, buf, strlen(buf));
@@ -8974,7 +9148,8 @@ void show_logbook_delete(LOGBOOK * lbs)
    } else {
 
  
-      show_standard_header(lbs, TRUE, "Delete Logbook", "");
+      strcpy(str, "Delete logbook");
+      show_standard_header(lbs, TRUE, str, "");
 
       rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
       rsprintf("<tr><td class=\"dlgtitle\">\n");
@@ -8988,6 +9163,50 @@ void show_logbook_delete(LOGBOOK * lbs)
       rsprintf("<tr><td align=center class=\"dlgform\">");
       rsprintf("<input type=submit name=confirm value=\"%s\">\n", loc("Yes"));
       rsprintf("<input type=submit name=confirm value=\"%s\">\n", loc("No"));
+      rsprintf("</td></tr>\n\n");
+   }
+
+   rsprintf("</table>\n");
+   show_bottom_text(lbs);
+   rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void show_logbook_rename(LOGBOOK * lbs)
+{
+   char str[256];
+   
+   /* redirect if confirm = NO */
+   if (getparam("lbname") && *getparam("lbname")) {
+
+      rename_logbook(lbs->name, getparam("lbname"), str);
+      if (str[0])
+         show_error(str);
+      else {
+         sprintf(str, "../%s/?cmd=Config", getparam("lbname"));
+         redirect(NULL, str);
+      }
+      return;
+
+   } else {
+
+ 
+      strcpy(str, loc("Rename logbook"));
+      show_standard_header(lbs, TRUE, str, "");
+
+      rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
+      rsprintf("<tr><td class=\"dlgtitle\">\n");
+
+      /* define hidden field for command */
+      rsprintf("<input type=hidden name=cmd value=\"%s\">\n", loc("Rename this logbook"));
+
+      rsprintf("%s</td></tr>\n", loc("Enter new logbook name"));
+
+      rsprintf("<tr><td align=center class=\"dlgform\">");
+      rsprintf("<input type=text name=\"lbname\"><br><br>\n");
+      rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Rename this logbook"));
+      rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
       rsprintf("</td></tr>\n\n");
    }
 
@@ -9014,7 +9233,15 @@ void show_logbook_new(LOGBOOK * lbs)
       }
 
       /* create new logbook */
-      redirect(NULL, "../?cmd=Config");
+      create_logbook(getparam("lbname"), getparam("template"), str);
+      if (str[0])
+         show_error(str);
+      else {
+         strcpy(lbn, getparam("lbname"));
+         url_encode(lbn, sizeof(lbn));
+         sprintf(str, "../%s/?cmd=Config", lbn);
+         redirect(NULL, str);
+      }
       return;
    }
 
@@ -17114,7 +17341,7 @@ void interprete(char *lbook, char *path)
    }
 
    if (strieq(command, loc("Rename this logbook"))) {
-      show_error("This functionality is not yet implemented");
+      show_logbook_rename(lbs);
       return;
    }
 
