@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.5  2003/06/05 07:16:36  midas
+  Creat boundary randomly
+
   Revision 1.4  2003/06/04 14:26:59  midas
   elog utility can read text from stdin
 
@@ -51,6 +54,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 #ifdef _MSC_VER
 #include <windows.h>
@@ -248,7 +252,8 @@ char                 host_name[256], boundary[80], str[80], *p;
     }
 
   /* compose content */
-  strcpy(boundary, "---------------------------7d0bf1a60904bc");
+  srand((unsigned)time(NULL));
+  sprintf(boundary, "---------------------------%04X%04X%04X", rand(), rand(), rand());
   strcpy(content, boundary);
   strcat(content, "\r\nContent-Disposition: form-data; name=\"cmd\"\r\n\r\nSubmit\r\n");
 
