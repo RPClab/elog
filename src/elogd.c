@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.356  2004/06/23 08:00:26  midas
+   Extract and use 'X-Forwarded-Host:'
+
    Revision 1.355  2004/06/23 07:41:34  midas
    Added _cmdline in redirection
 
@@ -17983,6 +17986,16 @@ void server_loop(int tcp_port, int daemon)
          /* extract host */
          http_host[0] = 0;
          if ((p = strstr(net_buffer, "Host:")) != NULL) {
+            p += 5;
+            while (*p && *p == ' ')
+               p++;
+            strlcpy(http_host, p, sizeof(http_host));
+            if (strchr(http_host, '\r'))
+               *strchr(http_host, '\r') = 0;
+         }
+
+         /* extract X-Forwarded-Host, overwrite "Host:" if found */
+         if ((p = strstr(net_buffer, "X-Forwarded-Host:")) != NULL) {
             p += 5;
             while (*p && *p == ' ')
                p++;
