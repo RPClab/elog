@@ -6,8 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
-   Revision 1.484  2004/09/24 20:39:11  midas
+   Revision 1.485  2004/09/24 20:40:25  midas
    Added cvs_revision
+
 
    Revision 1.483  2004/09/24 16:07:07  midas
    Display first/previous/next/last directly as link if first.gif is missing
@@ -567,7 +568,7 @@
 
 /* Version of ELOG */
 #define VERSION "2.5.4-4"
-char cvs_revision = "$Id";
+char cvs_revision = "$Id$";
 
 /* ELOG identification */
 static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
