@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.132  2003/07/15 08:00:04  midas
+  Fixed problem with coloring hyperlinks in find result page
+
   Revision 1.131  2003/07/10 16:02:19  midas
   Added '-x' flag
 
@@ -3979,8 +3982,8 @@ char *list[] = { "http://", "https://", "ftp://", "mailto:", "elog:", "file://",
 
 void rsputs2(const char *str)
 {
-int i, j, k, l, m;
-char *p, link[256], tmp[256];
+int i, j, k, l, m, n;
+char *p, *pd, link[1000], link_text[1000], tmp[256];
 
   if (strlen_retbuf + (int)strlen(str) > return_buffer_size)
     {
@@ -4003,6 +4006,48 @@ char *p, link[256], tmp[256];
         link[k] = 0;
         i--;
 
+        /* check if link contains coloring */
+        p = strchr(link, '\001');
+        if (p != NULL)
+          {
+          strlcpy(link_text, link, sizeof(link_text));
+
+          /* skip everything between '<' and '>' */
+          pd = p;
+          while (*pd && *pd != '\002')
+            *p = *pd++;
+
+          strcpy(p, pd+1);
+
+          /* skip '</B>' */
+          p = strchr(link, '\001');
+          if (p != NULL)
+            {
+            pd = p;
+
+            while (*pd && *pd != '\002')
+              *p = *pd++;
+
+            strcpy(p, pd+1);
+            }
+
+          /* correct link text */
+          for (n=0 ; n<(int)strlen(link_text) ; n++)
+            {
+            switch (link_text[n])
+              {
+              /* the translation for the search highliting */
+              case '\001' : link_text[n] = '<'; break;
+              case '\002' : link_text[n] = '>'; break;
+              case '\003' : link_text[n] = '\"'; break;
+              case '\004' : link_text[n] = ' '; break;
+              }
+            }
+
+          }
+        else
+          strlcpy(link_text, link, sizeof(link_text));
+
         if (strcmp(list[l], "elog:") == 0)
           {
           strlcpy(tmp, link, sizeof(tmp));
@@ -4015,14 +4060,14 @@ char *p, link[256], tmp[256];
 
           if (m < (int)strlen(tmp))
             /* if link contains reference to other logbook, add ".." in front */
-            sprintf(return_buffer+j, "<a href=\"../%s\">elog:%s</a>", link, link);
+            sprintf(return_buffer+j, "<a href=\"../%s\">elog:%s</a>", link, link_text);
           else if (link[0] == '/')
-            sprintf(return_buffer+j, "<a href=\"%d%s\">elog:%s</a>", _current_message_id, link, link);
+            sprintf(return_buffer+j, "<a href=\"%d%s\">elog:%s</a>", _current_message_id, link, link_text);
           else
-            sprintf(return_buffer+j, "<a href=\"%s\">elog:%s</a>", link, link);
+            sprintf(return_buffer+j, "<a href=\"%s\">elog:%s</a>", link, link_text);
           }
         else
-          sprintf(return_buffer+j, "<a href=\"%s%s\">%s%s</a>", list[l], link, list[l], link);
+          sprintf(return_buffer+j, "<a href=\"%s%s\">%s%s</a>", list[l], link, list[l], link_text);
 
         j += strlen(return_buffer+j);
         break;
