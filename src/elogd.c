@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.137  2003/07/17 08:01:24  midas
+  Renames 'display search' to 'list display'
+
   Revision 1.136  2003/07/15 12:29:10  midas
   Fixed typo
 
@@ -9699,7 +9702,11 @@ LOGBOOK *lbs_cur;
 
   size = printable ? 2 : 3;
 
-  if (getcfg(lbs->name, "Display search", list))
+  list[0] = 0;
+  if (!getcfg(lbs->name, "List display", list))   /* new 2.3.10 format */
+    getcfg(lbs->name, "Display search", list);   /* old 2.3.9  format */
+
+  if (list[0])
     n_attr_disp = strbreak(list, disp_attr, MAX_N_ATTR);
   else
     {
