@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.337  2004/06/07 14:59:42  midas
+   Fixed problem with 'preset text' under conditional attributes
+
    Revision 1.336  2004/06/07 10:36:48  midas
    Version 2.5.3
 
@@ -1988,26 +1991,6 @@ int is_group(char *group)
 
    free(str);
    return 0;
-}
-
-/*------------------------------------------------------------------*/
-
-int getcfg_cond1(char *group, char *condition, char *param, char *value)
-{
-   char str[256];
-
-   if (condition == NULL || condition[0] == 0)
-      return getcfg(group, param, value);
-
-   sprintf(str, "{%s}%s", condition, param);
-   if (getcfg(group, str, value))
-      return 2;
-
-   sprintf(str, "{%s} %s", condition, param);
-   if (getcfg(group, str, value))
-      return 2;
-
-   return getcfg(group, param, value);
 }
 
 /*------------------------------------------------------------------*/
@@ -7025,34 +7008,39 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          }
       }
 
-      if ((!message_id || breedit)
-          && getcfg(lbs->name, "Preset text", str)) {
-         /* check if file starts with an absolute directory */
-         if (str[0] == DIR_SEPARATOR || str[1] == ':')
-            strcpy(file_name, str);
-         else {
-            strlcpy(file_name, resource_dir, sizeof(file_name));
-            strlcat(file_name, str, sizeof(file_name));
-         }
 
-         /* check if file exists */
-         fh = open(file_name, O_RDONLY | O_BINARY);
-         if (fh > 0) {
-            length = lseek(fh, 0, SEEK_END);
-            lseek(fh, 0, SEEK_SET);
-            buffer = malloc(length + 1);
-            read(fh, buffer, length);
-            buffer[length] = 0;
-            close(fh);
-            rsputs(buffer);
-            free(buffer);
-         } else {
-            j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-            strsubst(str, slist, svalue, j);
-            while (strstr(str, "\\n"))
-               memcpy(strstr(str, "\\n"), "\r\n", 2);
-            rsputs(str);
-         }
+      if ((i = getcfg(lbs->name, "Preset text", str)) > 0) {
+
+         if (!bedit || (breedit && i == 2)) {   /* preset on reedit only if preset is under condition */
+
+            /* check if file starts with an absolute directory */
+            if (str[0] == DIR_SEPARATOR || str[1] == ':')
+               strcpy(file_name, str);
+            else {
+               strlcpy(file_name, resource_dir, sizeof(file_name));
+               strlcat(file_name, str, sizeof(file_name));
+            }
+
+            /* check if file exists */
+            fh = open(file_name, O_RDONLY | O_BINARY);
+            if (fh > 0) {
+               length = lseek(fh, 0, SEEK_END);
+               lseek(fh, 0, SEEK_SET);
+               buffer = malloc(length + 1);
+               read(fh, buffer, length);
+               buffer[length] = 0;
+               close(fh);
+               rsputs(buffer);
+               free(buffer);
+            } else {
+               j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+               strsubst(str, slist, svalue, j);
+               while (strstr(str, "\\n"))
+                  memcpy(strstr(str, "\\n"), "\r\n", 2);
+               rsputs(str);
+            }
+         } else
+             rsputs(text); /* otherwise keep original text */
       }
 
       rsprintf("</textarea><br>\n");
