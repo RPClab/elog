@@ -112,6 +112,7 @@ Section "Multi-language support"
   File eloglang.brazilian
   File eloglang.japanese
   File eloglang.italian
+  File eloglang.danish
 SectionEnd
 
 ; optional section
@@ -169,6 +170,7 @@ Section "Uninstall"
   Delete $INSTDIR\eloglang.brazilian
   Delete $INSTDIR\eloglang.italian
   Delete $INSTDIR\eloglang.japanese
+  Delete $INSTDIR\eloglang.danish
 
   Delete $INSTDIR\doc\*
   RMDir $INSTDIR\doc

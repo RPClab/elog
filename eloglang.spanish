@@ -290,3 +290,7 @@ No 'Attributes' option present in %s = No se encuentra presente la opcion 'Attri
 CSV ("," separated) = 
 CSV (";" separated) = 
 Auto detect = 
+text = 
+Column header '%s' must be present in CSV file = 
+Fill text body = 
+Please re-enter filename = 

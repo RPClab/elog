@@ -289,3 +289,7 @@ No 'Attributes' option present in %s = Keine 'Attributes'-Options in %s vorhande
 CSV ("," separated) = CSV (mit "," getrennt)
 CSV (";" separated) = CSV (mit ";" getrennt)
 Auto detect = Automatisch erkennen
+text = Text
+Column header '%s' must be present in CSV file = Spaltenüberschrift '%s' muß in der CSV Datei vorhanden sein
+Fill text body = Haupttext importieren
+Please re-enter filename = Bitte Dateinamen erneut eingeben

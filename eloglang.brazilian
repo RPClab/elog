@@ -294,3 +294,7 @@ CSV ("," separated) =
 CSV (";" separated) = 
 Auto detect = 
 CSV import preview of %s = 
+text = 
+Column header '%s' must be present in CSV file = 
+Fill text body = 
+Please re-enter filename = 

@@ -292,3 +292,11 @@ CSV ("," separated) = CSV (";" gescheiden)
 CSV (";" separated) = CSV (";" gescheiden)
 Login name = Loginnaam
 Auto detect = Auto ontdek
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+text = 
+Column header '%s' must be present in CSV file = 
+Fill text body = 
+Please re-enter filename = 

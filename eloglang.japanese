@@ -292,3 +292,7 @@ CSV ("," separated) =
 CSV (";" separated) = 
 Auto detect = 
 From = 
+text = 
+Column header '%s' must be present in CSV file = 
+Fill text body = 
+Please re-enter filename = 
