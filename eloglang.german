@@ -285,9 +285,8 @@ Suppress shell execution = Kommando-Ausführung unterdrücken
 #
 # V2.4.0
 Maximum number of replies (%d) exceeded
+Update = Aktualisieren
 
 # V2.4.1
 by = von
 Change [global] = [global] ändern
-
-
