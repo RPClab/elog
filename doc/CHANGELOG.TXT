@@ -1,3 +1,10 @@
+Version 2.1.2, released September xx, 2002
+=========================================
+
+- Self registration now also works without guest menu commands
+- Reversed up/down arrow to indicate sort order
+- Added IP information to log file
+
 Version 2.1.1, released August 13th, 2002
 =========================================
 

@@ -309,8 +309,18 @@ If this option is not present, following default is used:
 <pre>Menu commands = New, Edit, Delete, Reply, Find, Last day, Last 10, Config, Help</pre>
 <p>
 
+<li><b><code>Copy to = &lt;logbook list&gt;</code></b>
+<li><b><code>Move to = &lt;logbook list&gt;</code></b>
+<br>
+The commands <code><b>Copy to</b></code> and <code><b>Move to</b></code> make it possible
+to copy or move a logbook entry from one logbook to another. By default, all logbooks except
+the current logbook are shown as a possible destination. With the configurations options
+<b><code>Copy to = &lt;logbook list&gt;</code></b> and <b><code>Move to = &lt;logbook list&gt;</code></b>
+it is possible to specify a list of destination logbooks, separated by commata. This can
+make sense if only certain logbooks make sense as destinations.<p>
+
 <li><b><code>Find Menu commands = &lt;list&gt;</code></b>
-</br>
+<br>
 This option specifies the menu commands displayed on top of the listing page
 resulting from a "<I>find</I>" command. Although all commands from a above are possible,
 only the commands <code><b>New, Find, Back, Last day, Last 10, Last x, Config, Change
@@ -404,6 +414,12 @@ a comma, encose it in quotations marks like<p>
 <pre>
 Options town = San Francisco, "Paris, Texas", "Paris, France"
 </pre>
+<p>
+
+<LI><b><code>ROptions &lt;attribute&gt; = &lt;list&gt;</code></b>
+<br>
+Same as <code><b>Options</b></code> above, but using radio buttons instead
+of a drop-down box.
 <p>
 
 <LI><b><code>MOptions &lt;attribute&gt; = &lt;list&gt;</code></b>
@@ -829,6 +845,13 @@ only for new messages. The default is <b>0</b>.
 </br>
 If this flag is <b>1</b>, the "<I>Back</I>" button takes you back to the logbook
 selection page instead to the last entry of the current logbook.
+The default is <b>0</b>.
+<p>
+
+<li><b><code>Logout to main = 0|1</code></b>
+</br>
+If this flag is <b>1</b>, the "<I>Logout</I>" operation takes you back to the logbook
+selection page instead to the login page.
 The default is <b>0</b>.
 <p>
 
