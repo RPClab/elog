@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.168  2003/12/31 19:47:06  midas
+  Implemented conditional attributes
+
   Revision 1.167  2003/12/15 09:36:23  midas
   Added 'date on reply = 2' option
 
@@ -1621,6 +1624,26 @@ int  fh;
     return getcfg("global", param, value);
 
   return 0;
+}
+
+/*------------------------------------------------------------------*/
+
+int getcfg_cond(char *group, char *condition, char *param, char *value)
+{
+char str[256];
+
+  if (condition == NULL || condition[0] == 0)
+    return getcfg(group, param, value);
+
+  sprintf(str, "{%s}%s", condition, param);
+  if (getcfg(group, str, value))
+    return 1;
+
+  sprintf(str, "{%s} %s", condition, param);
+  if (getcfg(group, str, value))
+    return 1;
+
+  return getcfg(group, param, value);
 }
 
 /*------------------------------------------------------------------*/
@@ -4187,14 +4210,14 @@ char *p;
 
 /*------------------------------------------------------------------*/
 
-int scan_attributes(char *logbook)
+int scan_attributes(char *logbook, char *condition)
 /* scan configuration file for attributes and fill attr_list, attr_options
    and attr_flags arrays */
 {
 char list[10000], str[NAME_LENGTH], tmp_list[MAX_N_ATTR][NAME_LENGTH];
 int  i, j, n, m;
 
-  if (getcfg(logbook, "Attributes", list))
+  if (getcfg_cond(logbook, condition, "Attributes", list))
     {
     /* reset attribute flags */
     memset(attr_flags, 0, sizeof(attr_flags));
@@ -4208,25 +4231,25 @@ int  i, j, n, m;
     for (i=0 ; i<n ; i++)
       {
       sprintf(str, "Options %s", attr_list[i]);
-      if (getcfg(logbook, str, list))
+      if (getcfg_cond(logbook, condition, str, list))
         strbreak(list, attr_options[i], MAX_N_LIST);
 
       sprintf(str, "MOptions %s", attr_list[i]);
-      if (getcfg(logbook, str, list))
+      if (getcfg_cond(logbook, condition, str, list))
         {
         strbreak(list, attr_options[i], MAX_N_LIST);
         attr_flags[i] |= AF_MULTI;
         }
 
       sprintf(str, "ROptions %s", attr_list[i]);
-      if (getcfg(logbook, str, list))
+      if (getcfg_cond(logbook, condition, str, list))
         {
         strbreak(list, attr_options[i], MAX_N_LIST);
         attr_flags[i] |= AF_RADIO;
         }
 
       sprintf(str, "IOptions %s", attr_list[i]);
-      if (getcfg(logbook, str, list))
+      if (getcfg_cond(logbook, condition, str, list))
         {
         strbreak(list, attr_options[i], MAX_N_LIST);
         attr_flags[i] |= AF_ICON;
@@ -4234,7 +4257,7 @@ int  i, j, n, m;
       }
 
     /* check if attribute required */
-    getcfg(logbook, "Required Attributes", list);
+    getcfg_cond(logbook, condition, "Required Attributes", list);
     m = strbreak(list, tmp_list, MAX_N_ATTR);
     for (i=0 ; i<m ; i++)
       {
@@ -4244,7 +4267,7 @@ int  i, j, n, m;
       }
 
     /* check if locked attribute */
-    getcfg(logbook, "Locked Attributes", list);
+    getcfg_cond(logbook, condition, "Locked Attributes", list);
     m = strbreak(list, tmp_list, MAX_N_ATTR);
     for (i=0 ; i<m ; i++)
       {
@@ -4254,7 +4277,7 @@ int  i, j, n, m;
       }
 
     /* check if fixed attribute for Edit */
-    getcfg(logbook, "Fixed Attributes Edit", list);
+    getcfg_cond(logbook, condition, "Fixed Attributes Edit", list);
     m = strbreak(list, tmp_list, MAX_N_ATTR);
     for (i=0 ; i<m ; i++)
       {
@@ -4264,7 +4287,7 @@ int  i, j, n, m;
       }
 
     /* check if fixed attribute for Reply */
-    getcfg(logbook, "Fixed Attributes Reply", list);
+    getcfg_cond(logbook, condition, "Fixed Attributes Reply", list);
     m = strbreak(list, tmp_list, MAX_N_ATTR);
     for (i=0 ; i<m ; i++)
       {
@@ -5196,7 +5219,21 @@ int i;
 
 /*------------------------------------------------------------------*/
 
-void show_edit_form(LOGBOOK *lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload)
+BOOL is_cond_attr(index)
+{
+int i;
+
+  for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
+    if (strchr(attr_options[index][i], '{') &&
+        strchr(attr_options[index][i], '}'))
+      return TRUE;
+
+  return FALSE;
+}
+
+/*------------------------------------------------------------------*/
+
+void show_edit_form(LOGBOOK *lbs, int message_id, BOOL breply, BOOL bedit, BOOL breedit)
 {
 int    i, j, n, index, size, width, height, fh, length, first, input_size, input_maxlen,
        format_flags;
@@ -5205,7 +5242,8 @@ char   list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256];
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
        orig_tag[80], reply_tag[MAX_REPLY_TO*10], att[MAX_ATTACHMENTS][256], encoding[80],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH],
-       owner[256], locked_by[256], class_value[80], class_name[80];
+       owner[256], locked_by[256], class_value[80], class_name[80],
+       condition[256];
 time_t now;
 char   fl[8][NAME_LENGTH];
 struct tm *ts;
@@ -5218,7 +5256,7 @@ struct tm *ts;
 
   text[0] = 0;
 
-  if (bupload)
+  if (breedit)
     {
     /* get date from parameter */
     if (*getparam("entry_date"))
@@ -5309,6 +5347,26 @@ struct tm *ts;
       }
     }
 
+  /* evaluate conditional attributes */
+  condition[0] = 0;
+  for (i=0 ; i<lbs->n_attr ; i++)
+    {
+    if (strchr(attrib[i], '{') && strchr(attrib[i], '}'))
+      {
+      strlcpy(str, strchr(attrib[i], '{')+1, sizeof(str));
+      if (*strchr(str, '}'))
+        *strchr(str, '}') = 0;
+
+      if (condition[0] == 0)
+        strlcpy(condition, str, sizeof(condition));
+      else
+        {
+        strlcat(condition, ",", sizeof(condition));
+        strlcat(condition, str, sizeof(condition));
+        }
+      }
+    }
+
   /* check for maximum number of replies */
   if (breply)
     {
@@ -5329,7 +5387,7 @@ struct tm *ts;
     }
 
   /* check for author */
-  if (bedit && getcfg(lbs->name, "Restrict edit", str) && atoi(str) == 1)
+  if (bedit && getcfg_cond(lbs->name, condition, "Restrict edit", str) && atoi(str) == 1)
     {
     if (!is_author(lbs, attrib, owner))
       {
@@ -5340,7 +5398,7 @@ struct tm *ts;
     }
 
   /* check for editing interval */
-  if (bedit && getcfg(lbs->name, "Restrict edit time", str))
+  if (bedit && getcfg_cond(lbs->name, condition, "Restrict edit time", str))
     {
     for (i = 0 ; i < *lbs->n_el_index ; i++)
       if (lbs->el_index[i].message_id == message_id)
@@ -5357,7 +5415,7 @@ struct tm *ts;
   /* remove attributes for replies */
   if (breply)
     {
-    getcfg(lbs->name, "Remove on reply", str);
+    getcfg_cond(lbs->name, condition, "Remove on reply", str);
     n = strbreak(str, list, MAX_N_ATTR);
     for (i=0 ; i<n ; i++)
       for (j=0 ; j<lbs->n_attr ; j++)
@@ -5373,7 +5431,7 @@ struct tm *ts;
     for (index = 0 ; index < lbs->n_attr ; index++)
       {
       sprintf(str, "Subst on reply %s", attr_list[index]);
-      if (getcfg(lbs->name, str, preset))
+      if (getcfg_cond(lbs->name, condition, str, preset))
         {
         /* check if already second reply */
         if (orig_tag[0] == 0)
@@ -5387,12 +5445,12 @@ struct tm *ts;
     }
 
   /* subst attributes for edits */
-  if (message_id && bedit && !bupload)
+  if (message_id && bedit && !breedit)
     {
     for (index = 0 ; index < lbs->n_attr ; index++)
       {
       sprintf(str, "Subst on edit %s", attr_list[index]);
-      if (getcfg(lbs->name, str, preset))
+      if (getcfg_cond(lbs->name, condition, str, preset))
         {
         i = build_subst_list(lbs, slist, svalue, attrib);
         strsubst(preset, slist, svalue, i);
@@ -5407,7 +5465,7 @@ struct tm *ts;
   /* header */
   show_html_header(lbs, FALSE, "ELOG");
 
-  rsprintf("<body><form method=\"POST\" action=\".\" enctype=\"multipart/form-data\">\n");
+  rsprintf("<body><form name=form1 method=\"POST\" action=\".\" enctype=\"multipart/form-data\">\n");
 
   /*---- add password in case cookie expires during edit ----*/
 
@@ -5427,6 +5485,9 @@ struct tm *ts;
   /*---- menu buttons ----*/
 
   rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
+
+  /* default cmd */
+  rsprintf("<input type=hidden name=cmd value=\"%s\">\n", loc("Update"));
 
   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Submit"));
   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Back"));
@@ -5451,7 +5512,7 @@ struct tm *ts;
   time(&now);
   if (bedit)
     {
-    if (getcfg(lbs->name, "Date format", format))
+    if (getcfg_cond(lbs->name, condition, "Date format", format))
       {
       struct tm ts;
 
@@ -5477,7 +5538,7 @@ struct tm *ts;
     }
   else
     {
-    if (getcfg(lbs->name, "Date format", format))
+    if (getcfg_cond(lbs->name, condition, "Date format", format))
       strftime(str, sizeof(str), format, localtime(&now));
     else
       strcpy(str, ctime(&now));
@@ -5489,6 +5550,10 @@ struct tm *ts;
   rsprintf("<td class=\"attribvalue\">%s\n", str);
   rsprintf("<input type=hidden name=entry_date value=\"%s\"></td></tr>\n", date);
 
+  /* rescan attributes if condition set */
+  if (condition[0])
+    scan_attributes(lbs->name, condition);
+
   /* display attributes */
   for (index = 0 ; index < lbs->n_attr ; index++)
     {
@@ -5498,7 +5563,7 @@ struct tm *ts;
     input_maxlen = NAME_LENGTH;
 
     sprintf(str, "Format %s", attr_list[index]);
-    if (getcfg(lbs->name, str, format))
+    if (getcfg_cond(lbs->name, condition, str, format))
       {
       n = strbreak(format, fl, 8);
       if (n > 0)
@@ -5517,7 +5582,7 @@ struct tm *ts;
 
     /* check for preset string */
     sprintf(str, "Preset %s", attr_list[index]);
-    if (getcfg(lbs->name, str, preset))
+    if (getcfg_cond(lbs->name, condition, str, preset))
       {
       if (!bedit)
         {
@@ -5544,7 +5609,7 @@ struct tm *ts;
 
     /* show optional comment */
     sprintf(str, "Comment %s", attr_list[index]);
-    if (getcfg(lbs->name, str, comment))
+    if (getcfg_cond(lbs->name, condition, str, comment))
       rsprintf("<br><span class=\"selcomment\"><b>%s</b></span>\n", comment);
 
     rsprintf("</td>\n");
@@ -5668,7 +5733,7 @@ struct tm *ts;
                 rsprintf("<nobr><input type=radio name=\"%s\" value=\"%s\">", attr_list[index], attr_options[index][i]);
 
               sprintf(str, "Icon comment %s", attr_options[index][i]);
-              getcfg(lbs->name, str, comment);
+              getcfg_cond(lbs->name, condition, str, comment);
 
               if (comment[0])
                 rsprintf("<img src=\"icons/%s\" alt=\"%s\"></nobr>\n", attr_options[index][i], comment);
@@ -5684,20 +5749,44 @@ struct tm *ts;
           else
             {
             /* display drop-down box */
-            rsprintf("<td class=\"attribvalue\"><select name=\"%s\">\n", attr_list[index]);
+            rsprintf("<td class=\"attribvalue\"><select name=\"%s\"", attr_list[index]);
+            
+            if (is_cond_attr(index))
+              rsprintf(" onChange=\"document.form1.submit()\">\n");
+            else
+              rsprintf(">\n");
 
             /* display emtpy option */
             rsprintf("<option value=\"\">- %s -\n", loc("please select"));
 
             for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
               {
-              if (equal_ustring(attr_options[index][i], attrib[index]))
-                rsprintf("<option selected value=\"%s\">%s\n", attr_options[index][i], attr_options[index][i]);
+              strlcpy(str, attr_options[index][i], sizeof(str));
+              if (strchr(str, '{'))
+                *strchr(str, '{') = 0;
+
+              if (equal_ustring(attr_options[index][i], attrib[index]) ||
+                  equal_ustring(str, attrib[index]))
+                rsprintf("<option selected value=\"%s\">%s\n", attr_options[index][i], str);
               else
-                rsprintf("<option value=\"%s\">%s\n", attr_options[index][i], attr_options[index][i]);
+                rsprintf("<option value=\"%s\">%s\n", attr_options[index][i], str);
               }
 
-            rsprintf("</select></td></tr>\n");
+            rsprintf("</select>\n");
+            if (is_cond_attr(index))
+              {
+              /* show "update" button only of javascript is not enabled */
+              rsprintf("<script language=\"javascript\" type=\"text/javascript\">\n");
+              rsprintf("if (!navigator.javaEnabled()) {\n");
+              rsprintf("  document.write(\"<input type=submit value=\\\"%s\\\"\")\n", loc("Update"));
+              rsprintf("} \n");
+              rsprintf("</script>\n");
+
+              rsprintf("<noscript>\n");
+              rsprintf("<input type=submit value=\\\"%s\\\">\n", loc("Update"));
+              rsprintf("</noscript>\n");
+              }
+            rsprintf("</td></tr>\n");
             }
           }
         }
@@ -5707,7 +5796,7 @@ struct tm *ts;
   /* set textarea width */
   width = 76;
 
-  if (getcfg(lbs->name, "Message width", str))
+  if (getcfg_cond(lbs->name, condition, "Message width", str))
     width = atoi(str);
 
   /* increased width according to longest line */
@@ -5739,7 +5828,7 @@ struct tm *ts;
 
   /* set textarea height */
   height = 20;
-  if (getcfg(lbs->name, "Message height", str))
+  if (getcfg_cond(lbs->name, condition, "Message height", str))
     height = atoi(str);
 
   rsprintf("<tr><td colspan=2 class=\"attribvalue\">\n");
@@ -5748,20 +5837,20 @@ struct tm *ts;
     /* hidden text for original message */
     rsprintf("<input type=hidden name=reply_to value=\"%d\">\n", message_id);
 
-  if (bupload)
+  if (breedit)
     /* hidden text for original message */
     rsprintf("<input type=hidden name=reply_to value=\"%s\">\n", getparam("reply_to"));
 
   if (bedit && message_id)
     rsprintf("<input type=hidden name=edit_id value=\"%d\">\n", message_id);
 
-  if (getcfg(lbs->name, "Message comment", comment) && !bedit && !message_id)
+  if (getcfg_cond(lbs->name, condition, "Message comment", comment) && !bedit && !message_id)
     {
     rsputs(comment);
     rsputs("<br>\n");
     }
 
-  if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1)
+  if (!getcfg_cond(lbs->name, condition, "Show text", str) || atoi(str) == 1)
     {
     rsprintf("<textarea rows=%d cols=%d wrap=hard name=Text>", height, width);
 
@@ -5769,17 +5858,18 @@ struct tm *ts;
       {
       if (bedit)
         {
-        rsputs(text);
+        if (!breedit && !getcfg_cond(lbs->name, condition, "Preset text", str))
+          rsputs(text);
         }
       else
         {
-        if (!getcfg(lbs->name, "Quote on reply", str) || atoi(str) > 0)
+        if (!getcfg_cond(lbs->name, condition, "Quote on reply", str) || atoi(str) > 0)
           {
-          if (getcfg(lbs->name, "Date on reply", str) && atoi(str) == 1)
+          if (getcfg_cond(lbs->name, condition, "Date on reply", str) && atoi(str) == 1)
             {
             time(&now);
             ts = localtime(&now);
-            if (getcfg(lbs->name, "Date format", format))
+            if (getcfg_cond(lbs->name, condition, "Date format", format))
               strftime(str, sizeof(str), format, ts);
             else
               {
@@ -5791,7 +5881,7 @@ struct tm *ts;
 
           p = text;
 
-          if (!getcfg(lbs->name, "Reply string", reply_string))
+          if (!getcfg_cond(lbs->name, condition, "Reply string", reply_string))
             strcpy(reply_string, "> ");
 
           do
@@ -5833,11 +5923,11 @@ struct tm *ts;
 
             } while (TRUE);
 
-          if (getcfg(lbs->name, "Date on reply", str) && atoi(str) == 2)
+          if (getcfg_cond(lbs->name, condition, "Date on reply", str) && atoi(str) == 2)
             {
             time(&now);
             ts = localtime(&now);
-            if (getcfg(lbs->name, "Date format", format))
+            if (getcfg_cond(lbs->name, condition, "Date format", format))
               strftime(str, sizeof(str), format, ts);
             else
               {
@@ -5850,7 +5940,7 @@ struct tm *ts;
         }
       }
 
-    if (!message_id && getcfg(lbs->name, "Preset text", str))
+    if ((!message_id || breedit) && getcfg_cond(lbs->name, condition, "Preset text", str))
       {
       /* check if file starts with an absolute directory */
       if (str[0] == DIR_SEPARATOR || str[1] == ':')
@@ -5883,7 +5973,7 @@ struct tm *ts;
     /* HTML check box */
     if (message_id)
       {
-      if (getcfg(lbs->name, "HTML default", str))
+      if (getcfg_cond(lbs->name, condition, "HTML default", str))
         {
         if (atoi(str) < 2)
           {
@@ -5907,7 +5997,7 @@ struct tm *ts;
       }
     else
       {
-      if (getcfg(lbs->name, "HTML default", str))
+      if (getcfg_cond(lbs->name, condition, "HTML default", str))
         {
         if (atoi(str) == 0)
           {
@@ -5928,9 +6018,9 @@ struct tm *ts;
     }
 
   /* Suppress email check box */
-  if ( !(bedit && getcfg(lbs->name, "Suppress Email on edit", str) && atoi(str) == 1) )
+  if ( !(bedit && getcfg_cond(lbs->name, condition, "Suppress Email on edit", str) && atoi(str) == 1) )
     {
-    if (getcfg(lbs->name, "Suppress default", str))
+    if (getcfg_cond(lbs->name, condition, "Suppress default", str))
       {
       if (atoi(str) == 0)
         {
@@ -5951,9 +6041,9 @@ struct tm *ts;
     }
 
   /* Suppress execute shell check box */
-  if ( !bedit && getcfg(lbs->name, "Execute new", str) )
+  if ( !bedit && getcfg_cond(lbs->name, condition, "Execute new", str) )
     {
-    if (getcfg(lbs->name, "Suppress execute default", str))
+    if (getcfg_cond(lbs->name, condition, "Suppress execute default", str))
       {
       if (atoi(str) == 0)
         {
@@ -5973,9 +6063,9 @@ struct tm *ts;
       }
     }
 
-  if ( bedit && getcfg(lbs->name, "Execute edit", str) )
+  if ( bedit && getcfg_cond(lbs->name, condition, "Execute edit", str) )
     {
-    if (getcfg(lbs->name, "Suppress execute default", str))
+    if (getcfg_cond(lbs->name, condition, "Suppress execute default", str))
       {
       if (atoi(str) == 0)
         {
@@ -5998,7 +6088,7 @@ struct tm *ts;
   /* Resubmit check box */
   if (bedit)
     {
-    if (getcfg(lbs->name, "Resubmit default", str))
+    if (getcfg_cond(lbs->name, condition, "Resubmit default", str))
       {
       if (atoi(str) == 0)
         {
@@ -6020,7 +6110,7 @@ struct tm *ts;
 
   rsprintf("</tr>\n");
 
-  if (!getcfg(lbs->name, "Enable attachments", str) || atoi(str) > 0)
+  if (!getcfg_cond(lbs->name, condition, "Enable attachments", str) || atoi(str) > 0)
     {
     i = 0;
     if (bedit)
@@ -6042,7 +6132,7 @@ struct tm *ts;
       }
 
     /* optional attachment comment */
-    if (getcfg(lbs->name, "Attachment comment", comment) && !bedit && !message_id)
+    if (getcfg_cond(lbs->name, condition, "Attachment comment", comment) && !bedit && !message_id)
       {
       rsprintf("<tr><td colspan=2 class=\"attribvalue\">\n");
       rsputs(comment);
@@ -6075,6 +6165,11 @@ struct tm *ts;
 
   rsprintf("</table><!-- show_standard_title -->\n");
   rsprintf("</form></body></html>\r\n");
+
+  /* rescan unconditional attributes */
+  if (condition[0])
+    scan_attributes(lbs->name, NULL);
+
 }
 
 /*------------------------------------------------------------------*/
@@ -6850,8 +6945,17 @@ int  i;
       }
 
     rsprintf("</select>\n");
-    rsprintf("<input type=submit value=\"%s\"></td></tr>\n", loc("Go"));
 
+    /* show "update" button only of javascript is not enabled */
+    rsprintf("<script language=\"javascript\" type=\"text/javascript\">\n");
+    rsprintf("if (!navigator.javaEnabled()) {\n");
+    rsprintf("  document.write(\"<input type=submit value=\\\"%s\\\"\")\n", loc("Update"));
+    rsprintf("} \n");
+    rsprintf("</script>\n");
+
+    rsprintf("<noscript>\n");
+    rsprintf("<input type=submit value=\\\"%s\\\">\n", loc("Update"));
+    rsprintf("</noscript>\n");
     }
 
   /*---- entry form ----*/
@@ -8591,7 +8695,7 @@ int  i, n;
       strlcat(menu_str, "Config, ", sizeof(menu_str));
     }
 
-  strcpy(other_str, "Upload, Submit, Back, Search, Save, Download, Cancel, First, Last, Previous, Next, Requested, Forgot, ");
+  strcpy(other_str, "Update, Upload, Submit, Back, Search, Save, Download, Cancel, First, Last, Previous, Next, Requested, Forgot, ");
 
   /* admin commands */
   if (getcfg(lbs->name, "Admin user", str) &&
@@ -10502,6 +10606,10 @@ int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_or
     else
       {
       strlcpy(attrib[i], getparam(attr_list[i]), NAME_LENGTH);
+
+      /* strip trailing "{...}" */
+      if (strchr(attrib[i], '{') && strchr(attrib[i], '}'))
+        *strchr(attrib[i], '{') = 0;
       }
 
     if (!*getparam("edit_id"))
@@ -12490,7 +12598,7 @@ FILE    *f;
 
   lb_index = i;
   lbs = lb_list+i;
-  lbs->n_attr = scan_attributes(lbs->name);
+  lbs->n_attr = scan_attributes(lbs->name, NULL);
 
   if (*getparam("wpassword"))
     {
@@ -12905,6 +13013,12 @@ FILE    *f;
   if (equal_ustring(command, loc("Reply")))
     {
     show_edit_form(lbs, message_id, TRUE, FALSE, FALSE);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Update")))
+    {
+    show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE);
     return;
     }
 
