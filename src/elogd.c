@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.134  2003/07/15 12:15:21  midas
+  Added extended logging facilities
+
   Revision 1.133  2003/07/15 11:19:28  midas
   Download now works with elog utility
 
@@ -1059,6 +1062,7 @@ char rem_host[256];
 INT  _sock;
 BOOL verbose, use_keepalive, enable_execute = FALSE;
 INT  _current_message_id;
+INT  _logging_level;
 
 char *mname[] = {
   "January",
@@ -1195,6 +1199,8 @@ BOOL enum_user_line(LOGBOOK *lbs, int n, char *user);
 int  get_user_line(char *logbook_name, char *user, char *password, char *full_name, char *email, char *email_notify);
 int strbreak(char *str, char list[][NAME_LENGTH], int size);
 int execute_shell(LOGBOOK *lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], char *sh_cmd);
+char *getparam(char *param);
+void logf(LOGBOOK *lbs, const char *format, ...);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -3638,6 +3644,9 @@ char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
     return EL_FILE_ERROR;
     }
 
+  if (_logging_level > 1)
+    logf(lbs, "DELETE message #%d", message_id);
+
   message[i] = 0;
 
   if (strncmp(message, "$@MID@$:", 8) != 0)
@@ -3934,16 +3943,16 @@ char   att_file[MAX_ATTACHMENTS][256];
 
 /*------------------------------------------------------------------*/
 
-void logf(const char *format, ...)
+void logf(LOGBOOK *lbs, const char *format, ...)
 {
 char    fname[2000];
 va_list argptr;
-char    str[10000];
+char    str[10000], lb[256];
 FILE*   f;
 time_t  now;
 char    buf[256];
 
-  if (!getcfg("global", "logfile", fname))
+  if (!getcfg(lbs->name, "logfile", fname))
     return;
 
   va_start(argptr, format);
@@ -3956,7 +3965,16 @@ char    buf[256];
 
   now=time(0);
   strftime(buf, sizeof(buf), "%d-%b-%Y %H:%M:%S", localtime(&now));
-  fprintf(f,"%s [%s]: %s", buf, rem_host, str);
+
+  if (lbs == NULL)
+    lb[0] = 0;
+  else
+    strlcpy(lb, lbs->name, sizeof(lb));
+
+  if (*getparam("unm"))
+    fprintf(f,"%s [%sd@%s] %s: %s", buf, getparam("unm"), rem_host, lb, str);
+  else
+    fprintf(f,"%s [%s] %s: %s", buf, rem_host, lb, str);
 
   if (str[strlen(str)-1] != '\n')
     fprintf(f,"\n");
@@ -10132,6 +10150,8 @@ char   shell_cmd[1000];
 
   strsubst(shell_cmd, slist, svalue, i);
 
+  logf(lbs, "SHELL \"%s\"", shell_cmd);
+
   system(shell_cmd);
 
   return SUCCESS;
@@ -10291,6 +10311,9 @@ int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_or
       strcpy(in_reply_to, getparam("reply_to"));
     }
 
+  if (_logging_level > 1 && message_id)
+    logf(lbs, "EDIT message #%d", message_id);
+
   message_id = el_submit(lbs, message_id, date, attr_list, attrib, lbs->n_attr, getparam("text"),
                      in_reply_to, reply_to, *getparam("html") ? "HTML" : "plain",
                      att_file, TRUE, NULL);
@@ -10304,6 +10327,9 @@ int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_or
     return;
     }
 
+  if (_logging_level > 1 && !*getparam("edit_id"))
+    logf(lbs, "NEW message #%d", message_id);
+  
   /* resubmit thread if requested */
   if (resubmit_orig)
     message_id = el_move_message_thread(lbs, resubmit_orig);
@@ -10869,6 +10895,11 @@ BOOL   first;
 
     if (status != EL_SUCCESS)
       message_error = status;
+    else
+      {
+      if (_logging_level > 2)
+        logf(lbs, "READ message #%d", message_id);
+      }
     }
   else
     message_error = EL_EMPTY;
@@ -11983,6 +12014,11 @@ FILE    *f;
   group = getparam("group");
   index = atoi(getparam("index"));
 
+  if (getcfg(lbook, "Logging Level", str))
+    _logging_level = atoi(str);
+  else
+    _logging_level = 1;
+
   /* if experiment given, use it as logbook (for elog!) */
   if (experiment && experiment[0])
     {
@@ -12099,7 +12135,7 @@ FILE    *f;
           do_crypt(getparam("upassword"), enc_pwd);
 
           /* log logins */
-          logf("Login of user \"%s\" (attempt) for logbook selection page", getparam("uname"));
+          logf(NULL, "LOGIN user \"%s\" (attempt) for logbook selection page", getparam("uname"));
 
           if (isparam("redir"))
             strcpy(str, getparam("redir"));
@@ -12109,7 +12145,7 @@ FILE    *f;
           if (!check_user_password(NULL, getparam("uname"), enc_pwd, str))
             return;
 
-          logf("Login of user \"%s\" (successful)", getparam("uname"));
+          logf(NULL, "LOGIN user \"%s\" (success)", getparam("uname"));
 
           /* set cookies */
           set_login_cookies(NULL, getparam("uname"), enc_pwd);
@@ -12233,7 +12269,7 @@ FILE    *f;
     do_crypt(getparam("upassword"), enc_pwd);
 
     /* log logins */
-    logf("Login of user \"%s\" (attempt) for logbook \"%s\"", getparam("uname"), logbook);
+    logf(lbs, "LOGIN user \"%s\" (attempt)", getparam("uname"));
 
     if (isparam("redir"))
       strcpy(str, getparam("redir"));
@@ -12243,7 +12279,7 @@ FILE    *f;
     if (!check_user_password(lbs, getparam("uname"), enc_pwd, str))
       return;
 
-    logf("Login of user \"%s\" (successful)", getparam("uname"));
+    logf(lbs, "LOGIN user \"%s\" (success)", getparam("uname"));
 
     /* set cookies */
     set_login_cookies(lbs, getparam("uname"), enc_pwd);
@@ -12262,10 +12298,9 @@ FILE    *f;
       strlcpy(css, str, sizeof(css));
 
     /* check if guest access */
-    if (getcfg(lbs->name, "Guest menu commands", str) && *getparam("unm") == 0 &&
-        !isparam("wpwd") && !isparam("wusr"))
-      logf("Guest access");
-    else
+    if (!(getcfg(lbs->name, "Guest menu commands", str) && *getparam("unm") == 0 &&
+          !isparam("wpwd") && !isparam("wusr")))
+      {
       if (strcmp(path, css) != 0)
         {
         /* if no guest menu commands but self register, evaluate new user commands */
@@ -12275,10 +12310,10 @@ FILE    *f;
             return;
           }
 
-        logf("Connection of user \"%s\"",getparam("unm"));
         if (!check_user_password(lbs, getparam("unm"), getparam("upwd"), getparam("cmdline")))
           return;
         }
+      }
     }
 
   if (equal_ustring(command, loc("Login")))
@@ -12705,7 +12740,7 @@ FILE    *f;
     if (equal_ustring(getparam("config"), getparam("unm")))
       {
       /* log activity */
-      logf("Logout of user \"%s\" from logbook \"%s\"", getparam("unm"), lbs->name);
+      logf(lbs, "LOGOUT");
 
       /* set cookies */
       set_login_cookies(lbs, "", "");
@@ -12748,7 +12783,7 @@ FILE    *f;
   if (equal_ustring(command, loc("Logout")))
     {
     /* log activity */
-    logf("Logout of user \"%s\" from logbook \"%s\"", getparam("unm"), lbs->name);
+    logf(lbs, "LOGOUT");
 
     if (getcfg(lbs->name, "Logout to main", str) &&
         atoi(str) == 1)
