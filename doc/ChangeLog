@@ -1,39 +1,51 @@
+Version 2.5.3, released June 7th, 2004
+======================================
+
+- Implemented favicon (little icon displayed next to bookmarks in Mozilla browser)
+- Several problems and bugs with quick filters fixed
+- Implemented "protect selection page"
+- Implemented text body CSV import
+- Changed redirection to absolute path (as defined in HTTP standard)
+- Allow ',', '.' and '-' in numeric format
+- Added <hr> and <br> to be recognized as HTML in attributes
+- Fixed stack overflow under Windows on resubmit of entry
+- Added NT/XP service functionality
+
 Version 2.5.2, released March 26th, 2004
 ========================================
 
--  Improved synchronization speed
--  Implemented 'display <attribute>'
--  Implemented XML encoding
--  Implemented CSV import and XML export
--  Implemented 'guest list display'
--  Implemented 'extendable options' for MOptions
--  Conditional attributes get evaluated correctly during editing of existing entries
--  Fixed crashing elogd in threaded display
--  Implemented option 'guest display'
--  Implemented OR's and AND's of several conditions
--  Change POST action to './' for OS-X IE
--  Strip HTML from title bar and summary display
--  Fixed bug with MOptions and conditional attributes
--  Implemented 'ID display'
--  Fixed bug with supressed email notification box and conditional attributes
--  Substitutions now also work with 'preset text'
--  Added Prepend/Append on Edit/Reply
--  Substitution of $message id and $entry time now works on all possible places
--  Allocate heap memory in display_line
--  Fixed bug with date attribute email notification
--  Fixed bug with top text
--  Added 'edit' and 'delete' to 'list display'
--  Added CSV import page
--  Show attribute values as HTML if the contain <a> or <img> in listing
--  Fixed bug with 'start page = 0?cmd=Last
--  Fixed bug in el_decode, added <label> to buttons
--  Expand substitutions with 'preset' and conditional attributes
--  Automatic hot links terminated with a '.' get correctly displayed
--  Made 'subst <attrib> = $<attrib>' work correctly
--  Removed javaEnabled()
--  Improved synchronization algorithm. Conflicting entries are properly copied if one of them got deleted
--  Made 'main tab' work with top level groups
-
+- Improved synchronization speed
+- Implemented 'display <attribute>'
+- Implemented XML encoding
+- Implemented CSV import and XML export
+- Implemented 'guest list display'
+- Implemented 'extendable options' for MOptions
+- Conditional attributes get evaluated correctly during editing of existing entries
+- Fixed crashing elogd in threaded display
+- Implemented option 'guest display'
+- Implemented OR's and AND's of several conditions
+- Change POST action to './' for OS-X IE
+- Strip HTML from title bar and summary display
+- Fixed bug with MOptions and conditional attributes
+- Implemented 'ID display'
+- Fixed bug with supressed email notification box and conditional attributes
+- Substitutions now also work with 'preset text'
+- Added Prepend/Append on Edit/Reply
+- Substitution of $message id and $entry time now works on all possible places
+- Allocate heap memory in display_line
+- Fixed bug with date attribute email notification
+- Fixed bug with top text
+- Added 'edit' and 'delete' to 'list display'
+- Added CSV import page
+- Show attribute values as HTML if the contain <a> or <img> in listing
+- Fixed bug with 'start page = 0?cmd=Last
+- Fixed bug in el_decode, added <label> to buttons
+- Expand substitutions with 'preset' and conditional attributes
+- Automatic hot links terminated with a '.' get correctly displayed
+- Made 'subst <attrib> = $<attrib>' work correctly
+- Removed javaEnabled()
+- Improved synchronization algorithm. Conflicting entries are properly copied if one of them got deleted
+- Made 'main tab' work with top level groups
 
 Version 2.5.1, released February 17th, 2004
 ===========================================

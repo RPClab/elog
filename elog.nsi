@@ -4,6 +4,14 @@
 ;
 
 ; The name of the installer
+;--------------------------------
+;Include Modern UI
+
+!include "MUI.nsh"
+
+;--------------------------------
+;General
+
 Name "ELOG"
 
 ; The file to write
@@ -23,17 +31,31 @@ ComponentText "This will install the ELOG electronic logbook server on your comp
 ; The text to prompt the user to enter a directory
 DirText "Choose a directory to install in to:"
 
-; Pages
-Page components
-Page directory
-Page instfiles
+;--------------------------------
+;Pages
 
-UninstPage uninstConfirm
-UninstPage instfiles
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_LICENSE "COPYING"
+!insertmacro MUI_PAGE_COMPONENTS
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+
+;--------------------------------
+;Languages
+
+!insertmacro MUI_LANGUAGE "English"
+
+;--------------------------------
+;Installer Sections
+
+!define MUI_ABORTWARNING
 
 ;----------------------------------------------
 ; Main system
-Section "ELOG system (required)"
+Section "ELOG system (required)" SecSystem
 
   ; root directory
   SetOutPath $INSTDIR
@@ -70,6 +92,8 @@ Section "ELOG system (required)"
   themesNotExist:
     File themes\default\*.css
     File themes\default\*.gif
+    File themes\default\*.ico
+    File themes\default\*.png
     SetOutPath $INSTDIR\themes\default\icons
     File themes\default\icons\*.*
   themesNotOverwrite:
@@ -95,30 +119,19 @@ Section "ELOG system (required)"
 SectionEnd
 
 ; optional section
-Section "Multi-language support"
+Section "Multi-language support" SecLang
   SetOutPath $INSTDIR
-  File eloghelp_ge.html
-  File eloghelp_fr.html
-  File eloghelp_sp.html
-  File eloghelp_du.html
-  File eloghelp_br.html
-  File eloghelp_ja.html
-  File eloghelp_it.html
-  File eloghelp_en.html
-  File eloglang.german
-  File eloglang.french
-  File eloglang.spanish
-  File eloglang.dutch
-  File eloglang.brazilian
-  File eloglang.japanese
-  File eloglang.italian
-  File eloglang.danish
+  File eloghelp_*.html
+  File eloglang.*
 SectionEnd
 
 ; optional section
-Section "Start Menu Shortcuts"
+Section "Start Menu Shortcuts" SecStart
   CreateDirectory "$SMPROGRAMS\ELOG"
-  CreateShortCut "$SMPROGRAMS\ELOG\ELOG server.lnk" "$INSTDIR\elogd.exe" "" "$INSTDIR\elogd.exe" 0 
+  CreateDirectory "$SMPROGRAMS\ELOG\ELOG Server"
+  CreateShortCut "$SMPROGRAMS\ELOG\ELOG Server\Start ELOG server manually.lnk" "$INSTDIR\elogd.exe" "$INSTDIR\elogd.exe" "$INSTDIR\themes\default\favicon.ico"
+  CreateShortCut "$SMPROGRAMS\ELOG\ELOG Server\Register ELOG server service.lnk" "$INSTDIR\elogd.exe" "$INSTDIR\elogd.exe -install" "$INSTDIR\themes\default\favicon.ico"
+  CreateShortCut "$SMPROGRAMS\ELOG\ELOG Server\Unregister ELOG server service.lnk" "$INSTDIR\elogd.exe" "$INSTDIR\elogd.exe -remove" "$INSTDIR\themes\default\favicon.ico"
   Delete "$SMPROGRAMS\ELOG\Demo Logbook (start server first!).lnk"
   WriteINIStr "$SMPROGRAMS\ELOG\Demo Logbook (start server first!).url" \
               "InternetShortcut" "URL" "http://localhost:8080/demo/"
@@ -155,22 +168,8 @@ Section "Uninstall"
   Delete $INSTDIR\elconv.exe
   Delete $INSTDIR\elogd.cfg
 
-  Delete $INSTDIR\eloghelp_en.html
-  Delete $INSTDIR\eloghelp_fr.html
-  Delete $INSTDIR\eloghelp_ge.html
-  Delete $INSTDIR\eloghelp_sp.html
-  Delete $INSTDIR\eloghelp_du.html
-  Delete $INSTDIR\eloghelp_it.html
-  Delete $INSTDIR\eloghelp_ja.html
-  Delete $INSTDIR\eloghelp_br.html
-  Delete $INSTDIR\eloglang.french
-  Delete $INSTDIR\eloglang.german
-  Delete $INSTDIR\eloglang.spanish
-  Delete $INSTDIR\eloglang.dutch
-  Delete $INSTDIR\eloglang.brazilian
-  Delete $INSTDIR\eloglang.italian
-  Delete $INSTDIR\eloglang.japanese
-  Delete $INSTDIR\eloglang.danish
+  Delete $INSTDIR\eloghelp_*.html
+  Delete $INSTDIR\eloglang.*
 
   Delete $INSTDIR\doc\*
   RMDir $INSTDIR\doc
@@ -211,5 +210,14 @@ Section "Uninstall"
   Removed:
 
 SectionEnd
+
+;--------------------------------
+;Descriptions
+
+!insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+  !insertmacro MUI_DESCRIPTION_TEXT ${SecSystem} "Installs ELOG system, documentation, source code and an example logbook"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SecLang} "Installs support for different languages which can be switched during runtime"
+  !insertmacro MUI_DESCRIPTION_TEXT ${SecStart} "Installs start menu shortcuts for ELOG"
+!insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 ; eof

@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.336  2004/06/07 10:36:48  midas
+   Version 2.5.3
+
    Revision 1.335  2004/06/05 21:45:55  midas
    Added NT service functionality
 
@@ -114,405 +117,12 @@
    Revision 1.300  2004/03/17 21:11:04  midas
    Removed debug print
 
-   Revision 1.299  2004/03/17 20:57:07  midas
-   Fixed config sync problem due to CRLF-LF
-
-   Revision 1.298  2004/03/16 15:39:53  midas
-   Fixed endless loop in strip_html
-
-   Revision 1.297  2004/03/16 08:48:30  midas
-   Fixed format compiler warnings
-
-   Revision 1.296  2004/03/15 20:07:34  midas
-   Conditional attributes get evaluated correctly during editing of existing entries
-
-   Revision 1.295  2004/03/15 08:02:46  midas
-   Fixed crashing elogd in threaded display
-
-   Revision 1.294  2004/03/14 16:43:29  midas
-   Implemented option 'guest display'
-
-   Revision 1.293  2004/03/13 21:07:58  midas
-   Implemented and between conditions
-
-   Revision 1.292  2004/03/13 15:00:05  midas
-   Implemented OR's of several conditions
-
-   Revision 1.291  2004/03/11 11:42:09  midas
-   Change POST action to './' for OS-X IE
-
-   Revision 1.290  2004/03/10 15:54:03  midas
-   Strip HTML from title bar and summary display
-
-   Revision 1.289  2004/03/10 14:53:40  midas
-   Fixed bug with MOptions and conditional attributes
-
-   Revision 1.288  2004/03/09 09:56:04  midas
-   Implemented 'ID display'
-
-   Revision 1.287  2004/03/08 21:24:43  midas
-   Tried to reduce required stack size in threaded display
-
-   Revision 1.286  2004/03/08 20:49:18  midas
-   Fixed bug with supressed email notification box and conditional attributes
-
-   Revision 1.285  2004/03/08 13:00:12  midas
-   Filter entries with invalid date
-
-   Revision 1.284  2004/03/08 12:52:51  midas
-   Filter entries with invalid date
-
-   Revision 1.283  2004/03/08 09:41:23  midas
-   Substitutions now also work with 'preset test'
-
-   Revision 1.282  2004/03/08 08:59:06  midas
-   Evaluage 'pre/append on edit/reply' even for empty entries
-
-   Revision 1.281  2004/03/08 08:13:09  midas
-   Replaces __TIMESTAMP__ with __DATE__ and __TIME__
-
-   Revision 1.280  2004/03/06 11:41:58  midas
-   Made preset $date for date attributes working
-
-   Revision 1.279  2004/03/05 22:35:15  midas
-   Added Prepend/Append on Edit/Reply
-
-   Revision 1.278  2004/03/05 21:40:01  midas
-   Substitution of $message id and $entry time now works on all possible places
-
-   Revision 1.277  2004/03/05 20:39:09  midas
-   Allocate heap memory in display_line
-
-   Revision 1.276  2004/03/03 10:29:56  midas
-   Fixed bug with date attribute email notification
-
-   Revision 1.275  2004/03/01 15:56:47  midas
-   Fixed bug with top text
-
-   Revision 1.274  2004/03/01 07:32:29  midas
-   Added label for 'search across all logbooks'
-
-   Revision 1.273  2004/02/27 08:20:02  midas
-   Do not sort 'edit' and 'delete' in 'list display'
-
-   Revision 1.272  2004/02/27 08:10:40  midas
-   Added 'edit' and 'delete' to 'list display'
-
-   Revision 1.271  2004/02/26 21:06:32  midas
-   Added CSV import page
-
-   Revision 1.270  2004/02/26 13:41:17  midas
-   Changed strupr() to toupper()
-
-   Revision 1.269  2004/02/26 13:16:34  midas
-   Show attribute values as HTML if the contain <a> or <img> in listing
-
-   Revision 1.268  2004/02/26 13:09:14  midas
-   Show attribute values as HTML if the contain <a> or <img>
-
-   Revision 1.267  2004/02/26 13:00:27  midas
-   Fixed bug with 'start page = 0?cmd=Last
-
-   Revision 1.266  2004/02/26 12:41:42  midas
-   Fixed bug in el_decode, added <label> to buttons
-
-   Revision 1.265  2004/02/25 15:55:19  midas
-   Expand substitutions with 'preset' and conditional attributes
-
-   Revision 1.264  2004/02/25 14:39:26  midas
-   Automatic hot links terminated with a '.' get correctly displayed
-
-   Revision 1.263  2004/02/25 10:22:22  midas
-   Made 'subst <attrib> = $<attrib>' work correctly
-
-   Revision 1.262  2004/02/24 19:05:16  midas
-   Removed javaEnabled()
-
-   Revision 1.261  2004/02/19 20:27:17  midas
-   Improved synchronization algorithm. Conflicting entries are properly copied if one of them got deleted
-
-   Revision 1.260  2004/02/18 18:13:22  midas
-   Made 'main tab' work with top level groups
-
-   Revision 1.259  2004/02/18 14:18:10  midas
-   Fixed synchronization problems with other language
-
-   Revision 1.258  2004/02/17 20:09:36  midas
-   Added 'debug' facility for synchronize
-
-   Revision 1.257  2004/02/17 19:49:33  midas
-   Fixed problem with date attributes in conjunction with conditional attributes
-
-   Revision 1.256  2004/02/17 11:13:37  midas
-   Added charset for sending files
-
-   Revision 1.255  2004/02/17 10:21:46  midas
-   Translate 'entries'
-
-   Revision 1.254  2004/02/17 09:52:04  midas
-   Added 'x Months', needed for Japanese translation
-
-   Revision 1.253  2004/02/17 08:38:56  midas
-   Fixed bug with AF_NUMERIC
-
-   Revision 1.252  2004/02/17 08:14:43  midas
-   Redesigned date quick filter
-
-   Revision 1.251  2004/02/16 20:27:28  midas
-   Implemented numeric attributes
-
-   Revision 1.250  2004/02/16 16:28:46  midas
-   Changed indentation
-
-   Revision 1.249  2004/02/16 15:50:54  midas
-   Fixed other warnings
-
-   Revision 1.248  2004/02/16 15:05:56  midas
-   Changed indentation
-
-   Revision 1.247  2004/02/16 15:04:32  midas
-   Fixed compiler warnings
-
-   Revision 1.246  2004/02/16 14:27:03  midas
-   Place calendar in middle of screen
-
-   Revision 1.245  2004/02/15 14:06:09  midas
-   Implemented search functionality for AF_DATE
-
-   Revision 1.244  2004/02/13 23:27:20  midas
-   Restructured code
-
-   Revision 1.243  2004/02/13 20:45:09  midas
-   Fixed another problem with quotation marks
-
-   Revision 1.242  2004/02/13 20:32:34  midas
-   Attributes can now contain quotation marks
-
-   Revision 1.241  2004/02/09 21:46:24  midas
-   Implemented 'type <attribute> = date'
-
-   Revision 1.240  2004/02/06 14:34:11  midas
-   Sorting now also works for logbooks
-
-   Revision 1.239  2004/02/05 07:58:38  midas
-   Use send_tcp for large buffers
-
-   Revision 1.238  2004/02/05 07:47:27  midas
-   Fixed bug in search display for all logbooks
-
-   Revision 1.237  2004/02/04 15:25:14  midas
-   Fixed stack overflow in conjunction with 'use lock'
-
-   Revision 1.236  2004/02/04 11:55:21  midas
-   Display logbook in 'search all' even if 'list display' is present
-
-   Revision 1.235  2004/02/04 10:39:22  midas
-   Added 'js=xxx.js' support
-
-   Revision 1.234  2004/02/04 09:21:37  midas
-   Added 'use email heading edit'
-
-   Revision 1.233  2004/02/04 08:25:06  midas
-   Only [global] admin user sees 'synchronize all logbooks'
-
-   Revision 1.232  2004/02/03 12:31:57  midas
-   Changed typo
-
-   Revision 1.231  2004/02/03 12:30:40  midas
-   Changed typo
-
-   Revision 1.230  2004/02/03 12:26:55  midas
-   Change CRLF -> CR when saving elogd.cfg under Unix
-
-   Revision 1.229  2004/02/03 10:36:17  midas
-   Do not renumber and entries if they are already identical
-
-   Revision 1.228  2004/02/03 10:10:50  midas
-   Fixed missing logbook when language!=english
-
-   Revision 1.227  2004/02/03 09:44:42  midas
-   Fixed bug that 'save config' gave strange redirection
-
-   Revision 1.226  2004/02/03 08:49:15  midas
-   Fixed bug with conditional attributes
-
-   Revision 1.225  2004/02/03 08:38:23  midas
-   Validation now works with attributes containing blanks
-
-   Revision 1.224  2004/02/02 21:13:06  midas
-   Form validatin now also works for radio buttons
-
-   Revision 1.223  2004/02/02 16:28:04  midas
-   Added javascript for required attributes checking
-
-   Revision 1.222  2004/02/02 16:00:01  midas
-   Fixed bug that '<' was not correctly displayed in links
-
-   Revision 1.221  2004/01/30 09:50:51  midas
-   Added entry counter
-
-   Revision 1.220  2004/01/30 09:25:17  midas
-   Finished calendar in find form
-
-   Revision 1.219  2004/01/29 21:20:02  midas
-   Started working on calendar
-
-   Revision 1.218  2004/01/29 09:53:27  midas
-   Use \r\n in save_admin_config()
-
-   Revision 1.217  2004/01/29 09:41:28  midas
-   Implemented CSV output
-
-   Revision 1.216  2004/01/28 15:27:18  midas
-   Version 2.5.0
-
-   Revision 1.215  2004/01/27 16:18:10  midas
-   Use HTTP 1.0 in receive_message
-
-   Revision 1.214  2004/01/27 13:45:05  midas
-   Fixed bug in attachment retrieval
-
-   Revision 1.213  2004/01/27 13:27:43  midas
-   Remove email notification in submit_elog_mirror
-
-   Revision 1.212  2004/01/27 11:22:56  midas
-   Made cron work properly with 'wdays'
-
-   Revision 1.211  2004/01/26 16:21:49  midas
-   Revised logging for synchronizing
-
-   Revision 1.210  2004/01/26 14:52:26  midas
-   Added cron facility
-
-   Revision 1.209  2004/01/23 16:35:18  midas
-   Mirroring now works with top groups
-
-   Revision 1.208  2004/01/22 21:19:09  midas
-   Fixed mirror errors for replies
-
-   Revision 1.207  2004/01/22 16:40:00  midas
-   Keep attachment date/time on mirroring
-
-   Revision 1.206  2004/01/22 12:29:48  midas
-   Search 'all logbooks' only for current top group
-
-   Revision 1.205  2004/01/21 16:25:07  midas
-   Changed 'message' to 'entry' consistently
-
-   Revision 1.204  2004/01/20 21:05:39  midas
-   Synchronization almost works
-
-   Revision 1.203  2004/01/20 16:25:57  midas
-   Remove last CR in receive_message()
-
-   Revision 1.202  2004/01/20 15:50:06  midas
-   Changed error return from receive_message()
-
-   Revision 1.201  2004/01/19 21:34:14  midas
-   Implemented receive_message
-
-   Revision 1.200  2004/01/19 16:22:28  midas
-   Continued working on synchronization
-
-   Revision 1.199  2004/01/19 09:13:28  midas
-   Removed '{n}' in quick filter and find page list
-
-   Revision 1.198  2004/01/18 21:47:11  midas
-   Continued working on synchronizing
-
-   Revision 1.197  2004/01/17 15:37:06  midas
-   Display months on find page localized
-
-   Revision 1.196  2004/01/16 20:41:34  midas
-   Fixed language bug with 'change [global]'
-
-   Revision 1.195  2004/01/16 19:43:30  midas
-   Implemented setlocale() for strftime()
-
-   Revision 1.194  2004/01/15 12:15:47  midas
-   Fixed missing format_flags initialization
-
-   Revision 1.193  2004/01/15 11:22:52  midas
-   Fixed bug that boolean attributes were not accepted
-
-   Revision 1.192  2004/01/14 20:08:24  midas
-   Added 'expand all' facility
-
-   Revision 1.191  2004/01/14 10:16:44  midas
-   Added new translated strings
-
-   Revision 1.190  2004/01/14 10:14:05  midas
-   Changed layout when adding new options
-
-   Revision 1.189  2004/01/14 10:04:17  midas
-   Fixed bug of disappearing icons
-
-   Revision 1.188  2004/01/13 21:24:42  midas
-   Added 'extendable options'
-
-   Revision 1.187  2004/01/13 16:37:27  midas
-   Fixed bug with elog:/<n> referencing
-
-   Revision 1.186  2004/01/13 15:15:48  midas
-   Fixed disappearing text on edit
-
-   Revision 1.185  2004/01/13 15:02:17  midas
-   Sort user names in selection box
-
-   Revision 1.184  2004/01/13 11:40:40  midas
-   Fixed probelem with redirection
-
-   Revision 1.183  2004/01/13 10:09:05  midas
-   Fixed bug in get_logbook_hierarchy()
-
-   Revision 1.182  2004/01/13 09:37:01  midas
-   Admin users can edit [global <top>] section
-
-   Revision 1.181  2004/01/12 08:37:17  midas
-   Fixed bug that text disappeared upon upload
-
-   Revision 1.180  2004/01/09 22:56:00  midas
-   Implemented expansion in logbook selection page
-
-   Revision 1.179  2004/01/09 14:57:58  midas
-   Use '$entry date' instead of '$date' for 'Last submission'
-
-   Revision 1.178  2004/01/09 14:34:58  midas
-   Fixed bug in free_logbook_hierarchy()
-
-   Revision 1.177  2004/01/09 14:21:56  midas
-   Evaluate 'preset xxx' on re-edit
-
-   Revision 1.176  2004/01/09 14:09:41  midas
-   Added 'last submission' option
-
-   Revision 1.175  2004/01/07 15:04:03  midas
-   Check for duplicate logbooks
-
-   Revision 1.174  2004/01/07 14:28:58  midas
-   Added logging for SMTP communication
-
-   Revision 1.173  2004/01/07 14:05:14  midas
-   Fixed bug with permissions
-
-   Revision 1.172  2004/01/07 11:14:36  midas
-   Only section of current logbook can be edited in elogd.cfg
-
-   Revision 1.171  2004/01/06 13:21:34  midas
-   Changed indent style
-
-   Revision 1.170  2004/01/05 15:02:14  midas
-   Version 2.4.0
-
-   Revision 1.169  2004/01/05 15:01:22  midas
-   Display message comment on reedit
-
    <oder revision comments removed>
   
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.2"
+#define VERSION "2.5.3"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -18459,20 +18069,23 @@ int install_service(void)
    vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
    GetVersionEx(&vi);
    if (vi.dwPlatformId != VER_PLATFORM_WIN32_NT) {
-      printf("Can install service only under Windows NT/2k/XP\n");
+      printf("Can install service only under Windows NT/2k/XP.\n");
       return -1;
    }
 
    if (GetModuleFileName(NULL, path, sizeof(path)) == 0) {
+      printf("Cannot retrieve module file name.\n");
       return -1;
    }
-     
+
    sprintf(cmd, "\"%s\" -D", path);
 
    /* Open the default, local Service Control Manager database */
    hsrvmanager = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
-   if (hsrvmanager == NULL)
+   if (hsrvmanager == NULL) {
+      printf("Cannot connect to Service Control Manager.\n");
       return -1;
+   }
 
    /* Create an entry for the elogd service */
    hservice = CreateService(hsrvmanager,        // SCManager database
@@ -18492,15 +18105,19 @@ int install_service(void)
 
    if (hservice == NULL) {
       if (GetLastError() == ERROR_SERVICE_EXISTS)
-         printf("The elogd service is already registered");
+         printf("The elogd service is already registered.\n");
       else
-         printf("The elogd service could not be registered");
+         printf("The elogd service could not be registered.\n");
    } else {
+
+      printf("The elogd service has been registered successfully.\n");
 
       /* Try to start the elogd service */
       if (!StartService(hservice, 0, NULL))
-         printf("The elogd service could not be started");
- 
+         printf("The elogd service could not be started.");
+      else
+         printf("The elogd service has been started successfully.\n");
+
       CloseServiceHandle(hservice);
    }
 
@@ -18516,12 +18133,14 @@ int remove_service(void)
 
    /* Open the SCM */
    hsrvmanager = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
-   if (hsrvmanager == NULL)
+   if (hsrvmanager == NULL) {
+      printf("Cannot connect to Service Control Manager.\n");
       return -1;
+   }
 
    hservice = OpenService(hsrvmanager, ELOGDSERVICENAME, SERVICE_ALL_ACCESS);
    if (hservice == NULL) {
-      printf("The elogd service could not be found");
+      printf("The elogd service could not be found.\n");
       return -1;
    }
 
@@ -18529,23 +18148,25 @@ int remove_service(void)
    if (ControlService(hservice, SERVICE_CONTROL_STOP, &status)) {
       while (QueryServiceStatus(hservice, &status)) {
          if (status.dwCurrentState == SERVICE_STOP_PENDING)
-            Sleep(1000);
+            Sleep(100);
          else
             break;
       }
 
       if (status.dwCurrentState != SERVICE_STOPPED) {
-         printf("The elogd service could not be stopped");
-      }
+         printf("The elogd service could not be stopped.\n");
+      } else
+         printf("elogd service stopped successfully.\n");
    }
 
    /* Now remove the service from the SCM */
    if (!DeleteService(hservice)) {
       if (GetLastError() == ERROR_SERVICE_MARKED_FOR_DELETE)
-         printf("The elogd service is already marked to be unregistered");
+         printf("The elogd service is already marked to be unregistered.\n");
       else
-         printf("The elogd service could not be unregistered");
-   }
+         printf("The elogd service could not be unregistered.\n");
+   } else
+      printf("The elogd service hass been unregistered successfully.\n");
 
    CloseServiceHandle(hservice);
    CloseServiceHandle(hsrvmanager);
@@ -18554,84 +18175,84 @@ int remove_service(void)
 
 void WINAPI ServiceControlHandler(DWORD controlCode)
 {
-	switch (controlCode)
-	{
-		case SERVICE_CONTROL_INTERROGATE:
-			break;
+   switch (controlCode) {
+   case SERVICE_CONTROL_INTERROGATE:
+      break;
 
-		case SERVICE_CONTROL_SHUTDOWN:
-		case SERVICE_CONTROL_STOP:
-			serviceStatus.dwCurrentState = SERVICE_STOP_PENDING;
-			SetServiceStatus( serviceStatusHandle, &serviceStatus );
+   case SERVICE_CONTROL_SHUTDOWN:
+   case SERVICE_CONTROL_STOP:
+      serviceStatus.dwCurrentState = SERVICE_STOP_PENDING;
+      SetServiceStatus(serviceStatusHandle, &serviceStatus);
 
-			_abort = TRUE;
+      _abort = TRUE;
 
-			return;
+      return;
 
-		case SERVICE_CONTROL_PAUSE:
-			break;
+   case SERVICE_CONTROL_PAUSE:
+      break;
 
-		case SERVICE_CONTROL_CONTINUE:
-			break;
+   case SERVICE_CONTROL_CONTINUE:
+      break;
 
-		default:
-			if (controlCode >= 128 && controlCode <= 255)
-				// user defined control code
-				break;
-			else
-				// unrecognised control code
-				break;
-	}
+   default:
+      if (controlCode >= 128 && controlCode <= 255)
+         // user defined control code
+         break;
+      else
+         // unrecognised control code
+         break;
+   }
 
-	SetServiceStatus(serviceStatusHandle, &serviceStatus);
+   SetServiceStatus(serviceStatusHandle, &serviceStatus);
 }
 
-void WINAPI ServiceMain(DWORD argc, LPSTR *argv)
+void WINAPI ServiceMain(DWORD argc, LPSTR * argv)
 {
-	// initialise service status
-	serviceStatus.dwServiceType = SERVICE_WIN32;
-	serviceStatus.dwCurrentState = SERVICE_STOPPED;
-	serviceStatus.dwControlsAccepted = 0;
-	serviceStatus.dwWin32ExitCode = NO_ERROR;
-	serviceStatus.dwServiceSpecificExitCode = NO_ERROR;
-	serviceStatus.dwCheckPoint = 0;
-	serviceStatus.dwWaitHint = 0;
+   // initialise service status
+   serviceStatus.dwServiceType = SERVICE_WIN32;
+   serviceStatus.dwCurrentState = SERVICE_STOPPED;
+   serviceStatus.dwControlsAccepted = 0;
+   serviceStatus.dwWin32ExitCode = NO_ERROR;
+   serviceStatus.dwServiceSpecificExitCode = NO_ERROR;
+   serviceStatus.dwCheckPoint = 0;
+   serviceStatus.dwWaitHint = 0;
 
-	serviceStatusHandle = RegisterServiceCtrlHandler(ELOGDSERVICENAME, ServiceControlHandler);
+   serviceStatusHandle =
+       RegisterServiceCtrlHandler(ELOGDSERVICENAME, ServiceControlHandler);
 
    if (serviceStatusHandle) {
-		// service is starting
-		serviceStatus.dwCurrentState = SERVICE_START_PENDING;
-		SetServiceStatus(serviceStatusHandle, &serviceStatus);
+      // service is starting
+      serviceStatus.dwCurrentState = SERVICE_START_PENDING;
+      SetServiceStatus(serviceStatusHandle, &serviceStatus);
 
-		// running
-		serviceStatus.dwControlsAccepted |= (SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN);
-		serviceStatus.dwCurrentState = SERVICE_RUNNING;
-		SetServiceStatus(serviceStatusHandle, &serviceStatus);
+      // running
+      serviceStatus.dwControlsAccepted |= (SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN);
+      serviceStatus.dwCurrentState = SERVICE_RUNNING;
+      SetServiceStatus(serviceStatusHandle, &serviceStatus);
 
       /* start main server, exit with "_abort = TRUE" */
       server_loop(tcp_port, FALSE);
 
-		// service was stopped
-		serviceStatus.dwCurrentState = SERVICE_STOP_PENDING;
-		SetServiceStatus(serviceStatusHandle, &serviceStatus);
+      // service was stopped
+      serviceStatus.dwCurrentState = SERVICE_STOP_PENDING;
+      SetServiceStatus(serviceStatusHandle, &serviceStatus);
 
-		// service is now stopped
-		serviceStatus.dwControlsAccepted &= ~(SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN);
-		serviceStatus.dwCurrentState = SERVICE_STOPPED;
-		SetServiceStatus(serviceStatusHandle, &serviceStatus);
-	}
+      // service is now stopped
+      serviceStatus.dwControlsAccepted &=
+          ~(SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN);
+      serviceStatus.dwCurrentState = SERVICE_STOPPED;
+      SetServiceStatus(serviceStatusHandle, &serviceStatus);
+   }
 }
 
 void run_service(void)
 {
-   SERVICE_TABLE_ENTRY serviceTable[] =
-	{
-		{ ELOGDSERVICENAME, ServiceMain },
-		{ 0, 0 }
-	};
+   SERVICE_TABLE_ENTRY serviceTable[] = {
+      {ELOGDSERVICENAME, ServiceMain},
+      {0, 0}
+   };
 
-	StartServiceCtrlDispatcher(serviceTable);
+   StartServiceCtrlDispatcher(serviceTable);
 
 }
 
@@ -18654,18 +18275,18 @@ int main(int argc, char *argv[])
    orig_gid = getegid();
    orig_uid = geteuid();
 #endif
-   
+
    /* register cleanup function */
    atexit(cleanup);
-   
+
    tzset();
-   
+
    /* initialize variables */
    read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = 0;
    logbook_dir[0] = resource_dir[0] = logbook_dir[0] = pidfile[0] = 0;
    tcp_port_cl = 0;
    use_keepalive = TRUE;
-   
+
    /* default config file */
    strcpy(config_file, "elogd.cfg");
 
@@ -18697,18 +18318,21 @@ int main(int argc, char *argv[])
                 tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday, tms->tm_hour,
                 tms->tm_min, tms->tm_sec);
          exit(EXIT_SUCCESS);
-      } 
-      
+      }
 #ifdef OS_WINNT
       else if (stricmp(argv[i], "-install") == 0) {
          install_service();
+         printf("Please hit any key ...");
+         fgets(str, sizeof(str), stdin);
          exit(EXIT_SUCCESS);
       } else if (stricmp(argv[i], "-remove") == 0) {
          remove_service();
+         printf("Please hit any key ...");
+         fgets(str, sizeof(str), stdin);
          exit(EXIT_SUCCESS);
       }
 #endif
-      
+
       else if (argv[i][0] == '-') {
          if (i + 1 >= argc || argv[i + 1][0] == '-')
             goto usage;
@@ -18765,7 +18389,7 @@ int main(int argc, char *argv[])
    if (daemon) {
       /* change to directory of executable */
       strcpy(str, argv[0]);
-      for (i=strlen(str)-1 ; i>0 ; i--)
+      for (i = strlen(str) - 1; i > 0; i--)
          if (str[i] != '\\')
             str[i] = 0;
          else
@@ -18787,7 +18411,7 @@ int main(int argc, char *argv[])
       strlcpy(resource_dir, str, sizeof(resource_dir));
    if (getcfg("global", "Logbook Dir", str))
       strlcpy(logbook_dir, str, sizeof(logbook_dir));
-   
+
    if ((read_pwd[0] || write_pwd[0] || admin_pwd[0]) && !logbook[0]) {
       printf("Must specify a lookbook via the -l parameter.\n");
       exit(EXIT_SUCCESS);
@@ -18863,6 +18487,6 @@ int main(int argc, char *argv[])
    else
 #endif
 
-   server_loop(tcp_port, daemon);
+      server_loop(tcp_port, daemon);
    exit(EXIT_SUCCESS);
 }
