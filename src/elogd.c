@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.352  2004/06/21 18:04:43  midas
+   Fixed email notification problem if URL does not contain a trailing '/'
+
    Revision 1.351  2004/06/18 20:44:37  midas
    Implemented deletion of logbooks through web interface
 
@@ -13742,6 +13745,8 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
          strcat(str, "/");
       }
    } else {
+      if (str[strlen(str)-1] != '/')
+         strlcat(str, "/", sizeof(str));
       strlcat(str, lbs->name_enc, sizeof(str));
       strlcat(str, "/", sizeof(str));
    }
