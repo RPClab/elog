@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.133  2003/07/15 11:19:28  midas
+  Download now works with elog utility
+
   Revision 1.132  2003/07/15 08:00:04  midas
   Fixed problem with coloring hyperlinks in find result page
 
@@ -7599,7 +7602,7 @@ char   message[TEXT_SIZE+1000], *p;
     }
 
   return_length = strlen(return_buffer)+size;
-  strlcat(return_buffer, message, sizeof(return_buffer));
+  strlcat(return_buffer, message, return_buffer_size);
 
   return EL_SUCCESS;
 }
@@ -12735,7 +12738,8 @@ FILE    *f;
     return;
     }
 
-  if (equal_ustring(command, loc("Download")))
+  if (equal_ustring(command, loc("Download")) ||
+      equal_ustring(command, "Download"))
     {
     show_download_page(lbs, dec_path);
     return;
