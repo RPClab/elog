@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.369  2004/07/07 14:29:06  midas
+   Added note about 'stealing' of locks
+
    Revision 1.368  2004/07/07 13:51:44  midas
    Admin user has to supply own old password
 
@@ -15736,7 +15739,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
       if (locked_by && locked_by[0]) {
          sprintf(str, "%s %s", loc("Entry is currently edited by"), locked_by);
          rsprintf("<tr><td nowrap colspan=2 class=\"errormsg\"><img src=\"stop.gif\">\n");
-         rsprintf("%s</td></tr>\n", str);
+         rsprintf("%s<br>%s</td></tr>\n", str, loc("You can \"steal\" the lock by editing this entry"));
       }
 
       rsprintf("<tr><td class=\"attribhead\">\n");
