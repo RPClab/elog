@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.291  2004/03/11 11:42:09  midas
+   Change POST action to './' for OS-X IE
+
    Revision 1.290  2004/03/10 15:54:03  midas
    Strip HTML from title bar and summary display
 
@@ -6543,7 +6546,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("</head>\n");
 
    rsprintf("<body>\n");
-   rsprintf("<form name=form1 method=\"POST\" action=\".\" ");
+   rsprintf("<form name=form1 method=\"POST\" action=\"./\" ");
    rsprintf("enctype=\"multipart/form-data\">\n");
 
    /*---- add password in case cookie expires during edit ----*/
@@ -7594,7 +7597,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
    show_html_header(lbs, FALSE, str, TRUE);
 
    rsprintf
-       ("<body><form method=\"POST\" action=\".\" enctype=\"multipart/form-data\">\n");
+       ("<body><form method=\"POST\" action=\"./\" enctype=\"multipart/form-data\">\n");
 
    /*---- title ----*/
 
