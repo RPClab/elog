@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.57  2003/03/27 13:05:28  midas
+  Removed borders around icons in threaded display
+
   Revision 1.56  2003/03/26 11:45:31  midas
   Added text search in all attributes
 
@@ -6755,7 +6758,7 @@ FILE *f;
       {
       /* if top level only, display reply icon if message has a reply */
       if (getcfg(lbs->name, "Top level only", str) && atoi(str) == 1 && reply_to[0])
-        rsprintf("<a href=\"%s\"><img border=0 src=\"icons/icon2.gif\"></a>&nbsp;", ref);
+        rsprintf("<a href=\"%s\"><img border=0 src=\"reply.gif\"></a>&nbsp;", ref);
       else
         {
         /* display standard icons */
@@ -6918,7 +6921,7 @@ FILE *f;
             else if (attr_flags[i] & AF_ICON)
               {
               if (attrib[i][0])
-                rsprintf("&nbsp;<img src=\"icons/%s\">&nbsp;", attrib[i]);
+                rsprintf("&nbsp;<img border=0 src=\"icons/%s\">&nbsp;", attrib[i]);
               }
 
             else
@@ -6948,7 +6951,7 @@ FILE *f;
               {
               rsprintf("<td class=\"%s\">", sclass);
               if (attrib[i][0])
-                rsprintf("<img src=\"icons/%s\">", attrib[i]);
+                rsprintf("<img border=0 src=\"icons/%s\">", attrib[i]);
               rsprintf("&nbsp</td>");
               }
 
@@ -8420,7 +8423,8 @@ LOGBOOK *lbs_cur;
   
   /*---- header ----*/
 
-  show_standard_header(lbs, TRUE, loc("ELOG Entries"), NULL);
+  sprintf(str, "ELOG %s", lbs->name);
+  show_standard_header(lbs, TRUE, str, NULL);
 
   /*---- title ----*/
 
