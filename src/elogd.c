@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.322  2004/05/08 15:02:01  midas
+   Fixed bug with remove _all_ leading to infinite page forwarding
+
    Revision 1.321  2004/05/05 15:26:04  midas
    Fixed compiler warning
 
@@ -593,6 +596,7 @@ char logbook_dir[256];
 char tcp_hostname[256];
 int tcp_port = 80;
 char theme_name[80];
+char http_host[256];
 
 #define MAX_GROUPS       32
 #define MAX_PARAM       120
@@ -1344,6 +1348,39 @@ void _MD5_decode(unsigned int *pout, unsigned char *pin, unsigned int len)
       pout[i] = ((unsigned int) pin[j]) |
           (((unsigned int) pin[j + 1]) << 8) | (((unsigned int) pin[j + 2]) << 16) |
           (((unsigned int) pin[j + 3]) << 24);
+}
+
+/*------------------------------------------------------------------*/
+
+void serialdate2date(double days, int *day, int *month, int *year)
+/* convert days since 1.1.1900 to date */
+
+{
+   int i,j, l, n;
+
+   l = (int)days + 68569 + 2415019;
+   n = (int)(( 4 * l ) / 146097);
+   l = l - (int)(( 146097 * n + 3 ) / 4);
+   i = (int)(( 4000 * ( l + 1 ) ) / 1461001);
+   l = l - (int)(( 1461 * i ) / 4) + 31;
+   j = (int)(( 80 * l ) / 2447);
+   *day = l - (int)(( 2447 * j ) / 80);
+   l = (int)(j / 11);
+   *month = j + 2 - ( 12 * l );
+   *year = 100 * ( n - 49 ) + i + l;
+}
+
+double date2serialdate(int day, int month, int year)
+/* convert date to days since 1.1.1900 */
+{
+   int serialdate;
+
+   serialdate = (int)(( 1461 * ( year + 4800 + (int)(( month - 14 ) / 12) ) ) / 4) +
+                (int)(( 367 * ( month - 2 - 12 * ( ( month - 14 ) / 12 ) ) ) / 12) -
+                (int)(( 3 * ( (int)(( year + 4900 + (int)(( month - 14 ) / 12) ) / 100) ) ) / 4) +
+                day - 2415019 - 32075;
+
+   return serialdate;
 }
 
 /*------------------------------------------------------------------*/
@@ -4859,6 +4896,15 @@ void set_location(LOGBOOK * lbs, char *rel_path)
          getcfg(lbs->name, "URL", str);
       else
          getcfg("global", "URL", str);
+
+      /* if HTTP request comes from localhost, use localhost as
+         absolute link (needed if running on DSL at home */
+      if (!str[0] && strstr(http_host, "localhost")) {
+         sprintf(str, "http://localhost", host_name);
+         if (tcp_port != 80)
+            sprintf(str+strlen(str), ":%d", tcp_port);
+         strcat(str, "/");
+      }
 
       if (!str[0]) {
          /* assemble absolute path from host name and port */
@@ -12272,15 +12318,17 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       redirect(lbs, str);
       return;
    }
-   for (i = 0; i < MAX_N_ATTR; i++)
-      if (strieq(getparam(attr_list[i]), "_all_")) {
-         strlcpy(str, _cmdline, sizeof(str));
-         strcpy(param, attr_list[i]);
-         url_encode(param, sizeof(param));
-         subst_param(str, sizeof(str), param, "");
-         redirect(lbs, str);
-         return;
-      }
+   if (strstr(_cmdline, "_all_")) {
+      strlcpy(str, _cmdline, sizeof(str));
+      while (strstr(str, "_all_")) {
+         p = strstr(str, "_all_");
+         pt = p + 5;
+         while (p > str && *p != '&')
+            p--;
+         strcpy(p, pt);
+      }  
+      redirect(lbs, str);
+   }
 
    slist = malloc((MAX_N_ATTR + 10) * NAME_LENGTH);
    svalue = malloc((MAX_N_ATTR + 10) * NAME_LENGTH);
@@ -17699,6 +17747,17 @@ void server_loop(int tcp_port, int daemon)
             strlcpy(browser, p, sizeof(browser));
             if (strchr(browser, '\r'))
                *strchr(browser, '\r') = 0;
+         }
+
+         /* extract host */
+         http_host[0] = 0;
+         if ((p = strstr(net_buffer, "Host:")) != NULL) {
+            p += 5;
+            while (*p && *p == ' ')
+               p++;
+            strlcpy(http_host, p, sizeof(http_host));
+            if (strchr(http_host, '\r'))
+               *strchr(http_host, '\r') = 0;
          }
 
          /* extract "X-Forwarded-For:" */
