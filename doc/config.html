@@ -906,6 +906,86 @@ The administrator has to ensure then of course that only trusted people can edit
 
 </UL>
 
+<a name="conditional"><hr>
+<div class=section>&nbsp; Conditional attributes &nbsp;</div>
+<p>
+
+When entering data into a elog form, it might be helpful to change the options of the attributes
+depending on the value of other attributes.	Let's assume you have a logbook containing entries
+for different computers with different operating systems. Your elogd.cfg file starts like that:
+<p>
+
+<pre>
+Attributes = PC Name, Operating System, Version
+Options Operating System = Linux, Windows
+</pre>
+<p>
+
+For the operating system version, you would like a list, but this list has to be different 
+for Linux and Windows. This can be achieved with <i>conditional attributes</i>. Simply write
+following configuration:
+<p>
+
+<pre>
+Attributes = PC Name, Operating System, Version
+Options Operating System = Linux{1}, Windows{2}
+{1} Options Version = 2.2, 2.4, 2.6
+{2} Options Version = ME, 2k, NT, XP
+</pre>
+<p>
+
+If you enter a new entry into that logbook, the drop-down list for <code><b>Version</b></code>
+changes automatically depending on the <code><b>Operating System</b></code>. Note that you
+have to enable Java Script for this to work. Without Java Script, a separate button appears
+in the line of the Operating System which has to be pressed to make the Version list change.
+<p>
+
+The number {1} and {2} in the configuration file are called <i>conditions</i>. Depending
+on these conditions, certain other lines can be activated. So if the Operating System
+<i>Linux</i> is selected, condition {1} is true, which selects the line starting 
+with {1} to select the options <i>2.2, 2.4, 2.6</i>. 
+<p>
+
+This technique offers various other possibilities, since any configuration option can
+be made conditional by adding a <code><b>{&lt;n&gt;}</b></code> in front of that line
+where &lt;n&gt; is an arbitrary number.	One often used possibility is the definition
+of forms. Depending on an attribute, the configuration option 
+<code><b>Prset text = ...</b></code> can be used to copy some pre-defined forms into
+the message body, which can then be filled out. Consider following example:
+<p>
+
+<pre>
+Attributes = Author, Type
+Options Type = Network check{1}, System check{2}
+
+{1} Preset text = network.txt
+{2} Preset text = system.txt
+</pre>
+<p>
+This causes two text files <i>network.txt</i> and <i>system.txt</i> to be copied
+into the message body when a new entry is made. The file <i>network.txt</i> could
+look like:
+<p>
+
+<pre>
+Routers checked:  [ ]
+DHCP checked:     [ ]
+Comment: ...
+</pre>
+<p>
+
+This works like a pre-defined form, the user puts X's between the "[ ]" when that
+item has been checked. Other possibilities are pre-defined shift sheets in environments
+where elog is uses as a shift logbook. The shift sheet could contain the names
+of the shift crew, some check-list for standard tasks etc.
+<p>
+
+Another use of conditional attributes is in conjunction with the option
+<code><b>Message comment</b></code>. Depending on some attribute values, different
+message comment can be displayed to tell the user what to enter exactly in the
+message body for that attribute value.
+<p>
+
 <a name="access"><hr>
 <div class=section>&nbsp; Access control &nbsp;</div>
 <p>
