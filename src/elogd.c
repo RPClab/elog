@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.572  2005/03/01 23:48:17  ritt
+   Implemented MXML for password file
+
    Revision 1.571  2005/02/22 09:34:04  ritt
    Fixed bug with logbook names containing blanks and 'List' link
 
@@ -932,6 +935,7 @@ char pidfile[256];              /* Pidfile name                                 
 
 /* local includes */
 #include "regex.h"
+#include "mxml.h"
 
 BOOL running_as_daemon;         /* Running as a daemon/service? */
 int elog_tcp_port = (int) DEFAULT_PORT; /* Server's TCP port            */
@@ -1195,7 +1199,7 @@ int run_service(void);
 #endif
 
 void show_error(char *error);
-BOOL enum_user_line(LOGBOOK * lbs, int n, char *user);
+BOOL enum_user_line(LOGBOOK * lbs, int n, char *user, int size);
 int get_user_line(char *logbook_name, char *user, char *password, char *full_name,
                   char *email, char *email_notify);
 int strbreak(char *str, char list[][NAME_LENGTH], int size, char *brk);
@@ -1360,8 +1364,6 @@ char *xstrdup(const char *string)
    strcpy(s, string);
    return s;
 }
-
-/*------------------------------------------------------------------*/
 
 /*----------------------- Message handling -------------------------*/
 
@@ -3568,7 +3570,7 @@ void retrieve_email_from(LOGBOOK * lbs, char *ret, char attrib[MAX_N_ATTR][NAME_
    /* if nothing available, figure out email from an administrator */
    if (strchr(str, '@') == NULL) {
       for (i = 0;; i++) {
-         if (!enum_user_line(lbs, i, login_name))
+         if (!enum_user_line(lbs, i, login_name, sizeof(login_name)))
             break;
          get_user_line(lbs->name, login_name, NULL, NULL, str, NULL);
          if (is_admin_user(lbs->name, login_name) && strchr(str, '@'))
@@ -7254,9 +7256,8 @@ void add_subst_time(LOGBOOK * lbs,
 
 BOOL change_pwd(LOGBOOK * lbs, char *user, char *pwd)
 {
-   char str[256], file_name[256], line[256], *p, *pl;
-   char *buf;
-   int i, fh, size;
+   char str[256], file_name[256];
+   PMXML_NODE xml_tree, node;
 
    getcfg(lbs->name, "Password file", str, sizeof(str));
 
@@ -7267,75 +7268,23 @@ BOOL change_pwd(LOGBOOK * lbs, char *user, char *pwd)
       strlcat(file_name, str, sizeof(file_name));
    }
 
-   fh = open(file_name, O_RDWR | O_BINARY, 644);
-   if (fh > 0) {
-      lseek(fh, 0, SEEK_END);
-      size = TELL(fh);
-      lseek(fh, 0, SEEK_SET);
+   xml_tree = mxml_parse_file(file_name, str, sizeof(str));
+   if (!xml_tree)
+      return FALSE;
 
-      buf = xmalloc(size + 1);
-      read(fh, buf, size);
-      buf[size] = 0;
-      pl = buf;
-
-      while (pl < buf + size) {
-         for (i = 0; pl[i] && pl[i] != '\r' && pl[i] != '\n'; i++)
-            line[i] = pl[i];
-         line[i] = 0;
-
-         if (line[0] == ';' || line[0] == '#' || line[0] == 0) {
-            pl += strlen(line);
-            while (*pl && (*pl == '\r' || *pl == '\n'))
-               pl++;
-            continue;
-         }
-
-         strcpy(str, line);
-         if (strchr(str, ':'))
-            *strchr(str, ':') = 0;
-         if (strcmp(str, user) == 0)
-            break;
-
-         pl += strlen(line);
-         while (*pl && (*pl == '\r' || *pl == '\n'))
-            pl++;
-      }
-
-      /* return if not found */
-      if (pl >= buf + size) {
-         xfree(buf);
-         close(fh);
-         return FALSE;
-      }
-
-      p = strchr(line, ':');
-      if (p)
-         p = strchr(p + 1, ':');
-      if (p == NULL)
-         return FALSE;
-
-      /* replace password */
-      lseek(fh, 0, SEEK_SET);
-      write(fh, buf, pl - buf);
-
-      sprintf(str, "%s:%s%s\n", user, pwd, p);
-      write(fh, str, strlen(str));
-
-      pl += strlen(line);
-      while (*pl && (*pl == '\r' || *pl == '\n'))
-         pl++;
-
-      write(fh, pl, strlen(pl));
-
-      TRUNCATE(fh);
-
-      xfree(buf);
-      close(fh);
-
-      return TRUE;
+   sprintf(str, "/list/user[name=%s]/password", user);
+   node = mxml_find_node(xml_tree, str);
+   if (node == NULL) {
+      mxml_free_tree(xml_tree);
+      return FALSE;
    }
 
-   return FALSE;
+   mxml_replace_node_value(node, pwd);
+
+   mxml_write_tree(file_name, xml_tree);
+   mxml_free_tree(xml_tree);
+
+   return TRUE;
 }
 
 /*------------------------------------------------------------------*/
@@ -8347,7 +8296,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf("<option value=\"\">- %s -\n", loc("please select"));
 
                for (i = 0;; i++) {
-                  if (!enum_user_line(lbs, i, login_name))
+                  if (!enum_user_line(lbs, i, login_name, sizeof(login_name)))
                      break;
                   get_user_line(lbs->name, login_name, NULL, str, NULL, NULL);
 
@@ -9927,10 +9876,11 @@ int save_config(char *buffer, char *error)
 
 int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 {
-   char file_name[256], str[256], line[256], *buf, *pl, new_pwd[80], new_pwd2[80];
+   char file_name[256], str[256], *pl, new_pwd[80], new_pwd2[80];
    char smtp_host[256], email_addr[256], mail_from[256], subject[256], mail_text[2000];
    char admin_user[80], enc_pwd[80], url[256];
-   int i, fh, size, self_register;
+   int self_register;
+   PMXML_NODE xml_tree, node;
 
    /* check for full name */
    if (!isparam("new_full_name") || *getparam("new_full_name") == 0) {
@@ -9979,92 +9929,50 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
          strlcat(file_name, str, sizeof(file_name));
       }
 
-      fh = open(file_name, O_RDWR | O_BINARY | O_CREAT, 0644);
-      if (fh < 0) {
-         sprintf(str, loc("Cannot open file <b>%s</b>"), file_name);
-         strcat(str, ": ");
-         strlcat(str, strerror(errno), sizeof(str));
+      xml_tree = mxml_parse_file(file_name, str, sizeof(str));
+      if (xml_tree == NULL) {
          show_error(str);
          return 0;
       }
+         
+      sprintf(str, "/list/user[name=%s]", user);
+      node = mxml_find_node(xml_tree, str);
 
-      lseek(fh, 0, SEEK_END);
-      size = TELL(fh);
-      lseek(fh, 0, SEEK_SET);
-
-      buf = xmalloc(size + 1);
-      read(fh, buf, size);
-      buf[size] = 0;
-      pl = buf;
-
-      while (pl < buf + size) {
-         for (i = 0; pl[i] && pl[i] != '\r' && pl[i] != '\n'; i++)
-            line[i] = pl[i];
-         line[i] = 0;
-
-         /* skip outcommented lines */
-         if (line[0] == ';' || line[0] == '#') {
-            pl += strlen(line);
-            while (*pl && (*pl == '\r' || *pl == '\n'))
-               pl++;
-            continue;
-         }
-
-         if (line[0] == 0)
-            break;
-
-         strcpy(str, line);
-         if (strchr(str, ':'))
-            *strchr(str, ':') = 0;
-         if (strcmp(str, user) == 0) {
-            if (new_user) {
-               sprintf(str, "%s \"%s\" %s", loc("Login name"), user, loc("exists already"));
-               show_error(str);
-               xfree(buf);
-               close(fh);
-               return 0;
-            }
-            break;
-         }
-
-         pl += strlen(line);
-         while (*pl && (*pl == '\r' || *pl == '\n'))
-            pl++;
+      if (node && new_user) {
+         sprintf(str, "%s \"%s\" %s", loc("Login name"), user, loc("exists already"));
+         show_error(str);
+         mxml_free_tree(xml_tree);
+         return 0;
       }
 
       if (new_user) {
-         lseek(fh, 0, SEEK_END);
-         if (strlen(buf) != 0 && (buf[strlen(buf) - 1] != '\r' && buf[strlen(buf) - 1] != '\n'))
-            write(fh, "\n", 1);
+         node = mxml_add_node(xml_tree, "user", NULL);
 
-         if (activate)
-            sprintf(str, "%s:%s:%s:%s:%s\n", getparam("new_user_name"),
-                    getparam("encpwd"), getparam("new_full_name"),
-                    getparam("new_user_email"), getparam("email_notify"));
-         else
-            sprintf(str, "%s:%s:%s:%s:%s\n", getparam("new_user_name"),
-                    new_pwd, getparam("new_full_name"), getparam("new_user_email"), getparam("email_notify"));
-         write(fh, str, strlen(str));
+         if (activate) {
+            mxml_add_node(node, "name", getparam("new_user_name"));
+            mxml_add_node(node, "password", getparam("encpwd"));
+            mxml_add_node(node, "full_name", getparam("new_full_name"));
+            mxml_add_node(node, "email", getparam("new_user_email"));
+            mxml_add_node(node, "email_notify", getparam("email_notify"));
+         } else {
+            mxml_add_node(node, "name", getparam("new_user_name"));
+            mxml_add_node(node, "password", new_pwd);
+            mxml_add_node(node, "full_name", getparam("new_full_name"));
+            mxml_add_node(node, "email", getparam("new_user_email"));
+            mxml_add_node(node, "email_notify", getparam("email_notify"));
+         }
+
       } else {
-         /* replace line */
-         lseek(fh, 0, SEEK_SET);
-         write(fh, buf, pl - buf);
-
-         sprintf(str, "%s:%s:%s:%s:%s\n", getparam("new_user_name"),
-                 new_pwd, getparam("new_full_name"), getparam("new_user_email"), getparam("email_notify"));
-         write(fh, str, strlen(str));
-
-         pl += strlen(line);
-         while (*pl && (*pl == '\r' || *pl == '\n'))
-            pl++;
-
-         write(fh, pl, strlen(pl));
-
-         TRUNCATE(fh);
+         /* replace record */
+         mxml_replace_subvalue(node, "name", getparam("new_user_name"));
+         mxml_replace_subvalue(node, "password", new_pwd);
+         mxml_replace_subvalue(node, "full_name", getparam("new_full_name"));
+         mxml_replace_subvalue(node, "email", getparam("new_user_email"));
+         mxml_replace_subvalue(node, "email_notify", getparam("email_notify"));
       }
 
-      xfree(buf);
-      close(fh);
+      mxml_write_tree(file_name, xml_tree);
+      mxml_free_tree(xml_tree);
    }
 
    /* if requested, send notification email to admin user */
@@ -10199,8 +10107,8 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 
 int remove_user(LOGBOOK * lbs, char *user)
 {
-   char file_name[256], str[256], line[256], *buf, *pl;
-   int i, fh, size;
+   char file_name[256], str[256];
+   PMXML_NODE xml_tree, node;
 
    getcfg(lbs->name, "Password file", str, sizeof(str));
 
@@ -10211,63 +10119,26 @@ int remove_user(LOGBOOK * lbs, char *user)
       strlcat(file_name, str, sizeof(file_name));
    }
 
-   fh = open(file_name, O_RDWR | O_BINARY, 0644);
-   if (fh < 0) {
-      sprintf(str, loc("Cannot open file <b>%s</b>"), file_name);
-      strcat(str, ": ");
-      strcat(str, strerror(errno));
-      show_error(str);
-      return 0;
+   xml_tree = mxml_parse_file(file_name, str, sizeof(str));
+   if (xml_tree == NULL)
+      return FALSE;
+
+   sprintf(str, "/list/user[name=%s]", user);
+   node = mxml_find_node(xml_tree, str);
+   if (node == NULL) {
+      mxml_free_tree(xml_tree);
+      return FALSE;
    }
 
-   lseek(fh, 0, SEEK_END);
-   size = TELL(fh);
-   lseek(fh, 0, SEEK_SET);
+   mxml_delete_node(node);
 
-   buf = xmalloc(size + 1);
-   read(fh, buf, size);
-   buf[size] = 0;
-   pl = buf;
-
-   while (pl < buf + size) {
-      for (i = 0; pl[i] && pl[i] != '\r' && pl[i] != '\n'; i++)
-         line[i] = pl[i];
-      line[i] = 0;
-
-      if (line[0] == ';' || line[0] == '#' || line[0] == 0) {
-         pl += strlen(line);
-         while (*pl && (*pl == '\r' || *pl == '\n'))
-            pl++;
-         continue;
-      }
-
-      strcpy(str, line);
-      if (strchr(str, ':'))
-         *strchr(str, ':') = 0;
-      if (strcmp(str, user) == 0)
-         break;
-
-      pl += strlen(line);
-      while (*pl && (*pl == '\r' || *pl == '\n'))
-         pl++;
+   if (!mxml_write_tree(file_name, xml_tree)) {
+      mxml_free_tree(xml_tree);
+      return FALSE;
    }
 
-   /* remove line */
-   lseek(fh, 0, SEEK_SET);
-   write(fh, buf, pl - buf);
-
-   pl += strlen(line);
-   while (*pl && (*pl == '\r' || *pl == '\n'))
-      pl++;
-
-   write(fh, pl, strlen(pl));
-
-   TRUNCATE(fh);
-
-   xfree(buf);
-   close(fh);
-
-   return 1;
+   mxml_free_tree(xml_tree);
+   return TRUE;
 }
 
 /*------------------------------------------------------------------*/
@@ -10327,7 +10198,7 @@ void show_config_page(LOGBOOK * lbs)
 
       /* count user list */
       for (n = 0;; n++) {
-         if (!enum_user_line(lbs, n, str))
+         if (!enum_user_line(lbs, n, str, sizeof(str)))
             break;
       }
 
@@ -10337,7 +10208,7 @@ void show_config_page(LOGBOOK * lbs)
          user_list[i] = xcalloc(NAME_LENGTH, 1);
 
       for (i = 0; i < n; i++)
-         enum_user_line(lbs, i, user_list[i]);
+         enum_user_line(lbs, i, user_list[i], NAME_LENGTH);
 
       /* sort list */
       qsort(user_list, n, sizeof(char *), ascii_compare);
@@ -10422,7 +10293,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
       strcpy(name, getparam("login_name"));
 
       for (i = 0;; i++) {
-         if (!enum_user_line(lbs, i, login_name))
+         if (!enum_user_line(lbs, i, login_name, sizeof(login_name)))
             break;
 
          get_user_line(lbs->name, login_name, NULL, full_name, user_email, NULL);
@@ -17122,7 +16993,7 @@ void submit_elog(LOGBOOK * lbs)
              || atoi(str) == 0) {
             /* go through password file */
             for (index = 0;; index++) {
-               if (!enum_user_line(lbs, index, user))
+               if (!enum_user_line(lbs, index, user, sizeof(user)))
                   break;
 
                get_user_line(lbs->name, user, NULL, NULL, user_email, email_notify);
@@ -18373,12 +18244,105 @@ BOOL check_password(LOGBOOK * lbs, char *name, char *password, char *redir)
 
 /*------------------------------------------------------------------*/
 
+BOOL convert_password_file(char *file_name)
+{
+   char name[256], password[256], full_name[256], email[256], email_notify[256];
+   int i, len, fh;
+   char *buf, *p;
+   PMXML_NODE root, list, node;
+
+   fh = open(file_name, O_RDONLY | O_TEXT);
+   if (fh < 0)
+      return FALSE;
+   len = lseek(fh, 0, SEEK_END);
+   lseek(fh, 0, SEEK_SET);
+   buf = malloc(len+1);
+   assert(buf);
+   i = read(fh, buf, len);
+   buf[i] = 0;
+   close(fh);
+
+   p = buf;
+
+   /* skip leading spaces or new lines */
+   while (*p && isspace(*p))
+      p++;
+
+   root = mxml_create_root_node();
+   list = mxml_add_node(root, "list", NULL);
+
+   while (*p) {
+
+      /* skip comment lines */
+      if (*p != ';' && *p != '#') {
+         for (i=0 ; i<sizeof(name) && *p && *p != ':' ; i++)
+            name[i] = *p++;
+         name[i] = 0;
+         if (*p++ != ':') {
+            free(buf);
+            return FALSE;
+         }
+
+         for (i=0 ; i<sizeof(password) && *p && *p != ':' ; i++)
+            password[i] = *p++;
+         password[i] = 0;
+         if (*p++ != ':') {
+            free(buf);
+            return FALSE;
+         }
+
+         for (i=0 ; i<sizeof(full_name) && *p && *p != ':' ; i++)
+            full_name[i] = *p++;
+         full_name[i] = 0;
+         if (*p++ != ':') {
+            free(buf);
+            return FALSE;
+         }
+
+         for (i=0 ; i<sizeof(email) && *p && *p != ':' ; i++)
+            email[i] = *p++;
+         email[i] = 0;
+         if (*p++ != ':') {
+            free(buf);
+            return FALSE;
+         }
+
+         for (i=0 ; i<sizeof(email_notify) && *p && *p != '\n' ; i++)
+            email_notify[i] = *p++;
+         email_notify[i] = 0;
+         if (*p++ != '\n') {
+            free(buf);
+            return FALSE;
+         }
+
+         node = mxml_add_node(list, "user", NULL);
+         mxml_add_node(node, "name", name);
+         mxml_add_node(node, "password", password);
+         mxml_add_node(node, "full_name", full_name);
+         mxml_add_node(node, "email", email);
+         mxml_add_node(node, "email_notify", email_notify);
+      }
+
+      while (*p && isspace(*p))
+         p++;
+   }
+
+   mxml_write_tree(file_name, root);
+   mxml_free_tree(root);
+
+   free(buf);
+   return TRUE;
+}
+
+/*------------------------------------------------------------------*/
+
 int get_user_line(char *logbook_name, char *user, char *password, char *full_name,
                   char *email, char *email_notify)
 {
-   char str[256], line[256], file_name[256], *p;
+   char str[256], line[256], file_name[256];
    FILE *f;
-   int i, fd;
+   int fd;
+   PMXML_NODE xml_tree, user_node, node;
 
    if (password)
       password[0] = 0;
@@ -18418,51 +18382,37 @@ int get_user_line(char *logbook_name, char *user, char *password, char *full_nam
          return 1;
       }
 
-      while (!feof(f)) {
-         line[0] = 0;
-         fgets(line, sizeof(line), f);
-
-         if (line[0] == ';' || line[0] == '#' || line[0] == 0)
-            continue;
-
-         strcpy(str, line);
-         if (strchr(str, ':'))
-            *strchr(str, ':') = 0;
-         if (strcmp(str, user) == 0)
-            break;
+      /* check if in XML format, otherwise convert it */
+      line[0] = 0;
+      fgets(line, sizeof(line), f);
+      if (strstr(line, "<?xml") == 0) {
+         fclose(f);
+         if (!convert_password_file(file_name))
+            return 1;
       }
-      fclose(f);
 
-      if (strcmp(str, user) != 0)
+      if ((xml_tree = mxml_parse_file(file_name, str, sizeof(str))) == NULL) {
+         show_error(str);
+         return 1;
+      }
+
+      sprintf(str, "/list/user[name=%s]", user);
+      if ((user_node = mxml_find_node(xml_tree, str)) == NULL) {
+         mxml_free_tree(xml_tree);
          return 2;
+      }
 
       /* if user found, retrieve other info */
-      p = line;
+      if ((node = mxml_find_node(user_node, "password")) != NULL && password && mxml_get_value(node))
+         strlcpy(password, mxml_get_value(node), 256);
+      if ((node = mxml_find_node(user_node, "full_name")) != NULL && full_name && mxml_get_value(node))
+         strlcpy(full_name, mxml_get_value(node), 256);
+      if ((node = mxml_find_node(user_node, "email")) != NULL && email && mxml_get_value(node))
+         strlcpy(email, mxml_get_value(node), 256);
+      if ((node = mxml_find_node(user_node, "email_notify")) != NULL && email_notify && mxml_get_value(node))
+         strlcpy(email_notify, mxml_get_value(node), 256);
 
-      for (i = 0; i < 4; i++) {
-         if (strchr(p, ':') == NULL)
-            break;
-         p = strchr(p, ':') + 1;
-
-         while (*p && *p == ' ')
-            p++;
-         strlcpy(str, p, sizeof(str));
-         if (strchr(str, ':'))
-            *strchr(str, ':') = 0;
-
-         while (str[strlen(str) - 1] == ' ' || str[strlen(str) - 1] == '\r' || str[strlen(str) - 1] == '\n')
-            str[strlen(str) - 1] = 0;
-
-         if (i == 0 && password)
-            strcpy(password, str);
-         else if (i == 1 && full_name)
-            strcpy(full_name, str);
-         else if (i == 2 && email)
-            strcpy(email, str);
-         else if (i == 3 && email_notify)
-            strcpy(email_notify, str);
-      }
-
+      mxml_free_tree(xml_tree);
       return 1;
    } else {
       if (user[0])
@@ -18474,11 +18424,10 @@ int get_user_line(char *logbook_name, char *user, char *password, char *full_nam
 
 /*------------------------------------------------------------------*/
 
-BOOL enum_user_line(LOGBOOK * lbs, int n, char *user)
+BOOL enum_user_line(LOGBOOK * lbs, int n, char *user, int size)
 {
-   char str[256], line[256], file_name[256];
-   FILE *f;
-   int i;
+   char str[256], file_name[256];
+   PMXML_NODE xml_tree, node;
 
    getcfg(lbs->name, "Password file", str, sizeof(str));
 
@@ -18492,35 +18441,20 @@ BOOL enum_user_line(LOGBOOK * lbs, int n, char *user)
       strlcat(file_name, str, sizeof(file_name));
    }
 
-   f = fopen(file_name, "r");
-   i = 0;
-   if (f != NULL) {
-      while (!feof(f)) {
-         line[0] = 0;
-         fgets(line, sizeof(line), f);
-
-         if (line[0] == ';' || line[0] == '#' || line[0] == 0)
-            continue;
-
-         if (strchr(line, ':') == NULL)
-            continue;
-
-         strcpy(str, line);
-         if (strchr(str, ':'))
-            *strchr(str, ':') = 0;
-
-         if (i == n) {
-            strcpy(user, str);
-            fclose(f);
-            return TRUE;
-         }
-
-         i++;
-      }
-      fclose(f);
+   if ((xml_tree = mxml_parse_file(file_name, str, sizeof(str))) == NULL) {
+      show_error(str);
+      return FALSE;
    }
 
-   return FALSE;
+   sprintf(str, "/list/user[%d]/name", n);
+   if ((node = mxml_find_node(xml_tree, str)) == NULL) {
+      mxml_free_tree(xml_tree);
+      return FALSE;
+   }
+
+   strlcpy(user, mxml_get_value(node), size);
+   mxml_free_tree(xml_tree);
+   return TRUE;
 }
 
 /*------------------------------------------------------------------*/
