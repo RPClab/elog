@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.432  2004/08/04 12:38:22  midas
+   Warn if port is already used
+
    Revision 1.431  2004/08/04 11:59:12  midas
    Added -s(ilent) option
 
@@ -19434,16 +19437,25 @@ void server_loop(int tcp_port)
    }
 
    serv_addr.sin_port = htons((short) tcp_port);
-   /* try reusing address */
+
+   /* first try without reusing address */
+   flag = 0;
+   setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR, (char *) &flag, sizeof(INT));
+   status = bind(lsock, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
+   if (status < 0)
+      eprintf("Warning: another server might already run on port %d.\n\n",tcp_port);
+
+   /* now try with reusing address */
    flag = 1;
    setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR, (char *) &flag, sizeof(INT));
    status = bind(lsock, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
    if (status < 0) {
       eprintf
-          ("Cannot bind to port %d.\nPlease try later or use the \"-p\" flag to specify a different port.\n",
+          ("Cannot bind to port %d.\nPlease use the \"-p\" flag to specify a different port.\n",
            tcp_port);
       exit(EXIT_FAILURE);
    }
+
 
    /* get host name for mail notification */
    gethostname(host_name, sizeof(host_name));
@@ -20678,7 +20690,7 @@ int install_service(void)
 
       /* Try to start the elogd service */
       if (!StartService(hservice, 0, NULL))
-         eprintf("The elogd service could not be started.");
+         eprintf("The elogd service could not be started.\n");
       else
          eprintf("The elogd service has been started successfully.\n");
 
@@ -20728,15 +20740,16 @@ int remove_service(int silent)
    }
 
    /* Now remove the service from the SCM */
-   if (!silent) {
-      if (!DeleteService(hservice)) {
+   if (!DeleteService(hservice)) {
+      if (!silent) {
          if (GetLastError() == ERROR_SERVICE_MARKED_FOR_DELETE)
             eprintf("The elogd service is already marked to be unregistered.\n");
          else
             eprintf("The elogd service could not be unregistered.\n");
-      } else
+      }
+   } else
+      if (!silent)
          eprintf("The elogd service hass been unregistered successfully.\n");
-   }
 
    CloseServiceHandle(hservice);
    CloseServiceHandle(hsrvmanager);
@@ -20799,6 +20812,12 @@ void WINAPI ServiceMain(DWORD argc, LPSTR * argv)
       serviceStatus.dwControlsAccepted |= (SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN);
       serviceStatus.dwCurrentState = SERVICE_RUNNING;
       SetServiceStatus(serviceStatusHandle, &serviceStatus);
+
+      /* avoid recursive calls to run_service */
+      running_as_daemon = 0;
+
+      /* Redirect all messages handled with eprintf/efputs to syslog */
+      redirect_to_syslog();
 
       /* start main server, exit with "_abort = TRUE" */
       server_loop(tcp_port);
@@ -20887,7 +20906,7 @@ int main(int argc, char *argv[])
          running_as_daemon = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'v')
          verbose = TRUE;
-      else if (argv[i][0] == '-' && argv[i][1] == 's')
+      else if (argv[i][0] == '-' && argv[i][1] == 'S')
          silent = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'k')
          use_keepalive = FALSE;
