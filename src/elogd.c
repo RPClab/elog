@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.316  2004/03/27 14:33:59  midas
+   Implemeted first version of favicon
+
    Revision 1.315  2004/03/26 08:28:29  midas
    Version 2.5.2
 
@@ -684,6 +687,7 @@ struct {
    ".JPEG", "image/jpeg"}, {
    ".GIF", "image/gif"}, {
    ".PNG", "image/png"}, {
+   ".ICO", "text/plain"}, {
    ".PS", "application/postscript"}, {
    ".EPS", "application/postscript"}, {
    ".HTML", "text/html"}, {
@@ -5203,6 +5207,9 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head)
       strlcpy(css, str, sizeof(css));
 
    rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">\n", css);
+
+   rsprintf("<link rel=\"shortcut icon\" href=\"favicon.ico\">\n");
+   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\">\n");
 
    if (close_head)
       rsprintf("</head>\n");
@@ -16355,7 +16362,7 @@ void interprete(char *lbook, char *path)
 
    if ((strlen(pfile) > 13 && pfile[6] == '_' && pfile[13] == '_')
        || (strlen(pfile) > 13 && pfile[6] == '_' && pfile[13] == '/')
-       || strstr(pfile, ".gif")
+       || strstr(pfile, ".gif") || strstr(pfile, ".ico")
        || strstr(pfile, ".jpg") || strstr(pfile, ".jpeg")
        || strstr(pfile, ".png") || strstr(pfile, ".css")
        || strstr(pfile, ".js")) {
@@ -17607,8 +17614,8 @@ void server_loop(int tcp_port, int daemon)
          }
 
          if (strstr(logbook, ".gif") || strstr(logbook, ".jpg") ||
-             strstr(logbook, ".jpg") || strstr(logbook, ".png")
-             || strstr(logbook, ".htm")
+             strstr(logbook, ".jpg") || strstr(logbook, ".png") ||
+             strstr(logbook, ".ico") || strstr(logbook, ".htm")
              || strstr(logbook, ".css")) {
             /* check if file in resource directory */
             strlcpy(str, resource_dir, sizeof(str));
