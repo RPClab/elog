@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.38  2003/03/05 07:39:26  midas
+  Only re-read elogd.cfg if changed, using stat()
+
   Revision 1.37  2003/03/04 21:14:47  midas
   'Copy to' and 'Move to' now processes whole threads
 
@@ -651,6 +654,7 @@
   #include <io.h>
   #include <time.h>
   #include <direct.h>
+  #include <sys/stat.h>
 
 #else
 
@@ -1389,6 +1393,7 @@ INT ss_daemon_init()
 /* Parameter extraction from configuration file similar to win.ini */
 
 char *cfgbuffer;
+time_t cfgfile_mtime = 0;
 
 int getcfg(char *group, char *param, char *value)
 {
@@ -11342,6 +11347,7 @@ int                  lsock, len, flag, content_length, header_length;
 struct hostent       *phe;
 fd_set               readfds;
 struct timeval       timeout;
+struct stat          cfg_stat;
 
 #ifdef OS_WINNT
   {
@@ -11892,11 +11898,23 @@ struct timeval       timeout;
           }
         }
 
-      /* force re-read configuration file */
-      if (cfgbuffer)
+      /* force re-read configuration file if changed */
+      if (stat(config_file, &cfg_stat) == 0)
         {
-        free(cfgbuffer);
-        cfgbuffer = NULL;
+        if (cfgfile_mtime < cfg_stat.st_mtime)
+          {
+          cfgfile_mtime = cfg_stat.st_mtime;
+
+          if (cfgbuffer)
+            {
+            free(cfgbuffer);
+            cfgbuffer = NULL;
+            }
+          }
+        }
+      else
+        {
+        perror("Cannot stat() config file");
         }
 
       /* check if logbook exists */
