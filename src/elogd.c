@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.393  2004/07/22 20:51:53  midas
+   Added size parameter to getcfg()
+
    Revision 1.392  2004/07/22 20:23:39  midas
    Message handling implemented by Recai Oktas
 
@@ -2128,7 +2131,7 @@ BOOL match_param(char *str, char *param)
 
 /*-------------------------------------------------------------------*/
 
-int getcfg_simple(char *group, char *param, char *value)
+int getcfg_simple(char *group, char *param, char *value, int vsize)
 /* read value for certain parameter in configuration file using [<group>] */
 {
    char *str, *p, *pstr;
@@ -2192,10 +2195,10 @@ int getcfg_simple(char *group, char *param, char *value)
 
                      if (str[0] == '"' && str[strlen(str) - 1] == '"' &&
                          strchr(str + 1, '"') == str + strlen(str) - 1) {
-                        strcpy(value, str + 1);
+                        strlcpy(value, str + 1, vsize);
                         value[strlen(value) - 1] = 0;
                      } else
-                        strcpy(value, str);
+                        strlcpy(value, str, vsize);
 
                      free(str);
                      return status;
@@ -2223,7 +2226,7 @@ int getcfg_simple(char *group, char *param, char *value)
 
 /*-------------------------------------------------------------------*/
 
-int getcfg(char *group, char *param, char *value)
+int getcfg(char *group, char *param, char *value, int vsize)
 /*
    Read parameter from configuration file.
 
@@ -2244,17 +2247,17 @@ int getcfg(char *group, char *param, char *value)
    /* if group is [global] and top group exists, read from there */
    if (strieq(group, "global") && getcfg_topgroup()) {
       sprintf(str, "global %s", getcfg_topgroup());
-      if (getcfg(str, param, value))
+      if (getcfg(str, param, value, vsize))
          return 1;
    }
 
-   status = getcfg_simple(group, param, value);
+   status = getcfg_simple(group, param, value, vsize);
    if (status)
       return status;
 
    /* if parameter not found in logbook, look in [global] section */
    if (!group || is_logbook(group))
-      return getcfg("global", param, value);
+      return getcfg("global", param, value, vsize);
 
    return 0;
 }
@@ -2350,14 +2353,14 @@ int is_group(char *group)
 
 /*------------------------------------------------------------------*/
 
-int enumcfg(char *group, char *param, char *value, int index)
+int enumcfg(char *group, char *param, int psize, char *value, int vsize, int index)
 {
    char str[10000], *p, *pstr;
    int i;
 
    /* open configuration file */
    if (!cfgbuffer)
-      getcfg("dummy", "dummy", str);
+      getcfg("dummy", "dummy", str, sizeof(str));
    if (!cfgbuffer)
       return 0;
 
@@ -2385,7 +2388,7 @@ int enumcfg(char *group, char *param, char *value, int index)
                   *pstr-- = 0;
 
                if (i == index) {
-                  strcpy(param, str);
+                  strlcpy(param, str, psize);
                   if (*p == '=') {
                      p++;
                      while (*p == ' ' || *p == '\t')
@@ -2398,7 +2401,7 @@ int enumcfg(char *group, char *param, char *value, int index)
                         *pstr-- = 0;
 
                      if (value)
-                        strcpy(value, str);
+                        strlcpy(value, str, vsize);
                   }
                   return 1;
                }
@@ -2429,7 +2432,7 @@ int enumgrp(int index, char *group)
 
    /* open configuration file */
    if (!cfgbuffer)
-      getcfg("dummy", "dummy", str);
+      getcfg("dummy", "dummy", str, sizeof(str));
    if (!cfgbuffer)
       return 0;
 
@@ -2469,7 +2472,7 @@ int exist_top_group()
    char str[256];
 
    for (i = 0;; i++) {
-      if (!enumcfg("global", str, NULL, i))
+      if (!enumcfg("global", str, sizeof(str), NULL, 0, i))
          break;
       str[9] = 0;
       if (strieq(str, "top group"))
@@ -2492,7 +2495,7 @@ int check_language()
    int fh, length, n;
    struct stat cfg_stat;
 
-   getcfg("global", "Language", language);
+   getcfg("global", "Language", language, sizeof(language));
 
    /* set locale for strftime */
    if (language[0])
@@ -2618,7 +2621,7 @@ char *loc(char *orig)
       return result;
    }
 
-   getcfg("global", "Language", language);
+   getcfg("global", "Language", language, sizeof(language));
    eprintf("Language error: string \"%s\" not found for language \"%s\"\n", orig,
            language);
 
@@ -2710,7 +2713,7 @@ void retrieve_email_from(LOGBOOK * lbs, char *ret)
 
    if (isparam("user_email") && *getparam("user_email"))
       strcpy(str, getparam("user_email"));
-   else if (!getcfg(lbs->name, "Use Email from", str))
+   else if (!getcfg(lbs->name, "Use Email from", str, sizeof(str)))
       sprintf(str, "ELog@%s", host_name);
 
    strcpy(ret, str);
@@ -3158,7 +3161,7 @@ int el_index_logbooks()
       url_encode(lb_list[n].name_enc, sizeof(lb_list[n].name_enc));
 
       /* get data dir from configuration file (old method) */
-      if (getcfg(logbook, "Data dir", str)) {
+      if (getcfg(logbook, "Data dir", str, sizeof(str))) {
          if (str[0] == DIR_SEPARATOR || str[1] == ':')
             strlcpy(data_dir, str, sizeof(data_dir));
          else {
@@ -3171,7 +3174,7 @@ int el_index_logbooks()
          if (data_dir[strlen(data_dir) - 1] != DIR_SEPARATOR)
             strlcat(data_dir, DIR_SEPARATOR_STR, sizeof(data_dir));
 
-         if (getcfg(logbook, "Subdir", str)) {
+         if (getcfg(logbook, "Subdir", str, sizeof(str))) {
             if (str[0] == DIR_SEPARATOR)
                strlcpy(data_dir, str, sizeof(data_dir));
             else
@@ -4248,7 +4251,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
    }
 
    /* execute shell if requested */
-   if (getcfg(lbs->name, "Execute delete", str))
+   if (getcfg(lbs->name, "Execute delete", str, sizeof(str)))
       execute_shell(lbs, message_id, NULL, str);
 
    return EL_SUCCESS;
@@ -4365,7 +4368,7 @@ int el_move_message_thread(LOGBOOK * lbs, int message_id)
    el_delete_message(lbs, message_id, FALSE, NULL, FALSE, FALSE);
 
    /* move all replies recursively */
-   if (getcfg(lbs->name, "Resubmit replies", str) && atoi(str) == 1) {
+   if (getcfg(lbs->name, "Resubmit replies", str, sizeof(str)) && atoi(str) == 1) {
       if (reply_to[0]) {
          n = strbreak(reply_to, list, MAX_N_ATTR, ",");
          for (i = 0; i < n; i++)
@@ -4446,9 +4449,9 @@ void logf(LOGBOOK * lbs, const char *format, ...)
    char buf[1000];
 
    if (lbs == NULL) {
-      if (!getcfg("global", "logfile", str))
+      if (!getcfg("global", "logfile", str, sizeof(str)))
          return;
-   } else if (!getcfg(lbs->name, "logfile", str))
+   } else if (!getcfg(lbs->name, "logfile", str, sizeof(str)))
       return;
 
    if (str[0] == DIR_SEPARATOR || str[1] == ':')
@@ -4995,9 +4998,9 @@ void set_location(LOGBOOK * lbs, char *rel_path)
       rsputs(rel_path);
    } else {
       if (lbs)
-         getcfg(lbs->name, "URL", str);
+         getcfg(lbs->name, "URL", str, sizeof(str));
       else
-         getcfg("global", "URL", str);
+         getcfg("global", "URL", str, sizeof(str));
 
       /* if HTTP request comes from localhost, use localhost as
          absolute link (needed if running on DSL at home */
@@ -5089,7 +5092,7 @@ void set_cookie(LOGBOOK * lbs, char *name, char *value, BOOL global, char *expir
    /* add path */
    if (global) {
       /* path for all logbooks */
-      if (getcfg(lb_name, "URL", str)) {
+      if (getcfg(lb_name, "URL", str, sizeof(str))) {
          extract_path(str);
          url_encode(str, sizeof(str));
          rsprintf(" path=/%s;", str);
@@ -5099,7 +5102,7 @@ void set_cookie(LOGBOOK * lbs, char *name, char *value, BOOL global, char *expir
       /* bug in lynx: path has to be absolute */
       if (strstr(browser, "Lynx/") != NULL) {
          /* path for individual logbook */
-         if (getcfg(lb_name, "URL", str)) {
+         if (getcfg(lb_name, "URL", str, sizeof(str))) {
             extract_path(str);
             url_encode(str, sizeof(str));
             if (str[0])
@@ -5231,7 +5234,7 @@ and attr_flags arrays */
        tmp_list[MAX_N_ATTR][NAME_LENGTH];
    int i, j, n, m;
 
-   if (getcfg(logbook, "Attributes", list)) {
+   if (getcfg(logbook, "Attributes", list, sizeof(list))) {
       /* reset attribute flags */
       memset(attr_flags, 0, sizeof(attr_flags));
 
@@ -5243,30 +5246,30 @@ and attr_flags arrays */
       memset(attr_options, 0, sizeof(attr_options));
       for (i = 0; i < n; i++) {
          sprintf(str, "Options %s", attr_list[i]);
-         if (getcfg(logbook, str, list))
+         if (getcfg(logbook, str, list, sizeof(list)))
             strbreak(list, attr_options[i], MAX_N_LIST, ",");
 
          sprintf(str, "MOptions %s", attr_list[i]);
-         if (getcfg(logbook, str, list)) {
+         if (getcfg(logbook, str, list, sizeof(list))) {
             strbreak(list, attr_options[i], MAX_N_LIST, ",");
             attr_flags[i] |= AF_MULTI;
          }
 
          sprintf(str, "ROptions %s", attr_list[i]);
-         if (getcfg(logbook, str, list)) {
+         if (getcfg(logbook, str, list, sizeof(list))) {
             strbreak(list, attr_options[i], MAX_N_LIST, ",");
             attr_flags[i] |= AF_RADIO;
          }
 
          sprintf(str, "IOptions %s", attr_list[i]);
-         if (getcfg(logbook, str, list)) {
+         if (getcfg(logbook, str, list, sizeof(list))) {
             strbreak(list, attr_options[i], MAX_N_LIST, ",");
             attr_flags[i] |= AF_ICON;
          }
       }
 
       /* check if attribute required */
-      getcfg(logbook, "Required Attributes", list);
+      getcfg(logbook, "Required Attributes", list, sizeof(list));
       m = strbreak(list, tmp_list, MAX_N_ATTR, ",");
       for (i = 0; i < m; i++) {
          for (j = 0; j < n; j++)
@@ -5275,7 +5278,7 @@ and attr_flags arrays */
       }
 
       /* check if locked attribute */
-      getcfg(logbook, "Locked Attributes", list);
+      getcfg(logbook, "Locked Attributes", list, sizeof(list));
       m = strbreak(list, tmp_list, MAX_N_ATTR, ",");
       for (i = 0; i < m; i++) {
          for (j = 0; j < n; j++)
@@ -5284,7 +5287,7 @@ and attr_flags arrays */
       }
 
       /* check if fixed attribute for Edit */
-      getcfg(logbook, "Fixed Attributes Edit", list);
+      getcfg(logbook, "Fixed Attributes Edit", list, sizeof(list));
       m = strbreak(list, tmp_list, MAX_N_ATTR, ",");
       for (i = 0; i < m; i++) {
          for (j = 0; j < n; j++)
@@ -5293,7 +5296,7 @@ and attr_flags arrays */
       }
 
       /* check if fixed attribute for Reply */
-      getcfg(logbook, "Fixed Attributes Reply", list);
+      getcfg(logbook, "Fixed Attributes Reply", list, sizeof(list));
       m = strbreak(list, tmp_list, MAX_N_ATTR, ",");
       for (i = 0; i < m; i++) {
          for (j = 0; j < n; j++)
@@ -5302,7 +5305,7 @@ and attr_flags arrays */
       }
 
       /* check for extendable options */
-      getcfg(logbook, "Extendable Options", list);
+      getcfg(logbook, "Extendable Options", list, sizeof(list));
       m = strbreak(list, tmp_list, MAX_N_ATTR, ",");
       for (i = 0; i < m; i++) {
          for (j = 0; j < n; j++)
@@ -5313,7 +5316,7 @@ and attr_flags arrays */
 
       for (i = 0; i < n; i++) {
          sprintf(str, "Type %s", attr_list[i]);
-         if (getcfg(logbook, str, type)) {
+         if (getcfg(logbook, str, type, sizeof(type))) {
             if (strieq(type, "date"))
                attr_flags[i] |= AF_DATE;
             if (strieq(type, "numeric"))
@@ -5340,7 +5343,7 @@ void show_http_header(BOOL expires)
    rsprintf("HTTP/1.1 200 Document follows\r\n");
    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
 
-   if (getcfg("global", "charset", str))
+   if (getcfg("global", "charset", str, sizeof(str)))
       rsprintf("Content-Type: text/html;charset=%s\r\n", str);
    else
       rsprintf("Content-Type: text/html;charset=iso-8859-1\r\n");
@@ -5394,10 +5397,10 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head)
    /* Cascading Style Sheet */
    strlcpy(css, "default.css", sizeof(css));
 
-   if (lbs != NULL && getcfg(lbs->name, "CSS", str))
+   if (lbs != NULL && getcfg(lbs->name, "CSS", str, sizeof(str)))
       strlcpy(css, str, sizeof(css));
 
-   else if (lbs == NULL && getcfg("global", "CSS", str))
+   else if (lbs == NULL && getcfg("global", "CSS", str, sizeof(str)))
       strlcpy(css, str, sizeof(css));
 
    rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">\n", css);
@@ -5451,9 +5454,9 @@ void show_upgrade_page(LOGBOOK * lbs)
    rsprintf("<pre>\n");
    rsprintf("Attributes = Author, Type, Category, Subject\n");
    rsprintf("Required Attributes = Author\n");
-   getcfg(lbs->name, "Types", str);
+   getcfg(lbs->name, "Types", str, sizeof(str));
    rsprintf("Options Type = %s\n", str);
-   getcfg(lbs->name, "Categories", str);
+   getcfg(lbs->name, "Categories", str, sizeof(str));
    rsprintf("Options Category = %s\n", str);
    rsprintf("Page title = $subject\n");
    rsprintf("</pre>\n");
@@ -5491,7 +5494,7 @@ LBLIST get_logbook_hierarchy(void)
 
    /* enumerate groups */
    for (i = n = 0;; i++) {
-      if (!enumcfg("global", grpname, grpmembers, i))
+      if (!enumcfg("global", grpname, sizeof(grpname), grpmembers, sizeof(grpmembers), i))
          break;
 
       flag = 0;
@@ -5648,7 +5651,7 @@ void change_logbook_in_group(LOGBOOK * lbs, char *new_name)
 
    /* enumerate groups */
    for (i = 0;; i++) {
-      if (!enumcfg("global", grpname, grpmembers, i))
+      if (!enumcfg("global", grpname, sizeof(grpname), grpmembers, sizeof(grpmembers), i))
          break;
 
       flag = 0;
@@ -5684,7 +5687,7 @@ void add_logbook_to_group(LOGBOOK * lbs, char *new_name)
 
    /* enumerate groups */
    for (i = 0;; i++) {
-      if (!enumcfg("global", grpname, grpmembers, i))
+      if (!enumcfg("global", grpname, sizeof(grpname), grpmembers, sizeof(grpmembers), i))
          break;
 
       flag = 0;
@@ -5733,23 +5736,23 @@ void show_standard_title(char *logbook, char *text, int printable)
    pnode = phier;               /* start at root of tree */
    pnext = NULL;
 
-   if (!printable && (!getcfg(logbook, "logbook tabs", str)
+   if (!printable && (!getcfg(logbook, "logbook tabs", str, sizeof(str))
                       || atoi(str) == 1)) {
 
       for (level = 0;; level++) {
          rsprintf("<tr><td class=\"tabs\">\n");
 
-         if (level == 0 && getcfg("global", "main tab", str) && !getcfg_topgroup())
+         if (level == 0 && getcfg("global", "main tab", str, sizeof(str)) && !getcfg_topgroup())
             rsprintf("<span class=\"ltab\"><a href=\"../\">%s</a></span>\n", str);
 
-         if (level == 1 && getcfg("global", "main tab", str) && getcfg_topgroup())
+         if (level == 1 && getcfg("global", "main tab", str, sizeof(str)) && getcfg_topgroup())
             rsprintf("<span class=\"ltab\"><a href=\"../%s/\">%s</a></span>\n",
                      getcfg_topgroup(), str);
 
          /* iterate through members of this group */
          for (i = 0; i < pnode->n_members; i++) {
 
-            if (getcfg(pnode->member[i]->name, "Hidden", str) && atoi(str) == 1)
+            if (getcfg(pnode->member[i]->name, "Hidden", str, sizeof(str)) && atoi(str) == 1)
                continue;
 
             strlcpy(str, pnode->member[i]->name, sizeof(str));
@@ -5821,7 +5824,7 @@ void show_standard_title(char *logbook, char *text, int printable)
    rsprintf("<tr><td class=\"title1\">");
 
    /* use comment as title if available, else logbook name */
-   if (!getcfg(logbook, "Comment", str))
+   if (!getcfg(logbook, "Comment", str, sizeof(str)))
       strcpy(str, logbook);
 
    rsprintf("&nbsp;&nbsp;%s%s&nbsp;</td>\n", str, text);
@@ -5830,21 +5833,21 @@ void show_standard_title(char *logbook, char *text, int printable)
    if (*getparam("full_name"))
       rsprintf("<td class=\"title2\">%s \"%s\"</td>\n", loc("Logged in as"),
                getparam("full_name"));
-   else if (getcfg(logbook, "Guest menu commands", str))
+   else if (getcfg(logbook, "Guest menu commands", str, sizeof(str)))
       rsprintf("<td class=\"title2\" align=center>%s</td>\n", loc("Not logged in"));
 
    /* right cell */
    rsprintf("<td class=\"title3\">");
 
-   if (getcfg(logbook, "Title image URL", str))
+   if (getcfg(logbook, "Title image URL", str, sizeof(str)))
       rsprintf("<a href=\"%s\">\n", str);
 
-   if (getcfg(logbook, "Title image", str))
+   if (getcfg(logbook, "Title image", str, sizeof(str)))
       rsprintf(str);
    else
       rsprintf("<img border=0 src=\"elog.gif\" alt=\"ELOG logo\">");
 
-   if (getcfg(logbook, "Title image URL", str))
+   if (getcfg(logbook, "Title image URL", str, sizeof(str)))
       rsprintf("</a>\n");
 
    rsprintf("</td>\n");
@@ -5859,7 +5862,7 @@ void show_top_text(LOGBOOK * lbs)
    char str[NAME_LENGTH];
    int size;
 
-   if (getcfg(lbs->name, "top text", str)) {
+   if (getcfg(lbs->name, "top text", str, sizeof(str))) {
       FILE *f;
       char file_name[256], *buf;
 
@@ -5895,7 +5898,7 @@ void show_bottom_text(LOGBOOK * lbs)
    char str[NAME_LENGTH];
    int size;
 
-   if (getcfg(lbs->name, "bottom text", str)) {
+   if (getcfg(lbs->name, "bottom text", str, sizeof(str))) {
       FILE *f;
       char file_name[256], *buf;
 
@@ -5980,13 +5983,13 @@ void set_login_cookies(LOGBOOK * lbs, char *user, char *enc_pwd)
 
    /* get optional expriation from configuration file */
    if (isparam("remember")) {
-      if (!getcfg(lb_name, "Login expiration", exp))
+      if (!getcfg(lb_name, "Login expiration", exp, sizeof(exp)))
          strcpy(exp, "31*24");  /* one month by default */
    } else
       exp[0] = 0;
 
    /* check if cookies should be global */
-   global = getcfg("global", "Password file", str);
+   global = getcfg("global", "Password file", str, sizeof(str));
 
    /* two cookies for password and user name */
    set_cookie(lbs, "unm", user, global, exp);
@@ -6050,7 +6053,7 @@ void send_file_direct(char *file_name)
          if (strstr(str, filetype[i].ext))
             break;
 
-      if (!getcfg("global", "charset", charset))
+      if (!getcfg("global", "charset", charset, sizeof(charset)))
          strcpy(charset, "iso-8859-1");
 
       if (filetype[i].ext[0])
@@ -6211,7 +6214,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
 
                t = (time_t) atoi(attrib[i]);
                ts = localtime(&t);
-               if (!getcfg(lbs->name, "Date format", format))
+               if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
                   strcpy(format, DEFAULT_DATE_FORMAT);
 
                strftime(value[i], NAME_LENGTH, format, ts);
@@ -6250,7 +6253,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
    time(&t);
    if (format_date) {
       ts = localtime(&t);
-      if (!getcfg(lbs->name, "Time format", format))
+      if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
          strcpy(format, DEFAULT_TIME_FORMAT);
 
       strftime(str, sizeof(str), format, ts);
@@ -6263,7 +6266,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
    time(&t);
    if (format_date) {
       ts = gmtime(&t);
-      if (!getcfg(lbs->name, "Time format", format))
+      if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
          strcpy(format, DEFAULT_TIME_FORMAT);
 
       strftime(str, sizeof(str), format, ts);
@@ -6291,7 +6294,7 @@ void add_subst_time(LOGBOOK * lbs,
    time_t ltime;
    struct tm *pts;
 
-   if (!getcfg(lbs->name, "Time format", format))
+   if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
       strcpy(format, DEFAULT_TIME_FORMAT);
    ltime = date_to_ltime(date);
    pts = localtime(&ltime);
@@ -6308,7 +6311,7 @@ BOOL change_pwd(LOGBOOK * lbs, char *user, char *pwd)
    char *buf;
    int i, fh, size;
 
-   getcfg(lbs->name, "Password file", str);
+   getcfg(lbs->name, "Password file", str, sizeof(str));
 
    if (str[0] == DIR_SEPARATOR || str[1] == ':')
       strcpy(file_name, str);
@@ -6535,7 +6538,7 @@ BOOL is_author(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], char *owner)
    /* search attribute which contains short_name of author */
    for (i = 0; i < lbs->n_attr; i++) {
       sprintf(str, "Preset %s", attr_list[i]);
-      if (getcfg(lbs->name, str, preset)) {
+      if (getcfg(lbs->name, str, preset, sizeof(preset))) {
          if (strstr(preset, "$short_name")) {
             if (strstr(attrib[i], getparam("unm")) == NULL) {
                strcpy(owner, attrib[i]);
@@ -6550,7 +6553,7 @@ BOOL is_author(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], char *owner)
       /* if not found, search attribute which contains full_name of author */
       for (i = 0; i < lbs->n_attr; i++) {
          sprintf(str, "Preset %s", attr_list[i]);
-         if (getcfg(lbs->name, str, preset)) {
+         if (getcfg(lbs->name, str, preset, sizeof(preset))) {
             if (strstr(preset, "$long_name")) {
                if (strstr(attrib[i], getparam("full_name")) == NULL) {
                   strcpy(owner, attrib[i]);
@@ -6733,7 +6736,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      text, &size, orig_tag, reply_tag, att, encoding, locked_by);
 
          if (bedit) {
-            if (getcfg(lbs->name, "Use Lock", str) && atoi(str) == 1) {
+            if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1) {
                if (*getparam("full_name"))
                   strcpy(str, getparam("full_name"));
                else
@@ -6800,7 +6803,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* check for author */
-   if (bedit && getcfg(lbs->name, "Restrict edit", str)
+   if (bedit && getcfg(lbs->name, "Restrict edit", str, sizeof(str))
        && atoi(str) == 1) {
       if (!is_author(lbs, attrib, owner)) {
          sprintf(str, loc("Only user <i>%s</i> can edit this entry"), owner);
@@ -6811,7 +6814,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* check for editing interval */
-   if (bedit && getcfg(lbs->name, "Restrict edit time", str)) {
+   if (bedit && getcfg(lbs->name, "Restrict edit time", str, sizeof(str))) {
       for (i = 0; i < *lbs->n_el_index; i++)
          if (lbs->el_index[i].message_id == message_id)
             break;
@@ -6828,7 +6831,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    /* remove attributes for replies */
    if (breply) {
-      getcfg(lbs->name, "Remove on reply", str);
+      getcfg(lbs->name, "Remove on reply", str, sizeof(str));
       n = strbreak(str, list, MAX_N_ATTR, ",");
       for (i = 0; i < n; i++)
          for (j = 0; j < lbs->n_attr; j++) {
@@ -6841,7 +6844,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (breply) {
       for (index = 0; index < lbs->n_attr; index++) {
          sprintf(str, "Subst on reply %s", attr_list[index]);
-         if (getcfg(lbs->name, str, preset)) {
+         if (getcfg(lbs->name, str, preset, sizeof(preset))) {
             /* check if already second reply */
             if (orig_tag[0] == 0) {
 
@@ -6862,7 +6865,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (message_id && bedit && !breedit && !bupload) {
       for (index = 0; index < lbs->n_attr; index++) {
          sprintf(str, "Subst on edit %s", attr_list[index]);
-         if (getcfg(lbs->name, str, preset)) {
+         if (getcfg(lbs->name, str, preset, sizeof(preset))) {
 
             /* do not format date for date attributes */
             i = build_subst_list(lbs, slist, svalue, attrib,
@@ -7053,10 +7056,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    /*---- add password in case cookie expires during edit ----*/
 
-   if (getcfg(lbs->name, "Write password", str))
+   if (getcfg(lbs->name, "Write password", str, sizeof(str)))
       rsprintf("<input type=hidden name=\"wpwd\" value=\"%s\">\n", str);
 
-   if (getcfg(lbs->name, "Password file", str)) {
+   if (getcfg(lbs->name, "Password file", str, sizeof(str))) {
       rsprintf("<input type=hidden name=\"unm\" value=\"%s\">\n", getparam("unm"));
       rsprintf("<input type=hidden name=\"upwd\" value=\"%s\">\n", getparam("upwd"));
    }
@@ -7101,14 +7104,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    time(&now);
    if (bedit) {
-      if (!getcfg(lbs->name, "Time format", format))
+      if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
          strcpy(format, DEFAULT_TIME_FORMAT);
 
       ltime = date_to_ltime(date);
       pts = localtime(&ltime);
       strftime(str, sizeof(str), format, pts);
    } else {
-      if (getcfg(lbs->name, "Time format", format))
+      if (getcfg(lbs->name, "Time format", format, sizeof(format)))
          strftime(str, sizeof(str), format, localtime(&now));
       else
          strcpy(str, ctime(&now));
@@ -7125,7 +7128,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    for (i = 0; i < lbs->n_attr; i++) {
       format_flags[i] = 0;
       sprintf(str, "Format %s", attr_list[i]);
-      if (getcfg(lbs->name, str, format)) {
+      if (getcfg(lbs->name, str, format, sizeof(format))) {
          n = strbreak(format, fl, 8, ",");
          if (n > 0)
             format_flags[i] = atoi(fl[0]);
@@ -7142,7 +7145,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       btou(ua);
 
       sprintf(str, "Format %s", attr_list[index]);
-      if (getcfg(lbs->name, str, format)) {
+      if (getcfg(lbs->name, str, format, sizeof(format))) {
          n = strbreak(format, fl, 8, ",");
          if (n > 1)
             strlcpy(class_name, fl[1], sizeof(class_name));
@@ -7162,7 +7165,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       /* check for preset string */
       sprintf(str, "Preset %s", attr_list[index]);
-      if ((i = getcfg(lbs->name, str, preset)) > 0) {
+      if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0) {
 
          if ((!bedit && !breply) ||     /* don't subst on edit or reply */
              (breedit && i == 2)) {     /* subst on reedit only if preset is under condition */
@@ -7187,7 +7190,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
 
       sprintf(str, "Preset on reply %s", attr_list[index]);
-      if ((i = getcfg(lbs->name, str, preset)) > 0 && breply) {
+      if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0 && breply) {
 
          if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
 
@@ -7213,7 +7216,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       /* display text box with optional tooltip */
       sprintf(str, "Tooltip %s", attr_list[index]);
       title[0] = 0;
-      if (getcfg(lbs->name, str, comment))
+      if (getcfg(lbs->name, str, comment, sizeof(comment)))
          sprintf(title, " title=\"%s\"", comment);
 
       rsprintf("<td%s nowrap class=\"attribname\">", title);
@@ -7223,7 +7226,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       /* show optional comment */
       sprintf(str, "Comment %s", attr_list[index]);
-      if (getcfg(lbs->name, str, comment))
+      if (getcfg(lbs->name, str, comment, sizeof(comment)))
          rsprintf("<br><span class=\"selcomment\"><b>%s</b></span>\n", comment);
 
       rsprintf("</td>\n");
@@ -7402,7 +7405,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                              ua, attr_options[index][i]);
 
                      sprintf(str, "Icon comment %s", attr_options[index][i]);
-                     getcfg(lbs->name, str, comment);
+                     getcfg(lbs->name, str, comment, sizeof(comment));
 
                      if (comment[0])
                         rsprintf("<img src=\"icons/%s\" alt=\"%s\"></nobr>\n",
@@ -7473,7 +7476,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* set textarea width */
    width = 76;
 
-   if (getcfg(lbs->name, "Message width", str))
+   if (getcfg(lbs->name, "Message width", str, sizeof(str)))
       width = atoi(str);
 
    /* increased width according to longest line */
@@ -7503,7 +7506,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    /* set textarea height */
    height = 20;
-   if (getcfg(lbs->name, "Message height", str))
+   if (getcfg(lbs->name, "Message height", str, sizeof(str)))
       height = atoi(str);
 
    rsprintf("<tr><td colspan=2 class=\"attribvalue\">\n");
@@ -7519,13 +7522,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (bedit && message_id)
       rsprintf("<input type=hidden name=edit_id value=\"%d\">\n", message_id);
 
-   if (getcfg(lbs->name, "Message comment", comment)
+   if (getcfg(lbs->name, "Message comment", comment, sizeof(comment))
        && !message_id) {
       rsputs(comment);
       rsputs("<br>\n");
    }
 
-   preset_text = getcfg(lbs->name, "Preset text", str);
+   preset_text = getcfg(lbs->name, "Preset text", str, sizeof(str));
    if (preset_text) {
 
       /* don't use preset text if editing */
@@ -7533,14 +7536,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          preset_text = FALSE;
 
       /* user preset on reedit only if preset is under condition */
-      if (breedit && getcfg(lbs->name, "Preset text", str) == 2)
+      if (breedit && getcfg(lbs->name, "Preset text", str, sizeof(str)) == 2)
          preset_text = TRUE;
    }
 
-   if (!getcfg(lbs->name, "Show text", str)
+   if (!getcfg(lbs->name, "Show text", str, sizeof(str))
        || atoi(str) == 1) {
 
-      if (getcfg(lbs->name, "Fix text", str) && atoi(str) == 1)
+      if (getcfg(lbs->name, "Fix text", str, sizeof(str)) && atoi(str) == 1)
          strcpy(str, " readonly");
       else
          strcpy(str, "");
@@ -7557,7 +7560,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             add_subst_list(slist, svalue, "message id", mid, &j);
             add_subst_time(lbs, slist, svalue, "entry time", date, &j);
 
-            if (getcfg(lbs->name, "Prepend on edit", str)) {
+            if (getcfg(lbs->name, "Prepend on edit", str, sizeof(str))) {
                strsubst(str, slist, svalue, j);
                while (strstr(str, "\\n"))
                   memcpy(strstr(str, "\\n"), "\r\n", 2);
@@ -7566,7 +7569,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
             rsputs(text);
 
-            if (getcfg(lbs->name, "Append on edit", str)) {
+            if (getcfg(lbs->name, "Append on edit", str, sizeof(str))) {
                strsubst(str, slist, svalue, j);
                while (strstr(str, "\\n"))
                   memcpy(strstr(str, "\\n"), "\r\n", 2);
@@ -7574,9 +7577,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             }
          }
       } else if (breply) {
-         if (!getcfg(lbs->name, "Quote on reply", str)
+         if (!getcfg(lbs->name, "Quote on reply", str, sizeof(str))
              || atoi(str) > 0) {
-            if (getcfg(lbs->name, "Prepend on reply", str)) {
+            if (getcfg(lbs->name, "Prepend on reply", str, sizeof(str))) {
                j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
                sprintf(mid, "%d", message_id);
                add_subst_list(slist, svalue, "message id", mid, &j);
@@ -7591,7 +7594,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             p = text;
 
             if (text[0]) {
-               if (!getcfg(lbs->name, "Reply string", reply_string))
+               if (!getcfg(lbs->name, "Reply string", reply_string, sizeof(reply_string)))
                   strcpy(reply_string, "> ");
 
                do {
@@ -7624,7 +7627,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                } while (TRUE);
             }
 
-            if (getcfg(lbs->name, "Append on reply", str)) {
+            if (getcfg(lbs->name, "Append on reply", str, sizeof(str))) {
 
                j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
                sprintf(mid, "%d", message_id);
@@ -7640,7 +7643,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
 
       if (preset_text) {
-         getcfg(lbs->name, "Preset text", str);
+         getcfg(lbs->name, "Preset text", str, sizeof(str));
 
          /* check if file starts with an absolute directory */
          if (str[0] == DIR_SEPARATOR || str[1] == ':')
@@ -7674,7 +7677,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       /* HTML check box */
       if (message_id) {
-         if (getcfg(lbs->name, "HTML default", str)) {
+         if (getcfg(lbs->name, "HTML default", str, sizeof(str))) {
             if (atoi(str) < 2) {
                if (encoding[0] == 'H')
                   rsprintf("<input type=checkbox checked name=html value=1>%s\n",
@@ -7694,7 +7697,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         loc("Submit as HTML text"));
          }
       } else {
-         if (getcfg(lbs->name, "HTML default", str)) {
+         if (getcfg(lbs->name, "HTML default", str, sizeof(str))) {
             if (atoi(str) == 0) {
                rsprintf("<input type=checkbox name=html value=1>%s\n",
                         loc("Submit as HTML text"));
@@ -7711,9 +7714,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* Suppress email check box */
-   if (!(bedit && !breedit && !bupload && getcfg(lbs->name, "Suppress Email on edit", str)
+   if (!(bedit && !breedit && !bupload && getcfg(lbs->name, "Suppress Email on edit", str, sizeof(str))
          && atoi(str) == 1)) {
-      if (getcfg(lbs->name, "Suppress default", str)) {
+      if (getcfg(lbs->name, "Suppress default", str, sizeof(str))) {
          if (atoi(str) == 0) {
             rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
             rsprintf("<input type=checkbox name=suppress value=1>%s\n",
@@ -7731,8 +7734,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* Suppress execute shell check box */
-   if (!bedit && getcfg(lbs->name, "Execute new", str)) {
-      if (getcfg(lbs->name, "Suppress execute default", str)) {
+   if (!bedit && getcfg(lbs->name, "Execute new", str, sizeof(str))) {
+      if (getcfg(lbs->name, "Suppress execute default", str, sizeof(str))) {
          if (atoi(str) == 0) {
             rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
             rsprintf("<input type=checkbox name=shell_suppress value=1>%s\n",
@@ -7749,8 +7752,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
    }
 
-   if (bedit && getcfg(lbs->name, "Execute edit", str)) {
-      if (getcfg(lbs->name, "Suppress execute default", str)) {
+   if (bedit && getcfg(lbs->name, "Execute edit", str, sizeof(str))) {
+      if (getcfg(lbs->name, "Suppress execute default", str, sizeof(str))) {
          if (atoi(str) == 0) {
             rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
             rsprintf("<input type=checkbox name=shell_suppress value=1>%s\n",
@@ -7769,7 +7772,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    /* Resubmit check box */
    if (bedit) {
-      if (getcfg(lbs->name, "Resubmit default", str)) {
+      if (getcfg(lbs->name, "Resubmit default", str, sizeof(str))) {
          if (atoi(str) == 0) {
             rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
             rsprintf("<input type=checkbox name=resubmit value=1>%s\n",
@@ -7788,7 +7791,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    rsprintf("</tr>\n");
 
-   if (!getcfg(lbs->name, "Enable attachments", str)
+   if (!getcfg(lbs->name, "Enable attachments", str, sizeof(str))
        || atoi(str) > 0) {
       i = 0;
       if (bedit) {
@@ -7809,7 +7812,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
 
       /* optional attachment comment */
-      if (getcfg(lbs->name, "Attachment comment", comment)
+      if (getcfg(lbs->name, "Attachment comment", comment, sizeof(comment))
           && !message_id) {
          rsprintf("<tr><td colspan=2 class=\"attribvalue\">\n");
          rsputs(comment);
@@ -7887,10 +7890,10 @@ void show_find_form(LOGBOOK * lbs)
 
    rsprintf("<b>%s:</b>&nbsp;&nbsp;", loc("Mode"));
 
-   if (!getcfg(lbs->name, "Display mode", mode))
+   if (!getcfg(lbs->name, "Display mode", mode, sizeof(mode)))
       strcpy(mode, "Full");
 
-   if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1) {
+   if (!getcfg(lbs->name, "Show text", str, sizeof(str)) || atoi(str) == 1) {
       if (strieq(mode, "Full"))
          rsprintf("<input type=radio id=\"full\" name=\"mode\" value=\"full\" checked>");
       else
@@ -7944,7 +7947,7 @@ void show_find_form(LOGBOOK * lbs)
 
    rsprintf("<tr><td class=\"form2\"><b>%s:</b><br>", loc("Options"));
 
-   if (!getcfg(lbs->name, "Number attachments", str) || atoi(str) > 0) {
+   if (!getcfg(lbs->name, "Number attachments", str, sizeof(str)) || atoi(str) > 0) {
       rsprintf("<input type=checkbox id=\"attach\" name=\"attach\" value=1>");
       rsprintf("<label for=\"attach\">%s<br></label>\n", loc("Show attachments"));
    }
@@ -7952,7 +7955,7 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf("<input type=checkbox id=\"printable\" name=\"printable\" value=1>");
    rsprintf("<label for=\"printable\">%s<br></label>\n", loc("Printable output"));
 
-   if (getcfg(lbs->name, "Reverse sort", str) && atoi(str) == 1)
+   if (getcfg(lbs->name, "Reverse sort", str, sizeof(str)) && atoi(str) == 1)
       rsprintf("<input type=checkbox id=\"reverse\" name=\"reverse\" value=1 checked>");
    else
       rsprintf("<input type=checkbox id=\"reverse\" name=\"reverse\" value=1>");
@@ -7968,14 +7971,14 @@ void show_find_form(LOGBOOK * lbs)
    }
 
    if (i > 2) {
-      if (!getcfg(lbs->name, "Search all logbooks", str) || atoi(str) == 1) {
+      if (!getcfg(lbs->name, "Search all logbooks", str, sizeof(str)) || atoi(str) == 1) {
          rsprintf("<input type=checkbox id=all name=all value=1>\n");
          rsprintf("<label for=\"all\">%s</label><br>\n", loc("Search all logbooks"));
       }
    }
 
    rsprintf(loc("Display"));
-   if (!getcfg(lbs->name, "Entries per page", str))
+   if (!getcfg(lbs->name, "Entries per page", str, sizeof(str)))
       strcpy(str, "20");
    rsprintf(" <input type=text name=npp size=3 value=%s> ", str);
    rsprintf(loc("entries per page"));
@@ -8051,7 +8054,7 @@ void show_find_form(LOGBOOK * lbs)
                   *strchr(option, '{') = 0;
 
                sprintf(str, "Icon comment %s", option);
-               getcfg(lbs->name, str, comment);
+               getcfg(lbs->name, str, comment, sizeof(comment));
 
                rsprintf("<nobr><input type=radio name=\"%s\" value=\"%s\">", attr_list[i],
                         option);
@@ -8290,7 +8293,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
       return;
    }
 
-   if (getcfg(section, "Admin textarea", str)
+   if (getcfg(section, "Admin textarea", str, sizeof(str))
        && strchr(str, ',') != NULL) {
       cols = atoi(str);
       rows = atoi(strchr(str, ',') + 1);
@@ -8611,7 +8614,7 @@ int rename_logbook(LOGBOOK * lbs, char *new_name)
    }
 
    /* rename logbook file */
-   if (!getcfg(lbs->name, "Subdir", str)) {
+   if (!getcfg(lbs->name, "Subdir", str, sizeof(str))) {
       strlcpy(lb_dir, logbook_dir, sizeof(lb_dir));
       if (lb_dir[strlen(lb_dir) - 1] != DIR_SEPARATOR)
          strlcat(lb_dir, DIR_SEPARATOR_STR, sizeof(lb_dir));
@@ -8834,7 +8837,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 
    /* check self register flag */
    self_register = 0;
-   if (getcfg(lbs->name, "Self register", str))
+   if (getcfg(lbs->name, "Self register", str, sizeof(str)))
       self_register = atoi(str);
 
    if (!activate) {
@@ -8863,7 +8866,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
    }
 
    if (activate || !new_user || self_register != 3) {   /* do not save in mode 3 */
-      getcfg(lbs->name, "Password file", str);
+      getcfg(lbs->name, "Password file", str, sizeof(str));
 
       if (str[0] == DIR_SEPARATOR || str[1] == ':')
          strcpy(file_name, str);
@@ -8965,14 +8968,14 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
    /* if requested, send notification email to admin user */
    if (new_user && (self_register == 2 || self_register == 3)
        && !isparam("admin")) {
-      if (!getcfg("global", "SMTP host", smtp_host)) {
+      if (!getcfg("global", "SMTP host", smtp_host, sizeof(smtp_host))) {
          show_error(loc
                     ("No SMTP host defined in [global] section of configuration file"));
          return 0;
       }
 
       /* try to get URL from referer */
-      if (!getcfg("global", "URL", url)) {
+      if (!getcfg("global", "URL", url, sizeof(url))) {
          if (referer[0])
             strcpy(url, referer);
          else {
@@ -9004,7 +9007,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
          sendmail(lbs, smtp_host, mail_from, getparam("new_user_email"), subject,
                   mail_text, TRUE, url, NULL);
       } else {
-         if (getcfg(lbs->name, "Admin user", admin_user)) {
+         if (getcfg(lbs->name, "Admin user", admin_user, sizeof(admin_user))) {
             pl = strtok(admin_user, " ,");
             while (pl) {
                get_user_line(lbs->name, pl, NULL, NULL, email_addr, NULL);
@@ -9107,7 +9110,7 @@ int remove_user(LOGBOOK * lbs, char *user)
    char file_name[256], str[256], line[256], *buf, *pl;
    int i, fh, size;
 
-   getcfg(lbs->name, "Password file", str);
+   getcfg(lbs->name, "Password file", str, sizeof(str));
 
    if (str[0] == DIR_SEPARATOR || str[1] == ':')
       strcpy(file_name, str);
@@ -9354,14 +9357,14 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             do_crypt(pwd, pwd_encrypted);
 
             /* send email with new password */
-            if (!getcfg("global", "SMTP host", smtp_host)) {
+            if (!getcfg("global", "SMTP host", smtp_host, sizeof(smtp_host))) {
                show_error(loc
                           ("No SMTP host defined in [global] section of configuration file"));
                return;
             }
 
             /* try to get URL from referer */
-            if (!getcfg("global", "URL", url)) {
+            if (!getcfg("global", "URL", url, sizeof(url))) {
                if (referer[0])
                   strcpy(url, referer);
                else {
@@ -9595,7 +9598,7 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
       }
 
       /* check for author */
-      if (getcfg(lbs->name, "Restrict edit", str) && atoi(str) == 1) {
+      if (getcfg(lbs->name, "Restrict edit", str, sizeof(str)) && atoi(str) == 1) {
          /* get message for reply/edit */
 
          el_retrieve(lbs, message_id, NULL, attr_list, attrib, lbs->n_attr, NULL, NULL,
@@ -11425,7 +11428,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
    char list[MAX_N_LIST][NAME_LENGTH], error_str[256], *buffer;
    unsigned char digest[16];
 
-   if (!getcfg(lbs->name, "Mirror server", str)) {
+   if (!getcfg(lbs->name, "Mirror server", str, sizeof(str))) {
       show_error(loc("No mirror server defined in configuration file"));
       return;
    }
@@ -11486,7 +11489,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
 
       /*---- check for configuration file ----*/
 
-      if (getcfg(lbs->name, "Mirror config", str) && atoi(str) == 1 && md5_cache) {
+      if (getcfg(lbs->name, "Mirror config", str, sizeof(str)) && atoi(str) == 1 && md5_cache) {
 
          load_config_section(lbs->name, &buffer, error_str);
          if (error_str[0])
@@ -11519,7 +11522,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                   logf(lbs, "MIRROR send config");
 
                /* submit configuration section */
-               if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
                   submit_config(lbs, list[index], buffer, error_str);
 
                if (error_str[0])
@@ -11537,7 +11540,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                if (_logging_level > 1)
                   logf(lbs, "MIRROR receive config");
 
-               if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
                   receive_config(lbs, list[index], error_str);
 
                if (error_str[0])
@@ -11614,7 +11617,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                   logf(lbs, "MIRROR send entry #%d", message_id);
 
                /* submit local message */
-               if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
                   submit_message(lbs, list[index], message_id, error_str);
                all_identical = FALSE;
 
@@ -11638,7 +11641,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                if (_logging_level > 1)
                   logf(lbs, "MIRROR receive entry #%d", message_id);
 
-               if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
                   receive_message(lbs, list[index], message_id, error_str, FALSE);
                all_identical = FALSE;
 
@@ -11709,7 +11712,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                   logf(lbs, "MIRROR send entry #%d", message_id);
 
                /* submit local message */
-               if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
                   submit_message(lbs, list[index], message_id, error_str);
                all_identical = FALSE;
 
@@ -11731,7 +11734,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                if (_logging_level > 1)
                   logf(lbs, "MIRROR delete local entry #%d", message_id);
 
-               if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+               if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
                   el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
                all_identical = FALSE;
 
@@ -11754,7 +11757,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                logf(lbs, "MIRROR send entry #%d", message_id);
 
             remote_id = 0;
-            if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+            if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
                remote_id = submit_message(lbs, list[index], message_id, error_str);
             all_identical = FALSE;
 
@@ -11792,7 +11795,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                logf(lbs, "MIRROR change entry #%d to #%d", message_id, max_id + 1);
 
             /* rearrange local message not to conflict with remote message */
-            if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+            if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
                el_move_message(lbs, message_id, max_id + 1);
             all_identical = FALSE;
 
@@ -11827,7 +11830,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                if (!exist_cache) {
 
                   /* if message does not exist locally and in cache, it is new, so retrieve it */
-                  if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+                  if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
                      receive_message(lbs, list[index], message_id, error_str, TRUE);
                   all_identical = FALSE;
 
@@ -11854,7 +11857,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                                  md5_remote[i_remote].md5_digest)) {
 
                      /* if message has changed remotely, receive it */
-                     if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+                     if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
                         receive_message(lbs, list[index], message_id, error_str, TRUE);
                      all_identical = FALSE;
 
@@ -11884,7 +11887,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                      combine_url(lbs, list[index], str, url, sizeof(url));
 
                      all_identical = FALSE;
-                     if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0) {
+                     if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0) {
                         retrieve_url(url, &buffer, NULL);
 
                         if (strstr(buffer, "Location: ")) {
@@ -11934,7 +11937,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
                      }
             }
 
-         if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+         if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0)
             save_md5(lbs, list[index], md5_remote, n_remote);
 
          if (md5_remote)
@@ -11972,7 +11975,7 @@ void synchronize(LOGBOOK * lbs, int mode)
 
    if (lbs == NULL) {
       for (i = 0; lb_list[i].name[0]; i++)
-         if (getcfg(lb_list[i].name, "mirror server", str)) {
+         if (getcfg(lb_list[i].name, "mirror server", str, sizeof(str))) {
 
             if (exist_top_group() && getcfg_topgroup())
                if (lb_list[i].top_group[0]
@@ -11980,7 +11983,7 @@ void synchronize(LOGBOOK * lbs, int mode)
                   continue;
 
             /* if called by cron, set user name and password */
-            if (mode == SYNC_CRON && getcfg(lb_list[i].name, "mirror user", str)) {
+            if (mode == SYNC_CRON && getcfg(lb_list[i].name, "mirror user", str, sizeof(str))) {
                if (get_user_line(lb_list[i].name, str, pwd, NULL, NULL, NULL) ==
                    EL_SUCCESS) {
                   setparam("unm", str);
@@ -12073,10 +12076,10 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    skip_comma = FALSE;
 
    if (strieq(mode, "Threaded")
-       && getcfg(lbs->name, "Thread display", display)) {
+       && getcfg(lbs->name, "Thread display", display, sizeof(display))) {
       /* check if to use icon from attributes */
       attr_icon[0] = 0;
-      if (getcfg(lbs->name, "Thread icon", attr_icon)) {
+      if (getcfg(lbs->name, "Thread icon", attr_icon, sizeof(attr_icon))) {
          for (i = 0; i < n_attr; i++)
             if (strieq(attr_list[i], attr_icon))
                break;
@@ -12091,7 +12094,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   attr_icon);
       else {
          /* if top level only, display reply icon if message has a reply */
-         if (getcfg(lbs->name, "Top level only", str) && atoi(str) == 1 && reply_to[0])
+         if (getcfg(lbs->name, "Top level only", str, sizeof(str)) && atoi(str) == 1 && reply_to[0])
             rsprintf("<a href=\"%s\"><img border=0 src=\"reply.gif\"></a>&nbsp;", ref);
          else {
             /* display standard icons */
@@ -12155,7 +12158,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   rsprintf("<img src=\"stop.gif\" alt=\"%s\">&nbsp;", str);
                }
 
-               if (getcfg(lbs->name, "ID display", display)) {
+               if (getcfg(lbs->name, "ID display", display, sizeof(display))) {
                   j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
                                        (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
                   sprintf(str, "%d", message_id);
@@ -12206,7 +12209,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          }
 
          if (strieq(disp_attr[index], loc("Date"))) {
-            if (!getcfg(lbs->name, "Time format", format))
+            if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
                strcpy(format, DEFAULT_TIME_FORMAT);
 
             ltime = date_to_ltime(date);
@@ -12276,7 +12279,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
                   else if (attr_flags[i] & AF_DATE) {
 
-                     if (!getcfg(lbs->name, "Date format", format))
+                     if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
                         strcpy(format, DEFAULT_DATE_FORMAT);
 
                      ltime = atoi(attrib[i]);
@@ -12307,7 +12310,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                         rsprintf("<a href=\"%s\">", ref);
 
                         sprintf(str, "Display %s", attr_list[i]);
-                        if (getcfg(lbs->name, str, display)) {
+                        if (getcfg(lbs->name, str, display, sizeof(display))) {
                            j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
                                                 (char (*)[NAME_LENGTH]) svalue, attrib,
                                                 TRUE);
@@ -12416,7 +12419,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       colspan++;
 
    if (strieq(mode, "Full") && show_text) {
-      if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1) {
+      if (!getcfg(lbs->name, "Show text", str, sizeof(str)) || atoi(str) == 1) {
          rsprintf("<tr><td class=\"messagelist\" colspan=%d>", colspan);
 
          if (strieq(encoding, "plain")) {
@@ -12676,12 +12679,12 @@ BOOL is_user_allowed(LOGBOOK * lbs, char *command)
    int i, n;
 
    /* check for user level access */
-   if (!getcfg(lbs->name, "Password file", str))
+   if (!getcfg(lbs->name, "Password file", str, sizeof(str)))
       return TRUE;
 
    /* check for deny */
    sprintf(str, "Deny %s", command);
-   if (getcfg(lbs->name, str, users)) {
+   if (getcfg(lbs->name, str, users, sizeof(users))) {
       /* check if current user in list */
       n = strbreak(users, list, MAX_N_LIST, ",");
       for (i = 0; i < n; i++)
@@ -12694,14 +12697,14 @@ BOOL is_user_allowed(LOGBOOK * lbs, char *command)
 
    /* check admin command */
    if (strieq(command, loc("Admin"))) {
-      if (getcfg(lbs->name, "Admin user", str)) {
+      if (getcfg(lbs->name, "Admin user", str, sizeof(str))) {
          return is_admin_user(lbs->name, getparam("unm"));
       }
    }
 
    /* check for allow */
    sprintf(str, "Allow %s", command);
-   if (!getcfg(lbs->name, str, users))
+   if (!getcfg(lbs->name, str, users, sizeof(users)))
       return TRUE;
 
    /* check if current user in list */
@@ -12725,14 +12728,14 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
       return TRUE;
 
    /* check for guest access */
-   if (!getcfg(lbs->name, "Guest Menu commands", menu_str) || *getparam("unm") != 0)
-      getcfg(lbs->name, "Menu commands", menu_str);
+   if (!getcfg(lbs->name, "Guest Menu commands", menu_str, sizeof(menu_str)) || *getparam("unm") != 0)
+      getcfg(lbs->name, "Menu commands", menu_str, sizeof(menu_str));
 
    /* default menu commands */
    if (menu_str[0] == 0) {
       strcpy(menu_str, "Back, New, Edit, Delete, Reply, Find, ");
 
-      if (getcfg(lbs->name, "Password file", str)) {
+      if (getcfg(lbs->name, "Password file", str, sizeof(str))) {
 
          if (is_admin_user(lbs->name, getparam("unm"))) {
 
@@ -12743,7 +12746,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
             strcat(menu_str, "Create new logbook, ");
 
 
-            if (getcfg(lbs->name, "Mirror server", str))
+            if (getcfg(lbs->name, "Mirror server", str, sizeof(str)))
                strcat(menu_str, "Synchronize, ");
 
             if (is_admin_user("global", getparam("unm"))) {
@@ -12763,7 +12766,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          }
          strcat(menu_str, "Config, Logout, ");
       } else {
-         if (getcfg(lbs->name, "Mirror server", str))
+         if (getcfg(lbs->name, "Mirror server", str, sizeof(str)))
             strcat(menu_str, "Synchronize, ");
          strcat(menu_str, "Config, ");
          strcat(menu_str, "Change [global], ");
@@ -12812,15 +12815,15 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 
    /* check find menu commands */
    str[0] = 0;
-   if (!getcfg(lbs->name, "Guest Find Menu commands", str) || *getparam("unm") != 0)
-      getcfg(lbs->name, "Find Menu commands", str);
+   if (!getcfg(lbs->name, "Guest Find Menu commands", str, sizeof(str)) || *getparam("unm") != 0)
+      getcfg(lbs->name, "Find Menu commands", str, sizeof(str));
 
    if (str[0])
       strlcat(menu_str, str, sizeof(menu_str));
    else {
       strlcat(menu_str, "New, Find, Select, Last x, Help, ", sizeof(menu_str));
 
-      if (getcfg(lbs->name, "Password file", str))
+      if (getcfg(lbs->name, "Password file", str, sizeof(str)))
          strlcat(menu_str, "Admin, Config, Logout, ", sizeof(menu_str));
       else
          strlcat(menu_str, "Config, ", sizeof(menu_str));
@@ -12833,7 +12836,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
    /* admin commands */
    if (is_admin_user(lbs->name, getparam("unm"))) {
       strcat(other_str, "Remove user, New user, Activate, ");
-   } else if (getcfg(lbs->name, "Self register", str) && atoi(str) > 0) {
+   } else if (getcfg(lbs->name, "Self register", str, sizeof(str)) && atoi(str) > 0) {
       strcat(other_str, "Remove user, New user, ");
    }
 
@@ -12914,7 +12917,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
    if (mode_commands) {
       rsprintf("<td class=\"menu2a\">\n");
 
-      if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1) {
+      if (!getcfg(lbs->name, "Show text", str, sizeof(str)) || atoi(str) == 1) {
          if (page_n != 1)
             sprintf(ref, "page%d", page_n);
          else
@@ -12944,7 +12947,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
             ref[0] = 0;
 
          cur_exp = 1;
-         if (getcfg(lbs->name, "Expand default", str))
+         if (getcfg(lbs->name, "Expand default", str, sizeof(str)))
             cur_exp = atoi(str);
          if (isparam("expand"))
             cur_exp = atoi(getparam("expand"));
@@ -12971,7 +12974,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
       rsprintf("</td>\n");
    }
 
-   if (getcfg(lbs->name, "Quick filter", str)) {
+   if (getcfg(lbs->name, "Quick filter", str, sizeof(str))) {
       rsprintf("<td class=\"menu2b\">\n");
       n = strbreak(str, list, MAX_N_LIST, ",");
 
@@ -13061,7 +13064,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
                      comment[0] = 0;
                      if (attr_flags[i] & AF_ICON) {
                         sprintf(str, "Icon comment %s", attr_options[i][j]);
-                        getcfg(lbs->name, str, comment);
+                        getcfg(lbs->name, str, comment, sizeof(comment));
                      }
 
                      strcpy(option, attr_options[i][j]);
@@ -13200,15 +13203,15 @@ void show_select_navigation(LOGBOOK * lbs)
    rsprintf("<input type=button value=\"%s\" onClick=\"ToggleAll();\">\n",
             loc("Toggle all"));
 
-   if (!getcfg(lbs->name, "Menu commands", str) || strstr(str, "Delete")) {
+   if (!getcfg(lbs->name, "Menu commands", str, sizeof(str)) || strstr(str, "Delete")) {
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Delete"));
    }
 
-   if (getcfg(lbs->name, "Menu commands", str) && strstr(str, "Copy to")) {
+   if (getcfg(lbs->name, "Menu commands", str, sizeof(str)) && strstr(str, "Copy to")) {
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Copy to"));
       rsprintf("<select name=destc>\n");
 
-      if (getcfg(lbs->name, "Copy to", str)) {
+      if (getcfg(lbs->name, "Copy to", str, sizeof(str))) {
          n_log = strbreak(str, lbk_list, MAX_N_LIST, ",");
 
          for (i = 0; i < n_log; i++)
@@ -13230,11 +13233,11 @@ void show_select_navigation(LOGBOOK * lbs)
       rsprintf("</select>\n");
    }
 
-   if (getcfg(lbs->name, "Menu commands", str) && strstr(str, "Move to")) {
+   if (getcfg(lbs->name, "Menu commands", str, sizeof(str)) && strstr(str, "Move to")) {
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Move to"));
       rsprintf("<select name=destm>\n");
 
-      if (getcfg(lbs->name, "Move to", str)) {
+      if (getcfg(lbs->name, "Move to", str, sizeof(str))) {
          n_log = strbreak(str, lbk_list, MAX_N_LIST, ",");
 
          for (i = 0; i < n_log; i++)
@@ -13410,7 +13413,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          }
       }
       /* add reverse=0 if not present */
-      if (strstr(_cmdline, "reverse=") == NULL && getcfg(lbs->name, "Reverse sort", str)
+      if (strstr(_cmdline, "reverse=") == NULL && getcfg(lbs->name, "Reverse sort", str, sizeof(str))
           && atoi(str) == 1) {
          if (strchr(_cmdline, '?'))
             strlcat(_cmdline, "&reverse=0", sizeof(_cmdline));
@@ -13486,7 +13489,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       reverse = atoi(getparam("Reverse"));
    else {
       reverse = 0;
-      if (getcfg(lbs->name, "Reverse sort", str))
+      if (getcfg(lbs->name, "Reverse sort", str, sizeof(str)))
          reverse = atoi(str);
    }
 
@@ -13496,7 +13499,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
    /* for page display, get mode from config file */
    if (past_n || last_n || page_n) {
-      if (getcfg(lbs->name, "Display Mode", str))
+      if (getcfg(lbs->name, "Display Mode", str, sizeof(str)))
          strcpy(mode, str);
       if (*getparam("mode"))
          strcpy(mode, getparam("mode"));
@@ -13592,7 +13595,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    /* check for search all */
    search_all = atoi(getparam("all"));
 
-   if (getcfg(lbs->name, "Search all logbooks", str) && atoi(str) == 0)
+   if (getcfg(lbs->name, "Search all logbooks", str, sizeof(str)) && atoi(str) == 0)
       search_all = 0;
 
    n_msg = 0;
@@ -13944,7 +13947,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    i_start = 0;
    i_stop = n_msg - 1;
    if (page_n) {
-      if (getcfg(lbs->name, "Entries per page", str))
+      if (getcfg(lbs->name, "Entries per page", str, sizeof(str)))
          n_page = atoi(str);
       else
          n_page = 20;
@@ -13967,7 +13970,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
    /*---- header ----*/
 
-   if (getcfg(lbs->name, "Summary Page Title", str)) {
+   if (getcfg(lbs->name, "Summary Page Title", str, sizeof(str))) {
       i = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
                            (char (*)[NAME_LENGTH]) svalue, NULL, TRUE);
       strsubst(str, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, i);
@@ -14057,20 +14060,20 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             rsprintf("<input type=hidden name=lastcmd value=\"%s\">\n", str);
          }
 
-         if (!getcfg(lbs->name, "Guest Find menu commands", menu_str)
+         if (!getcfg(lbs->name, "Guest Find menu commands", menu_str, sizeof(menu_str))
              || *getparam("unm") != 0)
-            getcfg(lbs->name, "Find menu commands", menu_str);
+            getcfg(lbs->name, "Find menu commands", menu_str, sizeof(menu_str));
 
          /* default menu commands */
          if (menu_str[0] == 0) {
             strcpy(menu_str, "New, Find, Select, CSV Import, ");
 
-            if (getcfg(lbs->name, "Password file", str))
+            if (getcfg(lbs->name, "Password file", str, sizeof(str)))
                strcat(menu_str, "Config, Logout, ");
             else
                strcat(menu_str, "Config, ");
 
-            if (getcfg(lbs->name, "Mirror server", str))
+            if (getcfg(lbs->name, "Mirror server", str, sizeof(str)))
                strcat(menu_str, "Synchronize, ");
 
             strcpy(str, loc("Last x"));
@@ -14131,7 +14134,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
       /*---- find menu text ----*/
 
-      if (getcfg(lbs->name, "find menu text", str) && !printable) {
+      if (getcfg(lbs->name, "find menu text", str, sizeof(str)) && !printable) {
          FILE *f;
          char file_name[256], *buf;
 
@@ -14268,7 +14271,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                comment[0] = 0;
                if (attr_flags[i] & AF_ICON) {
                   sprintf(str, "Icon comment %s", getparam(attr_list[i]));
-                  getcfg(lbs->name, str, comment);
+                  getcfg(lbs->name, str, comment, sizeof(comment));
                }
 
                if (comment[0] == 0)
@@ -14293,12 +14296,12 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
       /* get number of summary lines */
       n_line = 3;
-      if (getcfg(lbs->name, "Summary lines", str))
+      if (getcfg(lbs->name, "Summary lines", str, sizeof(str)))
          n_line = atoi(str);
 
       /* get mode commands flag */
       mode_commands = TRUE;
-      if (getcfg(lbs->name, "Mode commands", str) && atoi(str) == 0)
+      if (getcfg(lbs->name, "Mode commands", str, sizeof(str)) && atoi(str) == 0)
          mode_commands = FALSE;
 
       /*---- notification message ----*/
@@ -14328,11 +14331,11 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       show_text = TRUE;
 
       list[0] = 0;
-      getcfg(lbs->name, "List display", list);
+      getcfg(lbs->name, "List display", list, sizeof(list));
 
       /* evaluate Guest display list */
-      if (getcfg(lbs->name, "Password file", str) &&
-          getcfg(lbs->name, "Guest list display", str) && !isparam("unm")) {
+      if (getcfg(lbs->name, "Password file", str, sizeof(str)) &&
+          getcfg(lbs->name, "Guest list display", str, sizeof(str)) && !isparam("unm")) {
 
          strcpy(list, str);
 
@@ -14558,7 +14561,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
          expand = 1;
          if (threaded) {
-            if (getcfg(lbs->name, "Expand default", str))
+            if (getcfg(lbs->name, "Expand default", str, sizeof(str)))
                expand = atoi(str);
 
             if (isparam("expand"))
@@ -14638,13 +14641,13 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
    time_t ltime;
    struct tm *pts;
 
-   if (!getcfg("global", "SMTP host", smtp_host)) {
+   if (!getcfg("global", "SMTP host", smtp_host, sizeof(smtp_host))) {
       show_error(loc("No SMTP host defined in [global] section of configuration file"));
       return 0;
    }
 
    flags = 63;
-   if (getcfg(lbs->name, "Email format", str))
+   if (getcfg(lbs->name, "Email format", str, sizeof(str)))
       flags = atoi(str);
 
    retrieve_email_from(lbs, mail_from);
@@ -14653,10 +14656,10 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
    mail_text[0] = 0;
 
    if (flags & 1) {
-      if (getcfg(lbs->name, "Use Email heading", str)) {
+      if (getcfg(lbs->name, "Use Email heading", str, sizeof(str))) {
          if (old_mail) {
-            if (!getcfg(lbs->name, "Use Email heading edit", str))
-               getcfg(lbs->name, "Use Email heading", str);
+            if (!getcfg(lbs->name, "Use Email heading edit", str, sizeof(str)))
+               getcfg(lbs->name, "Use Email heading", str, sizeof(str));
          }
 
          sprintf(mail_text + strlen(mail_text), str);
@@ -14687,11 +14690,11 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
          if (attr_flags[j] & AF_ICON) {
 
             sprintf(str2, "Icon comment %s", attrib[j]);
-            getcfg(lbs->name, str2, comment);
+            getcfg(lbs->name, str2, comment, sizeof(comment));
 
          } else if (attr_flags[j] & AF_DATE) {
 
-            if (!getcfg(lbs->name, "Date format", format))
+            if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
                strcpy(format, DEFAULT_DATE_FORMAT);
 
             ltime = atoi(attrib[j]);
@@ -14722,7 +14725,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
    }
 
    /* compose subject from attributes */
-   if (getcfg(lbs->name, "Use Email Subject", subject)) {
+   if (getcfg(lbs->name, "Use Email Subject", subject, sizeof(subject))) {
       j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
       sprintf(str, "%d", message_id);
       add_subst_list(slist, svalue, "message id", str, &j);
@@ -14736,7 +14739,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
 
    /* try to get URL from referer */
 
-   if (!getcfg("global", "URL", str)) {
+   if (!getcfg("global", "URL", str, sizeof(str))) {
       if (referer[0])
          strcpy(str, referer);
       else {
@@ -14769,7 +14772,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
 
    status = 0;
    if (flags & 16) {
-      if (getcfg(lbs->name, "Omit Email to", str) && atoi(str) == 1)
+      if (getcfg(lbs->name, "Omit Email to", str, sizeof(str)) && atoi(str) == 1)
          status =
              sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url,
                       att_file);
@@ -14778,7 +14781,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
              sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url,
                       att_file);
    } else {
-      if (getcfg(lbs->name, "Omit Email to", str) && atoi(str) == 1)
+      if (getcfg(lbs->name, "Omit Email to", str, sizeof(str)) && atoi(str) == 1)
          status =
              sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url,
                       NULL);
@@ -14793,7 +14796,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
       url_encode(str, sizeof(str));
       sprintf(mail_param, "?error=%s", str);
    } else {
-      if (!getcfg(lbs->name, "Display email recipients", str) || atoi(str) == 1) {
+      if (!getcfg(lbs->name, "Display email recipients", str, sizeof(str)) || atoi(str) == 1) {
          if (mail_param[0] == 0)
             strcpy(mail_param, "?");
          else
@@ -15244,7 +15247,7 @@ void submit_elog(LOGBOOK * lbs)
    for (i = 0; i < lbs->n_attr; i++) {
       if (!*getparam("edit_id")) {
          sprintf(str, "Subst %s", attr_list[i]);
-         if (getcfg(lbs->name, str, subst_str)) {
+         if (getcfg(lbs->name, str, subst_str, sizeof(subst_str))) {
             strsubst(subst_str, slist, svalue, n);
             strcpy(attrib[i], subst_str);
          }
@@ -15333,7 +15336,7 @@ void submit_elog(LOGBOOK * lbs)
       strcpy(mail_param, "?suppress=1");
    } else {
       if (!(*getparam("edit_id")
-            && getcfg(lbs->name, "Suppress Email on edit", str)
+            && getcfg(lbs->name, "Suppress Email on edit", str, sizeof(str))
             && atoi(str) == 1)) {
          /* go throuch "Email xxx" in configuration file */
          for (index = mindex = 0; index <= lbs->n_attr; index++) {
@@ -15367,7 +15370,7 @@ void submit_elog(LOGBOOK * lbs)
             } else
                sprintf(str, "Email ALL");
 
-            if (getcfg(lbs->name, str, list)) {
+            if (getcfg(lbs->name, str, list, sizeof(list))) {
                n = strbreak(list, mail_list, MAX_N_LIST, ",");
 
                if (verbose)
@@ -15390,7 +15393,7 @@ void submit_elog(LOGBOOK * lbs)
             }
          }
 
-         if (!getcfg(lbs->name, "Suppress Email to users", str) || atoi(str) == 0) {
+         if (!getcfg(lbs->name, "Suppress Email to users", str, sizeof(str)) || atoi(str) == 0) {
             /* go through password file */
             for (index = 0;; index++) {
                if (!enum_user_line(lbs, index, user))
@@ -15429,17 +15432,17 @@ void submit_elog(LOGBOOK * lbs)
 
    if (!atoi(getparam("shell_suppress"))) {
       if (!*getparam("edit_id")) {
-         if (getcfg(lbs->name, "Execute new", str))
+         if (getcfg(lbs->name, "Execute new", str, sizeof(str)))
             execute_shell(lbs, message_id, attrib, str);
       } else {
-         if (getcfg(lbs->name, "Execute edit", str))
+         if (getcfg(lbs->name, "Execute edit", str, sizeof(str)))
             execute_shell(lbs, message_id, attrib, str);
       }
    }
 
    /*---- custom submit page ----*/
 
-   if (getcfg(lbs->name, "Submit page", str)) {
+   if (getcfg(lbs->name, "Submit page", str, sizeof(str))) {
       /* check if file starts with an absolute directory */
       if (str[0] == DIR_SEPARATOR || str[1] == ':')
          strcpy(file_name, str);
@@ -15778,14 +15781,14 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
    _current_message_id = message_id;
 
    /* check for guest access */
-   if (!getcfg(lbs->name, "Guest Menu commands", menu_str) || *getparam("unm") != 0)
-      getcfg(lbs->name, "Menu commands", menu_str);
+   if (!getcfg(lbs->name, "Guest Menu commands", menu_str, sizeof(menu_str)) || *getparam("unm") != 0)
+      getcfg(lbs->name, "Menu commands", menu_str, sizeof(menu_str));
 
    /* default menu commands */
    if (menu_str[0] == 0) {
       strcpy(menu_str, "Back, New, Edit, Delete, Reply, Find, ");
 
-      if (getcfg(lbs->name, "Password file", str)) {
+      if (getcfg(lbs->name, "Password file", str, sizeof(str))) {
          strcat(menu_str, "Config, Logout, ");
       } else {
          strcat(menu_str, "Config, ");
@@ -15931,7 +15934,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
    if (status == EL_SUCCESS && message_error != EL_EMPTY) {
       str[0] = 0;
 
-      if (getcfg(lbs->name, "Page Title", str)) {
+      if (getcfg(lbs->name, "Page Title", str, sizeof(str))) {
          i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
          sprintf(mid, "%d", message_id);
          add_subst_list(slist, svalue, "message id", mid, &i);
@@ -15970,7 +15973,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
          continue;
 
       if (strieq(cmd, "Copy to") || strieq(cmd, "Move to")) {
-         if (getcfg(lbs->name, cmd, str)) {
+         if (getcfg(lbs->name, cmd, str, sizeof(str))) {
             n_log = strbreak(str, lbk_list, MAX_N_LIST, ",");
 
             for (j = 0; j < n_log; j++) {
@@ -16034,7 +16037,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
    /*---- next/previous buttons ----*/
 
-   if (!getcfg(lbs->name, "Enable browsing", str) || atoi(str) == 1) {
+   if (!getcfg(lbs->name, "Enable browsing", str, sizeof(str)) || atoi(str) == 1) {
       rsprintf("<td width=\"10%%\" nowrap align=right>\n");
 
       rsprintf("<input type=image name=cmd_first alt=\"%s\" src=\"first.gif\">\n",
@@ -16053,7 +16056,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
    /*---- menu text ----*/
 
-   if (getcfg(lbs->name, "menu text", str)) {
+   if (getcfg(lbs->name, "menu text", str, sizeof(str))) {
       FILE *f;
       char file_name[256], *buf;
 
@@ -16161,7 +16164,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
       /* browsing flag to distinguish "/../<attr>=<value>" from browsing */
       rsprintf("<input type=hidden name=browsing value=1>\n");
 
-      if (getcfg(lbs->name, "ID display", display)) {
+      if (getcfg(lbs->name, "ID display", display, sizeof(display))) {
          j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
                               (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
          sprintf(str, "%d", message_id);
@@ -16180,7 +16183,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
       /*---- display date ----*/
 
-      if (!getcfg(lbs->name, "Time format", format))
+      if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
          strcpy(format, DEFAULT_TIME_FORMAT);
 
       ltime = date_to_ltime(date);
@@ -16224,7 +16227,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
       for (i = 0; i < lbs->n_attr; i++) {
          format_flags[i] = 0;
          sprintf(str, "Format %s", attr_list[i]);
-         if (getcfg(lbs->name, str, format)) {
+         if (getcfg(lbs->name, str, format, sizeof(format))) {
             n = strbreak(format, fl, 8, ",");
             if (n > 0)
                format_flags[i] = atoi(fl[0]);
@@ -16233,8 +16236,8 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
       for (i = 0; i < lbs->n_attr; i++) {
 
-         if (getcfg(lbs->name, "Password file", str) &&
-             getcfg(lbs->name, "Guest display", str) && !isparam("unm")) {
+         if (getcfg(lbs->name, "Password file", str, sizeof(str)) &&
+             getcfg(lbs->name, "Guest display", str, sizeof(str)) && !isparam("unm")) {
 
             n = strbreak(str, gattr, MAX_N_ATTR, ",");
             for (j = 0; j < n; j++)
@@ -16249,7 +16252,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
          strcpy(class_value, "attribvalue");
 
          sprintf(str, "Format %s", attr_list[i]);
-         if (getcfg(lbs->name, str, format), ",") {
+         if (getcfg(lbs->name, str, format, sizeof(format)), ",") {
             n = strbreak(format, fl, 8, ",");
             if (n > 1)
                strlcpy(class_name, fl[1], sizeof(class_name));
@@ -16263,7 +16266,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
          sprintf(lattr, "l%s", attr_list[i]);
          rsprintf("<td nowrap class=\"%s\">", class_name);
 
-         if (getcfg(lbs->name, "Filtered browsing", str) && atoi(str) == 1) {
+         if (getcfg(lbs->name, "Filtered browsing", str, sizeof(str)) && atoi(str) == 1) {
             if (*getparam(lattr) == '1')
                rsprintf("<input type=\"checkbox\" checked name=\"%s\" value=\"1\">&nbsp;",
                         lattr);
@@ -16288,7 +16291,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
             rsprintf("%s:</td><td class=\"%s\">\n", attr_list[i], class_value);
             if (attrib[i][0]) {
                sprintf(str, "Icon comment %s", attrib[i]);
-               getcfg(lbs->name, str, comment);
+               getcfg(lbs->name, str, comment, sizeof(comment));
 
                if (comment[0])
                   rsprintf("<img src=\"icons/%s\" alt=\"%s\">", attrib[i], comment);
@@ -16318,7 +16321,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
             rsprintf("</td>\n");
          } else if (attr_flags[i] & AF_DATE) {
 
-            if (!getcfg(lbs->name, "Date format", format))
+            if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
                strcpy(format, DEFAULT_DATE_FORMAT);
 
             ltime = atoi(attrib[i]);
@@ -16335,7 +16338,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
             rsprintf("%s:</td><td class=\"%s\">\n", attr_list[i], class_value);
 
             sprintf(str, "Display %s", attr_list[i]);
-            if (getcfg(lbs->name, str, display)) {
+            if (getcfg(lbs->name, str, display, sizeof(display))) {
                j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
                                     (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
                sprintf(str, "%d", message_id);
@@ -16368,10 +16371,10 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
       /*---- message text ----*/
 
-      show_text = !getcfg(lbs->name, "Show text", str) || atoi(str) == 1;
+      show_text = !getcfg(lbs->name, "Show text", str, sizeof(str)) || atoi(str) == 1;
 
-      if (getcfg(lbs->name, "Password file", str) &&
-          getcfg(lbs->name, "Guest display", str) && !isparam("unm")) {
+      if (getcfg(lbs->name, "Password file", str, sizeof(str)) &&
+          getcfg(lbs->name, "Guest display", str, sizeof(str)) && !isparam("unm")) {
 
          n = strbreak(str, gattr, MAX_N_ATTR, ",");
          for (j = 0; j < n; j++)
@@ -16439,7 +16442,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
                rsprintf("</span></td></tr></table></td></tr>\n");
 
-               if (!getcfg(lbs->name, "Show attachments", str) || atoi(str) == 1) {
+               if (!getcfg(lbs->name, "Show attachments", str, sizeof(str)) || atoi(str) == 1) {
                   if (strstr(att, ".GIF") || strstr(att, ".JPG") || strstr(att, ".JPEG")
                       || strstr(att, ".PNG")) {
                      rsprintf("<tr><td class=\"messageframe\">\n");
@@ -16501,7 +16504,7 @@ BOOL check_password(LOGBOOK * lbs, char *name, char *password, char *redir)
    char str[256];
 
    /* get password from configuration file */
-   if (getcfg(lbs->name, name, str)) {
+   if (getcfg(lbs->name, name, str, sizeof(str))) {
       if (strcmp(password, str) == 0)
          return TRUE;
 
@@ -16571,7 +16574,7 @@ int get_user_line(char *logbook_name, char *user, char *password, char *full_nam
    if (email_notify)
       email_notify[0] = 0;
 
-   getcfg(logbook_name, "Password file", str);
+   getcfg(logbook_name, "Password file", str, sizeof(str));
 
    if (!str[0])
       return 1;
@@ -16663,7 +16666,7 @@ BOOL enum_user_line(LOGBOOK * lbs, int n, char *user)
    FILE *f;
    int i;
 
-   getcfg(lbs->name, "Password file", str);
+   getcfg(lbs->name, "Password file", str, sizeof(str));
 
    if (!str[0])
       return FALSE;
@@ -16715,14 +16718,14 @@ BOOL check_login_user(LOGBOOK * lbs, char *user)
    char list[MAX_N_LIST][NAME_LENGTH];
 
    /* treat admin user as login user */
-   if (getcfg(lbs->name, "Admin user", str) && user[0]) {
+   if (getcfg(lbs->name, "Admin user", str, sizeof(str)) && user[0]) {
       n = strbreak(str, list, MAX_N_LIST, ",");
       for (i = 0; i < n; i++)
          if (strcmp(user, list[i]) == 0)
             return TRUE;
    }
 
-   if (getcfg(lbs->name, "Login user", str) && user[0]) {
+   if (getcfg(lbs->name, "Login user", str, sizeof(str)) && user[0]) {
       n = strbreak(str, list, MAX_N_LIST, ",");
       for (i = 0; i < n; i++)
          if (strcmp(user, list[i]) == 0)
@@ -16742,7 +16745,7 @@ BOOL is_admin_user(char *logbook, char *user)
    char str[1000];
    char list[MAX_N_LIST][NAME_LENGTH];
 
-   if (getcfg(logbook, "Admin user", str) && user[0]) {
+   if (getcfg(logbook, "Admin user", str, sizeof(str)) && user[0]) {
       n = strbreak(str, list, MAX_N_LIST, ",");
       for (i = 0; i < n; i++)
          if (strcmp(user, list[i]) == 0)
@@ -16762,7 +16765,7 @@ BOOL is_admin_user_global(char *user)
    char str[1000];
    char list[MAX_N_LIST][NAME_LENGTH];
 
-   if (getcfg_simple("global", "Admin user", str) && user[0]) {
+   if (getcfg_simple("global", "Admin user", str, sizeof(str)) && user[0]) {
       n = strbreak(str, list, MAX_N_LIST, ",");
       for (i = 0; i < n; i++)
          if (strcmp(user, list[i]) == 0)
@@ -16844,7 +16847,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
       /* if URL is specified in configuration file, check if login happens for
          the specified host, in order to get cookies right... */
 
-      if (getcfg(lbs->name, "URL", str)) {
+      if (getcfg(lbs->name, "URL", str, sizeof(str))) {
          extract_host(str);
          strcpy(str2, http_host);
          if (strchr(str2, ':'))
@@ -16890,7 +16893,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
       rsprintf
           ("<td align=left class=\"dlgform\"><input type=password name=upassword></td></tr>\n");
 
-      if (!getcfg(lbs->name, "Login expiration", str) || atoi(str) > 0) {
+      if (!getcfg(lbs->name, "Login expiration", str, sizeof(str)) || atoi(str) > 0) {
          rsprintf("<td align=center colspan=2 class=\"dlgform\">");
          rsprintf("<input type=checkbox checked name=remember value=1>\n");
          rsprintf("%s</td></tr>\n", loc("Remember me on this computer"));
@@ -16900,7 +16903,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
           ("<tr><td align=center colspan=2 class=\"dlgform\"><a href=\"?cmd=%s\">%s</a>",
            loc("Forgot"), loc("Forgot password?"));
 
-      if (getcfg(lbs->name, "Self register", str) && atoi(str) > 0) {
+      if (getcfg(lbs->name, "Self register", str, sizeof(str)) && atoi(str) > 0) {
          strcpy(str, loc("New user"));
          url_encode(str, sizeof(str));
          rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"?cmd=%s\">%s</td></tr>",
@@ -16929,7 +16932,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
          /* remove remaining cookies */
          set_login_cookies(lbs, "", "");
       } else {
-         getcfg(lbs->name, "Password file", full_name);
+         getcfg(lbs->name, "Password file", full_name, sizeof(full_name));
          sprintf(str, loc("Cannot open file <b>%s</b>"), full_name);
 
          show_error(str);
@@ -17004,7 +17007,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
             show_logbook_node(plb->member[i], plb->is_top ? NULL : plb, level + 1, btop);
    } else {
 
-      if (!getcfg(plb->name, "Hidden", str) || atoi(str) == 0) {
+      if (!getcfg(plb->name, "Hidden", str, sizeof(str)) || atoi(str) == 0) {
 
          /* search logbook in list */
          for (index = 0; lb_list[index].name[0]; index++)
@@ -17023,13 +17026,13 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
          else
             rsprintf("<a href=\"%s/\">%s</a>", lb_list[index].name_enc,
                      lb_list[index].name);
-         if (getcfg(lb_list[index].name, "Read password", str)
-             || (getcfg(lb_list[index].name, "Password file", str)
-                 && !getcfg(lb_list[index].name, "Guest menu commands", str)))
+         if (getcfg(lb_list[index].name, "Read password", str, sizeof(str))
+             || (getcfg(lb_list[index].name, "Password file", str, sizeof(str))
+                 && !getcfg(lb_list[index].name, "Guest menu commands", str, sizeof(str))))
             rsprintf("&nbsp;&nbsp;<img src=\"lock.gif\">");
          rsprintf("<br>\n");
          str[0] = 0;
-         getcfg(lb_list[index].name, "Comment", str);
+         getcfg(lb_list[index].name, "Comment", str, sizeof(str));
          rsprintf("<span class=\"selcomment\">%s</span></td>\n", str);
          rsprintf("<td nowrap class=\"selentries\">");
          rsprintf("%d", *lb_list[index].n_el_index);
@@ -17045,7 +17048,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
             el_retrieve(&lb_list[index],
                         message_id, date, attr_list, attrib, lb_list[index].n_attr, NULL,
                         0, NULL, NULL, NULL, NULL, NULL);
-            if (!getcfg(lb_list[index].name, "Last submission", str)) {
+            if (!getcfg(lb_list[index].name, "Last submission", str, sizeof(str))) {
                sprintf(str, "$entry time");
                for (i = 0; i < lb_list[index].n_attr; i++)
                   if (strieq(attr_list[i], "Author"))
@@ -17074,12 +17077,12 @@ void show_top_selection_page()
    LBLIST phier;
 
    /* if selection page protected, check password */
-   if (getcfg("global", "password file", str) &&
-       getcfg("global", "protect selection page", str) && atoi(str) == 1)
+   if (getcfg("global", "password file", str, sizeof(str)) &&
+       getcfg("global", "protect selection page", str, sizeof(str)) && atoi(str) == 1)
       if (!check_user_password(NULL, getparam("unm"), getparam("upwd"), ""))
          return;
 
-   if (getcfg("global", "Page Title", str)) {
+   if (getcfg("global", "Page Title", str, sizeof(str))) {
       strip_html(str);
       show_html_header(NULL, TRUE, str, TRUE);
    } else
@@ -17088,7 +17091,7 @@ void show_top_selection_page()
    rsprintf("<table class=\"selframe\" cellspacing=0 align=center>\n");
    rsprintf("<tr><td class=\"dlgtitle\">\n");
 
-   if (getcfg("global", "Welcome title", str)) {
+   if (getcfg("global", "Welcome title", str, sizeof(str))) {
       rsputs(str);
    } else {
       rsprintf("%s.<BR>\n", loc("Several logbooks groups are defined on this host"));
@@ -17138,7 +17141,7 @@ void show_selection_page()
    }
 
    /* check for Guest Selection Page */
-   if (getcfg("global", "Guest Selection Page", str)
+   if (getcfg("global", "Guest Selection Page", str, sizeof(str))
        && !(isparam("unm") && isparam("upwd"))) {
       /* check for URL */
       if (strstr(str, "http://")) {
@@ -17159,7 +17162,7 @@ void show_selection_page()
 
    /* top group present and no top group in URL */
    if (exist_top_group() && getcfg_topgroup() == NULL) {
-      if (getcfg("global", "show top groups", str) && atoi(str) == 1) {
+      if (getcfg("global", "show top groups", str, sizeof(str)) && atoi(str) == 1) {
          show_top_selection_page();
          return;
       } else
@@ -17167,12 +17170,12 @@ void show_selection_page()
    }
 
    /* if selection page protected, check password */
-   if (getcfg("global", "password file", str) &&
-       getcfg("global", "protect selection page", str) && atoi(str) == 1)
+   if (getcfg("global", "password file", str, sizeof(str)) &&
+       getcfg("global", "protect selection page", str, sizeof(str)) && atoi(str) == 1)
       if (!check_user_password(NULL, getparam("unm"), getparam("upwd"), ""))
          return;
 
-   if (getcfg("global", "Page Title", str)) {
+   if (getcfg("global", "Page Title", str, sizeof(str))) {
       strip_html(str);
       show_html_header(NULL, TRUE, str, TRUE);
    } else
@@ -17181,7 +17184,7 @@ void show_selection_page()
    rsprintf("<table class=\"selframe\" cellspacing=0 align=center>\n");
    rsprintf("<tr><td colspan=13 class=\"dlgtitle\">\n");
 
-   if (getcfg("global", "Welcome title", str)) {
+   if (getcfg("global", "Welcome title", str, sizeof(str))) {
       rsputs(str);
    } else {
       rsprintf("%s.<BR>\n", loc("Several logbooks are defined on this host"));
@@ -17190,7 +17193,7 @@ void show_selection_page()
 
    rsprintf("</td></tr>\n");
 
-   if (getcfg("global", "mirror server", str)) {
+   if (getcfg("global", "mirror server", str, sizeof(str))) {
 
       /* only admin user sees synchronization link */
       if (is_admin_user("global", getparam("unm"))) {
@@ -17487,7 +17490,7 @@ void interprete(char *lbook, char *path)
    value = getparam("value");
    group = getparam("group");
    index = atoi(getparam("index"));
-   if (getcfg(lbook, "Logging Level", str))
+   if (getcfg(lbook, "Logging Level", str, sizeof(str)))
       _logging_level = atoi(str);
    else
       _logging_level = 2;
@@ -17526,7 +17529,7 @@ void interprete(char *lbook, char *path)
    setcfg_topgroup("");
 
    sprintf(str, "Top group %s", logbook);
-   if (getcfg("global", str, list)) {
+   if (getcfg("global", str, list, sizeof(list))) {
       setcfg_topgroup(logbook);
       logbook[0] = 0;
    }
@@ -17554,7 +17557,7 @@ void interprete(char *lbook, char *path)
    if (!logbook[0]) {
 
       /* check for self register */
-      if (getcfg(group, "Self register", str) && atoi(str) > 0) {
+      if (getcfg(group, "Self register", str, sizeof(str)) && atoi(str) > 0) {
          if (!do_self_register(NULL, getparam("cmd")))
             return;
       }
@@ -17610,7 +17613,7 @@ void interprete(char *lbook, char *path)
       }
 
       /* check for global selection page if no logbook given */
-      if (!logbook[0] && getcfg("global", "Selection page", str)) {
+      if (!logbook[0] && getcfg("global", "Selection page", str, sizeof(str))) {
          /* check for URL */
          if (strstr(str, "http://")) {
             redirect(NULL, str);
@@ -17661,7 +17664,7 @@ void interprete(char *lbook, char *path)
       setcfg_topgroup(lbs->top_group);
 
    /* get theme for logbook */
-   if (getcfg(logbook, "Theme", str))
+   if (getcfg(logbook, "Theme", str, sizeof(str)))
       strlcpy(theme_name, str, sizeof(theme_name));
    else
       strlcpy(theme_name, "default", sizeof(theme_name));
@@ -17680,10 +17683,10 @@ void interprete(char *lbook, char *path)
          rsprintf("Keep-Alive: timeout=60, max=10\r\n");
       }
 
-      global = getcfg("global", "Write password", str);
+      global = getcfg("global", "Write password", str, sizeof(str));
 
       /* get optional expriation from configuration file */
-      getcfg(logbook, "Write password expiration", exp);
+      getcfg(logbook, "Write password expiration", exp, sizeof(exp));
       /* set "wpwd" cookie */
       set_cookie(lbs, "wpwd", enc_pwd, global, exp);
 
@@ -17704,10 +17707,10 @@ void interprete(char *lbook, char *path)
          rsprintf("Keep-Alive: timeout=60, max=10\r\n");
       }
 
-      global = getcfg("global", "Admin password", str);
+      global = getcfg("global", "Admin password", str, sizeof(str));
 
       /* get optional expriation from configuration file */
-      getcfg(logbook, "Admin password expiration", exp);
+      getcfg(logbook, "Admin password expiration", exp, sizeof(exp));
       /* set "apwd" cookie */
       set_cookie(lbs, "apwd", enc_pwd, global, exp);
 
@@ -17734,20 +17737,20 @@ void interprete(char *lbook, char *path)
    }
 
    /* if password file given, check password and user name */
-   if (getcfg(logbook, "Password file", str)) {
+   if (getcfg(logbook, "Password file", str, sizeof(str))) {
       /* get current CSS */
       strlcpy(css, "default.css", sizeof(css));
-      if (lbs != NULL && getcfg(lbs->name, "CSS", str))
+      if (lbs != NULL && getcfg(lbs->name, "CSS", str, sizeof(str)))
          strlcpy(css, str, sizeof(css));
-      else if (lbs == NULL && getcfg("global", "CSS", str))
+      else if (lbs == NULL && getcfg("global", "CSS", str, sizeof(str)))
          strlcpy(css, str, sizeof(css));
       /* check if guest access */
-      if (!(getcfg(lbs->name, "Guest menu commands", str)
+      if (!(getcfg(lbs->name, "Guest menu commands", str, sizeof(str))
             && *getparam("unm") == 0 && !isparam("wpwd")
             && !isparam("wusr"))) {
          if (strcmp(path, css) != 0) {
             /* if no guest menu commands but self register, evaluate new user commands */
-            if (getcfg(lbs->name, "Self register", str) && atoi(str) > 0) {
+            if (getcfg(lbs->name, "Self register", str, sizeof(str)) && atoi(str) > 0) {
                if (!do_self_register(lbs, command))
                   return;
             }
@@ -17784,7 +17787,7 @@ void interprete(char *lbook, char *path)
 
    /* check for "Back" button */
    if (strieq(command, loc("Back"))
-       && getcfg(lbs->name, "Back to main", str)
+       && getcfg(lbs->name, "Back to main", str, sizeof(str))
        && atoi(str) == 1) {
       redirect(lbs, "../");
       return;
@@ -17913,7 +17916,7 @@ void interprete(char *lbook, char *path)
    }
 
    /* check for new syntax in elogd.cfg */
-   if (getcfg(lbs->name, "Types", str)) {
+   if (getcfg(lbs->name, "Types", str, sizeof(str))) {
       show_upgrade_page(lbs);
       return;
    }
@@ -17947,7 +17950,7 @@ void interprete(char *lbook, char *path)
    /*---- check for various commands --------------------------------*/
 
    if (strieq(command, loc("Help"))) {
-      if (getcfg(lbs->name, "Help URL", str)) {
+      if (getcfg(lbs->name, "Help URL", str, sizeof(str))) {
          /* if file is given, add '/' to make absolute path */
          if (strchr(str, '/') == NULL)
             sprintf(ref, "/%s", str);
@@ -17960,7 +17963,7 @@ void interprete(char *lbook, char *path)
       /* send local help file */
       strlcpy(file_name, resource_dir, sizeof(file_name));
       strlcat(file_name, "eloghelp_", sizeof(file_name));
-      if (getcfg("global", "Language", str)) {
+      if (getcfg("global", "Language", str, sizeof(str))) {
          str[2] = 0;
          strlcat(file_name, str, sizeof(file_name));
       } else
@@ -18167,7 +18170,7 @@ void interprete(char *lbook, char *path)
       else if (isparam("cfg_user"))
          sprintf(str + strlen(str), "?cmd=%s&cfg_user=%s", loc("Config"),
                  getparam("cfg_user"));
-      else if (getcfg(lbs->name, "password file", str2))
+      else if (getcfg(lbs->name, "password file", str2, sizeof(str2)))
          sprintf(str + strlen(str), "?cmd=%s", loc("Config"));
 
       redirect(lbs, str);
@@ -18209,7 +18212,7 @@ void interprete(char *lbook, char *path)
    }
 
    if (strieq(command, loc("Config"))) {
-      if (!getcfg(lbs->name, "Password file", str))
+      if (!getcfg(lbs->name, "Password file", str, sizeof(str)))
          show_admin_page(lbs, NULL);
       else
          show_config_page(lbs);
@@ -18240,7 +18243,7 @@ void interprete(char *lbook, char *path)
    if (strieq(command, loc("Logout"))) {
       /* log activity */
       logf(lbs, "LOGOUT");
-      if (getcfg(lbs->name, "Logout to main", str) && atoi(str) == 1) {
+      if (getcfg(lbs->name, "Logout to main", str, sizeof(str)) && atoi(str) == 1) {
          sprintf(str, "../");
          setparam("redir", str);
       }
@@ -18254,7 +18257,7 @@ void interprete(char *lbook, char *path)
    }
 
    /* check for welcome page */
-   if (!_cmdline[0] && getcfg(lbs->name, "Welcome page", str) && str[0]) {
+   if (!_cmdline[0] && getcfg(lbs->name, "Welcome page", str, sizeof(str)) && str[0]) {
       /* check if file starts with an absolute directory */
       if (str[0] == DIR_SEPARATOR || str[1] == ':')
          strcpy(file_name, str);
@@ -18267,7 +18270,7 @@ void interprete(char *lbook, char *path)
    }
 
    /* check for start page */
-   if (!_cmdline[0] && getcfg(lbs->name, "Start page", str) && str[0]) {
+   if (!_cmdline[0] && getcfg(lbs->name, "Start page", str, sizeof(str)) && str[0]) {
       redirect(lbs, str);
       return;
    }
@@ -18534,7 +18537,7 @@ void check_cron()
    static struct tm last_time;
    char list[60][NAME_LENGTH];
 
-   if (!getcfg("global", "mirror cron", str))
+   if (!getcfg("global", "mirror cron", str, sizeof(str)))
       return;
 
    for (i = 0; i < 5; i++)
@@ -18694,7 +18697,7 @@ void server_loop(int tcp_port)
       strcpy(host_name, phe->h_name);
 
    /* open configuration file */
-   getcfg("dummy", "dummy", str);
+   getcfg("dummy", "dummy", str, sizeof(str));
 
 #ifdef OS_UNIX
    /* create PID file if given as command line parameter or if running under root */
@@ -19199,7 +19202,7 @@ void server_loop(int tcp_port)
                strlcpy(str, resource_dir, sizeof(str));
                strlcat(str, "themes", sizeof(str));
                strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
-               if (getcfg("global", "theme", theme))
+               if (getcfg("global", "theme", theme, sizeof(theme)))
                   strlcat(str, theme, sizeof(str));
                else
                   strlcat(str, "default", sizeof(str));
@@ -19221,7 +19224,7 @@ void server_loop(int tcp_port)
 
                /* check for top group */
                sprintf(str, "Top group %s", logbook);
-               if (!getcfg("global", str, list)) {
+               if (!getcfg("global", str, list, sizeof(list))) {
 
                   sprintf(str, "Error: logbook \"%s\" not defined in elogd.cfg", logbook);
                   show_error(str);
@@ -19265,7 +19268,7 @@ void server_loop(int tcp_port)
          /*---- check "hosts deny" ----*/
 
          authorized = 1;
-         if (getcfg(logbook, "Hosts deny", list)) {
+         if (getcfg(logbook, "Hosts deny", list, sizeof(list))) {
             strcpy(rem_host_ip, (char *) inet_ntoa(rem_addr));
             n = strbreak(list, host_list, MAX_N_LIST, ",");
             /* check if current connection matches anyone on the list */
@@ -19310,7 +19313,7 @@ void server_loop(int tcp_port)
 
          /*---- check "hosts allow" ----*/
 
-         if (getcfg(logbook, "Hosts allow", list)) {
+         if (getcfg(logbook, "Hosts allow", list, sizeof(list))) {
             strcpy(rem_host_ip, (char *) inet_ntoa(acc_addr.sin_addr));
             n = strbreak(list, host_list, MAX_N_LIST, ",");
             /* check if current connection matches anyone on the list */
@@ -19360,7 +19363,7 @@ void server_loop(int tcp_port)
 
          /* ask for password if configured */
          authorized = 1;
-         if (getcfg(logbook, "Read Password", pwd)) {
+         if (getcfg(logbook, "Read Password", pwd, sizeof(pwd))) {
             authorized = 0;
             /* decode authorization */
             if (strstr(net_buffer, "Authorization:")) {
@@ -20034,9 +20037,9 @@ int main(int argc, char *argv[])
    close(fh);
 
    /* evaluate directories from config file */
-   if (getcfg("global", "Resource Dir", str))
+   if (getcfg("global", "Resource Dir", str, sizeof(str)))
       strlcpy(resource_dir, str, sizeof(resource_dir));
-   if (getcfg("global", "Logbook Dir", str))
+   if (getcfg("global", "Logbook Dir", str, sizeof(str)))
       strlcpy(logbook_dir, str, sizeof(logbook_dir));
 
    /* extract resource directory from configuration file if not given */
@@ -20112,12 +20115,12 @@ int main(int argc, char *argv[])
    if (tcp_port_cl != 0)
       tcp_port = tcp_port_cl;
    else {
-      if (getcfg("global", "Port", str))
+      if (getcfg("global", "Port", str, sizeof(str)))
          tcp_port = atoi(str);
    }
 
    /* get optional content length from configuration file */
-   if (getcfg("global", "Max content length", str))
+   if (getcfg("global", "Max content length", str, sizeof(str)))
       _max_content_length = atoi(str);
 
    /* initiate daemon/service as soon as possible */
