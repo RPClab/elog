@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.6  2003/02/10 10:48:32  midas
+  All items in listing are now a link
+
   Revision 1.5  2003/02/07 12:25:27  midas
   Fixed bug with '\' in front of resource directory
 
@@ -6190,12 +6193,6 @@ FILE *f;
   nowrap = printable ? "" : "nowrap";
   skip_comma = FALSE;
 
-  /* ##
-  strcpy(align, "center");
-  if (getcfg(lbs->name, "Table align", str))
-    strcpy(align, str);
-  */
-
   if (equal_ustring(mode, "Threaded") && getcfg(lbs->name, "Thread display", display))
     {
     /* check if to use icon from attributes */
@@ -6309,7 +6306,7 @@ FILE *f;
             rsprintf(", %s", lbs->name);
           }
         else
-          rsprintf("<td class=\"%s\" %s>%s</td>", sclass, nowrap, lbs->name);
+          rsprintf("<td class=\"%s\" %s><a href=\"%s\">%s</a></td>", sclass, nowrap, ref, lbs->name);
         }
 
       if (equal_ustring(disp_attr[index], "Date"))
@@ -6349,7 +6346,7 @@ FILE *f;
             rsprintf(", %s", str);
           }
         else
-          rsprintf("<td class=\"%s\" %s>%s</td>", sclass, nowrap, str);
+          rsprintf("<td class=\"%s\" %s><a href=\"%s\">%s</a></td>", sclass, nowrap, ref, str);
         }
 
       for (i=0 ; i<n_attr ; i++)
@@ -6414,9 +6411,9 @@ FILE *f;
 
             else
               {
-              rsprintf("<td class=\"%s\">", sclass);
+              rsprintf("<td class=\"%s\"><a href=\"%s\">", sclass, ref);
               rsputs2(attrib[i]);
-              rsprintf("&nbsp</td>");
+              rsprintf("&nbsp</a></td>");
               }
             }
           }
@@ -9910,7 +9907,7 @@ char str[10000];
     getcfg(lb_list[i].name, "Comment", str);
     rsprintf("<td class=\"attribvalue\">%s&nbsp;</td>\n", str);
 
-    rsprintf("<td class=\"attribvalue2\">");
+    rsprintf("<td nowrap class=\"attribvalue2\">");
     rsprintf(loc("%d entries"), *lb_list[i].n_el_index);
     rsprintf("</td></tr>\n");
     }
@@ -11321,6 +11318,9 @@ struct timeval       timeout;
       if (!strchr(net_buffer, '\r'))
         goto finished;
 
+      if (verbose)
+        printf("\n\n\n%s\n", net_buffer);
+
       /* initialize parametr array */
       initparam();
 
@@ -11411,9 +11411,14 @@ struct timeval       timeout;
         {
         if (logbook[0] && *p == ' ')
           {
-          sprintf(str, "%s/", logbook_enc);
-          redirect(str);
-          goto redir;
+          if (!strstr(logbook, ".css") &&
+              !strstr(logbook, ".gif") &&
+              !strstr(logbook, ".jpg"))
+            {
+            sprintf(str, "%s/", logbook_enc);
+            redirect(str);
+            goto redir;
+            }
           }
         }
 
@@ -11483,15 +11488,19 @@ struct timeval       timeout;
         send_file_direct(str);
         send(_sock, return_buffer, return_length, 0);
 
+        if (verbose)
+          {
+          printf("==== Return ================================\n");
+          puts(return_buffer);
+          printf("\n\n");
+          }
+
         goto finished;
         }
       else
         {
         if (!equal_ustring(logbook, str) && logbook[0])
           {
-          if (verbose)
-            printf("\n\n\n%s\n", net_buffer);
-
           sprintf(str, "Error: logbook \"%s\" not defined in elogd.cfg", logbook);
           show_error(str);
           send(_sock, return_buffer, strlen(return_buffer), 0);
@@ -11519,9 +11528,6 @@ struct timeval       timeout;
 
         if (n == 1)
           {
-          if (verbose)
-            printf("\n\n\n%s\n", net_buffer);
-
           strlcpy(logbook, str, sizeof(logbook));
           strlcpy(logbook_enc, logbook, sizeof(logbook_enc));
           url_encode(logbook_enc, sizeof(logbook_enc));
@@ -11716,9 +11722,6 @@ struct timeval       timeout;
         }
       else
         {
-        if (verbose)
-          printf("\n\n\n%s\n", net_buffer);
-
         if (strncmp(net_buffer, "GET", 3) == 0)
           {
           /* extract path and commands */
