@@ -5,36 +5,36 @@
 
    Contents:     Midas XML Library
 
-   $Log$
-   Revision 1.10  2005/03/23 10:02:13  ritt
-   Fixed compiler warnings
+   This is a simple implementation of XML functions for writing and
+   reading XML files. For writing an XML file from scratch, following
+   functions can be used:
 
-   Revision 1.9  2005/03/22 16:10:09  ritt
-   Allow ' in xpath
+   writer = mxml_open_document(file_name);
+     mxml_start_element(writer, name);
+     mxml_write_attribute(writer, name, value);
+     mxml_write_value(writer, value);
+     mxml_end_element(writer); 
+     ...
+   mxml_close_document(writer);
 
-   Revision 1.8  2005/03/22 14:26:19  ritt
-   Implemented mxml_find_nodes()
+   To read an XML file, the function
 
-   Revision 1.7  2005/03/21 16:05:21  ritt
-   Added STRLCPY_DEFINED
+   tree = mxml_parse_file(file_name, error, sizeof(error));
 
-   Revision 1.6  2005/03/21 16:02:08  ritt
-   Added code for strlcpy/cat ifndef STRLCPY_DEFINED
+   is used. It parses the complete XML file and stores it in a
+   hierarchical tree in memory. Nodes in that tree can be searched
+   for with
 
-   Revision 1.5  2005/03/21 07:37:22  ritt
-   Changed file mode
+   mxml_find_node(tree, xml_path);
 
-   Revision 1.4  2005/03/03 15:36:05  ritt
-   Fixed compiler warnings
+   or
 
-   Revision 1.3  2005/03/03 15:34:21  ritt
-   Implemented mxml_debug_tree()
+   mxml_find_nodes(tree, xml_path, &nodelist);
 
-   Revision 1.2  2005/03/01 23:55:43  ritt
-   Fixed compiler warnings
-
-   Revision 1.1  2005/03/01 23:48:18  ritt
-   Implemented MXML for password file
+   which support a subset of the XPath specification. Another set of
+   functions is availabe to retrieve attributes and values from nodes
+   in the tree and for manipulating nodes, like replacing, adding and
+   deleting nodes.
 
 \********************************************************************/
 
@@ -147,6 +147,30 @@ size_t strlcat(char *dst, const char *src, size_t size)
 
 /*------------------------------------------------------------------*/
 
+int mxml_write_line(MXML_WRITER *writer, char *line)
+{
+   int len;
+   
+   len = strlen(line);
+
+   if (writer->buffer) {
+      if (writer->buffer_len + len >= writer->buffer_size) {
+         writer->buffer_size += 10000;
+         writer->buffer = (char *)realloc(writer->buffer, writer->buffer_size);
+      }
+      strcat(writer->buffer, line);
+      writer->buffer_len += len;
+      return len;
+   } else {
+      return write(writer->fh, line, len);
+   }
+
+   return 0;
+}
+
+
+/*------------------------------------------------------------------*/
+
 MXML_WRITER *mxml_open_document(const char *file_name) 
 /* open a file and write XML header */
 {
@@ -155,24 +179,32 @@ MXML_WRITER *mxml_open_document(const char *file_name)
    MXML_WRITER *writer;
 
    writer = (MXML_WRITER *)malloc(sizeof(MXML_WRITER));
+   memset(writer, 0, sizeof(MXML_WRITER));
 
-   writer->fh = open(file_name, O_RDWR | O_CREAT | O_TRUNC | O_TEXT, 0644);
+   if (file_name) {
+      writer->fh = open(file_name, O_RDWR | O_CREAT | O_TRUNC | O_TEXT, 0644);
 
-   if (writer->fh == -1) {
-      sprintf(line, "Unable to open file \"%s\": ", file_name);
-      perror(line);
-      free(writer);
-      return NULL;
+      if (writer->fh == -1) {
+         sprintf(line, "Unable to open file \"%s\": ", file_name);
+         perror(line);
+         free(writer);
+         return NULL;
+      }
+   } else {
+      writer->buffer_size = 10000;
+      writer->buffer = (char *)malloc(10000);
+      writer->buffer[0] = 0;
+      writer->buffer_len = 0;
    }
 
    /* write XML header */
    strcpy(line, "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
-   write(writer->fh, line, strlen(line));
+   mxml_write_line(writer, line);
    time(&now);
    strcpy(str, ctime(&now));
    str[24] = 0;
    sprintf(line, "<!-- created by MXML on %s -->\n", str);
-   write(writer->fh, line, strlen(line));
+   mxml_write_line(writer, line);
 
    /* initialize stack */
    writer->level = 0;
@@ -186,13 +218,23 @@ MXML_WRITER *mxml_open_document(const char *file_name)
 void mxml_encode(char *src, int size)
 /* convert '<' '>' '&' '"' ''' into &xx; */
 {
-   char *dst, *ps, *pd;
+   char *ps, *pd;
+   static char *buffer = NULL;
+   static int buffer_size = 1000;
 
    assert(size);
-   dst = (char*) malloc(size);
+
+   if (buffer == NULL)
+      buffer = (char *) malloc(buffer_size);
+
+   if (size > buffer_size) {
+      buffer = (char *) realloc(buffer, size*2);
+      buffer_size = size;
+   }
+
    ps = src;
-   pd = dst;
-   for (ps = src ; *ps && (size_t)pd - (size_t)dst < (size_t)(size-10) ; ps++) {
+   pd = buffer;
+   for (ps = src ; *ps && (size_t)pd - (size_t)buffer < (size_t)(size-10) ; ps++) {
       switch (*ps) {
       case '<':
          strcpy(pd, "&lt;");
@@ -220,8 +262,7 @@ void mxml_encode(char *src, int size)
    }
    *pd = 0;
 
-   strlcpy(src, dst, size);
-   free(dst);
+   strlcpy(src, buffer, size);
 }
 
 /*------------------------------------------------------------------*/
@@ -270,7 +311,7 @@ int mxml_start_element(MXML_WRITER *writer, const char *name)
    char line[1000], name_enc[1000];
 
    if (writer->element_is_open) {
-      write(writer->fh, ">\n", 2);
+      mxml_write_line(writer, ">\n");
       writer->element_is_open = FALSE;
    }
 
@@ -294,7 +335,7 @@ int mxml_start_element(MXML_WRITER *writer, const char *name)
    writer->element_is_open = TRUE;
    writer->data_was_written = FALSE;
 
-   return write(writer->fh, line, strlen(line)) == (int)strlen(line);
+   return mxml_write_line(writer, line) == (int)strlen(line);
 }
 
 /*------------------------------------------------------------------*/
@@ -334,7 +375,7 @@ int mxml_end_element(MXML_WRITER *writer)
    strlcat(line, ">\n", sizeof(line));
    writer->data_was_written = FALSE;
 
-   return write(writer->fh, line, strlen(line)) == (int)strlen(line);
+   return mxml_write_line(writer, line) == (int)strlen(line);
 }
 
 /*------------------------------------------------------------------*/
@@ -342,23 +383,19 @@ int mxml_end_element(MXML_WRITER *writer)
 int mxml_write_attribute(MXML_WRITER *writer, const char *name, const char *value)
 /* write an attribute to the currently open XML element */
 {
-   char name_enc[1000];
+   char name_enc[1000], val_enc[1000], line[2000];
 
    if (!writer->element_is_open)
       return FALSE;
 
-   write(writer->fh, " ", 1);
    strcpy(name_enc, name);
    mxml_encode(name_enc, sizeof(name_enc));
-   write(writer->fh, name_enc, strlen(name_enc));
-   write(writer->fh, "=\"", 2);
+   strcpy(val_enc, value);
+   mxml_encode(val_enc, sizeof(val_enc));
 
-   strcpy(name_enc, value);
-   mxml_encode(name_enc, sizeof(name_enc));
-   write(writer->fh, name_enc, strlen(name_enc));
-   write(writer->fh, "\"", 1);
+   sprintf(line, " %s=\"%s\"", name_enc, val_enc);
 
-   return TRUE;
+   return mxml_write_line(writer, line) == (int)strlen(line);
 }
 
 /*------------------------------------------------------------------*/
@@ -366,14 +403,13 @@ int mxml_write_attribute(MXML_WRITER *writer, const char *name, const char *valu
 int mxml_write_value(MXML_WRITER *writer, const char *data)
 /* write value of an XML element, like <[name]>[value]</[name]> */
 {
-   int i, j;
    static char *data_enc;
    static int data_size = 0;
 
    if (!writer->element_is_open)
       return FALSE;
 
-   if (write(writer->fh, ">", 1) != 1)
+   if (mxml_write_line(writer, ">") != 1)
       return FALSE;
    writer->element_is_open = FALSE;
    writer->data_was_written = TRUE;
@@ -388,32 +424,36 @@ int mxml_write_value(MXML_WRITER *writer, const char *data)
 
    strcpy(data_enc, data);
    mxml_encode(data_enc, data_size);
-   j = strlen(data_enc);
-   i = write(writer->fh, data_enc, j);
-
-   return i == j;
+   return mxml_write_line(writer, data_enc) == (int)strlen(data_enc);
 }
 
 /*------------------------------------------------------------------*/
 
-int mxml_close_document(MXML_WRITER *writer)
+char *mxml_close_document(MXML_WRITER *writer)
 /* close a file opened with mxml_open_writer */
 {
    int i;
+   char *p;
 
    if (writer->element_is_open) {
       writer->element_is_open = FALSE;
-      if (write(writer->fh, ">\n", 2) != 2)
-         return FALSE;
+      if (mxml_write_line(writer, ">\n") != 2)
+         return NULL;
    }
 
    /* close remaining open levels */
    for (i = 0 ; i<writer->level ; i++)
       mxml_end_element(writer);
 
+   if (writer->buffer) {
+      p = writer->buffer;
+      free(writer);
+      return p;
+   } 
+
    close(writer->fh);
    free(writer);
-   return TRUE;
+   return (char *)1;
 }
 
 /*------------------------------------------------------------------*/

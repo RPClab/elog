@@ -5,19 +5,6 @@
 
    Contents:     Header file for mxml.c
 
-   $Log$
-   Revision 1.4  2005/03/22 15:06:11  ritt
-   Added mxml_add_node_at()
-
-   Revision 1.3  2005/03/22 14:26:22  ritt
-   Implemented mxml_find_nodes()
-
-   Revision 1.2  2005/03/03 15:34:40  ritt
-   Implemented mxml_debug_tree()
-
-   Revision 1.1  2005/03/01 23:48:18  ritt
-   Implemented MXML for password file
-
 \********************************************************************/
 
 /*------------------------------------------------------------------*/
@@ -26,6 +13,9 @@
 
 typedef struct {
    int  fh;
+   char *buffer;
+   int  buffer_size;
+   int  buffer_len;
    int  level;
    int element_is_open;
    int data_was_written;
@@ -53,7 +43,7 @@ int mxml_start_element(MXML_WRITER *writer, const char *name);
 int mxml_end_element(MXML_WRITER *writer); 
 int mxml_write_attribute(MXML_WRITER *writer, const char *name, const char *value);
 int mxml_write_value(MXML_WRITER *writer, const char *value);
-int mxml_close_document(MXML_WRITER *writer);
+char *mxml_close_document(MXML_WRITER *writer);
 
 int mxml_get_number_of_children(PMXML_NODE pnode);
 PMXML_NODE mxml_subnode(PMXML_NODE pnode, int index);
