@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.609  2005/03/29 21:15:24  ritt
+   Implemented 'Type <attrib> = datetime'
+
    Revision 1.608  2005/03/29 13:31:37  ritt
    Handle logbook subscriptios correctly with self register = 3
 
@@ -1174,8 +1177,10 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 #define AF_RADIO              (1<<6)
 #define AF_EXTENDABLE         (1<<7)
 #define AF_DATE               (1<<8)
-#define AF_NUMERIC            (1<<9)
-#define AF_USERLIST          (1<<10)
+#define AF_DATETIME           (1<<9)
+#define AF_TIME              (1<<10)
+#define AF_NUMERIC           (1<<11)
+#define AF_USERLIST          (1<<12)
 
 /* attribute format flags */
 #define AFF_SAME_LINE              1
@@ -6379,6 +6384,10 @@ and attr_flags arrays */
          if (getcfg(logbook, str, type, sizeof(type))) {
             if (strieq(type, "date"))
                attr_flags[i] |= AF_DATE;
+            if (strieq(type, "datetime"))
+               attr_flags[i] |= AF_DATETIME;
+            if (strieq(type, "time"))
+               attr_flags[i] |= AF_TIME;
             if (strieq(type, "numeric"))
                attr_flags[i] |= AF_NUMERIC;
             if (strieq(type, "userlist"))
@@ -7307,7 +7316,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
       for (; i < lbs->n_attr; i++) {
          strcpy(list[i], attr_list[i]);
          if (attrib) {
-            if ((attr_flags[i] & AF_DATE) && format_date) {
+            if ((attr_flags[i] & (AF_DATE | AF_DATETIME)) && format_date) {
 
                t = (time_t) atoi(attrib[i]);
                ts = localtime(&t);
@@ -7678,9 +7687,35 @@ void show_date_selector(int day, int month, int year, char *index)
 
 /*------------------------------------------------------------------*/
 
+void show_time_selector(int hour, int min, char *index)
+{
+   int i;
+
+   rsprintf("<select name=\"h%s\">\n", index);
+
+   rsprintf("<option value=\"\">\n");
+   for (i = 0; i < 24; i++)
+      if (i == hour)
+         rsprintf("<option selected value=\"%d\">%02d\n", i, i);
+      else
+         rsprintf("<option value=\"%d\">%02d\n", i, i);
+   rsprintf("</select> <b>:</b> \n");
+
+   rsprintf("<select name=\"n%s\">", index);
+   rsprintf("<option selected value=\"\">\n");
+   for (i = 0; i < 60; i++)
+      if (i == min)
+         rsprintf("<option selected value=%d>%02d\n", i, i);
+      else
+         rsprintf("<option value=%d>%02d\n", i, i);
+   rsprintf("</select>\n");
+}
+
+/*------------------------------------------------------------------*/
+
 void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
 {
-   int i, j, first, year, month, day;
+   int i, j, first, year, month, day, hour, min;
    char str[1000], ua[NAME_LENGTH];
    time_t ltime;
    struct tm ts;
@@ -7732,6 +7767,39 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
          } else
             strcpy(attrib[i], "");
 
+      } else if (attr_flags[i] & AF_DATETIME) {
+
+         sprintf(str, "y%d", i);
+         year = atoi(getparam(str));
+         if (year < 100)
+            year += 2000;
+
+         sprintf(str, "m%d", i);
+         month = atoi(getparam(str));
+
+         sprintf(str, "d%d", i);
+         day = atoi(getparam(str));
+
+         sprintf(str, "h%d", i);
+         hour = atoi(getparam(str));
+
+         sprintf(str, "n%d", i);
+         min = atoi(getparam(str));
+
+         memset(&ts, 0, sizeof(struct tm));
+         ts.tm_year = year - 1900;
+         ts.tm_mon = month - 1;
+         ts.tm_mday = day;
+         ts.tm_hour = hour;
+         ts.tm_min  = min;
+         ts.tm_isdst = -1;
+
+         if (month && day) {
+            ltime = mktime(&ts);
+            sprintf(attrib[i], "%d", (int) ltime);
+         } else
+            strcpy(attrib[i], "");
+
       } else {
          strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
       }
@@ -7743,7 +7811,7 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
 void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload, BOOL breedit)
 {
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
-       format_flags[MAX_N_ATTR], year, month, day, n_attr, n_disp_attr, attr_index[MAX_N_ATTR];
+       format_flags[MAX_N_ATTR], year, month, day, hour, min, n_attr, n_disp_attr, attr_index[MAX_N_ATTR];
    char str[1000], preset[1000], *p, *pend, star[80], comment[10000], reply_string[256],
        list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80],
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80],
@@ -7821,7 +7889,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
              (breedit && i == 2)) {     /* subst on reedit only if preset is under condition */
 
             /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & AF_DATE) == 0);
+            i = build_subst_list(lbs, slist, svalue, attrib, 
+                                  (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
             strsubst(preset, slist, svalue, i);
 
             /* check for index substitution */
@@ -7844,7 +7913,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
 
             /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & AF_DATE) == 0);
+            i = build_subst_list(lbs, slist, svalue, attrib, 
+                                  (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
             strsubst(preset, slist, svalue, i);
 
             /* check for index substitution */
@@ -7914,7 +7984,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
              (breedit && i == 2)) {     /* subst on reedit only if preset is under condition */
 
             /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & AF_DATE) == 0);
+            i = build_subst_list(lbs, slist, svalue, attrib, 
+                                  (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
             strsubst(preset, slist, svalue, i);
 
             /* check for index substitution */
@@ -7937,7 +8008,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
 
             /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & AF_DATE) == 0);
+            i = build_subst_list(lbs, slist, svalue, attrib, 
+                                  (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
             strsubst(preset, slist, svalue, i);
 
             /* check for index substitution */
@@ -8017,7 +8089,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             if (orig_tag[0] == 0) {
 
                /* do not format date for date attributes */
-               i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & AF_DATE) == 0);
+               i = build_subst_list(lbs, slist, svalue, attrib, 
+                                     (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
                sprintf(str, "%d", message_id);
                add_subst_list(slist, svalue, "message id", str, &i);
                add_subst_time(lbs, slist, svalue, "entry time", date, &i);
@@ -8035,7 +8108,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          if (getcfg(lbs->name, str, preset, sizeof(preset))) {
 
             /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & AF_DATE) == 0);
+            i = build_subst_list(lbs, slist, svalue, attrib, 
+                                  (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
 
             sprintf(str, "%d", message_id);
             add_subst_list(slist, svalue, "message id", str, &i);
@@ -8103,7 +8177,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             rsprintf("    return false;\n");
             rsprintf("  }\n");
 
-         } else if (attr_flags[i] & AF_DATE) {
+         } else if (attr_flags[i] & (AF_DATE | AF_DATETIME)) {
             rsprintf("  if (document.form1.m%d.value == \"\") {\n", i);
             sprintf(str, loc("Please enter month for attribute '%s'"), attr_list[i]);
             rsprintf("    alert(\"%s\");\n", str);
@@ -8122,6 +8196,21 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             rsprintf("    document.form1.y%d.focus();\n", i);
             rsprintf("    return false;\n");
             rsprintf("  }\n");
+
+            if (attr_flags[i] & AF_DATETIME) {
+               rsprintf("  if (document.form1.h%d.value == \"\") {\n", i);
+               sprintf(str, loc("Please enter hour for attribute '%s'"), attr_list[i]);
+               rsprintf("    alert(\"%s\");\n", str);
+               rsprintf("    document.form1.h%d.focus();\n", i);
+               rsprintf("    return false;\n");
+               rsprintf("  }\n");
+               rsprintf("  if (document.form1.n%d.value == \"\") {\n", i);
+               sprintf(str, loc("Please enter minute for attribute '%s'"), attr_list[i]);
+               rsprintf("    alert(\"%s\");\n", str);
+               rsprintf("    document.form1.n%d.focus();\n", i);
+               rsprintf("    return false;\n");
+               rsprintf("  }\n");
+            }
 
          } else {
             rsprintf("  if (document.form1.%s.value == \"\") {\n", ua);
@@ -8443,6 +8532,28 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf("<td%s class=\"attribvalue\">", title);
                sprintf(str, "%d", index);
                show_date_selector(day, month, year, str);
+               rsprintf("</td>\n");
+
+            } else if (attr_flags[index] & AF_DATETIME) {
+
+               year = month = day = 0;
+               hour = min = -1;
+               if (attrib[index][0]) {
+                  ltime = atoi(attrib[index]);
+                  pts = localtime(&ltime);
+                  year = pts->tm_year + 1900;
+                  month = pts->tm_mon + 1;
+                  day = pts->tm_mday;
+                  hour = pts->tm_hour;
+                  min = pts->tm_min;
+               }
+
+               rsprintf("<td%s class=\"attribvalue\">", title);
+               sprintf(str, "%d", index);
+               show_date_selector(day, month, year, str);
+               rsprintf("&nbsp;&nbsp;");
+               show_time_selector(hour, min, str);
+
                rsprintf("</td>\n");
 
             } else if (attr_flags[index] & AF_USERLIST) {
@@ -9213,12 +9324,16 @@ void show_find_form(LOGBOOK * lbs)
       rsprintf("<td class=\"attribvalue\">");
       if (attr_options[i][0][0] == 0) {
 
-         if (attr_flags[i] & AF_DATE) {
+         if (attr_flags[i] & (AF_DATE | AF_DATETIME)) {
 
             rsprintf("<table width=\"100%%\" cellspacing=0 border=0>\n");
             rsprintf("<tr><td width=\"1%%\">%s:<td>", loc("Start"));
             sprintf(str, "%da", i);
             show_date_selector(0, 0, 0, str);
+            if (attr_flags[i] & AF_DATETIME) {
+               rsprintf("&nbsp;&nbsp;");
+               show_time_selector(0, 0, str);
+            }
 
             rsprintf("</td></tr>\n");
             rsprintf("<tr><td width=\"1%%\">%s:<td>", loc("End"));
@@ -13777,6 +13892,24 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                         rsprintf("<td class=\"%s\">%s</td>\n", sclass, str);
                   }
 
+                  else if (attr_flags[i] & AF_DATETIME) {
+
+                     if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+                        strcpy(format, DEFAULT_TIME_FORMAT);
+
+                     ltime = atoi(attrib[i]);
+                     pts = localtime(&ltime);
+                     if (ltime == 0)
+                        strcpy(str, "-");
+                     else
+                        strftime(str, sizeof(str), format, pts);
+
+                     if (disp_attr_link == NULL || disp_attr_link[i])
+                        rsprintf("<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", sclass, ref, str);
+                     else
+                        rsprintf("<td class=\"%s\">%s</td>\n", sclass, str);
+                  }
+
                   else if (attr_flags[i] & AF_ICON) {
                      rsprintf("<td class=\"%s\">", sclass);
                      if (attrib[i][0])
@@ -14527,7 +14660,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
 
             if (attr_options[i][0][0] == 0) {
 
-               if (attr_flags[i] & AF_DATE) {
+               if (attr_flags[i] & (AF_DATE | AF_DATETIME)) {
 
                   rsprintf("<select name=\"%s\" onChange=\"document.form1.submit()\">\n", list[index]);
 
@@ -15394,7 +15527,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       if (*getparam(attr_list[i]))
          break;
 
-      if (attr_flags[i] & AF_DATE) {
+      if (attr_flags[i] & (AF_DATE | AF_DATETIME)) {
          sprintf(str, "%da", i);
          if (retrieve_date(str, TRUE))
             break;
@@ -15522,7 +15655,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                if (searched && !found)
                   break;
 
-            } else if (attr_flags[i] & AF_DATE) {
+            } else if (attr_flags[i] & (AF_DATE | AF_DATETIME)) {
 
                /* check for last[i]/next[i] */
 
@@ -15951,7 +16084,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
           || *getparam("subtext");
 
       for (i = 0; i < lbs->n_attr; i++)
-         if (*getparam(attr_list[i]) && (attr_flags[i] & AF_DATE) == 0)
+         if (*getparam(attr_list[i]) && (attr_flags[i] & (AF_DATE | AF_DATETIME)) == 0)
             disp_filter = TRUE;
 
       for (i = 0; i < lbs->n_attr; i++) {
@@ -16015,7 +16148,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          }
 
          for (i = 0; i < lbs->n_attr; i++) {
-            if (attr_flags[i] & AF_DATE) {
+            if (attr_flags[i] & (AF_DATE | AF_DATETIME)) {
 
                sprintf(str, "%da", i);
                ltime1 = retrieve_date(str, TRUE);
@@ -16572,6 +16705,17 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
                strcpy(comment, "-");
             else
                strftime(comment, sizeof(str), format, pts);
+         } else if (attr_flags[j] & AF_DATETIME) {
+
+            if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+               strcpy(format, DEFAULT_TIME_FORMAT);
+
+            ltime = atoi(attrib[j]);
+            pts = localtime(&ltime);
+            if (ltime == 0)
+               strcpy(comment, "-");
+            else
+               strftime(comment, sizeof(str), format, pts);
          }
 
          if (!comment[0])
@@ -16912,7 +17056,7 @@ void submit_elog(LOGBOOK * lbs)
        mail_param[1000], *mail_to, att_file[MAX_ATTACHMENTS][256],
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], ua[NAME_LENGTH];
    int i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_orig,
-       mail_to_size, ltime, year, month, day, n_attr, email_notify[1000];
+       mail_to_size, ltime, year, month, day, hour, min, n_attr, email_notify[1000];
    BOOL bedit;
    struct tm tms;
 
@@ -16932,6 +17076,24 @@ void submit_elog(LOGBOOK * lbs)
             if (*getparam(str) == 0)
                missing = 1;
             sprintf(str, "y%d", i);
+            if (*getparam(str) == 0)
+               missing = 1;
+            if (missing)
+               break;
+         } else if (attr_flags[i] & AF_DATETIME) {
+            sprintf(str, "d%d", i);
+            if (*getparam(str) == 0)
+               missing = 1;
+            sprintf(str, "m%d", i);
+            if (*getparam(str) == 0)
+               missing = 1;
+            sprintf(str, "y%d", i);
+            if (*getparam(str) == 0)
+               missing = 1;
+            sprintf(str, "h%d", i);
+            if (*getparam(str) == 0)
+               missing = 1;
+            sprintf(str, "n%d", i);
             if (*getparam(str) == 0)
                missing = 1;
             if (missing)
@@ -17117,6 +17279,50 @@ void submit_elog(LOGBOOK * lbs)
                tms.tm_mon = month - 1;
                tms.tm_mday = day;
                tms.tm_hour = 12;
+
+               ltime = mktime(&tms);
+
+               if (ltime == -1) {
+                  show_error(loc("Date must be between 1970 and 2037"));
+                  return;
+               }
+               sprintf(attrib[i], "%d", ltime);
+            }
+         }
+
+      } else if (attr_flags[i] & AF_DATETIME) {
+
+         if (isparam(ua))       // from edit/reply of fixed attributes
+            strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
+         else {
+
+            sprintf(str, "y%d", i);
+            year = atoi(getparam(str));
+            if (year < 100)
+               year += 2000;
+
+            sprintf(str, "m%d", i);
+            month = atoi(getparam(str));
+
+            sprintf(str, "d%d", i);
+            day = atoi(getparam(str));
+
+            sprintf(str, "h%d", i);
+            hour = atoi(getparam(str));
+
+            sprintf(str, "n%d", i);
+            min = atoi(getparam(str));
+
+            if (month == 0 || day == 0)
+               strcpy(attrib[i], "");
+            else {
+               memset(&tms, 0, sizeof(struct tm));
+               tms.tm_year = year - 1900;
+               tms.tm_mon = month - 1;
+               tms.tm_mday = day;
+               tms.tm_hour = hour;
+               tms.tm_min = min;
+               tms.tm_isdst = -1;
 
                ltime = mktime(&tms);
 
@@ -18242,6 +18448,20 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
             if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
                strcpy(format, DEFAULT_DATE_FORMAT);
+
+            ltime = atoi(attrib[i]);
+            pts = localtime(&ltime);
+            if (ltime == 0)
+               strcpy(str, "-");
+            else
+               strftime(str, sizeof(str), format, pts);
+
+            rsprintf("%s:</td><td class=\"%s\">%s&nbsp</td>\n", attr_list[i], class_value, str);
+
+         } else if (attr_flags[i] & AF_DATETIME) {
+
+            if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+               strcpy(format, DEFAULT_TIME_FORMAT);
 
             ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
