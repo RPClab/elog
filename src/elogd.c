@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.391  2004/07/15 20:40:33  midas
+   Return error number in retrieve_remote_md5()
+
    Revision 1.390  2004/07/15 19:56:00  midas
    Implemented 'max content length'
 
@@ -10303,8 +10306,11 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
    if (n == 0) {
       if (isparam("debug"))
          rsputs(text);
-      if (strstr(text, "Login"))
+      if (strstr(text, "Login")) {
          sprintf(error_str, loc("No user name supplied to access remote logbook"));
+         free(text);
+         return -2;
+      }
       else
          sprintf(error_str, loc("Error accessing remote logbook"));
    }
@@ -11225,7 +11231,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
    int index, i, j, i_msg, i_remote, i_cache, n_remote, n_cache, nserver,
        remote_id, exist_remote, exist_cache, message_id, max_id;
    int all_identical;
-   char str[2000], url[256], loc_ref[256], rem_ref[256];
+   char str[2000], url[256], loc_ref[256], rem_ref[256], pwd[256];
    MD5_INDEX *md5_remote, *md5_cache;
    char list[MAX_N_LIST][NAME_LENGTH], error_str[256], *buffer;
    unsigned char digest[16];
@@ -11262,14 +11268,28 @@ void synchronize_logbook(LOGBOOK * lbs, int mode)
       n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote, error_str);
       if (n_remote <= 0) {
 
-         mprint(lbs, mode, error_str);
+         if (n_remote == -2 && mode == SYNC_CLONE) {
+            /* ask for username and password */
+            printf("Please enter username to access %s%s: ", list[index], lbs->name);
+            fgets(str, sizeof(str), stdin);
+            setparam("unm", str);
 
-         if (md5_remote)
-            free(md5_remote);
+            printf("Please enter password to access %s%s: ", list[index], lbs->name);
+            fgets(str, sizeof(str), stdin);
+            do_crypt(str, pwd);
+            setparam("upwd", pwd);
 
-         if (mode == SYNC_HTML)
-            rsprintf("</pre>\n");
-         continue;
+         } else {
+
+            mprint(lbs, mode, error_str);
+
+            if (md5_remote)
+               free(md5_remote);
+
+            if (mode == SYNC_HTML)
+               rsprintf("</pre>\n");
+            continue;
+         }
       }
 
       /* load local copy of remote MD5s from file */
