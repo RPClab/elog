@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.51  2003/03/25 16:08:46  midas
+  Fixed problem that uploading attachments on a reply deleted the original message
+
   Revision 1.50  2003/03/21 16:04:28  midas
   Added 'admin textarea'
 
@@ -4820,7 +4823,7 @@ char   str[80], date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
 
 /*------------------------------------------------------------------*/
 
-void show_edit_form(LOGBOOK *lbs, int message_id, BOOL bedit, BOOL upload)
+void show_edit_form(LOGBOOK *lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload)
 {
 int    i, j, n, index, size, width, height, fh, length, first;
 char   str[1000], preset[1000], *p, star[80], comment[10000], reply_string[256];
@@ -4838,7 +4841,7 @@ time_t now;
 
   text[0] = 0;
 
-  if (upload)
+  if (bupload)
     {
     /* get date from parameter */
     if (*getparam("entry_date"))
@@ -4957,7 +4960,7 @@ time_t now;
     }
 
   /* remove attributes for replies */
-  if (message_id && !bedit)
+  if (breply)
     {
     getcfg(lbs->name, "Remove on reply", str);
     n = strbreak(str, list, MAX_N_ATTR);
@@ -4970,7 +4973,7 @@ time_t now;
     }
 
   /* subst attributes for replies */
-  if (message_id && !bedit)
+  if (breply)
     {
     for (index = 0 ; index < lbs->n_attr ; index++)
       {
@@ -4989,7 +4992,7 @@ time_t now;
     }
 
   /* subst attributes for edits */
-  if (message_id && bedit && !upload)
+  if (message_id && bedit && !bupload)
     {
     for (index = 0 ; index < lbs->n_attr ; index++)
       {
@@ -5258,14 +5261,12 @@ time_t now;
       }
     }
 
-  if (message_id)
-    {
+  if (breply)
     /* hidden text for original message */
-    rsprintf("<input type=hidden name=orig value=\"%d\">\n", message_id);
+    rsprintf("<input type=hidden name=reply_to value=\"%d\">\n", message_id);
 
-    if (bedit)
-      rsprintf("<input type=hidden name=edit value=1>\n");
-    }
+  if (bedit && message_id)
+    rsprintf("<input type=hidden name=edit_id value=\"%d\">\n", message_id);
 
   rsprintf("</td></tr>\n");
 
@@ -8063,6 +8064,7 @@ LOGBOOK *lbs_cur;
       msg_list[n].lbs = lbs_cur;
       msg_list[n].index = j;
       sprintf(msg_list[n].string, "%010d", lbs_cur->el_index[j].file_time);
+      msg_list[n].in_reply_to = lbs_cur->el_index[j].in_reply_to;
       n++;
       }
     }
@@ -8266,6 +8268,17 @@ LOGBOOK *lbs_cur;
     if (isparam("sort"))
       reverse = 0;
     }
+
+  /*---- remove duplicate messages ----*/
+  
+  for (i=0 ; i<n_msg ; i++)
+    for (j=i+1 ; j<n_msg ; j++)
+      if (msg_list[i].lbs == msg_list[j].lbs &&
+          msg_list[i].index == msg_list[j].index)
+        {
+        msg_list[i].lbs = NULL;
+        break;
+        }
 
   /*---- compact messasges ----*/
 
@@ -9032,7 +9045,7 @@ int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_or
       strlcpy(attrib[i], getparam(attr_list[i]), NAME_LENGTH);
       }
 
-    if (!*getparam("edit"))
+    if (!*getparam("edit_id"))
       {
       sprintf(str, "Subst %s", attr_list[i]);
       if (getcfg(lbs->name, str, subst_str))
@@ -9049,17 +9062,18 @@ int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_or
   date[0] = 0;
   resubmit_orig = 0;
 
-  if (*getparam("edit") &&
+  if (*getparam("edit_id") &&
       *getparam("resubmit") &&
       atoi(getparam("resubmit")) == 1)
     {
-    resubmit_orig = atoi(getparam("orig"));
+    resubmit_orig = atoi(getparam("edit_id"));
 
     /* get old links */
     el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0,
                 NULL, 0, in_reply_to, reply_to, NULL, NULL);
 
     /* if not message head, move all preceeding messages */
+    /* outcommented, users want only resubmitted message occur at end (see what's new) 
     if (in_reply_to[0])
       {
       do
@@ -9069,23 +9083,24 @@ int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_or
                     NULL, 0, in_reply_to, reply_to, NULL, NULL);
         } while (in_reply_to[0]);
       }
+    */
 
-    message_id = atoi(getparam("orig"));
+    message_id = atoi(getparam("edit_id"));
     strcpy(in_reply_to, "<keep>");
     strcpy(reply_to, "<keep>");
     date[0] = 0;
     }
   else
     {
-    if (*getparam("edit"))
+    if (*getparam("edit_id"))
       {
-      message_id = atoi(getparam("orig"));
+      message_id = atoi(getparam("edit_id"));
       strcpy(in_reply_to, "<keep>");
       strcpy(reply_to, "<keep>");
       strcpy(date, "<keep>");
       }
     else
-      strcpy(in_reply_to, getparam("orig"));
+      strcpy(in_reply_to, getparam("reply_to"));
     }
 
   message_id = el_submit(lbs, message_id, date, attr_list, attrib, lbs->n_attr, getparam("text"),
@@ -9121,7 +9136,7 @@ int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_or
     }
   else
     {
-    if (!(*getparam("edit") && getcfg(lbs->name, "Suppress Email on edit", str) && atoi(str) == 1))
+    if (!(*getparam("edit_id") && getcfg(lbs->name, "Suppress Email on edit", str) && atoi(str) == 1))
       {
       /* go throuch "Email xxx" in configuration file */
       for (index=mindex=0 ; index <= lbs->n_attr ; index++)
@@ -9208,7 +9223,7 @@ int    i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_or
   if (strlen(mail_to) > 0)
     {
     mail_to[strlen(mail_to)-1] = 0; /* strip last ',' */
-    if (compose_email(lbs, mail_to, message_id, attrib, mail_param, *getparam("edit")) == 0)
+    if (compose_email(lbs, mail_to, message_id, attrib, mail_param, *getparam("edit_id")) == 0)
       return;
     }
 
@@ -10855,8 +10870,8 @@ FILE    *f;
 
   if (equal_ustring(command, loc("Back")))
     {
-    if (isparam("orig"))
-      sprintf(str, "../%s/%s", logbook_enc, getparam("orig"));
+    if (isparam("edit_id"))
+      sprintf(str, "../%s/%s", logbook_enc, getparam("edit_id"));
     else
       sprintf(str, "../%s/", logbook_enc);
 
@@ -11033,7 +11048,7 @@ FILE    *f;
 
   if (equal_ustring(command, loc("New")))
     {
-    show_edit_form(lbs, 0, FALSE, FALSE);
+    show_edit_form(lbs, 0, FALSE, FALSE, FALSE);
     return;
     }
 
@@ -11041,7 +11056,7 @@ FILE    *f;
 
   if (equal_ustring(command, loc("Upload")))
     {
-    show_edit_form(lbs, atoi(getparam("orig")), TRUE, TRUE);
+    show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE);
     return;
     }
 
@@ -11072,7 +11087,7 @@ FILE    *f;
           unsetparam(str);
         }
 
-      show_edit_form(lbs, atoi(getparam("orig")), TRUE, TRUE);
+      show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE);
       return;
       }
     }
@@ -11081,14 +11096,14 @@ FILE    *f;
     {
     if (message_id)
       {
-      show_edit_form(lbs, message_id, TRUE, FALSE);
+      show_edit_form(lbs, message_id, FALSE, TRUE, FALSE);
       return;
       }
     }
 
   if (equal_ustring(command, loc("Reply")))
     {
-    show_edit_form(lbs, message_id, FALSE, FALSE);
+    show_edit_form(lbs, message_id, TRUE, FALSE, FALSE);
     return;
     }
 
