@@ -24,6 +24,11 @@ td {
   width:100%;
 }
 
+/* printable frame table */
+.pframe {
+  width:600;
+}
+
 /* standard formatting for logbook tabs */
 .tabs {
   font-family:sans-serif;
