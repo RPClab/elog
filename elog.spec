@@ -5,7 +5,7 @@
 Name:       elog
 Summary:    elog is a standalone electronic web logbook
 Version:    2.5.4
-Release:    1
+Release:    5
 Copyright:  GPL
 Group:      Applications/Networking
 Source:     http://midas.psi.ch/elog/download/elog-%{version}.tar.gz
@@ -68,7 +68,7 @@ each weblog can be totally different from the rest.
 
 %build
 make
-perl -p -i -e "s#\@PREFIX\@#%{prefix}#g" elogd.init
+sed "s#\@PREFIX\@#%{prefix}#g" elogd.init_template > elogd.init
 
 %install
 mkdir -p $RPM_BUILD_ROOT%{prefix}/elog
