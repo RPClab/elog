@@ -7,8 +7,6 @@ Version 1.3.3, released April 2nd, 2002
 - Made elog utility work with elogd running on other languages 
   (Fixed "submit" translation)
 - Require logbook flag in elog utility
-- Made "Copy to" and "Move to" work in other languages
-- Made elog utility work in other languages (fixed "submit" translation)
 - Added support for Spanish, thanks to Julio Calvo (jhcalvo@arnet.com.ar)
 - Added "BGImage" and "BGTImage" in themes
 - Added .jpeg as valid file extension equivalent to .jpg
