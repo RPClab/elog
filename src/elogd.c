@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.411  2004/07/28 18:51:48  midas
+   Close syslog on cleanup
+
    Revision 1.410  2004/07/28 13:24:06  midas
    Fixed problem that attachments could not be deleted
 
@@ -434,6 +437,7 @@ uid_t orig_uid;                 /* Original effective UID before dropping privil
 #endif
 
 char pidfile[256];              /* Pidfile name */
+BOOL running_as_daemon;         /* Running as a daemon? */
 
 static void (*printf_handler) (const char *);   /* Handler to printf for logging */
 static void (*fputs_handler) (const char *);    /* Handler to fputs for logging  */
@@ -20184,6 +20188,13 @@ void cleanup(void)
       }
    }
 #endif
+   
+   if (running_as_daemon)
+#ifdef OS_UNIX
+      closelog();
+#else
+      DeregisterEventSource(hEventLog);
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -20416,7 +20427,6 @@ int run_service(void)
 int main(int argc, char *argv[])
 {
    int i, fh, tcp_port_cl;
-   int daemon = FALSE;
    char read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256],
        clone_url[256], error_str[256];
    time_t now;
@@ -20438,6 +20448,7 @@ int main(int argc, char *argv[])
    logbook_dir[0] = resource_dir[0] = logbook_dir[0] = pidfile[0] = 0;
    tcp_port_cl = 0;
    use_keepalive = TRUE;
+   running_as_daemon = FALSE;
 
    /*
     * Initially, redirect all messages handled with eprintf/efputs to stderr.
@@ -20464,7 +20475,7 @@ int main(int argc, char *argv[])
    /* parse command line parameters */
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-' && argv[i][1] == 'D')
-         daemon = TRUE;
+         running_as_daemon = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'v')
          verbose = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'k')
@@ -20694,7 +20705,7 @@ int main(int argc, char *argv[])
 
    /* initiate daemon/service as soon as possible */
 
-   if (daemon) {
+   if (running_as_daemon) {
       /* Redirect all messages handled with eprintf/efputs to syslog */
       redirect_to_syslog();
 
@@ -20728,13 +20739,6 @@ int main(int argc, char *argv[])
    }
 
    server_loop(tcp_port);
-
-   if (daemon)
-#ifdef OS_UNIX
-      closelog();
-#else
-      DeregisterEventSource(hEventLog);
-#endif
 
    exit(EXIT_SUCCESS);
 }
