@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.67  2003/04/04 20:50:15  midas
+  Fixed bug in base64_encode
+
   Revision 1.66  2003/04/04 11:00:22  midas
   Removed 'admin' command, added link 'change elogd.cfg' on config page instead
 
@@ -1240,9 +1243,11 @@ void base64_encode(char *s, char *d)
 unsigned int t, pad;
 
   pad = 3 - strlen(s) % 3;
+  if (pad == 3)
+    pad = 0;
   while (*s)
     {
-    t =   (*s++) << 16;
+    t = (*s++) << 16;
     if (*s)
       t |=  (*s++) << 8;
     if (*s)
