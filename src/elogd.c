@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.544  2005/01/25 16:31:40  ritt
+   Switched from GIF to PNG
+
    Revision 1.543  2005/01/21 22:51:25  ritt
    Remove any CR/LF from attributes submitted from browser
 
@@ -6654,7 +6657,7 @@ void show_standard_title(char *logbook, char *text, int printable)
    if (getcfg(logbook, "Title image", str, sizeof(str)))
       rsprintf(str);
    else
-      rsprintf("<img border=0 src=\"elog.gif\" alt=\"ELOG logo\">");
+      rsprintf("<img border=0 src=\"elog.png\" alt=\"ELOG logo\">");
 
    if (getcfg(logbook, "Title image URL", str, sizeof(str)))
       rsprintf("</a>\n");
@@ -7443,7 +7446,7 @@ void show_date_selector(int day, int month, int year, char *index)
 
    rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
    rsprintf("  document.write(\"<a href=\\\"javascript:opencal('%s')\\\">\");\n", index);
-   rsprintf("  document.writeln(\"<img src=\\\"cal.gif\\\" border=\\\"0\\\"");
+   rsprintf("  document.writeln(\"<img src=\\\"cal.png\\\" border=\\\"0\\\"");
    rsprintf("alt=\\\"%s\\\"></a>\");\n", loc("Pick a date"));
 
    rsprintf("//-->\n");
@@ -13238,7 +13241,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
       if (locked_by && locked_by[0]) {
          sprintf(str, "%s %s", loc("Entry is currently edited by"), locked_by);
-         rsprintf("<img src=\"stop.gif\" alt=\"%s\">&nbsp;", str);
+         rsprintf("<img src=\"stop.png\" alt=\"%s\">&nbsp;", str);
       }
 
       /* show select box */
@@ -13278,13 +13281,13 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       else {
          /* if top level only, display reply icon if message has a reply */
          if (getcfg(lbs->name, "Top level only", str, sizeof(str)) && atoi(str) == 1 && reply_to[0])
-            rsprintf("<img border=0 src=\"reply.gif\">&nbsp;");
+            rsprintf("<img border=0 src=\"reply.png\">&nbsp;");
          else {
             /* display standard icons */
             if (level == 0)
-               rsprintf("<img border=0 src=\"entry.gif\">&nbsp;");
+               rsprintf("<img border=0 src=\"entry.png\">&nbsp;");
             else
-               rsprintf("<img border=0 src=\"reply.gif\">&nbsp;");
+               rsprintf("<img border=0 src=\"reply.png\">&nbsp;");
          }
       }
       if (highlight != message_id)
@@ -13336,9 +13339,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          if (strieq(disp_attr[index], loc("ID"))) {
             if (strieq(mode, "Threaded")) {
                if (level == 0)
-                  rsprintf("<img border=0 src=\"entry.gif\">&nbsp;");
+                  rsprintf("<img border=0 src=\"entry.png\">&nbsp;");
                else
-                  rsprintf("<img border=0 src=\"reply.gif\">&nbsp;");
+                  rsprintf("<img border=0 src=\"reply.png\">&nbsp;");
 
                skip_comma = TRUE;
 
@@ -13347,7 +13350,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
                if (locked_by && locked_by[0]) {
                   sprintf(str, "%s %s", loc("Entry is currently edited by"), locked_by);
-                  rsprintf("<img src=\"stop.gif\" alt=\"%s\">&nbsp;", str);
+                  rsprintf("<img src=\"stop.png\" alt=\"%s\">&nbsp;", str);
                }
 
                if (getcfg(lbs->name, "ID display", display, sizeof(display))) {
@@ -13382,14 +13385,14 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          if (strieq(disp_attr[index], loc("Edit"))) {
             if (!strieq(mode, "Threaded")) {
                rsprintf("<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref, loc("Edit"));
-               rsprintf("<img src=\"edit.gif\" border=0 alt=\"%s\"></a></td>\n", loc("Edit entry"));
+               rsprintf("<img src=\"edit.png\" border=0 alt=\"%s\"></a></td>\n", loc("Edit entry"));
             }
          }
 
          if (strieq(disp_attr[index], loc("Delete"))) {
             if (!strieq(mode, "Threaded")) {
                rsprintf("<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref, loc("Delete"));
-               rsprintf("<img src=\"delete.gif\" border=0 alt=\"%s\"></a></td>\n", loc("Delete entry"));
+               rsprintf("<img src=\"delete.png\" border=0 alt=\"%s\"></a></td>\n", loc("Delete entry"));
             }
          }
 
@@ -14573,7 +14576,7 @@ void show_rss_feed(LOGBOOK * lbs)
    rsprintf("<generator>ELOG V%s</generator>\n", VERSION);
 
    rsprintf("<image>\n");
-   rsprintf("<url>%s/elog.gif</url>\n", url);
+   rsprintf("<url>%s/elog.png</url>\n", url);
    rsprintf("<title>ELOG %s</title>\n", lbs->name_enc);
    rsprintf("<link>%s</link>\n", url);
    rsprintf("</image>\n");
@@ -15821,9 +15824,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
             img[0] = 0;
             if (strcmp(getparam("sort"), disp_attr[i]) == 0)
-               strcpy(img, "<img align=top src=\"up.gif\">");
+               strcpy(img, "<img align=top src=\"up.png\">");
             else if (strcmp(getparam("rsort"), disp_attr[i]) == 0)
-               strcpy(img, "<img align=top src=\"down.gif\">");
+               strcpy(img, "<img align=top src=\"down.png\">");
 
             if (strieq(disp_attr[i], "Edit") || strieq(disp_attr[i], "Delete"))
                rsprintf("<th class=\"listtitle\">%s</th>\n", disp_attr[i]);
@@ -17521,7 +17524,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    if (!getcfg(lbs->name, "Enable browsing", str, sizeof(str)) || atoi(str) == 1) {
       rsprintf("<td class=\"menu1a\" width=\"10%%\" nowrap align=right>\n");
 
-      /* check if first.gif exists, just put link there if not */
+      /* check if first.png exists, just put link there if not */
       strlcpy(file_name, resource_dir, sizeof(file_name));
       if (file_name[0] && file_name[strlen(file_name) - 1] != DIR_SEPARATOR)
          strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
@@ -17531,13 +17534,13 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          strlcat(file_name, theme_name, sizeof(file_name));
          strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
       }
-      strlcat(file_name, "first.gif", sizeof(file_name));
+      strlcat(file_name, "first.png", sizeof(file_name));
       if (stat(file_name, &st) >= 0) {
-         rsprintf("<input type=image name=cmd_first alt=\"%s\" src=\"first.gif\">\n", loc("First entry"));
-         rsprintf("<input type=image name=cmd_previous alt=\"%s\" src=\"previous.gif\">\n",
+         rsprintf("<input type=image name=cmd_first alt=\"%s\" src=\"first.png\">\n", loc("First entry"));
+         rsprintf("<input type=image name=cmd_previous alt=\"%s\" src=\"previous.png\">\n",
                   loc("Previous entry"));
-         rsprintf("<input type=image name=cmd_next alt=\"%s\" src=\"next.gif\">\n", loc("Next entry"));
-         rsprintf("<input type=image name=cmd_last alt=\"%s\" src=\"last.gif\">\n", loc("Last entry"));
+         rsprintf("<input type=image name=cmd_next alt=\"%s\" src=\"next.png\">\n", loc("Next entry"));
+         rsprintf("<input type=image name=cmd_last alt=\"%s\" src=\"last.png\">\n", loc("Last entry"));
       } else {
          rsprintf("<a href=\"%d?cmd=%s\">|&lt;</a>&nbsp;\n", message_id, loc("First"));
          rsprintf("<a href=\"%d?cmd=%s\">&lt;</a>&nbsp;\n", message_id, loc("Previous"));
@@ -17642,7 +17645,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
       if (locked_by && locked_by[0]) {
          sprintf(str, "%s %s", loc("Entry is currently edited by"), locked_by);
-         rsprintf("<tr><td nowrap colspan=2 class=\"errormsg\"><img src=\"stop.gif\">\n");
+         rsprintf("<tr><td nowrap colspan=2 class=\"errormsg\"><img src=\"stop.png\">\n");
          rsprintf("%s<br>%s</td></tr>\n", str, loc("You can \"steal\" the lock by editing this entry"));
       }
 
@@ -18615,7 +18618,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
          if (getcfg(lb_list[index].name, "Read password", str, sizeof(str))
              || (getcfg(lb_list[index].name, "Password file", str, sizeof(str))
                  && !getcfg(lb_list[index].name, "Guest menu commands", str, sizeof(str))))
-            rsprintf("&nbsp;&nbsp;<img src=\"lock.gif\" alt=\"%s\" title=\"%s\">",
+            rsprintf("&nbsp;&nbsp;<img src=\"lock.png\" alt=\"%s\" title=\"%s\">",
                      loc("This logbook requires authentication"),
                      loc("This logbook requires authentication"));
          rsprintf("<br>\n");
@@ -18975,14 +18978,14 @@ void show_calendar(LOGBOOK * lbs)
    /* link to previous year */
    rsprintf("&nbsp;&nbsp;");
    rsprintf("<a href=\"?i=%s&m=%d&y=%d\">", index, cur_mon, cur_year - 1);
-   rsprintf("<img border=0 align=\"absmiddle\" src=\"cal_prev.gif\" alt=\"%s\"></a>", loc("Previous Year"));
+   rsprintf("<img border=0 align=\"absmiddle\" src=\"cal_prev.png\" alt=\"%s\"></a>", loc("Previous Year"));
 
    /* current year */
    rsprintf("&nbsp;%d&nbsp;", cur_year);
 
    /* link to next year */
    rsprintf("<a href=\"?i=%s&m=%d&y=%d\">", index, cur_mon, cur_year + 1);
-   rsprintf("<img border=0 align=\"absmiddle\" src=\"cal_next.gif\" alt=\"%s\"></a>", loc("Next Year"));
+   rsprintf("<img border=0 align=\"absmiddle\" src=\"cal_next.png\" alt=\"%s\"></a>", loc("Next Year"));
 
    /* go to first day of month */
    ts->tm_mday = 1;
@@ -19419,7 +19422,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (strncmp(path, "last", 4) == 0 && strstr(path, ".gif") == NULL &&
+   if (strncmp(path, "last", 4) == 0 && strstr(path, ".png") == NULL &&
        (!isparam("cmd") || strieq(getparam("cmd"), loc("Select")))
        && !isparam("newpwd")) {
       show_elog_list(lbs, 0, atoi(path + 4), 0, NULL);
