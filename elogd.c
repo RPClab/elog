@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.10  2002/06/12 07:48:56  midas
+  Display message ID's
+
   Revision 2.9  2002/06/11 12:01:56  midas
   Added 'download' command
 
@@ -230,7 +233,7 @@ int  tcp_port = 80;
 #define MAX_N_ATTR       50
 #define VALUE_SIZE      256
 #define PARAM_LENGTH    256
-#define TEXT_SIZE     50000
+#define TEXT_SIZE    100000
 #define MAX_PATH_LENGTH 256
 
 char _param[MAX_PARAM][PARAM_LENGTH];
@@ -1250,7 +1253,7 @@ char c, test;
 
 /*------------------------------------------------------------------*/
 
-INT ss_file_find(char * path, char * pattern, char **plist)
+INT ss_file_find(char *path, char *pattern, char **plist)
 /********************************************************************\
 
   Routine: ss_file_find
@@ -1262,42 +1265,43 @@ INT ss_file_find(char * path, char * pattern, char **plist)
     char  *pattern          pattern string (wildcard allowed)
 
   Output:
-    char  **plist           pointer to the lfile list
+    char  **plist           pointer to the file list
 
   Function value:
     int                     Number of files matching request
 
 \********************************************************************/
 {
-  int i;
-
 #ifdef OS_UNIX
-  DIR *dir_pointer;
-  struct dirent *dp;
+  int    i, j, n;
+  struct dirent **namelist;
 
-  if ((dir_pointer = opendir(path)) == NULL)
+  n = scandir(path, &namelist, 0, alphasort);
+
+  if (n <= 0)
     return 0;
+
   *plist = (char *) malloc(MAX_PATH_LENGTH);
-  i = 0;
-  for (dp = readdir(dir_pointer); dp != NULL; dp = readdir(dir_pointer))
+
+  for (i=j=0 ; i<n ; i++)
     {
-    if (fnmatch1(pattern, dp->d_name) == 0)
+    if (fnmatch1(pattern, namelist[i]->d_name) == 0)
       {
-      *plist = (char *)realloc(*plist, (i+1)*MAX_PATH_LENGTH);
-      strncpy(*plist+(i*MAX_PATH_LENGTH), dp->d_name, strlen(dp->d_name));
-      *(*plist+(i*MAX_PATH_LENGTH)+strlen(dp->d_name)) = '\0';
-      i++;
-      seekdir(dir_pointer, telldir(dir_pointer));
+      *plist = (char *)realloc(*plist, (j+1)*MAX_PATH_LENGTH);
+      strncpy(*plist+(j*MAX_PATH_LENGTH), namelist[i]->d_name, strlen(namelist[i]->d_name));
+      *(*plist+(j*MAX_PATH_LENGTH)+strlen(namelist[i]->d_name)) = '\0';
+      j++;
       }
     }
-  closedir(dir_pointer);
+  free(namelist);
+  return j;
 #endif
 
 #ifdef OS_WINNT
   HANDLE pffile;
   LPWIN32_FIND_DATA lpfdata;
   char str[255];
-  int first;
+  int  i, first;
 
   strcpy(str,path);
   strcat(str,"\\");
@@ -1322,8 +1326,8 @@ INT ss_file_find(char * path, char * pattern, char **plist)
     i++;
     }
   free(lpfdata);
-#endif
   return i;
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -5660,7 +5664,7 @@ skip:
 void submit_elog(LOGBOOK *lbs)
 {
 char   str[256], mail_to[256], mail_from[256], file_name[256], error[1000],
-       mail_text[10000], mail_list[MAX_N_LIST][NAME_LENGTH], list[10000], smtp_host[256],
+       mail_text[TEXT_SIZE+1000], mail_list[MAX_N_LIST][NAME_LENGTH], list[10000], smtp_host[256],
        subject[256], attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[256], in_reply_to[80];
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
 char   att_file[MAX_ATTACHMENTS][256];
@@ -6781,6 +6785,11 @@ BOOL   first;
 
     if (i>0)
       rsprintf("</tr>\n");
+
+    /*---- display message ID ----*/
+
+    rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>%s:</b></td><td bgcolor=%s>%d</td></tr>\n\n",
+             gt("Categories bgcolor1"), loc("Message ID"), gt("Categories bgcolor2"), message_id);
 
     /*---- display date ----*/
 
