@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.28  2002/06/20 09:41:11  midas
+  Added syntax help link to configuration page
+
   Revision 2.27  2002/06/20 09:19:10  midas
   Fixed problems with find
 
@@ -185,7 +188,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.0.1"
+#define VERSION "2.0.2"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -4416,7 +4419,10 @@ char *buffer;
   rsputs(buffer);
   free(buffer);
 
-  rsprintf("</textarea><br>\n");
+  rsprintf("</textarea>\n");
+
+  /* put link for config page */
+  rsprintf("<a target=\"_blank\" href=\"http://midas.psi.ch/elog/config.html\">Syntax Help</a>");
 
   rsprintf("</table></td></tr>\n");
 
@@ -5654,6 +5660,7 @@ struct tm tms, *ptms;
 
     do
       {
+      //printf("## %d\n", message_id);
       size = sizeof(text);
       status = el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
                            text, &size, in_reply_to, reply_to,
