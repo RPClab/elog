@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.86  2003/04/22 07:02:12  midas
+  Added javascript code to put focus on name field on login page
+
   Revision 1.85  2003/04/16 19:17:35  midas
   Added flag 'Hidden'
 
@@ -10901,8 +10904,12 @@ int   i, n;
       }
 
     /* show login password page */
-    show_standard_header(lbs, TRUE, "ELOG login", NULL);
+    show_html_header(lbs, TRUE, "ELOG login");
 
+    rsprintf("<body OnLoad=\"document.form1.uname.focus();\">\n");
+
+    rsprintf("<form name=form1 method=\"GET\" action=\"\">\n\n");
+  
     /* define hidden fields for current destination */
     rsprintf("<input type=hidden name=redir value=\"%s\">\n", redir);
 
