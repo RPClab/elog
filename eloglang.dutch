@@ -285,7 +285,7 @@ Semicolon = Punt Komma
 Ignore first line = Negeer eerste regel
 Preview import = Import voorbeeld
 CSV import preview of %s = CSV import voorbeeld van %s
-Too many attributes in CSV file = Te veel attributen in CSV bestand 
+Too many attributes in CSV file = Te veel attributen in CSV bestand
 %d entries successfully imported = %d  berichten succesvol geïmporteerd
 No 'Attributes' option present in %s = Geen 'Attributen' optie aanwezig in %s
 CSV ("," separated) = CSV (";" gescheiden)
@@ -293,12 +293,9 @@ CSV (";" separated) = CSV (";" gescheiden)
 Login name = Loginnaam
 Auto detect = Auto ontdek
 Text = Tekst
-Column header '%s' must be present in CSV file = Kolonne hoved '%s' skal være tilstede i CSV filen
-Fill text body = Udfyld tekst feltet
-Please re-enter filename = Gentag fil navn
-Last x = Sidste X
-#
-#---- please translate following items and then remove this comment ----#
-#
-text = 
-Activate = 
+Column header '%s' must be present in CSV file = Kolomkop '%s' moet aanwezig zijn in CSV bestand
+Fill text body = Vul tekst gedeelte
+Please re-enter filename = Geef bestandsnaam opnieuw op
+Last x = Laatste x
+text =tekst
+Activate = Activeer
