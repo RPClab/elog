@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.54  2002/08/02 11:00:10  midas
+  Started working on user configuration page
+
   Revision 2.53  2002/07/31 11:48:08  midas
   Added page wise display
 
@@ -3522,7 +3525,8 @@ struct tm      *ts;
 
 void show_change_pwd_page(LOGBOOK *lbs)
 {
-char   str[256], file_name[256], line[256], *p, *pl, old_pwd[32], new_pwd[32];
+char   str[256], file_name[256], line[256], *p, *pl, old_pwd[32], 
+       new_pwd[32], new_pwd2[32];
 char   *buf;
 FILE   *f;
 int    i, wrong_pwd, size;
@@ -3530,9 +3534,9 @@ double exp;
 time_t now;
 struct tm *gmt;
 
-
   do_crypt(getparam("oldpwd"), old_pwd);
   do_crypt(getparam("newpwd"), new_pwd);
+  do_crypt(getparam("newpwd2"), new_pwd2);
 
   getcfg(lbs->name, "Password file", str);
 
@@ -3597,7 +3601,10 @@ struct tm *gmt;
           *strchr(str, ':') = 0;
 
         if (strcmp(old_pwd, str) != 0)
-          wrong_pwd = TRUE;
+          wrong_pwd = 1;
+
+        if (strcmp(new_pwd, new_pwd2) != 0)
+          wrong_pwd = 2;
         }
 
       /* replace password */
@@ -3672,8 +3679,11 @@ struct tm *gmt;
             gt("Border width"), gt("Frame color"));
   rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
 
-  if (wrong_pwd)
+  if (wrong_pwd == 1)
     rsprintf("<tr><th bgcolor=#FF0000>%s!</th></tr>\n", loc("Wrong password"));
+
+  if (wrong_pwd == 2)
+    rsprintf("<tr><th bgcolor=#FF0000>%s!</th></tr>\n", loc("New passwords do not match, please retype"));
 
   rsprintf("<tr><td align=center bgcolor=%s>\n", gt("Title bgcolor"));
 
@@ -3684,6 +3694,8 @@ struct tm *gmt;
            gt("Cell BGColor"), loc("Old Password"));
   rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=newpwd></td></tr>\n",
            gt("Cell BGColor"), loc("New Password"));
+  rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=newpwd2></td></tr>\n",
+           gt("Cell BGColor"), loc("Retype new password"));
 
   rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=\"%s\"></td></tr>",
            gt("Cell BGColor"), loc("Submit"));
@@ -4411,6 +4423,13 @@ char   str[256], mode[256];
       }
     }
 
+  rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
+  rsprintf(loc("Display"));
+  if (!getcfg(lbs->name, "Entries per page", str))
+    strcpy(str, "20");
+  rsprintf(" <input type=text name=npp size=3 value=%s> ", str);
+  rsprintf(loc("entries per page"));
+
   rsprintf("<tr><td nowrap width=10%% bgcolor=%s>%s:</td>", gt("Categories bgcolor1"), loc("Start date"));
   rsprintf("<td bgcolor=%s><select name=\"m1\">\n", gt("Categories bgcolor2"));
 
@@ -4497,7 +4516,7 @@ char   str[256], mode[256];
 
 /*------------------------------------------------------------------*/
 
-void show_config_page(LOGBOOK *lbs)
+void show_admin_page(LOGBOOK *lbs)
 {
 int  fh, length;
 char *buffer;
@@ -4584,7 +4603,7 @@ char *buffer;
 
 /*------------------------------------------------------------------*/
 
-int save_config()
+int save_admin_config()
 {
 int  fh, i;
 char str[80];
@@ -4611,6 +4630,140 @@ char str[80];
 
   close(fh);
   return 1;
+}
+
+/*------------------------------------------------------------------*/
+
+int save_user_config(LOGBOOK *lbs, char *user)
+{
+FILE *f;
+char file_name[256], str[256], line[256], *buf, *pl;
+int  i, size;
+
+  getcfg(lbs->name, "Password file", str);
+
+  if (str[0] == DIR_SEPARATOR || str[1] == ':')
+    strcpy(file_name, str);
+  else
+    {
+    strcpy(file_name, cfg_dir);
+    strcat(file_name, str);
+    }
+
+  f = fopen(file_name, "r+b");
+  if (f == NULL)
+    {
+    show_error("");
+    return 0;
+    }
+
+  fseek(f, 0, SEEK_END);
+  size = TELL(fileno(f));
+  fseek(f, 0, SEEK_SET);
+
+  buf = malloc(size+1);
+  fread(buf, 1, size, f);
+  buf[size] = 0;
+  pl = buf;
+
+  while (pl < buf+size)
+    {
+    for (i=0 ; pl[i] && pl[i] != '\r' && pl[i] != '\n' ; i++)
+      line[i] = pl[i];
+    line[i] = 0;
+
+    if (line[0] == ';' || line[0] == '#' || line[0] == 0)
+      {
+      pl += strlen(line);
+      while (*pl && (*pl == '\r' || *pl == '\n'))
+        pl++;
+      continue;
+      }
+
+    strcpy(str, line);
+    if (strchr(str, ':'))
+      *strchr(str, ':') = 0;
+    if (strcmp(str, user) == 0)
+      break;
+
+    pl += strlen(line);
+    while (*pl && (*pl == '\r' || *pl == '\n'))
+      pl++;
+    }
+
+  /* replace line */
+  fseek(f, 0, SEEK_SET);
+  fwrite(buf, 1, pl-buf, f);
+
+  fprintf(f, "%s:%s:%s:%s\n", getparam("user_name"), getparam("uwpd"), 
+          getparam("full_name"), getparam("user_email"));
+
+  pl += strlen(line);
+  while (*pl && (*pl == '\r' || *pl == '\n'))
+    pl++;
+
+  fwrite(pl, 1, strlen(pl), f);
+
+#ifdef _MSC_VER
+  chsize(fileno(f), TELL(fileno(f)));
+#else
+  ftruncate(fileno(f), TELL(fileno(f)));
+#endif
+
+  free(buf);
+  fclose(f);
+  return 1;
+}
+
+/*------------------------------------------------------------------*/
+
+void show_config_page(LOGBOOK *lbs)
+{
+  /*---- header ----*/
+
+  show_standard_header(loc("ElOG user config"), "");
+
+  /*---- title ----*/
+
+  show_standard_title(lbs->name, "", 0);
+
+  /*---- menu buttons ----*/
+
+  rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=1 bgcolor=%s>\n",
+           gt("Menu1 cellpadding"), gt("Frame color"));
+
+  rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
+
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
+  rsprintf("<input type=hidden name=config value=\"%s\">\n", getparam("unm"));
+  rsprintf("</td></tr></table></td></tr>\n\n");
+
+  /*---- entry form ----*/
+
+  /* overall table for message giving blue frame */
+  rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n",
+           gt("Categories border"), gt("Categories cellpadding"), gt("Frame color"));
+
+  rsprintf("<tr><td width=10%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Login name"));
+  rsprintf("<td bgcolor=%s><input type=text name=user_name value=\"%s\"></td></tr>\n", 
+            gt("Categories bgcolor2"), getparam("unm"));
+
+  rsprintf("<tr><td width=10%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Full name"));
+  rsprintf("<td bgcolor=%s><input type=text name=full_name value=\"%s\"></tr>\n", 
+            gt("Categories bgcolor2"), getparam("full_name"));
+
+  rsprintf("<tr><td width=10%% bgcolor=%s>Email:</td>\n", gt("Categories bgcolor1"));
+  rsprintf("<td bgcolor=%s><input type=text name=user_email value=\"%s\"></tr>\n", 
+            gt("Categories bgcolor2"), getparam("user_email"));
+
+  rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
+  rsprintf("<input type=submit name=cmd value=\"%s\"></tr>\n", loc("Change password"));
+
+  rsprintf("</table></td></tr>\n");
+
+  rsprintf("</td></tr></table>\n\n");
+  rsprintf("</body></html>\r\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -5272,6 +5425,8 @@ int msg_compare_reverse(const void *m1, const void *m2)
   return strcmp(((MSG_LIST *)m2)->string, ((MSG_LIST *)m1)->string);
 }
 
+/*------------------------------------------------------------------*/
+
 void show_page_navigation(int n_msg, int page_n, int n_page)
 {
 int i;
@@ -5289,27 +5444,52 @@ char ref[256];
   if (page_n > 1)
     {
     sprintf(ref, "page%d", page_n - 1);
-    if (strchr(getparam("cmdline"), '?'))
+    if (strstr(getparam("cmdline"), "cmd=Search&"))
+      {
+      strcat(ref, "?");
+      strcat(ref, strstr(getparam("cmdline"), "cmd=Search&")+11);
+      }
+    else if (strchr(getparam("cmdline"), '?'))
       strcat(ref, strchr(getparam("cmdline"), '?'));
     rsprintf("<a href=\"%s\">Previous</a>&nbsp;&nbsp;", ref);
     }
 
-  for (i=0 ; i<n_msg/n_page+1 ; i++)
+  for (i=0 ; i<(n_msg-1)/n_page+1 ; i++)
     {
     sprintf(ref, "page%d", i+1);
-    if (strchr(getparam("cmdline"), '?'))
+    if (strstr(getparam("cmdline"), "cmd=Search&"))
+      {
+      strcat(ref, "?");
+      strcat(ref, strstr(getparam("cmdline"), "cmd=Search&")+11);
+      }
+    else if (strchr(getparam("cmdline"), '?'))
       strcat(ref, strchr(getparam("cmdline"), '?'));
 
-    if (page_n == i+1)
-      rsprintf("%d, ", i+1);
+    if (i == (n_msg-1)/n_page)
+      {
+      if (page_n == i+1)
+        rsprintf("%d&nbsp;&nbsp", i+1);
+      else
+        rsprintf("<a href=\"%s\">%d</a>&nbsp;&nbsp", ref, i+1);
+      }
     else
-      rsprintf("<a href=\"%s\">%d</a>, ", ref, i+1);
+      {
+      if (page_n == i+1)
+        rsprintf("%d, ", i+1);
+      else
+        rsprintf("<a href=\"%s\">%d</a>, ", ref, i+1);
+      }
     }
 
   if (page_n != -1 && page_n * n_page < n_msg)
     {
     sprintf(ref, "page%d", page_n + 1);
-    if (strchr(getparam("cmdline"), '?'))
+    if (strstr(getparam("cmdline"), "cmd=Search&"))
+      {
+      strcat(ref, "?");
+      strcat(ref, strstr(getparam("cmdline"), "cmd=Search&")+11);
+      }
+    else if (strchr(getparam("cmdline"), '?'))
       strcat(ref, strchr(getparam("cmdline"), '?'));
     rsprintf("<a href=\"%s\">Next</a>&nbsp;&nbsp;", ref);
     }
@@ -5317,13 +5497,20 @@ char ref[256];
   if (page_n != -1 && n_page < n_msg)
     {
     sprintf(ref, "page");
-    if (strchr(getparam("cmdline"), '?'))
+    if (strstr(getparam("cmdline"), "cmd=Search&"))
+      {
+      strcat(ref, "?");
+      strcat(ref, strstr(getparam("cmdline"), "cmd=Search&")+11);
+      }
+    else if (strchr(getparam("cmdline"), '?'))
       strcat(ref, strchr(getparam("cmdline"), '?'));
     rsprintf("<a href=\"%s\">All</a>\n", ref);
     }
 
   rsprintf("</b></font></td></tr></table></td></tr>\n\n");
 }
+
+/*------------------------------------------------------------------*/
 
 void show_elog_submit_find(LOGBOOK *lbs, INT past_n, INT last_n, INT page_n)
 {
@@ -5684,6 +5871,10 @@ MSG_LIST *msg_list;
       memcpy(&msg_list[j++], &msg_list[i], sizeof(MSG_LIST));
   n_msg = j;
 
+  /*---- sort messasges ----*/
+
+  qsort(msg_list, n_msg, sizeof(MSG_LIST), reverse ? msg_compare_reverse : msg_compare);
+
   /*---- number of messages per page ----*/
 
   n_page = 1000000;
@@ -5691,24 +5882,30 @@ MSG_LIST *msg_list;
   i_stop = n_msg-1;
   if (page_n)
     {
-    if (getcfg(lbs->name, "Messages per page", str))
+    if (getcfg(lbs->name, "Entries per page", str))
       n_page = atoi(str);
     else
       n_page = 20;
+    if (isparam("npp"))
+      n_page = atoi(getparam("npp"));
 
     if (page_n != -1)
       {
       i_start = (page_n - 1) * n_page;
       i_stop  = i_start + n_page - 1;
+
+      if (i_start >= n_msg)
+        {
+        show_error("Page doesn't exist");
+        free(msg_list);
+        return;
+        }
+
       if (i_stop >= n_msg)
         i_stop = n_msg-1;
       }
     }
   
-  /*---- sort messasges ----*/
-
-  qsort(&msg_list[i_start], i_stop-i_start+1, sizeof(MSG_LIST), reverse ? msg_compare_reverse : msg_compare);
-
   /*---- header ----*/
 
   show_standard_header(loc("ELOG search result"), NULL);
@@ -5908,7 +6105,7 @@ MSG_LIST *msg_list;
 
   /*---- page navigation ----*/
 
-  if (!printable && page_n)
+  if (!printable && page_n && n_msg > n_page)
     show_page_navigation(n_msg, page_n, n_page);
 
   /*---- table titles ----*/
@@ -6106,7 +6303,7 @@ MSG_LIST *msg_list;
 
   /*---- page navigation ----*/
 
-  if (!printable && page_n)
+  if (!printable && page_n && n_msg > n_page)
     show_page_navigation(n_msg, page_n, n_page);
 
   
@@ -6780,7 +6977,7 @@ BOOL   first;
       return;
       }
 
-    show_elog_submit_find(lbs, 0, 0, 0);
+    show_elog_submit_find(lbs, 0, 0, 1);
     return;
     }
 
@@ -6808,6 +7005,12 @@ BOOL   first;
     return;
     }
 
+  if (equal_ustring(command, loc("Admin")))
+    {
+    show_admin_page(lbs);
+    return;
+    }
+
   if (equal_ustring(command, loc("Config")))
     {
     show_config_page(lbs);
@@ -6823,8 +7026,14 @@ BOOL   first;
 
   if (equal_ustring(command, loc("Save")))
     {
-    if (!save_config())
+    if (isparam("config"))
+      {
+      if (!save_user_config(lbs, getparam("unm")))
+        return;
+      }
+    else if (!save_admin_config())
       return;
+
     sprintf(str, "../%s/", lbs->name_enc);
     redirect(str);
     return;
@@ -7754,7 +7963,7 @@ char  str[256], upwd[256], full_name[256], email[256];
 void show_selection_page()
 {
 int  i;
-char str[10000], logbook[256];
+char str[10000];
 
   show_http_header();
 
@@ -7777,7 +7986,7 @@ char str[10000], logbook[256];
   rsprintf("<p><p><p><table border=0 bgcolor=#486090 cellpadding=0 cellspacing=0 align=center>");
   rsprintf("<tr><td><table cellpadding=5 cellspacing=1 border=0 width=100%% bgcolor=#486090>\n");
 
-  rsprintf("<tr><td align=center colspan=2 bgcolor=#486090>\n");
+  rsprintf("<tr><td align=center colspan=3 bgcolor=#486090>\n");
 
   if (getcfg("global", "Welcome title", str))
     {
@@ -7792,19 +8001,18 @@ char str[10000], logbook[256];
 
   for (i=0 ;  ; i++)
     {
-    if (!enumgrp(i, logbook))
+    if (!lb_list[i].name[0])
       break;
 
-    if (equal_ustring(logbook, "global"))
-      continue;
-
-    strcpy(str, logbook);
-    url_encode(str);
-    rsprintf("<tr><td bgcolor=#CCCCFF><a href=\"%s/\">%s</a></td>", str, logbook);
+    rsprintf("<tr><td bgcolor=#CCCCFF><a href=\"%s/\">%s</a></td>", lb_list[i].name_enc, lb_list[i].name);
 
     str[0] = 0;
-    getcfg(logbook, "Comment", str);
-    rsprintf("<td bgcolor=#DDEEBB>%s&nbsp;</td></tr>\n", str);
+    getcfg(lb_list[i].name, "Comment", str);
+    rsprintf("<td bgcolor=#DDEEBB>%s&nbsp;</td>\n", str);
+
+    rsprintf("<td bgcolor=#FFFFB0>");
+    rsprintf(loc("%d entries"), *lb_list[i].n_el_index);
+    rsprintf("</td></tr>\n");
     }
 
   rsprintf("</table></td></tr></table></body>\n");
