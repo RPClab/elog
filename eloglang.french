@@ -1,6 +1,6 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.5.7)
+# (for 2.5.8)
 # A more recent version may be available at :
 # http://midas.psi.ch/cgi-bin/cvsweb/elog/eloglang.french
 #
@@ -343,13 +343,9 @@ down = bas
 stop = arrêter
 Entry = Entrée
 name may not contain blanks = le nom de doit pas contenir d'espace
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-regular expressions = 
-Text fields are treated as %s = 
-Subscribe to logbooks = 
-enable automatic email notifications = 
-Set all = 
-Set none = 
+regular expressions = expressions régulières
+Text fields are treated as %s = Les champs texte sont traités en tant que
+Subscribe to logbooks = S'abonner aux registres
+enable automatic email notifications = activer les notifications par mél.
+Set all = Activer tout
+Set none = Désactiver tout
