@@ -31,8 +31,15 @@ is usually the case if some user asks for some new features, which are then
 implemented and sent to the user for testing. The minor releases are named
 <b><code>x.y.z-r</code></b> where <b><code>r</code></b> is the release number.
 A <a href="http://midas.psi.ch/cgi-bin/cvsweb/elog/src/elogd.c">CVS web access</a> to the
-source code contains the complete development history of ELOG. News for each
-version can be seen in the <a href="http://midas.psi.ch/elog/download/ChangeLog">changelog</a><p>
+source code contains the complete development history of ELOG. To check out the complete
+CVS tree, use:<P>
+<code>
+<b>setenv CVS_RSH ssh</b>    (or "export CVS_RSH=ssh" for bash & Co)<br>
+<b>cvs -d :ext:cvs@midas.psi.ch:/usr/local/cvsroot checkout elog</b><br>
+cvs@midas.psi.ch's password: <b>cvs</b><br>
+</code><p>
+News for each version can be seen in the
+<a href="http://midas.psi.ch/elog/download/ChangeLog">changelog</a><p>
 
 <div class=Section><i>ELOG source code</i></div><p>
 
