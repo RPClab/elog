@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.12  2002/02/25 15:31:04  midas
+  Made "move to", "copy to" and "submit" (from elog) work in other languages
+
   Revision 1.11  2002/02/12 16:06:10  midas
   Fixed small bug
 
@@ -40,7 +43,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.3.2"
+#define VERSION "1.3.3"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -4152,7 +4155,7 @@ FILE   *f;
               }
             }
           else
-            rsprintf("<input type=submit name=cmd value=\"%s\">\n", menu_item[i]);
+            rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc(menu_item[i]));
           }
         }
       else
@@ -4177,13 +4180,13 @@ FILE   *f;
             }
           else
             {
-            strcpy(str, menu_item[i]);
+            strcpy(str, loc(menu_item[i]));
             url_encode(str);
 
             if (i < n-1)
-              rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, str, menu_item[i]);
+              rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, str, loc(menu_item[i]));
             else
-              rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;\n", logbook_enc, str, menu_item[i]);
+              rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;\n", logbook_enc, str, loc(menu_item[i]));
             }
           }
 
@@ -5512,6 +5515,18 @@ FILE   *f;
 
     strcat(menu_str, loc("Help"));
     }
+  else
+    {
+    /* localize menu commands */
+    n = strbreak(menu_str, menu_item, MAX_N_LIST);
+    menu_str[0] = 0;
+    for (i=0 ; i<n ; i++)
+      {
+      strcat(menu_str, loc(menu_item[i]));
+      if (i<n-1)
+        strcat(menu_str, ", ");
+      }
+    }
 
   strcpy(other_str, loc("Submit"));
   strcat(other_str, " ");
@@ -5530,6 +5545,10 @@ FILE   *f;
   strcat(other_str, loc("Previous"));
   strcat(other_str, " ");
   strcat(other_str, loc("Next"));
+
+  /* add non-localized submit for elog utility */
+  strcat(other_str, " ");
+  strcat(other_str, "Submit");
 
   /* check if command is present in the menu list */
   if (command[0] && strstr(menu_str, command) == NULL &&
@@ -5599,7 +5618,8 @@ FILE   *f;
     return;
     }
 
-  if (equal_ustring(command, loc("Submit")))
+  if (equal_ustring(command, loc("Submit")) ||
+      equal_ustring(command, "Submit"))
     {
     submit_elog();
     return;
@@ -5940,7 +5960,7 @@ FILE   *f;
       /* display menu item */
 
       /* strip "logbook" from "move to / copy to" commands */
-      strcpy(cmd, menu_item[i]);
+      strcpy(cmd, loc(menu_item[i]));
       if (strchr(cmd, '\"'))
         *strchr(cmd, '\"') = 0;
 
@@ -5992,12 +6012,12 @@ FILE   *f;
 
             strcpy(ref, str);
             url_encode(ref);
-            if (equal_ustring(menu_item[i], "copy to"))
-              rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s&destc=%s\">Copy to \"%s\"</a>&nbsp|\n",
-                        logbook_enc, path, loc("Copy to"), ref, str);
+            if (equal_ustring(menu_item[i], loc("Copy to")))
+              rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s&destc=%s\">%s \"%s\"</a>&nbsp|\n",
+                        logbook_enc, path, loc("Copy to"), ref, loc("Copy to"), str);
             else
-              rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s&destm=%s\">Move to \"%s\"</a>&nbsp|\n",
-                        logbook_enc, path, loc("Move to"), ref, str);
+              rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s&destm=%s\">%s \"%s\"</a>&nbsp|\n",
+                        logbook_enc, path, loc("Move to"), ref, loc("Move to"), str);
             }
           }
         }
@@ -7439,54 +7459,53 @@ struct timeval       timeout;
       return_length = 0;
 
       /* extract logbook */
-      if (strncmp(net_buffer, "GET", 3) == 0)
+      p = strchr(net_buffer, '/')+1;
+      logbook[0] = 0;
+      for (i=0 ; *p && *p != '/' && *p != '?' && *p != ' '; i++)
+        logbook[i] = *p++;
+      logbook[i] = 0;
+      strcpy(logbook_enc, logbook);
+      url_decode(logbook);
+
+      /* check if logbook exists */
+      for (i=0 ; ; i++)
         {
-        p = net_buffer+5;
-        logbook[0] = 0;
-        for (i=0 ; *p && *p != '/' && *p != '?' && *p != ' '; i++)
-          logbook[i] = *p++;
-        logbook[i] = 0;
-        strcpy(logbook_enc, logbook);
-        url_decode(logbook);
+        if (!enumgrp(i, str))
+          break;
+        if (equal_ustring(logbook, str))
+          break;
+        }
 
-        /* check if logbook exists */
-        for (i=0 ; ; i++)
+      if (strstr(logbook, ".gif") || strstr(logbook, ".jpg") || strstr(logbook, ".png") ||
+          strstr(logbook, ".htm"))
+        {
+        /* serve file directly */
+        strcpy(str, cfg_dir);
+        strcat(str, logbook);
+        send_file(str);
+        send(_sock, return_buffer, return_length, 0);
+
+        goto error;
+        }
+      else
+        {
+        if (!equal_ustring(logbook, str) && logbook[0])
           {
-          if (!enumgrp(i, str))
-            break;
-          if (equal_ustring(logbook, str))
-            break;
-          }
+          if (verbose)
+            printf("\n\n\n%s\n", net_buffer);
 
-        if (strstr(logbook, ".gif") || strstr(logbook, ".jpg") || strstr(logbook, ".png") ||
-            strstr(logbook, ".htm"))
-          {
-          /* server file directly */
-          strcpy(str, cfg_dir);
-          strcat(str, logbook);
-          send_file(str);
-          send(_sock, return_buffer, return_length, 0);
+          sprintf(str, "Error: logbook \"%s\" not defined in elogd.cfg", logbook);
+          show_error(str);
+          send(_sock, return_buffer, strlen(return_buffer), 0);
 
+          if (verbose)
+            {
+            printf("==== Return ================================\n");
+            puts(return_buffer);
+            printf("\n\n");
+            }
           goto error;
           }
-        else
-          if (!equal_ustring(logbook, str) && logbook[0])
-            {
-            if (verbose)
-              printf("\n\n\n%s\n", net_buffer);
-
-            sprintf(str, "Error: logbook \"%s\" not defined in elogd.cfg", logbook);
-            show_error(str);
-            send(_sock, return_buffer, strlen(return_buffer), 0);
-
-            if (verbose)
-              {
-              printf("==== Return ================================\n");
-              puts(return_buffer);
-              printf("\n\n");
-              }
-            goto error;
-            }
         }
 
       /* if no logbook is given and only one logbook defined, use this one */
@@ -7509,7 +7528,7 @@ struct timeval       timeout;
           strcpy(logbook_enc, logbook);
           url_encode(logbook_enc);
 
-          /* redirect to logbook, necessary to get optionsl cookies for that logbook */
+          /* redirect to logbook, necessary to get optional cookies for that logbook */
           redirect("");
 
           send(_sock, return_buffer, strlen(return_buffer), 0);
