@@ -4,9 +4,6 @@
 # 01-03-2003
 #
 
-#
-# Menu commands
-#
 New = Nieuw
 Edit = Wijzig
 Delete = Wis
@@ -33,10 +30,6 @@ Move to = Verplaats naar
 Save = Opslaan
 Cancel = Annuleren
 Go to = Naar
-
-#
-# Login & password screens
-#
 Wrong password = Verkeerde wachtwoord
 Please login = Aanmelden
 Username = Gebruikersnaam
@@ -50,10 +43,6 @@ Please enter password to obtain administration access = Geef wachtwoord voor adm
 Several logbooks are defined on this host = Meerdere logboeken aanwezig op deze machine
 Please select the one to connect to = Selecteer er een om aan te melden
 Change password for user = Wachtwoord wijzigen voor gebruiker
-
-#
-# Entry display
-#
 Logged in as = Aangemeld als
 Entry date = Startdatum
 with = met
@@ -73,10 +62,6 @@ In reply to = In antwoord op
 If no attachments are resubmitted, the original ones are kept = Als er geen bijlagen worden verzonden worden de originele bewaard.
 To delete an old attachment, enter <code>&lt;delete&gt;</code> in the new attachment field = Om een oude bijlage te wissen, geef <code>&lt;wissen&gt;</code> op
 <delete> = <wissen>
-
-#
-# Submit entry
-#
 ELOG Error = ELOG Fout
 Fields marked with = Velden gemarkeerd met
 are required = zijn verplicht
@@ -88,10 +73,6 @@ Please go back and enter the <b>%s</b> field = Ga terug en vul het veld <b>%s</b
 Please use your browser's back button to go back = Gebruik de terug-knop van je browser om terug te gaan
 Only user <i>%s</i> can edit this entry = Alleen de gebruiker <i>%s</i> kan dit item wijzigen
 New attachment = Nieuwe bijlage
-
-#
-# Find display
-#
 ELOG search result = ELOG zoekresultaat
 ELOG find = ELOG zoeken
 Find = zoek
@@ -110,10 +91,6 @@ Search all logbooks = Alle Logboeken doorzoeken
 Last %d days = Laatste %d dagen
 Last %d entries = Laatste %d berichten
 No entries found = Geen berichten gevonden
-
-#
-# Email, Copy/Move, Delete
-#
 A new entry has been submitted on %s = Een nieuwe bericht is verzonden op %s
 Logbook = Logboek
 Copy ELog entry = ELog bericht kopiëren
@@ -125,10 +102,6 @@ No = Nee
 Message successfully deleted = bericht met succes gewist
 Error deleting message: status = Fout bij wissen: Status
 Goto last message = Ga naar laatste bericht
-
-#
-# Error messages
-#
 Error: Command "<b>%s</b>" not allowed = Fout: Commando "<b>%s</b>" niet toegestaan
 Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = Fout: Commando "<b>%s</b>" is niet toegestaan voor "<b>%s</b>"
 Cannot open file <b>%s</b> = Bestand <b>%s</b> kan niet worden geopend
@@ -137,10 +110,6 @@ No SMTP host defined in [global] section of configuration file = Geen SMTP Host 
 Messags %s cannot be read from logook "%s" = bericht %s kan niet uit "%s" worden gelezen
 New message cannot be written to directory "%s" = Nieuwe bericht kan niet naar map "%s" worden geschreven
 Only user <i>%s</i> can edit this entry = Alleen gebruiker <i>%s</i> kan dit bericht wijzigen
-
-#
-# New strings for V2.0
-#
 Display full message =Toon volledig bericht
 Display threads = Toon draden
 Logbook is empty = logboek is leeg
@@ -148,9 +117,6 @@ This message has been deleted = Het bericht is gewist
 Download = Download
 and all its replies = en al de antwoorden
 Message ID =Bericht ID
-
-#
-# New string for V2.xx
 Not logged in = Niet ingelogd
 Login = Inloggen
 Page %d of %d = Pagina %d van de %d
@@ -171,9 +137,6 @@ Retype password = Wachtwoord opnieuw opgeven
 exists already = bestaat al
 Register as new user = Als nieuwe gebruiker aanmelden
 name may not contain blanks = Naam mag geen spaties bevatten
-
-#
-# New strings for V2.1.1
 A new ELOG user has been registered on %s = Een nieuwe gebruiker heeft zich aangemeld op %s
 Email = E-mail
 User "%s" registered on logbook "%s" = Gebruiker "%s" geregistreerd in logboek "%s"
@@ -186,9 +149,6 @@ Are you sure to delete these messages? = Weet u zeker dat u deze berichten wilt 
 %d messages moved successfully from "%s" to "%s" = Bericht is succesvol verplaatst van "%s" naar "%s"
 %d messages copied successfully from "%s" to "%s" = Bericht is succesvol gekopieerd "%s" naar "%s"
 Select = Kies
-
-#
-# New strings for V2.2.0
 No message selected for deletion = Geen bericht geselecteerd om te wissen
 No message selected = Geen bericht geselecteerd
 All entries = Alle berichten
@@ -204,21 +164,12 @@ entries per page = berichten per pagina
 Toggle all = Toon alles
 Selected entries = Geselecteerde berichten
 Enable email notifications=Automatisch e-mail aankondiging
-
-#
-# New strings for V2.2.2
 A old entry has been updated on %s = Een ouder bericht is op %s gewijzigd
-
-#
-# New strings for V2.2.4
 Collapse = Samenvatten
 Expand = Uitbreiden
 Full = Volledig
 Summary = Samenvatting
 Threaded = Berichtdraad
-
-#
-# New strings for V2.2.6
 ELOG Entries = ELOG Invoer
 Filters = Filter
 Mode = Modus
@@ -226,32 +177,22 @@ Options = Opties
 Error: start date after end date = Fout: Begindatum begint na de einddatum
 and all their replies = en alle antwoorden
 Your request has been forwarded to the administrator. You will be notified by email upon activation of your new account. = Je verzoek is doorgestuurd naar de administraotr. Je krijgt per e-mail bericht als het account geactiveerd is.
-
-#
-# New strings for V2.3.1
 Upload = Upload
 Requested = Verzocht
 Registration request on logbook "%s" = Registratie verzoek voor Logboek "%s"
 A new ELOG user wants to register on "%s" = Een nieuwe Elog gebruiker wil zich registreren voor "%s"
-
-# New strings for V2.3.2
 One message = Een bericht
 %d messages = %d berichten
 and its replies = met antwoorden
 and their replies = met antwoorden
 moved successfully from "%s" to "%s" = verplaatsing  van "%s" naar "%s" succesvol
 copied successfully from "%s" to "%s" = kopie van "%s" naar "%s" succesvol
-
-#
-# New strings for V2.3.4
 Last x = Laatste x
 Only user <i>%s</i> can delete this entry = Alleen gebruiker <i>%s</i> kan dit bericht wissen
 Search text also in attributes = Zoek ook in atributen
 Goto logbook selection page = Ga naar logboek selectie pagina
 Login as different user = Als een andere gebruiker aanmelden
 User <i>"%s"</i> has no access to logbook <i>"%s"</i> = Gebruiker <i>"%s"</i> heeft geen toegang tot logboek <i>"%s"</i>
-
-# New strings for V2.3.5
 Date = Datum
 ID = ID
 Change elogd.cfg = elogd.cfg aanpassen
@@ -270,22 +211,34 @@ Please log on by clicking on following link and change your password = Meld je a
 A new password has been created for you on host %s = Een nieuw wachtwoord is aangemaakt op %s
 Enter your user name or email address = Geef je gebruikersnaam of je email adres op
 Password recovery for ELOG %s = Wachtwoord Herstel voor ELOG %s
-
-#
-# New string for V2.3.6
 Host = Computer
 Your ELOG account has been activated = Het Elog account is geactiveerd
 Activate = Activeren
 Maximum number of attachments reached = Maximaal aantal bijlagen bereikt
 Invalid user name <i>"%s"</i> = Ongeldige gebruikersnaam <i>"%s"</i>
-
-# New string for V2.3.7
 User = Gebruiker
 on = op
 computer = Computer
 Entry is currently edited by = Bericht wordt momenteel gewijzigd door
-
-#
-# New string for V2.3.9
 recipients = Ontvanger
 
+# to be done:
+
+Maximum number of replies (%d) exceeded = 
+Message can only be edited %1.2lg hours after creation = 
+Update = 
+Add %s = 
+Add new option here = 
+Suppress shell execution = 
+Change %s = 
+Editing %s = 
+User name <i>"%s"</i> not registered = 
+Synchronization = 
+Synchronizing with = 
+Message identical = 
+Error: Value <b>%s</b> not allowed for boolean attributes = 
+Error: Attribute option <b>%s</b> not existing = 
+Message %s cannot be read from logbook "%s" = 
+Last submission = 
+Expand all = 
+Synchronize = 

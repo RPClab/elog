@@ -1,11 +1,7 @@
 #
 # Spanish messages by Julio Calvo <jhcalvo@arnet.com.ar>
-# $Revision$
 #
 
-#
-# Menu commands
-#
 New = Nuevo
 Edit = Editar
 Delete = Borrar
@@ -32,10 +28,6 @@ Move to = Mover a
 Save = Guardar
 Cancel = Cancelar
 Go to = Ir a
-
-#
-# Login & password screens
-#
 Wrong password = Clave incorrecta
 Please login = Por favor ingrese
 Username = Usuario
@@ -49,10 +41,6 @@ Please enter password to obtain administration access = Por favor ingrese la cla
 Several logbooks are defined on this host = Hay varios logbooks definidos en este servidor
 Please select the one to connect to = Por favor elija uno para conectarse
 Change password for user = Cambiar clave para el usuario
-
-#
-# Entry display
-#
 Logged in as = Conectado como
 Entry date = Fecha de entrada
 with = con
@@ -72,10 +60,6 @@ Attachments = Attachments
 No message available = No hay mensajes disponibles
 Reply to this = Responder a esto
 In reply to = En respuesta a
-
-#
-# Submit entry
-#
 ELOG Error = Error de ELOG 
 Fields marked with = Campos marcados con
 are required = se requieren
@@ -87,10 +71,6 @@ Please go back and enter the <b>%s</b> field = Por favor vuelva atras e ingrese 
 Please use your browser's back button to go back = Por favor vuelva atras con el boton de su browser
 Original attachment = Attachment original
 New attachment = Nuevo attachment
-
-#
-# Find display
-#
 ELOG search result = Resultado de la busqueda de ELOG
 ELOG find = ELOG encontro
 Find = Encontrar
@@ -109,10 +89,6 @@ Search all logbooks = Buscar en todos los logbooks
 Last %d days = Ultimos %d dias
 Last %d entries = Ultimas %d Entradas
 No entries found = No se encontro ninguna entrada
-
-#
-# Email, Copy/Move, Delete
-#
 A new entry has been submitted on %s = Nueva entrada enviada en %s 
 Logbook = Logbook
 Copy ELog entry = Copiar entrada de ELog 
@@ -124,10 +100,6 @@ No = No
 Message successfully deleted = Mensaje borrado exitosamente
 Error deleting message: status = Error al borrar mensaje: Status
 Goto last message = Ir al ultimo mensaje
-
-#
-# Error messages
-#
 Error: Command "<b>%s</b>" not allowed = Error: Comando "<b>%s</b>" no permitido
 Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = Error: Comando "<b>%s</b>" no permitido apra el usuario "<b>%s</b>"
 Cannot open file <b>%s</b> = No se puede abrir el archivo <b>%s</b> 
@@ -135,14 +107,114 @@ Cannot write to <b>%s</b> = No se puede escribir en el <b>%s</b>
 No SMTP host defined in [global] section of configuration file = No se definio el host SMTP en en la seccion [global] del archivo de configuracion
 Messages %s cannot be read from logook "%s" = El mensaje %s no puede leerse del logbook "%s"
 New message cannot be written to directory "%s" = No puede escribirse el nuevo mensaje al directorio "%s"
-
-#
-# New strings for V2.0
-#
 Display full message = Mostrar mensaje completo
 Display threads = Mostrar hilos
 Logbook is empty = El logbook esta vacio
 This message has been deleted = Este mensaje ha sido borrado
 Download = Bajar
 and all its replies = y todas sus respuestas
+
+# to be done:
+
 Message ID = 
+Not logged in = 
+New passwords do not match, please retype = 
+Old password = 
+Retype new password = 
+Maximum number of replies (%d) exceeded = 
+Only user <i>%s</i> can edit this entry = 
+Message can only be edited %1.2lg hours after creation = 
+Update = 
+Add %s = 
+Add new option here = 
+Suppress shell execution = 
+Maximum number of attachments reached = 
+Upload = 
+Mode = 
+Options = 
+entries per page = 
+Filters = 
+Show last = 
+Day = 
+Week = 
+Month = 
+Months = 
+Search text also in attributes = 
+Admin = 
+Change %s = 
+Editing %s = 
+Login name = 
+exists already = 
+Your ELOG account has been activated = 
+Your ELOG account has been activated on host = 
+You can access it at = 
+Registration request on logbook "%s" = 
+Registration request on host "%s" = 
+A new ELOG user wants to register on "%s" = 
+User "%s" registered on logbook "%s" = 
+User "%s" registered on host "%s" = 
+A new ELOG user has been registered on %s = 
+Host = 
+Full name = 
+Hit following URL to activate that account = 
+Requested = 
+ELOG user config = 
+Select user = 
+User [%s] has been deleted = 
+Enable email notifications = 
+Remove user = 
+New user = 
+Change elogd.cfg = 
+No Email address registered with user name <i>"%s"</i> = 
+Password recovery for ELOG %s = 
+A new password has been created for you on host %s = 
+ELOG password recovery = 
+A new password for user <i>"%s"</i> has been sent to %s = 
+Error sending Email via <i>"%s"</i> = 
+Email address <i>"%s"</i> not registered = 
+User name <i>"%s"</i> not registered = 
+Enter your user name or email address = 
+Forgot = 
+ELOG new user = 
+name may not contain blanks = 
+Retype password = 
+No message selected for deletion = 
+Only user <i>%s</i> can delete this entry = 
+Are you sure to delete these messages? = 
+and all their replies = 
+Synchronization = 
+Synchronizing with = 
+Message identical = 
+Entry is currently edited by = 
+Date = 
+Threaded = 
+Collapse = 
+Expand = 
+All entries = 
+Goto page = 
+Selected entries = 
+Toggle all = 
+Error: start date after end date = 
+all entries = 
+Page %d of %d = 
+A old entry has been updated on %s = 
+recipients = 
+Error: Value <b>%s</b> not allowed for boolean attributes = 
+Error: Attribute option <b>%s</b> not existing = 
+Message %s cannot be read from logbook "%s" = 
+One message = 
+%d messages = 
+and its replies = 
+and their replies = 
+User <i>"%s"</i> has no access to logbook <i>"%s"</i> = 
+Login as different user = 
+Goto logbook selection page = 
+Invalid user name <i>"%s"</i> = 
+Remember me on this computer = 
+Forgot password? = 
+Register as new user = 
+Entries = 
+Last submission = 
+Expand all = 
+ELOG registration = 
+Synchronize = 
