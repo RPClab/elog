@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.249  2004/02/16 15:50:54  midas
+   Fixed other warnings
+
    Revision 1.248  2004/02/16 15:05:56  midas
    Changed indentation
 
@@ -15905,13 +15908,14 @@ BOOL _hup = FALSE;
 
 void ctrlc_handler(int sig)
 {
-   _abort = TRUE;
+   if (sig)
+      _abort = TRUE;
 }
 
 void hup_handler(int sig)
 {
-   
-_hup = TRUE;
+   if (sig) 
+      _hup = TRUE;
 }
 
 /*------------------------------------------------------------------*/
