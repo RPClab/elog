@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.23  2002/06/18 07:32:03  midas
+  Add logbook name when URL is specified
+
   Revision 2.22  2002/06/18 07:22:28  midas
   Removed width from logbook selection page
 
@@ -6040,10 +6043,13 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, message_id;
                 sprintf(str, "http://%s/", host_name);
               else
                 sprintf(str, "http://%s:%d/", host_name, tcp_port);
+
+              strcat(str, lbs->name);
+              strcat(str, "/");
               }
             }
 
-         sprintf(mail_text+strlen(mail_text), "\r\n%s URL         : %s%d\r\n",
+          sprintf(mail_text+strlen(mail_text), "\r\n%s URL         : %s%d\r\n",
                   loc("Logbook"), str, message_id);
 
           if (getcfg(lbs->name, "Email message body", str) &&
