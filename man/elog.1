@@ -1,0 +1,104 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH ELOG 1 "January 15, 2002"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+elog \- utility program for Electronic Logbook ELOG
+.SH SYNOPSIS
+.sp
+\fBelog\fR \fB-a \fIattribute=value\fB\fR [ \fB-f \fIfile...\fB\fR ]
+\fB-h \fIhost\fB\fR [ \fB-l \fIlogbook\fB\fR ] [ \fB-m \fItextfile\fB\fR ]
+[ \fB-p \fIport\fB\fR ] [ \fB-r \fIid\fB\fR ] [ \fB-s \fIsubdir\fB\fR ]
+[ \fB-u \fIusername\fB \fIpassword\fB\fR ] [ \fB-v\fR ]
+[ \fB-w \fIpassword\fB\fR ] \fImessage\fB\fR
+.SH DESCRIPTION
+.PP
+The Electronic Logbook
+.B ELOG
+can be used to store and retrieve messages through a Web interface. Depending
+on the configuration, the
+.B ELOG
+system can host one or more logbooks which are stored in separate sections on
+the server.
+.B elog
+is the standalone client program which can be used from the command line to
+interact with the
+.B ELOG
+daemon (elogd). The
+.B elog
+message can either be submitted on the command line or in a file with the `\-m'
+flag.  For the former case, message with blanks must be enclosed in quotes.
+Multiple attributes can be specified as well as several attachments. The
+password must match the write password defined on the server.  If user level
+access is defined on the server (via the `Password file' option), a valid user
+name / password pair must be specified with the `\-u' option.
+.PP
+The
+.B elog
+program makes it possible to submit logbook entries automatically by the system
+or from scripts. In some shift logbooks this feature is used to enter alarm
+messages automatically into the logbook.
+.SH OPTIONS
+\fBelog\fP accepts the following options:
+.TP
+.BI -a " attribute=value"
+set attribute to value
+.TP
+.BI -f " file..."
+attach files while submitting
+.TP
+.BI -h " host"
+host where
+.B elogd
+is running
+.TP
+.BI -l " logbook"
+name of logbook or experiment
+.TP
+.BI -m " textfile"
+submit message from textfile
+.TP
+.BI -p " port"
+port where
+.B elogd
+is running
+.TP
+.BI -r " id"
+reply to existing message of id
+.TP
+.BI -s " dir"
+directory where logbooks reside
+.TP
+.BI -u " username password"
+username and password
+.TP
+.BR \-v
+verbose output
+.TP
+.BI -w " password"
+write password defined on server
+.SH SEE ALSO
+.BR elogd (8).
+.PP
+The full documentation for
+.B ELOG
+is maintained as an html manual. You can reach it from the package document
+directory.
+.SH AUTHOR
+Written by Stefan Ritt <stefan.ritt@psi.ch>.
+.PP
+This manual page was written by Recai Oktas <roktas@omu.edu.tr>, for the Debian
+GNU/Linux system (but may be used by others).
