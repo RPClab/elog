@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.40  2002/07/09 07:31:13  midas
+  Removed alphasort() for Solaris compatibility
+
   Revision 2.39  2002/07/09 07:22:12  midas
   Fixed bug in error display on save config file
 
@@ -1372,7 +1375,7 @@ INT ss_file_find(char *path, char *pattern, char **plist)
   int    i, j, n;
   struct dirent **namelist;
 
-  n = scandir(path, &namelist, 0, alphasort);
+  n = scandir(path, &namelist, NULL, NULL);
 
   if (n <= 0)
     return 0;
