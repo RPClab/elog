@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.510  2004/11/15 11:42:17  midas
+   Fixed typo
+
    Revision 1.509  2004/11/15 09:57:33  midas
    Changed charset for RSS feeds
 
@@ -767,7 +770,7 @@ typedef int INT;
 #define DEFAULT_TIME_FORMAT "%c"
 #define DEFAULT_DATE_FORMAT "%x"
     
-#define DEFAULT_CHARSET "ISO-8859-1"
+#define DEFAULT_HTTP_CHARSET "ISO-8859-1"
 
 #define SUCCESS        1
 #define FAILURE        0
@@ -6004,7 +6007,7 @@ void show_http_header(BOOL expires)
    if (getcfg("global", "charset", str, sizeof(str)))
       rsprintf("Content-Type: text/html;charset=%s\r\n", str);
    else
-      rsprintf("Content-Type: text/html;charset=%S\r\n", DEFAULT_CHARSET);
+      rsprintf("Content-Type: text/html;charset=%S\r\n", DEFAULT_HTTP_CHARSET);
 
    if (use_keepalive) {
       rsprintf("Connection: Keep-Alive\r\n");
@@ -6725,7 +6728,7 @@ void send_file_direct(char *file_name)
             break;
 
       if (!getcfg("global", "charset", charset, sizeof(charset)))
-         strcpy(charset, DEFAULT_CHARSET);
+         strcpy(charset, DEFAULT_HTTP_CHARSET);
 
       if (filetype[i].ext[0]) {
          if (strncmp(filetype[i].type, "text", 4) == 0)
@@ -10995,7 +10998,7 @@ int show_md5_page(LOGBOOK * lbs)
    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
    rsprintf("Accept-Ranges: bytes\r\n");
    rsprintf("Connection: close\r\n");
-   rsprintf("Content-Type: text/plain;charset=%S\r\n", DEFAULT_CHARSET);
+   rsprintf("Content-Type: text/plain;charset=%S\r\n", DEFAULT_HTTP_CHARSET);
    rsprintf("Pragma: no-cache\r\n");
    rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
 
@@ -14259,7 +14262,7 @@ void show_rss_feed(LOGBOOK * lbs)
    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
 
    if (!getcfg("global", "charset", charset, sizeof(charset)))
-      strcpy(charset, DEFAULT_CHARSET);
+      strcpy(charset, DEFAULT_HTTP_CHARSET);
 
    rsprintf("Content-Type: text/xml;charset=%s\r\n", charset);
    rsprintf("\r\n");
@@ -15058,7 +15061,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
       /* no menus and tables */
       show_plain_header(0, "export.xml");
-      rsPRINRF("<?xml version=\"1.0\" encoding=\"%S\"?>\n", DEFAULT_CHARSET);
+      rsprintf("<?xml version=\"1.0\" encoding=\"%S\"?>\n", DEFAULT_HTTP_CHARSET);
       rsprintf("<!-- ELOGD Version %s export.xml -->\n", VERSION);
       rsprintf("<ELOG_LIST>\n");
 
