@@ -31,15 +31,42 @@ them directly<p>
 
 <UL>
 
-<LI><h2>Perl program to submit an email to elog</h2>
+<LI><h2>Perl script to submit an email to ELOG</h2>
 
 <h3>by <a href="mailto:sak@essc.psu.edu">Sridhar Anandakrishnan</a></h3>
 
-Perl program to split apart an email message and submit each of the mime attachments as an
-attachment to elog. The <i>-a</i> command line is fixed for now as "subject=subject of the email",
-so the logbook has to include that.<p>
+Perl program to split apart an email message and submit each of the mime 
+attachments as an attachment to ELOG. The <i>-a</i> command line is fixed for 
+now as "subject=subject of the email", so the logbook has to include that.<p>
 
-<a href="doelog.txt">doelog.txt</a>
+<a href="../contrib/mailelog.txt">mailelog.txt</a>
+<a href="../contrib/mailelog.pl">mailelog.pl</a>
+<p>
+
+<LI><h2>Perl scripts to convert an ELOG logbook to a MySQL database</h2>
+
+<h3>by <a href="mailto:fhooper@sushisoft.com">Fred Hooper</a></h3>
+
+Perl scripts to help translate logbooks created by ELOG from the native elog
+flat file format to a MySQL database. The elog2sql toolkit consists of two
+scripts. The first script, parsecfg.pl, reads an elogd.cfg, and creates a 
+sqlfile that will create a set of db tables corresponding to ELOG logbooks.  
+The second script, parselog.pl, takes a set of ELOG logfiles, and creates a 
+sql file that will enter the logbook data into the database.<p>
+
+<a href="../contrib/elog2sql.txt">elog2sql.txt</a>
+<a href="../contrib/elog2sql">elog2sql</a>
+<p>
+
+<LI><h2>Javascript for Bookmark link for one-click submission to ELOG</h2>
+
+<h3>by <a href="mailto:fhooper@sushisoft.com">Fred Hooper</a></h3>
+
+Javascript to be used as a browser link that allows a one step copy and paste 
+from a web browser into an ELOG logbook.<p>
+
+<a href="../contrib/elogsubmit.txt">elogsubmit.txt</a>
+<a href="../contrib/elogsubmit.js">elogsubmit.js</a>
 <p>
 
 </UL>

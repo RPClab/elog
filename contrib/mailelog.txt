@@ -1,0 +1,34 @@
+Attached is a perl script to which you can pipe a message (or a
+single-message file) to submit that message to `elog'.  The `elog'
+distribution includes two programs `elogd', which is the main daemon that is
+accessed via the browser, and `elog', which is a command-line interface to
+elogd.
+
+The attached perl script `mailelog', will split a multipart MIME message
+into its components and submit each as an attachment to elog to create a new
+entry in a specified logbook.  The attributes are the subject, from, and cc
+of the message.
+
+Usage: mailelog [-|file] [-l logbook]
+
+(if there are no arguments, read from stdin)
+(makes a command that looks like this:
+elog -p 8080 -h localhost -l emails -a subject=<subject> -a from=<from> -a
+cc=<cc> -f attachment-1 -f attachment-2 -f ...
+
+attachment-1 is the body of the message and attachment-2... are the actual
+MIME attachments.  Set the elogd configuration to display attachments, so
+that the message body is immediately visible.
+
+Defaults: -h localhost -p 8080 -l emails
+
+If no `-l logbook' flag is specified, then the entry is sent to the `emails'
+logbook, so make sure that logbook exists.  Save this in, e.g,
+~/bin/mailelog, and make sure it is executable (`chmod +x mailelog') and on
+your path (bash: `export PATH=$HOME/bin:$PATH' or csh/tcsh: `setenv PATH
+$HOME/bin:$PATH')
+
+Bugs: multi-message files don't work.  can't add other attributes.  if the
+logbook doesn't have attributes subject, from, cc, they are quietly lost.
+
+  -- Sridhar Anandakrishnan <sak@essc.psu.edu>

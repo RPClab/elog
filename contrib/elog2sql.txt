@@ -1,0 +1,30 @@
+elog2sql was created to help translate logbooks created by the program
+``elog'' from the native elog flat file format to a MySQL database.  I had a
+need to have the elog data in a database, and it appears from the forum that
+several others had a similar need.
+
+ I created a set of perl scripts that will allow the translation of elog
+logbooks into a MySQL database. The design and implementation of these
+scripts are a simple one, and allow the one-time copying of a set of logbooks.
+
+The elog2sql toolkit consists of two scripts. The first script, parsecfg.pl,
+reads a elogd.cfg, and creates a sql file that will create a set of db
+tables corresponding to elog logbooks. The second script, parselog.pl, takes
+a set of elog logfiles, and creates a sql file that will enter the logbook
+data into the database. The result is a copy of the elog logbook that can
+used as desired inside the framework of MySQL. Attachments are handled by
+inserting an entry of the attachment name into an seperate attachment table.
+This allows multiple attachments per entry.
+
+You can download the elog2sql program archive at
+http://www.davidfannin.com/elog2sql/elog2sql.tar.gz . It contains the
+scripts and basic documentation.  You can read the man page at
+http://www.davidfannin.com/elog2sql/index.html 
+
+
+I have also uploaded a copy of the archive here.
+
+
+email me for questions or comments.
+
+  -- Fred Hooper <fhooper@sushisoft.com>

@@ -1,0 +1,77 @@
+I have created a javascript to be used as a browser link that allows a one
+step cut and paste from a web browser into a elog logbook. 
+
+The intended application is allow a user to do a text selection in a web
+browser, then click on a bookmark that automagically pastes the selected
+text, the current browser page url, and the current browser page title into
+a pre-defined elog logbook.   I do some research where I would like to save
+some text from a webpage, but also have a record of where the webpage came
+from.  However, you should find that you can extend this script in a varity
+of ways for your own application.  
+
+The script is a simple one: it uses javascript in a saved bookmark to get
+your selected text, title, and url, and then creates a new browser window
+with a elog form, and print the document variables into the form, and then
+submits the form to elog.   The key advantage to this approach is that you
+can use the "post" command, rather than "get", to submit to the text section
+of an elog logbook.  The only way I found now to submit to elog via a
+bookmark is using the "get" command, and it doesn't allow entry of the
+"text" field, only attribute fields.    
+
+The second major advantage to using POST is that you can submit a much 
+large quanity of information ; However, some checking on this leads me to 
+believe that the limit is browser and server depended, so YMMV.  However, a 
+great discussion on the limits of browsers can be found here: 
+http://www.squarefree.com/bookmarklets/browsers.html .
+
+One of the major limits is that IE6.0 browsers have a maxium of 508 bytes
+per bookmark - This book runs over 800 bytes, so I suspect tha IE6+ will 
+not allow it. I tested the link with Mozilla and Firebird 0.7.
+
+This script will need to edited for you to use with your elog logbook.
+The script should be fairly self-explainitory, if you are used to html 
+forms and have some exposure to javascript.
+
+You will need to modifiy the following fields:
+
+1) in form action = http://ELOG_URL/LOGBOOK/?cmd=New
+   
+   change the link to point to your specific logbook to be used for entry.
+
+2) the attribute fields need match up with the ones in your logbook.
+
+   The ones listed in the template are Author, Email, Title, and URL.
+
+   If you have fixed fields (like Author and Email), then you can
+   predefine these fields as shown.  
+
+   I have the page title used as the entry for Title, and the page url is
+   use as the URL attribute.
+
+   Finally, I have the text selection used as the entry for the Text field.
+
+   You can add additional fields by creating a new <input ...>  segment
+   in the script.  For those more clever than me, you can concatinate the
+   title, url and selection to paste into the Text area as well.  
+
+3) once you have a edited version of the script (make sure you keep it as a
+single line), you can then create a new bookmark in your browser, and then
+paste the script into the properties->location field (for Mozilla/Firebird)
+or the properties->url field (IE). Give it a good name like "post to elog"
+
+4) once saved, you can then go a web page, select some text, and then go to
+your bookmarks and click on the bookmark. It should then create a new
+window in elog with a completed logbook entry.
+
+
+some notes:
+
+1) again, this may not work on IE6+ browsers due to M$ limitations.
+
+2) You may have to be logged in already to elog for this work - I have not
+tested the interaction using a password protected elog
+
+3) You can only post to a single elog logbook - You'll need to have 
+multiple bookmarks for multiple logbooks.
+
+  -- Fred Hooper <fhooper@sushisoft.com>
