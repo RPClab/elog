@@ -13,6 +13,8 @@ Version 2.0.0, released June 12th, 2002
   under a proxy)
 - Added display of message ID
 - Sort files in ss_file_find
+- Added link display for "elog:<id>" string where <id> is the 
+  ID of a logbook message
 
 Version 1.3.6, released June 3rd, 2002
 ======================================
