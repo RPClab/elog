@@ -1920,7 +1920,14 @@ the administrator.<br><br>
 
 If one wants to try out mirroring without causing any harm, one can turn on this flag.
 During synchronization, entries are compared and necessary transfers are displayed,
-but not executed. Default is <b><code>0</code></b>.
+but not executed. Default is <b><code>0</code></b>.<br><br>
+
+<li><b><code>Mirror exclude = 0 | 1</code></b><br><br>
+
+By default, all logbooks are mirrored. Individual logbooks might be excluded from 
+mirroring by putting <b><code>Mirror exclude = 1</code></b> in their individual logbook
+section of the configuration file (<B>Not</B> the [global] section). 
+Default is <b><code>0</code></b>.
 
 </UL>
 </OL><p>

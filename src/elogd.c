@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.545  2005/01/25 20:49:18  ritt
+   Implemented 'Mirror exclude'
+
    Revision 1.544  2005/01/25 16:31:40  ritt
    Switched from GIF to PNG
 
@@ -4165,7 +4168,7 @@ INT el_retrieve(LOGBOOK * lbs,
 {
    int i, index, size, fh;
    char str[NAME_LENGTH], file_name[256], *p;
-   char message[TEXT_SIZE + 1000], attachment_all[64 * MAX_ATTACHMENTS];
+   char *message, attachment_all[64 * MAX_ATTACHMENTS];
 
    if (message_id == 0)
       /* open most recent message */
@@ -4190,9 +4193,12 @@ INT el_retrieve(LOGBOOK * lbs,
                          text, textsize, in_reply_to, reply_to, attachment, encoding, locked_by);
    }
 
+   message = malloc(TEXT_SIZE + 1000);
+
    lseek(fh, lbs->el_index[index].offset, SEEK_SET);
-   i = read(fh, message, sizeof(message) - 1);
+   i = read(fh, message, TEXT_SIZE + 1000 - 1);
    if (i <= 0) {
+      free(message);
       close(fh);
       return EL_FILE_ERROR;
    }
@@ -4201,6 +4207,7 @@ INT el_retrieve(LOGBOOK * lbs,
    close(fh);
 
    if (strncmp(message, "$@MID@$:", 8) != 0) {
+      free(message);    
       /* file might have been edited, rebuild index */
       el_build_index(lbs, TRUE);
       return el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
@@ -4208,8 +4215,10 @@ INT el_retrieve(LOGBOOK * lbs,
    }
 
    /* check for correct ID */
-   if (atoi(message + 8) != message_id)
+   if (atoi(message + 8) != message_id) {
+      free(message);
       return EL_FILE_ERROR;
+   }
 
    /* decode message size */
    p = strstr(message + 8, "$@MID@$:");
@@ -4285,6 +4294,7 @@ INT el_retrieve(LOGBOOK * lbs,
          if ((int) strlen(p) >= *textsize) {
             strlcpy(text, p, *textsize);
             show_error("Entry too long to display. Please increase TEXT_SIZE and recompile elogd.");
+            free(message);
             return EL_FILE_ERROR;
          } else {
             strlcpy(text, p, *textsize);
@@ -4304,6 +4314,7 @@ INT el_retrieve(LOGBOOK * lbs,
       }
    }
 
+   free(message);
    return EL_SUCCESS;
 }
 
@@ -13161,6 +13172,10 @@ void synchronize(LOGBOOK * lbs, int mode)
                if (lb_list[i].top_group[0]
                    && !strieq(lb_list[i].top_group, getcfg_topgroup()))
                   continue;
+
+            /* skip if excluded */
+            if (getcfg(lb_list[i].name, "Mirror exclude", str, sizeof(str)) && atoi(str) == 1)
+               continue;
 
             /* if called by cron, set user name and password */
             if (mode == SYNC_CRON && getcfg(lb_list[i].name, "mirror user", str, sizeof(str))) {
