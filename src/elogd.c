@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.384  2004/07/14 15:20:13  midas
+   Fixed bug in el_enum_attr()
+
    Revision 1.383  2004/07/14 14:25:48  midas
    Don't evaluate 'preset xxx' on replies
 
@@ -2577,8 +2580,10 @@ void el_enum_attr(char *message, int n, char *attr_name, char *attr_value)
          break;
 
       p = strchr(p, '\n');
-      if (!p)
+      if (!p) {
+         str[0] = 0;  /* not a valid line */
          break;
+      }
       while (*p == '\n' || *p == '\r')
          p++;
 
