@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.266  2004/02/26 12:41:42  midas
+   Fixed bug in el_decode, added <label> to buttons
+
    Revision 1.265  2004/02/25 15:55:19  midas
    Expand substitutions with 'preset' and conditional attributes
 
@@ -2490,13 +2493,23 @@ void el_decode(char *message, char *key, char *result)
 
    } while (1);
 
-   if ((pc = strstr(message, key)) != NULL && pc < ph
-       && (*(pc - 1) == '\n' || *(pc - 1) == '\r')) {
-      for (pc = strstr(message, key) + strlen(key); *pc != '\n' && *pc != '\r';)
-         *result++ = *pc++;
-      *result = 0;
-   } else
-      *result = 0;
+   /* go through all lines */
+   for (pc = message ; pc < ph ; ) {
+      
+      if (strncmp(pc, key, strlen(key)) == 0) {
+         pc += strlen(key);
+         while (*pc != '\n' && *pc != '\r')
+            *result++ = *pc++;
+         *result = 0;
+         return;
+      }
+
+      pc = strchr(pc, '\n');
+      if (pc == NULL)
+         return;
+      while (*pc && (*pc == '\n' || *pc == '\r'))
+         pc++;
+   }
 }
 
 /*------------------------------------------------------------------*/
@@ -6618,13 +6631,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      sprintf(str, "%s_%d", ua, i);
 
                      if (strstr(attrib[index], attr_options[index][i]))
-                        rsprintf
-                            ("<nobr><input type=checkbox checked name=\"%s\" value=\"%s\">%s</nobr>\n",
-                             str, attr_options[index][i], attr_options[index][i]);
+                        rsprintf("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" checked>\n",
+                             str, str, attr_options[index][i]);
                      else
-                        rsprintf
-                            ("<nobr><input type=checkbox name=\"%s\" value=\"%s\">%s</nobr>\n",
-                             str, attr_options[index][i], attr_options[index][i]);
+                        rsprintf("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\">\n",
+                             str, str, attr_options[index][i]);
+
+                     rsprintf("<label for=\"%s\">%s</label></nobr>\n", 
+                               str, attr_options[index][i]);
 
                      if (format_flags & AFF_MULTI_LINE)
                         rsprintf("<br>");
@@ -6637,13 +6651,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      if (strstr(attrib[index], attr_options[index][i]))
-                        rsprintf
-                            ("<nobr><input type=radio checked name=\"%s\" value=\"%s\">%s</nobr>\n",
-                             ua, attr_options[index][i], attr_options[index][i]);
+                        rsprintf("<nobr><input type=radio id=\"%s\" name=\"%s\" value=\"%s\" checked>\n",
+                             attr_options[index][i], ua, attr_options[index][i]);
                      else
-                        rsprintf
-                            ("<nobr><input type=radio name=\"%s\" value=\"%s\">%s</nobr>\n",
-                             ua, attr_options[index][i], attr_options[index][i]);
+                        rsprintf("<nobr><input type=radio id=\"%s\" name=\"%s\" value=\"%s\">\n",
+                             attr_options[index][i], ua, attr_options[index][i]);
+
+                     rsprintf("<label for=\"%s\">%s</label></nobr>\n", 
+                               attr_options[index][i], attr_options[index][i]);
 
                      if (format_flags & AFF_MULTI_LINE)
                         rsprintf("<br>");
@@ -7116,61 +7131,56 @@ void show_find_form(LOGBOOK * lbs)
 
    if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1) {
       if (strieq(mode, "Full"))
-         rsprintf("<input type=radio name=mode value=\"full\" checked>%s&nbsp;&nbsp;\n",
-                  loc("Display full entries"));
+         rsprintf("<input type=radio id=\"full\" name=\"mode\" value=\"full\" checked>");
       else
-         rsprintf("<input type=radio name=mode value=\"full\">%s&nbsp;&nbsp;\n",
-                  loc("Display full entries"));
+         rsprintf("<input type=radio id=\"full\" name=\"mode\" value=\"full\">");
+      rsprintf("<label for=\"full\">%s&nbsp;&nbsp;</label>\n", loc("Display full entries"));
 
       if (strieq(mode, "Summary"))
-         rsprintf
-             ("<input type=radio name=mode value=\"summary\" checked>%s&nbsp;&nbsp;\n",
-              loc("Summary only"));
+         rsprintf("<input type=radio id=\"summary\" name=\"mode\" value=\"summary\" checked>");
       else
-         rsprintf("<input type=radio name=mode value=\"summary\">%s&nbsp;&nbsp;\n",
-                  loc("Summary only"));
+         rsprintf("<input type=radio id=\"summary\" name=\"mode\" value=\"summary\">");
+      rsprintf("<label for=\"summary\">%s&nbsp;&nbsp;</label>\n", loc("Summary only"));
+
+
    } else {
       if (strieq(mode, "Full") || strieq(mode, "Summary"))
-         rsprintf
-             ("<input type=radio name=mode value=\"summary\" checked>%s&nbsp;&nbsp;\n",
-              loc("Summary"));
+         rsprintf("<input type=radio id=\"summary\" name=\"mode\" value=\"summary\" checked>");
       else
-         rsprintf("<input type=radio name=mode value=\"summary\">%s&nbsp;&nbsp;\n",
-                  loc("Summary"));
+         rsprintf("<input type=radio id=\"summary\" name=\"mode\" value=\"summary\">");
+      rsprintf("<label for=\"summary\">%s&nbsp;&nbsp;</label>\n", loc("Summary"));
    }
 
-
    if (strieq(mode, "Threaded"))
-      rsprintf("<input type=radio name=mode value=\"threaded\" checked>%s&nbsp;&nbsp;\n",
-               loc("Display threads"));
+      rsprintf("<input type=radio id=\"threaded\" name=\"mode\" value=\"threaded\" checked>");
    else
-      rsprintf("<input type=radio name=mode value=\"threaded\">%s&nbsp;&nbsp;\n",
-               loc("Display threads"));
+      rsprintf("<input type=radio id=\"threaded\" name=\"mode\" value=\"threaded\">");
+   rsprintf("<label for=\"threaded\">%s&nbsp;&nbsp;</label>\n", loc("Display threads"));
 
    if (strieq(mode, "CSV"))
-      rsprintf("<input type=radio name=mode value=\"CSV\" checked>%s&nbsp;&nbsp;\n",
-               loc("Display comma-separated values (CSV)"));
+      rsprintf("<input type=radio id=\"CSV\" name=\"mode\" value=\"CSV\" checked>");
    else
-      rsprintf("<input type=radio name=mode value=\"CSV\">%s&nbsp;&nbsp;\n",
-               loc("Display comma-separated values (CSV)"));
+      rsprintf("<input type=radio id=\"CSV\" name=\"mode\" value=\"CSV\">");
+               
+   rsprintf("<label for=\"CSV\">%s&nbsp;&nbsp;</label>\n", loc("Display comma-separated values (CSV)"));
 
    rsprintf("</td></tr>\n");
 
    rsprintf("<tr><td class=\"form2\"><b>%s:</b><br>", loc("Options"));
 
-   if (!getcfg(lbs->name, "Number attachments", str) || atoi(str) > 0)
-      rsprintf("<input type=checkbox name=attach value=1>%s<br>\n",
-               loc("Show attachments"));
+   if (!getcfg(lbs->name, "Number attachments", str) || atoi(str) > 0) {
+      rsprintf("<input type=checkbox id=\"attach\" name=\"attach\" value=1>");
+      rsprintf("<label for=\"attach\">%s<br></label>\n", loc("Show attachments"));
+   }
 
-   rsprintf("<input type=checkbox name=printable value=1>%s<br>\n",
-            loc("Printable output"));
+   rsprintf("<input type=checkbox id=\"printable\" name=\"printable\" value=1>");
+   rsprintf("<label for=\"printable\">%s<br></label>\n", loc("Printable output"));
 
    if (getcfg(lbs->name, "Reverse sort", str) && atoi(str) == 1)
-      rsprintf("<input type=checkbox checked name=reverse value=1>%s<br>\n",
-               loc("Sort in reverse order"));
+      rsprintf("<input type=checkbox id=\"reverse\" name=\"reverse\" value=1 checked>");
    else
-      rsprintf("<input type=checkbox name=reverse value=1>%s<br>\n",
-               loc("Sort in reverse order"));
+      rsprintf("<input type=checkbox id=\"reverse\" name=\"reverse\" value=1>");
+   rsprintf("<label for=\"reverse\">%s<br></label>\n", loc("Sort in reverse order"));
 
    /* count logbooks */
    for (i = 0;; i++) {
@@ -7298,11 +7308,11 @@ void show_find_form(LOGBOOK * lbs)
        ("<td class=\"attribvalue\"><input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\">\n");
    rsprintf("<i>%s</i></td></tr>\n", loc("(case insensitive substring)"));
 
-   rsprintf
-       ("<tr><td><td class=\"attribvalue\"><input type=checkbox name=sall value=1>%s</td></tr>\n",
-        loc("Search text also in attributes"));
+   rsprintf("<tr><td><td class=\"attribvalue\">\n");
+   rsprintf("<input type=checkbox id=\"sall\" name=\"sall\" value=1>\n");
+   rsprintf("<label for=\"sall\">%s</label>\n", loc("Search text also in attributes"));
 
-   rsprintf("</table></td></tr></table>\n");
+   rsprintf("</td></tr></table></td></tr></table>\n");
    show_bottom_text(lbs);
    rsprintf("</form></body></html>\r\n");
 }
