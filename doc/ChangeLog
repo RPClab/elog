@@ -1,3 +1,25 @@
+Version 2.3.2, released March xxst, 2003
+==========================================
+
+- Exchanged priviledge drop and directory creation (Recai Oktas)
+- Added 'X-Mailer: Elog' and 'X-Elog-URL' in mail header
+- Only re-read elogd.cfg if changed, using stat()
+- 'Copy to' and 'Move to' now processes whole threads
+- Ignore <tab>'s in config file correctly
+- On 'restrict edit' check long_name only if short_name is not present
+- Do not overwrite existing pidfile
+- Changed path for cookies, special case for Lynx
+- Added '-f <pidfile>' option
+- Avoid cleartext password on URL if wrong username was supplied
+- Fixed bug that attributes in replies were not found in searches if display in threaded mode
+- Fixed problem that entry date changed on upload
+- Added 'attachment comment' option to elogd.cfg
+- Changed mode display with 'show text = 0'
+- Improved display of links in messages
+- Fixed problem with emails depending on MOptions attribute
+- Fixed problem with creation of nested logbook directories
+- Fixed bug with 'theme =' option in [global] section
+
 Version 2.3.1, released Februar 21st, 2003
 ==========================================
 

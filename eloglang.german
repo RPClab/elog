@@ -112,8 +112,6 @@ No entries found = Keine Einträge gefunden
 A new entry has been submitted on %s = Ein neuer Eintrag wurde von %s abgeschickt
 Logbook = Logbuch
 Copy ELog entry = ELog Eintrag Kopieren
-Message moved successfully from "%s" to "%s" = Eintrag erfolgreich von "%s" nach "%s" verschoben
-Message copied successfully from "%s" to "%s" = Eintrag erfolgreich von "%s" nach "%s" kopiert
 Are you sure to delete this message? = Diesen Eintrag wirklich löschen?
 Yes = Ja
 No = Nein
@@ -178,8 +176,6 @@ ELOG registration = ELOG Registrierung
 Your ELOG account has been activated on host = Ihr ELOG Konto wurde aktiviert auf
 You can access it at = Der Zugriff erfolgt über
 Are you sure to delete these messages? = Diese Einträge wirklich löschen?
-%d messages moved successfully from "%s" to "%s" = Eintrag erfolgreich von "%s" nach "%s" verschoben
-%d messages copied successfully from "%s" to "%s" = Eintrag erfolgreich von "%s" nach "%s" kopiert
 Select = Auswählen
 
 #
@@ -229,4 +225,11 @@ Requested = Erfordert
 Registration request on logbook "%s" = Registrierungsanforderung für Logbuch "%s"
 A new ELOG user wants to register on "%s" = Ein neuer Benutzer möchte sich auf "%s" registrieren
 
-
+#
+# New strings for V2.3.2
+One message = Ein Eintrag
+%d messages = %d Einträge
+and its replies = mit Antworten
+and their replies =	mit Antworten
+moved successfully from "%s" to "%s" = erfolgreich von "%s" nach "%s" verschoben
+copied successfully from "%s" to "%s" = erfolgreich von "%s" nach "%s" kopiert
