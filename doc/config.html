@@ -645,7 +645,22 @@ Preset Author = $long_name
 If the attribute should be locked at the Web submission, use the
 "<I>Locked Attributes = ...</I>" option. If a preset value is given for an
 attribute which has an options list, the preset value is selected in the drop
-down box by default.
+down box by default.<br><br>
+
+A special option are automatically generated tags, which are automatically incremented
+for each new message. This is achieved by putting a "%" into the preset string, which
+is used as a <i>printf</i> format specifier. A statement like
+<p>
+<pre>
+Preset Number = XYZ-%05d
+</pre>
+results in automatically created attributes <i>"Number"</i> of the form<p>
+<pre>
+XYZ-00001
+XYZ-00002
+XYZ-00003
+</pre>
+and so on.
 <p>
 
 <LI><b><code>Preset text = &lt;string&gt; or &lt;file&gt;</code></b>
