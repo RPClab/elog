@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.4  2001/12/21 16:03:23  midas
+  Moved themes directories under "themes/"
+
   Revision 1.3  2001/12/21 15:28:51  midas
   Initial version as separate package, corresponds to V1.3.2
 
@@ -940,8 +943,10 @@ int  i;
   memset(file_name, 0, sizeof(file_name));
 
   strcpy(file_name, cfg_dir);
+  strcat(file_name, "themes");
+  strcat(file_name, DIR_SEPARATOR_STR);
   strcat(file_name, tn);
-  file_name[strlen(file_name)] = DIR_SEPARATOR;
+  strcat(file_name, DIR_SEPARATOR_STR);
   strcat(file_name, "theme.cfg");
 
   f = fopen(file_name, "r");
@@ -5659,6 +5664,10 @@ FILE   *f;
       {
       /* file from theme directory requested */
       strcpy(file_name, cfg_dir);
+      if (file_name[0])
+        strcat(file_name, DIR_SEPARATOR_STR);
+      strcat(file_name, "themes");
+      strcat(file_name, DIR_SEPARATOR_STR);
       strcat(file_name, theme_name);
       strcat(file_name, DIR_SEPARATOR_STR);
       strcat(file_name, path);
