@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.96  2002/11/06 13:39:29  midas
+  Added charset= option
+
   Revision 2.95  2002/11/06 08:59:18  midas
   Files can be specified with absolute path
 
@@ -3556,9 +3559,16 @@ char str[1000];
 
 void show_http_header()
 {
+char str[256];
+
   rsprintf("HTTP/1.1 200 Document follows\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-  rsprintf("Content-Type: text/html\r\n");
+
+  if (getcfg("global", "charset", str))
+    rsprintf("Content-Type: text/html;charset=%s\r\n", str);
+  else
+    rsprintf("Content-Type: text/html\r\n");
+
   rsprintf("Pragma: no-cache\r\n");
   if (use_keepalive)
     {
