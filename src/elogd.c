@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.283  2004/03/08 09:41:23  midas
+   Substitutions now also work with 'preset test'
+
    Revision 1.282  2004/03/08 08:59:06  midas
    Evaluage 'pre/append on edit/reply' even for empty entries
 
@@ -6935,7 +6938,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf(str);
             }
          }
-      } else {
+      } else if (breply) {
          if (!getcfg_cond(lbs->name, condition, "Quote on reply", str)
              || atoi(str) > 0) {
             if (getcfg_cond(lbs->name, condition, "Prepend on reply", str)) {
@@ -7019,8 +7022,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             close(fh);
             rsputs(buffer);
             free(buffer);
-         } else
+         } else {
+            j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+            strsubst(str, slist, svalue, j);
+            while (strstr(str, "\\n"))
+               memcpy(strstr(str, "\\n"), "\r\n", 2);
             rsputs(str);
+         }
       }
 
       rsprintf("</textarea><br>\n");
