@@ -532,7 +532,7 @@ setting, and are automatically translated into the specified language.<br><br>
 
 If this option is not present, following default is used:
 <br>
-<pre>Menu commands = Back, New, Edit, Delete, Reply, Find, Config, Help</pre>
+<pre>Menu commands = List, New, Edit, Delete, Reply, Find, Config, Help</pre>
 <br>
 
 <li><b><code>Copy to = &lt;logbook list&gt;</code></b>
@@ -571,8 +571,8 @@ menu, with which one can login as a real user (username and password have to mat
 from the password file), which then allowes full access via the <b>"Menu commands"</b> list.
 A typical example for the menu settings for this scenario are:<p>
 <pre>
-Menu commands = Back, New, Edit, Reply, Find, Config, Logout, Help
-Guest menu commands = Back, Find, Login, Help
+Menu commands = List, New, Edit, Reply, Find, Config, Logout, Help
+Guest menu commands = List, Find, Login, Help
 </pre>
 <p>
 Note that the presence of this option opens user access also to the find result or elog
@@ -1644,7 +1644,7 @@ only for new messages. The default is <b>0</b>.
 
 <li><b><code>Back to main = 0|1</code></b>
 </br>
-If this flag is <b>1</b>, the "<I>Back</I>" button takes you back to the logbook
+If this flag is <b>1</b>, the "<I>List</I>" button takes you back to the logbook
 selection page instead to the last entry of the current logbook.
 The default is <b>0</b>.
 <p>
