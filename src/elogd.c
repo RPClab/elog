@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.58  2003/03/28 10:04:06  midas
+  Use 'Icon comment' in quick filter
+
   Revision 1.57  2003/03/27 13:05:28  midas
   Removed borders around icons in threaded display
 
@@ -7483,7 +7486,7 @@ void show_page_filters(LOGBOOK *lbs, int n_msg, int page_n, int n_page, BOOL top
                        BOOL threaded)
 {
 int  cur_exp, n, i, j, index;
-char ref[256], str[NAME_LENGTH];
+char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH];
 char list[MAX_N_LIST][NAME_LENGTH];
 
   rsprintf("<tr><td class=\"menuframe\">\n");
@@ -7610,7 +7613,6 @@ char list[MAX_N_LIST][NAME_LENGTH];
           if (equal_ustring(attr_list[i], list[index]))
             break;
 
-        
         if (attr_options[i][0][0] == 0)
           {
           rsprintf("<input type=text onChange=\"document.form1.submit()\" name=\"%s\" value=\"%s\">\n",
@@ -7626,10 +7628,20 @@ char list[MAX_N_LIST][NAME_LENGTH];
             {
             for (j=0 ; j<MAX_N_LIST && attr_options[i][j][0] ; j++)
               {
+              comment[0] = 0;
+              if (attr_flags[i] & AF_ICON)
+                {
+                sprintf(str, "Icon comment %s", attr_options[i][j]);
+                getcfg(lbs->name, str, comment);
+                }
+
+              if (comment[0] == 0)
+                strcpy(comment, attr_options[i][j]);
+              
               if (isparam(attr_list[i]) && equal_ustring(attr_options[i][j], getparam(attr_list[i])))
-                rsprintf("<option selected value=\"%s\">%s\n", attr_options[i][j], attr_options[i][j]);
+                rsprintf("<option selected value=\"%s\">%s\n", attr_options[i][j], comment);
               else
-                rsprintf("<option value=\"%s\">%s\n", attr_options[i][j], attr_options[i][j]);
+                rsprintf("<option value=\"%s\">%s\n", attr_options[i][j], comment);
               }
             }
 
