@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.13  2003/02/15 10:12:33  midas
+  Special treatement of <br> in attributes
+
   Revision 1.12  2003/02/14 22:48:17  midas
   Fixed bug from previous modification
 
@@ -3280,6 +3283,12 @@ char *p, link[256];
           sprintf(return_buffer+j, "<a href=\"%s\">elog:%s</a>", link, link);
         j += strlen(return_buffer+j);
         }
+      else if (strncmp(str+i, "<br>", 4) == 0)
+        {
+        strcpy(return_buffer+j, "<br>");
+        j+=4;
+        i+=3;
+        }
       else
         switch (str[i])
           {
@@ -4362,7 +4371,10 @@ struct tm      *ts;
   if (getcfg(lbs->name, "Date format", format))
     strftime(str, sizeof(str), format, ts);
   else
+    {
     strcpy(str, ctime(&now));
+    str[strlen(str)-1] = 0;
+    }
   strcpy(value[i++], str);
 
   return i;
@@ -4733,7 +4745,10 @@ time_t now;
           {
           i = build_subst_list(lbs, slist, svalue, attrib);
           strsubst(preset, slist, svalue, i);
-          strcpy(attrib[index], preset);
+          if (strncmp(preset, "<br>", 4) == 0)
+            strcpy(attrib[index], preset+4);
+          else
+            strcpy(attrib[index], preset);
           }
         }
       }
