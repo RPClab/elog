@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.574  2005/03/02 14:04:18  ritt
+   Implemented support for thumbnail display
+
    Revision 1.573  2005/03/02 00:01:23  ritt
    Fixed compiler warnings
 
@@ -2202,6 +2205,20 @@ void _MD5_decode(unsigned int *pout, unsigned char *pin, unsigned int len)
       pout[i] = ((unsigned int) pin[j]) |
           (((unsigned int) pin[j + 1]) << 8) | (((unsigned int) pin[j + 2]) << 16) |
           (((unsigned int) pin[j + 3]) << 24);
+}
+
+/*------------------------------------------------------------------*/
+
+BOOL file_exist(char *file_name)
+{
+   int fh;
+
+   fh = open(file_name, O_RDONLY);
+   if (fh < 0)
+      return FALSE;
+
+   close(fh);
+   return TRUE;
 }
 
 /*------------------------------------------------------------------*/
@@ -4498,6 +4515,8 @@ void el_delete_attachment(LOGBOOK * lbs, char *file_name)
    strlcpy(str, lbs->data_dir, sizeof(str));
    strlcat(str, file_name, sizeof(str));
    remove(str);
+   strlcat(str, ".thumb", sizeof(str));
+   remove(str);
 }
 
 /*------------------------------------------------------------------*/
@@ -4998,9 +5017,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
       if (attachment != NULL) {
          if (attachment[i][0] && p) {
             /* delete old attachment if new one exists */
-            strlcpy(str, lbs->data_dir, sizeof(str));
-            strlcat(str, p, sizeof(str));
-            remove(str);
+            el_delete_attachment(lbs, p);
          }
 
          /* return old attachment if no new one */
@@ -5008,11 +5025,8 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
             strcpy(attachment[i], p);
       }
 
-      if (delete_attachments && p) {
-         strlcpy(str, lbs->data_dir, sizeof(str));
-         strlcat(str, p, sizeof(str));
-         remove(str);
-      }
+      if (delete_attachments && p)
+         el_delete_attachment(lbs, p);
    }
 
    /* decode references */
@@ -17351,7 +17365,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    int size, i, j, n, n_log, status, fh, length, message_error, index, n_hidden,
        message_id, orig_message_id, format_flags[MAX_N_ATTR], att_hide[MAX_ATTACHMENTS],
        n_attachments, n_lines;
-   char str[1000], ref[256], file_enc[256], attrib[MAX_N_ATTR][NAME_LENGTH];
+   char str[1000], ref[256], file_enc[256], thumb_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
    char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], cmd_enc[256],
        orig_tag[80], reply_tag[MAX_REPLY_TO * 10], display[256],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
@@ -18046,6 +18060,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                /* determine size of attachment */
                strlcpy(file_name, lbs->data_dir, sizeof(file_name));
                strlcat(file_name, attachment[index], sizeof(file_name));
+               strlcpy(thumb_name, file_name, sizeof(thumb_name));
+               strlcat(thumb_name, ".thumb", sizeof(thumb_name));
 
                length = 0;
                fh = open(file_name, O_RDONLY | O_BINARY);
@@ -18084,6 +18100,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                display_inline = is_image(file_name) || is_ascii(file_name);
                if (chkext(att, ".PS") || chkext(att, ".PDF") || chkext(att, ".EPS"))
                   display_inline = 0;
+               if (file_exist(thumb_name))
+                  display_inline = 1;
 
                if (display_inline) {
                   rsprintf("<span class=\"bytes\">");
@@ -18135,7 +18153,12 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                if ((!getcfg(lbs->name, "Show attachments", str, sizeof(str))
                     || atoi(str) == 1) && !att_hide[index] && display_inline) {
 
-                  if (is_image(att)) {
+                  if (file_exist(thumb_name)) {
+                     rsprintf("<tr><td class=\"attachmentframe\">\n");
+                     rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
+                     rsprintf("<img src=\"%s.thumb\" alt=\"%s\"></a>\n", ref, attachment[index]+14);
+                     rsprintf("</td></tr>\n\n");
+                  } else if (is_image(att)) {
                      rsprintf("<tr><td class=\"attachmentframe\">\n");
                      rsprintf("<a name=\"att%d\"></a>\n", index + 1);
                      rsprintf("<img src=\"%s\" alt=\"%s\">\n", ref, attachment[index]+14);
