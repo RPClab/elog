@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.153  2003/11/11 12:21:33  midas
+  Fixed bug with \r and \n in header
+
   Revision 1.152  2003/11/11 12:11:19  midas
   Fixed stack overflow on long reply-chains
 
@@ -1843,7 +1846,19 @@ char *pc, *ph;
 
   *result = 0;
 
-  ph = strstr(message, "========================================\r");
+  ph = strstr(message, "========================================");
+  if (ph == NULL)
+    return;
+
+  do
+    {
+    if (ph[40] == '\r' || ph[40] == '\n')
+      break;
+    ph = strstr(ph+40, "========================================");
+    if (ph == NULL)
+      return;
+
+    } while (1);
 
   if ((pc = strstr(message, key)) != NULL &&
        pc < ph && (*(pc-1) == '\n' || *(pc-1) == '\r'))
