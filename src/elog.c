@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.9  2003/07/15 12:17:13  midas
+  Removed FALSE/TRUE
+
   Revision 1.8  2003/07/15 12:16:52  midas
   Removed FALSE/TRUE
 
@@ -674,7 +677,7 @@ char                 old_attrib_name[MAX_N_ATTR][NAME_LENGTH], old_attrib[MAX_N_
         break;
         }
 
-      } while (TRUE);
+      } while (1);
 
     strlcat(text, new_text, TEXT_SIZE);
     }
