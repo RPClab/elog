@@ -134,20 +134,27 @@ td {
 
 /* link colors and decorations for message listings */
 
-.list1, .list1 a {
+.list1 {
   background-color:#DDEEBB;
   text-align:center;
-  color:black;
 }
 
-.list2, .list2 a {
+.list2 {
   background-color:#FFFFB0;
   text-align:center;
-  color:black;
 }
 
-.list1 a:visited { color:black; } /* bug for IE */
-.list2 a:visited { color:black; } /* bug for IE */
+.list1 a:link { color:black; text-decoration:none }
+.list1 a:visited { color:black; text-decoration:none }
+.list1 a:hover { color:#0000FF; text-decoration:underline }
+.list1 a:active { color:black; text-decoration:underline }
+.list1 a:focus { color:#0000FF; text-decoration:underline }
+
+.list2 a:link { color:black; text-decoration:none }
+.list2 a:visited { color:black; text-decoration:none }
+.list2 a:hover { color:#0000FF; text-decoration:underline }
+.list2 a:active { color:black; text-decoration:underline }
+.list2 a:focus { color:#0000FF; text-decoration:underline }
 
 /* attachment line */
 
