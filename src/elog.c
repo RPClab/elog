@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.10  2003/07/15 12:17:45  midas
+  Removed BOOL
+
   Revision 1.9  2003/07/15 12:17:13  midas
   Removed FALSE/TRUE
 
@@ -132,7 +135,7 @@ unsigned int t, pad;
 
 /*---- string comparison -------------------------------------------*/
 
-BOOL equal_ustring(char *str1, char *str2)
+int equal_ustring(char *str1, char *str2)
 {
   if (str1 == NULL && str2 != NULL)
     return 0;
