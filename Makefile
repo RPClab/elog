@@ -10,6 +10,7 @@
 CC = gcc
 LIBS = 
 CFLAGS = -g -O
+IFLAGS = -kr -nut -i3 -l90
 EXECS = elog elogd elconv
 DESTDIR = /usr/local/bin
 SDESTDIR = /usr/local/sbin
@@ -36,7 +37,10 @@ all: $(EXECS)
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 indent:
-	find . -name "*.[hc]" -exec indent -kr -nut -i3 {} \;
+	indent $(IFLAGS) src/elogd.c
+	indent $(IFLAGS) src/elog.c
+	indent $(IFLAGS) src/elconv.c
+
 
 install: $(EXECS)
 	$(INSTALL) -m 0755 -d $(DESTDIR) $(SDESTDIR) $(MANDIR)/man1/ $(MANDIR)/man8/
