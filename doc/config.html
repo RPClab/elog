@@ -587,19 +587,19 @@ logbook, to delete entries in the logbook and to configure a logbook via the <I>
 </b></code> directly with the <b><code>-r </code></b>, <b><code>-w</code></b> and <b>
 <code>-a </code></b> flags. To set the write password of logbook "<I>linux</I>" to "<I>
 test</I>", enter: <p>
-<ul><code>elogd -w test -l linux</code></ul>
-<p>
-The read password is queried by the browser with a pop-up window and usually stays active
-for the entire browser session. The write and admin passwords are stored in cookies on
-the browser side and expire after the browser session. This time can be changed with the
-statement <b> <code>Write Password Expiration = x</code></b> or <b><code>Admin Password
-Expiration = x</code></b>, where <i>x</i> is the expiration time in hours. It should be
-noted that on some systems the daylight savings time is calculated incorrectly, which can
-cause time offsets of one hour between a server PC and a client PC. In this case one hour
-must be added to the expiration time. If the expiration is set to "0", the passwords are
-kept for the current browser session only. When the browser is restarted, the password
-must be re-entered.
-<P>
+<ul><code>elogd -w test -l linux</code></ul><p>
+
+The read password is queried by the browser with a pop-up window and usually stays
+active for the entire browser session. The write and admin passwords are stored in
+cookies on the browser side and expire after the browser session. This time can be
+changed with the statement <b> <code>Write Password Expiration = x</code></b> or <b>
+<code>Admin Password Expiration = x</code></b>, where <i>x</i> is the expiration time in
+hours. It should be noted that on some systems the daylight savings time is calculated
+incorrectly, which can cause time offsets of one hour between a server PC and a client
+PC. In this case one hour must be added to the expiration time. If the expiration is set
+to "0", which is the default, the passwords are kept for the current browser session
+only. When the browser is restarted, the password must be re-entered.<P>
+
 <ul>
 <LI><b><code>Password file = &lt;file&gt;</code></b>
 <LI><b><code>Login expiration = &lt;hours&gt;</code></b>
@@ -613,6 +613,7 @@ password file. This file contains user names and passwords in following format:
 &lt;login name3&gt;:&lt;password3&gt;:&lt;full name3&gt;:&lt;email3&gt;&lt;notify3&gt;
 ...</pre></code></ul>
 <p>
+
 The passwords are encoded. New users can either be created by hitting <b>Register as new user</b>
 on the login page if <b><code>Self register = 1</code></b> in the configuration file, or
 by the admin user in the <b>Config</b> page by pressing <b>New user</b>. When a user is
@@ -631,22 +632,29 @@ with the current user name and email:
 Options Email = $user_email</code></ul>
 <p>
 Thus the author name is not user-input anymore, ensuring the entry always contains the
-actual user name. For a full listing of substitutions, see the "<I>Subst &lt;attrib></I>" option.
-<p>
-The user name and password are stored as cookies on the user side. They expire after 24
-hours by default, which can be changed with the <code><b>Login expiration</b></code >
-options. If the expiration is set to "0", the passwords are kept for the current browser
-session only. When the browser is restarted, the password must be re-entered.
-<p>
+actual user name. For a full listing of substitutions, see the "<I>Subst &lt;attrib></I>" option.<p>
+
+The user name and password are stored as cookies on the user side. They expire after the
+current browser session by default, which can be changed with the <code><b>Login
+expiration</b></code > option, giving the expiration time in hours. Setting this to 24
+for example, makes the password expire after one day.<p>
+
 <ul>
-<LI><b><code>Self register = 0|1</code></b>
+<LI><b><code>Self register = 0|1|2|3</code></b>
 </ul>
+
 With this option it is possible for new users to self-register an user account. At the
 login page, a link is displayed <b>"Register as a new user"</b> which leads the user to
-a configuration page where one can enter the account name, full name and email address. A flag
-allows for automatic email notification on new entries on the logbook. These settings can
-later be changed with the <b>Config</b> menu command.
-<p>
+a configuration page where one can enter the account name, full name and email address.
+A flag allows for automatic email notification on new entries on the logbook. These
+settings can later be changed with the <b>Config</b> menu command.<p>
+
+Setting this option to <b>0</b> disables self registration. With option <b>1</b>, users
+can silently register, while setting it to <b>2</b> causes elogd to send an email
+notification to the admin user(s). The option <b>3</b> is used to <i>only</i> send an
+email notification to tha admin users(s), which then can validate the account and commit
+it by hitting the URL given in the email notification.<p>
+
 <ul>
 <LI><b><code>Allow &lt;command&gt; = &lt;user list&gt;</code></b>
 </ul>
