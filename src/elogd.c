@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.422  2004/08/03 14:16:11  midas
+   Fixed problem with {..} in attributes
+
    Revision 1.421  2004/08/03 09:58:36  midas
    Added 0644 to mkdir under linux
 
@@ -7941,7 +7944,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                            loc("Submit as HTML text"));
                else
                   rsprintf("<input type=checkbox name=html value=1>%s\n",
-                           loc("Submit as HTML text"));
+                           loc("Submit as HTML text"));                                     \
             } else if (atoi(str) == 3) {
                rsprintf("<input type=hidden name=html value=1>\n");
             }
@@ -15885,7 +15888,7 @@ void submit_elog(LOGBOOK * lbs)
          strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
 
          /* strip trailing "{...}" */
-         if (strchr(attrib[i], '{') && strchr(attrib[i], '}'))
+         if (is_cond_attr(i) && strchr(attrib[i], '{') && strchr(attrib[i], '}'))
             *strchr(attrib[i], '{') = 0;
       }
 
