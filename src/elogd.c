@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.563  2005/02/16 08:22:25  ritt
+   Added web link to regular expressions
+
    Revision 1.562  2005/02/16 08:15:00  ritt
    Test regular expressions for validity
 
@@ -8995,8 +8998,12 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf("</td></tr>\n");
 
    rsprintf("<tr><td class=\"form2\"><b>%s:</b>", loc("Filters"));
-   rsprintf("&nbsp;&nbsp;<span class=\"selcomment\">(%s)</span><br>",
-            loc("Text fields are treated as regular expressions"));
+   sprintf(str, "<a href=\"http://dmoz.org/Computers/Programming/Languages/Regular_Expressions/\">");
+   strcat(str, loc("regular expressions"));
+   strcat(str, "</a>");
+   rsprintf("&nbsp;&nbsp;<span class=\"selcomment\">(");
+   rsprintf(loc("Text fields are treated as %s"), str);
+   rsprintf(")</span><br>");
 
    /* table for two-column items */
    rsprintf("<table width=\"100%%\" cellspacing=0>\n");
