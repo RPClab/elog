@@ -8,9 +8,70 @@
   <META NAME="keywords" CONTENT="ELOG MIDAS PSI RITT">
 <LINK REL="stylesheet" TYPE="text/css" HREF="elog.css">
 </HEAD>
-<frameset rows="20%,*,10%">
-<frame src="dl-menu.html">
-<frame src="http://midas.psi.ch/elog/download/">
-<frame src="dl-sig.html">
+
+<div class=title>&nbsp; ELOG download page &nbsp;</div>
+<p>
+<div class=menu>&nbsp;Site map :&nbsp;
+&nbsp;[<a target=_top class=nav href="index.html">Home</a>]&nbsp;
+&nbsp;[<a target=_top  class=nav href="userguide.html">User's Guide</a>]&nbsp;
+&nbsp;[<a target=_top  class=nav href="adminguide.html">Administrator's Guide</a>]&nbsp;
+&nbsp;[<a target=_top  class=nav href="faq.html">FAQ</a>]&nbsp;
+&nbsp;[<a target=_top  class=nav href="wishlist.html">Wishlist</a>]&nbsp;
+&nbsp;[<a class=nav href="contrib.html">Contributions</a>]&nbsp;
+&nbsp;[<a target=_top  class=nav href="http://midas.psi.ch/elogs/Linux%20Demo/">DEMO</a>]&nbsp;
+&nbsp;[Download]&nbsp;
+</div>
+<p>
+
+
+ELOG is distributed both as source code and as precompiled binaries for
+various platforms. In addition to regular releases, snapshots are made
+available containing some new and not yet completely debugged code. This
+is usually the case if some user asks for some new features, which are then
+implemented and sent to the user for testing. A
+<a href="http://midas.psi.ch/cgi-bin/cvsweb/elog/src/elogd.c">CVS web access</a> to the
+source code contains the complete develoopment history of ELOG.<p>
+
+<div class=Section><i>ELOG source code</i></div><p>
+
+The source code is available as a good old <a href="http://midas.psi.ch/elog/download/tar/">TAR<a>
+file. Select <a href="http://midas.psi.ch/elog/download/tar/elog-latest.tar.gz">elog-latest.tar.gz</a>
+unless you want to download a previous version. Untar the file with<p>
+
+<code>
+tar -zxvf elog-latest.tar.gz
+</code><p>
+
+and compile it with <code>"make"<code>. Then follow the instructions on how to install the server
+on a Linux system.
+
+<div class=Section><i>Windows Binaries</i></div><p>
+
+The windows binaries are distributed with an automatic
+<a href="http://midas.psi.ch/elog/download/windows/elog-latest.exe">installer<a>. Execute
+the installer to install ELOG and to register the elogd server as a windows service. Previous
+windows versions can be found <a href="http://midas.psi.ch/elog/download/windows/">here</a>.
+The latest snapshot of the elogd.exe executable is
+<a href="http://midas.psi.ch/elog/download/windows/elogd-snapshot.exe">here</a>. To install it,
+please stop the ELOG service (if configured), then overwrite the <code>elogd.exe</code>
+executable (usually in <code>c:\Program Files\ELOG\elogd.exe</code> or similar), and
+optionally restart the ELOG service.<p>
+
+<div class=Section><i>Linux Binaries</i></div><p>
+
+Linux binaries are distributed as a
+<a href="http://midas.psi.ch/elog/download/RPMS/elog-latest.i386.rpm">RPM</a>. For previous
+versions check <a href="http://midas.psi.ch/elog/download/RPMS/">here</a>. There are
+also <a href="http://midas.psi.ch/elog/download/SRPMS">SRPMS</a>. Thanks to Recai Oktas
+there is also a <a href="http://midas.psi.ch/elog/download/debian">Debian package</a>.<p>
+
+
+<div class=footer>&nbsp;
+Content by <a class=nav href="mailto:Stefan.Ritt&#64;psi.ch">Stefan Ritt</a>,
+Web pages by <a class=nav href="mailto:fredp&#64;mygale.org">Fred Pacquier</a>
+ - last modified on 19/12/2001
+&nbsp;</div>
+
+
 </frameset>
 </HTML>

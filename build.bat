@@ -17,3 +17,5 @@ net use n: \\pc2075\midas mi_das /user:midas
 "\program files\NSIS\makensis" /DVERSION=%version% elog.nsi
 
 copy elog%version%.exe n:\html\elog\download\windows\
+copy elog%version%.exe n:\html\elog\download\windows\elog-latest.exe
+
