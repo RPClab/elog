@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.325  2004/05/11 09:16:03  midas
+   Fixed typo
+
    Revision 1.324  2004/05/10 19:46:07  midas
    Extendable options can now reside also in [globa] section
 
@@ -18470,7 +18473,7 @@ int main(int argc, char *argv[])
    if (tcp_port_cl != 0)
       tcp_port = tcp_port_cl;
    else {
-      if (getcfg("global", "Port1", str))
+      if (getcfg("global", "Port", str))
          tcp_port = atoi(str);
    }
 
