@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.78  2003/04/08 11:10:06  midas
+  Made password recovery work in German
+
   Revision 1.77  2003/04/08 10:40:48  midas
   Fixed missing/wrong translation
 
@@ -1210,13 +1213,13 @@ void url_encode(char *ps, int size)
    Encode the given string in-place by adding %XX escapes
 \********************************************************************/
 {
-char *pd, *p, str[NAME_LENGTH];
+unsigned char *pd, *p, str[NAME_LENGTH];
 
   pd = str;
   p  = ps;
   while (*p && (int)pd < (int)str + 250)
     {
-    if (strchr(" %&=#?+", *p))
+    if (strchr(" %&=#?+", *p) || *p > 127)
       {
       sprintf(pd, "%%%02X", *p);
       pd += 3;
@@ -6570,7 +6573,7 @@ char str[1000], login_name[256], full_name[256], user_email[256], name[256], pwd
           strlcat(url, "/", sizeof(url));
           }
 
-        sprintf(redir, "?cmd=Change password&old_pwd=%s", pwd);
+        sprintf(redir, "?cmd=%s&old_pwd=%s", loc("Change password"), pwd);
         url_encode(redir, sizeof(redir));
         sprintf(str, "?redir=%s&uname=%s&upassword=%s", redir, login_name, pwd);
         strlcat(url, str, sizeof(url));
@@ -7643,9 +7646,7 @@ int  i, n;
       if (!getcfg(lbs->name, "Admin user", str) ||
           (getcfg(lbs->name, "Admin user", str) && strstr(str, getparam("unm")) != 0))
         {
-        strcat(menu_str, "Admin, ");
-        strcat(menu_str, loc("Change elogd.cfg"));
-        strcat(menu_str, ", ");
+        strcat(menu_str, "Admin, Change elogd.cfg, ");
         }
       strcat(menu_str, "Config, Logout, ");
       }
