@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.394  2004/07/22 21:05:29  midas
+   Fixed bugs with https:// in URL
+
    Revision 1.393  2004/07/22 20:51:53  midas
    Added size parameter to getcfg()
 
@@ -1833,6 +1836,8 @@ void split_url(char *url, char *host, int *port, char *subdir, char *param)
    p = url;
    if (strncmp(url, "http://", 7) == 0)
       p += 7;
+   if (strncmp(url, "https://", 8) == 0)
+      p += 8;
 
    strncpy(host, p, 256);
    if (strchr(host, '/')) {
@@ -4956,8 +4961,14 @@ void extract_path(char *str)
 {
    char *p, str2[256];
 
-   if (strstr(str, "http://")) {
+   p = NULL;
+
+   if (strstr(str, "http://")) 
       p = str + 7;
+   if (strstr(str, "https://")) 
+      p = str + 8;
+   
+   if (p) {
       while (*p && *p != '/')
          p++;
       if (*p == '/')
@@ -4976,8 +4987,14 @@ void extract_host(char *str)
 {
    char *p, str2[256];
 
-   if (strstr(str, "http://")) {
+   p = NULL;
+
+   if (strstr(str, "http://")) 
       p = str + 7;
+   if (strstr(str, "https://")) 
+      p = str + 8;
+   
+   if (p) {
       while (*p && *p != '/' && *p != ':')
          p++;
       *p = 0;
@@ -4994,6 +5011,9 @@ void set_location(LOGBOOK * lbs, char *rel_path)
    char str[NAME_LENGTH];
 
    if (strncmp(rel_path, "http://", 7) == 0) {
+      rsputs("Location: ");
+      rsputs(rel_path);
+   } else if (strncmp(rel_path, "https://", 8) == 0) {
       rsputs("Location: ");
       rsputs(rel_path);
    } else {
@@ -10386,6 +10406,8 @@ void combine_url(LOGBOOK * lbs, char *url, char *param, char *result, int size)
 
    if (strstr(url, "http://"))
       strlcpy(result, url + 7, size);
+   else if (strstr(url, "https://"))
+      strlcpy(result, url + 8, size);
    else
       strlcpy(result, url, size);
 
@@ -11295,6 +11317,8 @@ int save_md5(LOGBOOK * lbs, char *server, MD5_INDEX * md5_index, int n)
    url_decode(url);
    if (strstr(url, "http://"))
       strcpy(str, url + 7);
+   else if (strstr(url, "https://"))
+      strcpy(str, url + 8);
    else
       strcpy(str, url);
 
@@ -11338,6 +11362,8 @@ int load_md5(LOGBOOK * lbs, char *server, MD5_INDEX ** md5_index)
    url_decode(url);
    if (strstr(url, "http://"))
       strcpy(str, url + 7);
+   else if (strstr(url, "https://"))
+      strcpy(str, url + 8);
    else
       strcpy(str, url);
 
@@ -17144,7 +17170,7 @@ void show_selection_page()
    if (getcfg("global", "Guest Selection Page", str, sizeof(str))
        && !(isparam("unm") && isparam("upwd"))) {
       /* check for URL */
-      if (strstr(str, "http://")) {
+      if (strstr(str, "http://") || strstr(str, "https://")) {
          redirect(NULL, str);
          return;
       }
@@ -17615,7 +17641,7 @@ void interprete(char *lbook, char *path)
       /* check for global selection page if no logbook given */
       if (!logbook[0] && getcfg("global", "Selection page", str, sizeof(str))) {
          /* check for URL */
-         if (strstr(str, "http://")) {
+         if (strstr(str, "http://") || strstr(str, "https://")) {
             redirect(NULL, str);
             return;
          }
