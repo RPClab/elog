@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.8  2003/07/15 12:16:52  midas
+  Removed FALSE/TRUE
+
   Revision 1.7  2003/07/15 11:19:45  midas
   Added -e flag, reply now quotes original text
 
@@ -129,20 +132,20 @@ unsigned int t, pad;
 BOOL equal_ustring(char *str1, char *str2)
 {
   if (str1 == NULL && str2 != NULL)
-    return FALSE;
+    return 0;
   if (str1 != NULL && str2 == NULL)
-    return FALSE;
+    return 0;
   if (str1 == NULL && str2 == NULL)
-    return TRUE;
+    return 1;
 
   while (*str1)
     if (toupper(*str1++) != toupper(*str2++))
-      return FALSE;
+      return 0;
 
   if (*str2)
-    return FALSE;
+    return 0;
 
-  return TRUE;
+  return 1;
 }
 
 /*---- strlcpy and strlcat to avoid buffer overflow ----------------*/
@@ -338,12 +341,12 @@ char                 host_name[256], str[80], *ph, *ps;
   sprintf(request+strlen(request), "Host: %s\r\n", host_name);
   sprintf(request+strlen(request), "User-Agent: ELOG\r\n");
 
-  first = TRUE;
+  first = 1;
   if (passwd[0])
     {
     if (first)
       sprintf(request+strlen(request), "Cookie: ");
-    first = FALSE;
+    first = 0;
 
     base64_encode(passwd, str);
     sprintf(request+strlen(request), "wpwd=%s;", str);
@@ -353,7 +356,7 @@ char                 host_name[256], str[80], *ph, *ps;
     {
     if (first)
       sprintf(request+strlen(request), "Cookie: ");
-    first = FALSE;
+    first = 0;
 
     sprintf(request+strlen(request), "unm=%s;", uname);
     }
@@ -362,7 +365,7 @@ char                 host_name[256], str[80], *ph, *ps;
     {
     if (first)
       sprintf(request+strlen(request), "Cookie: ");
-    first = FALSE;
+    first = 0;
 
     base64_encode(upwd, str);
     sprintf(request+strlen(request), "upwd=%s;", str);
