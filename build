@@ -1,10 +1,16 @@
 #!/bin/csh
-#Usage: build <version>
+#Usage: build <version> <release>
 #Build ELOG distribution
 
+if ($#argv < 2) then
+  echo "Usage: build <version> <release>"
+  exit
+endif
+ 
 set version = $argv[1]
+set release = $argv[2]
 set dir = /tmp/elog-$version
-set archive = elog-$version.tar.gz
+set archive = elog-$version-$release.tar.gz
 
 # create temporary directory
 rm -Rf $dir
@@ -63,9 +69,9 @@ rm -f /usr/src/redhat/RPMS/i386/*
 rm -f /usr/src/redhat/SRPMS/*
 rpmbuild -ba elog.spec
 cp /usr/src/redhat/RPMS/i386/elog*rpm /home/midas/html/elog/download/RPMS/
-cp /usr/src/redhat/RPMS/i386/elog*rpm /home/midas/html/elog/download/RPMS/elog-latest.i386.rpm
+cp /usr/src/redhat/RPMS/i386/elog-$version-$release.i386.rpm /home/midas/html/elog/download/RPMS/elog-latest.i386.rpm
 cp /usr/src/redhat/SRPMS/elog*rpm /home/midas/html/elog/download/SRPMS/
-cp /usr/src/redhat/SRPMS/elog*rpm /home/midas/html/elog/download/SRPMS/elog-latest.src.rpm
+cp /usr/src/redhat/SRPMS/elog-$version-$release.src.rpm /home/midas/html/elog/download/SRPMS/elog-latest.src.rpm
 
 
 
