@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.10  2002/01/31 00:51:41  midas
+  Small patch to make elogd run under Max OS X (Darwin), thanks to Dominik Westner <westner@logicunited.com>
+
   Revision 1.9  2002/01/30 04:26:05  midas
   Added flag 'restrict edit = 0/1'
 
@@ -485,7 +488,8 @@ struct tm            *ts;
   time(&now);
   ts = localtime(&now);
   strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S", ts);
-  snprintf(str, sizeof(str) - 1, "Date: %s %+03d%02d\r\n\r\n", buf, (int) (-timezone/3600), (int) ((abs(timezone)/60) % 60));
+  snprintf(str, sizeof(str) - 1, "Date: %s %+03d%02d\r\n\r\n", buf, 
+          (int) (-(int)timezone/3600), (int) ((abs((int)timezone)/60) % 60));
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
 
