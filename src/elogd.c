@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.536  2005/01/17 15:42:05  midas
+   Made extendable attributes work with MOptions
+
    Revision 1.535  2005/01/17 14:01:40  midas
    Added message_id and date to CSV export
 
@@ -8192,9 +8195,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   rsprintf(loc("Add new option here"), attr_list[index]);
                   rsprintf("&nbsp;:&nbsp;</i>\n");
 
-                  rsprintf
-                      ("<input type=\"text\" size=20 maxlength=%d name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
-                       input_maxlen, ua, attrib[index]);
+                  if (attr_flags[index] & AF_MULTI)
+                     rsprintf
+                        ("<input type=\"text\" size=20 maxlength=%d name=\"%s_0\" value=\"%s\" onChange=\"mod();\">\n",
+                        input_maxlen, ua, attrib[index]);
+                  else
+                     rsprintf
+                        ("<input type=\"text\" size=20 maxlength=%d name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
+                        input_maxlen, ua, attrib[index]);
 
                   rsprintf("</td>\n");
 
@@ -16383,6 +16391,9 @@ void submit_elog(LOGBOOK * lbs)
    for (i = 0; i < n_attr; i++) {
       strcpy(ua, attr_list[i]);
       btou(ua);
+      if (attr_flags[i] & AF_MULTI)
+         strcat(ua, "_0");
+
       if (isparam(ua) && attr_options[i][0][0]) {
 
          if (strieq(attr_options[i][0], "boolean")) {
@@ -20392,7 +20403,7 @@ void server_loop(void)
                                 ("Error: Content length (%d) larger than maximum content length (%d)"),
                                 content_length, _max_content_length);
                         strcat(str, "<br>");
-                        strcat(str, loc("Please increase <b>\"Max content length\"</b> in config file"));
+                        strcat(str, loc("Please increase <b>\"Max content length\"</b> in config file and restart elogd"));
                         keep_alive = FALSE;
                         show_error(str);
                         goto redir;
