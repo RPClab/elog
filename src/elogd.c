@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.53  2003/03/26 10:15:21  midas
+  Only ownwer can delete entry if 'restrict edit = 1'
+
   Revision 1.52  2003/03/25 19:55:15  midas
   Sort threaded list correctly if replies are resubmitted
 
@@ -674,7 +677,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.3.3"
+#define VERSION "2.3.4"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -1741,33 +1744,49 @@ int  i;
 
 char *locbuffer = NULL;
 char **porig, **ptrans;
+time_t locfile_mtime = 0;
 
 /* localization support */
 char *loc(char *orig)
 {
-char language[256], file_name[256], *p;
-int  fh, length, n;
-static char old_language[256];
+char         language[256], file_name[256], *p;
+int          fh, length, n;
+struct stat  cfg_stat;
 
   getcfg("global", "Language", language);
 
-  if (!equal_ustring(language, old_language))
+  /* force re-read configuration file if changed */
+  strlcpy(file_name, resource_dir, sizeof(file_name));
+  strlcat(file_name, "eloglang.", sizeof(file_name));
+  strlcat(file_name, language, sizeof(file_name));
+
+  if (stat(file_name, &cfg_stat) == 0)
     {
-    if (equal_ustring(language, "english") ||
-        language[0] == 0)
+    if (locfile_mtime < cfg_stat.st_mtime)
       {
+      locfile_mtime = cfg_stat.st_mtime;
+
       if (locbuffer)
         {
         free(locbuffer);
         locbuffer = NULL;
         }
       }
-    else
-      {
-      strlcpy(file_name, resource_dir, sizeof(file_name));
-      strlcat(file_name, "eloglang.", sizeof(file_name));
-      strlcat(file_name, language, sizeof(file_name));
+    }
 
+  if (equal_ustring(language, "english") ||
+      language[0] == 0)
+    {
+    if (locbuffer)
+      {
+      free(locbuffer);
+      locbuffer = NULL;
+      }
+    }
+  else
+    {
+    if (locbuffer == NULL)
+      {
       fh = open(file_name, O_RDONLY | O_BINARY);
       if (fh < 0)
         return orig;
@@ -1838,8 +1857,6 @@ static char old_language[256];
       porig[n] = NULL;
       ptrans[n] = NULL;
       }
-
-    strcpy(old_language, language);
     }
 
   if (!locbuffer)
@@ -4780,11 +4797,11 @@ int    i, fh, wrong_pwd, size;
   if (!getcfg(lbs->name, "Admin user", str) ||
       !strstr(str, getparam("unm")) != 0)
     {
-    rsprintf("<tr><td align=right class=\"dlgform\">%s:\n", loc("Old Password"));
+    rsprintf("<tr><td align=right class=\"dlgform\">%s:\n", loc("Old password"));
     rsprintf("<td align=left class=\"dlgform\"><input type=password name=oldpwd></td></tr>\n");
     }
 
-  rsprintf("<tr><td align=right class=\"dlgform\">%s:</td>\n", loc("New Password"));
+  rsprintf("<tr><td align=right class=\"dlgform\">%s:</td>\n", loc("New password"));
   rsprintf("<td align=left class=\"dlgform\"><input type=password name=newpwd></td></tr>\n");
 
   rsprintf("<tr><td align=right class=\"dlgform\">%s:</td>\n", loc("Retype new password"));
@@ -4826,6 +4843,55 @@ char   str[80], date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
 
 /*------------------------------------------------------------------*/
 
+BOOL is_author(LOGBOOK *lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], char *owner)
+{
+char str[1000], preset[1000];
+int i;
+
+  /* search attribute which contains short_name of author */
+  for (i=0 ; i<lbs->n_attr ; i++)
+    {
+    sprintf(str, "Preset %s", attr_list[i]);
+    if (getcfg(lbs->name, str, preset))
+      {
+      if (strstr(preset, "$short_name"))
+        {
+        if (strstr(attrib[i], getparam("unm")) == NULL)
+          {
+          strcpy(owner, attrib[i]);
+          return FALSE;
+          }
+        else
+          break;
+        }
+      }
+    }
+
+  if (i == lbs->n_attr)
+    {
+    /* if not found, search attribute which contains full_name of author */
+    for (i=0 ; i<lbs->n_attr ; i++)
+      {
+      sprintf(str, "Preset %s", attr_list[i]);
+      if (getcfg(lbs->name, str, preset))
+        {
+        if (strstr(preset, "$long_name"))
+          {
+          if (strstr(attrib[i], getparam("full_name")) == NULL)
+            {
+            strcpy(owner, attrib[i]);
+            return FALSE;
+            }
+          }
+        }
+      }
+    }
+
+  return TRUE;
+}
+
+/*------------------------------------------------------------------*/
+
 void show_edit_form(LOGBOOK *lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload)
 {
 int    i, j, n, index, size, width, height, fh, length, first;
@@ -4833,7 +4899,8 @@ char   str[1000], preset[1000], *p, star[80], comment[10000], reply_string[256];
 char   list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256];
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
        orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80],
-       slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
+       slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH],
+       owner[256];
 time_t now;
 
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
@@ -4920,45 +4987,11 @@ time_t now;
   /* check for author */
   if (bedit && getcfg(lbs->name, "Restrict edit", str) && atoi(str) == 1)
     {
-    /* search attribute which contains short_name of author */
-    for (i=0 ; i<lbs->n_attr ; i++)
+    if (!is_author(lbs, attrib, owner))
       {
-      sprintf(str, "Preset %s", attr_list[i]);
-      if (getcfg(lbs->name, str, preset))
-        {
-        if (strstr(preset, "$short_name"))
-          {
-          if (strstr(attrib[i], getparam("unm")) == NULL)
-            {
-            sprintf(str, loc("Only user <i>%s</i> can edit this entry"), attrib[i]);
-            show_error(str);
-            return;
-            }
-          else
-            break;
-          }
-        }
-      }
-
-    if (i == lbs->n_attr)
-      {
-      /* if not found, search attribute which contains full_name of author */
-      for (i=0 ; i<lbs->n_attr ; i++)
-        {
-        sprintf(str, "Preset %s", attr_list[i]);
-        if (getcfg(lbs->name, str, preset))
-          {
-          if (strstr(preset, "$long_name"))
-            {
-            if (strstr(attrib[i], getparam("full_name")) == NULL)
-              {
-              sprintf(str, loc("Only user <b>%s</b> can edit this entry"), attrib[i]);
-              show_error(str);
-              return;
-              }
-            }
-          }
-        }
+      sprintf(str, loc("Only user <i>%s</i> can edit this entry"), owner);
+      show_error(str);
+      return;
       }
     }
 
@@ -5788,8 +5821,8 @@ char str[NAME_LENGTH];
     }
   else
     {
-    cols = 80;
-    rows = 40;
+    cols = 120;
+    rows = 30;
     }
 
   rsprintf("<textarea cols=%d rows=%d wrap=virtual name=Text>", cols, rows);
@@ -6368,7 +6401,8 @@ void show_new_user_page(LOGBOOK *lbs)
 void show_elog_delete(LOGBOOK *lbs, int message_id)
 {
 int    i, status, reply, next;
-char   str[256], in_reply_to[80], reply_to[256];
+char   str[256], in_reply_to[80], reply_to[256], owner[256];
+char   attrib[MAX_N_ATTR][NAME_LENGTH];
 
   /* redirect if confirm = NO */
   if (getparam("confirm") && *getparam("confirm") &&
@@ -6442,6 +6476,22 @@ char   str[256], in_reply_to[80], reply_to[256];
       if (i == atoi(getparam("nsel")))
         {
         show_error(loc("No message selected for deletion"));
+        return;
+        }
+      }
+
+    /* check for author */
+    if (getcfg(lbs->name, "Restrict edit", str) && atoi(str) == 1)
+      {
+      /* get message for reply/edit */
+
+      el_retrieve(lbs, message_id, NULL, attr_list, attrib, lbs->n_attr,
+                  NULL, NULL, NULL, NULL, NULL, NULL);
+
+      if (!is_author(lbs, attrib, owner))
+        {
+        sprintf(str, loc("Only user <i>%s</i> can delete this entry"), owner);
+        show_error(str);
         return;
         }
       }
@@ -7248,7 +7298,7 @@ int  i, n;
     }
 
   /* check for allow */
-  sprintf(str, "Allow %s", unloc(command));
+  sprintf(str, "Allow %s", command);
   if (!getcfg(lbs->name, str, users))
     return TRUE;
 
@@ -8616,7 +8666,7 @@ LOGBOOK *lbs_cur;
 
     /* empty title for selection box */
     if (atoi(getparam("select")) == 1)
-      rsprintf("<td class=\"listtitle\"></td>\n");
+      rsprintf("<th class=\"listtitle\"></td>\n");
     
     for (i=0 ; i<n_attr_disp ; i++)
       {
@@ -8664,12 +8714,12 @@ LOGBOOK *lbs_cur;
       else if (strcmp(getparam("rsort"), disp_attr[i]) == 0)
         strcpy(img, "<img align=top src=\"down.gif\">");
 
-      rsprintf("<td class=\"listtitle\"><a href=\"%s\">%s</a>%s</td>\n", 
+      rsprintf("<th class=\"listtitle\"><a href=\"%s\">%s</a>%s</td>\n", 
                 ref, disp_attr[i], img);
       }
 
     if (!equal_ustring(mode, "Full") && n_line > 0)
-      rsprintf("<td class=\"listtitle\">Text</td>\n");
+      rsprintf("<th class=\"listtitle\">Text</td>\n");
 
     rsprintf("</tr>\n\n");
     }
@@ -10411,12 +10461,6 @@ char  status, str[256], upwd[256], full_name[256], email[256];
       rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n", str);
       }
 
-    if (isparam("wfil"))
-      {
-      sprintf(str, loc("Cannot open file <b>%s</b>"), getparam("wfil"));
-      rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n", str);
-      }
-
     rsprintf("<tr><td colspan=2 class=\"dlgtitle\">%s</td></tr>\n", loc("Please login"));
 
     rsprintf("<tr><td align=right class=\"dlgform\">%s:</td>\n", loc("Username"));
@@ -10450,13 +10494,18 @@ char  status, str[256], upwd[256], full_name[256], email[256];
     if (status == 2)
       {
       sprintf(str, "?wusr=%s", user);
-      redirect(lbs, str);
+
+      setparam("redir", str);
+
+      /* remove remaining cookies */
+      set_login_cookies(lbs, "", "");
       }
     else
       {
       getcfg(lbs->name, "Password file", full_name);
-      sprintf(str, "?wfil=%s", full_name);
-      redirect(lbs, str);
+      sprintf(str, loc("Cannot open file <b>%s</b>"), full_name);
+
+      show_error(str);
       }
     return FALSE;
     }
