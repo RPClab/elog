@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.617  2005/04/06 19:20:57  ritt
+   Version 2.5.8-3
+
    Revision 1.616  2005/04/06 19:12:25  ritt
    Fixed bug with lowercase conditions
 
@@ -963,7 +966,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.8-2"
+#define VERSION "2.5.8-3"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -14171,7 +14174,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      if (is_ascii(file_name) &&
                          !chkext(attachment[index], ".PS") &&
                          !chkext(attachment[index], ".PDF") &&
-                         !chkext(attachment[index], ".EPS") && show_attachments) {
+                         !chkext(attachment[index], ".EPS") &&
+                         !chkext(attachment[index], ".HTM") &&
+                         !chkext(attachment[index], ".HTML") && show_attachments) {
 
                         /* display attachment */
                         rsprintf("</td></tr><tr><td colspan=%d class=\"messagelist\"><pre>", colspan);
@@ -18687,7 +18692,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
                /* determine if displayed inline */
                display_inline = is_image(file_name) || is_ascii(file_name);
-               if (chkext(att, ".PS") || chkext(att, ".PDF") || chkext(att, ".EPS"))
+               if (chkext(att, ".PS") || chkext(att, ".PDF") || chkext(att, ".EPS") || 
+                   chkext(att, ".HTM") || chkext(att, ".HTML"))
                   display_inline = 0;
                if (file_exist(thumb_name))
                   display_inline = 1;
