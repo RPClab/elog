@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.500  2004/10/26 07:29:21  midas
+   Added image to RSS feed
+
    Revision 1.499  2004/10/25 21:26:35  midas
    Changed XML encoding
 
@@ -14278,6 +14281,12 @@ void show_rss_feed(LOGBOOK * lbs)
    }
 
    rsprintf("<generator>ELOG V%s</generator>\n", VERSION);
+
+   rsprintf("<image>\n");
+   rsprintf("<url>%s/elog.gif</url>\n", url);
+   rsprintf("<title>ELOG %s</title>\n", lbs->name_enc);
+   rsprintf("<link>%s</link>\n", url);
+   rsprintf("</image>\n");
 
    /*---- show last 15 items ----*/
 
