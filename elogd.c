@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.101  2002/11/21 09:13:33  midas
+  Added 'menu text' and 'find menu text'
+
   Revision 2.100  2002/11/20 14:20:16  midas
   Fixed bug with bottom text file display
 
@@ -7444,6 +7447,49 @@ char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
     }
 
 
+  /*---- find menu text ----*/
+  
+  if (getcfg(lbs->name, "find menu text", str) && !printable)
+    {
+    FILE *f;
+    char file_name[256], *buf;
+
+    rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=1 bgcolor=%s>\n",
+             gt("Menu1 cellpadding"), gt("Frame color"));
+
+    rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
+
+    /* check if file starts with an absolute directory */
+    if (str[0] == DIR_SEPARATOR || str[1] == ':')
+      strcpy(file_name, str);
+    else
+      {
+      strcpy(file_name, cfg_dir);
+      strcat(file_name, str);
+      }
+
+    f = fopen(file_name, "rb");
+    if (f != NULL)
+      {
+      fseek(f, 0, SEEK_END);
+      size = TELL(fileno(f));
+      fseek(f, 0, SEEK_SET);
+
+      buf = malloc(size+1);
+      fread(buf, 1, size, f);
+      buf[size] = 0;
+      fclose(f);
+
+
+      rsputs(buf);
+
+      }
+    else
+      rsprintf("<center><b>Error: file <i>\"%s\"</i> not found</b></center>", file_name);
+
+    rsprintf("</td></tr></table></td></tr>");
+    }
+
   /*---- display filters ----*/
 
   rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1>\n",
@@ -8755,6 +8801,49 @@ BOOL   first;
     }
 
   rsprintf("</table></td></tr>\n\n");
+
+  /*---- menu text ----*/
+  
+  if (getcfg(lbs->name, "menu text", str))
+    {
+    FILE *f;
+    char file_name[256], *buf;
+
+    rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=1 bgcolor=%s>\n",
+             gt("Menu1 cellpadding"), gt("Frame color"));
+
+    rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
+
+    /* check if file starts with an absolute directory */
+    if (str[0] == DIR_SEPARATOR || str[1] == ':')
+      strcpy(file_name, str);
+    else
+      {
+      strcpy(file_name, cfg_dir);
+      strcat(file_name, str);
+      }
+
+    f = fopen(file_name, "rb");
+    if (f != NULL)
+      {
+      fseek(f, 0, SEEK_END);
+      size = TELL(fileno(f));
+      fseek(f, 0, SEEK_SET);
+
+      buf = malloc(size+1);
+      fread(buf, 1, size, f);
+      buf[size] = 0;
+      fclose(f);
+
+
+      rsputs(buf);
+
+      }
+    else
+      rsprintf("<center><b>Error: file <i>\"%s\"</i> not found</b></center>", file_name);
+
+    rsprintf("</td></tr></table></td></tr>");
+    }
 
   /*---- message ----*/
 

@@ -1,3 +1,8 @@
+Version 2.2.4, released Nobember xxth, 2002
+===========================================
+
+- Added option "Menu text = xxxx" and "Find Menu text = xxxx"
+
 Version 2.2.3, released Nobember 20th, 2002
 ===========================================
 

@@ -381,6 +381,33 @@ Guest menu commands = Back, Find, Login, Help
 </br>
 Same as <b>Guest Menu commands</b> but for the find result page.<p>
 
+<li><b><code>Menu text = &lt;file&gt;</code></b>
+</br>
+If this option is present, and additional menu row above the message gets displayed with
+the contents of &lt;file&gt;. This file can contain arbitrary text, images or links.
+One example would be following text to go back to the listing page and display the
+next <i>Routine</i> entry and all <i>Routine</i> entries:<br>
+
+<pre>
+&lt;small&gt;
+&amp;nbsp;&lt;a href="?cmd=next&type=Routine"&gt;Next Routine entry&lt;/a&gt;&amp;nbsp;|
+&amp;nbsp;&lt;a href="../?Type=Routine"&gt;All Routine entries&lt;/a&gt;
+&lt;/small&gt;
+</pre>
+
+<li><b><code>Find Menu text = &lt;file&gt;</code></b>
+</br>
+The same for the find result page. One example would be following text to
+switch between the different display modi:<br>
+
+<pre>
+&lt;small&gt;
+&amp;nbsp;&lt;a href="?mode=summary"&gt;Summary&lt;/a&gt;&amp;nbsp;|
+&amp;nbsp;&lt;a href="?mode=full"&gt;Full&lt;/a&gt;&amp;nbsp;|
+&amp;nbsp;&lt;a href="?mode=threaded"&gt;Threaded&lt;/a&gt;&amp;nbsp;|
+&lt;/small&gt;
+</pre>
+
 <li><b><code>Bottom text = &lt;file&gt;</code></b>
 </br>
 If this option is present, the HTML contents of <b><code>file</code></b> is displayed at
