@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.21  2003/02/19 10:41:08  midas
+  Fixed problem with logooks containing blanks and cookies
+
   Revision 1.20  2003/02/19 09:32:05  midas
   Fixed problem with cookie path
 
@@ -3520,7 +3523,10 @@ void set_location(LOGBOOK *lbs, char *rel_path)
 char str[NAME_LENGTH];
 
   if (strncmp(rel_path, "http://", 7) == 0)
-    rsprintf("Location: %s", rel_path);
+    {
+    rsputs("Location: ");
+    rsputs(rel_path);
+    }
   else
     {
     if (lbs)
@@ -3534,28 +3540,36 @@ char str[NAME_LENGTH];
       if (str[strlen(str)-1] != '/')
         strcat(str, "/");
 
-      rsprintf("Location: %s", str);
+      rsputs("Location: ");
+      rsputs(str);
 
       if (strncmp(rel_path, "../", 3) == 0)
-        rsprintf(rel_path+3);
+        rsputs(rel_path+3);
       else if (strcmp(rel_path, ".") == 0)
         {
         if (lbs)
-          rsprintf(lbs->name_enc);
+          rsputs(lbs->name_enc);
         }
       else if (rel_path[0] == '/')
-        rsprintf(rel_path+1);
+        rsputs(rel_path+1);
       else
         {
         if (lbs)
-          rsprintf("%s/%s", lbs->name_enc, rel_path);
+          {
+          rsputs(lbs->name_enc);
+          rsputs("/");
+          rsputs(rel_path);
+          }
         else
-          rsprintf("%s", rel_path);
+          rsputs(rel_path);
         }
       }
     else
+      {
       /* relative path */
-      rsprintf("Location: %s", rel_path);
+      rsputs("Location: ");
+      rsputs(rel_path);
+      }
     }
 
   rsprintf("\r\n\r\n<html>redir</html>\r\n");
@@ -3617,7 +3631,10 @@ struct tm *gmt;
       {
       extract_path(str);
       url_encode(str, sizeof(str));
-      rsprintf(" path=/%s/%s;", str, lbs->name_enc);
+      if (str[0])
+        rsprintf(" path=/%s/%s/;", str, lbs->name_enc);
+      else
+        rsprintf(" path=/%s/;", lbs->name_enc);
       }
     else
       rsprintf(" path=/%s/;", lbs->name_enc);
