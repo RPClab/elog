@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.603  2005/03/29 07:52:06  ritt
+   Renamed it to 'expand selection page'
+
    Revision 1.602  2005/03/29 07:50:15  ritt
    Implemented 'expand selection', defaulting to one
 
@@ -19095,7 +19098,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
             expand = 1;
       }
 
-      if (!getcfg(plb->name, "Expand selection", str, sizeof(str)) || atoi(str) == 1)
+      if (!getcfg(plb->name, "Expand selection page", str, sizeof(str)) || atoi(str) == 1)
          expand_all = 1;
       else
          expand_all = 0;
@@ -19354,7 +19357,7 @@ void show_selection_page()
          if (phier->member[i]->n_members == 0)
             show_title = 1;
 
-   if (!getcfg("global", "Expand selection", str, sizeof(str)) || atoi(str) == 1)
+   if (!getcfg("global", "Expand selection page", str, sizeof(str)) || atoi(str) == 1)
       expand_all = 1;
    else
       expand_all = 0;
