@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.395  2004/07/23 06:59:06  midas
+   Fixed missing argument to getcfg() under linux
+
    Revision 1.394  2004/07/22 21:05:29  midas
    Fixed bugs with https:// in URL
 
@@ -301,6 +304,7 @@
 /* ELOG identification */
 static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -18773,7 +18777,7 @@ void server_loop(int tcp_port)
    signal(SIGHUP, hup_handler);
    /* give up root privilege */
    if (geteuid() == 0) {
-      if (!getcfg("global", "Grp", str) || setgroup(str) < 0) {
+      if (!getcfg("global", "Grp", str, sizeof(str)) || setgroup(str) < 0) {
          eprintf("Falling back to default group \"elog\"\n");
          if (setgroup("elog") < 0) {
             eprintf("Falling back to default group \"%s\"\n", DEFAULT_GROUP);
@@ -18786,7 +18790,7 @@ void server_loop(int tcp_port)
          }
       }
 
-      if (!getcfg("global", "Usr", str) || setuser(str) < 0) {
+      if (!getcfg("global", "Usr", str, sizeof(str)) || setuser(str) < 0) {
          eprintf("Falling back to default user \"elog\"\n");
          if (setuser("elog") < 0) {
             eprintf("Falling back to default user \"%s\"\n", DEFAULT_USER);
