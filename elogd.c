@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.23  2002/05/31 12:51:58  midas
+  First version with truely relative paths
+
   Revision 1.22  2002/05/13 20:50:53  midas
   Fixed problem with daylight savings time
 
@@ -74,7 +77,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.3.5"
+#define VERSION "1.3.6"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -497,6 +500,14 @@ struct tm            *ts;
 
   recv_string(s, str, sizeof(str), 10000);
   if (verbose) puts(str);
+
+  /* drain server messages */
+  do
+    {
+    str[0] = 0;
+    recv_string(s, str, sizeof(str), 300);
+    if (verbose) puts(str);
+    } while (str[0]);
 
   snprintf(str, sizeof(str) - 1, "HELO %s\r\n", host_name);
   send(s, str, strlen(str), 0);
@@ -2583,7 +2594,7 @@ void redirect(char *path)
     rsprintf("Keep-Alive: timeout=60, max=10\r\n");
     }
 
-  rsprintf("Location: /%s/%s\r\n\r\n<html>redir</html>\r\n", logbook_enc, path);
+  rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", path);
 }
 
 void redirect2(char *path)
@@ -2808,14 +2819,14 @@ void show_standard_header(char *title, char *path)
   rsprintf("<html><head><title>%s</title></head>\n", title);
 
   if (*gt("BGImage"))
-    rsprintf("<body bgcolor=#FFFFFF background=\"/%s/%s\">\n", logbook_enc, gt("BGImage"));
+    rsprintf("<body bgcolor=#FFFFFF background=\"%s\">\n", gt("BGImage"));
   else
     rsprintf("<body bgcolor=#FFFFFF>\n");
   
   if (path)
-    rsprintf("<form method=\"GET\" action=\"/%s/%s\">\n\n", logbook_enc, path);
+    rsprintf("<form method=\"GET\" action=\"%s\">\n\n", path);
   else
-    rsprintf("<form method=\"GET\" action=\"/%s\">\n\n", logbook_enc);
+    rsprintf("<form method=\"GET\" action=\"\">\n\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -2843,7 +2854,7 @@ int  i;
 
     if (getcfg("global", "main tab", str))
       {
-      rsprintf("<td nowrap bgcolor=#E0E0E0><a href=\"/\">%s</a></td>\n", str);
+      rsprintf("<td nowrap bgcolor=#E0E0E0><a href=\"../\">%s</a></td>\n", str);
       rsprintf("<td width=10 bgcolor=#FFFFFF>&nbsp;</td>\n");
       }
 
@@ -2861,7 +2872,7 @@ int  i;
       if (equal_ustring(str, logbook))
         rsprintf("<td nowrap bgcolor=%s><font color=%s>%s</font></td>\n", gt("Title BGColor"), gt("Title fontcolor"), str);
       else
-        rsprintf("<td nowrap bgcolor=#E0E0E0><a href=\"/%s\">%s</a></td>\n", ref, str);
+        rsprintf("<td nowrap bgcolor=#E0E0E0><a href=\"../%s/\">%s</a></td>\n", ref, str);
       rsprintf("<td width=10 bgcolor=#FFFFFF>&nbsp;</td>\n");
       }
     rsprintf("<td width=100%% bgcolor=#FFFFFF>&nbsp;</td>\n");
@@ -2895,7 +2906,7 @@ int  i;
   /* right cell */
   rsprintf("<td bgcolor=%s align=right>", gt("Title BGColor"));
   if (*gt("Title image"))
-    rsprintf("<img src=\"/%s/%s\">", logbook_enc, gt("Title image"));
+    rsprintf("<img src=\"%s\">", gt("Title image"));
   else
     rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif color=%s><b>ELOG V%s&nbsp;&nbsp</b></font>",
               gt("Title fontcolor"), VERSION);
@@ -3245,13 +3256,16 @@ struct tm *gmt;
           }
 
         /* get optional expriation from configuration file */
-        exp = 24;
+        exp = 0;
         if (getcfg(logbook, "Login expiration", str))
           exp = atof(str);
 
         if (exp == 0)
           {
-          rsprintf("Set-Cookie: upwd=%s; path=/%s\r\n", new_pwd, logbook_enc);
+          if (getcfg("global", "Password file", str))
+            rsprintf("Set-Cookie: upwd=%s; path=/\r\n", new_pwd);
+          else
+            rsprintf("Set-Cookie: upwd=%s\r\n", new_pwd);
           }
         else
           {
@@ -3260,11 +3274,13 @@ struct tm *gmt;
           gmt = gmtime(&now);
           strftime(str, sizeof(str), "%A, %d-%b-%Y %H:%M:%S GMT", gmt);
 
-          rsprintf("Set-Cookie: upwd=%s; path=/%s; expires=%s\r\n", new_pwd, logbook_enc, str);
+          if (getcfg("global", "Password file", str))
+            rsprintf("Set-Cookie: upwd=%s; path=/; expires=%s\r\n", new_pwd, str);
+          else
+            rsprintf("Set-Cookie: upwd=%s; expires=%s\r\n", new_pwd, str);
           }
 
-        sprintf(str, "/%s/", logbook_enc);
-        rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
+        rsprintf("Location: .\r\n\r\n<html>redir</html>\r\n");
         return;
         }
       }
@@ -3442,8 +3458,7 @@ time_t now;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>ELOG</title></head>\n");
-  rsprintf("<body><form method=\"POST\" action=\"/%s\" enctype=\"multipart/form-data\">\n",
-            logbook_enc);
+  rsprintf("<body><form method=\"POST\" action=\".\" enctype=\"multipart/form-data\">\n");
 
   /*---- title row ----*/
 
@@ -3626,7 +3641,7 @@ time_t now;
               else
                 rsprintf("<input type=radio name=\"%s\" value=\"%s\">", attr_list[index], attr_options[index][i]);
 
-              rsprintf("<img src=\"/%s/icons/%s\">&nbsp;\n", logbook_enc, attr_options[index][i]);
+              rsprintf("<img src=\"icons/%s\">&nbsp;\n", attr_options[index][i]);
               }
 
             rsprintf("</td></tr>\n");
@@ -4000,7 +4015,7 @@ char   str[256];
         for (j=0 ; j<MAX_N_LIST && attr_options[i][j][0] ; j++)
           {
           rsprintf("<input type=radio name=\"%s\" value=\"%s\">", attr_list[i], attr_options[i][j]);
-          rsprintf("<img src=\"/%s/icons/%s\">&nbsp;\n", logbook_enc, attr_options[i][j]);
+          rsprintf("<img src=\"icons/%s\">&nbsp;\n", attr_options[i][j]);
           }
         }
 
@@ -4047,8 +4062,7 @@ char *buffer;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>ELOG config</title></head>\n");
-  rsprintf("<body><form method=\"POST\" action=\"/%s\" enctype=\"multipart/form-data\">\n",
-            logbook_enc);
+  rsprintf("<body><form method=\"POST\" action=\".\" enctype=\"multipart/form-data\">\n");
 
   /*---- title ----*/
 
@@ -4328,13 +4342,13 @@ FILE   *f;
             if (past_n)
               {
               sprintf(str, loc("Last %d days"), past_n*2);
-              rsprintf("&nbsp;<a href=\"/%s/past%d\">%s</a>&nbsp;|\n", logbook_enc, past_n*2, str);
+              rsprintf("&nbsp;<a href=\"past%d\">%s</a>&nbsp;|\n", past_n*2, str);
               }
 
             if (last_n)
               {
               sprintf(str, loc("Last %d entries"), last_n*2);
-              rsprintf("&nbsp;<a href=\"/%s/last%d\">%s</a>&nbsp;|\n", logbook_enc, last_n*2, str);
+              rsprintf("&nbsp;<a href=\"last%d\">%s</a>&nbsp;|\n", last_n*2, str);
               }
             }
           else
@@ -4343,9 +4357,9 @@ FILE   *f;
             url_encode(str);
 
             if (i < n-1)
-              rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, str, loc(menu_item[i]));
+              rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;|\n", str, loc(menu_item[i]));
             else
-              rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;\n", logbook_enc, str, loc(menu_item[i]));
+              rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;\n", str, loc(menu_item[i]));
             }
           }
 
@@ -4378,17 +4392,17 @@ FILE   *f;
         if (past_n)
           {
           sprintf(str, loc("Last %d days"), past_n*2);
-          rsprintf("&nbsp;<a href=\"/%s/past%d\">%s</a>&nbsp;|\n", logbook_enc, past_n*2, str);
+          rsprintf("&nbsp;<a href=\"past%d\">%s</a>&nbsp;|\n", past_n*2, str);
           }
 
         if (last_n)
           {
           sprintf(str, loc("Last %d entries"), last_n*2);
-          rsprintf("&nbsp;<a href=\"/%s/last%d\">%s</a>&nbsp;|\n", logbook_enc, last_n*2, str);
+          rsprintf("&nbsp;<a href=\"last%d\">%s</a>&nbsp;|\n", last_n*2, str);
           }
 
-        rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, loc("Find"), loc("Find"));
-        rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;\n", logbook_enc, loc("Back"), loc("Back"));
+        rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;|\n", loc("Find"), loc("Find"));
+        rsprintf("&nbsp;<a href=\"?cmd=%s\">%s</a>&nbsp;\n", loc("Back"), loc("Back"));
 
         rsprintf("</small>\n");
         }
@@ -4892,7 +4906,7 @@ FILE   *f;
 
         strcpy(lb_enc, logbook_list[lindex]);
         url_encode(lb_enc);
-        sprintf(ref, "/%s/%s", lb_enc, str);
+        sprintf(ref, "../%s/%s", lb_enc, str);
 
         if (full)
           {
@@ -4902,7 +4916,8 @@ FILE   *f;
           size = printable ? 2 : 3;
           nowrap = printable ? "" : "nowrap";
 
-          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></font></td>", col, size, ref, n_found);
+          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></font></td>", 
+            col, size, ref, n_found);
 
           if (search_all)
             rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, logbook_list[lindex]);
@@ -4953,7 +4968,7 @@ FILE   *f;
               {
               rsprintf("<td align=center bgcolor=%s>", col);
               if (attrib[i][0])
-                rsprintf("<img src=\"/%s/icons/%s\">", logbook_enc, attrib[i]);
+                rsprintf("<img src=\"icons/%s\">", attrib[i]);
               rsprintf("&nbsp</td>");
               }
 
@@ -5004,7 +5019,7 @@ FILE   *f;
               {
               strcpy(str, attachment[index]);
               str[13] = 0;
-              sprintf(ref, "/%s/%s/%s", logbook_list[lindex], str, attachment[index]+14);
+              sprintf(ref, "../%s/%s/%s", logbook_list[lindex], str, attachment[index]+14);
 
               for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
                 str[i] = toupper(attachment[index][i]);
@@ -5080,7 +5095,8 @@ FILE   *f;
           size = printable ? 2 : 3;
           nowrap = printable ? "" : "nowrap";
 
-          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></font></td>", col, size, ref, n_found);
+          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></font></td>", 
+            col, size, ref, n_found);
 
           if (search_all)
             rsprintf("<td align=center %s bgcolor=%s>%s</td>", nowrap, col, logbook_list[lindex]);
@@ -5131,7 +5147,7 @@ FILE   *f;
               {
               rsprintf("<td align=center bgcolor=%s>", col);
               if (attrib[i][0])
-                rsprintf("<img src=\"/%s/icons/%s\">", logbook_enc, attrib[i]);
+                rsprintf("<img src=\"icons/%s\">", attrib[i]);
               rsprintf("&nbsp</td>");
               }
 
@@ -5493,8 +5509,8 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
     rsprintf("Keep-Alive: timeout=60, max=10\r\n");
     }
 
-  rsprintf("Location: /%s/%s%s\r\n\r\n<html>redir</html>\r\n",
-            logbook_enc, tag, mail_param);
+  rsprintf("Location: %s%s\r\n\r\n<html>redir</html>\r\n",
+            tag, mail_param);
 }
 
 /*------------------------------------------------------------------*/
@@ -5617,9 +5633,9 @@ char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
     rsprintf(loc("Message copied successfully from \"%s\" to \"%s\""), logbook, dst_logbook);
 
   rsprintf("</b></tr>\n");
-  rsprintf("<tr><td bgcolor=%s align=center>%s <a href=\"/%s/%s\">%s</td></tr>\n",
+  rsprintf("<tr><td bgcolor=%s align=center>%s <a href=\"../%s/%s\">%s</td></tr>\n",
             gt("Cell BGColor"), loc("Go to"), logbook, src_path, logbook);
-  rsprintf("<tr><td bgcolor=%s align=center>%s <a href=\"/%s\">%s</td></tr>\n",
+  rsprintf("<tr><td bgcolor=%s align=center>%s <a href=\"../%s/\">%s</td></tr>\n",
             gt("Cell BGColor"), loc("Go to"), dst_logbook, dst_logbook);
 
   rsprintf("</table></td></tr></table>\n");
@@ -5860,7 +5876,7 @@ FILE   *f;
     {
     if (!save_config())
       return;
-    redirect("");
+    redirect(".");
     return;
     }
 
@@ -5878,10 +5894,18 @@ FILE   *f;
     logf("Logout of user \"%s\" from logbook \"%s\"",getparam("unm"),logbook);
 
     /* delete user cookies */
-    rsprintf("Set-Cookie: upwd=; path=/%s; expires=Fri, 01 Jan 1983 00:00:00 GMT\r\n", logbook_enc, str);
-    rsprintf("Set-Cookie: unm=; path=/%s; expires=Fri, 01 Jan 1983 00:00:00 GMT\r\n", logbook_enc, str);
+    if (getcfg("global", "Password file", str))
+      {
+      rsprintf("Set-Cookie: upwd=; path=/; expires=Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+      rsprintf("Set-Cookie: unm=; path=/; expires=Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+      }
+    else
+      {
+      rsprintf("Set-Cookie: upwd=; expires=Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+      rsprintf("Set-Cookie: unm=; expires=Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+      }
 
-    rsprintf("Location: /\r\n\r\n<html>redir</html>\r\n");
+    rsprintf("Location: ../\r\n\r\n<html>redir</html>\r\n");
     return;
     }
 
@@ -6178,10 +6202,10 @@ FILE   *f;
           url_encode(ref);
 
           if (equal_ustring(cmd, loc("Copy to")))
-            rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s&destc=%s\">%s</a>&nbsp|\n",
+            rsprintf("&nbsp;<a href=\"../%s/%s?cmd=%s&destc=%s\">%s</a>&nbsp|\n",
                       logbook_enc, path, loc("Copy to"), ref, menu_item[i]);
           else
-            rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s&destm=%s\">%s</a>&nbsp|\n",
+            rsprintf("&nbsp;<a href=\"../%s/%s?cmd=%s&destm=%s\">%s</a>&nbsp|\n",
                       logbook_enc, path, loc("Move to"), ref, menu_item[i]);
           }
         else
@@ -6201,10 +6225,10 @@ FILE   *f;
             strcpy(ref, str);
             url_encode(ref);
             if (equal_ustring(menu_item[i], loc("Copy to")))
-              rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s&destc=%s\">%s \"%s\"</a>&nbsp|\n",
+              rsprintf("&nbsp;<a href=\"../%s/%s?cmd=%s&destc=%s\">%s \"%s\"</a>&nbsp|\n",
                         logbook_enc, path, loc("Copy to"), ref, loc("Copy to"), str);
             else
-              rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s&destm=%s\">%s \"%s\"</a>&nbsp|\n",
+              rsprintf("&nbsp;<a href=\"../%s/%s?cmd=%s&destm=%s\">%s \"%s\"</a>&nbsp|\n",
                         logbook_enc, path, loc("Move to"), ref, loc("Move to"), str);
             }
           }
@@ -6215,9 +6239,9 @@ FILE   *f;
         url_encode(str);
 
         if (i < n-1)
-          rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, path, str, menu_item[i]);
+          rsprintf("&nbsp;<a href=\"%s?cmd=%s\">%s</a>&nbsp;|\n", path, str, menu_item[i]);
         else
-          rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s\">%s</a>&nbsp;\n", logbook_enc, path, str, menu_item[i]);
+          rsprintf("&nbsp;<a href=\"%s?cmd=%s\">%s</a>&nbsp;\n", path, str, menu_item[i]);
         }
       }
 
@@ -6248,14 +6272,14 @@ FILE   *f;
 
     if (atoi(gt("Menu2 use images")) == 1)
       {
-      rsprintf("<input type=image name=cmd_first border=0 alt=\"%s\" src=\"/%s/first.gif\">\n",
-               loc("First entry"), logbook_enc);
-      rsprintf("<input type=image name=cmd_previous border=0 alt=\"%s\" src=\"/%s/previous.gif\">\n",
-               loc("Previous entry"), logbook_enc);
-      rsprintf("<input type=image name=cmd_next border=0 alt=\"%s\" src=\"/%s/next.gif\">\n",
-               loc("Next entry"), logbook_enc);
-      rsprintf("<input type=image name=cmd_last border=0 alt=\"%s\" src=\"/%s/last.gif\">\n",
-               loc("Last entry"), logbook_enc);
+      rsprintf("<input type=image name=cmd_first border=0 alt=\"%s\" src=\"first.gif\">\n",
+               loc("First entry"));
+      rsprintf("<input type=image name=cmd_previous border=0 alt=\"%s\" src=\"previous.gif\">\n",
+               loc("Previous entry"));
+      rsprintf("<input type=image name=cmd_next border=0 alt=\"%s\" src=\"next.gif\">\n",
+               loc("Next entry"));
+      rsprintf("<input type=image name=cmd_last border=0 alt=\"%s\" src=\"last.gif\">\n",
+               loc("Last entry"));
       }
     else
       {
@@ -6374,14 +6398,14 @@ FILE   *f;
       if (orig_tag[0])
         {
         rsprintf("<tr><td nowrap width=10%% bgcolor=%s>", gt("Categories bgcolor1"));
-        sprintf(ref, "/%s/%s", logbook_enc, orig_tag);
+        sprintf(ref, "%s", orig_tag);
         rsprintf("<b>%s:</b></td><td bgcolor=%s>", loc("In reply to"), gt("Menu2 bgcolor"));
         rsprintf("<a href=\"%s\">%s</a></td></tr>\n", ref, orig_tag);
         }
       if (reply_tag[0])
         {
         rsprintf("<tr><td nowrap width=10%% bgcolor=%s>", gt("Categories bgcolor1"));
-        sprintf(ref, "/%s/%s", logbook_enc, reply_tag);
+        sprintf(ref, "%s", reply_tag);
         rsprintf("<b>%s:</b></td><td bgcolor=%s>", loc("Reply to this"), gt("Menu2 bgcolor"));
         rsprintf("<a href=\"%s\">%s</a></td></tr>\n", ref, reply_tag);
         }
@@ -6419,7 +6443,7 @@ FILE   *f;
         rsprintf("<b>%s:</b></td><td bgcolor=%s>\n",
                  attr_list[i], gt("Categories bgcolor2"));
         if (attrib[i][0])
-          rsprintf("<img src=\"/%s/icons/%s\">", logbook_enc, attrib[i]);
+          rsprintf("<img src=\"icons/%s\">", attrib[i]);
         rsprintf("&nbsp</td></tr>\n");
         }
       else
@@ -6441,7 +6465,7 @@ FILE   *f;
       rsprintf("<tr><td><table width=100%% border=0 cellpadding=1 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
       
       if (*gt("BGTimage"))
-        rsprintf("<tr><td background=\"/%s/%s\" bgcolor=%s><br>\n", logbook_enc, gt("BGTimage"), gt("Text BGColor"));
+        rsprintf("<tr><td background=\"%s\" bgcolor=%s><br>\n", gt("BGTimage"), gt("Text BGColor"));
       else
         rsprintf("<tr><td bgcolor=%s><br>\n", gt("Text BGColor"));
 
@@ -6481,7 +6505,7 @@ FILE   *f;
 
         strcpy(str, attachment[index]);
         str[13] = 0;
-        sprintf(ref, "/%s/%s/%s", logbook_enc, str, attachment[index]+14);
+        sprintf(ref, "%s/%s", str, attachment[index]+14);
 
         rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
 
@@ -6804,7 +6828,7 @@ char str[10000], logbook[256];
 
     strcpy(str, logbook);
     url_encode(str);
-    rsprintf("<tr><td bgcolor=#CCCCFF><a href=\"/%s\">%s</a></td>", str, logbook);
+    rsprintf("<tr><td bgcolor=#CCCCFF><a href=\"%s/\">%s</a></td>", str, logbook);
 
     str[0] = 0;
     getcfg(logbook, "Comment", str);
@@ -6943,13 +6967,16 @@ struct tm *gmt;
       }
 
     /* get optional expriation from configuration file */
-    exp = 24;
+    exp = 0;
     if (getcfg(logbook, "Write password expiration", str))
       exp = atof(str);
 
     if (exp == 0)
       {
-      rsprintf("Set-Cookie: wpwd=%s; path=/%s\r\n", enc_pwd, logbook_enc);
+      if (getcfg("global", "Write password", str))
+        rsprintf("Set-Cookie: wpwd=%s; path=/\r\n", enc_pwd);
+      else
+        rsprintf("Set-Cookie: wpwd=%s\r\n", enc_pwd);
       }
     else
       {
@@ -6958,10 +6985,16 @@ struct tm *gmt;
       gmt = gmtime(&now);
       strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
 
-      rsprintf("Set-Cookie: wpwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
+      if (getcfg("global", "Write password", str))
+        rsprintf("Set-Cookie: wpwd=%s; path=/; expires=%s\r\n", enc_pwd, logbook_enc, str);
+      else
+        rsprintf("Set-Cookie: wpwd=%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
       }
 
-    sprintf(str, "/%s/%s", logbook_enc, getparam("redir"));
+    sprintf(str, "%s", getparam("redir"));
+    if (!str[0])
+      strcpy(str, ".");
+
     rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
     return;
     }
@@ -6983,13 +7016,16 @@ struct tm *gmt;
       }
 
     /* get optional expriation from configuration file */
-    exp = 24;
+    exp = 0;
     if (getcfg(logbook, "Admin password expiration", str))
       exp = atof(str);
 
     if (exp == 0)
       {
-      rsprintf("Set-Cookie: apwd=%s; path=/%s\r\n", enc_pwd, logbook_enc);
+      if (getcfg("global", "Admin password", str))
+        rsprintf("Set-Cookie: apwd=%s; path=/\r\n", enc_pwd);
+      else
+        rsprintf("Set-Cookie: apwd=%s\r\n", enc_pwd);
       }
     else
       {
@@ -6998,10 +7034,16 @@ struct tm *gmt;
       gmt = gmtime(&now);
       strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
 
-      rsprintf("Set-Cookie: apwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
+      if (getcfg("global", "Admin password", str))
+        rsprintf("Set-Cookie: apwd=%s; path=/; expires=%s\r\n", enc_pwd);
+      else
+        rsprintf("Set-Cookie: apwd=%s; expires=%s\r\n", enc_pwd);
       }
 
-    sprintf(str, "/%s/%s", logbook_enc, getparam("redir"));
+    sprintf(str, "%s", getparam("redir"));
+    if (!str[0])
+      strcpy(str, ".");
+
     rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
     return;
     }
@@ -7028,14 +7070,22 @@ struct tm *gmt;
       }
 
     /* get optional expriation from configuration file */
-    exp = 24;
+    exp = 0;
     if (getcfg(logbook, "Login expiration", str))
       exp = atof(str);
 
     if (exp == 0)
       {
-      rsprintf("Set-Cookie: upwd=%s; path=/%s\r\n", enc_pwd, logbook_enc);
-      rsprintf("Set-Cookie: unm=%s; path=/%s\r\n", getparam("uname"), logbook_enc);
+      if (getcfg("global", "Password file", str))
+        {
+        rsprintf("Set-Cookie: upwd=%s; path=/\r\n", enc_pwd);
+        rsprintf("Set-Cookie: unm=%s; path=/\r\n", getparam("uname"));
+        }
+      else
+        {
+        rsprintf("Set-Cookie: upwd=%s\r\n", enc_pwd);
+        rsprintf("Set-Cookie: unm=%s\r\n", getparam("uname"));
+        }
       }
     else
       {
@@ -7044,11 +7094,22 @@ struct tm *gmt;
       gmt = gmtime(&now);
       strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
 
-      rsprintf("Set-Cookie: upwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
-      rsprintf("Set-Cookie: unm=%s; path=/%s; expires=%s\r\n", getparam("uname"), logbook_enc, str);
+      if (getcfg("global", "Password file", str))
+        {
+        rsprintf("Set-Cookie: upwd=%s; path=/; expires=%s\r\n", enc_pwd, str);
+        rsprintf("Set-Cookie: unm=%s; path=/; expires=%s\r\n", getparam("uname"), str);
+        }
+      else
+        {
+        rsprintf("Set-Cookie: upwd=%s; expires=%s\r\n", enc_pwd, str);
+        rsprintf("Set-Cookie: unm=%s; expires=%s\r\n", getparam("uname"), str);
+        }
       }
 
-    sprintf(str, "/%s/%s", logbook_enc, getparam("redir"));
+    sprintf(str, "%s", getparam("redir"));
+    if (!str[0])
+      strcpy(str, ".");
+
     rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
     return;
     }
@@ -7416,6 +7477,9 @@ struct timeval       timeout;
 
     status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
 
+    if (_abort)
+      break;
+
     if (FD_ISSET(lsock, &readfds))
       {
       len = sizeof(acc_addr);
@@ -7748,9 +7812,10 @@ struct timeval       timeout;
           strcpy(logbook, str);
           strcpy(logbook_enc, logbook);
           url_encode(logbook_enc);
+          strcat(logbook_enc, "/");
 
           /* redirect to logbook, necessary to get optional cookies for that logbook */
-          redirect("");
+          redirect(logbook_enc);
 
           send(_sock, return_buffer, strlen(return_buffer), 0);
 
@@ -8074,6 +8139,8 @@ struct timeval       timeout;
       }
 
     } while (!_abort);
+
+  printf("Server aborted.\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -8196,7 +8263,7 @@ char *cfgbuffer, str[256], *p;
 
 int main(int argc, char *argv[])
 {
-int i;
+int i, fh;
 int tcp_port = 80, daemon = FALSE;
 char read_pwd[80], write_pwd[80], admin_pwd[80], str[80];
 time_t now;
@@ -8313,7 +8380,39 @@ usage:
       }
     }
 
+  /* check for configuration file */
+  fh = open(cfg_file, O_RDONLY | O_BINARY);
+  if (fh < 0)
+    {
+    printf("Configuration file \"%s\" not found.\n", cfg_file);
+    return 1;
+    }
+  close(fh);
+
+#ifdef OS_UNIX
+  {
+  int pid;
+  FILE *f;
+
+  /* crate /var/run/elogd.pid file */
+  pid = getpid();
+  f = fopen("/var/run/elogd.pid", "w");
+  if (f)
+    {
+    fprintf(f, "%d\n", pid);
+    fclose(f);
+    }
+  }
+
+  signal(SIGTERM, ctrlc_handler);
+  signal(SIGINT, ctrlc_handler);
+#endif
+  
   server_loop(tcp_port, daemon);
+
+#ifdef OS_UNIX
+  unlink("/var/run/elogd.pid");
+#endif
 
   return 0;
 }
