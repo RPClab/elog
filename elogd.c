@@ -6,6 +6,10 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.5  2002/01/14 13:05:41  midas
+  - Check for JavaScript in error display
+  - Improved decoding of POST message (needed for lynx)
+
   Revision 1.4  2001/12/21 16:03:23  midas
   Moved themes directories under "themes/"
 
@@ -2787,7 +2791,22 @@ void show_error(char *error)
 
   rsprintf("<tr><td bgcolor=%s align=center>", gt("Cell BGColor"));
 
+  rsprintf("<script language=\"javascript\" type=\"text/javascript\">\n");
+  rsprintf("if (!navigator.javaEnabled()) {\n");
+  rsprintf("  document.write(\"%s\")\n", loc("Please use your browser's back button to go back"));
+  rsprintf("} else {\n");
+  rsprintf("  document.write(\"<button type=button onClick=history.back()>%s</button>\")\n", loc("Back"));
+  rsprintf("} \n");
+  rsprintf("</script>\n");
+
+  rsprintf("<noscript>\n");
+  rsprintf("%s\n", loc("Please use your browser's back button to go back"));
+  rsprintf("</noscript>\n");
+
+  /*
   rsprintf("<button type=button onClick=history.back()>%s</button>\n", loc("Back"));
+  */
+
   /*
   rsprintf("<input type=submit value=\"%s\">", loc("Back"));
   */
@@ -4985,25 +5004,13 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
 
   if (missing)
     {
-    show_standard_header("ELOG error", "");
+    sprintf(error, "<i>");
+    sprintf(error+strlen(error), loc("Error: Attribute <b>%s</b> not supplied"), attr_list[i]);
+    sprintf(error+strlen(error), ".</i><p>\n");
+    sprintf(error+strlen(error), loc("Please go back and enter the <b>%s</b> field"), attr_list[i]);
+    strcat(error, ".\n");
 
-    rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
-              gt("Border width"), gt("Frame color"));
-    rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
-    rsprintf("<tr><td bgcolor=#FFB0B0 align=center>");
-
-    rsprintf("<i>");
-    rsprintf(loc("Error: Attribute <b>%s</b> not supplied"), attr_list[i]);
-    rsprintf(".</i><p>\n");
-    rsprintf(loc("Please go back and enter the <b>%s</b> field"), attr_list[i]);
-    rsprintf(".</tr>\n");
-
-    rsprintf("<tr><td bgcolor=%s align=center>", gt("Cell BGColor"));
-    rsprintf("<button type=button onClick=history.back()>%s</button></td></tr>\n", loc("Back"));
-
-
-    rsprintf("</table></td></tr></table>\n");
-    rsprintf("</body></html>\n");
+    show_error(error);
     return;
     }
 
@@ -6822,7 +6829,7 @@ char *p, *pitem;
 
 void decode_post(char *string, char *boundary, int length)
 {
-char *pinit, *p, *pitem, *ptmp, file_name[256], str[256];
+char *pinit, *p, *ptmp, file_name[256], str[256], line[256], item[256];
 int  i, n;
 
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
@@ -6841,18 +6848,35 @@ int  i, n;
     {
     if (strstr(string, "name="))
       {
-      pitem = strstr(string, "name=")+5;
-      if (*pitem == '\"')
-        pitem++;
+      strncpy(line, strstr(string, "name=") + 5, sizeof(line)-1);
+      line[sizeof(line)-1] = 0;
 
-      if (strncmp(pitem, "attfile", 7) == 0)
+      if (strchr(line, '\r'))
+        *strchr(line, '\r') = 0;
+
+      if (strchr(line, '\n'))
+        *strchr(line, '\n') = 0;
+
+      strcpy(item, line);
+      if (item[0] == '\"')
         {
-        n = pitem[7] - '1';
+        strcpy(item, line+1);
+
+        if (strchr(item, '\"'))
+          *strchr(item, '\"') = 0;
+        }
+      else
+        if (strchr(item, ' '))
+          *strchr(item, ' ') = 0;
+
+      if (strncmp(item, "attfile", 7) == 0)
+        {
+        n = item[7] - '1';
 
         /* evaluate file attachment */
-        if (strstr(pitem, "filename="))
+        if (strstr(string, "filename="))
           {
-          p = strstr(pitem, "filename=")+9;
+          p = strstr(string, "filename=")+9;
 
           if (*p == '\"')
             p++;
@@ -6910,14 +6934,11 @@ int  i, n;
         }
       else
         {
-        p = pitem;
+        p = string;
         if (strstr(p, "\r\n\r\n"))
           p = strstr(p, "\r\n\r\n")+4;
         else if (strstr(p, "\r\r\n\r\r\n"))
           p = strstr(p, "\r\r\n\r\r\n")+6;
-
-        if (strchr(pitem, '\"'))
-          *strchr(pitem, '\"') = 0;
 
         if (strstr(p, boundary))
           {
@@ -6927,7 +6948,7 @@ int  i, n;
           while (*ptmp == '-' || *ptmp == '\n' || *ptmp == '\r')
             *ptmp-- = 0;
           }
-        setparam(pitem, p);
+        setparam(item, p);
         }
 
       while (*string == '-' || *string == '\n' || *string == '\r')
