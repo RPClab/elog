@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.502  2004/10/26 20:37:24  midas
+   Fixed problems with favicon.ico
+
    Revision 1.501  2004/10/26 19:13:14  midas
    Implemented 'RSS Entries'
 
@@ -899,7 +902,7 @@ struct {
    ".GZ", "application/x-gzip"}, {
    ".HTM", "text/html"}, {
    ".HTML", "text/html"}, {
-   ".ICO", "text/plain"}, {
+   ".ICO", "image/x-icon"}, {
    ".JPEG", "image/jpeg"}, {
    ".JPG", "image/jpeg"}, {
    ".JS", "application/x-javascript"}, {
@@ -6704,9 +6707,12 @@ void send_file_direct(char *file_name)
       if (!getcfg("global", "charset", charset, sizeof(charset)))
          strcpy(charset, "iso-8859-1");
 
-      if (filetype[i].ext[0])
-         rsprintf("Content-Type: %s;charset=%s\r\n", filetype[i].type, charset);
-      else if (is_ascii(file_name))
+      if (filetype[i].ext[0]) {
+         if (strncmp(filetype[i].type, "text", 4) == 0)
+            rsprintf("Content-Type: %s;charset=%s\r\n", filetype[i].type, charset);
+         else
+            rsprintf("Content-Type: %s\r\n", filetype[i].type);
+      }  else if (is_ascii(file_name))
          rsprintf("Content-Type: text/plain;charset=%s\r\n", charset);
       else
          rsprintf("Content-Type: application/octet-stream;charset=%s\r\n", charset);
@@ -20247,7 +20253,7 @@ void server_loop(void)
                if (logbook[0] && *p == ' ') {
                   if (!strstr(logbook, ".css") && !strstr(logbook, ".htm")
                       && !strstr(logbook, ".gif") && !strstr(logbook, ".jpg")
-                      && !strstr(logbook, ".png")) {
+                      && !strstr(logbook, ".png") && !strstr(logbook, ".ico")) {
                      sprintf(str, "%s/", logbook_enc);
                      redirect(NULL, str);
                      goto redir;
