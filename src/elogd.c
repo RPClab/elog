@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.23  2003/02/24 12:22:00  midas
+  Fixed bug with 'theme =' option in [global] section
+
   Revision 1.22  2003/02/20 08:03:25  midas
   Fixed language problems with self register
 
@@ -11158,7 +11161,7 @@ void server_loop(int tcp_port, int daemon)
 int                  status, i, n, n_error, authorized, min, i_min, i_conn, length;
 struct sockaddr_in   serv_addr, acc_addr;
 char                 pwd[256], str[256], url[256], cl_pwd[256], *p, *pd;
-char                 cookie[256], boundary[256], list[1000],
+char                 cookie[256], boundary[256], list[1000], theme[256],
                      host_list[MAX_N_LIST][NAME_LENGTH],
                      rem_host_ip[256], logbook[256], logbook_enc[256];
 int                  lsock, len, flag, content_length, header_length;
@@ -11729,7 +11732,12 @@ struct timeval       timeout;
         strlcpy(str, resource_dir, sizeof(str));
         strlcat(str, "themes", sizeof(str));
         strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
-        strlcat(str, "default", sizeof(str));
+        
+        if (getcfg("global", "theme", theme))
+          strlcat(str, theme, sizeof(str));
+        else
+          strlcat(str, "default", sizeof(str));
+
         strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
         strlcat(str, logbook, sizeof(str));
         send_file_direct(str);
