@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.213  2004/01/27 13:27:43  midas
+   Remove email notification in submit_elog_mirror
+
    Revision 1.212  2004/01/27 11:22:56  midas
    Made cron work properly with 'wdays'
 
@@ -1571,6 +1574,9 @@ int retrieve_url(char *url, char **buffer)
       sprintf(str + strlen(str), "Cookie: unm=%s; upwd=%s\r\n", getparam("unm"),
               getparam("upwd"));
 
+   /* add host (RFC2616, Sec. 14) */
+   sprintf(str + strlen(str), "Host: %s:%d\r\n", host, port);
+
    strcat(str, "\r\n");
 
    send(sock, str, strlen(str), 0);
@@ -2318,7 +2324,7 @@ void el_decode(char *message, char *key, char *result)
 
 void el_enum_attr(char *message, int n, char *attr_name, char *attr_value)
 {
-   char *p, str[256], tmp[256];
+   char *p, str[NAME_LENGTH], tmp[NAME_LENGTH];
    int i;
 
    p = message;
@@ -2355,9 +2361,9 @@ void el_enum_attr(char *message, int n, char *attr_name, char *attr_value)
    attr_name[0] = 0;
    attr_value[0] = 0;
    if (strchr(str, ':')) {
-      strcpy(attr_name, str);
+      strlcpy(attr_name, str, NAME_LENGTH);
       *strchr(attr_name, ':') = 0;
-      strcpy(attr_value, strchr(str, ':') + 2);
+      strlcpy(attr_value, strchr(str, ':') + 2, NAME_LENGTH);
    }
 
 }
@@ -3973,14 +3979,14 @@ void logf(LOGBOOK * lbs, const char *format, ...)
    strftime(buf, sizeof(buf), "%d-%b-%Y %H:%M:%S", localtime(&now));
    strcat(buf, " ");
 
-   if (*getparam("unm") && rem_host[0]) 
-      sprintf(buf+strlen(buf), "[%s@%s] ", getparam("unm"), rem_host);
+   if (*getparam("unm") && rem_host[0])
+      sprintf(buf + strlen(buf), "[%s@%s] ", getparam("unm"), rem_host);
    else if (rem_host[0])
-      sprintf(buf+strlen(buf), "[%s] ", rem_host);
+      sprintf(buf + strlen(buf), "[%s] ", rem_host);
 
    if (lbs)
-      sprintf(buf+strlen(buf), "{%s} ", lbs->name);
-      
+      sprintf(buf + strlen(buf), "{%s} ", lbs->name);
+
    strlcat(buf, str, sizeof(buf));
    if (buf[strlen(buf) - 1] != '\n')
       strlcat(buf, "\n", sizeof(buf));
@@ -8137,6 +8143,8 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
    int i, n, id, x, version;
    char *text, *p, url[256], str[256];
 
+   *md5_index = NULL;
+
    combine_url(lbs, host, "?cmd=GetMD5", url, sizeof(url));
 
    text = NULL;
@@ -8145,7 +8153,6 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
       sprintf(error_str, loc("Cannot connect to remote server \"%s\""), host);
       return -1;
    }
-   *md5_index = NULL;
    p = strstr(text, "ELOG HTTP ");
    if (!p) {
       sprintf(error_str, loc("Remote server is not an ELOG server"));
@@ -8210,12 +8217,12 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index,
    }
 
    if (n == 0) {
-      if (strstr(text, "Login")) 
+      if (strstr(text, "Login"))
          sprintf(error_str, loc("No user name supplied to access remote logbook"));
       else
          sprintf(error_str, loc("Error accessing remote logbook"));
    }
-   
+
    /* debugging only
       for (i = 0; i < n; i++) {
       int j;
@@ -8520,9 +8527,10 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, BOOL bnew)
 {
    int i, status, size, n_attr;
-   char str[256], str2[245], *p, *p2, *message, date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
-       in_reply_to[80], reply_to[MAX_REPLY_TO * 10], encoding[80], locked_by[256],
-       attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], attachment_all[64 * MAX_ATTACHMENTS];
+   char str[NAME_LENGTH], str2[NAME_LENGTH], *p, *p2, *message, date[80],
+       attrib[MAX_N_ATTR][NAME_LENGTH], in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
+       encoding[80], locked_by[256], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
+       attachment_all[64 * MAX_ATTACHMENTS];
 
    error_str[0] = 0;
 
@@ -8941,7 +8949,8 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
 
       if (!bcron) {
          rsprintf("<table width=\"100%%\" cellpadding=1 cellspacing=0");
-         sprintf(str, loc("Synchronizing logbook \"%s\" with server \"%s\""), lbs->name,
+         sprintf(loc_ref, "<a href=\"../%s/\">%s</a>", lbs->name_enc, lbs->name);
+         sprintf(str, loc("Synchronizing logbook %s with server \"%s\""), loc_ref,
                  list[index]);
          rsprintf("<tr><td class=\"title1\">%s</td></tr>\n", str);
          rsprintf("</table><p>\n");
@@ -8952,7 +8961,6 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
       /* send partial return buffer */
       flush_return_buffer();
 
-      md5_remote = NULL;
       n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote, error_str);
       if (n_remote <= 0) {
 
@@ -8970,122 +8978,117 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
       }
 
       /* load local copy of remote MD5s from file */
-      md5_cache = NULL;
       n_cache = load_md5(lbs, list[index], &md5_cache);
-
-      /* if this is the first time (no cache exists yet), use remote list instead */
-      if (md5_cache == NULL && n_remote) {
-         md5_cache = calloc(sizeof(MD5_INDEX), n_remote);
-         assert(md5_cache);
-         memcpy(md5_cache, md5_remote, sizeof(MD5_INDEX) * n_remote);
-         n_cache = n_remote;
-      }
 
       /*---- check for configuration file ----*/
 
-      load_config_section(lbs->name, &buffer, error_str);
-      if (error_str[0]) {
-         if (bcron)
-            logf(lbs, "Error loading configuration file: %s", error_str);
-         else
-            rsprintf("Error loading configuration file: %s\n", error_str);
-      } else
-         MD5_checksum(buffer, strlen(buffer), digest);
+      if (getcfg(lbs->name, "Mirror config", str) && atoi(str) == 1 && md5_cache) {
 
-      /* compare MD5s */
-      /*
-         printf("ID0:    ");
-         for (j = 0; j < 16; j++)
-         printf("%02X", digest[j]);
-         printf("\nCache : ");
-         for (j = 0; j < 16; j++)
-         printf("%02X", md5_cache[0].md5_digest[j]);
-         printf("\nRemote: ");
-         for (j = 0; j < 16; j++)
-         printf("%02X", md5_remote[0].md5_digest[j]);
-         printf("\n\n");
-       */
-
-      if (n_remote > 0) {
-         /* if config has been changed on this server, but not remotely, send it */
-         if (!equal_md5(md5_cache[0].md5_digest, digest)
-             && equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)) {
-
-            if (_logging_level > 1)
-               logf(lbs, "MIRROR send config");
-
-            /* submit configuration section */
-            if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
-               submit_config(lbs, list[index], buffer, error_str);
-
-            if (error_str[0]) {
-               if (bcron)
-                  logf(lbs, "Error sending config file: %s", error_str);
-               else
-                  rsprintf("Error sending config file: %s\n", error_str);
-            } else {
-               if (!bcron)
-                  rsprintf("Local config submitted\n");
-            }
-
-            md5_cache[0].message_id = -1;
-
+         load_config_section(lbs->name, &buffer, error_str);
+         if (error_str[0]) {
+            if (bcron)
+               logf(lbs, "Error loading configuration file: %s", error_str);
+            else
+               rsprintf("Error loading configuration file: %s\n", error_str);
          } else
-            /* if config has been changed remotely, but not on this server, receive it */
-            if (!equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)
-                && equal_md5(md5_cache[0].md5_digest, digest)) {
+            MD5_checksum(buffer, strlen(buffer), digest);
 
-            if (_logging_level > 1)
-               logf(lbs, "MIRROR receive config");
+         /* compare MD5s */
+         /*
+            printf("ID0:    ");
+            for (j = 0; j < 16; j++)
+            printf("%02X", digest[j]);
+            printf("\nCache : ");
+            for (j = 0; j < 16; j++)
+            printf("%02X", md5_cache[0].md5_digest[j]);
+            printf("\nRemote: ");
+            for (j = 0; j < 16; j++)
+            printf("%02X", md5_remote[0].md5_digest[j]);
+            printf("\n\n");
+          */
 
-            if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
-                receive_config(lbs, list[index], error_str);
+         if (n_remote > 0) {
+            /* if config has been changed on this server, but not remotely, send it */
+            if (!equal_md5(md5_cache[0].md5_digest, digest)
+                && equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)) {
 
-            if (error_str[0]) {
-               if (bcron)
-                  logf(lbs, "Error receiving config file: %s\n", error_str);
-               else
-                  rsprintf("Error receiving config file: %s\n", error_str);
+               if (_logging_level > 1)
+                  logf(lbs, "MIRROR send config");
+
+               /* submit configuration section */
+               if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+                  submit_config(lbs, list[index], buffer, error_str);
+
+               if (error_str[0]) {
+                  if (bcron)
+                     logf(lbs, "Error sending config file: %s", error_str);
+                  else
+                     rsprintf("Error sending config file: %s\n", error_str);
+               } else {
+                  if (!bcron)
+                     rsprintf("Local config submitted\n");
+               }
+
+               md5_cache[0].message_id = -1;
+
+            } else
+               /* if config has been changed remotely, but not on this server, receive it */
+               if (!equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)
+                   && equal_md5(md5_cache[0].md5_digest, digest)) {
+
+               if (_logging_level > 1)
+                  logf(lbs, "MIRROR receive config");
+
+               if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+                  receive_config(lbs, list[index], error_str);
+
+               if (error_str[0]) {
+                  if (bcron)
+                     logf(lbs, "Error receiving config file: %s\n", error_str);
+                  else
+                     rsprintf("Error receiving config file: %s\n", error_str);
+               } else {
+                  if (!bcron)
+                     rsprintf("Remote config received\n");
+               }
+               md5_cache[0].message_id = -1;
+
+            } else
+               /* if config has been changed remotely and on this server, show conflict */
+               if (!equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)
+                   && !equal_md5(md5_cache[0].md5_digest, digest)
+                   && !equal_md5(md5_remote[0].md5_digest, digest)) {
+
+               if (_logging_level > 1)
+                  logf(lbs, "MIRROR config conflict");
+
+               if (!bcron) {
+                  rsprintf("%s.\n",
+                           loc("Configuration has been changed locally and remotely"));
+                  rsprintf(loc("Please merge manually to resolve conflict"));
+                  rsprintf(".\n");
+               }
+
             } else {
-               if (!bcron)
-                  rsprintf("Remote config received\n");
+               /* configs are identical */
+               md5_cache[0].message_id = -1;
             }
-            md5_cache[0].message_id = -1;
+         } else {               /* n_remote == 0 */
 
-         } else
-            /* if config has been changed remotely and on this server, show conflict */
-            if (!equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)
-                && !equal_md5(md5_cache[0].md5_digest, digest)
-                && !equal_md5(md5_remote[0].md5_digest, digest)) {
+            sprintf(str, loc("Logbook \"%s\" does not exist on remote server"),
+                    lbs->name);
+            if (bcron)
+               logf(lbs, str);
+            rsprintf("%s\n", str);
+            continue;
 
-            if (_logging_level > 1)
-               logf(lbs, "MIRROR config conflict");
-
-            if (!bcron) {
-               rsprintf("%s.\n",
-                        loc("Configuration has been changed locally and remotely"));
-               rsprintf(loc("Please merge manually to resolve conflict"));
-               rsprintf(".\n");
-            }
-
-         } else {
-            /* configs are identical */
-            md5_cache[0].message_id = -1;
          }
-      } else {                  /* n_remote == 0 */
 
-         sprintf(str, loc("Logbook \"%s\" does not exist on remote server"), lbs->name);
-         if (bcron)
-            logf(lbs, str);
-         rsprintf("%s\n", str);
-         continue;
+         flush_return_buffer();
 
+         if (buffer)
+            free(buffer);
       }
-
-      flush_return_buffer();
-
-      if (buffer)
-         free(buffer);
 
       /*---- loop through logbook entries ----*/
 
@@ -9291,37 +9294,43 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                      rsprintf("ID%d:\tRemote entry received\n", message_id);
 
                } else {
+
                   /* if message does not exist locally but in cache, delete remote message */
                   if (_logging_level > 1)
                      logf(lbs, "MIRROR delete remote entry #%d", message_id);
 
                   sprintf(str, "%d?cmd=Delete&confirm=Yes", message_id);
                   combine_url(lbs, list[index], str, url, sizeof(url));
-         
-                  if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
-                     retrieve_url(url, &buffer);
+
                   all_identical = FALSE;
+                  if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0) {
+                     retrieve_url(url, &buffer);
 
-                  if (strstr(buffer, "Location: ")) {
-                     if (!bcron)
-                        rsprintf("ID%d:\t%s\n", message_id, loc("Entry deleted remotely"));
-                  } else {
-                     if (bcron)
-                        logf(lbs, "%s", loc("Error deleting remote entry"));
-                     else
-                        rsprintf("%s\n", loc("Error deleting remote entry"));
-                  }
+                     if (strstr(buffer, "Location: ")) {
+                        if (!bcron)
+                           rsprintf("ID%d:\t%s\n", message_id,
+                                    loc("Entry deleted remotely"));
+                     } else {
+                        if (bcron)
+                           logf(lbs, "%s", loc("Error deleting remote entry"));
+                        else
+                           rsprintf("%s\n", loc("Error deleting remote entry"));
+                     }
+
+                     free(buffer);
+                  } else
+                     rsprintf("ID%d:\t%s\n", message_id, loc("Entry deleted remotely"));
+
                   md5_cache[i_cache].message_id = -1;
-
-                  free(buffer);
                }
             }
+
+            flush_return_buffer();
          }
 
       free(md5_remote);
 
       /* save remote MD5s in file */
-      md5_remote = NULL;
       n_remote = retrieve_remote_md5(lbs, list[index], &md5_remote, error_str);
       if (n_remote < 0)
          rsprintf("%s\n", error_str);
@@ -9340,7 +9349,8 @@ void synchronize_logbook(LOGBOOK * lbs, BOOL bcron)
                   }
          }
 
-      save_md5(lbs, list[index], md5_remote, n_remote);
+      if (!getcfg(lbs->name, "Mirror simulate", str) || atoi(str) == 0)
+         save_md5(lbs, list[index], md5_remote, n_remote);
 
       if (md5_remote)
          free(md5_remote);
@@ -9382,7 +9392,8 @@ void synchronize(LOGBOOK * lbs, BOOL bcron)
 
             /* if called by cron, set user name and password */
             if (bcron && getcfg(lb_list[i].name, "mirror user", str)) {
-               if (get_user_line(lb_list[i].name, str, pwd, NULL, NULL, NULL) == EL_SUCCESS) {
+               if (get_user_line(lb_list[i].name, str, pwd, NULL, NULL, NULL) ==
+                   EL_SUCCESS) {
                   setparam("unm", str);
                   setparam("upwd", pwd);
                }
@@ -12208,13 +12219,11 @@ void submit_elog(LOGBOOK * lbs)
 
 void submit_elog_mirror(LOGBOOK * lbs)
 {
-   char str[1000], str2[1000], date[80], mail_list[MAX_N_LIST][NAME_LENGTH], list[10000],
-       attrib_value[MAX_N_ATTR][NAME_LENGTH], attrib_name[MAX_N_ATTR][NAME_LENGTH],
-       in_reply_to[80], encoding[80], reply_to[MAX_REPLY_TO * 10], user[256],
-       user_email[256], email_notify[256], slist[MAX_N_ATTR + 10][NAME_LENGTH],
-       svalue[MAX_N_ATTR + 10][NAME_LENGTH], mail_param[1000], *mail_to,
-       att_file[MAX_ATTACHMENTS][256], name[NAME_LENGTH], value[NAME_LENGTH];
-   int i, j, n, index, mindex, suppress, message_id, mail_to_size, n_attr;
+   char str[1000], date[80], attrib_value[MAX_N_ATTR][NAME_LENGTH],
+       attrib_name[MAX_N_ATTR][NAME_LENGTH], in_reply_to[80], encoding[80],
+       reply_to[MAX_REPLY_TO * 10], att_file[MAX_ATTACHMENTS][256], name[NAME_LENGTH],
+       value[NAME_LENGTH];
+   int i, message_id, n_attr;
    BOOL bedit;
 
    /* get attachments */
@@ -12250,8 +12259,7 @@ void submit_elog_mirror(LOGBOOK * lbs)
                   !equal_ustring(name, "user_email") &&
                   !equal_ustring(name, "unm") &&
                   !equal_ustring(name, "upwd") &&
-                  !equal_ustring(name, "wpwd") &&
-                  strncmp(name, "attachment", 10) != 0) {
+                  !equal_ustring(name, "wpwd") && strncmp(name, "attachment", 10) != 0) {
             strlcpy(attrib_name[n_attr], name, NAME_LENGTH);
             strlcpy(attrib_value[n_attr++], value, NAME_LENGTH);
          }
@@ -12284,118 +12292,7 @@ void submit_elog_mirror(LOGBOOK * lbs)
       return;
    }
 
-   /*---- email notifications ----*/
-
-   suppress = atoi(getparam("suppress"));
-
-   /* check for mail submissions */
-   mail_param[0] = 0;
-   mail_to = malloc(256);
-   mail_to[0] = 0;
-   mail_to_size = 256;
-
-   if (suppress) {
-      strcpy(mail_param, "?suppress=1");
-   } else {
-      if (!(*getparam("edit_id")
-            && getcfg(lbs->name, "Suppress Email on edit", str)
-            && atoi(str) == 1)) {
-         /* go throuch "Email xxx" in configuration file */
-         for (index = mindex = 0; index <= n_attr; index++) {
-            if (index < n_attr) {
-               strcpy(str, "Email ");
-               if (strchr(attr_list[index], ' '))
-                  sprintf(str + strlen(str), "\"%s\"", attr_list[index]);
-               else
-                  strlcat(str, attr_list[index], sizeof(str));
-               strcat(str, " ");
-
-               if (attr_flags[index] & AF_MULTI) {
-                  sprintf(str2, "%s#%d", attr_list[index], mindex);
-
-                  mindex++;
-                  if (mindex == MAX_N_LIST)
-                     mindex = 0;
-                  else
-                     index--;   /* repeat this loop */
-               } else
-                  strcpy(str2, attr_list[index]);
-
-               if (strchr(getparam(str2), ' '))
-                  sprintf(str + strlen(str), "\"%s\"", getparam(str2));
-               else
-                  strlcat(str, getparam(str2), sizeof(str));
-            } else
-               sprintf(str, "Email ALL");
-
-            if (getcfg(lbs->name, str, list)) {
-               n = strbreak(list, mail_list, MAX_N_LIST);
-
-               if (verbose)
-                  printf("\n%s to %s\n\n", str, list);
-
-               for (i = 0; i < n; i++) {
-                  j = build_subst_list(lbs, slist, svalue, attrib_value);
-                  strsubst(mail_list[i], slist, svalue, j);
-
-                  if ((int) strlen(mail_to) + (int) strlen(mail_list[i]) >= mail_to_size) {
-                     mail_to_size += 256;
-                     mail_to = realloc(mail_to, mail_to_size);
-                  }
-                  strcat(mail_to, mail_list[i]);
-                  strcat(mail_to, ",");
-               }
-            }
-         }
-
-         if (!getcfg(lbs->name, "Suppress Email to users", str) || atoi(str) == 0) {
-            /* go through password file */
-            for (index = 0;; index++) {
-               if (!enum_user_line(lbs, index, user))
-                  break;
-
-               get_user_line(lbs->name, user, NULL, NULL, user_email, email_notify);
-
-               if (email_notify[0]) {
-                  /* check if user has access to this logbook */
-                  if (!check_login_user(lbs, user))
-                     continue;
-
-                  if ((int) strlen(mail_to) + (int) strlen(user_email) >= mail_to_size) {
-                     mail_to_size += 256;
-                     mail_to = realloc(mail_to, mail_to_size);
-                  }
-                  strcat(mail_to, user_email);
-                  strcat(mail_to, ",");
-               }
-            }
-         }
-      }
-   }
-
-   if (strlen(mail_to) > 0) {
-      mail_to[strlen(mail_to) - 1] = 0; /* strip last ',' */
-      if (compose_email
-          (lbs, mail_to, message_id, attrib_value, mail_param, *getparam("edit_id"),
-           att_file) == 0)
-         return;
-   }
-
-   free(mail_to);
-
-   /*---- shell execution ----*/
-
-   if (!atoi(getparam("shell_suppress"))) {
-      if (!*getparam("edit_id")) {
-         if (getcfg(lbs->name, "Execute new", str))
-            execute_shell(lbs, message_id, attrib_value, str);
-      } else {
-         if (getcfg(lbs->name, "Execute edit", str))
-            execute_shell(lbs, message_id, attrib_value, str);
-      }
-   }
-
-   sprintf(str, "%d%s", message_id, mail_param);
+   sprintf(str, "%d", message_id);
    redirect(lbs, str);
 }
 
@@ -14939,18 +14836,18 @@ void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
 
 BOOL cron_match(char *str, int value, BOOL ignore_star)
 {
-   int low, high; 
+   int low, high;
 
    if (atoi(str) == value)
       return TRUE;
-      
-   if (!ignore_star &&  str[0] == '*')
+
+   if (!ignore_star && str[0] == '*')
       return TRUE;
 
    /* check range */
    if (strchr(str, '-')) {
       low = atoi(str);
-      high = atoi(strchr(str, '-')+1);
+      high = atoi(strchr(str, '-') + 1);
       return value >= low && value <= high;
    }
 
@@ -15022,7 +14919,7 @@ void check_cron()
             /* month of year */
             if (i == 3 && cron_match(list[j], ts->tm_mon, FALSE))
                mon_flag = TRUE;
-            
+
             /* weekday */
             if (i == 4 && cron_match(list[j], ts->tm_wday, TRUE))
                wday_flag = TRUE;
