@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.437  2004/08/05 07:47:52  midas
+   Set cookies always with path
+
    Revision 1.436  2004/08/04 13:45:15  midas
    Do not print 'indexing logbooks..' when running as daemon
 
@@ -5396,19 +5399,16 @@ void set_cookie(LOGBOOK * lbs, char *name, char *value, BOOL global, char *expir
       } else
          rsprintf(" path=/;");
    } else {
-      /* bug in lynx: path has to be absolute */
-      if (strstr(browser, "Lynx/") != NULL) {
-         /* path for individual logbook */
-         if (getcfg(lb_name, "URL", str, sizeof(str))) {
-            extract_path(str);
-            url_encode(str, sizeof(str));
-            if (str[0])
-               rsprintf(" path=/%s/%s;", str, lbs->name_enc);
-            else
-               rsprintf(" path=/%s;", lbs->name_enc);
-         } else
+      /* path for individual logbook */
+      if (getcfg(lb_name, "URL", str, sizeof(str))) {
+         extract_path(str);
+         url_encode(str, sizeof(str));
+         if (str[0])
+            rsprintf(" path=/%s/%s;", str, lbs->name_enc);
+         else
             rsprintf(" path=/%s;", lbs->name_enc);
-      }
+      } else
+         rsprintf(" path=/%s;", lbs->name_enc);
    }
 
    exp = atof(expiration);
@@ -6284,7 +6284,7 @@ void set_login_cookies(LOGBOOK * lbs, char *user, char *enc_pwd)
    /* get optional expriation from configuration file */
    if (isparam("remember")) {
       if (!getcfg(lb_name, "Login expiration", exp, sizeof(exp)))
-         strcpy(exp, "31*24");  /* one month by default */
+         strcpy(exp, "744");  /* one month by default = 31*24 */
    } else
       exp[0] = 0;
 
@@ -6295,12 +6295,18 @@ void set_login_cookies(LOGBOOK * lbs, char *user, char *enc_pwd)
    set_cookie(lbs, "unm", user, global, exp);
    set_cookie(lbs, "upwd", enc_pwd, global, exp);
 
+   if (global && user[0] == 0 && enc_pwd[0] == 0) {
+      /* if logging out global, also delete possible non-global cookies */
+      set_cookie(lbs, "unm", user, 0, exp);
+      set_cookie(lbs, "upwd", enc_pwd, 0, exp);
+   }
+
    if (user[0]) {
       /* set "remember me" cookie on login */
       if (isparam("remember"))
-         set_cookie(lbs, "urem", "1", global, "24*365");
+         set_cookie(lbs, "urem", "1", global, "8760"); /* one year = 24*365 */
       else
-         set_cookie(lbs, "urem", "0", global, "24*365");
+         set_cookie(lbs, "urem", "0", global, "8760");
    }
 
    set_redir(lbs, getparam("redir"));
