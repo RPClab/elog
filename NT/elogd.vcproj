@@ -21,6 +21,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="\mxml"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="5"
@@ -163,7 +164,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\mxml.c">
+				RelativePath="..\..\mxml\mxml.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
@@ -208,7 +209,7 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl">
 			<File
-				RelativePath="..\src\mxml.h">
+				RelativePath="..\..\mxml\mxml.h">
 			</File>
 			<File
 				RelativePath="..\src\regex.h">
