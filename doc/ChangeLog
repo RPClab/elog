@@ -1,5 +1,5 @@
-Version 2.3.1, released Februar xxx, 2003
-=========================================
+Version 2.3.1, released Februar 21st, 2003
+==========================================
 
 - All attributes in listing are now a link
 - Link color & style in listings can be changed in CSS file
@@ -11,6 +11,7 @@ Version 2.3.1, released Februar xxx, 2003
 - Added proper handling of "<br>" in attributes
 - Added "Reply string" option
 - Changed maximum attribute size to 1000 Bytes
+- Fixed problems with language files, cookies and "Location:"'s
 
 Version 2.3.0, released Februar 7th, 2003
 =========================================
