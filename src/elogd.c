@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.97  2003/05/01 08:34:04  midas
+  Fixed bug with logbooks containing blanks in registration notification
+
   Revision 1.96  2003/05/01 08:17:45  midas
   Removed deleting cookies again (was Apache problem)
 
@@ -6304,7 +6307,7 @@ int    i, fh, size, self_register;
             sprintf(mail_text+strlen(mail_text), "\r\n\r\n");
 
             if (lbs)
-              sprintf(mail_text+strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), lbs->name);
+              sprintf(mail_text+strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), lbs->name_enc);
             else
               sprintf(mail_text+strlen(mail_text), "%s                : %s\r\n", loc("Host"), host_name);
 
