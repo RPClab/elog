@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.186  2004/01/13 15:15:48  midas
+   Fixed disappearing text on edit
+
    Revision 1.185  2004/01/13 15:02:17  midas
    Sort user names in selection box
 
@@ -5999,6 +6002,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       if (text[0]) {
          if (bedit) {
             if (bupload
+                || (!bupload && !breedit)
                 || (breedit && !getcfg_cond(lbs->name, condition, "Preset text", str)))
                rsputs(text);
          } else {
