@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.71  2002/09/10 05:59:04  midas
+  Made selections work with 'copy to' and 'move to'
+
   Revision 2.70  2002/09/09 08:04:58  midas
   Added select boxes
 
@@ -5423,7 +5426,10 @@ char   str[256], in_reply_to[80], reply_to[256];
           strcpy(str, getparam("nextmsg"));
           if (atoi(str) == 0)
             sprintf(str, "%d", el_search_message(lbs, EL_LAST, 0, TRUE));
-          redirect(str);
+          if (atoi(str) == 0)
+            redirect("");
+          else
+            redirect(str);
           return;
           }
         }
@@ -5746,7 +5752,7 @@ FILE *f;
     {
     /* show select box */
     if (select)
-      rsprintf("<td bgcolor=%s><input type=checkbox name=\"s%d\" value=1>\n", col, message_id);
+      rsprintf("<td bgcolor=%s><input type=checkbox name=\"s%d\" value=%d>\n", col, (*n_display)++, message_id);
 
     for (index=0 ; index<n_attr_disp ; index++)
       {
@@ -6241,7 +6247,11 @@ char ref[256];
 
 void show_select_navigation(LOGBOOK *lbs)
 {
+int  i, n_log;
 char str[256];
+char lbk_list[MAX_N_LIST][NAME_LENGTH];
+
+
 
   rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1>\n",
             gt("Border width"), gt("Categories cellpadding"));
@@ -6265,10 +6275,75 @@ char str[256];
   rsprintf("<input type=button value=\"%s\" onClick=\"ToggleAll();\">\n", loc("Toggle all"));
 
   if (!getcfg(lbs->name, "Menu commands", str) ||
-      strstr(str, "Delete"))
+      strstr(str, loc("Delete")))
     {
     rsprintf("<input type=submit name=cmd value=\"Delete\">\n");
     }
+
+  if (getcfg(lbs->name, "Menu commands", str) &&
+      strstr(str, loc("Copy to")))
+    {
+    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Copy to"));
+    rsprintf("<select name=destc>\n");
+
+    if (getcfg(lbs->name, "Copy to", str))
+      {
+      n_log = strbreak(str, lbk_list, MAX_N_LIST);
+
+      for (i=0 ; i<n_log ; i++)
+        rsprintf("<option value=\"%s\">%s\n", lbk_list[i], lbk_list[i]);
+      }
+    else
+      {
+      for (i=0 ;  ; i++)
+        {
+        if (!enumgrp(i, str))
+          break;
+
+        if (equal_ustring(str, "global"))
+          continue;
+
+        if (equal_ustring(str, lbs->name))
+          continue;
+
+        rsprintf("<option value=\"%s\">%s\n", str, str);
+        }
+      }
+    rsprintf("</select>\n");
+    }
+
+  if (getcfg(lbs->name, "Menu commands", str) &&
+      strstr(str, loc("Move to")))
+    {
+    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Move to"));
+    rsprintf("<select name=destm>\n");
+
+    if (getcfg(lbs->name, "Move to", str))
+      {
+      n_log = strbreak(str, lbk_list, MAX_N_LIST);
+
+      for (i=0 ; i<n_log ; i++)
+        rsprintf("<option value=\"%s\">%s\n", lbk_list[i], lbk_list[i]);
+      }
+    else
+      {
+      for (i=0 ;  ; i++)
+        {
+        if (!enumgrp(i, str))
+          break;
+
+        if (equal_ustring(str, "global"))
+          continue;
+
+        if (equal_ustring(str, lbs->name))
+          continue;
+
+        rsprintf("<option value=\"%s\">%s\n", str, str);
+        }
+      }
+    rsprintf("</select>\n");
+    }
+
 
   rsprintf("</td></tr></table></td></tr>\n\n");
 }
@@ -7478,7 +7553,7 @@ int    i, j, n, missing, first, index, n_mail, suppress, message_id;
 
 void copy_to(LOGBOOK *lbs, int src_id, char *dest_logbook, int move)
 {
-int     size, i, status, fh, message_id;
+int     size, i, n, n_done, index, status, fh, source_id, message_id;
 char    str[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char    date[80], text[TEXT_SIZE], msg_str[32], in_reply_to[80], reply_to[256],
         attachment[MAX_ATTACHMENTS][256], encoding[80];
@@ -7491,83 +7566,106 @@ LOGBOOK *lbs_dest;
     return;
   lbs_dest = &lb_list[i];
 
-  /* get message */
-  size = sizeof(text);
-  status = el_retrieve(lbs, src_id, date, attr_list, attrib, lbs->n_attr,
-                       text, &size, in_reply_to, reply_to,
-                       attachment, encoding);
+  if (src_id)
+    n = 1;
+  else
+    n = atoi(getparam("nsel"));
 
-  if (status != EL_SUCCESS)
+  n_done = 0;
+  for (index=0 ; index<n ; index++)
     {
-    sprintf(msg_str, "%d", src_id);
-    sprintf(str, loc("Message %s cannot be read from logbook \"%s\""), msg_str, lbs->name);
-    show_error(str);
-    return;
-    }
-
-  /* read attachments */
-  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-    if (attachment[i][0])
+    if (src_id)
+      source_id = src_id;
+    else
       {
-      strcpy(file_name, lbs->data_dir);
-      strcat(file_name, attachment[i]);
+      sprintf(str, "s%d", index);
+      if (!isparam(str))
+        continue;
 
-      fh = open(file_name, O_RDONLY | O_BINARY);
-      if (fh > 0)
-        {
-        lseek(fh, 0, SEEK_END);
-        _attachment_size[i] = TELL(fh);
-        lseek(fh, 0, SEEK_SET);
-
-        _attachment_buffer[i] = malloc(_attachment_size[i]);
-
-        if (_attachment_buffer[i])
-          read(fh, _attachment_buffer[i], _attachment_size[i]);
-
-        close(fh);
-        }
-
-      /* stip date/time from file name */
-      strcpy(str, attachment[i]);
-      strcpy(attachment[i], str+14);
+      source_id = atoi(getparam(str));
       }
 
-  /* submit in destination logbook without links */
+    /* get message */
+    size = sizeof(text);
+    status = el_retrieve(lbs, source_id, date, attr_list, attrib, lbs->n_attr,
+                         text, &size, in_reply_to, reply_to,
+                         attachment, encoding);
 
-  message_id = el_submit(lbs_dest, 0, date, attr_list, attrib, lbs_dest->n_attr, text,
-                     "", "", encoding,
-                     attachment,
-                     _attachment_buffer,
-                     _attachment_size);
+    if (status != EL_SUCCESS)
+      {
+      sprintf(msg_str, "%d", source_id);
+      sprintf(str, loc("Message %s cannot be read from logbook \"%s\""), msg_str, lbs->name);
+      show_error(str);
+      return;
+      }
 
-  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-    if (attachment[i][0])
-      free(_attachment_buffer[i]);
+    /* read attachments */
+    for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+      if (attachment[i][0])
+        {
+        strcpy(file_name, lbs->data_dir);
+        strcat(file_name, attachment[i]);
 
-  if (message_id <= 0)
-    {
-    sprintf(str, loc("New message cannot be written to directory \"%s\""), lbs_dest->data_dir);
-    strcat(str, "\n<p>");
-    strcat(str, loc("Please check that it exists and elogd has write access"));
-    show_error(str);
-    return;
-    }
+        fh = open(file_name, O_RDONLY | O_BINARY);
+        if (fh > 0)
+          {
+          lseek(fh, 0, SEEK_END);
+          _attachment_size[i] = TELL(fh);
+          lseek(fh, 0, SEEK_SET);
 
-  /* delete original message for move */
-  if (move)
-    {
-    el_delete_message(lbs, src_id, TRUE, NULL, TRUE);
+     
+          _attachment_buffer[i] = malloc(_attachment_size[i]);
 
-    /* check if this was the last message */
-    src_id = el_search_message(lbs, EL_NEXT, src_id, FALSE);
+          if (_attachment_buffer[i])
+            read(fh, _attachment_buffer[i], _attachment_size[i]);
 
-    /* if yes, force display of new last message */
-    if (src_id <= 0)
-      src_id = el_search_message(lbs, EL_LAST, 0, FALSE);
+          close(fh);
+          }
+
+        /* stip date/time from file name */
+        strcpy(str, attachment[i]);
+        strcpy(attachment[i], str+14);
+        }
+
+    /* submit in destination logbook without links */
+
+    message_id = el_submit(lbs_dest, 0, date, attr_list, attrib, lbs_dest->n_attr, text,
+                       "", "", encoding,
+                       attachment,
+                       _attachment_buffer,
+                       _attachment_size);
+
+    for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+      if (attachment[i][0])
+        free(_attachment_buffer[i]);
+
+    if (message_id <= 0)
+      {
+      sprintf(str, loc("New message cannot be written to directory \"%s\""), lbs_dest->data_dir);
+      strcat(str, "\n<p>");
+      strcat(str, loc("Please check that it exists and elogd has write access"));
+      show_error(str);
+      return;
+      }
+
+    n_done++;
+
+    /* delete original message for move */
+    if (move)
+      {
+      el_delete_message(lbs, source_id, TRUE, NULL, TRUE);
+
+      /* check if this was the last message */
+      source_id = el_search_message(lbs, EL_NEXT, source_id, FALSE);
+
+      /* if yes, force display of new last message */
+      if (source_id <= 0)
+        source_id = el_search_message(lbs, EL_LAST, 0, FALSE);
+      }
     }
 
   /* display status message */
-  sprintf(str, "%d", src_id);
+  sprintf(str, "%d", source_id);
   show_standard_header(loc("Copy ELog entry"), str);
 
   rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
@@ -7575,14 +7673,29 @@ LOGBOOK *lbs_dest;
   rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
 
   rsprintf("<tr><td bgcolor=#80FF80 align=center><b>");
-  if (move)
-    rsprintf(loc("Message moved successfully from \"%s\" to \"%s\""), lbs->name, lbs_dest->name);
+  if (n>1)
+    {
+    if (move)
+      rsprintf(loc("%d messages moved successfully from \"%s\" to \"%s\""), n_done, lbs->name, lbs_dest->name);
+    else
+      rsprintf(loc("%d messages copied successfully from \"%s\" to \"%s\""), n_done, lbs->name, lbs_dest->name);
+    }
   else
-    rsprintf(loc("Message copied successfully from \"%s\" to \"%s\""), lbs->name, lbs_dest->name);
+    {
+    if (move)
+      rsprintf(loc("Message moved successfully from \"%s\" to \"%s\""), lbs->name, lbs_dest->name);
+    else
+      rsprintf(loc("Message copied successfully from \"%s\" to \"%s\""), lbs->name, lbs_dest->name);
+    }
 
   rsprintf("</b></tr>\n");
-  rsprintf("<tr><td bgcolor=%s align=center>%s <a href=\"../%s/%d\">%s</td></tr>\n",
-            gt("Cell BGColor"), loc("Go to"), lbs->name, src_id, lbs->name);
+  if (src_id)
+    rsprintf("<tr><td bgcolor=%s align=center>%s <a href=\"../%s/%d\">%s</td></tr>\n",
+              gt("Cell BGColor"), loc("Go to"), lbs->name, source_id, lbs->name);
+  else
+    rsprintf("<tr><td bgcolor=%s align=center>%s <a href=\"../%s/%s\">%s</td></tr>\n",
+              gt("Cell BGColor"), loc("Go to"), lbs->name, getparam("cmdline"), lbs->name);
+
   rsprintf("<tr><td bgcolor=%s align=center>%s <a href=\"../%s/\">%s</td></tr>\n",
             gt("Cell BGColor"), loc("Go to"), lbs_dest->name, lbs_dest->name);
 
@@ -7603,7 +7716,7 @@ char   date[80], text[TEXT_SIZE], menu_str[1000], other_str[1000], cmd[256],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
 char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80], admin_user[80],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH], *p;
-char   lb_list[MAX_N_LIST][NAME_LENGTH];
+char   lbk_list[MAX_N_LIST][NAME_LENGTH];
 FILE   *f;
 BOOL   first;
 
@@ -8205,10 +8318,10 @@ BOOL   first;
 
         if (str[0])
           {
-          n_log = strbreak(str, lb_list, MAX_N_LIST);
+          n_log = strbreak(str, lbk_list, MAX_N_LIST);
 
           for (j=0 ; j<n_log ; j++)
-            rsprintf("<option value=\"%s\">%s\n", lb_list[j], lb_list[j]);
+            rsprintf("<option value=\"%s\">%s\n", lbk_list[j], lbk_list[j]);
           }
         else
           {
@@ -9371,7 +9484,8 @@ LOGBOOK *cur_lb;
     }
 
   if (strncmp(path, "last", 4) == 0 && strstr(path, ".gif") == NULL &&
-      !isparam("cmd") && !isparam("newpwd"))
+      (!isparam("cmd") || equal_ustring(getparam("cmd"), loc("Select")))
+      && !isparam("newpwd"))
     {
     show_elog_submit_find(cur_lb, 0, atoi(path+4), 0);
     return;
