@@ -144,9 +144,9 @@ Only user <i>%s</i> can edit this entry = Seul l'utilisateur <i>%s</i> peut modi
 #
 # New strings for V2.0
 #
-Display full message =
-Display threads =
-Logbook is empty =
-This message has been deleted =
-Download =
-and all its replies =
+Display full message = Afficher le message entier
+Display threads = Afficher les fils de discussion
+Logbook is empty = Ce registre est vide
+This message has been deleted = Ce message a été effacé
+Download = Télécharger
+and all its replies = et toutes les réponses
