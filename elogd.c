@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.55  2002/08/05 15:37:21  midas
+  First version of self-registration
+
   Revision 2.54  2002/08/02 11:00:10  midas
   Started working on user configuration page
 
@@ -491,6 +494,8 @@ LOGBOOK *lb_list = NULL;
 
 void show_error(char *error);
 void show_http_header();
+BOOL enum_user_line(LOGBOOK *lbs, int n, char *user);
+BOOL get_user_line(LOGBOOK *lbs, char *user, char *password, char *full_name, char *email);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -2782,8 +2787,9 @@ char str[256];
     return 1;
     }
 
+  /* paremeters can be superseeded */
   for (i=0 ; i<MAX_PARAM ; i++)
-    if (_param[i][0] == 0)
+    if (_param[i][0] == 0 || equal_ustring(param, _param[i]))
       break;
 
   if (i<MAX_PARAM)
@@ -3176,9 +3182,9 @@ void show_standard_header(char *title, char *path)
     rsprintf("<body bgcolor=#FFFFFF>\n");
 
   if (path)
-    rsprintf("<form method=\"GET\" action=\"%s\">\n\n", path);
+    rsprintf("<form name=form1 method=\"GET\" action=\"%s\">\n\n", path);
   else
-    rsprintf("<form method=\"GET\" action=\"\">\n\n");
+    rsprintf("<form name=form1 method=\"GET\" action=\"\">\n\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -3336,6 +3342,68 @@ void show_error(char *error)
 
   rsprintf("</td></tr>\n</table></td></tr></table>\n");
   rsprintf("</body></html>\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void set_login_cookies(LOGBOOK *lbs, char *user, char *enc_pwd)
+{
+char   str[256], str2[256];
+double exp;
+time_t now;
+struct tm *gmt;
+
+  rsprintf("HTTP/1.1 302 Found\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+  if (use_keepalive)
+    {
+    rsprintf("Connection: Keep-Alive\r\n");
+    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+    }
+
+  /* get optional expriation from configuration file */
+  exp = 0;
+  if (getcfg(lbs->name, "Login expiration", str))
+    exp = atof(str);
+
+  if (exp == 0)
+    {
+    if (getcfg("global", "Password file", str))
+      {
+      rsprintf("Set-Cookie: upwd=%s; path=/\r\n", enc_pwd);
+      rsprintf("Set-Cookie: unm=%s; path=/\r\n", user);
+      }
+    else
+      {
+      rsprintf("Set-Cookie: upwd=%s\r\n", enc_pwd);
+      rsprintf("Set-Cookie: unm=%s\r\n", user);
+      }
+    }
+  else
+    {
+    time(&now);
+    now += (int) (3600*exp);
+    gmt = gmtime(&now);
+    strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+
+    if (getcfg("global", "Password file", str2))
+      {
+      rsprintf("Set-Cookie: upwd=%s; path=/; expires=%s\r\n", enc_pwd, str);
+      rsprintf("Set-Cookie: unm=%s; path=/; expires=%s\r\n", user, str);
+      }
+    else
+      {
+      rsprintf("Set-Cookie: upwd=%s; expires=%s\r\n", enc_pwd, str);
+      rsprintf("Set-Cookie: unm=%s; expires=%s\r\n", user, str);
+      }
+    }
+
+  sprintf(str, "%s", getparam("redir"));
+  if (!str[0])
+    sprintf(str, "../%s/", lbs->name_enc);
+
+  rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
+  return;
 }
 
 /*------------------------------------------------------------------*/
@@ -3525,18 +3593,19 @@ struct tm      *ts;
 
 void show_change_pwd_page(LOGBOOK *lbs)
 {
-char   str[256], file_name[256], line[256], *p, *pl, old_pwd[32], 
-       new_pwd[32], new_pwd2[32];
+char   str[256], str2[256], file_name[256], line[256], *p, *pl, old_pwd[32], 
+       new_pwd[32], new_pwd2[32], user[80];
 char   *buf;
 FILE   *f;
 int    i, wrong_pwd, size;
-double exp;
-time_t now;
-struct tm *gmt;
 
   do_crypt(getparam("oldpwd"), old_pwd);
   do_crypt(getparam("newpwd"), new_pwd);
   do_crypt(getparam("newpwd2"), new_pwd2);
+
+  strcpy(user, getparam("unm"));
+  if (isparam("config"))
+    strcpy(user, getparam("config"));
 
   getcfg(lbs->name, "Password file", str);
 
@@ -3581,7 +3650,7 @@ struct tm *gmt;
         strcpy(str, line);
         if (strchr(str, ':'))
           *strchr(str, ':') = 0;
-        if (strcmp(str, getparam("unm")) == 0)
+        if (strcmp(str, user) == 0)
           break;
 
         pl += strlen(line);
@@ -3590,18 +3659,24 @@ struct tm *gmt;
         }
 
       /* if user found, check old password */
-      if (*getparam("unm") && (strcmp(str, getparam("unm")) == 0))
+      if (user[0] && (strcmp(str, user) == 0))
         {
         p = line+strlen(str);
         if (*p)
           p++;
 
-        strcpy(str, p);
-        if (strchr(str, ':'))
-          *strchr(str, ':') = 0;
+        strcpy(str2, p);
+        if (strchr(str2, ':'))
+          *strchr(str2, ':') = 0;
 
-        if (strcmp(old_pwd, str) != 0)
-          wrong_pwd = 1;
+        if (getcfg(lbs->name, "Admin user", str) &&
+            strstr(str, getparam("unm")) != 0)
+          wrong_pwd = 0;
+        else
+          {
+          if (strcmp(old_pwd, str2) != 0)
+            wrong_pwd = 1;
+          }
 
         if (strcmp(new_pwd, new_pwd2) != 0)
           wrong_pwd = 2;
@@ -3613,8 +3688,9 @@ struct tm *gmt;
         fseek(f, 0, SEEK_SET);
         fwrite(buf, 1, pl-buf, f);
 
-        fprintf(f, "%s:%s:%s:%s\n", getparam("unm"), new_pwd, 
+        sprintf(str, "%s:%s:%s:%s", user, new_pwd, 
                 getparam("full_name"), getparam("user_email"));
+        fprintf(f, "%s\n", str);
 
         pl += strlen(line);
         while (*pl && (*pl == '\r' || *pl == '\n'))
@@ -3632,42 +3708,15 @@ struct tm *gmt;
       free(buf);
       fclose(f);
 
+      if (!wrong_pwd && strcmp(user, getparam("unm")) == 0)
+        {
+        set_login_cookies(lbs, user, new_pwd);
+        return;
+        }
+
       if (!wrong_pwd)
         {
-        rsprintf("HTTP/1.1 302 Found\r\n");
-        rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-        if (use_keepalive)
-          {
-          rsprintf("Connection: Keep-Alive\r\n");
-          rsprintf("Keep-Alive: timeout=60, max=10\r\n");
-          }
-
-        /* get optional expriation from configuration file */
-        exp = 0;
-        if (getcfg(lbs->name, "Login expiration", str))
-          exp = atof(str);
-
-        if (exp == 0)
-          {
-          if (getcfg("global", "Password file", str))
-            rsprintf("Set-Cookie: upwd=%s; path=/\r\n", new_pwd);
-          else
-            rsprintf("Set-Cookie: upwd=%s\r\n", new_pwd);
-          }
-        else
-          {
-          time(&now);
-          now += (int) (3600*exp);
-          gmt = gmtime(&now);
-          strftime(str, sizeof(str), "%A, %d-%b-%Y %H:%M:%S GMT", gmt);
-
-          if (getcfg("global", "Password file", str))
-            rsprintf("Set-Cookie: upwd=%s; path=/; expires=%s\r\n", new_pwd, str);
-          else
-            rsprintf("Set-Cookie: upwd=%s; expires=%s\r\n", new_pwd, str);
-          }
-
-        rsprintf("Location: .\r\n\r\n<html>redir</html>\r\n");
+        redirect(".");
         return;
         }
       }
@@ -3687,11 +3736,18 @@ struct tm *gmt;
 
   rsprintf("<tr><td align=center bgcolor=%s>\n", gt("Title bgcolor"));
 
-  rsprintf("<font color=%s>%s \"%s\"</font></td></tr>\n",
-           gt("Title fontcolor"), loc("Change password for user"), getparam("full_name"));
+  rsprintf("<input type=hidden name=config value=\"%s\">", user);
 
-  rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=oldpwd></td></tr>\n",
-           gt("Cell BGColor"), loc("Old Password"));
+  rsprintf("<font color=%s>%s \"%s\"</font></td></tr>\n",
+           gt("Title fontcolor"), loc("Change password for user"), user);
+
+  if (!getcfg(lbs->name, "Admin user", str) ||
+      !strstr(str, getparam("unm")) != 0)
+    {
+    rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=oldpwd></td></tr>\n",
+             gt("Cell BGColor"), loc("Old Password"));
+    }
+
   rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=newpwd></td></tr>\n",
            gt("Cell BGColor"), loc("New Password"));
   rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=newpwd2></td></tr>\n",
@@ -4634,11 +4690,146 @@ char str[80];
 
 /*------------------------------------------------------------------*/
 
-int save_user_config(LOGBOOK *lbs, char *user)
+int save_user_config(LOGBOOK *lbs, char *user, BOOL new_user)
 {
-FILE *f;
-char file_name[256], str[256], line[256], *buf, *pl;
-int  i, size;
+FILE   *f;
+char   file_name[256], str[256], line[256], *buf, *pl, new_pwd[80], new_pwd2[80];
+int    i, size;
+
+  /* check for hidden password */
+  if (isparam("hpwd"))
+    {
+    strcpy(new_pwd, getparam("hpwd"));
+    }
+  else
+    {
+    /* check if passwords match */
+    do_crypt(getparam("newpwd"), new_pwd);
+    do_crypt(getparam("newpwd2"), new_pwd2);
+
+    if (strcmp(new_pwd, new_pwd2) != 0)
+      {
+      show_error(loc("New passwords do not match, please retype"));
+      return 0;
+      }
+    }
+
+  getcfg(lbs->name, "Password file", str);
+
+  if (str[0] == DIR_SEPARATOR || str[1] == ':')
+    strcpy(file_name, str);
+  else
+    {
+    strcpy(file_name, cfg_dir);
+    strcat(file_name, str);
+    }
+
+  f = fopen(file_name, "r+b");
+  if (f == NULL)
+    {
+    show_error("");
+    return 0;
+    }
+
+  fseek(f, 0, SEEK_END);
+  size = TELL(fileno(f));
+  fseek(f, 0, SEEK_SET);
+
+  buf = malloc(size+1);
+  fread(buf, 1, size, f);
+  buf[size] = 0;
+  pl = buf;
+
+  while (pl < buf+size)
+    {
+    for (i=0 ; pl[i] && pl[i] != '\r' && pl[i] != '\n' ; i++)
+      line[i] = pl[i];
+    line[i] = 0;
+
+    if (line[0] == ';' || line[0] == '#' || line[0] == 0)
+      {
+      pl += strlen(line);
+      while (*pl && (*pl == '\r' || *pl == '\n'))
+        pl++;
+      continue;
+      }
+
+    strcpy(str, line);
+    if (strchr(str, ':'))
+      *strchr(str, ':') = 0;
+    if (strcmp(str, user) == 0)
+      {
+      if (new_user)
+        {
+        sprintf(str, "%s \"%s\" %s", loc("Login name"), user, loc("exists already"));
+        show_error(str);
+        free(buf);
+        fclose(f);
+        return 0;
+        }
+      break;
+      }
+
+    pl += strlen(line);
+    while (*pl && (*pl == '\r' || *pl == '\n'))
+      pl++;
+    }
+
+  if (new_user)
+    {
+    fseek(f, 0, SEEK_END);
+    if (strlen(buf) != 0 &&
+        (buf[strlen(buf)-1] != '\r' && buf[strlen(buf)-1] != '\n'))
+      fprintf(f, "\n");
+
+    sprintf(str, "%s:%s:%s:%s", getparam("new_user_name"), new_pwd, 
+            getparam("new_full_name"), getparam("new_user_email"));
+    fprintf(f, "%s\n", str);
+    }
+  else
+    {
+    /* replace line */
+    fseek(f, 0, SEEK_SET);
+    fwrite(buf, 1, pl-buf, f);
+
+    sprintf(str, "%s:%s:%s:%s", getparam("new_user_name"), new_pwd, 
+            getparam("new_full_name"), getparam("new_user_email"));
+    fprintf(f, "%s\n", str);
+
+    pl += strlen(line);
+    while (*pl && (*pl == '\r' || *pl == '\n'))
+      pl++;
+
+    fwrite(pl, 1, strlen(pl), f);
+
+#ifdef _MSC_VER
+    chsize(fileno(f), TELL(fileno(f)));
+#else
+    ftruncate(fileno(f), TELL(fileno(f)));
+#endif
+    }
+
+  free(buf);
+  fclose(f);
+
+  /* if user name changed, set cookie */
+  if (strcmp(user, getparam("new_user_name")) != 0 &&
+      strcmp(user, getparam("unm")) == 0)
+    {
+    set_login_cookies(lbs, getparam("new_user_name"), new_pwd);
+    return 0;
+    }  
+  
+  return 1;
+}
+
+/*------------------------------------------------------------------*/
+
+int remove_user(LOGBOOK *lbs, char *user)
+{
+FILE   *f;
+char   file_name[256], str[256], line[256], *buf, *pl;
+int    i, size;
 
   getcfg(lbs->name, "Password file", str);
 
@@ -4691,12 +4882,9 @@ int  i, size;
       pl++;
     }
 
-  /* replace line */
+  /* remove line */
   fseek(f, 0, SEEK_SET);
   fwrite(buf, 1, pl-buf, f);
-
-  fprintf(f, "%s:%s:%s:%s\n", getparam("user_name"), getparam("uwpd"), 
-          getparam("full_name"), getparam("user_email"));
 
   pl += strlen(line);
   while (*pl && (*pl == '\r' || *pl == '\n'))
@@ -4712,6 +4900,7 @@ int  i, size;
 
   free(buf);
   fclose(f);
+  
   return 1;
 }
 
@@ -4719,9 +4908,108 @@ int  i, size;
 
 void show_config_page(LOGBOOK *lbs)
 {
+char str[256], user[80], password[80], full_name[80], user_email[80];
+int  i;
+
   /*---- header ----*/
 
   show_standard_header(loc("ElOG user config"), "");
+
+  /*---- title ----*/
+
+  show_standard_title(lbs->name, "", 0);
+
+
+  /* get user */
+  strcpy(user, getparam("unm"));
+  if (isparam("cfg_user"))
+    strcpy(user, getparam("cfg_user"));
+
+  /*---- menu buttons ----*/
+
+  rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=1 bgcolor=%s>\n",
+           gt("Menu1 cellpadding"), gt("Frame color"));
+
+  rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
+
+  rsprintf("<input type=hidden name=cmd value=\"Config\">\n", user); // for select javascript
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
+  rsprintf("<input type=hidden name=config value=\"%s\">\n", user);
+  rsprintf("</td></tr></table></td></tr>\n\n");
+
+  /* overall table for message giving blue frame */
+  rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n",
+           gt("Categories border"), gt("Categories cellpadding"), gt("Frame color"));
+
+  /*---- if admin user, show user list ----*/
+
+  if (getcfg(lbs->name, "Admin user", str) && 
+      strstr(str, getparam("unm")) != 0)
+    {
+    rsprintf("<tr><td width=10%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Select user"));
+    rsprintf("<td bgcolor=%s><select name=cfg_user onChange=\"document.form1.submit()\">\n", gt("Categories bgcolor2"));
+
+    for (i=0 ; ; i++)
+      {
+      if (enum_user_line(lbs, i, str))
+        {
+        if (strcmp(str, user) == 0)
+          rsprintf("<option selected value=\"%s\">%s\n", str, str);
+        else
+          rsprintf("<option value=\"%s\">%s\n", str, str);
+        }
+      else
+        break;
+      }
+
+    rsprintf("</select></td></tr>\n");
+    }
+
+  /*---- entry form ----*/
+
+  get_user_line(lbs, user, password, full_name, user_email);
+
+  rsprintf("<tr><td width=10%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Login name"));
+  rsprintf("<td bgcolor=%s><input type=text name=new_user_name value=\"%s\"></td></tr>\n", 
+            gt("Categories bgcolor2"), user);
+
+  rsprintf("<tr><td width=10%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Full name"));
+  rsprintf("<td bgcolor=%s><input type=text name=new_full_name value=\"%s\"></tr>\n", 
+            gt("Categories bgcolor2"), full_name);
+
+  rsprintf("<tr><td width=10%% bgcolor=%s>Email:</td>\n", gt("Categories bgcolor1"));
+  rsprintf("<td bgcolor=%s><input type=text name=new_user_email value=\"%s\"></tr>\n", 
+            gt("Categories bgcolor2"), user_email);
+
+  rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change password"));
+
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Remove user"));
+
+  if (getcfg(lbs->name, "Admin user", str) && 
+      strstr(str, getparam("unm")) != 0)
+    {
+    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("New user"));
+    }
+
+  /* hidden field for password */
+  rsprintf("<input type=hidden name=hpwd value=\"%s\">\n", password);
+  
+  rsprintf("</td></tr></table></td></tr>\n");
+
+  rsprintf("</td></tr></table>\n\n");
+  rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void show_new_user_page(LOGBOOK *lbs)
+{
+
+  /*---- header ----*/
+
+  show_standard_header(loc("ElOG new user"), "");
 
   /*---- title ----*/
 
@@ -4736,31 +5024,33 @@ void show_config_page(LOGBOOK *lbs)
 
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
-  rsprintf("<input type=hidden name=config value=\"%s\">\n", getparam("unm"));
   rsprintf("</td></tr></table></td></tr>\n\n");
-
-  /*---- entry form ----*/
 
   /* overall table for message giving blue frame */
   rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n",
            gt("Categories border"), gt("Categories cellpadding"), gt("Frame color"));
 
-  rsprintf("<tr><td width=10%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Login name"));
-  rsprintf("<td bgcolor=%s><input type=text name=user_name value=\"%s\"></td></tr>\n", 
-            gt("Categories bgcolor2"), getparam("unm"));
+  /*---- entry form ----*/
 
-  rsprintf("<tr><td width=10%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Full name"));
-  rsprintf("<td bgcolor=%s><input type=text name=full_name value=\"%s\"></tr>\n", 
-            gt("Categories bgcolor2"), getparam("full_name"));
+  rsprintf("<tr><td width=20%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Login name"));
+  rsprintf("<td bgcolor=%s><input type=text name=new_user_name> <i>(%s)</i></td></tr>\n", 
+            gt("Categories bgcolor2"), loc("name may not contain blanks"));
 
-  rsprintf("<tr><td width=10%% bgcolor=%s>Email:</td>\n", gt("Categories bgcolor1"));
-  rsprintf("<td bgcolor=%s><input type=text name=user_email value=\"%s\"></tr>\n", 
-            gt("Categories bgcolor2"), getparam("user_email"));
+  rsprintf("<tr><td width=20%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Full name"));
+  rsprintf("<td bgcolor=%s><input type=text name=new_full_name></tr>\n", 
+            gt("Categories bgcolor2"));
 
-  rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
-  rsprintf("<input type=submit name=cmd value=\"%s\"></tr>\n", loc("Change password"));
+  rsprintf("<tr><td width=20%% bgcolor=%s>Email:</td>\n", gt("Categories bgcolor1"));
+  rsprintf("<td bgcolor=%s><input type=text name=new_user_email></tr>\n", 
+            gt("Categories bgcolor2"));
 
-  rsprintf("</table></td></tr>\n");
+  rsprintf("<tr><td width=20%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Password"));
+  rsprintf("<td bgcolor=%s><input type=password name=newpwd>\n", gt("Categories bgcolor2"));
+
+  rsprintf("<tr><td width=20%% bgcolor=%s>%s:</td>\n", gt("Categories bgcolor1"), loc("Retype password"));
+  rsprintf("<td bgcolor=%s><input type=password name=newpwd2>\n", gt("Categories bgcolor2"));
+
+  rsprintf("</td></tr></table></td></tr>\n");
 
   rsprintf("</td></tr></table>\n\n");
   rsprintf("</body></html>\r\n");
@@ -6782,7 +7072,7 @@ int    message_id, orig_message_id;
 char   str[256], command[80], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char   date[80], text[TEXT_SIZE], menu_str[1000], other_str[1000], cmd[256],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
-char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80],
+char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80], admin_user[80],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH], *p;
 FILE   *f;
 BOOL   first;
@@ -6837,14 +7127,23 @@ BOOL   first;
     strcat(menu_str, ", ");
     strcat(menu_str, loc("Last 10"));
     strcat(menu_str, ", ");
-    strcat(menu_str, loc("Config"));
-    strcat(menu_str, ", ");
 
     if (getcfg(lbs->name, "Password file", str))
       {
-      strcat(menu_str, loc("Change Password"));
+      if (getcfg(lbs->name, "Admin user", str) && 
+          strstr(str, getparam("unm")) != 0)
+        {
+        strcat(menu_str, loc("Admin"));
+        strcat(menu_str, ", ");
+        }
+      strcat(menu_str, loc("Config"));
       strcat(menu_str, ", ");
       strcat(menu_str, loc("Logout"));
+      strcat(menu_str, ", ");
+      }
+    else
+      {
+      strcat(menu_str, loc("Config"));
       strcat(menu_str, ", ");
       }
 
@@ -6855,8 +7154,15 @@ BOOL   first;
     /* localize menu commands */
     n = strbreak(menu_str, menu_item, MAX_N_LIST);
     menu_str[0] = 0;
+    admin_user[0] = 0;
+    getcfg(lbs->name, "Admin user", admin_user);
     for (i=0 ; i<n ; i++)
       {
+      if (strcmp(menu_item[i], loc("Admin")) == 0)
+        {
+        if (strstr(admin_user, getparam("unm")) == NULL)
+          continue;
+        }
       strcat(menu_str, loc(menu_item[i]));
       if (i<n-1)
         strcat(menu_str, ", ");
@@ -6887,8 +7193,33 @@ BOOL   first;
   strcat(other_str, " ");
   strcat(other_str, "Submit");
 
+  /* admin commands */
+  if (getcfg(lbs->name, "Admin user", str) && 
+      *getparam("unm") &&
+      strstr(str, getparam("unm")) != 0)
+    {
+    strcat(other_str, loc("Remove user"));
+    strcat(other_str, " ");
+    strcat(other_str, loc("New user"));
+    strcat(other_str, " ");
+    }
+  else
+    if (getcfg(lbs->name, "Self register", str) &&
+        atoi(str) == 1)
+      {
+      strcat(other_str, loc("Remove user"));
+      strcat(other_str, " ");
+      strcat(other_str, loc("New user"));
+      strcat(other_str, " ");
+      }
+
+  /* allow change password if "config" possible */
+  if (equal_ustring(command, loc("Change password")) &&
+      strstr(menu_str, loc("Config")))
+    {
+    }
   /* check if command is present in the menu list */
-  if (command[0] && strstr(menu_str, command) == NULL &&
+  else if (command[0] && strstr(menu_str, command) == NULL &&
       strstr(other_str, command) == NULL)
     {
     sprintf(str, loc("Error: Command \"<b>%s</b>\" not allowed"), command);
@@ -7011,14 +7342,8 @@ BOOL   first;
     return;
     }
 
-  if (equal_ustring(command, loc("Config")))
-    {
-    show_config_page(lbs);
-    return;
-    }
-
   if (equal_ustring(command, loc("Change Password")) ||
-      isparam("newpwd"))
+      (isparam("newpwd") && !equal_ustring(command, loc("Cancel")) && !equal_ustring(command, loc("Save"))))
     {
     show_change_pwd_page(lbs);
     return;
@@ -7028,14 +7353,58 @@ BOOL   first;
     {
     if (isparam("config"))
       {
-      if (!save_user_config(lbs, getparam("unm")))
+      /* change existing user */
+      if (!save_user_config(lbs, getparam("config"), FALSE))
         return;
       }
-    else if (!save_admin_config())
+    else if (isparam("new_user_name"))
+      {
+      /* new user */
+      if (!save_user_config(lbs, getparam("new_user_name"), TRUE))
+        return;
+
+      /* login to logbook with new user */
+      if (!isparam("unm"))
+        {
+        }
+      }
+    else if (!save_admin_config()) /* save cfg file */
       return;
 
     sprintf(str, "../%s/", lbs->name_enc);
     redirect(str);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Remove user")))
+    {
+    remove_user(lbs, getparam("config"));
+
+    /* if removed user is current user, do logout */
+    if (equal_ustring(getparam("config"), getparam("unm")))
+      {
+      /* log activity */
+      logf("Logout of user \"%s\" from lbs->name \"%s\"",getparam("unm"),lbs->name);
+
+      /* set cookies */
+      set_login_cookies(lbs, "", "");
+      }
+
+    /* continue configuration as administrator */
+    unsetparam("cfg_user");
+    show_config_page(lbs);
+    return;
+    }
+
+  if (equal_ustring(command, loc("New user")))
+    {
+    show_new_user_page(lbs);
+    return;
+    }
+
+  if (equal_ustring(command, loc("Config")))
+    {
+    show_config_page(lbs);
     return;
     }
 
@@ -7058,19 +7427,7 @@ BOOL   first;
     /* log activity */
     logf("Logout of user \"%s\" from lbs->name \"%s\"",getparam("unm"),lbs->name);
 
-    /* delete user cookies */
-    if (getcfg("global", "Password file", str))
-      {
-      rsprintf("Set-Cookie: upwd=; path=/; expires=Fri, 01 Jan 1983 00:00:00 GMT\r\n");
-      rsprintf("Set-Cookie: unm=; path=/; expires=Fri, 01 Jan 1983 00:00:00 GMT\r\n");
-      }
-    else
-      {
-      rsprintf("Set-Cookie: upwd=; expires=Fri, 01 Jan 1983 00:00:00 GMT\r\n");
-      rsprintf("Set-Cookie: unm=; expires=Fri, 01 Jan 1983 00:00:00 GMT\r\n");
-      }
-
-    rsprintf("Location: ../\r\n\r\n<html>redir</html>\r\n");
+    set_login_cookies(lbs, "", "");
     return;
     }
 
@@ -7905,6 +8262,55 @@ int   i;
 
 /*------------------------------------------------------------------*/
 
+BOOL enum_user_line(LOGBOOK *lbs, int n, char *user)
+{
+char  str[256], line[256], file_name[256];
+FILE  *f;
+int   i;
+
+  getcfg(lbs->name, "Password file", str);
+
+  if (str[0] == DIR_SEPARATOR || str[1] == ':')
+    strcpy(file_name, str);
+  else
+    {
+    strcpy(file_name, cfg_dir);
+    strcat(file_name, str);
+    }
+
+  f = fopen(file_name, "r");
+  i = 0;
+  if (f != NULL)
+    {
+    while (!feof(f))
+      {
+      line[0] = 0;
+      fgets(line, sizeof(line), f);
+
+      if (line[0] == ';' || line[0] == '#' || line[0] == 0)
+        continue;
+
+      strcpy(str, line);
+      if (strchr(str, ':'))
+        *strchr(str, ':') = 0;
+
+      if (i == n)
+        {
+        strcpy(user, str);
+        fclose(f);
+        return TRUE;
+        }
+
+      i++;
+      }
+    fclose(f);
+    }
+
+  return FALSE;
+}
+
+/*------------------------------------------------------------------*/
+
 BOOL check_user_password(LOGBOOK *lbs, char *user, char *password, char *redir)
 {
 char  str[256], upwd[256], full_name[256], email[256];
@@ -7941,7 +8347,12 @@ char  str[256], upwd[256], full_name[256], email[256];
     rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;<input type=password name=upassword></td></tr>\n",
              gt("Cell BGColor"), loc("Password"));
 
-    rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=\"%s\"></td></tr>", gt("Cell BGColor"), loc("Submit"));
+    if (getcfg(lbs->name, "Self register", str) && atoi(str) == 1)
+      rsprintf("<tr><td align=center bgcolor=%s><a href=\"?cmd=New+user\">%s</td></tr>", 
+                gt("Cell BGColor"), loc("Register as new user"));
+
+    rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=\"%s\"></td></tr>", 
+              gt("Cell BGColor"), loc("Submit"));
 
     rsprintf("</table></td></tr></table>\n");
 
@@ -8051,7 +8462,7 @@ void interprete(char *lbook, char *path)
 {
 int     i, n, index, lb_index;
 double  exp;
-char    str[256], str2[256], enc_pwd[80], file_name[256], data_dir[256];
+char    str[256], enc_pwd[80], file_name[256], data_dir[256];
 char    enc_path[256], dec_path[256], logbook[256], logbook_enc[256];
 char    *experiment, *command, *value, *group;
 time_t  now;
@@ -8267,56 +8678,9 @@ LOGBOOK *cur_lb;
 
     logf("Login of user \"%s\" (successful)",getparam("uname"));
 
-    rsprintf("HTTP/1.1 302 Found\r\n");
-    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-    if (use_keepalive)
-      {
-      rsprintf("Connection: Keep-Alive\r\n");
-      rsprintf("Keep-Alive: timeout=60, max=10\r\n");
-      }
+    /* set cookies */
+    set_login_cookies(cur_lb, getparam("uname"), enc_pwd);
 
-    /* get optional expriation from configuration file */
-    exp = 0;
-    if (getcfg(logbook, "Login expiration", str))
-      exp = atof(str);
-
-    if (exp == 0)
-      {
-      if (getcfg("global", "Password file", str))
-        {
-        rsprintf("Set-Cookie: upwd=%s; path=/\r\n", enc_pwd);
-        rsprintf("Set-Cookie: unm=%s; path=/\r\n", getparam("uname"));
-        }
-      else
-        {
-        rsprintf("Set-Cookie: upwd=%s\r\n", enc_pwd);
-        rsprintf("Set-Cookie: unm=%s\r\n", getparam("uname"));
-        }
-      }
-    else
-      {
-      time(&now);
-      now += (int) (3600*exp);
-      gmt = gmtime(&now);
-      strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
-
-      if (getcfg("global", "Password file", str2))
-        {
-        rsprintf("Set-Cookie: upwd=%s; path=/; expires=%s\r\n", enc_pwd, str);
-        rsprintf("Set-Cookie: unm=%s; path=/; expires=%s\r\n", getparam("uname"), str);
-        }
-      else
-        {
-        rsprintf("Set-Cookie: upwd=%s; expires=%s\r\n", enc_pwd, str);
-        rsprintf("Set-Cookie: unm=%s; expires=%s\r\n", getparam("uname"), str);
-        }
-      }
-
-    sprintf(str, "%s", getparam("redir"));
-    if (!str[0])
-      sprintf(str, "../%s/", logbook_enc);
-
-    rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
     return;
     }
 
