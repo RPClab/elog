@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.338  2004/06/11 07:14:50  midas
+   Tested onUnload
+
    Revision 1.337  2004/06/07 14:59:42  midas
    Fixed problem with 'preset text' under conditional attributes
 
@@ -6484,7 +6487,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    rsprintf("  return true;\n");
-   rsprintf("}\n");
+   rsprintf("}\n\n");
+
+   rsprintf("function abandon()\n");
+   rsprintf("{\n");
+   //rsprintf("alert('abandon');\n");
+   rsprintf("}\n\n");
+
    rsprintf("//-->\n");
    rsprintf("</script>\n\n");
 
@@ -6496,7 +6505,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    rsprintf("</head>\n");
 
-   rsprintf("<body>\n");
+   rsprintf("<body onUnload=\"abandon();\">\n");
    rsprintf("<form name=form1 method=\"POST\" action=\"./\" ");
    rsprintf("enctype=\"multipart/form-data\">\n");
 
