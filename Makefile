@@ -63,5 +63,7 @@ install: $(EXECS)
 	$(INSTALL) -m 0644 man/elog.1 man/elconv.1 $(MANDIR)/man1/
 	$(INSTALL) -m 0644 man/elogd.8 $(MANDIR)/man8/
 
+restart:
+	/etc/rc.d/init.d/elogd restart
 clean:
 	-$(RM) *~ $(EXECS)
