@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.413  2004/07/28 19:53:28  midas
+   Increased possible size of 'welcome title' to 10000 chars
+
    Revision 1.412  2004/07/28 19:20:46  midas
    Fixed wrong date on date attributes on edit/reply if attribute is fixed
 
@@ -17473,7 +17476,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
 void show_top_selection_page()
 {
    int i;
-   char str[NAME_LENGTH], name[NAME_LENGTH], name_enc[NAME_LENGTH];
+   char str[10000], name[NAME_LENGTH], name_enc[NAME_LENGTH];
    LBLIST phier;
 
    /* if selection page protected, check password */
@@ -17521,7 +17524,7 @@ void show_top_selection_page()
 void show_selection_page()
 {
    int i, j, show_title;
-   char str[NAME_LENGTH], file_name[256];
+   char str[10000], file_name[256];
    LBLIST phier;
 
    /* check if at least one logbook define */
