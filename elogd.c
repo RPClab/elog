@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.32  2002/06/26 11:44:54  midas
+  Fixed bug when deleting last message in logbook
+
   Revision 2.31  2002/06/25 12:08:32  midas
   Version 2.0.3
 
@@ -1615,6 +1618,8 @@ int i;
 
       return 0;
       }
+    if (*lbs->n_el_index == 0)
+      return 0;
     return lbs->el_index[0].message_id;
     }
 
@@ -1628,6 +1633,8 @@ int i;
       
       return 0;
       }
+    if (*lbs->n_el_index == 0)
+      return 0;
     return lbs->el_index[*lbs->n_el_index-1].message_id;
     }
 
