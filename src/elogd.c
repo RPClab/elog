@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.535  2005/01/17 14:01:40  midas
+   Added message_id and date to CSV export
+
    Revision 1.534  2005/01/06 10:02:34  midas
    Implemented 'hidden attributes'
 
@@ -15247,6 +15250,18 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       /* no menus and tables */
       show_plain_header(0, "export.csv");
 
+      rsprintf("\"%s\"", loc("Message ID"));
+      if (strieq(mode, "CSV1"))
+         rsprintf(",");
+      else
+         rsprintf(";");
+
+      rsprintf("\"%s\"", loc("Date"));
+      if (strieq(mode, "CSV1"))
+         rsprintf(",");
+      else
+         rsprintf(";");
+
       for (i = 0; i < lbs->n_attr; i++) {
          strlcpy(str, attr_list[i], sizeof(str));
          if (str[0]) {
@@ -15698,6 +15713,18 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          break;
 
       if (csv) {
+
+         rsprintf("%d", message_id);
+         if (strieq(mode, "CSV1"))
+            rsprintf(",");
+         else
+            rsprintf(";");
+
+         rsprintf("%s", date);
+         if (strieq(mode, "CSV1"))
+            rsprintf(",");
+         else
+            rsprintf(";");
 
          for (i = 0; i < lbs->n_attr; i++) {
             strlcpy(str, attrib[i], sizeof(str));
