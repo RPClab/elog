@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.558  2005/02/14 10:57:11  ritt
+   Fixed compiler warning
+
    Revision 1.557  2005/02/14 10:52:36  ritt
    Version 2.5.7-1
 
@@ -21132,7 +21135,7 @@ void server_loop(void)
                      while (*p == ' ')
                         p++;
                      i = 0;
-                     while (*p && *p != ' ' && *p != '\r' && i < sizeof(cl_pwd) - 1)
+                     while (*p && *p != ' ' && *p != '\r' && i < (int)sizeof(cl_pwd) - 1)
                         str[i++] = *p++;
                      str[i] = 0;
                   }
