@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.6  2002/06/12 07:52:41  midas
+  Increased text size
+
   Revision 1.5  2002/06/11 12:01:45  midas
   Added -s for subdirectory
 
@@ -46,6 +49,8 @@ typedef int INT;
 #define MAX_ATTACHMENTS  10
 #define NAME_LENGTH     100
 #define MAX_N_ATTR       20
+
+#define TEXT_SIZE    100000
 
 int verbose;
 
@@ -338,7 +343,7 @@ char                 host_name[256], boundary[80], str[80], *p;
 
 int main(int argc, char *argv[])
 {
-char      str[1000], text[10000], uname[80], upwd[80];
+char      str[1000], text[TEXT_SIZE], uname[80], upwd[80];
 char      host_name[256], logbook[32], textfile[256], password[80], subdir[256];
 char      *buffer[MAX_ATTACHMENTS], attachment[MAX_ATTACHMENTS][256];
 INT       att_size[MAX_ATTACHMENTS];
