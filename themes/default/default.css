@@ -407,6 +407,16 @@ td {
   font-size:small;
 }
 
+.notifyleft {
+  padding:5px;
+  border:1px solid #806000;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  background-color:#FFD070;
+  text-align:left;
+  font-size:medium;
+}
+
 /* dialog boxes (login, delete, etc.) */
 .dlgframe {
   width:50%;
