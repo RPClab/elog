@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.65  2002/08/06 13:41:40  midas
+  Fixed problem with empty logbooks
+
   Revision 2.64  2002/08/06 12:26:20  midas
   Fixed crash for logbooks without a password file
 
@@ -6260,7 +6263,7 @@ MSG_LIST *msg_list;
       i_start = (page_n - 1) * n_page;
       i_stop  = i_start + n_page - 1;
 
-      if (i_start >= n_msg)
+      if (i_start >= n_msg && n_msg > 0)
         {
         show_error("Page doesn't exist");
         free(msg_list);
