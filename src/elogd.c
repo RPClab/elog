@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.566  2005/02/20 19:39:19  ritt
+   Improved speed by pre-parsing configuration file
+
    Revision 1.565  2005/02/20 14:30:07  ritt
    Applied patch from Heiko Scheit fixing problem with 'Show attributes' causing the 'Format ...' options to be ignored
 
@@ -1202,6 +1205,7 @@ int getcfg(char *group, char *param, char *value, int vsize);
 int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_LENGTH],
                      char attrib[][NAME_LENGTH], BOOL format_date);
 void highlight_searchtext(regex_t * re_buf, char *src, char *dst, BOOL hidden);
+int parse_config_file(char *config_file);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -2835,7 +2839,22 @@ INT ss_daemon_init()
 
 /* Parameter extraction from configuration file similar to win.ini */
 
-char *cfgbuffer;
+typedef struct {
+   char *param;
+   char *value;
+} CONFIG_PARAM;
+
+typedef struct {
+   char *section_name;
+   int  n_params;
+   CONFIG_PARAM *config_param;
+} LB_CONFIG;
+
+LB_CONFIG *lb_config = NULL;
+int n_lb_config = 0;
+
+char _topgroup[256];
+char _condition[256];
 time_t cfgfile_mtime = 0;
 
 /*-------------------------------------------------------------------*/
@@ -2845,10 +2864,7 @@ void check_config_file(BOOL force)
    struct stat cfg_stat;
 
    if (force) {
-      if (cfgbuffer) {
-         xfree(cfgbuffer);
-         cfgbuffer = NULL;
-      }
+      parse_config_file(config_file);
       return;
    }
 
@@ -2856,20 +2872,13 @@ void check_config_file(BOOL force)
    if (stat(config_file, &cfg_stat) == 0) {
       if (cfgfile_mtime < cfg_stat.st_mtime) {
          cfgfile_mtime = cfg_stat.st_mtime;
-
-         if (cfgbuffer) {
-            xfree(cfgbuffer);
-            cfgbuffer = NULL;
-         }
+         parse_config_file(config_file);
       }
-   } else {
+   } else
       eprintf("Cannot stat() config file; %s\n", strerror(errno));
-   }
 }
 
 /*-------------------------------------------------------------------*/
-
-char _topgroup[256];
 
 void setcfg_topgroup(char *topgroup)
 {
@@ -2897,8 +2906,6 @@ int is_logbook(char *logbook)
 
 /*-------------------------------------------------------------------*/
 
-char _condition[256];
-
 void set_condition(char *c)
 {
    strlcpy(_condition, c, sizeof(_condition));
@@ -2915,7 +2922,7 @@ BOOL match_param(char *str, char *param, int conditional_only)
       return FALSE;
 
    if (!_condition[0] || str[0] != '{')
-      return strieq(str, param);
+      return (strcmp(str, param) == 0);
 
    p = str;
    if (strchr(p, '}'))
@@ -2934,9 +2941,9 @@ BOOL match_param(char *str, char *param, int conditional_only)
 
    for (i = 0; i < ncl; i++)
       for (j = 0; j < npl; j++)
-         if (strieq(clist[i], plist[j])) {
+         if (strcmp(clist[i], plist[j]) == 0) {
             /* condition matches */
-            return strieq(p, param);
+            return strcmp(p, param) == 0;
          }
 
    /* check and'ed conditions */
@@ -2945,7 +2952,7 @@ BOOL match_param(char *str, char *param, int conditional_only)
          nand = strbreak(plist[i], alist, 10, "&");
          for (j = 0; j < nand; j++) {
             for (k = 0; k < ncl; k++)
-               if (strieq(clist[k], alist[j]))
+               if (strcmp(clist[k], alist[j]) == 0)
                   break;
 
             if (k == ncl)
@@ -2953,7 +2960,7 @@ BOOL match_param(char *str, char *param, int conditional_only)
          }
 
          if (j == nand)
-            return strieq(p, param);
+            return strcmp(p, param) == 0;
       }
 
    return 0;
@@ -2961,91 +2968,174 @@ BOOL match_param(char *str, char *param, int conditional_only)
 
 /*-------------------------------------------------------------------*/
 
-int getcfg_simple(char *group, char *param, char *value, int vsize, int conditional)
-/* read value for certain parameter in configuration file using [<group>] */
+int param_compare(const void *p1, const void *p2)
 {
-   char *str, *p, *pstr;
-   int length, status, fh;
+   return stricmp(((CONFIG_PARAM *)p1)->param, ((CONFIG_PARAM *)p2)->param);
+}
 
-   value[0] = 0;
-   status = 0;
+/*------------------------------------------------------------------*/
 
-   /* read configuration file on init */
-   if (!cfgbuffer) {
-      fh = open(config_file, O_RDONLY | O_BINARY);
-      if (fh < 0)
-         return 0;
-      length = lseek(fh, 0, SEEK_END);
-      lseek(fh, 0, SEEK_SET);
-      cfgbuffer = xmalloc(length + 1);
-      read(fh, cfgbuffer, length);
-      cfgbuffer[length] = 0;
-      close(fh);
+void free_config()
+{
+   int i, j;
+
+   for (i=0 ; i<n_lb_config ; i++) {
+      for (j=0 ; j<lb_config[i].n_params ; j++) {
+         xfree(lb_config[i].config_param[j].param);
+         xfree(lb_config[i].config_param[j].value);
+      }
+      xfree(lb_config[i].config_param);
+      xfree(lb_config[i].section_name);
    }
+   xfree(lb_config);
+   lb_config = NULL;
+   n_lb_config = 0;
+}
+
+/*------------------------------------------------------------------*/
+
+int parse_config_file(char *file_name)
+/* parse whole config file and store options in sorted list */
+{
+   char *str, *buffer, *p, *pstr;
+   int index, i, j, fh, length;
+
+   str = xmalloc(10000);
+
+   /* open configuration file */
+   fh = open(file_name, O_RDONLY | O_BINARY);
+   if (fh < 0)
+      return 0;
+   length = lseek(fh, 0, SEEK_END);
+   lseek(fh, 0, SEEK_SET);
+   buffer = xmalloc(length + 1);
+   read(fh, buffer, length);
+   buffer[length] = 0;
+   close(fh);
+
+   /* release previously allocated memory */
+   if (lb_config) 
+      free_config();
 
    /* search group */
-   str = xmalloc(10000);
-   p = cfgbuffer;
+   p = buffer;
+   index = 0;
    do {
       if (*p == '[') {
          p++;
          pstr = str;
-         while (*p && *p != ']' && *p != '\n')
+         while (*p && *p != ']' && *p != '\n' && *p != '\r')
             *pstr++ = *p++;
          *pstr = 0;
-         if (strieq(str, group)) {
-            /* search parameter */
-            p = strchr(p, '\n');
-            if (p)
+
+         /* allocate new group */
+         if (!lb_config)
+            lb_config = xmalloc(sizeof(LB_CONFIG));
+         else
+            lb_config = xrealloc(lb_config, sizeof(LB_CONFIG)*(n_lb_config+1));
+         lb_config[n_lb_config].section_name = xmalloc(strlen(str)+1);
+         lb_config[n_lb_config].n_params = 0;
+         strcpy(lb_config[n_lb_config].section_name, str);
+
+         /* enumerate parameters */
+         i = 0;
+         p = strchr(p, '\n');
+         if (p)
+            p++;
+         while (p && *p && *p != '[') {
+            pstr = str;
+            while (*p && *p != '=' && *p != '\n' && *p != '\r')
+               *pstr++ = *p++;
+            *pstr-- = 0;
+            while (pstr > str && (*pstr == ' ' || *pstr == '\t' || *pstr == '='))
+               *pstr-- = 0;
+
+            if (*p == '=') {
+
+               if (lb_config[n_lb_config].n_params == 0)
+                  lb_config[n_lb_config].config_param = xmalloc(sizeof(CONFIG_PARAM));
+               else
+                  lb_config[n_lb_config].config_param = xrealloc(lb_config[n_lb_config].config_param, 
+                     sizeof(CONFIG_PARAM)*(lb_config[n_lb_config].n_params+1));
+               lb_config[n_lb_config].config_param[i].param = xmalloc(strlen(str)+1);
+               
+               for (j=0 ; j<(int)strlen(str) ; j++)
+                  lb_config[n_lb_config].config_param[i].param[j] = toupper(str[j]);
+               lb_config[n_lb_config].config_param[i].param[j] = 0;
+
                p++;
-            while (p && *p && *p != '[') {
+               while (*p == ' ' || *p == '\t')
+                  p++;
                pstr = str;
-               while (*p && *p != '=' && *p != '\n')
+               while (*p && *p != '\n' && *p != '\r')
                   *pstr++ = *p++;
                *pstr-- = 0;
-               while (pstr > str && (*pstr == ' ' || *pstr == '=' || *pstr == '\t'))
+               while (*pstr == ' ' || *pstr == '\t')
                   *pstr-- = 0;
 
-               if (match_param(str, param, conditional)) {
-                  status = strchr(str, '{') ? 2 : 1;
-                  if (*p == '=') {
-                     p++;
-                     while (*p == ' ' || *p == '\t')
-                        p++;
-                     pstr = str;
-                     while (*p && *p != '\n' && *p != '\r')
-                        *pstr++ = *p++;
-                     *pstr-- = 0;
-                     while (*pstr == ' ' || *pstr == '\t')
-                        *pstr-- = 0;
+               lb_config[n_lb_config].config_param[i].value = xmalloc(strlen(str)+1);
+               strcpy(lb_config[n_lb_config].config_param[i].value, str);
 
-                     if (str[0] == '"' && str[strlen(str) - 1] == '"' &&
-                         strchr(str + 1, '"') == str + strlen(str) - 1) {
-                        strlcpy(value, str + 1, vsize);
-                        value[strlen(value) - 1] = 0;
-                     } else
-                        strlcpy(value, str, vsize);
-
-                     xfree(str);
-                     return status;
-                  }
-               }
-
-               if (p)
-                  p = strchr(p, '\n');
-               if (p)
-                  p++;
+               i++;
+               lb_config[n_lb_config].n_params = i;
             }
-         }
-      }
-      if (p)
-         p = strchr(p, '\n');
-      if (p)
-         p++;
-   } while (p);
 
+            while (*p && *p != '\r' && *p != '\n')
+               p++;
+            while (*p && (*p == '\r' || *p == '\n'))
+               p++;
+         }
+
+         /* sort parameter */
+         qsort(lb_config[n_lb_config].config_param, lb_config[n_lb_config].n_params, sizeof(CONFIG_PARAM), param_compare);
+
+         n_lb_config++;
+         index++;
+      }
+   } while (*p);
 
    xfree(str);
+   xfree(buffer);
+   return 0;
+}
+
+/*-------------------------------------------------------------------*/
+
+int getcfg_simple(char *group, char *param, char *value, int vsize, int conditional)
+{
+   int i, j, status;
+   char uparam[256];
+
+   for (i = 0; i < (int) strlen(param); i++)
+      uparam[i] = toupper(param[i]);
+   uparam[i] = 0;
+   value[0] = 0;
+
+   for (i=0 ; i<n_lb_config ; i++)
+      if (strieq(lb_config[i].section_name, group))
+         break;
+
+   if (i == n_lb_config)
+      return 0;
+
+   for (j=0 ; j<lb_config[i].n_params ; j++)
+      if (match_param(lb_config[i].config_param[j].param, uparam, conditional)) {
+         status = strchr(lb_config[i].config_param[j].param, '{') ? 2 : 1;
+         strlcpy(value, lb_config[i].config_param[j].value, vsize);
+         return status;
+      }
+
+   return 0;
+}
+
+/*-------------------------------------------------------------------*/
+
+int enumgrp(int index, char *group)
+{
+   if (index < n_lb_config) {
+      strcpy(group,lb_config[index].section_name);
+      return 1;
+   }
 
    return 0;
 }
@@ -3156,31 +3246,11 @@ char *find_param(char *buf, char *group, char *param)
 
 int is_group(char *group)
 {
-   char *str, *p, *pstr;
+   int i;
 
-   /* search group */
-   str = xmalloc(10000);
-   p = cfgbuffer;
-   do {
-      if (*p == '[') {
-         p++;
-         pstr = str;
-         while (*p && *p != ']' && *p != '\n')
-            *pstr++ = *p++;
-         *pstr = 0;
-         if (strieq(str, group)) {
-            xfree(str);
-            return 1;
-         }
-      }
-      if (p)
-         p = strchr(p, '\n');
-      if (p)
-         p++;
-   } while (p);
-
-
-   xfree(str);
+   for (i=0 ; i<n_lb_config ; i++)
+      if (strieq(group, lb_config[i].section_name))
+         return 1;
    return 0;
 }
 
@@ -3188,111 +3258,20 @@ int is_group(char *group)
 
 int enumcfg(char *group, char *param, int psize, char *value, int vsize, int index)
 {
-   char str[10000], *p, *pstr;
    int i;
 
-   /* open configuration file */
-   if (!cfgbuffer)
-      getcfg("dummy", "dummy", str, sizeof(str));
-   if (!cfgbuffer)
-      return 0;
+   for (i=0 ; i<n_lb_config ; i++)
+      if (strieq(group, lb_config[i].section_name)) {
 
-   /* search group */
-   p = cfgbuffer;
-   do {
-      if (*p == '[') {
-         p++;
-         pstr = str;
-         while (*p && *p != ']' && *p != '\n' && *p != '\r')
-            *pstr++ = *p++;
-         *pstr = 0;
-         if (strieq(str, group)) {
-            /* enumerate parameters */
-            i = 0;
-            p = strchr(p, '\n');
-            if (p)
-               p++;
-            while (p && *p && *p != '[') {
-               pstr = str;
-               while (*p && *p != '=' && *p != '\n' && *p != '\r')
-                  *pstr++ = *p++;
-               *pstr-- = 0;
-               while (pstr > str && (*pstr == ' ' || *pstr == '\t' || *pstr == '='))
-                  *pstr-- = 0;
-
-               if (i == index) {
-                  strlcpy(param, str, psize);
-                  if (*p == '=') {
-                     p++;
-                     while (*p == ' ' || *p == '\t')
-                        p++;
-                     pstr = str;
-                     while (*p && *p != '\n' && *p != '\r')
-                        *pstr++ = *p++;
-                     *pstr-- = 0;
-                     while (*pstr == ' ' || *pstr == '\t')
-                        *pstr-- = 0;
-
-                     if (value)
-                        strlcpy(value, str, vsize);
-                  }
-                  return 1;
-               }
-
-               if (p)
-                  p = strchr(p, '\n');
-               if (p)
-                  p++;
-               i++;
-            }
-         }
-      }
-      if (p)
-         p = strchr(p, '\n');
-      if (p)
-         p++;
-   } while (p);
-
-   return 0;
-}
-
-/*------------------------------------------------------------------*/
-
-int enumgrp(int index, char *group)
-{
-   char str[10000], *p, *pstr;
-   int i;
-
-   /* open configuration file */
-   if (!cfgbuffer)
-      getcfg("dummy", "dummy", str, sizeof(str));
-   if (!cfgbuffer)
-      return 0;
-
-   /* search group */
-   p = cfgbuffer;
-   i = 0;
-   do {
-      if (*p == '[') {
-         p++;
-         pstr = str;
-         while (*p && *p != ']' && *p != '\n' && *p != '\r')
-            *pstr++ = *p++;
-         *pstr = 0;
-
-         if (i == index) {
-            strcpy(group, str);
+         if (index < lb_config[i].n_params) {
+            strlcpy(param, lb_config[i].config_param[index].param, psize);
+            strlcpy(value, lb_config[i].config_param[index].value, vsize);
             return 1;
          }
 
-         i++;
-      }
+         return 0;
 
-      while (*p && *p != '\r' && *p != '\n')
-         p++;
-      while (*p && (*p == '\r' || *p == '\n'))
-         p++;
-   } while (*p);
+      }
 
    return 0;
 }
@@ -21348,7 +21327,7 @@ void server_loop(void)
 
    xfree(net_buffer);
    xfree(return_buffer);
-   xfree(cfgbuffer);
+   free_config();
 }
 
 /*------------------------------------------------------------------*/
@@ -22106,6 +22085,9 @@ int main(int argc, char *argv[])
       exit(EXIT_FAILURE);
    }
    close(fh);
+   
+   /* parse contents of config file into internal structure */
+   parse_config_file(config_file);
 
    /* evaluate directories from config file */
    if (getcfg("global", "Resource Dir", str, sizeof(str)))
