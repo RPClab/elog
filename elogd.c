@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.91  2002/11/04 12:56:25  midas
+  Fixed bug selecting messages in other languages
+
   Revision 2.90  2002/10/25 04:21:19  midas
   Made self registration work with global password file
 
@@ -6464,8 +6467,6 @@ int  i, n_log;
 char str[256];
 char lbk_list[MAX_N_LIST][NAME_LENGTH];
 
-
-
   rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1>\n",
             gt("Border width"), gt("Categories cellpadding"));
   rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
@@ -6488,13 +6489,13 @@ char lbk_list[MAX_N_LIST][NAME_LENGTH];
   rsprintf("<input type=button value=\"%s\" onClick=\"ToggleAll();\">\n", loc("Toggle all"));
 
   if (!getcfg(lbs->name, "Menu commands", str) ||
-      strstr(str, loc("Delete")))
+      strstr(str, "Delete"))
     {
     rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Delete"));
     }
 
   if (getcfg(lbs->name, "Menu commands", str) &&
-      strstr(str, loc("Copy to")))
+      strstr(str, "Copy to"))
     {
     rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Copy to"));
     rsprintf("<select name=destc>\n");
@@ -6526,7 +6527,7 @@ char lbk_list[MAX_N_LIST][NAME_LENGTH];
     }
 
   if (getcfg(lbs->name, "Menu commands", str) &&
-      strstr(str, loc("Move to")))
+      strstr(str, "Move to"))
     {
     rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Move to"));
     rsprintf("<select name=destm>\n");
