@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.76  2003/04/08 10:25:56  midas
+  Fixed small bug in debugging code
+
   Revision 1.75  2003/04/08 08:31:00  midas
   Made self_register=3 work with [global] password file
 
@@ -12937,15 +12940,12 @@ struct stat          cfg_stat;
         else if (strncmp(net_buffer, "POST", 4) == 0)
           {
           if (verbose)
-            printf("%s\n", net_buffer+header_length);
+            puts(net_buffer+header_length);
 
           /* get logbook from list (needed for attachment dir) */
           for (i=0 ; lb_list[i].name[0] ; i++)
             if (equal_ustring(logbook, lb_list[i].name))
               break;
-
-          if (strstr(net_buffer+header_length, "line1"))
-            strcpy(str, strstr(net_buffer+header_length, "line1"));
 
           decode_post(&lb_list[i], net_buffer+header_length, boundary, content_length);
           }
