@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.318  2004/04/08 14:21:14  midas
+   Implemented 'protect selection page'
+
    Revision 1.317  2004/04/06 21:19:59  midas
    Fixed problem with multiple quick filters on attributes without option lists
 
@@ -15713,7 +15716,9 @@ void show_selection_page()
       return;
 
    /* if selection page protected, check password */
-   if (getcfg("global", "password file", str))
+   if (getcfg("global", "password file", str) &&
+       getcfg("global", "protect selection page", str) &&
+       atoi(str) == 1)
       if (!check_user_password(NULL, getparam("unm"), getparam("upwd"), ""))
          return;
 
