@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.587  2005/03/14 20:07:46  ritt
+   Show attributes as HTML if they contain '<b>' etc.
+
    Revision 1.586  2005/03/14 20:00:34  ritt
    Fixed problem with multiple extendable options
 
@@ -5437,12 +5440,8 @@ int is_html(char *s)
       return TRUE;
    }
 
-   if (strstr(str, "<BR>")) {
-      xfree(str);
-      return TRUE;
-   }
-
-   if (strstr(str, "<HR>")) {
+   if (strstr(str, "<BR>") || strstr(str, "<HR>") || strstr(str, "<B>") || strstr(str, "<I>") ||
+       strstr(str, "<P>")){
       xfree(str);
       return TRUE;
    }
