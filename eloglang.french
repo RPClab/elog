@@ -245,7 +245,6 @@ Entry deleted remotely = Entrée distante supprimée
 All entries identical = Toutes les entrées sont identiques
 Invalid mirror_id or entry_date = Valeur de mirror_id ou entry_date incorrecte
 Synchronize all logbooks = Synchroniser tous les registres
-Display comma-separated values (CSV) = Afficher le résultat au format CSV
 Calendar = Calendrier
 Remote entry received = Entrée distante reçue
 Pick a date = Choisissez une date
@@ -283,7 +282,14 @@ Comma = virgule
 Semicolon = point-virgule
 Ignore first line = Ignorer la première ligne
 Preview import = Aperçu avant importation
-CVS import preview of %s = Aperçu pour l'importation CVS de %s
 Too many attributes in CSV file = Trop d'attributs dans le fichier CSV
 %d entries successfully imported = %d entrées importées avec succès
 No 'Attributes' option present in %s = Il n'y a pas d'option 'Attributs' dans %s
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+CSV ("," separated) = 
+CSV (";" separated) = 
+Auto detect = 
+CSV import preview of %s = 

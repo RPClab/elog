@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.315  2004/03/26 08:28:29  midas
+   Version 2.5.2
+
    Revision 1.314  2004/03/25 20:33:47  midas
    *** empty log message ***
 
@@ -444,95 +447,8 @@
    Revision 1.169  2004/01/05 15:01:22  midas
    Display message comment on reedit
 
-   Revision 1.168  2003/12/31 19:47:06  midas
-   Implemented conditional attributes
-
-   Revision 1.167  2003/12/15 09:36:23  midas
-   Added 'date on reply = 2' option
-
-   Revision 1.166  2003/12/05 12:16:23  midas
-   Added .selframe style class
-
-   Revision 1.165  2003/12/04 20:56:51  midas
-   Added 'date on reply' flag
-
-   Revision 1.164  2003/12/04 11:34:36  midas
-   Made 'preset xxx' work with boolean attributes
-
-   Revision 1.163  2003/12/03 14:36:01  midas
-   Added 'comment <attribute>'
-
-   Revision 1.162  2003/12/03 12:49:14  midas
-   Changed email notification format
-
-   Revision 1.161  2003/12/03 12:10:24  midas
-   Change email notification format
-
-   Revision 1.160  2003/12/03 11:55:27  midas
-   Added 'use email heading'
-
-   Revision 1.159  2003/11/27 10:15:39  midas
-   Fixed bug with deny/allow commands in other languages
-
-   Revision 1.158  2003/11/20 16:36:05  midas
-   Added check_config_file()
-
-   Revision 1.157  2003/11/20 16:22:54  midas
-   Removed printf()
-
-   Revision 1.156  2003/11/20 16:05:03  midas
-   Implemented check_config
-
-   Revision 1.155  2003/11/20 13:37:20  midas
-   Added 'restrict edit time'
-
-   Revision 1.154  2003/11/19 14:11:38  midas
-   Added MAX_REPLY_TO
-
-   Revision 1.153  2003/11/11 12:21:33  midas
-   Fixed bug with \r and \n in header
-
-   Revision 1.152  2003/11/11 12:11:19  midas
-   Fixed stack overflow on long reply-chains
-
-   Revision 1.151  2003/10/28 13:21:26  midas
-   Fixed empty 'Location:' for konqueror
-
-   Revision 1.150  2003/10/26 15:55:46  midas
-   Fixed bug in el_delete_message
-
-   Revision 1.149  2003/10/24 20:14:45  midas
-   - user cannot change login name if already existing
-   - user cannot search in logbooks of which he has no access
-   - added date of last entry in logbook selection page
-
-   Revision 1.148  2003/10/01 06:52:01  midas
-   Started to implement synchronize
-
-   Revision 1.147  2003/09/29 13:14:33  midas
-   Create password file if not present
-
-   Revision 1.146  2003/09/08 10:57:46  midas
-   Fixed even more HTML errors
-
-   Revision 1.145  2003/09/08 09:29:27  midas
-   Fixed HTML errors with nested tables etc.
-
-   Revision 1.144  2003/09/08 07:34:18  midas
-   Increased timeout in SMTP conversation
-
-   Revision 1.143  2003/09/05 15:16:21  midas
-   Changed search for '\r' to '\n' in determination of reply line length
-
-   Revision 1.142  2003/07/29 20:25:47  midas
-   Fixed display of text attachments
-
-   Revision 1.141  2003/07/28 15:24:27  midas
-   Fixed bug with elog:/n reference
-
-   Revision 1.140  2003/07/25 08:34:52  midas
-   Fixed bugs in HTML code
-                                          
+   <oder revision comments removed>
+  
 \********************************************************************/
 
 /* Version of ELOG */

@@ -103,8 +103,6 @@ Not logged in = Niet ingelogd
 Login = Inloggen
 Page %d of %d = Pagina %d van de %d
 all entries = alle berichten
-Lo
-gin name = Loginnaam
 Full name = Gebruikersnaam
 ELOG user config = ELOG gebruikers configuratie
 ELOG new user = ELOG Nieuwe gebruiker
@@ -257,7 +255,6 @@ Please enter day for attribute '%s' = Geef een dag voor attribuut '%s'
 Please enter year for attribute '%s' = Geef een jaar voor attribuut '%s'
 Please enter attribute '%s' = Geef een attribuut '%s'
 Entry time = Geef de tijd op
-Display comma-separated values (CSV) = Toon komma gescheiden waarden (CSV)
 Start = Start
 End = Eind
 Remote entry received = Bericht van andere server ontvangen
@@ -291,3 +288,11 @@ CSV import preview of %s = CSV import voorbeeld van %s
 Too many attributes in CSV file = Te veel attributen in CSV bestand 
 %d entries successfully imported = %d  berichten succesvol geïmporteerd
 No 'Attributes' option present in %s = Geen 'Attributen' optie aanwezig in %s
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+CSV ("," separated) = 
+CSV (";" separated) = 
+Login name = 
+Auto detect = 

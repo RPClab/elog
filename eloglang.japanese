@@ -50,7 +50,6 @@ Display full entries = 全ての記事を表示
 Summary only = 記事概要のみ
 Summary = 概要
 Display threads = スレッド表示
-Display comma-separated values (CSV) = CSV表示
 Options = オプション
 Show attachments = 添付を表示
 Printable output = 印刷出力
@@ -258,7 +257,6 @@ Please enter numeric value for '%s' = '%s'には半角数字を入力してください。
 Entry time = 登録時刻
 Start = 開始日
 End = 終了日
->From = から
 After = 以降
 to = まで
 Before = 以前
@@ -286,3 +284,11 @@ CSV import preview of %s = %sのCSVインポートプレビュー
 Too many attributes in CSV file = CSVファイルの属性が多すぎます
 %d entries successfully imported = %d個の記事をインポートしました
 No 'Attributes' option present in %s = %sに属性オプションがありません
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+CSV ("," separated) = 
+CSV (";" separated) = 
+Auto detect = 
+From = 

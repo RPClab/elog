@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.19  2004/03/26 08:28:29  midas
+  Version 2.5.2
+
   Revision 1.18  2004/03/25 19:47:48  midas
   Fixed problem with attributes containing spaces
 
@@ -984,7 +987,7 @@ int main(int argc, char *argv[])
             else if (argv[i][1] == 'm')
                strcpy(textfile, argv[++i]);
             else {
-               usage:
+             usage:
                printf("\nusage: elog\n");
                printf("           -h <hostname> [-p port] [-s subdir]\n");
                printf

@@ -242,7 +242,6 @@ Entry deleted remotely = Entrada borrada remotamente
 All entries identical = Todas las entradas son identicas
 Invalid mirror_id or entry_date = Mirror_id o fecha_de_entrada invalido
 Synchronize all logbooks = Sincronizar todos los logbooks
-Display comma-separated values (CSV) = Mostrar valores separados por coma (CSV)
 Calendar = Calendario
 Remote entry received = Se recibio entrada remota
 Pick a date = Elegir una fecha
@@ -284,3 +283,10 @@ Edit entry = Editar entrada
 Delete entry = Borrar entrada
 From = Desde
 No 'Attributes' option present in %s = No se encuentra presente la opcion 'Attributes' en %s
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+CSV ("," separated) = 
+CSV (";" separated) = 
+Auto detect = 
