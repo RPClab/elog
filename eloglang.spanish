@@ -1,4 +1,5 @@
 #
+# Spanish messages by Julio Calvo <jcalvo@mec-tuc.com.ar>
 # $Revision$
 #
 
@@ -134,3 +135,13 @@ Cannot write to <b>%s</b> = No se puede escribir en el <b>%s</b>
 No SMTP host defined in [global] section of configuration file = No se definio el host SMTP en en la seccion [global] del archivo de configuracion
 Messages %s cannot be read from logook "%s" = El mensaje %s no puede leerse del logbook "%s"
 New message cannot be written to directory "%s" = No puede escribirse el nuevo mensaje al directorio "%s"
+
+#
+# New strings for V2.0
+#
+Display full message =
+Display threads =
+Logbook is empty =
+This message has been deleted =
+Download =
+and all its replies =
