@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.11  2002/02/12 16:06:10  midas
+  Fixed small bug
+
   Revision 1.10  2002/01/31 00:51:41  midas
   Small patch to make elogd run under Max OS X (Darwin), thanks to Dominik Westner <westner@logicunited.com>
 
@@ -5745,8 +5748,11 @@ FILE   *f;
         strcat(file_name, DIR_SEPARATOR_STR);
       strcat(file_name, "themes");
       strcat(file_name, DIR_SEPARATOR_STR);
-      strcat(file_name, theme_name);
-      strcat(file_name, DIR_SEPARATOR_STR);
+      if (theme_name[0])
+        {
+        strcat(file_name, theme_name);
+        strcat(file_name, DIR_SEPARATOR_STR);
+        }
       strcat(file_name, path);
       }
 
