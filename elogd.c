@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.19  2002/06/14 07:21:38  midas
+  Corrected parameters to qsort()
+
   Revision 2.18  2002/06/14 07:15:22  midas
   Fixed <keep> on resubmits
 
@@ -1359,11 +1362,12 @@ INT ss_file_find(char *path, char *pattern, char **plist)
 
 /*------------------------------------------------------------------*/
 
-int eli_compare(const EL_INDEX *e1, const EL_INDEX *e2)
+int eli_compare(const void *e1, const void *e2)
 {
-  if (e1->file_time < e2->file_time)
+
+  if (((EL_INDEX *)e1)->file_time < ((EL_INDEX *)e2)->file_time)
     return -1;
-  if (e1->file_time > e2->file_time)
+  if (((EL_INDEX *)e1)->file_time > ((EL_INDEX *)e2)->file_time)
     return 1;
   return 0;
 }
