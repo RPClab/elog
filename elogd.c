@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.0  2002/06/06 15:16:39  midas
+  First version with new database scheme
+
   Revision 1.31  2002/06/03 09:55:08  midas
   Added 'start page=' option
 
@@ -169,6 +172,14 @@ typedef int INT;
 #define EL_LAST_MSG   3
 #define EL_NO_MSG     4
 #define EL_FILE_ERROR 5
+#define EL_UPGRADE    6
+#define EL_EMPTY      7
+#define EL_MEM_ERROR  8
+
+#define EL_FIRST      1
+#define EL_LAST       2
+#define EL_NEXT       3
+#define EL_PREV       4
 
 #define WEB_BUFFER_SIZE 2000000
 
@@ -179,9 +190,6 @@ char header_buffer[1000];
 int  return_length;
 char host_name[256];
 char referer[256];
-char logbook[256];
-char logbook_enc[256];
-char data_dir[256];
 char cfg_file[256];
 char cfg_dir[256];
 char tcp_hostname[256];
@@ -290,6 +298,24 @@ struct {
   { ".ZIP",   "application/x-zip-compressed" },
   { "" },
 };
+
+
+typedef struct {
+  int    message_id;
+  char   file_name[32];
+  time_t file_time;
+  int    offset;
+} EL_INDEX;
+
+typedef struct {
+  char      name[256];
+  char      name_enc[256];
+  char      data_dir[256];
+  EL_INDEX  *el_index;
+  int       n_el_index;
+} LOGBOOK;
+
+LOGBOOK *lb_list = NULL;
 
 int scan_attributes(char *logbook);
 void show_error(char *error);
@@ -569,7 +595,7 @@ struct tm            *ts;
   offset = (-(int)timezone);
   if (daylight)
     offset += 3600;
-  snprintf(str, sizeof(str) - 1, "Date: %s %+03d%02d\r\n\r\n", buf, 
+  snprintf(str, sizeof(str) - 1, "Date: %s %+03d%02d\r\n\r\n", buf,
           (int) (offset/3600), (int) ((abs((int)offset)/60) % 60));
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
@@ -971,7 +997,7 @@ static char old_language[256];
         return ptrans[n];
       return orig;
       }
-   
+
   return orig;
 }
 
@@ -1140,6 +1166,8 @@ char *pc;
       *result++ = *pc++;
     *result = 0;
     }
+  else
+    *result = 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -1269,322 +1297,360 @@ INT ss_file_find(char * path, char * pattern, char **plist)
 
 /*------------------------------------------------------------------*/
 
-INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
+int el_build_index(LOGBOOK *lbs)
+/* scan all ??????a.log files and build an index table in eli[] */
 {
-int    lfh, i, n, d, min, max, size, offset, direction, last, status, did_walk;
-struct tm *tms, ltms;
-time_t lt, ltime, lact;
-char   str[256], file_name[256], dir[256];
-char   *file_list;
+char      *file_list, str[256], dir[256], file_name[256], *buffer, *p;
+int       index, n, length;
+int       fh;
+time_t    ltime;
+struct tm tms;
 
-  did_walk = 0;
-  ltime = lfh = 0;
+  lbs->n_el_index = 0;
+  lbs->el_index = malloc(0);
 
   /* get data directory */
-  strcpy(dir, data_dir);
+  strcpy(dir, lbs->data_dir);
 
-  /* check tag for direction */
-  direction = 0;
-  if (strpbrk(tag, "+-"))
+  file_list = NULL;
+  n = ss_file_find(dir, "??????a.log", &file_list);
+  if (n == 0)
     {
-    direction = atoi(strpbrk(tag, "+-"));
-    *strpbrk(tag, "+-") = 0;
+    if (file_list)
+      free(file_list);
+    file_list = NULL;
+
+    n = ss_file_find(dir, "??????.log", &file_list);
+    if (n > 0)
+      return EL_UPGRADE;
+
+    return EL_EMPTY;
     }
 
-  /* if tag is given, open file directly */
-  if (tag[0])
+  /* go through all files */
+  for (index=0 ; index<n ; index++)
     {
-    /* extract time structure from tag */
-    tms = &ltms;
-    memset(tms, 0, sizeof(struct tm));
-    tms->tm_year = (tag[0]-'0')*10 + (tag[1]-'0');
-    tms->tm_mon  = (tag[2]-'0')*10 + (tag[3]-'0') -1;
-    tms->tm_mday = (tag[4]-'0')*10 + (tag[5]-'0');
-    tms->tm_hour = 12;
+    strcpy(file_name, dir);
+    strcat(file_name, file_list+index*MAX_PATH_LENGTH);
 
-    if (tms->tm_year < 90)
-      tms->tm_year += 100;
-    ltime = lt = mktime(tms);
+    fh = open(file_name, O_RDWR | O_BINARY, 0644);
 
-    if (ltime < 0)
-      return -1;
-
-    strcpy(str, tag);
-    if (strchr(str, '.'))
-      {
-      offset = atoi(strchr(str, '.')+1);
-      *strchr(str, '.') = 0;
-      }
-    else
-      return -1;
-
-    do
-      {
-      tms = localtime(&ltime);
-
-      sprintf(file_name, "%s%02d%02d%02d.log", dir,
-              tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
-      lfh = open(file_name, O_RDWR | O_BINARY, 0644);
-
-      if (lfh < 0)
-        {
-        if (!walk)
-          return EL_FILE_ERROR;
-
-        did_walk = 1;
-
-        if (direction == -1)
-          ltime -= 3600*24; /* one day back */
-        else
-          ltime += 3600*24; /* go forward one day */
-
-        /* set new tag */
-        tms = localtime(&ltime);
-        sprintf(tag, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
-        }
-
-      /* in forward direction, stop today */
-      if (direction != -1 && ltime > (time_t)(time(NULL)+3600*24))
-        break;
-
-      /* in backward direction, go back 10 years */
-      if (direction == -1 && abs((int)(lt-ltime)) > 3600*24*365*10)
-        break;
-
-      } while (lfh < 0);
-
-    if (lfh < 0)
+    if (fh < 0)
       return EL_FILE_ERROR;
 
-    if (direction == -1 && did_walk)
-      lseek(lfh, 0, SEEK_END);
-    else
-      lseek(lfh, offset, SEEK_SET);
-    }
+    /* read file into buffer */
+    length = lseek(fh, 0, SEEK_END);
 
-  /* open most recent file if no tag given */
-  if (tag[0] == 0)
-    {
-    if (first)
+    if (length > 0)
       {
-      /* go through whole directory, find first file */
-
-      file_list = NULL;
-      n = ss_file_find(dir, "??????.log", &file_list);
-      if (n == 0)
+      buffer = malloc(length);
+      if (buffer == NULL)
         {
-        if (file_list)
-          free(file_list);
-        return EL_FILE_ERROR;
+        printf("Not enough memory to allocate file buffer (%d bytes)\n", length);
+        return EL_MEM_ERROR;
         }
 
-      for (i=0,min=9999999 ; i<n ; i++)
-        {
-        d = atoi(file_list+i*MAX_PATH_LENGTH);
-        if (d == 0)
-          continue;
+      lseek(fh, 0, SEEK_SET);
+      read(fh, buffer, length);
+      close(fh);
 
-        if (d < 900000)
-          d += 1000000; /* last century */
+      /* go through buffer */
+      p = buffer;
 
-        if (d < min)
-          min = d;
-        }
-      free(file_list);
-      sprintf(file_name, "%s%06d.log", dir, min % 1000000);
-      lfh = open(file_name, O_RDWR | O_BINARY, 0644);
-      if (lfh < 0)
-        return EL_FILE_ERROR;
-
-      /* remember tag */
-      sprintf(tag, "%06d.0", min % 1000000);
-
-      /* on tag "+1", don't go to next message */
-      if (direction == 1)
-        direction = 0;
-      }
-    else
-      {
-      /* go through whole directory, find last file */
-
-      file_list = NULL;
-      n = ss_file_find(dir, "??????.log", &file_list);
-      if (n == 0)
-        {
-        if (file_list)
-          free(file_list);
-        return EL_NO_MSG;
-        }
-
-      for (i=0,max=0 ; i<n ; i++)
-        {
-        d = atoi(file_list+i*MAX_PATH_LENGTH);
-        if (d < 900000)
-          d += 1000000; /* last century */
-
-        if (d > max)
-          max = d;
-        }
-      free(file_list);
-      sprintf(file_name, "%s%06d.log", dir, max % 1000000);
-      lfh = open(file_name, O_RDWR | O_BINARY, 0644);
-      if (lfh < 0)
-        return EL_FILE_ERROR;
-
-      lseek(lfh, 0, SEEK_END);
-
-      /* remember tag */
-      sprintf(tag, "%06d.%d", (int) (max % 1000000), (int) (TELL(lfh)));
-      }
-    }
-
-  if (direction == -1)
-    {
-    /* seek previous message */
-
-    if (TELL(lfh) == 0)
-      {
-      /* go back one day */
-      close(lfh);
-
-      lt = ltime;
       do
         {
-        lt -= 3600*24;
-        tms = localtime(&lt);
-        sprintf(str, "%02d%02d%02d.0",
-                tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
+        p = strstr(p, "$@MID@$:");
 
-        status = el_search_message(str, &lfh, FALSE, FALSE);
+        if (p)
+          {
+          lbs->el_index = realloc(lbs->el_index, sizeof(EL_INDEX)*(lbs->n_el_index+1));
+          if (lbs->el_index == NULL)
+            {
+            printf("Not enough memory to allocate message index\n");
+            return EL_MEM_ERROR;
+            }
 
-        } while (status != SUCCESS &&
-                 (INT)ltime-(INT)lt < 3600*24*365);
+          strcpy(str, file_list+index*MAX_PATH_LENGTH);
+          strcpy(lbs->el_index[lbs->n_el_index].file_name, str);
+          
+          memset(&tms, 0, sizeof(struct tm));
+          tms.tm_year = (str[0]-'0')*10 + (str[1]-'0');
+          tms.tm_mon  = (str[2]-'0')*10 + (str[3]-'0') -1;
+          tms.tm_mday = (str[4]-'0')*10 + (str[5]-'0');
+          tms.tm_hour = 0;
 
-      if (status != EL_SUCCESS)
-        {
-        if (fh)
-          *fh = lfh;
-        else
-          close(lfh);
-        return EL_FIRST_MSG;
-        }
+          if (tms.tm_year < 90)
+            tms.tm_year += 100;
+          ltime = mktime(&tms);
 
-      /* adjust tag */
-      strcpy(tag, str);
+          lbs->el_index[lbs->n_el_index].file_time = ltime;
+            
+          lbs->el_index[lbs->n_el_index].message_id = atoi(p+8);
+          lbs->el_index[lbs->n_el_index].offset = (int) p - (int) buffer;
 
-      /* go to end of current file */
-      lseek(lfh, 0, SEEK_END);
+          if (lbs->el_index[lbs->n_el_index].message_id > 0)
+            {
+            /* valid ID */
+            lbs->n_el_index++;
+            }
+
+          p += 8;
+          }
+
+        } while (p);
+
+      free(buffer);
       }
 
-    /* read previous message size */
-    lseek(lfh, -17, SEEK_CUR);
-    i = read(lfh, str, 17);
-    if (i <= 0)
-      {
-      close(lfh);
-      return EL_FILE_ERROR;
-      }
-
-    if (strncmp(str, "$End$: ", 7) == 0)
-      {
-      size = atoi(str+7);
-      lseek(lfh, -size, SEEK_CUR);
-      }
-    else
-      {
-      close(lfh);
-      return EL_FILE_ERROR;
-      }
-
-    /* adjust tag */
-    sprintf(strchr(tag, '.')+1, "%d", (int) (TELL(lfh)));
     }
 
-  if (direction == 1)
-    {
-    /* seek next message */
-
-    /* read current message size */
-    last = TELL(lfh);
-
-    i = read(lfh, str, 15);
-    if (i <= 0)
-      {
-      close(lfh);
-      return EL_FILE_ERROR;
-      }
-    lseek(lfh, -15, SEEK_CUR);
-
-    if (strncmp(str, "$Start$: ", 9) == 0)
-      {
-      size = atoi(str+9);
-      lseek(lfh, size, SEEK_CUR);
-      }
-    else
-      {
-      close(lfh);
-      return EL_FILE_ERROR;
-      }
-
-    /* if EOF, goto next day */
-    i = read(lfh, str, 15);
-    if (i < 15)
-      {
-      close(lfh);
-      time(&lact);
-
-      lt = ltime;
-      do
-        {
-        lt += 3600*24;
-        tms = localtime(&lt);
-        sprintf(str, "%02d%02d%02d.0",
-                tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
-
-        status = el_search_message(str, &lfh, FALSE, FALSE);
-
-        } while (status != EL_SUCCESS &&
-                 (INT)lt-(INT)lact < 3600*24);
-
-      if (status != EL_SUCCESS)
-        {
-        if (fh)
-          *fh = lfh;
-        else
-          close(lfh);
-        return EL_LAST_MSG;
-        }
-
-      /* adjust tag */
-      strcpy(tag, str);
-
-      /* go to beginning of current file */
-      lseek(lfh, 0, SEEK_SET);
-      }
-    else
-      lseek(lfh, -15, SEEK_CUR);
-
-    /* adjust tag */
-    sprintf(strchr(tag, '.')+1, "%d", (int) (TELL(lfh)));
-    }
-
-  if (fh)
-    *fh = lfh;
-  else
-    close(lfh);
+  free(file_list);
 
   return EL_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
+int el_search_message(LOGBOOK *lbs, int mode, int message_id)
+/********************************************************************\
+
+  Routine: el_search_message
+
+  Purpose: Search for a specific message in a logbook
+
+  Input:
+    int   mode              Search mode, EL_FIRST, EL_LAST, EL_NEXT, EL_PREV
+    int   message_id        Message id for EL_NEXT and EL_PREV
+
+  Function value:
+    int                     New message id
+
+\********************************************************************/
+{
+int i;
+
+  if (lbs->n_el_index == 0)
+    return 0;
+
+  if (mode == EL_FIRST)
+    return lbs->el_index[0].message_id;
+
+  if (mode == EL_LAST)
+    return lbs->el_index[lbs->n_el_index-1].message_id;
+
+  if (mode == EL_NEXT)
+    {
+    for (i=0 ; i<lbs->n_el_index ; i++)
+      if (lbs->el_index[i].message_id == message_id)
+        break;
+
+    if (i == lbs->n_el_index)
+      return 0; // message not found
+
+    if (i == lbs->n_el_index-1)
+      return 0; // last message
+
+    return lbs->el_index[i+1].message_id;
+    }
+
+  if (mode == EL_PREV)
+    {
+    for (i=0 ; i<lbs->n_el_index ; i++)
+      if (lbs->el_index[i].message_id == message_id)
+        break;
+
+    if (i == lbs->n_el_index)
+      return 0; // message not found
+
+    if (i == 0)
+      return 0; // first message
+
+    return lbs->el_index[i-1].message_id;
+    }
+
+  return 0;
+}
+
+/*------------------------------------------------------------------*/
+
+INT el_retrieve(LOGBOOK *lbs,
+                int message_id, char *date, char attr_list[MAX_N_ATTR][NAME_LENGTH],
+                char attrib[MAX_N_ATTR][NAME_LENGTH], int n_attr,
+                char *text, int *textsize,
+                char *in_reply_to, char *reply_to,
+                char attachment[MAX_ATTACHMENTS][256],
+                char *encoding)
+/********************************************************************\
+
+  Routine: el_retrieve
+
+  Purpose: Retrieve an ELog entry by its message tab
+
+  Input:
+    LOGBOOK lbs             Logbook structure
+    int    message_id       Message ID to retrieve
+    int    *size            Size of text buffer
+
+  Output:
+    char   *tag             tag of retrieved message
+    char   *date            Date/time of message recording
+    char   attr_list        Names of attributes
+    char   attrib           Values of attributes
+    int    n_attr           Number of attributes
+    char   *text            Message text
+    char   *in_reply_to     Original message if this one is a reply
+    char   *reply_to        Replies for current message
+    char   *attachment[]    File attachments
+    char   *encoding        Encoding of message
+    int    *size            Actual message text size
+
+  Function value:
+    EL_SUCCESS              Successful completion
+    EL_EMPTY                Logbook is empty
+    EL_NO_MSG               Message doesn't exist
+    EL_FILE_ERROR           Internal error
+
+\********************************************************************/
+{
+int     i, index, size, fh;
+char    str[256], file_name[256], *p;
+char    message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
+
+  if (message_id == 0)
+    /* open most recent message */
+    message_id = el_search_message(lbs, EL_LAST, 0);
+
+  if (message_id == 0)
+    return EL_EMPTY;
+
+  for (index = 0 ; index < lbs->n_el_index ; index++)
+    if (lbs->el_index[index].message_id == message_id)
+      break;
+
+  if (index == lbs->n_el_index)
+    return EL_NO_MSG;
+
+  sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
+  fh = open(file_name, O_RDWR | O_BINARY, 0644);
+  if (fh < 0)
+    return EL_FILE_ERROR;
+
+  lseek(fh, lbs->el_index[index].offset, SEEK_SET);
+  i = read(fh, message, sizeof(message)-1);
+  if (i <= 0)
+    {
+    close(fh);
+    return EL_FILE_ERROR;
+    }
+
+  message[i] = 0;
+  close(fh);
+
+  if (strncmp(message, "$@MID@$:", 8) != 0)
+    return EL_FILE_ERROR;
+
+  /* check for correct ID */
+  if (atoi(message+8) != message_id)
+    return EL_FILE_ERROR;
+
+  /* decode message size */
+  p = strstr(message+8, "$@MID@$:");
+  if (p == NULL)
+    size = strlen(message);
+  else
+    size = (int) p - (int) message;
+
+  message[size] = 0;
+
+  /* decode message */
+  el_decode(message, "Date: ", date);
+  el_decode(message, "Reply to: ", reply_to);
+  el_decode(message, "In reply to: ", in_reply_to);
+
+  for (i=0 ; i<n_attr ; i++)
+    {
+    sprintf(str, "%s: ", attr_list[i]);
+    el_decode(message, str, attrib[i]);
+    }
+
+  el_decode(message, "Attachment: ", attachment_all);
+  el_decode(message, "Encoding: ", encoding);
+
+  /* break apart attachements */
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+    if (attachment[i] != NULL)
+      attachment[i][0] = 0;
+
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+    {
+    if (attachment[i] != NULL)
+      {
+      if (i == 0)
+        p = strtok(attachment_all, ",");
+      else
+        p = strtok(NULL, ",");
+
+      if (p != NULL)
+        strcpy(attachment[i], p);
+      else
+        break;
+      }
+    }
+
+  p = strstr(message, "========================================\n");
+
+  /* check for \n -> \r conversion (e.g. zipping/unzipping) */
+  if (p == NULL)
+    p = strstr(message, "========================================\r");
+
+  if (text != NULL)
+    {
+    if (p != NULL)
+      {
+      p += 41;
+      if ((int) strlen(p) >= *textsize)
+        {
+        strncpy(text, p, *textsize-1);
+        text[*textsize-1] = 0;
+        show_error("Message too long to display. Please increase TEXT_SIZE and recompile elogd.");
+        return EL_FILE_ERROR;
+        }
+      else
+        {
+        strcpy(text, p);
+
+        /* strip CR at end */
+        if (text[strlen(text)-1] == '\n')
+          {
+          text[strlen(text)-1] = 0;
+          if (text[strlen(text)-1] == '\r')
+            text[strlen(text)-1] = 0;
+          }
+
+        *textsize = strlen(text);
+        }
+      }
+    else
+      {
+      text[0] = 0;
+      *textsize = 0;
+      }
+    }
+
+  return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int el_submit(LOGBOOK *lbs, int message_id,
+              char attr_name[MAX_N_ATTR][NAME_LENGTH],
               char attr_value[MAX_N_ATTR][NAME_LENGTH],
-              int n_attr, char *text, char *reply_to, char *encoding,
+              int n_attr, char *text, 
+              char *in_reply_to, char *reply_to,
+              char *encoding,
               char afilename[MAX_ATTACHMENTS][256],
               char *buffer[MAX_ATTACHMENTS],
-              INT buffer_size[MAX_ATTACHMENTS],
-              char *tag, INT tag_size)
+              INT buffer_size[MAX_ATTACHMENTS])
 /********************************************************************\
 
   Routine: el_submit
@@ -1592,12 +1658,17 @@ INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
   Purpose: Submit an ELog entry
 
   Input:
+    LOGBOOK lbs             Logbook structure
+    int    message_id       Message id for existing message, 0 for
+                            new message
+
     char   attr_name[][]    Name of attributes
     char   attr_value[][]   Value of attributes
     int    n_attr           Number of attributes
 
     char   *text            Message text
-    char   *reply_to        In reply to this message
+    char   *in_reply_to     In reply to this message
+    char   *reply_to        Replie(s) to this message
     char   *encoding        Text encoding, either HTML or plain
 
     char   *afilename[]     File name of attachments
@@ -1606,24 +1677,19 @@ INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
     char   *tag             If given, edit existing message
     INT    *tag_size        Maximum size of tag
 
-  Output:
-    char   *tag             Message tag in the form YYMMDD.offset
-    INT    *tag_size        Size of returned tag
-
   Function value:
-    EL_SUCCESS              Successful completion
+    int                     New message ID
 
 \********************************************************************/
 {
-INT     n, i, size, fh, status, index, offset, tail_size;
+INT     n, i, size, fh, index, tail_size, orig_size, delta, reply_id;
 struct  tm *tms;
 char    file_name[256], afile_name[MAX_ATTACHMENTS][256], dir[256], str[256],
-        start_str[80], end_str[80], last[80], date[80], thread[80], attachment_all[64*MAX_ATTACHMENTS];
+        date[80], attachment_all[64*MAX_ATTACHMENTS],
+        rep1[256], rep2[256];
 time_t  now;
 char    message[TEXT_SIZE+100], *p;
 BOOL    bedit;
-
-  bedit = (tag[0] != 0);
 
   for (index = 0 ; index < MAX_ATTACHMENTS ; index++)
     {
@@ -1657,7 +1723,7 @@ BOOL    bedit;
         /* assemble ELog filename */
         if (p[0])
           {
-          strcpy(dir, data_dir);
+          strcpy(dir, lbs->data_dir);
 
           time(&now);
           tms = localtime(&now);
@@ -1687,34 +1753,62 @@ BOOL    bedit;
     }
 
   /* generate new file name YYMMDD.log in data directory */
-  strcpy(dir, data_dir);
+  strcpy(dir, lbs->data_dir);
+
+  bedit = (message_id > 0);
+  rep1[0] = rep2[0] = 0;
 
   if (bedit)
     {
     /* edit existing message */
-    strcpy(str, tag);
-    if (strchr(str, '.'))
-      {
-      offset = atoi(strchr(str, '.')+1);
-      *strchr(str, '.') = 0;
-      }
-    sprintf(file_name, "%s%s.log", dir, str);
+    for (index=0 ; index<lbs->n_el_index ; index++)
+      if (lbs->el_index[index].message_id == message_id)
+        break;
+
+    if (index == lbs->n_el_index)
+      return -1;
+
+    sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
     fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
     if (fh < 0)
       return -1;
 
-    lseek(fh, offset, SEEK_SET);
-    read(fh, str, 16);
-    size = atoi(str+9);
-    read(fh, message, size);
+    lseek(fh, lbs->el_index[index].offset, SEEK_SET);
+    i = read(fh, message, sizeof(message)-1);
+    message[i] = 0;
+
+    /* check for valid message */
+    if (strncmp(message, "$@MID@$:", 8) != 0)
+      {
+      close(fh);
+      return -1;
+      }
+
+    /* check for correct ID */
+    if (atoi(message+8) != message_id)
+      {
+      close(fh);
+      return -1;
+      }
+
+    /* decode message size */
+    p = strstr(message+8, "$@MID@$:");
+    if (p == NULL)
+      size = strlen(message);
+    else
+      size = (int) p - (int) message;
+
+    message[size] = 0;
 
     el_decode(message, "Date: ", date);
-    el_decode(message, "Thread: ", thread);
+    el_decode(message, "Reply to: ", rep1);
+    el_decode(message, "In reply to: ", rep2);
     el_decode(message, "Attachment: ", attachment_all);
 
     /* buffer tail of logfile */
     lseek(fh, 0, SEEK_END);
-    tail_size = TELL(fh) - (offset+size);
+    orig_size = size;
+    tail_size = TELL(fh) - (lbs->el_index[index].offset+size);
 
     if (tail_size > 0)
       {
@@ -1725,10 +1819,10 @@ BOOL    bedit;
         return -1;
         }
 
-      lseek(fh, offset+size, SEEK_SET);
+      lseek(fh, lbs->el_index[index].offset+size, SEEK_SET);
       n = read(fh, buffer, tail_size);
       }
-    lseek(fh, offset, SEEK_SET);
+    lseek(fh, lbs->el_index[index].offset, SEEK_SET);
     }
   else
     {
@@ -1736,28 +1830,45 @@ BOOL    bedit;
     time(&now);
     tms = localtime(&now);
 
-    sprintf(file_name, "%s%02d%02d%02d.log", dir,
+    sprintf(file_name, "%02d%02d%02da.log",
             tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
 
-    fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
+    sprintf(str, "%s%s", dir, file_name);
+    fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
     if (fh < 0)
       return -1;
 
     strcpy(date, ctime(&now));
     date[24] = 0;
 
-    if (reply_to[0])
-      sprintf(thread, "%16s %16s", reply_to, "0");
-    else
-      sprintf(thread, "%16s %16s", "0", "0");
-
     lseek(fh, 0, SEEK_END);
+
+    /* new message id is old plus one */
+    message_id = el_search_message(lbs, EL_LAST, 0)+1;
+
+    /* enter message in index */
+    lbs->n_el_index++;
+    lbs->el_index = realloc(lbs->el_index, sizeof(EL_INDEX)*lbs->n_el_index);
+    lbs->el_index[lbs->n_el_index-1].message_id = message_id;
+    strcpy(lbs->el_index[lbs->n_el_index-1].file_name, file_name);
+    lbs->el_index[lbs->n_el_index-1].file_time = now;
+    lbs->el_index[lbs->n_el_index-1].offset = TELL(fh);
     }
 
   /* compose message */
 
-  sprintf(message, "Date: %s\n", date);
-  sprintf(message+strlen(message), "Thread: %s\n", thread);
+  sprintf(message, "$@MID@$: %d\n", message_id);
+  sprintf(message+strlen(message), "Date: %s\n", date);
+
+  if (reply_to[0])
+    sprintf(message+strlen(message), "Reply to: %s\n", reply_to);
+  else if (rep1[0])
+    sprintf(message+strlen(message), "Reply to: %s\n", rep1);
+
+  if (in_reply_to[0])
+    sprintf(message+strlen(message), "In reply to: %s\n", in_reply_to);
+  else if (rep2[0])
+    sprintf(message+strlen(message), "In reply to: %s\n", rep2);
 
   for (i=0 ; i<n_attr ; i++)
     sprintf(message+strlen(message), "%s: %s\n", attr_name[i], attr_value[i]);
@@ -1777,7 +1888,7 @@ BOOL    bedit;
       if (p && (afile_name[i][0] || equal_ustring(afile_name[i], loc("<delete>"))))
         {
         /* delete old attachment */
-        strcpy(str, data_dir);
+        strcpy(str, lbs->data_dir);
         strcat(str, p);
         remove(str);
         }
@@ -1818,22 +1929,9 @@ BOOL    bedit;
   sprintf(message+strlen(message), "Encoding: %s\n", encoding);
   sprintf(message+strlen(message), "========================================\n");
   strcat(message, text);
+  strcat(message, "\n");
 
-  size = 0;
-  sprintf(start_str, "$Start$: %6d\n", size);
-  sprintf(end_str,   "$End$:   %6d\n\f", size);
-
-  size = strlen(message)+strlen(start_str)+strlen(end_str);
-
-  if (tag != NULL && !bedit)
-    sprintf(tag, "%02d%02d%02d.%d", tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday, (int) (TELL(fh)));
-
-  sprintf(start_str, "$Start$: %6d\n", size);
-  sprintf(end_str,   "$End$:   %6d\n\f", size);
-
-  write(fh, start_str, strlen(start_str));
   write(fh, message, strlen(message));
-  write(fh, end_str, strlen(end_str));
 
   if (bedit)
     {
@@ -1841,6 +1939,16 @@ BOOL    bedit;
       {
       n = write(fh, buffer, tail_size);
       free(buffer);
+
+      /* correct offsets for remaining messages */
+      delta = strlen(message) - orig_size;
+
+      for (i=0 ; i<lbs->n_el_index ; i++)
+        if (lbs->el_index[i].message_id == message_id)
+          break;
+
+      for (i++ ; i<lbs->n_el_index ; i++)
+        lbs->el_index[i].offset += delta;
       }
 
     /* truncate file here */
@@ -1854,227 +1962,37 @@ BOOL    bedit;
   close(fh);
 
   /* if reply, mark original message */
-  if (reply_to[0] && !bedit)
+  if (in_reply_to[0] && !bedit)
     {
-    strcpy(last, reply_to);
-    do
-      {
-      status = el_search_message(last, &fh, FALSE, FALSE);
-      if (status == EL_SUCCESS)
-        {
-        /* position to next thread location */
-        lseek(fh, 72, SEEK_CUR);
-        memset(str, 0, sizeof(str));
-        read(fh, str, 16);
-        lseek(fh, -16, SEEK_CUR);
+    char date[80], attr[MAX_N_ATTR][NAME_LENGTH], enc[80], 
+         att[MAX_ATTACHMENTS][256], reply_to[256];
 
-        /* if no reply yet, set it */
-        if (atoi(str) == 0)
-          {
-          sprintf(str, "%16s", tag);
-          write(fh, str, 16);
-          close(fh);
-          break;
-          }
-        else
-          {
-          /* if reply set, find last one in chain */
-          strcpy(last, strtok(str, " "));
-          close(fh);
-          }
-        }
-      else
-        /* stop on error */
-        break;
+    reply_id = atoi(in_reply_to);
 
-      } while (TRUE);
+    /* retrieve original message */
+    size = sizeof(message);
+    el_retrieve(lbs, reply_id, date, attr_list, attr, n_attr,
+                message, &size, in_reply_to, reply_to, att, enc);
+
+    if (reply_to[0])
+      strcat(reply_to, ", ");
+    sprintf(reply_to + strlen(reply_to), "%d", message_id);
+
+    /* don't resubmit attachments */
+    memset(att, 0, sizeof(att));
+
+    /* write modified message */
+    el_submit(lbs, reply_id, attr_list, attr, n_attr,
+              message, in_reply_to, reply_to, enc, att, NULL, NULL);
     }
 
-  return EL_SUCCESS;
+  return message_id;
 }
 
 /*------------------------------------------------------------------*/
 
-INT el_retrieve(char *tag, char *date, char attr_list[MAX_N_ATTR][NAME_LENGTH],
-                char attrib[MAX_N_ATTR][NAME_LENGTH], int n_attr,
-                char *text, int *textsize,
-                char *orig_tag, char *reply_tag,
-                char attachment[MAX_ATTACHMENTS][256],
-                char *encoding)
-/********************************************************************\
-
-  Routine: el_retrieve
-
-  Purpose: Retrieve an ELog entry by its message tab
-
-  Input:
-    char   *tag             tag in the form YYMMDD.offset
-    int    *size            Size of text buffer
-
-  Output:
-    char   *tag             tag of retrieved message
-    char   *date            Date/time of message recording
-    char   attr_list        Names of attributes
-    char   attrib           Values of attributes
-    int    n_attr           Number of attributes
-    char   *text            Message text
-    char   *orig_tag        Original message if this one is a reply
-    char   *reply_tag       Reply for current message
-    char   *attachment[]    File attachments
-    char   *encoding        Encoding of message
-    int    *size            Actual message text size
-
-  Function value:
-    EL_SUCCESS              Successful completion
-    EL_NO_MSG               No message in log
-    EL_LAST_MSG             Last message in log
-    EL_FILE_ERROR           Internal error
-
-\********************************************************************/
-{
-int     i, size, fh, offset, search_status;
-char    str[256], *p;
-char    message[TEXT_SIZE+1000], thread[256], attachment_all[64*MAX_ATTACHMENTS];
-
-  if (tag[0])
-    {
-    search_status = el_search_message(tag, &fh, TRUE, FALSE);
-    if (search_status != EL_SUCCESS)
-      return search_status;
-    }
-  else
-    {
-    /* open most recent message */
-    strcpy(tag, "-1");
-    search_status = el_search_message(tag, &fh, TRUE, FALSE);
-    if (search_status != EL_SUCCESS)
-      return search_status;
-    }
-
-  /* extract message size */
-  offset = TELL(fh);
-  i = read(fh, str, 16);
-  if (i <= 0)
-    {
-    close(fh);
-    return EL_FILE_ERROR;
-    }
-
-  if (strncmp(str, "$Start$: ", 9) == 0)
-    size = atoi(str+9);
-  else
-    {
-    close(fh);
-    return EL_FILE_ERROR;
-    }
-
-  /* read message */
-  memset(message, 0, sizeof(message));
-  read(fh, message, size);
-  close(fh);
-
-  /* decode message */
-  el_decode(message, "Date: ", date);
-  el_decode(message, "Thread: ", thread);
-
-  for (i=0 ; i<n_attr ; i++)
-    {
-    sprintf(str, "%s: ", attr_list[i]);
-    el_decode(message, str, attrib[i]);
-    }
-
-  el_decode(message, "Attachment: ", attachment_all);
-  el_decode(message, "Encoding: ", encoding);
-
-  /* break apart attachements */
-  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-    if (attachment[i] != NULL)
-      attachment[i][0] = 0;
-
-  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-    {
-    if (attachment[i] != NULL)
-      {
-      if (i == 0)
-        p = strtok(attachment_all, ",");
-      else
-        p = strtok(NULL, ",");
-
-      if (p != NULL)
-        strcpy(attachment[i], p);
-      else
-        break;
-      }
-    }
-
-  /* conver thread in reply-to and reply-from */
-  if (orig_tag != NULL && reply_tag != NULL)
-    {
-    p = strtok(thread, " \r");
-    if (p != NULL)
-      strcpy(orig_tag, p);
-    else
-      strcpy(orig_tag, "");
-
-    if (p != NULL)
-      {
-      p = strtok(NULL, " \r");
-      if (p != NULL)
-        strcpy(reply_tag, p);
-      else
-        strcpy(reply_tag, "");
-      if (atoi(orig_tag) == 0)
-        orig_tag[0] = 0;
-      if (atoi(reply_tag) == 0)
-        reply_tag[0] = 0;
-      }
-    }
-
-  p = strstr(message, "========================================\n");
-
-  /* check for \n -> \r conversion (e.g. zipping/unzipping) */
-  if (p == NULL)
-    p = strstr(message, "========================================\r");
-
-  if (text != NULL)
-    {
-    if (p != NULL)
-      {
-      p += 41;
-      if ((int) strlen(p) >= *textsize)
-        {
-        strncpy(text, p, *textsize-1);
-        text[*textsize-1] = 0;
-        show_error("Message too long to display. Please increase TEXT_SIZE and recompile elogd.");
-        return EL_FILE_ERROR;
-        }
-      else
-        {
-        strcpy(text, p);
-
-        /* strip end tag */
-        if (strstr(text, "$End$"))
-          *strstr(text, "$End$") = 0;
-
-        *textsize = strlen(text);
-        }
-      }
-    else
-      {
-      text[0] = 0;
-      *textsize = 0;
-      }
-    }
-
-  if (search_status == EL_LAST_MSG)
-    return EL_LAST_MSG;
-
-  return EL_SUCCESS;
-}
-
-/*------------------------------------------------------------------*/
-
-INT el_delete_message(char *tag)
+INT el_delete_message(LOGBOOK *lbs, int message_id, BOOL delete_attachments,
+                      char attachment[MAX_ATTACHMENTS][256])
 /********************************************************************\
 
   Routine: el_delete_message
@@ -2082,7 +2000,10 @@ INT el_delete_message(char *tag)
   Purpose: Delete an ELog entry including attachments
 
   Input:
-    char   *tag             Message tage
+      LOGBOOK *lbs          Pointer to logbook structure
+      int     message_id    Message ID
+      BOOL    delete_attachments   Delete attachments if TRUE
+      char    attachment    Used to return attachments (on move)
 
   Output:
     <none>
@@ -2092,51 +2013,85 @@ INT el_delete_message(char *tag)
 
 \********************************************************************/
 {
-INT  i, n, size, fh, offset, tail_size, status, n_attr;
-char dir[256], str[256], file_name[256];
-char *buffer, attrib[MAX_N_ATTR][NAME_LENGTH];
-char date[80], text[TEXT_SIZE], orig_tag[80], reply_tag[80],
-     attachment[MAX_ATTACHMENTS][256], encoding[80];
+INT  i, index, n, size, fh, tail_size;
+char str[256], file_name[256];
+char *buffer, *p;
+char message[TEXT_SIZE+1000], attachment_all[64*MAX_ATTACHMENTS];
 
-  n_attr = scan_attributes(logbook);
+  for (index = 0 ; index < lbs->n_el_index ; index++)
+    if (lbs->el_index[index].message_id == message_id)
+      break;
 
-  /* get attachments */
-  size = sizeof(text);
-  status = el_retrieve(tag, date, attr_list, attrib, n_attr,
-                       text, &size, orig_tag, reply_tag,
-                       attachment,
-                       encoding);
-  if (status != SUCCESS)
-    return EL_FILE_ERROR;
+  if (index == lbs->n_el_index)
+    return -1;
 
-  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-    if (attachment[i][0])
-      {
-      strcpy(str, data_dir);
-      strcat(str, attachment[i]);
-      remove(str);
-      }
-
-  /* generate file name YYMMDD.log in data directory */
-  strcpy(dir, data_dir);
-
-  strcpy(str, tag);
-  if (strchr(str, '.'))
-    {
-    offset = atoi(strchr(str, '.')+1);
-    *strchr(str, '.') = 0;
-    }
-  sprintf(file_name, "%s%s.log", dir, str);
+  sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
   fh = open(file_name, O_RDWR | O_BINARY, 0644);
   if (fh < 0)
     return EL_FILE_ERROR;
-  lseek(fh, offset, SEEK_SET);
-  read(fh, str, 16);
-  size = atoi(str+9);
+
+  lseek(fh, lbs->el_index[index].offset, SEEK_SET);
+  i = read(fh, message, sizeof(message)-1);
+  if (i <= 0)
+    {
+    close(fh);
+    return EL_FILE_ERROR;
+    }
+
+  message[i] = 0;
+
+  if (strncmp(message, "$@MID@$:", 8) != 0)
+    return EL_FILE_ERROR;
+
+  /* check for correct ID */
+  if (atoi(message+8) != message_id)
+    return EL_FILE_ERROR;
+
+  /* decode message size */
+  p = strstr(message+8, "$@MID@$:");
+  if (p == NULL)
+    size = strlen(message);
+  else
+    size = (int) p - (int) message;
+
+  message[size] = 0;
+
+  /* delete attachments */
+  el_decode(message, "Attachment: ", attachment_all);
+
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+    {
+    if (i == 0)
+      p = strtok(attachment_all, ",");
+    else
+      p = strtok(NULL, ",");
+
+    if (attachment != NULL)
+      {
+      if (attachment[i][0] && p)
+        {
+        /* delete old attachment if new one exists */
+        strcpy(str, lbs->data_dir);
+        strcat(str, p);
+        remove(str);
+        }
+
+      /* return old attachment if no new one */
+      if (!attachment[i][0] && p)
+        strcpy(attachment[i], p);
+      }
+
+    if (delete_attachments && p)
+      {
+      strcpy(str, lbs->data_dir);
+      strcat(str, p);
+      remove(str);
+      }
+    }
 
   /* buffer tail of logfile */
   lseek(fh, 0, SEEK_END);
-  tail_size = TELL(fh) - (offset+size);
+  tail_size = TELL(fh) - (lbs->el_index[index].offset+size);
 
   if (tail_size > 0)
     {
@@ -2147,10 +2102,10 @@ char date[80], text[TEXT_SIZE], orig_tag[80], reply_tag[80],
       return EL_FILE_ERROR;
       }
 
-    lseek(fh, offset+size, SEEK_SET);
+    lseek(fh, lbs->el_index[index].offset+size, SEEK_SET);
     n = read(fh, buffer, tail_size);
     }
-  lseek(fh, offset, SEEK_SET);
+  lseek(fh, lbs->el_index[index].offset, SEEK_SET);
 
   if (tail_size > 0)
     {
@@ -2172,115 +2127,11 @@ char date[80], text[TEXT_SIZE], orig_tag[80], reply_tag[80],
   if (tail_size == 0)
     remove(file_name);
 
-  return EL_SUCCESS;
-}
-
-/*------------------------------------------------------------------*/
-
-INT el_delete_message_only(char *tag, char afilename[MAX_ATTACHMENTS][256])
-/********************************************************************\
-
-  Routine: el_delete_message_only
-
-  Purpose: Delete an ELog entry, but keeping (and returning) attachments
-
-  Input:
-    char   *tag             Message tage
-
-  Output:
-    <none>
-
-  Function value:
-    EL_SUCCESS              Successful completion
-
-\********************************************************************/
-{
-INT  i, n, size, fh, offset, tail_size, status, n_attr;
-char dir[256], str[256], file_name[256];
-char *buffer, attrib[MAX_N_ATTR][NAME_LENGTH];
-char date[80], text[TEXT_SIZE], orig_tag[80], reply_tag[80],
-     attachment[MAX_ATTACHMENTS][256], encoding[80];
-
-  n_attr = scan_attributes(logbook);
-
-  /* get attachments */
-  size = sizeof(text);
-  status = el_retrieve(tag, date, attr_list, attrib, n_attr,
-                       text, &size, orig_tag, reply_tag,
-                       attachment,
-                       encoding);
-  if (status != SUCCESS)
-    return EL_FILE_ERROR;
-
-  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-    {
-    if (attachment[i][0] && afilename[i][0])
-      {
-      /* delete old attachment if new one exists */
-      strcpy(str, data_dir);
-      strcat(str, attachment[i]);
-      remove(str);
-      }
-
-    /* return old attachment if no new one */
-    if (attachment[i][0] && !afilename[i][0])
-      strcpy(afilename[i], attachment[i]);
-    }
-
-  /* generate file name YYMMDD.log in data directory */
-  strcpy(dir, data_dir);
-
-  strcpy(str, tag);
-  if (strchr(str, '.'))
-    {
-    offset = atoi(strchr(str, '.')+1);
-    *strchr(str, '.') = 0;
-    }
-  sprintf(file_name, "%s%s.log", dir, str);
-  fh = open(file_name, O_RDWR | O_BINARY, 0644);
-  if (fh < 0)
-    return EL_FILE_ERROR;
-  lseek(fh, offset, SEEK_SET);
-  read(fh, str, 16);
-  size = atoi(str+9);
-
-  /* buffer tail of logfile */
-  lseek(fh, 0, SEEK_END);
-  tail_size = TELL(fh) - (offset+size);
-
-  if (tail_size > 0)
-    {
-    buffer = malloc(tail_size);
-    if (buffer == NULL)
-      {
-      close(fh);
-      return EL_FILE_ERROR;
-      }
-
-    lseek(fh, offset+size, SEEK_SET);
-    n = read(fh, buffer, tail_size);
-    }
-  lseek(fh, offset, SEEK_SET);
-
-  if (tail_size > 0)
-    {
-    n = write(fh, buffer, tail_size);
-    free(buffer);
-    }
-
-  /* truncate file here */
-#ifdef OS_WINNT
-  chsize(fh, TELL(fh));
-#else
-  ftruncate(fh, TELL(fh));
-#endif
-
-  /* if file length gets zero, delete file */
-  tail_size = lseek(fh, 0, SEEK_END);
-  close(fh);
-
-  if (tail_size == 0)
-    remove(file_name);
+  /* remove message from index */
+  for (i=index ; i<lbs->n_el_index ; i++)
+    memcpy(&lbs->el_index[i], &lbs->el_index[i+1], sizeof(EL_INDEX));
+  lbs->n_el_index--;
+  lbs->el_index = realloc(lbs->el_index, sizeof(EL_INDEX)*lbs->n_el_index);
 
   return EL_SUCCESS;
 }
@@ -2296,22 +2147,22 @@ FILE*   f;
 time_t  now;
 char    buf[256];
 
-  if (!getcfg("global", "logfile", fname)) 
+  if (!getcfg("global", "logfile", fname))
     return;
 
   va_start(argptr, format);
   vsprintf(str, (char *) format, argptr);
   va_end(argptr);
-  
+
   f=fopen(fname,"a");
-  if (!f) 
+  if (!f)
     return;
 
   now=time(0);
   strftime(buf, sizeof(buf), "%d-%b-%Y %H:%M:%S", localtime(&now));
   fprintf(f,"%s: %s",buf,str);
 
-  if (str[strlen(str)-1] != '\n') 
+  if (str[strlen(str)-1] != '\n')
     fprintf(f,"\n");
 
   fclose(f);
@@ -2451,7 +2302,7 @@ char str[256];
     {
     if (strlen(value) >= TEXT_SIZE)
       {
-      sprintf(str, "Error: Message text too big (%d bytes). Please increase TEXT_SIZE and recompile elogd\n", 
+      sprintf(str, "Error: Message text too big (%d bytes). Please increase TEXT_SIZE and recompile elogd\n",
               strlen(value));
       show_error(str);
       return 0;
@@ -2632,20 +2483,6 @@ void redirect2(char *path)
   return_length = -1;
 }
 
-void redirect3(char *path)
-{
-  /* redirect */
-  rsprintf("HTTP/1.1 302 Found\r\n");
-  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-  if (use_keepalive)
-    {
-    rsprintf("Connection: Keep-Alive\r\n");
-    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
-    }
-
-  rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", path);
-}
-
 /*------------------------------------------------------------------*/
 
 int strbreak(char *str, char list[][NAME_LENGTH], int size)
@@ -2765,7 +2602,7 @@ int  i, j, n, m;
 
 /*------------------------------------------------------------------*/
 
-void show_upgrade_page()
+void show_upgrade_page(LOGBOOK *lbs)
 {
 char str[1000];
 
@@ -2803,9 +2640,9 @@ char str[1000];
   rsprintf("<pre>\n");
   rsprintf("Attributes = Author, Type, Category, Subject\n");
   rsprintf("Required Attributes = Author\n");
-  getcfg(logbook, "Types", str);
+  getcfg(lbs->name, "Types", str);
   rsprintf("Options Type = %s\n", str);
-  getcfg(logbook, "Categories", str);
+  getcfg(lbs->name, "Categories", str);
   rsprintf("Options Category = %s\n", str);
   rsprintf("Page title = $subject\n");
   rsprintf("</pre>\n");
@@ -2849,7 +2686,7 @@ void show_standard_header(char *title, char *path)
     rsprintf("<body bgcolor=#FFFFFF background=\"%s\">\n", gt("BGImage"));
   else
     rsprintf("<body bgcolor=#FFFFFF>\n");
-  
+
   if (path)
     rsprintf("<form method=\"GET\" action=\"%s\">\n\n", path);
   else
@@ -2935,7 +2772,7 @@ int  i;
 
   if (*gt("Title image URL"))
     rsprintf("<a href=\"%s\">\n", gt("Title image URL"));
-                       
+
   if (*gt("Title image"))
     rsprintf("<img border=0 src=\"%s\">", gt("Title image"));
   else
@@ -2979,7 +2816,7 @@ void show_error(char *error)
   */
 
   rsprintf("%s\n", loc("Please use your browser's back button to go back"));
-  
+
   /*
   rsprintf("</noscript>\n");
   */
@@ -3084,7 +2921,7 @@ int i;
       case ' ': rsprintf("&nbsp;"); break;
 
       /* the translation for the search highliting */
-      case '\001': rsprintf("<"); break;   
+      case '\001': rsprintf("<"); break;
       case '\002': rsprintf(">"); break;
       case '\003': rsprintf("\""); break;
       case '\004': rsprintf(" "); break;
@@ -3117,8 +2954,8 @@ int i;
 
 /*------------------------------------------------------------------*/
 
-int build_subst_list(char list[][NAME_LENGTH], char value[][NAME_LENGTH],
-                     char attrib[][NAME_LENGTH])
+int build_subst_list(LOGBOOK *lbs, char list[][NAME_LENGTH],
+                     char value[][NAME_LENGTH], char attrib[][NAME_LENGTH])
 {
 int            i;
 char           str[256], format[256];
@@ -3127,7 +2964,7 @@ struct tm      *ts;
 struct hostent *phe;
 
   /* copy attribute list */
-  for (i=0 ; i<scan_attributes(logbook) ; i++)
+  for (i=0 ; i<scan_attributes(lbs->name) ; i++)
     {
     strcpy(list[i], attr_list[i]);
     if (attrib)
@@ -3159,13 +2996,13 @@ struct hostent *phe;
 
   /* add logbook */
   strcpy(list[i], "logbook");
-  strcpy(value[i++], logbook);
+  strcpy(value[i++], lbs->name);
 
   /* add date */
   strcpy(list[i], "date");
   time(&now);
   ts = localtime(&now);
-  if (getcfg(logbook, "Date format", format))
+  if (getcfg(lbs->name, "Date format", format))
     strftime(str, sizeof(str), format, ts);
   else
     strcpy(str, ctime(&now));
@@ -3176,7 +3013,7 @@ struct hostent *phe;
 
 /*------------------------------------------------------------------*/
 
-void show_change_pwd_page()
+void show_change_pwd_page(LOGBOOK *lbs)
 {
 char   str[256], file_name[256], line[256], *p, *pl, old_pwd[32], new_pwd[32];
 char   *buf;
@@ -3190,7 +3027,7 @@ struct tm *gmt;
   do_crypt(getparam("oldpwd"), old_pwd);
   do_crypt(getparam("newpwd"), new_pwd);
 
-  getcfg(logbook, "Password file", str);
+  getcfg(lbs->name, "Password file", str);
 
   if (str[0] == DIR_SEPARATOR || str[1] == ':')
     strcpy(file_name, str);
@@ -3292,7 +3129,7 @@ struct tm *gmt;
 
         /* get optional expriation from configuration file */
         exp = 0;
-        if (getcfg(logbook, "Login expiration", str))
+        if (getcfg(lbs->name, "Login expiration", str))
           exp = atof(str);
 
         if (exp == 0)
@@ -3335,12 +3172,12 @@ struct tm *gmt;
   rsprintf("<font color=%s>%s \"%s\"</font></td></tr>\n",
            gt("Title fontcolor"), loc("Change password for user"), getparam("full_name"));
 
-  rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=oldpwd></td></tr>\n", 
+  rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=oldpwd></td></tr>\n",
            gt("Cell BGColor"), loc("Old Password"));
-  rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=newpwd></td></tr>\n", 
+  rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=newpwd></td></tr>\n",
            gt("Cell BGColor"), loc("New Password"));
 
-  rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=\"%s\"></td></tr>", 
+  rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=\"%s\"></td></tr>",
            gt("Cell BGColor"), loc("Submit"));
 
   rsprintf("</table></td></tr></table>\n");
@@ -3350,19 +3187,19 @@ struct tm *gmt;
 
 /*------------------------------------------------------------------*/
 
-BOOL allow_user(char *command)
+BOOL allow_user(LOGBOOK *lbs, char *command)
 {
 char str[1000], users[2000];
 char list[MAX_N_LIST][NAME_LENGTH];
 int  i, n;
 
   /* check for user level access */
-  if (!getcfg(logbook, "Password file", str))
+  if (!getcfg(lbs->name, "Password file", str))
     return TRUE;
 
   /* allow by default */
   sprintf(str, "Allow %s", command);
-  if (!getcfg(logbook, str, users))
+  if (!getcfg(lbs->name, str, users))
     return TRUE;
 
   /* check if current user in list */
@@ -3380,16 +3217,18 @@ int  i, n;
 
 /*------------------------------------------------------------------*/
 
-int get_last_index(int index)
+int get_last_index(LOGBOOK *lbs, int index)
 {
-int    i, n_attr;
+int    i, n_attr, message_id;
 char   str[80], date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
-       orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80];
+       in_reply_to[80], reply_to[256], att[MAX_ATTACHMENTS][256], encoding[80];
 
   str[0] = 0;
-  n_attr = scan_attributes(logbook);
-  el_retrieve(str, date, attr_list, attrib, n_attr,
-              NULL, 0, orig_tag, reply_tag, att, encoding);
+  n_attr = scan_attributes(lbs->name);
+  message_id = el_search_message(lbs, EL_LAST, 0);
+
+  el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
+              NULL, 0, in_reply_to, reply_to, att, encoding);
 
   strcpy(str, attrib[index]);
 
@@ -3403,9 +3242,9 @@ char   str[80], date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
 
 /*------------------------------------------------------------------*/
 
-void show_elog_new(char *path, BOOL bedit)
+void show_elog_new(LOGBOOK *lbs, int message_id, BOOL bedit)
 {
-int    i, n, n_attr, index, size, width, fh, length;
+int    i, j, n, n_attr, index, size, width, fh, length;
 char   str[1000], preset[1000], *p, star[80], comment[10000];
 char   list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256];
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
@@ -3413,7 +3252,7 @@ char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
 time_t now;
 
-  n_attr = scan_attributes(logbook);
+  n_attr = scan_attributes(lbs->name);
 
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     att[i][0] = 0;
@@ -3421,17 +3260,17 @@ time_t now;
   for (i=0 ; i<n_attr ; i++)
     attrib[i][0] = 0;
 
-  if (path)
+  if (message_id)
     {
     /* get message for reply */
 
-    strcpy(str, path);
     size = sizeof(text);
-    el_retrieve(str, date, attr_list, attrib, n_attr,
+    el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
                 text, &size, orig_tag, reply_tag, att, encoding);
     }
   else
     {
+    /* get preset attributes */
     for (i=0 ; i<n_attr ; i++)
       {
       sprintf(str, "p%s", attr_list[i]);
@@ -3440,13 +3279,13 @@ time_t now;
     }
 
   /* check for author */
-  if (bedit && getcfg(logbook, "Restrict edit", str) && atoi(str) == 1)
+  if (bedit && getcfg(lbs->name, "Restrict edit", str) && atoi(str) == 1)
     {
     /* search attribute which contains author */
     for (i=0 ; i<n_attr ; i++)
       {
       sprintf(str, "Preset %s", attr_list[i]);
-      if (getcfg(logbook, str, preset))
+      if (getcfg(lbs->name, str, preset))
         {
         if (strstr(preset, "$short_name"))
           {
@@ -3471,15 +3310,16 @@ time_t now;
     }
 
   /* remove attributes for replies */
-  if (path && !bedit)
+  if (message_id && !bedit)
     {
-    getcfg(logbook, "Remove on reply", str);
-    strbreak(str, list, MAX_N_ATTR);
-    for (i=0 ; i<n_attr ; i++)
-      {
-      if (equal_ustring(attr_list[i], list[i]))
-        attrib[i][0] = 0;
-      }
+    getcfg(lbs->name, "Remove on reply", str);
+    n = strbreak(str, list, MAX_N_ATTR);
+    for (i=0 ; i<n ; i++)
+      for (j=0 ; j<n_attr ; j++)
+        {
+        if (equal_ustring(attr_list[j], list[i]))
+          attrib[j][0] = 0;
+        }
     }
 
   /* header */
@@ -3497,7 +3337,7 @@ time_t now;
 
   /*---- title row ----*/
 
-  show_standard_title(logbook, "", 0);
+  show_standard_title(lbs->name, "", 0);
 
   /*---- menu buttons ----*/
 
@@ -3530,7 +3370,7 @@ time_t now;
   time(&now);
   if (bedit)
     {
-    if (getcfg(logbook, "Date format", format))
+    if (getcfg(lbs->name, "Date format", format))
       {
       struct tm ts;
 
@@ -3558,11 +3398,11 @@ time_t now;
     }
   else
     {
-    if (getcfg(logbook, "Date format", format))
+    if (getcfg(lbs->name, "Date format", format))
       strftime(str, sizeof(str), format, localtime(&now));
     else
       strcpy(str, ctime(&now));
-    
+
     rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>%s:</b></td><td bgcolor=%s>%s</td></tr>\n\n",
              gt("Categories bgcolor1"), loc("Entry date"), gt("Categories bgcolor2"), str);
     }
@@ -3574,19 +3414,19 @@ time_t now;
 
     /* check for preset string */
     sprintf(str, "Preset %s", attr_list[index]);
-    if (getcfg(logbook, str, preset))
+    if (getcfg(lbs->name, str, preset))
       {
       if (!bedit || (attr_flags[index] & AF_FIXED) == 0)
         {
-        i = build_subst_list(slist, svalue, NULL);
+        i = build_subst_list(lbs, slist, svalue, NULL);
         strsubst(preset, slist, svalue, i);
 
         /* check for index substitution */
         if (!bedit && strchr(preset, '%'))
           {
           /* get index */
-          i = get_last_index(index);
-          
+          i = get_last_index(lbs, index);
+
           strcpy(str, preset);
           sprintf(preset, str, i+1);
           }
@@ -3655,10 +3495,10 @@ time_t now;
               sprintf(str, "%s%d", attr_list[index], i);
 
               if (strstr(attrib[index], attr_options[index][i]))
-                rsprintf("<input type=checkbox checked name=\"%s\" value=\"%s\">%s&nbsp;\n", 
+                rsprintf("<input type=checkbox checked name=\"%s\" value=\"%s\">%s&nbsp;\n",
                   str, attr_options[index][i], attr_options[index][i]);
               else
-                rsprintf("<input type=checkbox name=\"%s\" value=\"%s\">%s&nbsp;\n", 
+                rsprintf("<input type=checkbox name=\"%s\" value=\"%s\">%s&nbsp;\n",
                   str, attr_options[index][i], attr_options[index][i]);
               }
 
@@ -3705,10 +3545,10 @@ time_t now;
       }
     }
 
-  if (path)
+  if (message_id)
     {
     /* hidden text for original message */
-    rsprintf("<input type=hidden name=orig value=\"%s\">\n", path);
+    rsprintf("<input type=hidden name=orig value=\"%d\">\n", message_id);
 
     if (bedit)
       rsprintf("<input type=hidden name=edit value=1>\n");
@@ -3719,26 +3559,26 @@ time_t now;
   /* set textarea width */
   width = 76;
 
-  if (getcfg(logbook, "Message width", str))
+  if (getcfg(lbs->name, "Message width", str))
     width = atoi(str);
 
   /* increased wrapping width for replies (leave space for '> ' */
-  if (path && !bedit)
+  if (message_id && !bedit)
     width += 2;
 
   rsprintf("<tr><td colspan=2 bgcolor=#FFFFFF>\n");
 
-  if (getcfg(logbook, "Message comment", comment) && !bedit && !path)
+  if (getcfg(lbs->name, "Message comment", comment) && !bedit && !message_id)
     {
     rsputs(comment);
     rsputs("<br>\n");
     }
 
-  if (!getcfg(logbook, "Show text", str) || atoi(str) == 1)
+  if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1)
     {
     rsprintf("<textarea rows=20 cols=%d wrap=hard name=Text>", width);
 
-    if (path)
+    if (message_id)
       {
       if (bedit)
         {
@@ -3776,7 +3616,7 @@ time_t now;
         }
       }
 
-    if (!path && getcfg(logbook, "Preset text", str))
+    if (!message_id && getcfg(lbs->name, "Preset text", str))
       {
       /* check if file */
       strcpy(file_name, cfg_dir);
@@ -3801,7 +3641,7 @@ time_t now;
     rsprintf("</textarea><br>\n");
 
     /* HTML check box */
-    if (path)
+    if (message_id)
       {
       if (encoding[0] == 'H')
         rsprintf("<input type=checkbox checked name=html value=1>%s\n", loc("Submit as HTML text"));
@@ -3810,7 +3650,7 @@ time_t now;
       }
     else
       {
-      if (getcfg(logbook, "HTML default", str))
+      if (getcfg(lbs->name, "HTML default", str))
         {
         if (atoi(str) == 0)
           {
@@ -3827,12 +3667,12 @@ time_t now;
     }
 
   /* Suppress check box */
-  if (getcfg(logbook, "Suppress default", str))
+  if (getcfg(lbs->name, "Suppress default", str))
     {
     if (atoi(str) == 0)
       {
       rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-      rsprintf("<input type=checkbox name=suppress value=1>%s>\n", loc("Suppress Email notification"));
+      rsprintf("<input type=checkbox name=suppress value=1>%s\n", loc("Suppress Email notification"));
       }
     else if (atoi(str) == 1)
       {
@@ -3849,7 +3689,7 @@ time_t now;
   if (bedit)
     {
     /* Resubmit check box */
-    if (getcfg(logbook, "Resubmit default", str))
+    if (getcfg(lbs->name, "Resubmit default", str))
       {
       if (atoi(str) == 0)
         {
@@ -3871,7 +3711,7 @@ time_t now;
 
   rsprintf("</tr>\n");
 
-  if (getcfg(logbook, "Number attachments", str))
+  if (getcfg(lbs->name, "Number attachments", str))
     n = atoi(str);
   else
     n = 5;
@@ -3932,12 +3772,12 @@ time_t now;
 
 /*------------------------------------------------------------------*/
 
-void show_elog_find()
+void show_elog_find(LOGBOOK *lbs)
 {
 int    i, j, n_attr;
 char   str[256];
 
-  n_attr = scan_attributes(logbook);
+  n_attr = scan_attributes(lbs->name);
 
   /*---- header ----*/
 
@@ -3945,7 +3785,7 @@ char   str[256];
 
   /*---- title ----*/
 
-  show_standard_title(logbook, "", 0);
+  show_standard_title(lbs->name, "", 0);
 
   /*---- menu buttons ----*/
 
@@ -3965,11 +3805,11 @@ char   str[256];
   rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n",
            gt("Categories border"), gt("Categories cellpadding"), gt("Frame color"));
 
-  if (!getcfg(logbook, "Show text", str) || atoi(str) == 1)
+  if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1)
     {
     rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
 
-    if (getcfg(logbook, "Summary on default", str) && atoi(str) == 1)
+    if (getcfg(lbs->name, "Summary on default", str) && atoi(str) == 1)
       rsprintf("<input type=checkbox checked name=mode value=\"summary\">%s\n", loc("Summary only"));
     else
       rsprintf("<input type=checkbox name=mode value=\"summary\">%s\n", loc("Summary only"));
@@ -3996,7 +3836,7 @@ char   str[256];
 
   if (i > 2)
     {
-    if (!getcfg(logbook, "Search all logbooks", str) || atoi(str) == 1)
+    if (!getcfg(lbs->name, "Search all logbooks", str) || atoi(str) == 1)
       {
       rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
       rsprintf("<input type=checkbox name=all value=1>%s</td></tr>\n", loc("Search all logbooks"));
@@ -4075,7 +3915,7 @@ char   str[256];
     rsprintf("</td></tr>\n");
     }
 
-  if (!getcfg(logbook, "Show text", str) || atoi(str) == 1)
+  if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1)
     {
     rsprintf("<tr><td bgcolor=%s>%s:</td>",  gt("Categories bgcolor1"), loc("Text"));
     rsprintf("<td bgcolor=%s><input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\">\n",
@@ -4089,7 +3929,7 @@ char   str[256];
 
 /*------------------------------------------------------------------*/
 
-void show_config_page()
+void show_config_page(LOGBOOK *lbs)
 {
 int  fh, length;
 char *buffer;
@@ -4110,7 +3950,7 @@ char *buffer;
 
   /*---- title ----*/
 
-  show_standard_title(logbook, "", 0);
+  show_standard_title(lbs->name, "", 0);
 
   /*---- menu buttons ----*/
 
@@ -4207,7 +4047,7 @@ char str[80];
 
 /*------------------------------------------------------------------*/
 
-void show_elog_delete(char *path)
+void show_elog_delete(LOGBOOK *lbs, int message_id)
 {
 int    status;
 char   str[256];
@@ -4216,13 +4056,13 @@ char   str[256];
   if (getparam("confirm") && *getparam("confirm") &&
       strcmp(getparam("confirm"), loc("No")) == 0)
     {
-    sprintf(str, "%s", path);
+    sprintf(str, "%d", message_id);
     redirect(str);
     return;
     }
 
   /* header */
-  sprintf(str, "%s", path);
+  sprintf(str, "%d", message_id);
   show_standard_header("Delete ELog entry", str);
 
   rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
@@ -4234,7 +4074,7 @@ char   str[256];
     if (strcmp(getparam("confirm"), loc("Yes")) == 0)
       {
       /* delete message */
-      status = el_delete_message(path);
+      status = el_delete_message(lbs, message_id, TRUE, NULL);
       rsprintf("<tr><td bgcolor=#80FF80 align=center>");
       if (status == EL_SUCCESS)
         rsprintf("<b>%s</b></tr>\n", loc("Message successfully deleted"));
@@ -4252,12 +4092,12 @@ char   str[256];
     rsprintf("<input type=hidden name=cmd value=\"%s\">\n", loc("Delete"));
 
     rsprintf("<tr><td bgcolor=%s align=center>", gt("Title bgcolor"));
-    rsprintf("<font color=%s><b>%s</b></font></td></tr>\n", gt("Title fontcolor"), 
+    rsprintf("<font color=%s><b>%s</b></font></td></tr>\n", gt("Title fontcolor"),
             loc("Are you sure to delete this message?"));
 
-    rsprintf("<tr><td bgcolor=%s align=center>%s</td></tr>\n", gt("Cell BGColor"), path);
+    rsprintf("<tr><td bgcolor=%s align=center>%d</td></tr>\n", gt("Cell BGColor"), message_id);
 
-    rsprintf("<tr><td bgcolor=%s align=center><input type=submit name=confirm value=\"%s\">\n", 
+    rsprintf("<tr><td bgcolor=%s align=center><input type=submit name=confirm value=\"%s\">\n",
               gt("Cell BGColor"), loc("Yes"));
     rsprintf("<input type=submit name=confirm value=\"%s\">\n", loc("No"));
     rsprintf("</td></tr>\n\n");
@@ -4269,16 +4109,16 @@ char   str[256];
 
 /*------------------------------------------------------------------*/
 
-void show_elog_submit_find(INT past_n, INT last_n)
+void show_elog_submit_find(LOGBOOK *lbs, INT past_n, INT last_n)
 {
 int    i, j, n, size, status, d1, m1, y1, d2, m2, y2, index, colspan, i_line, n_line, i_col;
 int    current_year, current_month, current_day, printable, n_logbook, lindex, n_attr,
-       reverse, n_attr_disp, n_found, search_all;
+       reverse, n_attr_disp, n_found, search_all, message_id;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR][NAME_LENGTH],
        list[10000], text[TEXT_SIZE], text1[TEXT_SIZE], text2[TEXT_SIZE],
-       orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80];
-char   str[256], tag[256], ref[256], file_name[256], col[80], old_data_dir[256];
-char   logbook_list[100][256], lb_enc[256], *nowrap, format[80];
+       in_reply_to[80], reply_to[256], attachment[MAX_ATTACHMENTS][256], encoding[80];
+char   str[256], ref[256], file_name[256], col[80];
+char   *nowrap, format[80];
 char   menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH];
 char   *p , *pt, *pt1, *pt2;
 BOOL   full, show_attachments;
@@ -4286,7 +4126,7 @@ time_t ltime, ltime_start, ltime_end, ltime_current, now;
 struct tm tms, *ptms;
 FILE   *f;
 
-  n_attr = scan_attributes(logbook);
+  n_attr = scan_attributes(lbs->name);
 
   printable = atoi(getparam("Printable"));
 
@@ -4295,7 +4135,7 @@ FILE   *f;
   else
     {
     reverse = 0;
-    if (getcfg(logbook, "Reverse sort", str))
+    if (getcfg(lbs->name, "Reverse sort", str))
       reverse = atoi(str);
     }
 
@@ -4314,14 +4154,14 @@ FILE   *f;
     sprintf(str+strlen(str), loc("Last %d entries"), last_n);
 
   if (printable)
-    show_standard_title(logbook, str, 1);
+    show_standard_title(lbs->name, str, 1);
   else
-    show_standard_title(logbook, str, 0);
+    show_standard_title(lbs->name, str, 0);
 
   /* get mode */
   if (past_n || last_n)
     {
-    if (getcfg(logbook, "Summary on default", str))
+    if (getcfg(lbs->name, "Summary on default", str))
       full = !atoi(str);
     else
       full = TRUE;
@@ -4349,7 +4189,7 @@ FILE   *f;
 
     rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
 
-    if (getcfg(logbook, "Find menu commands", menu_str))
+    if (getcfg(lbs->name, "Find menu commands", menu_str))
       {
       n = strbreak(menu_str, menu_item, MAX_N_LIST);
 
@@ -4634,15 +4474,15 @@ FILE   *f;
 
   /* get number of summary lines */
   n_line = 3;
-  if (getcfg(logbook, "Summary lines", str))
+  if (getcfg(lbs->name, "Summary lines", str))
     n_line = atoi(str);
 
   /* check for search all */
   search_all = atoi(getparam("all"));
 
-  if (getcfg(logbook, "Search all logbooks", str) && atoi(str) == 0)
+  if (getcfg(lbs->name, "Search all logbooks", str) && atoi(str) == 0)
     search_all = 0;
-  
+
   /*---- table titles ----*/
 
   rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n",
@@ -4660,7 +4500,7 @@ FILE   *f;
 
   rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Date</b></td>", col, size);
 
-  if (getcfg(logbook, "Display search", list))
+  if (getcfg(lbs->name, "Display search", list))
     n_attr_disp = strbreak(list, disp_attr, MAX_N_ATTR);
   else
     {
@@ -4692,26 +4532,17 @@ FILE   *f;
   i_col = 0;
   n_found = 0;
 
-  old_data_dir[0] = 0;
   if (search_all)
     {
     /* count logbooks */
-    for (i=n_logbook=0 ;  ; i++)
+    for (n_logbook=0 ;  ; n_logbook++)
       {
-      if (!enumgrp(i, str))
+      if (!lb_list[n_logbook].name[0])
         break;
-
-      if (equal_ustring(str, "global"))
-        continue;
-
-      strcpy(logbook_list[n_logbook++], str);
       }
-
-    strcpy(old_data_dir, data_dir);
     }
   else
     {
-    strcpy(logbook_list[0], logbook);
     n_logbook = 1;
     }
 
@@ -4719,27 +4550,13 @@ FILE   *f;
   for (lindex=0 ; lindex<n_logbook ; lindex++)
     {
     if (n_logbook > 1)
-      {
-      /* set data_dir from logbook */
-      getcfg(logbook_list[lindex], "Data dir", str);
-      if (str[0] == DIR_SEPARATOR || str[1] == ':')
-        strcpy(data_dir, str);
-      else
-        {
-        strcpy(data_dir, cfg_dir);
-        strcat(data_dir, str);
-        }
-      
-      if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
-        strcat(data_dir, DIR_SEPARATOR_STR);
-      }
+      lbs = &lb_list[lindex];
 
     if (past_n)
       {
       if (reverse)
         {
-        strcpy(tag, "-1");
-        el_search_message(tag, NULL, TRUE, FALSE);
+        message_id = el_search_message(lbs, EL_LAST, 0);
 
         time(&now);
         ltime_start = now-3600*24*past_n;
@@ -4748,22 +4565,27 @@ FILE   *f;
         {
         time(&now);
         ltime_start = now-3600*24*past_n;
-        ptms = localtime(&ltime_start);
 
-        sprintf(tag, "%02d%02d%02d.0", ptms->tm_year % 100, ptms->tm_mon+1, ptms->tm_mday);
+        for (i=0 ; i<lbs->n_el_index ; i++)
+          if (lbs->el_index[i].file_time >= ltime_start)
+            break;
+        if (i == lbs->n_el_index)
+          message_id = 0;
+        else
+          message_id = lbs->el_index[i].message_id;
         }
       }
     else if (last_n)
       {
-      strcpy(tag, "-1");
-      el_search_message(tag, NULL, TRUE, FALSE);
+      message_id = el_search_message(lbs, EL_LAST, 0);
 
       if (!reverse)
+        {
         for (i=1 ; i<last_n ; i++)
-          {
-          strcat(tag, "-1");
-          el_search_message(tag, NULL, TRUE, FALSE);
-          }
+          message_id = el_search_message(lbs, EL_PREV, message_id);
+        if (message_id == 0)
+          message_id = el_search_message(lbs, EL_FIRST, 0);
+        }
       }
     else
       {
@@ -4773,30 +4595,33 @@ FILE   *f;
         {
         if (!*getparam("y2") && !*getparam("m2") && !*getparam("d2"))
           {
-          strcpy(tag, "-1");
-
           /* search last message */
-          el_search_message(tag, NULL, TRUE, FALSE);
+          message_id = el_search_message(lbs, EL_LAST, 0);
           }
         else
           {
-          /* if y, m or d given, assemble start date */
-          sprintf(tag, "%02d%02d%02d.0-1", y2 % 100, m2, d2);
+          for (i=lbs->n_el_index-1 ; i>=0 ; i--)
+            if (lbs->el_index[i].file_time <= ltime_end)
+              break;
+          if (i<0)
+            message_id = 0;
+          else
+            message_id = lbs->el_index[i].message_id;
           }
         }
       else
         {
         if (!*getparam("y1") && !*getparam("m1") && !*getparam("d1"))
           {
-          tag[0] = 0;
-
           /* search first message */
-          el_search_message(tag, NULL, TRUE, TRUE);
+          message_id = el_search_message(lbs, EL_FIRST, 0);
           }
         else
           {
-          /* if y, m or d given, assemble start date */
-          sprintf(tag, "%02d%02d%02d.0", y1 % 100, m1, d1);
+          for (i=0 ; i<lbs->n_el_index ; i++)
+            if (lbs->el_index[i].file_time >= ltime_start)
+              break;
+          message_id = lbs->el_index[i].message_id;
           }
         }
       }
@@ -4804,28 +4629,15 @@ FILE   *f;
     do
       {
       size = sizeof(text);
-      status = el_retrieve(tag, date, attr_list, attrib, n_attr,
-                           text, &size, orig_tag, reply_tag,
+      status = el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
+                           text, &size, in_reply_to, reply_to,
                            attachment,
                            encoding);
 
-      if (reverse)
-        strcat(tag, "-1");
-      else
-        strcat(tag, "+1");
-
-      /* convert date to unix format */
-      memset(&tms, 0, sizeof(struct tm));
-      tms.tm_year = (tag[0]-'0')*10 + (tag[1]-'0');
-      tms.tm_mon  = (tag[2]-'0')*10 + (tag[3]-'0') -1;
-      tms.tm_mday = (tag[4]-'0')*10 + (tag[5]-'0');
-      tms.tm_hour = (date[11]-'0')*10 + (date[12]-'0');
-      tms.tm_min  = (date[14]-'0')*10 + (date[15]-'0');
-      tms.tm_sec  = (date[17]-'0')*10 + (date[18]-'0');
-
-      if (tms.tm_year < 90)
-        tms.tm_year += 100;
-      ltime_current = mktime(&tms);
+      for (i=0 ; i<lbs->n_el_index ; i++)
+        if (lbs->el_index[i].message_id == message_id)
+          break;
+      ltime_current = lbs->el_index[i].file_time;
 
       if (reverse)
         {
@@ -4838,7 +4650,7 @@ FILE   *f;
         if (ltime_end > 0)
           {
           if (ltime_current > ltime_end)
-            continue;
+            goto skip;
           }
         }
       else
@@ -4846,12 +4658,12 @@ FILE   *f;
         /* check for start date */
         if (ltime_start > 0)
           if (ltime_current < ltime_start)
-            continue;
+            goto skip;
 
         /* check for end date */
         if (ltime_end > 0)
           {
-          if (ltime_current > ltime_end)
+          if (ltime_current >= ltime_end)
             break;
           }
         }
@@ -4876,7 +4688,7 @@ FILE   *f;
             }
           }
         if (i < n_attr)
-          continue;
+          goto skip;
 
         if (*getparam("subtext"))
           {
@@ -4889,7 +4701,7 @@ FILE   *f;
           text1[i] = 0;
 
           if (strstr(text1, str) == NULL)
-            continue;
+            goto skip;
 
           text2[0] = 0;
           pt = text;   /* original text */
@@ -4942,15 +4754,7 @@ FILE   *f;
 
         n_found++;
 
-        strcpy(str, tag);
-        if (strchr(str, '+'))
-          *strchr(str, '+') = 0;
-        if (strchr(str, '-'))
-          *strchr(str, '-') = 0;
-
-        strcpy(lb_enc, logbook_list[lindex]);
-        url_encode(lb_enc);
-        sprintf(ref, "../%s/%s", lb_enc, str);
+        sprintf(ref, "../%s/%d", lbs->name_enc, message_id);
 
         if (full)
           {
@@ -4960,13 +4764,13 @@ FILE   *f;
           size = printable ? 2 : 3;
           nowrap = printable ? "" : "nowrap";
 
-          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></font></td>", 
+          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></font></td>",
             col, size, ref, n_found);
 
           if (search_all)
-            rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, logbook_list[lindex]);
+            rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, lbs->name);
 
-          if (getcfg(logbook, "Date format", format))
+          if (getcfg(lbs->name, "Date format", format))
             {
             struct tm ts;
 
@@ -5031,7 +4835,7 @@ FILE   *f;
           else
             colspan = 2+n_attr_disp;
 
-          if (!getcfg(logbook, "Show text", str) || atoi(str) == 1)
+          if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1)
             {
             rsprintf("<tr><td bgcolor=#FFFFFF colspan=%d><font size=%d>", colspan, size);
 
@@ -5063,7 +4867,7 @@ FILE   *f;
               {
               strcpy(str, attachment[index]);
               str[13] = 0;
-              sprintf(ref, "../%s/%s/%s", logbook_list[lindex], str, attachment[index]+14);
+              sprintf(ref, "../%s/%s/%s", lbs->name_enc, str, attachment[index]+14);
 
               for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
                 str[i] = toupper(attachment[index][i]);
@@ -5098,7 +4902,7 @@ FILE   *f;
                     /* display attachment */
                     rsprintf("<br><font size=%d><pre>", size);
 
-                    strcpy(file_name, data_dir);
+                    strcpy(file_name, lbs->data_dir);
 
                     strcat(file_name, attachment[index]);
 
@@ -5139,13 +4943,13 @@ FILE   *f;
           size = printable ? 2 : 3;
           nowrap = printable ? "" : "nowrap";
 
-          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></font></td>", 
+          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></font></td>",
             col, size, ref, n_found);
 
           if (search_all)
-            rsprintf("<td align=center %s bgcolor=%s>%s</td>", nowrap, col, logbook_list[lindex]);
+            rsprintf("<td align=center %s bgcolor=%s>%s</td>", nowrap, col, lbs->name);
 
-          if (getcfg(logbook, "Date format", format))
+          if (getcfg(lbs->name, "Date format", format))
             {
             struct tm ts;
 
@@ -5213,7 +5017,7 @@ FILE   *f;
               }
             str[i] = 0;
 
-            /* always encode, not to rip apart HTML documents, 
+            /* always encode, not to rip apart HTML documents,
                e.g. only the start of a table */
             strencode(str);
 
@@ -5228,7 +5032,14 @@ FILE   *f;
       if (last_n && n_found >= last_n)
         break;
 
-      } while (status == EL_SUCCESS);
+skip:
+      /* get index of next message */
+      if (reverse)
+        message_id = el_search_message(lbs, EL_PREV, message_id);
+      else
+        message_id = el_search_message(lbs, EL_NEXT, message_id);
+
+      } while (message_id);
     } /* for () */
 
   rsprintf("</table></td></tr>\n");
@@ -5245,7 +5056,7 @@ FILE   *f;
 
   rsprintf("</table>\n");
 
-  if (getcfg(logbook, "bottom text", str))
+  if (getcfg(lbs->name, "bottom text", str))
     {
     FILE *f;
     char file_name[256], *buf;
@@ -5273,25 +5084,21 @@ FILE   *f;
     rsprintf("<center><font size=1 color=#A0A0A0><a href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></font></center>", VERSION);
 
   rsprintf("</body></html>\r\n");
-
-  /* restor old data_dir */
-  if (old_data_dir[0])
-    strcpy(data_dir, old_data_dir);
 }
 
 /*------------------------------------------------------------------*/
 
-void submit_elog()
+void submit_elog(LOGBOOK *lbs)
 {
 char   str[256], mail_to[256], mail_from[256], file_name[256], error[1000],
        mail_text[10000], mail_list[MAX_N_LIST][NAME_LENGTH], list[10000], smtp_host[256],
-       tag[80], subject[256], attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[256];
+       subject[256], attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[256], in_reply_to[80];
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
 char   att_file[MAX_ATTACHMENTS][256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
-int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
+int    i, j, n, missing, first, index, n_attr, n_mail, suppress, message_id;
 
-  n_attr = scan_attributes(logbook);
+  n_attr = scan_attributes(lbs->name);
 
   /* check for required attributs */
   missing = 0;
@@ -5347,7 +5154,7 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
     }
 
   /* compile substitution list */
-  n = build_subst_list(slist, svalue, NULL);
+  n = build_subst_list(lbs, slist, svalue, NULL);
 
   /* retrieve attributes */
   for (i=0 ; i<n_attr ; i++)
@@ -5386,7 +5193,7 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
     if (!*getparam("edit"))
       {
       sprintf(str, "Subst %s", attr_list[i]);
-      if (getcfg(logbook, str, subst_str))
+      if (getcfg(lbs->name, str, subst_str))
         {
         strsubst(subst_str, slist, svalue, n);
         strcpy(attrib[i], subst_str);
@@ -5394,33 +5201,34 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
       }
     }
 
+  message_id = 0;
+  in_reply_to[0] = 0;
+
   if (*getparam("edit") &&
       *getparam("resubmit") &&
       atoi(getparam("resubmit")) == 1)
     {
     /* delete old message */
-    el_delete_message_only(getparam("orig"), att_file);
+    el_delete_message(lbs, atoi(getparam("orig")), FALSE, att_file);
     unsetparam("orig");
-
-    tag[0] = 0;
     }
   else
     {
-    tag[0] = 0;
     if (*getparam("edit"))
-      strcpy(tag, getparam("orig"));
+      message_id = atoi(getparam("orig"));
+    else
+      strcpy(in_reply_to, getparam("orig"));
     }
 
-  status = el_submit(attr_list, attrib, n_attr, getparam("text"),
-                     getparam("orig"), *getparam("html") ? "HTML" : "plain",
+  message_id = el_submit(lbs, message_id, attr_list, attrib, n_attr, getparam("text"),
+                     in_reply_to, "", *getparam("html") ? "HTML" : "plain",
                      att_file,
                      _attachment_buffer,
-                     _attachment_size,
-                     tag, sizeof(tag));
+                     _attachment_size);
 
-  if (status != EL_SUCCESS)
+  if (message_id <= 0)
     {
-    sprintf(str, loc("New message cannot be written to directory \"%s\""), data_dir);
+    sprintf(str, loc("New message cannot be written to directory \"%s\""), lbs->data_dir);
     strcat(str, "\n<p>");
     strcat(str, loc("Please check that it exists and elogd has write access"));
     show_error(str);
@@ -5458,7 +5266,7 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
       else
         sprintf(str, "Email ALL");
 
-      if (getcfg(logbook, str, list))
+      if (getcfg(lbs->name, str, list))
         {
         n = strbreak(list, mail_list, MAX_N_LIST);
 
@@ -5476,9 +5284,9 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
           {
           strcpy(mail_to, mail_list[i]);
 
-          if (getcfg(logbook, "Use Email from", mail_from))
+          if (getcfg(lbs->name, "Use Email from", mail_from))
             {
-            j = build_subst_list(slist, svalue, attrib);
+            j = build_subst_list(lbs, slist, svalue, attrib);
             strsubst(mail_from, slist, svalue, j);
             }
           else
@@ -5487,7 +5295,7 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
           sprintf(mail_text, loc("A new entry has been submitted on %s"), host_name);
           sprintf(mail_text+strlen(mail_text), "\r\n\r\n");
 
-          sprintf(mail_text+strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), logbook);
+          sprintf(mail_text+strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), lbs->name);
 
           for (j=0 ; j<n_attr ; j++)
             {
@@ -5499,9 +5307,9 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
             }
 
           /* compose subject from attributes */
-          if (getcfg(logbook, "Use Email Subject", subject))
+          if (getcfg(lbs->name, "Use Email Subject", subject))
             {
-            j = build_subst_list(slist, svalue, attrib);
+            j = build_subst_list(lbs, slist, svalue, attrib);
             strsubst(subject, slist, svalue, j);
             }
           else
@@ -5522,10 +5330,10 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
               }
             }
 
-         sprintf(mail_text+strlen(mail_text), "\r\n%s URL         : %s%s\r\n", 
-                  loc("Logbook"), str, tag);
+         sprintf(mail_text+strlen(mail_text), "\r\n%s URL         : %s%d\r\n",
+                  loc("Logbook"), str, message_id);
 
-          if (getcfg(logbook, "Email message body", str) &&
+          if (getcfg(lbs->name, "Email message body", str) &&
               atoi(str) == 1)
             {
             sprintf(mail_text+strlen(mail_text), "\r\n=================================\r\n\r\n%s",
@@ -5534,7 +5342,7 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
 
           sendmail(smtp_host, mail_from, mail_to, subject, mail_text);
 
-          if (!getcfg(logbook, "Display email recipients", str) ||
+          if (!getcfg(lbs->name, "Display email recipients", str) ||
                atoi(str) == 1)
             {
             if (mail_param[0] == 0)
@@ -5552,7 +5360,7 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
     if (buffer[i])
       free(buffer[i]);
 
-  if (getcfg(logbook, "Submit page", str))
+  if (getcfg(lbs->name, "Submit page", str))
     {
     strcpy(file_name, cfg_dir);
     strcat(file_name, str);
@@ -5568,30 +5376,39 @@ int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
     rsprintf("Keep-Alive: timeout=60, max=10\r\n");
     }
 
-  rsprintf("Location: %s%s\r\n\r\n<html>redir</html>\r\n",
-            tag, mail_param);
+  rsprintf("Location: %d%s\r\n\r\n<html>redir</html>\r\n",
+            message_id, mail_param);
 }
 
 /*------------------------------------------------------------------*/
 
-void copy_to(char *src_path, char *dst_logbook, int move)
+void copy_to(LOGBOOK *lbs, int src_id, char *dest_logbook, int move)
 {
-int    size, i, status, fh, n_attr;
-char   str[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
-char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
-       orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80];
+int     size, i, status, fh, n_attr, message_id;
+char    str[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
+char    date[80], text[TEXT_SIZE], msg_str[32], in_reply_to[80], reply_to[256], 
+        attachment[MAX_ATTACHMENTS][256], encoding[80];
+LOGBOOK *lbs_dest;
 
-  n_attr = scan_attributes(logbook);
+  n_attr = scan_attributes(lbs->name);
+
+  for (i=0 ; lb_list[i].name[0] ; i++)
+    if (equal_ustring(lb_list[i].name, dest_logbook))
+      break;
+  if (!lb_list[i].name[0])
+    return;
+  lbs_dest = &lb_list[i];
 
   /* get message */
   size = sizeof(text);
-  status = el_retrieve(src_path, date, attr_list, attrib, n_attr,
-                       text, &size, orig_tag, reply_tag,
+  status = el_retrieve(lbs, src_id, date, attr_list, attrib, n_attr,
+                       text, &size, in_reply_to, reply_to,
                        attachment, encoding);
 
   if (status != EL_SUCCESS)
     {
-    sprintf(str, loc("Message %s cannot be read from logbook \"%s\""), src_path, logbook);
+    sprintf(msg_str, "%d", src_id);
+    sprintf(str, loc("Message %s cannot be read from logbook \"%s\""), msg_str, lbs->name);
     show_error(str);
     return;
     }
@@ -5600,7 +5417,7 @@ char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     if (attachment[i][0])
       {
-      strcpy(file_name, data_dir);
+      strcpy(file_name, lbs->data_dir);
       strcat(file_name, attachment[i]);
 
       fh = open(file_name, O_RDONLY | O_BINARY);
@@ -5623,39 +5440,21 @@ char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
       strcpy(attachment[i], str+14);
       }
 
-  /* switch to destination logbook data directory */
+  /* submit in destination logbook without links */
 
-  strcpy(old_data_dir, data_dir);
-  getcfg(dst_logbook, "Data dir", str);
-  if (str[0] == DIR_SEPARATOR || str[1] == ':')
-    strcpy(data_dir, str);
-  else
-    {
-    strcpy(data_dir, cfg_dir);
-    strcat(data_dir, str);
-    }
-
-  if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
-    strcat(data_dir, DIR_SEPARATOR_STR);
-
-  tag[0] = 0;
-  status = el_submit(attr_list, attrib, n_attr, text,
-                     orig_tag, encoding,
+  message_id = el_submit(lbs_dest, 0, attr_list, attrib, n_attr, text,
+                     "", "", encoding,
                      attachment,
                      _attachment_buffer,
-                     _attachment_size,
-                     tag, sizeof(tag));
+                     _attachment_size);
 
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     if (attachment[i][0])
       free(_attachment_buffer[i]);
 
-  /* restore old data_dir */
-  strcpy(data_dir, old_data_dir);
-
-  if (status != EL_SUCCESS)
+  if (message_id <= 0)
     {
-    sprintf(str, loc("New message cannot be written to directory \"%s\""), data_dir);
+    sprintf(str, loc("New message cannot be written to directory \"%s\""), lbs_dest->data_dir);
     strcat(str, "\n<p>");
     strcat(str, loc("Please check that it exists and elogd has write access"));
     show_error(str);
@@ -5665,21 +5464,19 @@ char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
   /* delete original message for move */
   if (move)
     {
-    el_delete_message(src_path);
+    el_delete_message(lbs, src_id, TRUE, NULL);
 
     /* check if this was the last message */
-    size = sizeof(text);
-    status = el_retrieve(src_path, date, attr_list, attrib, n_attr,
-                         text, &size, orig_tag, reply_tag,
-                         attachment, encoding);
+    src_id = el_search_message(lbs, EL_NEXT, src_id);
 
     /* if yes, force display of new last message */
-    if (status != EL_SUCCESS)
-      src_path[0] = 0;
+    if (src_id <= 0)
+      src_id = el_search_message(lbs, EL_LAST, 0);
     }
 
   /* display status message */
-  show_standard_header(loc("Copy ELog entry"), src_path);
+  sprintf(str, "%d", src_id);
+  show_standard_header(loc("Copy ELog entry"), str);
 
   rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
             gt("Border width"), gt("Frame color"));
@@ -5687,15 +5484,15 @@ char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
 
   rsprintf("<tr><td bgcolor=#80FF80 align=center><b>");
   if (move)
-    rsprintf(loc("Message moved successfully from \"%s\" to \"%s\""), logbook, dst_logbook);
+    rsprintf(loc("Message moved successfully from \"%s\" to \"%s\""), lbs->name, lbs_dest->name);
   else
-    rsprintf(loc("Message copied successfully from \"%s\" to \"%s\""), logbook, dst_logbook);
+    rsprintf(loc("Message copied successfully from \"%s\" to \"%s\""), lbs->name, lbs_dest->name);
 
   rsprintf("</b></tr>\n");
-  rsprintf("<tr><td bgcolor=%s align=center>%s <a href=\"../%s/%s\">%s</td></tr>\n",
-            gt("Cell BGColor"), loc("Go to"), logbook, src_path, logbook);
+  rsprintf("<tr><td bgcolor=%s align=center>%s <a href=\"../%s/%d\">%s</td></tr>\n",
+            gt("Cell BGColor"), loc("Go to"), lbs->name, src_id, lbs->name);
   rsprintf("<tr><td bgcolor=%s align=center>%s <a href=\"../%s/\">%s</td></tr>\n",
-            gt("Cell BGColor"), loc("Go to"), dst_logbook, dst_logbook);
+            gt("Cell BGColor"), loc("Go to"), lbs_dest->name, lbs_dest->name);
 
   rsprintf("</table></td></tr></table>\n");
   rsprintf("</body></html>\r\n");
@@ -5705,23 +5502,27 @@ char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
 
 /*------------------------------------------------------------------*/
 
-void show_elog_page(char *logbook, char *path)
+void show_elog_page(LOGBOOK *lbs, int message_id)
 {
-int    size, i, j, len, n, msg_status, status, fh, length, first_message, last_message, index, n_attr;
-char   str[256], orig_path[256], command[80], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
+int    size, i, j, len, n, status, fh, length, message_error, index, n_attr;
+int    orig_message_id;
+char   str[256], command[80], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char   date[80], text[TEXT_SIZE], menu_str[1000], other_str[1000], cmd[256],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
 char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80],
-       slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
+       slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH], *p;
 FILE   *f;
+BOOL   first;
 
-  n_attr = scan_attributes(logbook);
+  n_attr = scan_attributes(lbs->name);
 
-  if (getcfg(logbook, "Types", str))
+  if (getcfg(lbs->name, "Types", str))
     {
-    show_upgrade_page();
+    show_upgrade_page(lbs);
     return;
     }
+
+  message_error = EL_SUCCESS;
 
   /*---- interprete commands ---------------------------------------*/
 
@@ -5738,11 +5539,11 @@ FILE   *f;
     strcpy(command, loc("Last"));
 
   /* check if command allowed for current user */
-  if (!allow_user(command))
+  if (!allow_user(lbs, command))
     return;
 
   /* get menu command */
-  getcfg(logbook, "Menu commands", menu_str);
+  getcfg(lbs->name, "Menu commands", menu_str);
   if (menu_str[0] == 0)
     {
     strcpy(menu_str, loc("New"));
@@ -5762,7 +5563,7 @@ FILE   *f;
     strcat(menu_str, loc("Config"));
     strcat(menu_str, ", ");
 
-    if (getcfg(logbook, "Password file", str))
+    if (getcfg(lbs->name, "Password file", str))
       {
       strcat(menu_str, loc("Change Password"));
       strcat(menu_str, ", ");
@@ -5818,7 +5619,7 @@ FILE   *f;
 
   if (equal_ustring(command, loc("Help")))
     {
-    if (getcfg(logbook, "Help URL", str))
+    if (getcfg(lbs->name, "Help URL", str))
       {
       /* if file is given, add '/' to make absolute path */
       if (strchr(str, '/') == NULL)
@@ -5826,7 +5627,7 @@ FILE   *f;
       else
         strcpy(ref, str);
 
-      redirect3(ref);
+      redirect(ref);
       return;
       }
 
@@ -5845,7 +5646,7 @@ FILE   *f;
 
     f = fopen(file_name, "r");
     if (f == NULL)
-      redirect3("http://midas.psi.ch/elog/eloghelp_en.html");
+      redirect("http://midas.psi.ch/elog/eloghelp_en.html");
     else
       {
       fclose(f);
@@ -5856,41 +5657,41 @@ FILE   *f;
 
   if (equal_ustring(command, loc("New")))
     {
-    show_elog_new(NULL, FALSE);
+    show_elog_new(lbs, 0, FALSE);
     return;
     }
 
   if (equal_ustring(command, loc("Edit")))
     {
-    if (path[0])
+    if (message_id)
       {
-      show_elog_new(path, TRUE);
+      show_elog_new(lbs, message_id, TRUE);
       return;
       }
     }
 
   if (equal_ustring(command, loc("Reply")))
     {
-    show_elog_new(path, FALSE);
+    show_elog_new(lbs, message_id, FALSE);
     return;
     }
 
   if (equal_ustring(command, loc("Submit")) ||
       equal_ustring(command, "Submit"))
     {
-    submit_elog();
+    submit_elog(lbs);
     return;
     }
 
   if (equal_ustring(command, loc("Find")))
     {
-    show_elog_find();
+    show_elog_find(lbs);
     return;
     }
 
   if (equal_ustring(command, loc("Search")))
     {
-    show_elog_submit_find(0, 0);
+    show_elog_submit_find(lbs, 0, 0);
     return;
     }
 
@@ -5908,26 +5709,26 @@ FILE   *f;
 
   if (equal_ustring(command, loc("Copy to")))
     {
-    copy_to(path, getparam("destc"), 0);
+    copy_to(lbs, message_id, getparam("destc"), 0);
     return;
     }
 
   if (equal_ustring(command, loc("Move to")))
     {
-    copy_to(path, getparam("destm"), 1);
+    copy_to(lbs, message_id, getparam("destm"), 1);
     return;
     }
 
   if (equal_ustring(command, loc("Config")))
     {
-    show_config_page();
+    show_config_page(lbs);
     return;
     }
 
   if (equal_ustring(command, loc("Change Password")) ||
       isparam("newpwd"))
     {
-    show_change_pwd_page();
+    show_change_pwd_page(lbs);
     return;
     }
 
@@ -5950,7 +5751,7 @@ FILE   *f;
       }
 
     /* log activity */
-    logf("Logout of user \"%s\" from logbook \"%s\"",getparam("unm"),logbook);
+    logf("Logout of user \"%s\" from lbs->name \"%s\"",getparam("unm"),lbs->name);
 
     /* delete user cookies */
     if (getcfg("global", "Password file", str))
@@ -5968,118 +5769,65 @@ FILE   *f;
     return;
     }
 
-  strcpy(str, getparam("last"));
-  if (strchr(str, ' '))
-    {
-    i = atoi(strchr(str, ' '));
-    sprintf(str, "last%d", i);
-    redirect(str);
-    return;
-    }
-
-  strcpy(str, getparam("past"));
-  if (strchr(str, ' '))
-    {
-    i = atoi(strchr(str, ' '));
-    sprintf(str, "past%d", i);
-    redirect(str);
-    return;
-    }
-
   if (equal_ustring(command, loc("Delete")))
     {
-    show_elog_delete(path);
-    return;
-    }
-
-  if (strncmp(path, "past", 4) == 0)
-    {
-    show_elog_submit_find(atoi(path+4), 0);
-    return;
-    }
-
-  if (strncmp(path, "last", 4) == 0 && strstr(path, ".gif") == NULL)
-    {
-    show_elog_submit_find(0, atoi(path+4));
-    return;
-    }
-
-  if (equal_ustring(command, loc("Back")) &&
-      getcfg(logbook, "Back to main", str) &&
-      atoi(str) == 1)
-    {
-    redirect3("/");
-    return;
-    }
-
-  /*---- check if file requested -----------------------------------*/
-
-  if ((strlen(path) > 13 && path[6] == '_' && path[13] == '_') ||
-      (strlen(path) > 13 && path[6] == '_' && path[13] == '/') ||
-      strstr(path, ".gif") || strstr(path, ".jpg") || 
-      strstr(path, ".jpeg") || strstr(path, ".png"))
-    {
-    if ((strlen(path) > 13 && path[6] == '_' && path[13] == '_') ||
-        (strlen(path) > 13 && path[6] == '_' && path[13] == '/'))
-      {
-      if (path[13] == '/')
-        path[13] = '_';
-
-      /* file from data directory requested */
-      strcpy(file_name, data_dir);
-      strcat(file_name, path);
-      }
-    else
-      {
-      /* file from theme directory requested */
-      strcpy(file_name, cfg_dir);
-      if (file_name[0])
-        strcat(file_name, DIR_SEPARATOR_STR);
-      strcat(file_name, "themes");
-      strcat(file_name, DIR_SEPARATOR_STR);
-      if (theme_name[0])
-        {
-        strcat(file_name, theme_name);
-        strcat(file_name, DIR_SEPARATOR_STR);
-        }
-      strcat(file_name, path);
-      }
-
-    send_file(file_name);
+    show_elog_delete(lbs, message_id);
     return;
     }
 
   /*---- check next/previous message -------------------------------*/
 
-  last_message = first_message = FALSE;
   if (equal_ustring(command, loc("Next")) || equal_ustring(command, loc("Previous")) ||
       equal_ustring(command, loc("Last")) || equal_ustring(command, loc("First")))
     {
-    strcpy(orig_path, path);
+    orig_message_id = message_id;
 
-    if (equal_ustring(command, loc("Last")) || equal_ustring(command, loc("First")))
-      path[0] = 0;
+    if (equal_ustring(command, loc("Last")))
+      message_id = el_search_message(lbs, EL_LAST, 0);
+      
+    if (equal_ustring(command, loc("First")))
+      message_id = el_search_message(lbs, EL_FIRST, 0);
 
+    if (!message_id)
+      {
+      redirect("");
+      return;
+      }
+
+    first = TRUE;
     do
       {
-      if (equal_ustring(command, loc("Next")) || equal_ustring(command, loc("First")))
-        strcat(path, "+1");
-      if (equal_ustring(command, loc("Previous")) || equal_ustring(command, loc("Last")))
-        strcat(path, "-1");
+      if (equal_ustring(command, loc("Next")))
+        message_id = el_search_message(lbs, EL_NEXT, message_id);
 
-      status = el_search_message(path, NULL, TRUE, equal_ustring(command, loc("First")));
-      if (status != EL_SUCCESS)
+      if (equal_ustring(command, loc("Previous")))
+        message_id = el_search_message(lbs, EL_PREV, message_id);
+
+      if (!first)
+        {
+        if (equal_ustring(command, loc("First")))
+          message_id = el_search_message(lbs, EL_NEXT, message_id);
+
+      
+        if (equal_ustring(command, loc("Last")))
+          message_id = el_search_message(lbs, EL_PREV, message_id);
+        }
+      else
+        first = FALSE;
+
+      if (message_id == 0)
         {
         if (equal_ustring(command, loc("Next")))
-          last_message = TRUE;
+          message_error = EL_LAST_MSG;
         else
-          first_message = TRUE;
-        strcpy(path, orig_path);
+          message_error = EL_FIRST_MSG;
+
+        message_id = orig_message_id;
         break;
         }
 
       size = sizeof(text);
-      el_retrieve(path, date, attr_list, attrib, n_attr,
+      el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
                   text, &size, orig_tag, reply_tag,
                   attachment, encoding);
 
@@ -6105,7 +5853,7 @@ FILE   *f;
           continue;
         }
 
-      sprintf(str, "%s", path);
+      sprintf(str, "%d", message_id);
 
       for (i=0 ; i<n_attr ; i++)
         {
@@ -6127,7 +5875,7 @@ FILE   *f;
 
   /*---- check for welcome page ------------------------------------*/
 
-  if (!path[0] && getcfg(logbook, "Welcome page", str) && str[0])
+  if (!message_id && getcfg(lbs->name, "Welcome page", str) && str[0])
     {
     strcpy(file_name, cfg_dir);
     strcat(file_name, str);
@@ -6137,7 +5885,7 @@ FILE   *f;
 
   /*---- check for start page --------------------------------------*/
 
-  if (!path[0] && getcfg(logbook, "Start page", str) && str[0])
+  if (!message_id && getcfg(lbs->name, "Start page", str) && str[0])
     {
     redirect(str);
     return;
@@ -6145,39 +5893,49 @@ FILE   *f;
 
   /*---- get current message ---------------------------------------*/
 
-  size = sizeof(text);
-  msg_status = el_retrieve(path, date, attr_list, attrib, n_attr,
-                           text, &size, orig_tag, reply_tag,
-                           attachment, encoding);
+  if (message_id == 0)
+    message_id = el_search_message(lbs, EL_LAST, 0);
+
+  if (message_id)
+    {
+    size = sizeof(text);
+    status = el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
+                             text, &size, orig_tag, reply_tag,
+                             attachment, encoding);
+
+    if (status != EL_SUCCESS)
+      message_error = status;
+    }
+  else
+    message_error = EL_EMPTY;
 
   /*---- header ----*/
 
   /* header */
-  if (msg_status == EL_SUCCESS)
+  if (status == EL_SUCCESS && message_error != EL_EMPTY)
     {
     str[0] = 0;
 
-    if (getcfg(logbook, "Page Title", str))
+    if (getcfg(lbs->name, "Page Title", str))
       {
-      i = build_subst_list(slist, svalue, attrib);
+      i = build_subst_list(lbs, slist, svalue, attrib);
       strsubst(str, slist, svalue, i);
       }
     else
       strcpy(str, "ELOG");
 
+    sprintf(ref, "%d", message_id);
     if (str[0])
-      show_standard_header(str, path);
+      show_standard_header(str, ref);
     else
-      show_standard_header(logbook, path);
+      show_standard_header(lbs->name, ref);
     }
-  else if (msg_status == EL_FILE_ERROR)
-    return;
   else
     show_standard_header("", "");
 
   /*---- title ----*/
 
-  show_standard_title(logbook, "", 0);
+  show_standard_title(lbs->name, "", 0);
 
   /*---- menu buttons ----*/
 
@@ -6221,7 +5979,7 @@ FILE   *f;
           if (equal_ustring(str, "global"))
             continue;
 
-          if (equal_ustring(str, logbook))
+          if (equal_ustring(str, lbs->name))
             continue;
 
           rsprintf("<option value=\"%s\">%s\n", str, str);
@@ -6269,11 +6027,11 @@ FILE   *f;
           url_encode(ref);
 
           if (equal_ustring(cmd, loc("Copy to")))
-            rsprintf("&nbsp;<a href=\"../%s/%s?cmd=%s&destc=%s\">%s</a>&nbsp|\n",
-                      logbook_enc, path, loc("Copy to"), ref, menu_item[i]);
+            rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&destc=%s\">%s</a>&nbsp|\n",
+                      lbs->name_enc, message_id, loc("Copy to"), ref, menu_item[i]);
           else
-            rsprintf("&nbsp;<a href=\"../%s/%s?cmd=%s&destm=%s\">%s</a>&nbsp|\n",
-                      logbook_enc, path, loc("Move to"), ref, menu_item[i]);
+            rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&destm=%s\">%s</a>&nbsp|\n",
+                      lbs->name_enc, message_id, loc("Move to"), ref, menu_item[i]);
           }
         else
           {
@@ -6286,17 +6044,17 @@ FILE   *f;
             if (equal_ustring(str, "global"))
               continue;
 
-            if (equal_ustring(str, logbook))
+            if (equal_ustring(str, lbs->name))
               continue;
 
             strcpy(ref, str);
             url_encode(ref);
             if (equal_ustring(menu_item[i], loc("Copy to")))
-              rsprintf("&nbsp;<a href=\"../%s/%s?cmd=%s&destc=%s\">%s \"%s\"</a>&nbsp|\n",
-                        logbook_enc, path, loc("Copy to"), ref, loc("Copy to"), str);
+              rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&destc=%s\">%s \"%s\"</a>&nbsp|\n",
+                        lbs->name_enc, message_id, loc("Copy to"), ref, loc("Copy to"), str);
             else
-              rsprintf("&nbsp;<a href=\"../%s/%s?cmd=%s&destm=%s\">%s \"%s\"</a>&nbsp|\n",
-                        logbook_enc, path, loc("Move to"), ref, loc("Move to"), str);
+              rsprintf("&nbsp;<a href=\"../%s/%d?cmd=%s&destm=%s\">%s \"%s\"</a>&nbsp|\n",
+                        lbs->name_enc, message_id, loc("Move to"), ref, loc("Move to"), str);
             }
           }
         }
@@ -6306,9 +6064,9 @@ FILE   *f;
         url_encode(str);
 
         if (i < n-1)
-          rsprintf("&nbsp;<a href=\"%s?cmd=%s\">%s</a>&nbsp;|\n", path, str, menu_item[i]);
+          rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;|\n", message_id, str, menu_item[i]);
         else
-          rsprintf("&nbsp;<a href=\"%s?cmd=%s\">%s</a>&nbsp;\n", path, str, menu_item[i]);
+          rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;\n", message_id, str, menu_item[i]);
         }
       }
 
@@ -6325,7 +6083,7 @@ FILE   *f;
 
   /*---- next/previous buttons ----*/
 
-  if (!getcfg(logbook, "Enable browsing", str) ||
+  if (!getcfg(lbs->name, "Enable browsing", str) ||
        atoi(str) == 1)
     {
     if (atoi(gt("Merge menus")) != 1)
@@ -6367,9 +6125,10 @@ FILE   *f;
   rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n",
            gt("Categories border"), gt("Categories cellpadding"), gt("Frame color"));
 
-  if (msg_status == EL_FILE_ERROR ||
-      (msg_status != EL_SUCCESS && !last_message && !first_message))
-    rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><h1>%s</h1></tr>\n", loc("No message available"));
+  if (message_error == EL_EMPTY)
+    rsprintf("<tr><td bgcolor=#FF8080 colspan=2 align=center><h1>%s</h1></tr>\n", loc("Logbook is empty"));
+  else if (message_error == EL_NO_MSG)
+    rsprintf("<tr><td bgcolor=#FF8080 colspan=2 align=center><h1>%s</h1></tr>\n", loc("This message has been deleted"));
   else
     {
     /* check for locked attributes */
@@ -6384,18 +6143,18 @@ FILE   *f;
     else
       str[0] = 0;
 
-    if (last_message)
-      rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>%s %s</b></tr>\n", 
+    if (message_error == EL_LAST_MSG)
+      rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>%s %s</b></tr>\n",
                loc("This is the last entry"), str);
 
-    if (first_message)
-      rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>%s %s</b></tr>\n", 
+    if (message_error == EL_FIRST_MSG)
+      rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>%s %s</b></tr>\n",
                loc("This is the first entry"), str);
 
     /* check for mail submissions */
     if (*getparam("suppress"))
       {
-      if (getcfg(logbook, "Suppress default", str) && atoi(str) == 1)
+      if (getcfg(lbs->name, "Suppress default", str) && atoi(str) == 1)
         rsprintf("<tr><td colspan=2 bgcolor=#FFFFFF>%s</tr>\n", loc("Email notification suppressed"));
       else
         rsprintf("<tr><td colspan=2 bgcolor=#FF0000><b>%s</b></tr>\n", loc("Email notification suppressed"));
@@ -6422,7 +6181,7 @@ FILE   *f;
 
     /*---- display date ----*/
 
-    if (getcfg(logbook, "Date format", format))
+    if (getcfg(lbs->name, "Date format", format))
       {
       struct tm ts;
 
@@ -6459,7 +6218,7 @@ FILE   *f;
 
     /*---- link to original message or reply ----*/
 
-    if (msg_status != EL_FILE_ERROR && (reply_tag[0] || orig_tag[0]))
+    if (message_error != EL_FILE_ERROR && (reply_tag[0] || orig_tag[0]))
       {
 
       if (orig_tag[0])
@@ -6472,9 +6231,21 @@ FILE   *f;
       if (reply_tag[0])
         {
         rsprintf("<tr><td nowrap width=10%% bgcolor=%s>", gt("Categories bgcolor1"));
-        sprintf(ref, "%s", reply_tag);
         rsprintf("<b>%s:</b></td><td bgcolor=%s>", loc("Reply to this"), gt("Menu2 bgcolor"));
-        rsprintf("<a href=\"%s\">%s</a></td></tr>\n", ref, reply_tag);
+
+        p = strtok(reply_tag, ",");
+        do
+          {
+          rsprintf("<a href=\"%s\">%s</a>\n", p, p);
+
+          p = strtok(NULL, ",");
+
+          if (p)
+            rsprintf("&nbsp&nbsp\n");
+
+          } while (p);
+
+        rsprintf("</td></tr>\n");
         }
       }
 
@@ -6485,7 +6256,7 @@ FILE   *f;
       sprintf(lattr, "l%s", attr_list[i]);
       rsprintf("<tr><td nowrap width=10%% bgcolor=%s>", gt("Categories bgcolor1"));
 
-      if (!getcfg(logbook, "Filtered browsing", str) ||
+      if (!getcfg(lbs->name, "Filtered browsing", str) ||
           atoi(str) == 1)
         {
         if (*getparam(lattr) == '1')
@@ -6527,10 +6298,10 @@ FILE   *f;
 
     /*---- message text ----*/
 
-    if (!getcfg(logbook, "Show text", str) || atoi(str) == 1)
+    if (!getcfg(lbs->name, "Show text", str) || atoi(str) == 1)
       {
       rsprintf("<tr><td><table width=100%% border=0 cellpadding=1 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
-      
+
       if (*gt("BGTimage"))
         rsprintf("<tr><td background=\"%s\" bgcolor=%s>\n", gt("BGTimage"), gt("Text BGColor"));
       else
@@ -6558,7 +6329,7 @@ FILE   *f;
         att[i] = 0;
 
         /* determine size of attachment */
-        strcpy(file_name, data_dir);
+        strcpy(file_name, lbs->data_dir);
         strcat(file_name, attachment[index]);
 
         length = 0;
@@ -6590,7 +6361,7 @@ FILE   *f;
 
         rsprintf("</td></tr></table></td></tr>\n");
 
-        if (!getcfg(logbook, "Show attachments", str) ||
+        if (!getcfg(lbs->name, "Show attachments", str) ||
             atoi(str) == 1)
           {
           if (strstr(att, ".GIF") ||
@@ -6615,7 +6386,7 @@ FILE   *f;
               if (!strstr(att, ".HTML"))
                 rsprintf("<br><pre>");
 
-              strcpy(file_name, data_dir);
+              strcpy(file_name, lbs->data_dir);
               strcat(file_name, attachment[index]);
 
               f = fopen(file_name, "rt");
@@ -6651,7 +6422,7 @@ FILE   *f;
   /* overall table */
   rsprintf("</td></tr></table></td></tr>\n");
 
-  if (getcfg(logbook, "bottom text", str))
+  if (getcfg(lbs->name, "bottom text", str))
     {
     FILE *f;
     char file_name[256], *buf;
@@ -6683,12 +6454,12 @@ FILE   *f;
 
 /*------------------------------------------------------------------*/
 
-BOOL check_password(char *logbook, char *name, char *password, char *redir)
+BOOL check_password(LOGBOOK *lbs, char *name, char *password, char *redir)
 {
 char  str[256];
 
   /* get password from configuration file */
-  if (getcfg(logbook, name, str))
+  if (getcfg(lbs->name, name, str))
     {
     if (strcmp(password, str) == 0)
       return TRUE;
@@ -6736,12 +6507,12 @@ char  str[256];
 
 /*------------------------------------------------------------------*/
 
-BOOL check_user_password(char *logbook, char *user, char *password, char *redir)
+BOOL check_user_password(LOGBOOK *lbs, char *user, char *password, char *redir)
 {
 char  str[256], line[256], file_name[256], *p;
 FILE  *f;
 
-  getcfg(logbook, "Password file", str);
+  getcfg(lbs->name, "Password file", str);
 
   if (str[0] == DIR_SEPARATOR || str[1] == ':')
     strcpy(file_name, str);
@@ -6816,9 +6587,9 @@ FILE  *f;
 
     rsprintf("<font color=%s>%s</font></td></tr>\n",
              gt("Title fontcolor"), loc("Please login"));
-    rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;<input type=text name=uname></td></tr>\n", 
+    rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;<input type=text name=uname></td></tr>\n",
              gt("Cell BGColor"), loc("Username"));
-    rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;<input type=password name=upassword></td></tr>\n", 
+    rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;<input type=password name=upassword></td></tr>\n",
              gt("Cell BGColor"), loc("Password"));
 
     rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=\"%s\"></td></tr>", gt("Cell BGColor"), loc("Submit"));
@@ -6921,7 +6692,7 @@ static char last_password[32];
 
 /*------------------------------------------------------------------*/
 
-void interprete(char *path)
+void interprete(char *lbook, char *path)
 /********************************************************************\
 
   Routine: interprete
@@ -6936,13 +6707,14 @@ void interprete(char *path)
 
 \********************************************************************/
 {
-int    i, n, index;
-double exp;
-char   str[256], enc_pwd[80], file_name[256];
-char   enc_path[256], dec_path[256];
-char   *experiment, *command, *value, *group;
-time_t now;
-struct tm *gmt;
+int     i, n, index, lb_index;
+double  exp;
+char    str[256], enc_pwd[80], file_name[256], data_dir[256];
+char    enc_path[256], dec_path[256], logbook[256], logbook_enc[256];
+char    *experiment, *command, *value, *group;
+time_t  now;
+struct  tm *gmt;
+LOGBOOK *cur_lb;
 
   /* encode path for further usage */
   strcpy(dec_path, path);
@@ -6962,6 +6734,12 @@ struct tm *gmt;
     {
     strcpy(logbook_enc, experiment);
     strcpy(logbook, experiment);
+    url_decode(logbook);
+    }                 
+  else
+    {
+    strcpy(logbook_enc, lbook);
+    strcpy(logbook, lbook);
     url_decode(logbook);
     }
 
@@ -7004,25 +6782,43 @@ struct tm *gmt;
   else
     loadtheme(NULL); /* get default values */
 
-  /* get data dir from configuration file */
-  getcfg(logbook, "Data dir", str);
-  if (str[0] == DIR_SEPARATOR || str[1] == ':')
-    strcpy(data_dir, str);
-  else
+  /* set up logbook entry if not existing */
+  for (i=0 ; lb_list[i].name[0] ; i++)
+    if (equal_ustring(logbook, lb_list[i].name))
+      break;
+  if (!lb_list[i].name[0])
     {
-    strcpy(data_dir, cfg_dir);
-    strcat(data_dir, str);
+    lb_list = realloc(lb_list, sizeof(LOGBOOK)*(i+2));
+    strcpy(lb_list[i].name, logbook);
+    strcpy(lb_list[i].name_enc, logbook_enc);
+
+    /* get data dir from configuration file */
+    getcfg(logbook, "Data dir", str);
+    if (str[0] == DIR_SEPARATOR || str[1] == ':')
+      strcpy(data_dir, str);
+    else
+      {
+      strcpy(data_dir, cfg_dir);
+      strcat(data_dir, str);
+      }
+
+    if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
+      strcat(data_dir, DIR_SEPARATOR_STR);
+
+    strcpy(lb_list[i].data_dir, data_dir);
+    lb_list[i].el_index = NULL;
+
+    lb_list[i+1].name[0] = 0;
     }
-  
-  if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
-    strcat(data_dir, DIR_SEPARATOR_STR);
+  lb_index = i;
+  cur_lb = lb_list+i;
 
   if (*getparam("wpassword"))
     {
     /* check if password correct */
     do_crypt(getparam("wpassword"), enc_pwd);
 
-    if (!check_password(logbook, "Write password", enc_pwd, getparam("redir")))
+    if (!check_password(cur_lb, "Write password", enc_pwd, getparam("redir")))
       return;
 
     rsprintf("HTTP/1.1 302 Found\r\n");
@@ -7071,7 +6867,7 @@ struct tm *gmt;
     /* check if password correct */
     do_crypt(getparam("apassword"), enc_pwd);
 
-    if (!check_password(logbook, "Admin password", enc_pwd, getparam("redir")))
+    if (!check_password(cur_lb, "Admin password", enc_pwd, getparam("redir")))
       return;
 
     rsprintf("HTTP/1.1 302 Found\r\n");
@@ -7123,7 +6919,7 @@ struct tm *gmt;
     /* log logins */
     logf("Login of user \"%s\" (attempt) for logbook \"%s\" ",getparam("uname"),logbook);
 
-    if (!check_user_password(logbook, getparam("uname"), enc_pwd, getparam("redir")))
+    if (!check_user_password(cur_lb, getparam("uname"), enc_pwd, getparam("redir")))
       return;
 
     logf("Login of user \"%s\" (successful)",getparam("uname"));
@@ -7190,7 +6986,7 @@ struct tm *gmt;
 
     /* don't check password for submit, since cookie might have been expired during editing */
     if (!equal_ustring(command, loc("Submit")))
-      if (!check_user_password(logbook, getparam("unm"), getparam("upwd"), path))
+      if (!check_user_password(cur_lb, getparam("unm"), getparam("upwd"), path))
         return;
     }
 
@@ -7200,7 +6996,7 @@ struct tm *gmt;
       equal_ustring(command, loc("Delete")))
     {
     sprintf(str, "%s?cmd=%s", path, command);
-    if (!check_password(logbook, "Write password", getparam("wpwd"), str))
+    if (!check_password(cur_lb, "Write password", getparam("wpwd"), str))
       return;
     }
 
@@ -7210,17 +7006,103 @@ struct tm *gmt;
       equal_ustring(command, loc("Move to")))
     {
     sprintf(str, "%s?cmd=%s", path, command);
-    if (!check_password(logbook, "Admin password", getparam("apwd"), str))
+    if (!check_password(cur_lb, "Admin password", getparam("apwd"), str))
       return;
     }
 
-  show_elog_page(logbook, dec_path);
+  /* check for "Back" button */
+  if (equal_ustring(command, loc("Back")) &&
+      getcfg(cur_lb->name, "Back to main", str) &&
+      atoi(str) == 1)
+    {
+    redirect("../");
+    return;
+    }
+
+  if (equal_ustring(command, loc("Back")))
+    {
+    redirect(".");
+    return;
+    }
+
+  /* check for "Last n*2 Entries" */
+  strcpy(str, getparam("last"));
+  if (strchr(str, ' '))
+    {
+    i = atoi(strchr(str, ' '));
+    sprintf(str, "last%d", i);
+    redirect(str);
+    return;
+    }
+
+  strcpy(str, getparam("past"));
+  if (strchr(str, ' '))
+    {
+    i = atoi(strchr(str, ' '));
+    sprintf(str, "past%d", i);
+    redirect(str);
+    return;
+    }
+
+  /* check for lastxx and pastxx */
+  if (strncmp(path, "past", 4) == 0 &&
+      *getparam("cmd") == 0)
+    {
+    show_elog_submit_find(cur_lb, atoi(path+4), 0);
+    return;
+    }
+
+  if (strncmp(path, "last", 4) == 0 && strstr(path, ".gif") == NULL &&
+      *getparam("cmd") == 0)
+    {
+    show_elog_submit_find(cur_lb, 0, atoi(path+4));
+    return;
+    }
+
+  /*---- check if file requested -----------------------------------*/
+
+  if ((strlen(dec_path) > 13 && dec_path[6] == '_' && dec_path[13] == '_') ||
+      (strlen(dec_path) > 13 && dec_path[6] == '_' && dec_path[13] == '/') ||
+      strstr(dec_path, ".gif") || strstr(dec_path, ".jpg") ||
+      strstr(dec_path, ".jpeg") || strstr(dec_path, ".png"))
+    {
+    if ((strlen(dec_path) > 13 && dec_path[6] == '_' && dec_path[13] == '_') ||
+        (strlen(dec_path) > 13 && dec_path[6] == '_' && dec_path[13] == '/'))
+      {
+      if (dec_path[13] == '/')
+        dec_path[13] = '_';
+
+      /* file from data directory requested */
+      strcpy(file_name, cur_lb->data_dir);
+      strcat(file_name, dec_path);
+      }
+    else
+      {
+      /* file from theme directory requested */
+      strcpy(file_name, cfg_dir);
+      if (file_name[0])
+        strcat(file_name, DIR_SEPARATOR_STR);
+      strcat(file_name, "themes");
+      strcat(file_name, DIR_SEPARATOR_STR);
+      if (theme_name[0])
+        {
+        strcat(file_name, theme_name);
+        strcat(file_name, DIR_SEPARATOR_STR);
+        }
+      strcat(file_name, dec_path);
+      }
+
+    send_file(file_name);
+    return;
+    }
+
+  show_elog_page(cur_lb, atoi(dec_path));
   return;
 }
 
 /*------------------------------------------------------------------*/
 
-void decode_get(char *string)
+void decode_get(char *logbook, char *string)
 {
 char path[256];
 char *p, *pitem;
@@ -7257,12 +7139,12 @@ char *p, *pitem;
       }
     }
 
-  interprete(path);
+  interprete(logbook, path);
 }
 
 /*------------------------------------------------------------------*/
 
-void decode_post(char *string, char *boundary, int length)
+void decode_post(char *logbook, char *string, char *boundary, int length)
 {
 char *pinit, *p, *ptmp, file_name[256], str[256], line[256], item[256];
 int  i, n;
@@ -7402,7 +7284,7 @@ int  i, n;
 
     } while ((int)(string - pinit) < length);
 
-  interprete("");
+  interprete(logbook, "");
 }
 
 /*------------------------------------------------------------------*/
@@ -7432,7 +7314,7 @@ struct sockaddr_in   serv_addr, acc_addr;
 char                 pwd[256], str[256], cl_pwd[256], *p;
 char                 cookie[256], boundary[256], list[1000],
                      host_list[MAX_N_LIST][NAME_LENGTH], rem_host_name[256],
-                     rem_host_ip[256];
+                     rem_host_ip[256], logbook[256], logbook_enc[256];
 int                  lsock, len, flag, content_length, header_length;
 struct hostent       *phe;
 fd_set               readfds;
@@ -7560,7 +7442,7 @@ struct timeval       timeout;
       }
     else
       setuid(getuid()); /* used for setuid programs */
-  
+
     }
 #endif
 
@@ -7886,7 +7768,7 @@ struct timeval       timeout;
           break;
         }
 
-      if (strstr(logbook, ".gif") || strstr(logbook, ".jpg") || 
+      if (strstr(logbook, ".gif") || strstr(logbook, ".jpg") ||
           strstr(logbook, ".jpg") || strstr(logbook, ".png") ||
           strstr(logbook, ".htm"))
         {
@@ -8167,13 +8049,13 @@ struct timeval       timeout;
             p++;
 
           /* decode command and return answer */
-          decode_get(p);
+          decode_get(logbook, p);
           }
         else if (strncmp(net_buffer, "POST", 4) == 0)
           {
           if (verbose)
             printf("%s\n", net_buffer+header_length);
-          decode_post(net_buffer+header_length, boundary, content_length);
+          decode_post(logbook, net_buffer+header_length, boundary, content_length);
           }
         else
           {
@@ -8189,7 +8071,7 @@ struct timeval       timeout;
           return_length = strlen_retbuf+1;
 
         if (keep_alive && strstr(return_buffer, "Content-Length") == NULL ||
-            strstr(return_buffer, "Content-Length") > 
+            strstr(return_buffer, "Content-Length") >
             strstr(return_buffer, "\r\n\r\n"))
           {
           /*---- add content-length ----*/
@@ -8369,9 +8251,10 @@ char *cfgbuffer, str[256], *p;
 
 int main(int argc, char *argv[])
 {
-int i, fh;
-int daemon = FALSE;
-char read_pwd[80], write_pwd[80], admin_pwd[80], str[80];
+int    i, n, status, fh;
+int    daemon = FALSE;
+char   read_pwd[80], write_pwd[80], admin_pwd[80], str[80], logbook[256],
+       data_dir[256];
 time_t now;
 struct tm *tms;
 
@@ -8494,6 +8377,67 @@ usage:
     return 1;
     }
   close(fh);
+
+  /* count logbooks */
+  for (i=n=0 ;  ; i++)
+    {
+    if (!enumgrp(i, str))
+      break;
+
+    if (equal_ustring(str, "global"))
+      continue;
+
+    n++;
+    }
+
+  /* build logbook indices */
+  lb_list = calloc(sizeof(LOGBOOK), n+1);
+  for (i=n=0 ;  ; i++)
+    {
+    if (!enumgrp(i, logbook))
+      break;
+
+    if (equal_ustring(logbook, "global"))
+      continue;
+
+    strcpy(lb_list[n].name, logbook);
+    strcpy(lb_list[n].name_enc, logbook);
+    url_encode(lb_list[n].name_enc);
+
+    /* get data dir from configuration file */
+    getcfg(logbook, "Data dir", str);
+    if (str[0] == DIR_SEPARATOR || str[1] == ':')
+      strcpy(data_dir, str);
+    else
+      {
+      strcpy(data_dir, cfg_dir);
+      strcat(data_dir, str);
+      }
+
+    if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
+      strcat(data_dir, DIR_SEPARATOR_STR);
+
+    strcpy(lb_list[n].data_dir, data_dir);
+    lb_list[n].el_index = NULL;
+
+    printf("Indexing logbook \"%s\"...\n", logbook);
+    status = el_build_index(&lb_list[n]);
+    
+    if (status == EL_EMPTY)
+      printf("Found empty logbook \"%s\"\n", logbook);
+    else if (status == EL_UPGRADE)
+      {
+      printf("Please upgrade data files in \"%s\" with the elconv program.\n", data_dir);
+      return 1;
+      }
+    else if (status != EL_SUCCESS)
+      {
+      printf("Error generating index.\n");
+      return 1;
+      }
+
+    n++;
+    }
 
   server_loop(tcp_port, daemon);
 
