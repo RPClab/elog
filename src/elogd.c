@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.289  2004/03/10 14:53:40  midas
+   Fixed bug with MOptions and conditional attributes
+
    Revision 1.288  2004/03/09 09:56:04  midas
    Implemented 'ID display'
 
@@ -6233,7 +6236,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             attrib[i][0] = 0;
             first = 1;
             for (j = 0; j < MAX_N_LIST; j++) {
-               sprintf(str, "%s#%d", ua, j);
+               sprintf(str, "%s_%d", ua, j);
                if (getparam(str)) {
                   if (*getparam(str)) {
                      if (first)
