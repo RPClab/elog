@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.76  2002/09/16 06:22:45  midas
+  Various fixed and enhancement
+
   Revision 2.75  2002/09/13 15:32:58  midas
   Various fixes and enhancements
 
@@ -476,9 +479,10 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 #define AF_REQUIRED           (1<<0)
 #define AF_LOCKED             (1<<1)
 #define AF_MULTI              (1<<2)
-#define AF_FIXED              (1<<3)
-#define AF_ICON               (1<<4)
-#define AF_RADIO              (1<<5)
+#define AF_FIXED_EDIT         (1<<3)
+#define AF_FIXED_REPLY        (1<<4)
+#define AF_ICON               (1<<5)
+#define AF_RADIO              (1<<6)
 
 char attr_list[MAX_N_ATTR][NAME_LENGTH];
 char attr_options[MAX_N_ATTR][MAX_N_LIST][NAME_LENGTH];
@@ -3239,7 +3243,7 @@ int  i, j, n, m;
         }
       }
 
-    /* check if attribut required */
+    /* check if attribute required */
     getcfg(logbook, "Required Attributes", list);
     m = strbreak(list, tmp_list, MAX_N_ATTR);
     for (i=0 ; i<m ; i++)
@@ -3249,7 +3253,7 @@ int  i, j, n, m;
           attr_flags[j] |= AF_REQUIRED;
       }
 
-    /* check if locked attribut */
+    /* check if locked attribute */
     getcfg(logbook, "Locked Attributes", list);
     m = strbreak(list, tmp_list, MAX_N_ATTR);
     for (i=0 ; i<m ; i++)
@@ -3259,14 +3263,24 @@ int  i, j, n, m;
           attr_flags[j] |= AF_LOCKED;
       }
 
-    /* check if fixed attribut */
-    getcfg(logbook, "Fixed Attributes", list);
+    /* check if fixed attribute for Edit */
+    getcfg(logbook, "Fixed Attributes Edit", list);
     m = strbreak(list, tmp_list, MAX_N_ATTR);
     for (i=0 ; i<m ; i++)
       {
       for (j=0 ; j<n ; j++)
         if (equal_ustring(attr_list[j], tmp_list[i]))
-          attr_flags[j] |= AF_FIXED;
+          attr_flags[j] |= AF_FIXED_EDIT;
+      }
+
+    /* check if fixed attribute for Reply */
+    getcfg(logbook, "Fixed Attributes Reply", list);
+    m = strbreak(list, tmp_list, MAX_N_ATTR);
+    for (i=0 ; i<m ; i++)
+      {
+      for (j=0 ; j<n ; j++)
+        if (equal_ustring(attr_list[j], tmp_list[i]))
+          attr_flags[j] |= AF_FIXED_REPLY;
       }
     }
   else
@@ -3529,7 +3543,7 @@ void show_error(char *error)
 
 void set_login_cookies(LOGBOOK *lbs, char *user, char *enc_pwd)
 {
-char   str[256], str2[256];
+char   str[256], str2[256], lb_name[256];
 double exp;
 time_t now;
 struct tm *gmt;
@@ -3542,9 +3556,14 @@ struct tm *gmt;
     rsprintf("Keep-Alive: timeout=60, max=10\r\n");
     }
 
+  if (lbs)
+    strcpy(lb_name, lbs->name);
+  else
+    strcpy(lb_name, "global");
+
   /* get optional expriation from configuration file */
   exp = 0;
-  if (getcfg(lbs->name, "Login expiration", str))
+  if (getcfg(lb_name, "Login expiration", str))
     exp = atof(str);
 
   if (exp == 0)
@@ -3581,7 +3600,12 @@ struct tm *gmt;
 
   sprintf(str, "%s", getparam("redir"));
   if (!str[0])
-    sprintf(str, "../%s/", lbs->name_enc);
+    {
+    if (lbs)
+      sprintf(str, "../%s/", lbs->name_enc);
+    else
+      sprintf(str, ".");
+    }
 
   rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
   return;
@@ -4236,7 +4260,9 @@ time_t now;
     rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td>", gt("Categories bgcolor1"), attr_list[index], star);
 
     /* if attribute cannot be changed, just display text */
-    if ((attr_flags[index] & AF_LOCKED) || (bedit && (attr_flags[index] & AF_FIXED)))
+    if ((attr_flags[index] & AF_LOCKED) || 
+        (bedit && (attr_flags[index] & AF_FIXED_EDIT)) ||
+        (message_id && !bedit && (attr_flags[index] & AF_FIXED_REPLY)))
       {
       rsprintf("<td bgcolor=%s>\n", gt("Categories bgcolor2"));
       rsputs2(attrib[index]);
@@ -9085,8 +9111,7 @@ char  status, str[256], upwd[256], full_name[256], email[256];
     show_standard_header("ELOG login", NULL);
 
     /* define hidden fields for current destination */
-    if (redir[0] && !password[0])
-      rsprintf("<input type=hidden name=redir value=\"%s\">\n", redir);
+    rsprintf("<input type=hidden name=redir value=\"%s\">\n", redir);
 
     rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
               gt("Border width"), gt("Frame color"));
@@ -9305,13 +9330,38 @@ LOGBOOK *cur_lb;
     if (n > 1)
       {
       /* if password file is given in global section, protect also logbook selection page */
-      /*##
       if (getcfg("global", "password file", str))
         {
-        if (!check_user_password(NULL, getparam("unm"), getparam("upwd"), "")
+
+        /* if data from login screen, evaluate it and set cookies */
+        if (*getparam("uname") && getparam("upassword"))
+          {
+          /* check if password correct */
+          do_crypt(getparam("upassword"), enc_pwd);
+
+          /* log logins */
+          logf("Login of user \"%s\" (attempt) for logbook selection page", getparam("uname"));
+
+          if (isparam("redir"))
+            strcpy(str, getparam("redir"));
+          else
+            strcpy(str, getparam("cmdline"));
+
+          if (!check_user_password(NULL, getparam("uname"), enc_pwd, str))
+            return;
+
+          logf("Login of user \"%s\" (successful)", getparam("uname"));
+
+          /* set cookies */
+          set_login_cookies(NULL, getparam("uname"), enc_pwd);
+
+          return;
+          }
+        
+        
+        if (!check_user_password(NULL, getparam("unm"), getparam("upwd"), ""))
           return;
         }
-      */
       
       show_selection_page();
       return;
@@ -9444,7 +9494,12 @@ LOGBOOK *cur_lb;
     /* log logins */
     logf("Login of user \"%s\" (attempt) for logbook \"%s\"", getparam("uname"), logbook);
 
-    if (!check_user_password(cur_lb, getparam("uname"), enc_pwd, getparam("cmdline")))
+    if (isparam("redir"))
+      strcpy(str, getparam("redir"));
+    else
+      strcpy(str, getparam("cmdline"));
+
+    if (!check_user_password(cur_lb, getparam("uname"), enc_pwd, str))
       return;
 
     logf("Login of user \"%s\" (successful)", getparam("uname"));
