@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.518  2004/12/06 20:42:51  midas
+   Fixed problem with 'Back' button
+
    Revision 1.517  2004/12/05 11:52:53  midas
    Added date check
 
@@ -6676,9 +6679,10 @@ void set_login_cookies(LOGBOOK * lbs, char *user, char *enc_pwd)
       strcpy(lb_name, "global");
 
    /* get optional expriation from configuration file */
-   if (isparam("remember")) {
-      if (!getcfg(lb_name, "Login expiration", exp, sizeof(exp)))
-         strcpy(exp, "744");    /* one month by default = 31*24 */
+   if (getcfg(lbs->name, "Login expiration", str, sizeof(str)) || atof(str) > 0)
+      strcpy(exp, str);
+   else if (isparam("remember")) {
+      strcpy(exp, "744");    /* one month by default = 31*24 */
    } else
       exp[0] = 0;
 
@@ -18090,7 +18094,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
       rsprintf("<tr><td align=right class=\"dlgform\">%s:</td>\n", loc("Password"));
       rsprintf("<td align=left class=\"dlgform\"><input type=password name=upassword></td></tr>\n");
 
-      if (!getcfg(lbs->name, "Login expiration", str, sizeof(str)) || atoi(str) > 0) {
+      if (!getcfg(lbs->name, "Login expiration", str, sizeof(str)) || atof(str) > 0) {
          rsprintf("<td align=center colspan=2 class=\"dlgform\">");
 
          if (isparam("urem") && atoi(getparam("urem")) == 0)
@@ -18975,15 +18979,8 @@ void interprete(char *lbook, char *path)
          return;
    }
 
-   /* check for "List" button */
-   if (strieq(command, loc("List"))
-       && getcfg(lbs->name, "Back to main", str, sizeof(str))
-       && atoi(str) == 1) {
-      redirect(lbs, "../");
-      return;
-   }
-
-   if (strieq(command, loc("List"))) {
+   /* check for "Back" button */
+   if (strieq(command, loc("Back"))) {
       if (isparam("edit_id")) {
          /* unlock message */
          el_lock_message(lbs, atoi(getparam("edit_id")), NULL);
@@ -18991,6 +18988,18 @@ void interprete(char *lbook, char *path)
          sprintf(str, "../%s/%s", logbook_enc, getparam("edit_id"));
       } else
          sprintf(str, "../%s/", logbook_enc);
+
+      if (getcfg(lbs->name, "Back to main", str, sizeof(str))
+          && atoi(str) == 1)
+         strcpy(str, "../");
+
+      redirect(lbs, str);
+      return;
+   }
+
+   /* check for "List" button */
+   if (strieq(command, loc("List"))) {
+      sprintf(str, "../%s/", logbook_enc);
       redirect(lbs, str);
       return;
    }
