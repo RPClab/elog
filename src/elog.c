@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.20  2004/03/28 10:41:05  midas
+  Fixed problem with logbooks containing blanks
+
   Revision 1.19  2004/03/26 08:28:29  midas
   Version 2.5.2
 
@@ -256,6 +259,33 @@ void btou(char *str)
    for (i = 0; i < (int) strlen(str); i++)
       if (str[i] == ' ')
          str[i] = '_';
+}
+
+/*------------------------------------------------------------------*/
+
+void url_encode(char *ps, int size)
+/********************************************************************\
+Encode the given string in-place by adding %XX escapes
+\********************************************************************/
+{
+   unsigned char *pd, *p, str[NAME_LENGTH];
+
+   pd = str;
+   p = ps;
+   while (*p && (int) pd < (int) str + 250) {
+      if (strchr("%&=#?+", *p) || *p > 127) {
+         sprintf(pd, "%%%02X", *p);
+         pd += 3;
+         p++;
+      } else if (*p == ' ') {
+         *pd++ = '+';
+         p++;
+      } else {
+         *pd++ = *p++;
+      }
+   }
+   *pd = '\0';
+   strlcpy(ps, str, size);
 }
 
 /*------------------------------------------------------------------*/
@@ -818,8 +848,11 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
    strcpy(request, "POST /");
    if (subdir[0])
       sprintf(request + strlen(request), "%s/", subdir);
-   if (experiment[0])
-      sprintf(request + strlen(request), "%s/", experiment);
+   if (experiment[0]) {
+      strcpy(str, experiment);
+      url_encode(str, sizeof(str));
+      sprintf(request + strlen(request), "%s/", str);
+   }
    strcat(request, " HTTP/1.0\r\n");
 
    sprintf(request + strlen(request),
