@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.183  2004/01/13 10:09:05  midas
+   Fixed bug in get_logbook_hierarchy()
+
    Revision 1.182  2004/01/13 09:37:01  midas
    Admin users can edit [global <top>] section
 
@@ -433,6 +436,7 @@ LBLIST get_logbook_hierarchy(void);
 int is_logbook_in_group(LBLIST pgrp, char *logbook);
 void free_logbook_hierarchy(LBLIST root);
 void show_top_text(LOGBOOK *lbs);
+void show_bottom_text(LOGBOOK *lbs);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -4528,27 +4532,29 @@ LBLIST get_logbook_hierarchy(void)
 
    /* populate nodes with logbooks or other groups */
    for (i = 0; i < root->n_members; i++)
-      for (j = 0; j < root->member[i]->n_members; j++) {
-         /* check if node is valid logbook */
-         for (k = 0; lb_list[k].name[0]; k++)
-            if (equal_ustring(root->member[i]->member[j]->name, lb_list[k].name))
-               break;
-
-         /* check if node is subgroup of other node */
-         if (!lb_list[k].name[0]) {
-            for (k = 0; k < root->n_members; k++)
-               if (equal_ustring(root->member[i]->member[j]->name, root->member[k]->name)) {
-
-                  /* node is allocated twice, so free one... */
-                  free(root->member[i]->member[j]);
-
-                  /* ... and reference the other */
-                  root->member[i]->member[j] = root->member[k];
-
-                  /* mark original pointer invalid */
-                  root->member[k] = NULL;
+      if (root->member[i]) {
+         for (j = 0; j < root->member[i]->n_members; j++) {
+            /* check if node is valid logbook */
+            for (k = 0; lb_list[k].name[0]; k++)
+               if (equal_ustring(root->member[i]->member[j]->name, lb_list[k].name))
                   break;
-               }
+
+            /* check if node is subgroup of other node */
+            if (!lb_list[k].name[0]) {
+               for (k = 0; k < root->n_members; k++)
+                  if (equal_ustring(root->member[i]->member[j]->name, root->member[k]->name)) {
+
+                     /* node is allocated twice, so free one... */
+                     free(root->member[i]->member[j]);
+
+                     /* ... and reference the other */
+                     root->member[i]->member[j] = root->member[k];
+
+                     /* mark original pointer invalid */
+                     root->member[k] = NULL;
+                     break;
+                  }
+            }
          }
       }
 
