@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 2.42  2002/07/11 07:22:42  midas
+  Made 'elog:<logbook>/<id>' reference work
+
   Revision 2.41  2002/07/09 07:37:37  midas
   Fixed bug that 'last xx entries?mode=threaded' was displayed
 
@@ -2662,7 +2665,11 @@ char *p, link[256];
         link[k] = 0;
         i--;
 
-        sprintf(return_buffer+j, "<a href=\"%s\">elog:%s</a>", link, link);
+        /* if link contains '/' (reference to other logbook), add ".." in front */
+        if (strchr(link, '/'))
+          sprintf(return_buffer+j, "<a href=\"../%s\">elog:%s</a>", link, link);
+        else
+          sprintf(return_buffer+j, "<a href=\"%s\">elog:%s</a>", link, link);
         j += strlen(return_buffer+j);
         }
       else
