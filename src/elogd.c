@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.268  2004/02/26 13:09:14  midas
+   Show attribute values as HTML if the contain <a> or <img>
+
    Revision 1.267  2004/02/26 13:00:27  midas
    Fixed bug with 'start page = 0?cmd=Last
 
@@ -4257,6 +4260,32 @@ void logf(LOGBOOK * lbs, const char *format, ...)
    fprintf(f, buf);
 
    fclose(f);
+}
+
+/*------------------------------------------------------------------*/
+
+int is_html(char *s)
+{
+   char *str;
+
+   str = malloc(strlen(s)+1);
+   assert(str);
+
+   strcpy(str, s);
+   strupr(str);
+
+   if (strstr(str, "<A HREF") && strchr(str, '>')) {
+      free(str);
+      return TRUE;
+   }
+
+   if (strstr(str, "<IMG") && strchr(str, '>')) {
+      free(str);
+      return TRUE;
+   }
+
+   free(str);
+   return FALSE;
 }
 
 /*------------------------------------------------------------------*/
@@ -14038,7 +14067,11 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
 
          } else {
             rsprintf("%s:</td><td class=\"%s\">\n", attr_list[i], class_value);
-            rsputs2(attrib[i]);
+            
+            if (is_html(attrib[i]))
+               rsputs(attrib[i]);
+            else
+               rsputs2(attrib[i]);
             rsprintf("&nbsp</td>\n");
          }
 
