@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.354  2004/06/23 07:34:04  midas
+   Redirect login screen if URL does not match the one in the config file
+
    Revision 1.353  2004/06/21 19:11:35  midas
    Implemented retrieve_elog_from
 
@@ -4659,6 +4662,23 @@ void extract_path(char *str)
       strcpy(str, str2);
       if (str[strlen(str) - 1] == '/')
          str[strlen(str) - 1] = 0;
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+void extract_host(char *str)
+{
+   char *p, str2[256];
+
+   if (strstr(str, "http://")) {
+      p = str + 7;
+      while (*p && *p != '/' && *p != ':')
+         p++;
+      *p = 0;
+
+      strcpy(str2, str+7);
+      strcpy(str, str2);
    }
 }
 
@@ -15756,7 +15776,8 @@ BOOL is_admin_user(char *logbook, char *user)
 
 BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
 {
-   char status, str[1000], upwd[256], full_name[256], email[256];
+   char str[1000], str2[256], upwd[256], full_name[256], email[256];
+   int  status;
 
    if (lbs == NULL)
       status = get_user_line("global", user, upwd, full_name, email, NULL);
@@ -15816,6 +15837,20 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
       if (!isparam("wpwd") && password[0]) {
          redirect(lbs, "?wpwd=1");
          return FALSE;
+      }
+
+      /* if URL is specified in configuration file, check if login happens for
+         the specified host, in order to get cookies right... */
+
+      if (getcfg(lbs->name, "URL", str)) {
+         extract_host(str);
+         strcpy(str2, http_host);
+         if (strchr(str2, ':'))
+            *strchr(str2, ':') = 0;
+         if (!strieq(str, str2)) {
+            redirect(lbs, "");
+            return FALSE;
+         }
       }
 
       /* show login password page */
