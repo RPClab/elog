@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.327  2004/05/19 20:27:50  midas
+   Added <hr> and <br> to be recognized as HTML in attributes
+
    Revision 1.326  2004/05/18 21:46:08  midas
    Allow ',' and '.' and '-' for numeric format
 
@@ -4475,7 +4478,12 @@ int is_html(char *s)
       return TRUE;
    }
 
-   if (strstr(str, "<IMG") && strchr(str, '>')) {
+   if (strstr(str, "<BR>")) {
+      free(str);
+      return TRUE;
+   }
+
+   if (strstr(str, "<HR>")) {
       free(str);
       return TRUE;
    }
