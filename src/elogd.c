@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
   
    $Log$
+   Revision 1.280  2004/03/06 11:41:58  midas
+   Made preset $date for date attributes working
+
    Revision 1.279  2004/03/05 22:35:15  midas
    Added Prepend/Append on Edit/Reply
 
@@ -5759,7 +5762,7 @@ void strencode2(char *b, char *text)
 /*------------------------------------------------------------------*/
 
 int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_LENGTH],
-                     char attrib[][NAME_LENGTH])
+                     char attrib[][NAME_LENGTH], BOOL format_date)
 {
    int i;
    char str[NAME_LENGTH], format[256];
@@ -5803,11 +5806,14 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
    /* add date */
    strcpy(list[i], "date");
    time(&now);
-   ts = localtime(&now);
-   if (!getcfg(lbs->name, "Time format", format))
-      strcpy(format, DEFAULT_TIME_FORMAT);
+   if (format_date) {
+      ts = localtime(&now);
+      if (!getcfg(lbs->name, "Time format", format))
+         strcpy(format, DEFAULT_TIME_FORMAT);
 
-   strftime(str, sizeof(str), format, ts);
+      strftime(str, sizeof(str), format, ts);
+   } else
+      sprintf(str, "%d", now);
 
    strcpy(value[i++], str);
 
@@ -6277,12 +6283,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                el_lock_message(lbs, message_id, str);
             }
          }
-      } else {
-         /* get preset attributes */
-         for (i = 0; i < lbs->n_attr; i++) {
-            sprintf(str, "p%s", attr_list[i]);
-            strcpy(attrib[i], getparam(str));
-         }
       }
    }
 
@@ -6362,7 +6362,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          if (getcfg_cond(lbs->name, condition, str, preset)) {
             /* check if already second reply */
             if (orig_tag[0] == 0) {
-               i = build_subst_list(lbs, slist, svalue, attrib);
+               i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
                sprintf(str, "%d", message_id);
                add_subst_list(slist, svalue, "message id", str, &i);
                add_subst_time(lbs, slist, svalue, "entry time", date, &i);
@@ -6378,7 +6378,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       for (index = 0; index < lbs->n_attr; index++) {
          sprintf(str, "Subst on edit %s", attr_list[index]);
          if (getcfg_cond(lbs->name, condition, str, preset)) {
-            i = build_subst_list(lbs, slist, svalue, attrib);
+            i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
             sprintf(str, "%d", message_id);
             add_subst_list(slist, svalue, "message id", str, &i);
             add_subst_time(lbs, slist, svalue, "entry time", date, &i);
@@ -6598,7 +6598,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
          if (!bedit || (breedit && i == 2)) {   /* subst on reedit only if preset is under condition */
 
-            i = build_subst_list(lbs, slist, svalue, attrib);
+            /* do not format date for date attributes */
+            i = build_subst_list(lbs, slist, svalue, attrib, 
+                   (attr_flags[index] & AF_DATE) == 0);
             strsubst(preset, slist, svalue, i);
 
             /* check for index substitution */
@@ -6907,7 +6909,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             if (bupload || (!bupload && !breedit)
                || (breedit && !getcfg_cond(lbs->name, condition, "Preset text", str))) {
 
-               j = build_subst_list(lbs, slist, svalue, attrib);
+               j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
                sprintf(mid, "%d", message_id);                    
                add_subst_list(slist, svalue, "message id", mid, &j);
                add_subst_time(lbs, slist, svalue, "entry time", date, &j);
@@ -6932,7 +6934,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             if (!getcfg_cond(lbs->name, condition, "Quote on reply", str)
                 || atoi(str) > 0) {
                if (getcfg_cond(lbs->name, condition, "Prepend on reply", str)) {
-                  j = build_subst_list(lbs, slist, svalue, attrib);
+                  j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
                   sprintf(mid, "%d", message_id);                    
                   add_subst_list(slist, svalue, "message id", mid, &j);
                   add_subst_time(lbs, slist, svalue, "entry time", date, &j);
@@ -6979,7 +6981,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                if (getcfg_cond(lbs->name, condition, "Append on reply", str)) {
 
-                  j = build_subst_list(lbs, slist, svalue, attrib);
+                  j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
                   sprintf(mid, "%d", message_id);                    
                   add_subst_list(slist, svalue, "message id", mid, &j);
                   add_subst_time(lbs, slist, svalue, "entry time", date, &j);
@@ -10338,7 +10340,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       }
 
       j = build_subst_list(lbs, (char (*)[NAME_LENGTH])slist, 
-                                (char (*)[NAME_LENGTH])svalue, attrib);
+                                (char (*)[NAME_LENGTH])svalue, attrib, TRUE);
       sprintf(str, "%d", message_id);
       add_subst_list((char (*)[NAME_LENGTH])slist, (char (*)[NAME_LENGTH])svalue, 
          "message id", str, &j);
@@ -11880,7 +11882,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
 
                /* if value starts with '$', substitute it */
                if (str[0] == '$') {
-                  j = build_subst_list(lbs, slist, svalue, attrib);
+                  j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
                   sprintf(mid, "%d", message_id);                    
                   add_subst_list(slist, svalue, "message id", mid, &j);
                   add_subst_time(lbs, slist, svalue, "entry time", date, &j);
@@ -12075,7 +12077,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n)
    /*---- header ----*/
 
    if (getcfg(lbs->name, "Summary Page Title", str)) {
-      i = build_subst_list(lbs, slist, svalue, NULL);
+      i = build_subst_list(lbs, slist, svalue, NULL, TRUE);
       strsubst(str, slist, svalue, i);
    } else
       sprintf(str, "ELOG %s", lbs->name);
@@ -12665,7 +12667,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
       flags = atoi(str);
 
    if (getcfg(lbs->name, "Use Email from", mail_from)) {
-      j = build_subst_list(lbs, slist, svalue, attrib);
+      j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
       sprintf(str, "%d", message_id);
       add_subst_list(slist, svalue, "message id", str, &j);
       strsubst(mail_from, slist, svalue, j);
@@ -12748,7 +12750,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
 
    /* compose subject from attributes */
    if (getcfg(lbs->name, "Use Email Subject", subject)) {
-      j = build_subst_list(lbs, slist, svalue, attrib);
+      j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
       sprintf(str, "%d", message_id);
       add_subst_list(slist, svalue, "message id", str, &j);
       strsubst(subject, slist, svalue, j);
@@ -12858,7 +12860,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
 
    strlcpy(shell_cmd, sh_cmd, sizeof(shell_cmd));
 
-   i = build_subst_list(lbs, slist, svalue, attrib);
+   i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
    sprintf(str, "%d", message_id);
    add_subst_list(slist, svalue, "message id", str, &i);
    strsubst(shell_cmd, slist, svalue, i);
@@ -13149,7 +13151,7 @@ void submit_elog(LOGBOOK * lbs)
    }
 
    /* compile substitution list */
-   n = build_subst_list(lbs, slist, svalue, attrib);
+   n = build_subst_list(lbs, slist, svalue, attrib, TRUE);
    if (atoi(getparam("edit_id")))
       add_subst_list(slist, svalue, "message id", getparam("edit_id"), &n);
 
@@ -13287,7 +13289,7 @@ void submit_elog(LOGBOOK * lbs)
                   printf("\n%s to %s\n\n", str, list);
 
                for (i = 0; i < n; i++) {
-                  j = build_subst_list(lbs, slist, svalue, attrib);
+                  j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
                   sprintf(str, "%d", message_id);
                   add_subst_list(slist, svalue, "message id", str, &j);
                   add_subst_time(lbs, slist, svalue, "entry time", date, &j);
@@ -13847,7 +13849,7 @@ void show_elog_message(LOGBOOK * lbs, char *dec_path, char *command)
       str[0] = 0;
 
       if (getcfg(lbs->name, "Page Title", str)) {
-         i = build_subst_list(lbs, slist, svalue, attrib);
+         i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
          sprintf(mid, "%d", message_id);
          add_subst_list(slist, svalue, "message id", mid, &i);
          add_subst_time(lbs, slist, svalue, "entry time", date, &i);
@@ -14843,7 +14845,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
                if (i < lb_list[index].n_attr)
                   sprintf(str + strlen(str), " %s $author", loc("by"));
             }
-            j = build_subst_list(&lb_list[index], slist, svalue, attrib);
+            j = build_subst_list(&lb_list[index], slist, svalue, attrib, TRUE);
             sprintf(mid, "%d", message_id);
             add_subst_list(slist, svalue, "message id", mid, &j);
             add_subst_time(&lb_list[index], slist, svalue, "entry time", date, &j);
