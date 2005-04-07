@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.621  2005/04/07 20:19:26  ritt
+   Fixed compiler warning
+
    Revision 1.620  2005/04/07 20:17:28  ritt
    Redirect to source logbook for copy/move
 
@@ -17906,7 +17909,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
    if (source_id)
       sprintf(str, "%d", source_id);
    else
-      sprintf(str, "");
+      str[0] = 0;
    redirect(lbs, str);
    return;
 
