@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.620  2005/04/07 20:17:28  ritt
+   Redirect to source logbook for copy/move
+
    Revision 1.619  2005/04/07 19:41:38  ritt
    Open attachments in separate browser window
 
@@ -17899,7 +17902,15 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
    if (orig_id)
       return;
 
-   /* display status message */
+   /* redirect to next entry of source logbook */
+   if (source_id)
+      sprintf(str, "%d", source_id);
+   else
+      sprintf(str, "");
+   redirect(lbs, str);
+   return;
+
+   /* old status message, removed until someone complains... 
    if (source_id)
       sprintf(str, "%d", source_id);
    else
@@ -17957,6 +17968,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
    rsprintf("</body></html>\r\n");
 
    return;
+   */
 }
 
 /*------------------------------------------------------------------*/
@@ -18117,6 +18129,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
 
    status = 0;
+   reply_tag[0] = orig_tag[0] = 0;
    if (message_id) {
       size = sizeof(text);
       status =
