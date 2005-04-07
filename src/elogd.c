@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.619  2005/04/07 19:41:38  ritt
+   Open attachments in separate browser window
+
    Revision 1.618  2005/04/06 19:45:13  ritt
    Reread password file(s) after HUP signal
 
@@ -14141,12 +14144,12 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             strlcat(thumb_name, ".thumb", sizeof(thumb_name));
 
             if (!show_attachments) {
-               rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;&nbsp;&nbsp; ", ref, attachment[index] + 14);
+               rsprintf("<a href=\"%s\" target=\"_blank\">%s</a>&nbsp;&nbsp;&nbsp;&nbsp; ", ref, attachment[index] + 14);
             } else {
 
                if (file_exist(thumb_name)) {
                   rsprintf
-                      ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
+                      ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\" target=\"_blank\">%s</a>\n",
                        colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
                   if (show_attachments) {
                      rsprintf("<tr><td colspan=%d class=\"attachmentframe\">\n", colspan);
@@ -14157,7 +14160,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                } else {
                   if (is_image(attachment[index])) {
                      rsprintf
-                         ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
+                         ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\" target=\"_blank\">%s</a>\n",
                           colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
                      if (show_attachments) {
                         rsprintf("</td></tr><tr>");
@@ -14167,7 +14170,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      }
                   } else {
                      rsprintf
-                         ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\">%s</a>\n",
+                         ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\" target=\"_blank\">%s</a>\n",
                           colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
 
                      strlcpy(file_name, lbs->data_dir, sizeof(file_name));
@@ -18680,7 +18683,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                    ("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s %d:</td>\n",
                     loc("Attachment"), index + 1);
 
-               rsprintf("<td class=\"attribvalue\"><a href=\"%s\">%s</a>\n", ref, attachment[index] + 14);
+               rsprintf("<td class=\"attribvalue\"><a href=\"%s\" target=\"_blank\">%s</a>\n", ref, attachment[index] + 14);
 
                rsprintf("&nbsp;<span class=\"bytes\">");
 
