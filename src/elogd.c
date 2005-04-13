@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.623  2005/04/13 08:05:05  ritt
+   Fixed bug with conditions and '&'
+
    Revision 1.622  2005/04/12 07:11:27  ritt
    Fixed crash on 'm*' regex search
 
@@ -3156,7 +3159,7 @@ BOOL match_param(char *str, char *param, int conditional_only)
          nand = strbreak(plist[i], alist, 10, "&");
          for (j = 0; j < nand; j++) {
             for (k = 0; k < ncl; k++)
-               if (strcmp(clist[k], alist[j]) == 0)
+               if (stricmp(clist[k], alist[j]) == 0)
                   break;
 
             if (k == ncl)
@@ -8009,7 +8012,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                else {
                   strlcat(condition, ",", sizeof(condition));
                   strlcat(condition, str, sizeof(condition));
-               }
+               } 
+
+            set_condition(condition);
+            n_attr = scan_attributes(lbs->name);
             }
          }
       }
