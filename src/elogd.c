@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.624  2005/04/13 19:39:46  ritt
+   Create password file if not present
+
    Revision 1.623  2005/04/13 08:05:05  ritt
    Fixed bug with conditions and '&'
 
@@ -19029,7 +19032,7 @@ BOOL convert_password_file(char *file_name)
 
 PMXML_NODE load_password_file(LOGBOOK * lbs)
 {
-   PMXML_NODE xml_tree;
+   PMXML_NODE root, list, xml_tree;
    char str[256], line[256], file_name[256];
    int fh;
 
@@ -19049,24 +19052,23 @@ PMXML_NODE load_password_file(LOGBOOK * lbs)
          return NULL;
       }
       close(fh);
-      fh = open(file_name, O_RDONLY);
-   }
+      
+      /* put empty XML tree into password file */
+      printf("Create empty password file \"%s\" ...\n", file_name);
+      root = mxml_create_root_node();
+      list = mxml_add_node(root, "list", NULL);
+      mxml_write_tree(file_name, root);
+      mxml_free_tree(root);
+   } else {
 
-   if (fh < 0) {
-      sprintf(str, loc("Cannot open file <b>%s</b>"), file_name);
-      strcat(str, ": ");
-      strlcat(str, strerror(errno), sizeof(str));
-      show_error(str);
-      return NULL;
-   }
-
-   /* check if in XML format, otherwise convert it */
-   line[0] = 0;
-   read(fh, line, sizeof(line));
-   close(fh);
-   if (strstr(line, "<?xml") == 0) {
-      if (!convert_password_file(file_name))
-         return NULL;
+      /* check if in XML format, otherwise convert it */
+      line[0] = 0;
+      read(fh, line, sizeof(line));
+      close(fh);
+      if (strstr(line, "<?xml") == 0) {
+         if (!convert_password_file(file_name))
+            return NULL;
+      }
    }
 
    if ((xml_tree = mxml_parse_file(file_name, str, sizeof(str))) == NULL) {
