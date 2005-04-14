@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.625  2005/04/14 13:41:50  ritt
+   Use charset from config file in sending email
+
    Revision 1.624  2005/04/13 19:39:46  ritt
    Create password file if not present
 
@@ -2522,7 +2525,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    char *str, *p, boundary[256], file_name[MAX_PATH_LENGTH];
    time_t now;
    struct tm *ts;
-   char list[1024][NAME_LENGTH], buffer[256];
+   char list[1024][NAME_LENGTH], buffer[256], charset[256];
 
    if (verbose)
       eprintf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
@@ -2676,6 +2679,8 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    getcfg("global", "Language", str, sizeof(str));
    if (str[0])
       setlocale(LC_ALL, str);
+   if (!getcfg("global", "charset", charset, sizeof(charset)))
+      strcpy(charset, DEFAULT_HTTP_CHARSET);
 
    if (n_att > 0) {
       snprintf(str, strsize - 1, "MIME-Version: 1.0\r\n");
@@ -2705,13 +2710,15 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
          efputs(str);
       write_logfile(lbs, str);
 
-      snprintf(str, strsize - 1, "--%s\r\nContent-Type: TEXT/PLAIN; charset=US-ASCII\r\n\r\n", boundary);
+      snprintf(str, strsize - 1, "--%s\r\nContent-Type: text/plain; charset=%s\r\n\r\n", 
+               boundary, charset);
+
       send(s, str, strlen(str), 0);
       if (verbose)
          efputs(str);
       write_logfile(lbs, str);
    } else {
-      snprintf(str, strsize - 1, "Content-Type: TEXT/PLAIN; charset=US-ASCII\r\n\r\n");
+      snprintf(str, strsize - 1, "Content-Type: TEXT/PLAIN; charset=%s\r\n\r\n", charset);
       send(s, str, strlen(str), 0);
       if (verbose)
          efputs(str);
