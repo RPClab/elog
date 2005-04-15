@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.627  2005/04/15 19:48:36  ritt
+   Use base64 encoding for email subject
+
    Revision 1.626  2005/04/15 19:33:29  ritt
    Adde 'Raw' mode for export
 
@@ -2064,7 +2067,7 @@ void base64_decode(char *s, char *d)
    *d = 0;
 }
 
-void base64_encode(char *s, char *d)
+void base64_encode(unsigned char *s, unsigned char *d)
 {
    unsigned int t, pad;
 
@@ -2528,7 +2531,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    char *str, *p, boundary[256], file_name[MAX_PATH_LENGTH];
    time_t now;
    struct tm *ts;
-   char list[1024][NAME_LENGTH], buffer[256], charset[256];
+   char list[1024][NAME_LENGTH], buffer[256], charset[256], subject_enc[2000];
 
    if (verbose)
       eprintf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
@@ -2636,14 +2639,13 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       efputs(str);
    write_logfile(lbs, str);
 
-   /* works for Outlook but not for Thunderbird...
    strcpy(subject_enc, "=?");
    strlcat(subject_enc, charset, sizeof(subject_enc));
-   strlcat(subject_enc, "?Q?", sizeof(subject_enc));
-   strlcat(subject_enc, subject, sizeof(subject_enc));
+   strlcat(subject_enc, "?B?", sizeof(subject_enc));
+   base64_encode(subject, subject_enc+strlen(subject_enc));
    strlcat(subject_enc, "?=", sizeof(subject_enc));
-   */
-   snprintf(str, strsize - 1, "From: %s\r\nSubject: %s\r\n", from, subject);
+
+   snprintf(str, strsize - 1, "From: %s\r\nSubject: %s\r\n", from, subject_enc);
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
