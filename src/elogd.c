@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.629  2005/04/15 20:25:53  ritt
+   Read password files in el_index_logbooks
+
    Revision 1.628  2005/04/15 20:13:35  ritt
    Fixed problem with password file creation through logbook selection page
 
@@ -1403,6 +1406,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
 void highlight_searchtext(regex_t * re_buf, char *src, char *dst, BOOL hidden);
 int parse_config_file(char *config_file);
 PMXML_NODE load_password_file(LOGBOOK * lbs);
+void load_password_files();
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -4354,6 +4358,8 @@ int el_index_logbooks()
       free_logbook_hierarchy(phier);
    }
  
+   load_password_files();
+
    return EL_SUCCESS;
 }
 
@@ -21461,9 +21467,6 @@ void server_loop(void)
    if (!verbose && !running_as_daemon)
       eputs("done");
 
-   /* load password files */
-   load_password_files();
-
    /* listen for connection */
    status = listen(lsock, SOMAXCONN);
    if (status < 0) {
@@ -22180,7 +22183,6 @@ void server_loop(void)
          /* reload configuration */
          check_config();
          el_index_logbooks();
-         load_password_files();
          _hup = FALSE;
       }
 #endif
