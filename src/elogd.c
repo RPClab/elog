@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.626  2005/04/15 19:33:29  ritt
+   Adde 'Raw' mode for export
+
    Revision 1.625  2005/04/14 13:41:50  ritt
    Use charset from config file in sending email
 
@@ -1861,7 +1864,7 @@ size_t strlcat(char *dst, const char *src, size_t size)
 /*-------------------------------------------------------------------*/
 
 void strsubst(char *string, char name[][NAME_LENGTH], char value[][NAME_LENGTH], int n)
-                                                      /* subsitute "$name" with value corresponding to name */
+/* subsitute "$name" with value corresponding to name */
 {
    int i, j;
    char tmp[1000], str[NAME_LENGTH], uattr[NAME_LENGTH], *ps, *pt, *p;
@@ -2531,6 +2534,9 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       eprintf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
    write_logfile(lbs, "Email from %s to %s, SMTP host %s:\n", from, to, smtp_host);
 
+   if (!getcfg("global", "charset", charset, sizeof(charset)))
+      strcpy(charset, DEFAULT_HTTP_CHARSET);
+
    /* count attachments */
    n_att = 0;
    if (att_file)
@@ -2630,6 +2636,13 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       efputs(str);
    write_logfile(lbs, str);
 
+   /* works for Outlook but not for Thunderbird...
+   strcpy(subject_enc, "=?");
+   strlcat(subject_enc, charset, sizeof(subject_enc));
+   strlcat(subject_enc, "?Q?", sizeof(subject_enc));
+   strlcat(subject_enc, subject, sizeof(subject_enc));
+   strlcat(subject_enc, "?=", sizeof(subject_enc));
+   */
    snprintf(str, strsize - 1, "From: %s\r\nSubject: %s\r\n", from, subject);
    send(s, str, strlen(str), 0);
    if (verbose)
@@ -2679,8 +2692,6 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    getcfg("global", "Language", str, sizeof(str));
    if (str[0])
       setlocale(LC_ALL, str);
-   if (!getcfg("global", "charset", charset, sizeof(charset)))
-      strcpy(charset, DEFAULT_HTTP_CHARSET);
 
    if (n_att > 0) {
       snprintf(str, strsize - 1, "MIME-Version: 1.0\r\n");
@@ -2710,7 +2721,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
          efputs(str);
       write_logfile(lbs, str);
 
-      snprintf(str, strsize - 1, "--%s\r\nContent-Type: text/plain; charset=%s\r\n\r\n", 
+      snprintf(str, strsize - 1, "--%s\r\nContent-Type: text/plain; charset=\"%s\"\r\n\r\n", 
                boundary, charset);
 
       send(s, str, strlen(str), 0);
@@ -2718,7 +2729,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
          efputs(str);
       write_logfile(lbs, str);
    } else {
-      snprintf(str, strsize - 1, "Content-Type: TEXT/PLAIN; charset=%s\r\n\r\n", charset);
+      snprintf(str, strsize - 1, "Content-Type: text/plain; charset=\"%s\"\r\n\r\n", charset);
       send(s, str, strlen(str), 0);
       if (verbose)
          efputs(str);
@@ -9320,6 +9331,12 @@ void show_find_form(LOGBOOK * lbs)
       rsprintf("<input type=radio id=\"XML\" name=\"mode\" value=\"XML\">");
    rsprintf("<label for=\"XML\">XML&nbsp;&nbsp;</label>\n");
 
+   if (strieq(mode, "Raw"))
+      rsprintf("<input type=radio id=\"Raw\" name=\"mode\" value=\"Raw\" checked>");
+   else
+      rsprintf("<input type=radio id=\"Raw\" name=\"mode\" value=\"Raw\">");
+   rsprintf("<label for=\"Raw\">Raw&nbsp;&nbsp;</label>\n");
+
    rsprintf("</td></tr>\n");
 
    rsprintf("<tr><td class=\"form2\"><b>%s:</b><br>", loc("Options"));
@@ -15313,7 +15330,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
        menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH], format[80],
        sort_attr[MAX_N_ATTR + 4][NAME_LENGTH];
    char *p, *pt, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
-   BOOL show_attachments, threaded, csv, xml, mode_commands, expand, filtering, disp_filter,
+   BOOL show_attachments, threaded, csv, xml, raw, mode_commands, expand, filtering, disp_filter,
        show_text, searched, found, disp_attr_link[MAX_N_ATTR + 4];
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2;
    struct tm tms, *ptms;
@@ -15470,8 +15487,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    threaded = strieq(mode, "threaded");
    csv = strieq(mode, "CSV1") || strieq(mode, "CSV2");
    xml = strieq(mode, "XML");
+   raw = strieq(mode, "Raw");
 
-   if (csv || xml) {
+   if (csv || xml || raw) {
       page_n = -1;              /* display all pages */
       show_attachments = FALSE; /* hide attachments */
    }
@@ -16048,6 +16066,11 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       rsprintf("<!-- ELOGD Version %s export.xml -->\n", VERSION);
       rsprintf("<ELOG_LIST>\n");
 
+   } else if (raw) {
+
+      /* no menus and tables */
+      show_plain_header(0, "export.txt");
+
    } else {
 
       show_standard_header(lbs, TRUE, str, NULL, TRUE);
@@ -16588,6 +16611,38 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
          rsputs("\t</ENTRY>\n");
 
+      } else if (raw) {
+
+         rsprintf("$@MID@$: %d\r\n", message_id);
+         rsprintf("Date: %s\r\n", date);
+
+         if (reply_to[0])
+            rsprintf("Reply to: %s\r\n", reply_to);
+
+         if (in_reply_to[0])
+            rsprintf("In reply to: %s\r\n", in_reply_to);
+
+         for (i = 0; i < lbs->n_attr; i++)
+            rsprintf("%s: %s\r\n", attr_list[i], attrib[i]);
+
+         rsprintf("Attachment: ");
+
+         if (attachment[0][0]) {
+            rsprintf(attachment[0]);
+            for (i = 1; i < MAX_ATTACHMENTS; i++)
+               if (attachment[i][0])
+                  rsprintf(",%s", attachment[i]);
+         }
+         rsprintf("\r\n");
+
+         rsprintf("Encoding: %s\r\n", encoding);
+         if (locked_by && locked_by[0])
+            rsprintf("Locked by: %s\r\n", locked_by);
+
+         rsprintf("========================================\r\n");
+         rsputs(text);
+         rsputs("\r\n");
+
       } else {
 
          /*---- add highlighting for searched subtext ----*/
@@ -16641,7 +16696,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       }                         /* if (!csv && !xml) */
    }                            /* for() */
 
-   if (!csv && !xml) {
+   if (!csv && !xml && !raw) {
       rsprintf("</table>\n");
 
       if (n_display)
