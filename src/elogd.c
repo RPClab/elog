@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.628  2005/04/15 20:13:35  ritt
+   Fixed problem with password file creation through logbook selection page
+
    Revision 1.627  2005/04/15 19:48:36  ritt
    Use base64 encoding for email subject
 
@@ -10298,6 +10301,20 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
             return 0;
          }
       }
+   }
+
+   /* if register through selection page, use first logbook with same password file */
+   if (lbs == NULL) {
+      getcfg(NULL, "password file", file_name, sizeof(file_name));
+      for (i=0 ; lb_list[i].name[0] ; i++) {
+         getcfg(lb_list[i].name, "password file", str, sizeof(str));
+         if (strieq(file_name, str))
+            break;
+      }
+      if (lb_list[i].name[0] == 0)
+         lbs = &lb_list[0];
+      else
+         lbs = &lb_list[i];
    }
 
    if (activate || !new_user || self_register != 3) {   /* do not save in mode 3 */
