@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.630  2005/04/18 18:49:31  ritt
+   Added 'set current time/date' funcitonality
+
    Revision 1.629  2005/04/15 20:25:53  ritt
    Read password files in el_index_logbooks
 
@@ -7753,11 +7756,11 @@ void show_date_selector(int day, int month, int year, char *index)
 
    rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
    rsprintf("  document.write(\"<a href=\\\"javascript:opencal('%s')\\\">\");\n", index);
-   rsprintf("  document.writeln(\"<img src=\\\"cal.png\\\" alt=\\\"Calendar\\\" border=\\\"0\\\"");
+   rsprintf("  document.writeln(\"<img src=\\\"cal.png\\\" align=\\\"middle\\\" border=\\\"0\\\"");
    rsprintf("alt=\\\"%s\\\"></a>\");\n", loc("Pick a date"));
 
    rsprintf("//-->\n");
-   rsprintf("</script>\n");
+   rsprintf("</script>&nbsp;&nbsp;\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -7792,6 +7795,28 @@ void show_time_selector(int hour, int min, int sec, char *index)
       else
          rsprintf("<option value=%d>%02d\n", i, i);
    rsprintf("</select>\n");
+
+   rsprintf("\n<script language=\"javascript\" type=\"text/javascript\">\n");
+   rsprintf("<!--\n");
+   rsprintf("function settime_%s()\n", index);
+   rsprintf("{\n");
+   rsprintf("  var d = new Date();\n");
+   rsprintf("  document.form1.d%s.value = d.getDate();\n", index);
+   rsprintf("  document.form1.m%s.value = d.getMonth()+1;\n", index);
+   rsprintf("  document.form1.y%s.value = d.getYear()+1900;\n", index);
+   rsprintf("  document.form1.h%s.value = d.getHours();\n", index);
+   rsprintf("  document.form1.n%s.value = d.getMinutes();\n", index);
+   rsprintf("  document.form1.s%s.value = d.getSeconds();\n", index);
+   rsprintf("}\n\n");
+
+   rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
+   rsprintf("  document.write(\"<a href=\\\"javascript:settime_%s()\\\">\");\n", index);
+   rsprintf("  document.writeln(\"<img src=\\\"clock.png\\\" align=\\\"middle\\\" border=\\\"0\\\" ");
+   rsprintf("alt=\\\"%s\\\"></a>\");\n", loc("Set current time"));
+
+   rsprintf("//-->\n");
+   rsprintf("</script>\n");
+
 }
 
 /*------------------------------------------------------------------*/
