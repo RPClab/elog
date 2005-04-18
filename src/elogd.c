@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.631  2005/04/18 20:39:32  ritt
+   Added SMTP error reporting
+
    Revision 1.630  2005/04/18 18:49:31  ritt
    Added 'set current time/date' funcitonality
 
@@ -2531,8 +2534,22 @@ INT recv_string(int sock, char *buffer, INT buffer_size, INT millisec)
 
 /*-------------------------------------------------------------------*/
 
+int check_smtp_error(char *str, int expected, char *error, int error_size)
+{
+   if (atoi(str) != expected) {
+      strlcpy(error, str + 4, error_size);
+      return 0;
+   }
+
+   return 1;
+}
+
+/*-------------------------------------------------------------------*/
+
 INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
-             char *subject, char *text, BOOL email_to, char *url, char att_file[MAX_ATTACHMENTS][256])
+             char *subject, char *text, BOOL email_to, char *url, 
+             char att_file[MAX_ATTACHMENTS][256], char *error,
+             int error_size)
 {
    struct sockaddr_in bind_addr;
    struct hostent *phe;
@@ -2542,6 +2559,8 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    time_t now;
    struct tm *ts;
    char list[1024][NAME_LENGTH], buffer[256], charset[256], subject_enc[2000];
+
+   memset(error, 0, error_size);
 
    if (verbose)
       eprintf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
@@ -2601,6 +2620,8 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    if (verbose)
       efputs(str);
    write_logfile(lbs, str);
+   if (!check_smtp_error(str, 250, error, error_size))
+      goto smtp_error;
 
    snprintf(str, strsize - 1, "MAIL FROM: %s\r\n", from);
    send(s, str, strlen(str), 0);
@@ -2611,6 +2632,9 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    if (verbose)
       efputs(str);
    write_logfile(lbs, str);
+
+   if (!check_smtp_error(str, 250, error, error_size))
+      goto smtp_error;
 
    /* break recipients into list */
    n = strbreak(to, list, 1024, ",");
@@ -2627,6 +2651,9 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       if (verbose)
          efputs(str);
       write_logfile(lbs, str);
+
+      if (!check_smtp_error(str, 250, error, error_size))
+         goto smtp_error;
    }
 
    snprintf(str, strsize - 1, "DATA\r\n");
@@ -2638,6 +2665,8 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    if (verbose)
       efputs(str);
    write_logfile(lbs, str);
+   if (!check_smtp_error(str, 354, error, error_size))
+      goto smtp_error;
 
    if (email_to)
       snprintf(str, strsize - 1, "To: %s\r\n", to);
@@ -2660,7 +2689,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    if (verbose)
       efputs(str);
    write_logfile(lbs, str);
-
+   
    snprintf(str, strsize - 1, "X-Mailer: Elog, Version %s\r\n", VERSION);
    send(s, str, strlen(str), 0);
    if (verbose)
@@ -2852,6 +2881,8 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    if (verbose)
       efputs(str);
    write_logfile(lbs, str);
+   if (!check_smtp_error(str, 250, error, error_size))
+      goto smtp_error;
 
    snprintf(str, strsize - 1, "QUIT\r\n");
    send(s, str, strlen(str), 0);
@@ -2862,6 +2893,10 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    if (verbose)
       efputs(str);
    write_logfile(lbs, str);
+   if (!check_smtp_error(str, 221, error, error_size))
+      goto smtp_error;
+
+smtp_error:
 
    closesocket(s);
    xfree(str);
@@ -10436,7 +10471,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
          sprintf(url + strlen(url), "?cmd=Login&unm=%s", getparam("new_user_name"));
          sprintf(mail_text + strlen(mail_text), "%s %s\r\n", loc("You can access it at"), url);
 
-         sendmail(lbs, smtp_host, mail_from, getparam("new_user_email"), subject, mail_text, TRUE, url, NULL);
+         sendmail(lbs, smtp_host, mail_from, getparam("new_user_email"), subject, mail_text, TRUE, url, NULL, NULL, 0);
       } else {
          if (getcfg(lbs->name, "Admin user", admin_user, sizeof(admin_user))) {
             pl = strtok(admin_user, " ,");
@@ -10506,7 +10541,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
                              loc("Logbook"), url, getparam("new_user_name"), pl);
                   }
 
-                  sendmail(lbs, smtp_host, mail_from, email_addr, subject, mail_text, TRUE, url, NULL);
+                  sendmail(lbs, smtp_host, mail_from, email_addr, subject, mail_text, TRUE, url, NULL, NULL, 0);
                }
 
                pl = strtok(NULL, " ,");
@@ -10824,7 +10859,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             strlcat(mail_text, "\r\n\r\n", sizeof(mail_text));
             sprintf(mail_text + strlen(mail_text), "ELOG Version %s\r\n", VERSION);
 
-            if (sendmail(lbs, smtp_host, mail_from, user_email, subject, mail_text, TRUE, url, NULL) != -1) {
+            if (sendmail(lbs, smtp_host, mail_from, user_email, subject, mail_text, TRUE, url, NULL, NULL, 0) != -1) {
                /* save new password */
                change_pwd(lbs, login_name, pwd_encrypted);
 
@@ -16869,7 +16904,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
 {
    int i, j, k, n, flags, status;
    char str[NAME_LENGTH + 100], str2[256], mail_from[256], *mail_text, smtp_host[256],
-       subject[256], format[256];
+       subject[256], format[256], error[256];
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
    char list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
    time_t ltime;
@@ -17013,18 +17048,23 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
    status = 0;
    if (flags & 16) {
       if (getcfg(lbs->name, "Omit Email to", str, sizeof(str)) && atoi(str) == 1)
-         status = sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url, att_file);
+         status = sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url, att_file, error, sizeof(error));
       else
-         status = sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url, att_file);
+         status = sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url, att_file, error, sizeof(error));
    } else {
       if (getcfg(lbs->name, "Omit Email to", str, sizeof(str)) && atoi(str) == 1)
-         status = sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url, NULL);
+         status = sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url, NULL, error, sizeof(error));
       else
-         status = sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url, NULL);
+         status = sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url, NULL, error, sizeof(error));
    }
 
    if (status < 0) {
       sprintf(str, loc("Error sending Email via <i>\"%s\"</i>"), smtp_host);
+      url_encode(str, sizeof(str));
+      sprintf(mail_param, "?error=%s", str);
+   } else if (error[0]) {
+      sprintf(str, loc("Error sending Email via <i>\"%s\"</i>: "), smtp_host);
+      strlcat(str, error, sizeof(str));
       url_encode(str, sizeof(str));
       sprintf(mail_param, "?error=%s", str);
    } else {
