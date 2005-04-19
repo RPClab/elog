@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.632  2005/04/19 06:43:45  ritt
+   Changed indentation
+
    Revision 1.631  2005/04/18 20:39:32  ritt
    Added SMTP error reporting
 
@@ -1008,7 +1011,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.8-3"
+#define VERSION "2.5.8-4"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -1334,7 +1337,7 @@ struct {
    ".XSL", "text/xml"}, {
    ".ZIP", "application/x-zip-compressed"}, {
 
-   ".THUMB", "image/jpeg"}, {  // hard-coded for now...
+   ".THUMB", "image/jpeg"}, {   // hard-coded for now...
 "", ""},};
 
 typedef struct {
@@ -2547,9 +2550,8 @@ int check_smtp_error(char *str, int expected, char *error, int error_size)
 /*-------------------------------------------------------------------*/
 
 INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
-             char *subject, char *text, BOOL email_to, char *url, 
-             char att_file[MAX_ATTACHMENTS][256], char *error,
-             int error_size)
+             char *subject, char *text, BOOL email_to, char *url,
+             char att_file[MAX_ATTACHMENTS][256], char *error, int error_size)
 {
    struct sockaddr_in bind_addr;
    struct hostent *phe;
@@ -2681,7 +2683,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    strcpy(subject_enc, "=?");
    strlcat(subject_enc, charset, sizeof(subject_enc));
    strlcat(subject_enc, "?B?", sizeof(subject_enc));
-   base64_encode(subject, subject_enc+strlen(subject_enc));
+   base64_encode(subject, subject_enc + strlen(subject_enc));
    strlcat(subject_enc, "?=", sizeof(subject_enc));
 
    snprintf(str, strsize - 1, "From: %s\r\nSubject: %s\r\n", from, subject_enc);
@@ -2689,7 +2691,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    if (verbose)
       efputs(str);
    write_logfile(lbs, str);
-   
+
    snprintf(str, strsize - 1, "X-Mailer: Elog, Version %s\r\n", VERSION);
    send(s, str, strlen(str), 0);
    if (verbose)
@@ -2762,7 +2764,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
          efputs(str);
       write_logfile(lbs, str);
 
-      snprintf(str, strsize - 1, "--%s\r\nContent-Type: text/plain; charset=\"%s\"\r\n\r\n", 
+      snprintf(str, strsize - 1, "--%s\r\nContent-Type: text/plain; charset=\"%s\"\r\n\r\n",
                boundary, charset);
 
       send(s, str, strlen(str), 0);
@@ -2896,7 +2898,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    if (!check_smtp_error(str, 221, error, error_size))
       goto smtp_error;
 
-smtp_error:
+ smtp_error:
 
    closesocket(s);
    xfree(str);
@@ -4395,7 +4397,7 @@ int el_index_logbooks()
 
       free_logbook_hierarchy(phier);
    }
- 
+
    load_password_files();
 
    return EL_SUCCESS;
@@ -5849,7 +5851,7 @@ void rsputs2(const char *str)
                /* link can contain special characters */
                rsputs2(link);
                j = strlen_retbuf;
-               
+
                sprintf(return_buffer + j, "\">%s", key_list[l]);
                j += strlen(return_buffer + j);
                strlen_retbuf = j;
@@ -7937,8 +7939,8 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
          ts.tm_mon = month - 1;
          ts.tm_mday = day;
          ts.tm_hour = hour;
-         ts.tm_min  = min;
-         ts.tm_sec  = sec;
+         ts.tm_min = min;
+         ts.tm_sec = sec;
          ts.tm_isdst = -1;
 
          if (month && day) {
@@ -7955,17 +7957,18 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
 
 /*------------------------------------------------------------------*/
 
-void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload, BOOL breedit, BOOL bduplicate)
+void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload, BOOL breedit,
+                    BOOL bduplicate)
 {
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
-       format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr, attr_index[MAX_N_ATTR];
+       format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr,
+       attr_index[MAX_N_ATTR];
    char str[1000], preset[1000], *p, *pend, star[80], comment[10000], reply_string[256],
        list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80],
-       attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80],
-       reply_tag[MAX_REPLY_TO * 10], att[MAX_ATTACHMENTS][256], encoding[80],
-       slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH],
-       owner[256], locked_by[256], class_value[80], class_name[80], condition[256],
-       ua[NAME_LENGTH], mid[80], title[256], login_name[256];
+       attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
+       att[MAX_ATTACHMENTS][256], encoding[80], slist[MAX_N_ATTR + 10][NAME_LENGTH],
+       svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
+       condition[256], ua[NAME_LENGTH], mid[80], title[256], login_name[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -8036,8 +8039,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
              (breedit && i == 2)) {     /* subst on reedit only if preset is under condition */
 
             /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib, 
-                                  (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
+            i = build_subst_list(lbs, slist, svalue, attrib,
+                                 (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
             strsubst(preset, slist, svalue, i);
 
             /* check for index substitution */
@@ -8060,8 +8063,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
 
             /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib, 
-                                  (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
+            i = build_subst_list(lbs, slist, svalue, attrib,
+                                 (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
             strsubst(preset, slist, svalue, i);
 
             /* check for index substitution */
@@ -8104,10 +8107,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                else {
                   strlcat(condition, ",", sizeof(condition));
                   strlcat(condition, str, sizeof(condition));
-               } 
+               }
 
-            set_condition(condition);
-            n_attr = scan_attributes(lbs->name);
+               set_condition(condition);
+               n_attr = scan_attributes(lbs->name);
             }
          }
       }
@@ -8134,8 +8137,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
              (breedit && i == 2)) {     /* subst on reedit only if preset is under condition */
 
             /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib, 
-                                  (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
+            i = build_subst_list(lbs, slist, svalue, attrib,
+                                 (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
             strsubst(preset, slist, svalue, i);
 
             /* check for index substitution */
@@ -8158,8 +8161,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
 
             /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib, 
-                                  (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
+            i = build_subst_list(lbs, slist, svalue, attrib,
+                                 (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
             strsubst(preset, slist, svalue, i);
 
             /* check for index substitution */
@@ -8239,8 +8242,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             if (orig_tag[0] == 0) {
 
                /* do not format date for date attributes */
-               i = build_subst_list(lbs, slist, svalue, attrib, 
-                                     (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
+               i = build_subst_list(lbs, slist, svalue, attrib,
+                                    (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
                sprintf(str, "%d", message_id);
                add_subst_list(slist, svalue, "message id", str, &i);
                add_subst_time(lbs, slist, svalue, "entry time", date, &i);
@@ -8258,8 +8261,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          if (getcfg(lbs->name, str, preset, sizeof(preset))) {
 
             /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib, 
-                                  (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
+            i = build_subst_list(lbs, slist, svalue, attrib,
+                                 (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
 
             sprintf(str, "%d", message_id);
             add_subst_list(slist, svalue, "message id", str, &i);
@@ -9052,7 +9055,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                }
          }
       } else if (bduplicate) {
-         
+
          rsputs3(text);
 
       } else if (breply) {
@@ -10372,7 +10375,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
    /* if register through selection page, use first logbook with same password file */
    if (lbs == NULL) {
       getcfg(NULL, "password file", file_name, sizeof(file_name));
-      for (i=0 ; lb_list[i].name[0] ; i++) {
+      for (i = 0; lb_list[i].name[0]; i++) {
          getcfg(lb_list[i].name, "password file", str, sizeof(str));
          if (strieq(file_name, str))
             break;
@@ -10471,7 +10474,8 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
          sprintf(url + strlen(url), "?cmd=Login&unm=%s", getparam("new_user_name"));
          sprintf(mail_text + strlen(mail_text), "%s %s\r\n", loc("You can access it at"), url);
 
-         sendmail(lbs, smtp_host, mail_from, getparam("new_user_email"), subject, mail_text, TRUE, url, NULL, NULL, 0);
+         sendmail(lbs, smtp_host, mail_from, getparam("new_user_email"), subject, mail_text, TRUE, url, NULL,
+                  NULL, 0);
       } else {
          if (getcfg(lbs->name, "Admin user", admin_user, sizeof(admin_user))) {
             pl = strtok(admin_user, " ,");
@@ -10524,24 +10528,23 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
                      url_encode(enc_pwd, sizeof(enc_pwd));
                      sprintf(mail_text + strlen(mail_text), "?cmd=Activate&new_user_name=%s&new_full_name=%s",
                              getparam("new_user_name"), str);
-                     sprintf(mail_text + strlen(mail_text), "&new_user_email=%s",
-                             getparam("new_user_email"));
+                     sprintf(mail_text + strlen(mail_text), "&new_user_email=%s", getparam("new_user_email"));
 
-                     for (i=0 ; lb_list[i].name[0] ; i++) {
+                     for (i = 0; lb_list[i].name[0]; i++) {
                         sprintf(str, "sub_lb%d", i);
                         if (isparam(str) && atoi(getparam(str)) == 1)
-                           sprintf(mail_text + strlen(mail_text),"&%s=1", str);
+                           sprintf(mail_text + strlen(mail_text), "&%s=1", str);
                      }
 
-                     sprintf(mail_text + strlen(mail_text),"&encpwd=%s&unm=%s\r\n",
-                             enc_pwd, pl);
+                     sprintf(mail_text + strlen(mail_text), "&encpwd=%s&unm=%s\r\n", enc_pwd, pl);
                   } else {
                      sprintf(mail_text + strlen(mail_text),
                              "\r\n%s URL         : %s?cmd=Config&cfg_user=%s&unm=%s\r\n",
                              loc("Logbook"), url, getparam("new_user_name"), pl);
                   }
 
-                  sendmail(lbs, smtp_host, mail_from, email_addr, subject, mail_text, TRUE, url, NULL, NULL, 0);
+                  sendmail(lbs, smtp_host, mail_from, email_addr, subject, mail_text, TRUE, url, NULL, NULL,
+                           0);
                }
 
                pl = strtok(NULL, " ,");
@@ -10859,7 +10862,8 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             strlcat(mail_text, "\r\n\r\n", sizeof(mail_text));
             sprintf(mail_text + strlen(mail_text), "ELOG Version %s\r\n", VERSION);
 
-            if (sendmail(lbs, smtp_host, mail_from, user_email, subject, mail_text, TRUE, url, NULL, NULL, 0) != -1) {
+            if (sendmail(lbs, smtp_host, mail_from, user_email, subject, mail_text, TRUE, url, NULL, NULL, 0)
+                != -1) {
                /* save new password */
                change_pwd(lbs, login_name, pwd_encrypted);
 
@@ -14271,7 +14275,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             strlcat(thumb_name, ".thumb", sizeof(thumb_name));
 
             if (!show_attachments) {
-               rsprintf("<a href=\"%s\" target=\"_blank\">%s</a>&nbsp;&nbsp;&nbsp;&nbsp; ", ref, attachment[index] + 14);
+               rsprintf("<a href=\"%s\" target=\"_blank\">%s</a>&nbsp;&nbsp;&nbsp;&nbsp; ", ref,
+                        attachment[index] + 14);
             } else {
 
                if (file_exist(thumb_name)) {
@@ -17048,14 +17053,22 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
    status = 0;
    if (flags & 16) {
       if (getcfg(lbs->name, "Omit Email to", str, sizeof(str)) && atoi(str) == 1)
-         status = sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url, att_file, error, sizeof(error));
+         status =
+             sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url, att_file, error,
+                      sizeof(error));
       else
-         status = sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url, att_file, error, sizeof(error));
+         status =
+             sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url, att_file, error,
+                      sizeof(error));
    } else {
       if (getcfg(lbs->name, "Omit Email to", str, sizeof(str)) && atoi(str) == 1)
-         status = sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url, NULL, error, sizeof(error));
+         status =
+             sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url, NULL, error,
+                      sizeof(error));
       else
-         status = sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url, NULL, error, sizeof(error));
+         status =
+             sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url, NULL, error,
+                      sizeof(error));
    }
 
    if (status < 0) {
@@ -18083,65 +18096,65 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
    redirect(lbs, str);
    return;
 
-   /* old status message, removed until someone complains... 
-   if (source_id)
+   /* old status message, removed until someone complains...
+      if (source_id)
       sprintf(str, "%d", source_id);
-   else
-      str[0] = 0;
-   show_standard_header(lbs, FALSE, loc("Copy ELog entry"), str, FALSE);
-
-   rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
-   rsprintf("<tr><td colspan=2 class=\"dlgtitle\">\n");
-
-   if (n_done == 0)
-      rsprintf(loc("No entry selected"));
-   else {
-      if (n_done == 1)
-         rsprintf(loc("One entry"));
       else
-         rsprintf(loc("%d messages"), n_done);
+      str[0] = 0;
+      show_standard_header(lbs, FALSE, loc("Copy ELog entry"), str, FALSE);
+
+      rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
+      rsprintf("<tr><td colspan=2 class=\"dlgtitle\">\n");
+
+      if (n_done == 0)
+      rsprintf(loc("No entry selected"));
+      else {
+      if (n_done == 1)
+      rsprintf(loc("One entry"));
+      else
+      rsprintf(loc("%d messages"), n_done);
 
       if (n_done_reply) {
-         rsprintf(" ");
+      rsprintf(" ");
 
-         if (n_done == 1)
-            rsprintf(loc("and its replies"));
-         else
-            rsprintf(loc("and their replies"));
+      if (n_done == 1)
+      rsprintf(loc("and its replies"));
+      else
+      rsprintf(loc("and their replies"));
       }
 
       rsprintf(" ");
 
       if (move)
-         rsprintf(loc("moved successfully from \"%s\" to \"%s\""), lbs->name, lbs_dest->name);
+      rsprintf(loc("moved successfully from \"%s\" to \"%s\""), lbs->name, lbs_dest->name);
       else
-         rsprintf(loc("copied successfully from \"%s\" to \"%s\""), lbs->name, lbs_dest->name);
-   }
+      rsprintf(loc("copied successfully from \"%s\" to \"%s\""), lbs->name, lbs_dest->name);
+      }
 
-   rsprintf("</b></tr>\n");
-   if (source_id)
+      rsprintf("</b></tr>\n");
+      if (source_id)
       rsprintf
-          ("<tr><td align=center class=\"dlgform\">%s <a href=\"../%s/%d\">%s</td></tr>\n",
-           loc("Go to"), lbs->name, source_id, lbs->name);
-   else {
+      ("<tr><td align=center class=\"dlgform\">%s <a href=\"../%s/%d\">%s</td></tr>\n",
+      loc("Go to"), lbs->name, source_id, lbs->name);
+      else {
       strcpy(str, getparam("lastcmd"));
       url_decode(str);
 
       rsprintf
-          ("<tr><td align=center class=\"dlgform\">%s <a href=\"../%s/%s\">%s</td></tr>\n",
-           loc("Go to"), lbs->name, str, lbs->name);
-   }
+      ("<tr><td align=center class=\"dlgform\">%s <a href=\"../%s/%s\">%s</td></tr>\n",
+      loc("Go to"), lbs->name, str, lbs->name);
+      }
 
-   rsprintf
-       ("<tr><td align=center class=\"dlgform\">%s <a href=\"../%s/\">%s</td></tr>\n",
-        loc("Go to"), lbs_dest->name, lbs_dest->name);
+      rsprintf
+      ("<tr><td align=center class=\"dlgform\">%s <a href=\"../%s/\">%s</td></tr>\n",
+      loc("Go to"), lbs_dest->name, lbs_dest->name);
 
-   rsprintf("</table>\n");
-   show_bottom_text(lbs);
-   rsprintf("</body></html>\r\n");
+      rsprintf("</table>\n");
+      show_bottom_text(lbs);
+      rsprintf("</body></html>\r\n");
 
-   return;
-   */
+      return;
+    */
 }
 
 /*------------------------------------------------------------------*/
@@ -18885,7 +18898,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                    ("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s %d:</td>\n",
                     loc("Attachment"), index + 1);
 
-               rsprintf("<td class=\"attribvalue\"><a href=\"%s\" target=\"_blank\">%s</a>\n", ref, attachment[index] + 14);
+               rsprintf("<td class=\"attribvalue\"><a href=\"%s\" target=\"_blank\">%s</a>\n", ref,
+                        attachment[index] + 14);
 
                rsprintf("&nbsp;<span class=\"bytes\">");
 
@@ -18899,7 +18913,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
                /* determine if displayed inline */
                display_inline = is_image(file_name) || is_ascii(file_name);
-               if (chkext(att, ".PS") || chkext(att, ".PDF") || chkext(att, ".EPS") || 
+               if (chkext(att, ".PS") || chkext(att, ".PDF") || chkext(att, ".EPS") ||
                    chkext(att, ".HTM") || chkext(att, ".HTML"))
                   display_inline = 0;
                if (file_exist(thumb_name))
@@ -19204,7 +19218,7 @@ PMXML_NODE load_password_file(LOGBOOK * lbs)
          return NULL;
       }
       close(fh);
-      
+
       /* put empty XML tree into password file */
       printf("Create empty password file \"%s\" ...\n", file_name);
       root = mxml_create_root_node();
@@ -19283,7 +19297,7 @@ int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name,
    if (email_notify)
       email_notify[0] = 0;
 
-   /* if global password file is requested, search for first 
+   /* if global password file is requested, search for first
       logbook with same password file than global section */
    orig_topgroup[0] = 0;
    if (lbs == NULL) {
@@ -19368,7 +19382,7 @@ BOOL enum_user_line(LOGBOOK * lbs, int n, char *user, int size)
    if (lbs->pwd_xml_tree == NULL)
       return FALSE;
 
-   sprintf(str, "/list/user[%d]/name", n+1);
+   sprintf(str, "/list/user[%d]/name", n + 1);
    if ((node = mxml_find_node(lbs->pwd_xml_tree, str)) == NULL)
       return FALSE;
 
@@ -20446,15 +20460,15 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (strieq(command, loc("New"))       || strieq(command, loc("Edit"))   || strieq(command, loc("Reply"))  || 
-       strieq(command, loc("Duplicate")) || strieq(command, loc("Delete")) || strieq(command, loc("Upload")) ||
-       strieq(command, loc("Submit"))) {
+   if (strieq(command, loc("New")) || strieq(command, loc("Edit")) || strieq(command, loc("Reply")) ||
+       strieq(command, loc("Duplicate")) || strieq(command, loc("Delete")) || strieq(command, loc("Upload"))
+       || strieq(command, loc("Submit"))) {
       sprintf(str, "%s?cmd=%s", path, command);
       if (!check_password(lbs, "Write password", getparam("wpwd"), str))
          return;
    }
 
-   if (strieq(command, loc("Delete"))  || strieq(command, loc("Config")) ||
+   if (strieq(command, loc("Delete")) || strieq(command, loc("Config")) ||
        strieq(command, loc("Copy to")) || strieq(command, loc("Move to"))) {
       sprintf(str, "%s?cmd=%s", path, command);
       if (!check_password(lbs, "Admin password", getparam("apwd"), str))
@@ -21133,7 +21147,7 @@ void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
                   *strchr(p, '\"') = 0;
                /* set attachment filename */
                strlcpy(file_name, p, sizeof(file_name));
-               
+
                /* remove spaces */
                btou(file_name);
                if (file_name[0]) {
