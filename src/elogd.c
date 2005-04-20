@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.633  2005/04/20 18:31:38  ritt
+   Version 2.5.8-5
+
    Revision 1.632  2005/04/19 06:43:45  ritt
    Changed indentation
 
@@ -1011,7 +1014,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.8-4"
+#define VERSION "2.5.8-5"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
