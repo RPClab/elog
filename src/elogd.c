@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.635  2005/04/21 20:50:02  ritt
+   Fixed missing icons in top groups
+
    Revision 1.634  2005/04/21 06:58:16  ritt
    Fixed wrong year under IE with datetime attibutes
 
@@ -20373,6 +20376,7 @@ void interprete(char *lbook, char *path)
    lb_index = i;
    lbs = lb_list + i;
    lbs->n_attr = scan_attributes(lbs->name);
+
    if (*getparam("wpassword")) {
       /* check if password correct */
       do_crypt(getparam("wpassword"), enc_pwd);
@@ -20436,6 +20440,31 @@ void interprete(char *lbook, char *path)
       /* set cookies */
       set_login_cookies(lbs, getparam("uname"), enc_pwd);
       return;
+   }
+
+   /* deliver icons without password */
+   if (chkext(path, ".gif") || chkext(path, ".jpg") || 
+       chkext(path, ".png") || chkext(path, ".ico") || 
+       chkext(path, ".htm") || chkext(path, ".css")) {
+      /* check if file in resource directory */
+      strlcpy(str, resource_dir, sizeof(str));
+      strlcat(str, path, sizeof(str));
+      if (exist_file(str)) {
+         send_file_direct(str);
+         return;
+      } else {
+         /* else search file in themes directory */
+         strlcpy(str, resource_dir, sizeof(str));
+         strlcat(str, "themes", sizeof(str));
+         strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
+         strlcat(str, theme_name, sizeof(str));
+         strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
+         strlcat(str, path, sizeof(str));
+         if (exist_file(str)) {
+            send_file_direct(str);
+            return;
+         }
+      }
    }
 
    /* if password file given, check password and user name */
