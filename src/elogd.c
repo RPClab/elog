@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.634  2005/04/21 06:58:16  ritt
+   Fixed wrong year under IE with datetime attibutes
+
    Revision 1.633  2005/04/20 18:31:38  ritt
    Version 2.5.8-5
 
@@ -7843,7 +7846,10 @@ void show_time_selector(int hour, int min, int sec, char *index)
    rsprintf("  var d = new Date();\n");
    rsprintf("  document.form1.d%s.value = d.getDate();\n", index);
    rsprintf("  document.form1.m%s.value = d.getMonth()+1;\n", index);
-   rsprintf("  document.form1.y%s.value = d.getYear()+1900;\n", index);
+   rsprintf("  year = d.getYear();\n");
+   rsprintf("  if (year < 1900)\n");
+   rsprintf("     year += 1900;\n");
+   rsprintf("  document.form1.y%s.value = year;\n", index);
    rsprintf("  document.form1.h%s.value = d.getHours();\n", index);
    rsprintf("  document.form1.n%s.value = d.getMinutes();\n", index);
    rsprintf("  document.form1.s%s.value = d.getSeconds();\n", index);
