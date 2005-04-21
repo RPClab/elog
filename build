@@ -24,6 +24,7 @@ mkdir $dir/themes/default
 mkdir $dir/themes/default/icons
 mkdir $dir/logbooks/
 mkdir $dir/logbooks/demo
+mkdir $dir/../mxml
 
 # checkout files
 echo Updating files...
@@ -32,6 +33,8 @@ cvs update
 # copy files to archive
 cp src/*.c $dir/src
 cp src/*.h $dir/src
+cp ../mxml/*.c $dir/../mxml
+cp ../mxml/*.h $dir/../mxml
 cp Makefile $dir
 cp elogd.cfg $dir/elogd.cfg
 cp COPYING $dir
@@ -52,9 +55,10 @@ cp logbooks/demo/* $dir/logbooks/demo
 # create elog-x.xx.tar.gz file
 echo Creating archive...
 cd /tmp
-tar -cvzf $archive elog-$version/
+tar -cvzf $archive elog-$version/ mxml/
 
 # remove temporary files
+rm -Rf $dir/../mxml
 rm -Rf $dir
 
 # transfer archive
