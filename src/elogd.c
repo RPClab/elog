@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.637  2005/04/22 13:42:51  ritt
+   Version 2.5.8-6
+
    Revision 1.636  2005/04/22 13:41:18  ritt
    Fixed crashes with very long (revisions) attributes
 
@@ -1023,7 +1026,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.8-5"
+#define VERSION "2.5.8-6"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -20460,8 +20463,8 @@ void interprete(char *lbook, char *path)
    }
 
    /* deliver icons without password */
-   if (chkext(path, ".gif") || chkext(path, ".jpg") || 
-       chkext(path, ".png") || chkext(path, ".ico") || 
+   if (chkext(path, ".gif") || chkext(path, ".jpg") ||
+       chkext(path, ".png") || chkext(path, ".ico") ||
        chkext(path, ".htm") || chkext(path, ".css")) {
       /* check if file in resource directory */
       strlcpy(str, resource_dir, sizeof(str));
