@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.638  2005/04/27 10:43:43  ritt
+   Applied patch from Emiliano to fix possible buffer overflow
+
    Revision 1.637  2005/04/22 13:42:51  ritt
    Version 2.5.8-6
 
@@ -5564,7 +5567,7 @@ void write_logfile(LOGBOOK * lbs, const char *format, ...)
    char str[10000];
    FILE *f;
    time_t now;
-   char buf[1000];
+   char buf[10000];
 
    if (lbs == NULL) {
       if (!getcfg("global", "logfile", str, sizeof(str)))
@@ -5573,7 +5576,7 @@ void write_logfile(LOGBOOK * lbs, const char *format, ...)
       return;
 
    if (str[0] == DIR_SEPARATOR || str[1] == ':')
-      strcpy(file_name, str);
+      strlcpy(file_name, str, sizeof(file_name));
    else {
       strlcpy(file_name, resource_dir, sizeof(file_name));
       strlcat(file_name, str, sizeof(file_name));
