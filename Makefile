@@ -48,6 +48,9 @@ mxml.o: $(MXMLDIR)/mxml.c $(MXMLDIR)/mxml.h
 elogd: src/elogd.c regex.o mxml.o
 	$(CC) $(CFLAGS) -I$(MXMLDIR) -o elogd src/elogd.c regex.o mxml.o $(LIBS)
 
+debug: src/elogd.c regex.o mxml.o
+	$(CC) -g -I$(MXMLDIR) -o elogd src/elogd.c regex.o mxml.o $(LIBS)
+
 %: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
