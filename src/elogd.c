@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.640  2005/04/29 20:26:12  ritt
+   Added str_escape from Emiliano Gabrielli
+
    Revision 1.639  2005/04/29 20:04:51  ritt
    Implemented 'case sensitive search' flag
 
@@ -2040,6 +2043,27 @@ Do the same including '/' characters
 }
 
 /*-------------------------------------------------------------------*/
+
+void str_escape(char *ps, int size)
+/********************************************************************\
+Encode the given string in-place by adding \\ escapes for `$"\
+\********************************************************************/
+{
+   unsigned char *pd, *p, str[NAME_LENGTH];
+
+   pd = str;
+   p = ps;
+   while (*p && (int) pd < (int) str + 250) {
+      if (strchr("'$\"\\", *p)) {
+         *pd++ = '\\';
+         *pd++ = *p++;
+      } else {
+         *pd++ = *p++;
+      }
+   }
+   *pd = '\0';
+   strlcpy(ps, str, size);
+}
 
 void btou(char *str)
 /* convert all blanks to underscores in a string */
@@ -17161,7 +17185,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
 {
    int i;
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
-   char shell_cmd[10000], tail[1000], str[80], *p;
+   char shell_cmd[10000], tail[1000], str[NAME_LENGTH], *p;
 
    if (!enable_execute) {
       eprintf("Shell execution not enabled via -x flag.\n");
@@ -17183,9 +17207,12 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
       for (i = 0; i < MAX_ATTACHMENTS; i++)
          if (att_file[i][0] &&
              strlen(shell_cmd) + strlen(lbs->data_dir) + strlen(att_file[i]) < sizeof(shell_cmd) + 1) {
-            strcpy(p, lbs->data_dir);
-            strcat(p, att_file[i]);
-            strcat(p, " ");
+            strcpy(p, "\"");
+            strcat(p, lbs->data_dir);
+            strcpy(str, att_file[i]);
+            str_escape(str, sizeof(str));
+            strcat(p, str);
+            strcat(p, "\" ");
             p += strlen(p);
          }
       strlcat(shell_cmd, tail, sizeof(shell_cmd));
