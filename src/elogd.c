@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.639  2005/04/29 20:04:51  ritt
+   Implemented 'case sensitive search' flag
+
    Revision 1.638  2005/04/27 10:43:43  ritt
    Applied patch from Emiliano to fix possible buffer overflow
 
@@ -9615,7 +9618,11 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf("<tr><td><td class=\"attribvalue\">\n");
    rsprintf("<input type=checkbox id=\"sall\" name=\"sall\" value=1>\n");
    rsprintf("<label for=\"sall\">%s</label>\n", loc("Search text also in attributes"));
-   rsprintf("<input type=checkbox id=\"sall\" name=\"casesensitive\" value=1>\n");
+   
+   if (getcfg(lbs->name, "Case sensitive search", str, sizeof(str)) && atoi(str))
+      rsprintf("<input type=checkbox id=\"sall\" name=\"casesensitive\" value=1 checked>\n");
+   else
+      rsprintf("<input type=checkbox id=\"sall\" name=\"casesensitive\" value=1>\n");
    rsprintf("<label for=\"casesensitive\">%s</label>\n", loc("Case sensitive"));
 
    rsprintf("</td></tr></table></td></tr></table>\n");
@@ -14860,7 +14867,11 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
 
    if (getcfg(lbs->name, "Quick filter", str, sizeof(str))) {
       rsprintf("<td class=\"menu2b\">\n");
+
       n = strbreak(str, list, MAX_N_LIST, ",");
+
+      if (getcfg(lbs->name, "Case sensitive search", str, sizeof(str)) && atoi(str))
+         rsprintf("<input type=hidden name=\"casesensitive\" value=1>\n");
 
       for (index = 0; index < n; index++) {
          if (strieq(list[index], loc("Date"))) {
