@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.644  2005/05/02 12:57:19  ritt
+   Remove empty attribute values in RSS feed
+
    Revision 1.643  2005/05/02 10:21:13  ritt
    Fixed compiler warning
 
@@ -15314,9 +15317,11 @@ void show_rss_feed(LOGBOOK * lbs)
 
          title[0] = 0;
          for (i = 0; i < lbs->n_attr; i++) {
-            strlcat(title, attrib[i], sizeof(title));
-            if (i < lbs->n_attr - 1)
-               strlcat(title, ", ", sizeof(title));
+            if (attrib[i][0]) {
+               strlcat(title, attrib[i], sizeof(title));
+               if (i < lbs->n_attr - 1)
+                  strlcat(title, ", ", sizeof(title));
+            }
          }
 
       }
