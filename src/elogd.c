@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.646  2005/05/02 15:19:01  ritt
+   Changed wrong sizeof(), thanks to Emiliano
+
    Revision 1.645  2005/05/02 15:06:55  ritt
    Removed superflous mailto:, thanks to Emiliano
 
@@ -8280,7 +8283,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   strlcpy(str, preset + 100, sizeof(str));
 
                strcpy(preset, "...");
-               strlcat(preset, str, sizeof(str));
+               strlcat(preset, str, sizeof(preset));
             }
             if (strncmp(preset, "<br>", 4) == 0)
                strcpy(attrib[index], preset + 4);
