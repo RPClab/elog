@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.642  2005/05/02 10:17:09  ritt
+   Put strlcpy/strlcat in separate source file
+
    Revision 1.641  2005/05/02 10:06:33  ritt
    Version 2.5.9-1
 
@@ -1147,6 +1150,7 @@ char pidfile[256];              /* Pidfile name                                 
 /* local includes */
 #include "regex.h"
 #include "mxml.h"
+#include "strlcpy.h"
 
 BOOL running_as_daemon;         /* Running as a daemon/service? */
 int elog_tcp_port = (int) DEFAULT_PORT; /* Server's TCP port            */
@@ -1841,73 +1845,6 @@ void redirect_to_stderr(void)
 }
 
 /*------------------------------------------------------------------*/
-
-/*---- strlcpy and strlcat to avoid buffer overflow ----------------*/
-
-/*
-* Copy src to string dst of size siz.  At most siz-1 characters
-* will be copied.  Always NUL terminates (unless size == 0).
-* Returns strlen(src); if retval >= siz, truncation occurred.
-*/
-size_t strlcpy(char *dst, const char *src, size_t size)
-{
-   char *d = dst;
-   const char *s = src;
-   size_t n = size;
-
-   /* Copy as many bytes as will fit */
-   if (n != 0 && --n != 0) {
-      do {
-         if ((*d++ = *s++) == 0)
-            break;
-      } while (--n != 0);
-   }
-
-   /* Not enough room in dst, add NUL and traverse rest of src */
-   if (n == 0) {
-      if (size != 0)
-         *d = '\0';             /* NUL-terminate dst */
-      while (*s++);
-   }
-
-   return (s - src - 1);        /* count does not include NUL */
-}
-
-/*
-* Appends src to string dst of size siz (unlike strncat, siz is the
-* full size of dst, not space left).  At most siz-1 characters
-* will be copied.  Always NUL terminates (unless size <= strlen(dst)).
-* Returns strlen(src) + MIN(size, strlen(initial dst)).
-* If retval >= size, truncation occurred.
-*/
-size_t strlcat(char *dst, const char *src, size_t size)
-{
-   char *d = dst;
-   const char *s = src;
-   size_t n = size;
-   size_t dlen;
-
-   /* Find the end of dst and adjust bytes left but don't go past end */
-   while (n-- != 0 && *d != '\0')
-      d++;
-   dlen = d - dst;
-   n = size - dlen;
-
-   if (n == 0)
-      return (dlen + strlen(s));
-   while (*s != '\0') {
-      if (n != 1) {
-         *d++ = *s;
-         n--;
-      }
-      s++;
-   }
-   *d = '\0';
-
-   return (dlen + (s - src));   /* count does not include NUL */
-}
-
-/*-------------------------------------------------------------------*/
 
 void strsubst(char *string, int size, char name[][NAME_LENGTH], char value[][NAME_LENGTH], int n)
 /* subsitute "$name" with value corresponding to name */

@@ -45,11 +45,14 @@ regex.o: src/regex.c src/regex.h
 mxml.o: $(MXMLDIR)/mxml.c $(MXMLDIR)/mxml.h
 	$(CC) $(CFLAGS) -DHAVE_STRLCPY -c -o mxml.o $(MXMLDIR)/mxml.c
 
-elogd: src/elogd.c regex.o mxml.o
-	$(CC) $(CFLAGS) -I$(MXMLDIR) -o elogd src/elogd.c regex.o mxml.o $(LIBS)
+strlcpy.o: src/strlcpy.c src/strlcpy.h
+	$(CC) $(CFLAGS) -c -o strlcpy.o src/strlcpy.c
 
-debug: src/elogd.c regex.o mxml.o
-	$(CC) -g -I$(MXMLDIR) -o elogd src/elogd.c regex.o mxml.o $(LIBS)
+elogd: src/elogd.c regex.o mxml.o strlcpy.o
+	$(CC) $(CFLAGS) -I$(MXMLDIR) -o elogd src/elogd.c regex.o mxml.o strlcpy.o $(LIBS)
+
+debug: src/elogd.c regex.o mxml.o strlcpy.o
+	$(CC) -g -I$(MXMLDIR) -o elogd src/elogd.c regex.o mxml.o strlcpy.o $(LIBS)
 
 %: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
@@ -81,5 +84,5 @@ install: $(EXECS)
 restart:
 	/etc/rc.d/init.d/elogd restart
 clean:
-	-$(RM) *~ $(EXECS) regex.o mxml.o
+	-$(RM) *~ $(EXECS) regex.o mxml.o strlcpy.o
 

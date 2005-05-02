@@ -175,6 +175,9 @@
 			<File
 				RelativePath="..\src\regex.c">
 			</File>
+			<File
+				RelativePath="..\src\strlcpy.c">
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
