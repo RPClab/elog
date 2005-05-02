@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.645  2005/05/02 15:06:55  ritt
+   Removed superflous mailto:, thanks to Emiliano
+
    Revision 1.644  2005/05/02 12:57:19  ritt
    Remove empty attribute values in RSS feed
 
@@ -5839,6 +5842,8 @@ void rsputs2(const char *str)
                           _current_message_id, link, link_text);
                else
                   sprintf(return_buffer + j, "<a href=\"%s\">elog:%s</a>", link, link_text);
+            } else if (strcmp(key_list[l], "mailto:") == 0) {
+                  sprintf(return_buffer + j, "<a href=\"mailto:%s\">%s</a>", link, link_text);
             } else {
                sprintf(return_buffer + j, "<a href=\"%s", key_list[l]);
                j += strlen(return_buffer + j);
