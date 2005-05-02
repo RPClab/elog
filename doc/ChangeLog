@@ -1,3 +1,31 @@
+Version 2.5.9, released May 2nd, 2005
+=====================================
+
+- Added str_escape from Emiliano Gabrielli
+- Implemented 'case sensitive search' flag
+- Applied patch from Emiliano to fix possible buffer overflow
+- Fixed crashes with very long (revisions) attributes
+- Fixed missing icons in top groups
+- Fixed wrong year under IE with datetime attibutes
+- Added SMTP error reporting
+- Added 'set current time/date' funcitonality
+- Use base64 encoding for email subject
+- Adde 'Raw' mode for export
+- Fixed bug with conditions and '&'
+- Fixed crash on 'm*' regex search
+- Redirect to source logbook for copy/move
+- Open attachments in separate browser window
+- Implemented drop-down boxes for copy/move also on individual entry page
+- Implemented 'Duplicate' command
+- Implemented datetime format
+- Subsittute ' ' in attachment file names by '_'
+- Changed is_ascii() to accept umlaute
+- Implemented 'expand selection', defaulting to one
+- Applied patch from Recai to give precedence to directories from the command line
+- Fixed problem with '&' in href links
+- Fixed problem with 'protect selection page' and invalid authentication
+- Fixed bug with crashing elog on 'protect selection page'
+
 Version 2.5.8, released March 21st, 2005
 ========================================
 

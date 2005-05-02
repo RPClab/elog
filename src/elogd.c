@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.641  2005/05/02 10:06:33  ritt
+   Version 2.5.9-1
+
    Revision 1.640  2005/04/29 20:26:12  ritt
    Added str_escape from Emiliano Gabrielli
 
@@ -1035,7 +1038,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.8-6"
+#define VERSION "2.5.9-1"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -1910,7 +1913,7 @@ void strsubst(char *string, int size, char name[][NAME_LENGTH], char value[][NAM
 /* subsitute "$name" with value corresponding to name */
 {
    int i, j;
-   char tmp[2*NAME_LENGTH], str[2*NAME_LENGTH], uattr[2*NAME_LENGTH], *ps, *pt, *p;
+   char tmp[2 * NAME_LENGTH], str[2 * NAME_LENGTH], uattr[2 * NAME_LENGTH], *ps, *pt, *p;
 
    pt = tmp;
    ps = string;
@@ -1940,7 +1943,7 @@ void strsubst(char *string, int size, char name[][NAME_LENGTH], char value[][NAM
 
       /* copy value */
       if (i < n) {
-         strlcpy(pt, value[i], sizeof(tmp)-((int)pt-(int)tmp));
+         strlcpy(pt, value[i], sizeof(tmp) - ((int) pt - (int) tmp));
          pt += strlen(pt);
          ps = p + strlen(uattr);
       } else {
@@ -1950,7 +1953,7 @@ void strsubst(char *string, int size, char name[][NAME_LENGTH], char value[][NAM
    }
 
    /* copy remainder */
-   strlcpy(pt, ps, sizeof(tmp)-((int)pt-(int)tmp));
+   strlcpy(pt, ps, sizeof(tmp) - ((int) pt - (int) tmp));
 
    /* return result */
    strlcpy(string, tmp, size);
@@ -8016,7 +8019,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
        format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr,
        attr_index[MAX_N_ATTR];
-   char str[2*NAME_LENGTH], preset[2*NAME_LENGTH], *p, *pend, star[80], comment[10000], reply_string[256],
+   char str[2 * NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80], comment[10000], reply_string[256],
        list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80],
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
        att[MAX_ATTACHMENTS][256], encoding[80], slist[MAX_N_ATTR + 10][NAME_LENGTH],
@@ -8323,10 +8326,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
             strsubst(preset, sizeof(preset), slist, svalue, i);
             if (strlen(preset) > NAME_LENGTH - 100) {
-               if (strstr(preset+100, "<br>")) {
-                  strlcpy(str, strstr(preset+100, "<br>"), sizeof(str));
+               if (strstr(preset + 100, "<br>")) {
+                  strlcpy(str, strstr(preset + 100, "<br>"), sizeof(str));
                } else
-                  strlcpy(str, preset+100, sizeof(str));
+                  strlcpy(str, preset + 100, sizeof(str));
 
                strcpy(preset, "...");
                strlcat(preset, str, sizeof(str));
@@ -9642,7 +9645,7 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf("<tr><td><td class=\"attribvalue\">\n");
    rsprintf("<input type=checkbox id=\"sall\" name=\"sall\" value=1>\n");
    rsprintf("<label for=\"sall\">%s</label>\n", loc("Search text also in attributes"));
-   
+
    if (getcfg(lbs->name, "Case sensitive search", str, sizeof(str)) && atoi(str))
       rsprintf("<input type=checkbox id=\"sall\" name=\"casesensitive\" value=1 checked>\n");
    else
@@ -14022,7 +14025,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
                                  (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
 
-                  strsubst(display, sizeof(display), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
+                  strsubst(display, sizeof(display), (char (*)[NAME_LENGTH]) slist,
+                           (char (*)[NAME_LENGTH]) svalue, j);
 
                } else
                   sprintf(display, "%d", message_id);
@@ -16000,7 +16004,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                   add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
                                  (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
 
-                  strsubst(str, sizeof(str), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
+                  strsubst(str, sizeof(str), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
+                           j);
                   setparam(attr_list[i], str);
                }
 
@@ -18237,7 +18242,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    int size, i, j, n, n_log, status, fh, length, message_error, index, n_hidden,
        message_id, orig_message_id, format_flags[MAX_N_ATTR], att_hide[MAX_ATTACHMENTS],
        n_attachments, n_lines;
-   char str[2*NAME_LENGTH], ref[256], file_enc[256], thumb_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
+   char str[2 * NAME_LENGTH], ref[256], file_enc[256], thumb_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
    char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], cmd_enc[256],
        orig_tag[80], reply_tag[MAX_REPLY_TO * 10], display[NAME_LENGTH],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
@@ -18853,7 +18858,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
                               (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
 
-               strsubst(display, sizeof(display), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
+               strsubst(display, sizeof(display), (char (*)[NAME_LENGTH]) slist,
+                        (char (*)[NAME_LENGTH]) svalue, j);
 
             } else
                strcpy(display, attrib[i]);
@@ -20505,8 +20511,7 @@ void interprete(char *lbook, char *path)
 
    /* deliver icons without password */
    if (chkext(path, ".gif") || chkext(path, ".jpg") ||
-       chkext(path, ".png") || chkext(path, ".ico") ||
-       chkext(path, ".htm") || chkext(path, ".css")) {
+       chkext(path, ".png") || chkext(path, ".ico") || chkext(path, ".htm") || chkext(path, ".css")) {
       /* check if file in resource directory */
       strlcpy(str, resource_dir, sizeof(str));
       strlcat(str, path, sizeof(str));

@@ -349,3 +349,13 @@ Subscribe to logbooks = S'abonner aux registres
 enable automatic email notifications = activer les notifications par mél.
 Set all = Activer tout
 Set none = Désactiver tout
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Set current time = 
+Please enter hour for attribute '%s' = 
+Please enter minute for attribute '%s' = 
+Please enter second for attribute '%s' = 
+No admin user has been defined in configuration file = 
+Duplicate = 

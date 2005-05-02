@@ -348,3 +348,10 @@ Subscribe to logbooks = Logbücher abbonieren
 enable automatic email notifications = Automatische Email Benachrichtigung ermöglichen
 Set all = Alle ermöglichen
 Set none = Keinen ermöglichen
+Set current time = Aktuelle Zeit setzen
+Please enter hour for attribute '%s' = Bitte Stunde eingeben für Attribut '%s'
+Please enter minute for attribute '%s' = Bitte Minute eingeben für Attribut '%s'
+Please enter second for attribute '%s' = Bitte Sekunde eingeben für Attribut '%s'
+No admin user has been defined in configuration file = In der Konfigurationsdatei ist kein Benutzer mit Administrationsrechten eingetragen
+Duplicate = Duplizieren
+
