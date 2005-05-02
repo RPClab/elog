@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.643  2005/05/02 10:21:13  ritt
+   Fixed compiler warning
+
    Revision 1.642  2005/05/02 10:17:09  ritt
    Put strlcpy/strlcat in separate source file
 
@@ -1857,7 +1860,7 @@ void strsubst(char *string, int size, char name[][NAME_LENGTH], char value[][NAM
    for (p = strchr(ps, '$'); p != NULL; p = strchr(ps, '$')) {
       /* copy leading characters */
       j = (int) (p - ps);
-      if (j >= sizeof(tmp))
+      if (j >= (int)sizeof(tmp))
          return;
       memcpy(pt, ps, j);
       pt += j;
