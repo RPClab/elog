@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.647  2005/05/05 09:26:16  ritt
+   Added error handling for invalid XML file
+
    Revision 1.646  2005/05/02 15:19:01  ritt
    Changed wrong sizeof(), thanks to Emiliano
 
@@ -1202,6 +1205,7 @@ typedef int INT;
 #define EL_EMPTY       7
 #define EL_MEM_ERROR   8
 #define EL_DUPLICATE   9
+#define EL_INVAL_FILE 10
 
 #define EL_FIRST       1
 #define EL_LAST        2
@@ -1457,8 +1461,8 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
                      char attrib[][NAME_LENGTH], BOOL format_date);
 void highlight_searchtext(regex_t * re_buf, char *src, char *dst, BOOL hidden);
 int parse_config_file(char *config_file);
-PMXML_NODE load_password_file(LOGBOOK * lbs);
-void load_password_files();
+PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size);
+int load_password_files();
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -4400,7 +4404,8 @@ int el_index_logbooks()
       free_logbook_hierarchy(phier);
    }
 
-   load_password_files();
+   if (!load_password_files())
+      return EL_INVAL_FILE;
 
    return EL_SUCCESS;
 }
@@ -19228,11 +19233,14 @@ BOOL convert_password_file(char *file_name)
 
 /*------------------------------------------------------------------*/
 
-PMXML_NODE load_password_file(LOGBOOK * lbs)
+PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size)
 {
    PMXML_NODE root, list, xml_tree;
    char str[256], line[256], file_name[256];
    int fh;
+
+   if (error)
+      error[0] = 0;
 
    if (!get_password_file(lbs, file_name, sizeof(file_name)))
       return NULL;
@@ -19243,10 +19251,11 @@ PMXML_NODE load_password_file(LOGBOOK * lbs)
    if (fh < 0) {
       fh = open(file_name, O_CREAT | O_RDWR, 0600);
       if (fh < 0) {
-         sprintf(str, loc("Cannot open file <b>%s</b>"), file_name);
+         sprintf(str, loc("Cannot open file \"%s\""), file_name);
          strcat(str, ": ");
          strlcat(str, strerror(errno), sizeof(str));
          show_error(str);
+         strlcpy(error, str, error_size);
          return NULL;
       }
       close(fh);
@@ -19264,13 +19273,18 @@ PMXML_NODE load_password_file(LOGBOOK * lbs)
       read(fh, line, sizeof(line));
       close(fh);
       if (strstr(line, "<?xml") == 0) {
-         if (!convert_password_file(file_name))
+         if (!convert_password_file(file_name)) {
+            sprintf(str, "Cannot convert password file \"%s\"", file_name);
+            strlcpy(error, str, error_size);
             return NULL;
+         }
       }
    }
 
    if ((xml_tree = mxml_parse_file(file_name, str, sizeof(str))) == NULL) {
       show_error(str);
+      strlcpy(error, str, error_size);
+      eprintf("Cannot load password file \"%s\": %s", file_name, error);
       return NULL;
    }
 
@@ -19279,17 +19293,19 @@ PMXML_NODE load_password_file(LOGBOOK * lbs)
 
 /*------------------------------------------------------------------*/
 
-void load_password_files()
+int load_password_files()
 {
    int i, j;
-   char str1[256], str2[256];
+   char str1[256], str2[256], error[256];
    PMXML_NODE xml_tree;
 
    for (i = 0; lb_list[i].name[0]; i++) {
       if (lb_list[i].pwd_xml_tree == NULL) {
          if (lb_list[i].top_group[0])
             setcfg_topgroup(lb_list[i].top_group);
-         xml_tree = load_password_file(&lb_list[i]);
+         xml_tree = load_password_file(&lb_list[i], error, sizeof(error));
+         if (error[0])
+            return 0;
          if (xml_tree) {
             lb_list[i].pwd_xml_tree = xml_tree;
 
@@ -19309,6 +19325,8 @@ void load_password_files()
          }
       }
    }
+
+   return 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -21575,7 +21593,7 @@ void server_loop(void)
             }
          }
       } else if (verbose)
-         eprintf("Falling back to group \"%s\"", str);
+         eprintf("Falling back to group \"%s\"\n", str);
 
       if (!getcfg("global", "Usr", str, sizeof(str)) || setuser(str) < 0) {
          eprintf("Falling back to default user \"elog\"\n");
@@ -21588,7 +21606,7 @@ void server_loop(void)
             }
          }
       } else if (verbose)
-         eprintf("Falling back to user \"%s\"", str);
+         eprintf("Falling back to user \"%s\"\n", str);
    }
 #endif
 
