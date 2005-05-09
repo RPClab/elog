@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.652  2005/05/09 11:08:36  ritt
+   Fixed compiler warning
+
    Revision 1.651  2005/05/09 11:06:28  ritt
    Version 2.5.9-2
 
@@ -22292,7 +22295,7 @@ void server_loop(void)
                   if (p != NULL) {
                      length = strlen(p + 4);
                      header_length = (int) (p - return_buffer);
-                     if (header_length+100 > sizeof(header_buffer))
+                     if (header_length+100 > (int)sizeof(header_buffer))
                         header_length = sizeof(header_buffer)-100;
                      memcpy(header_buffer, return_buffer, header_length);
                      sprintf(header_buffer + header_length, "\r\nContent-Length: %d\r\n\r\n", length);
