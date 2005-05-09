@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.648  2005/05/09 07:00:15  ritt
+   Fixed buffer overflow for header_buffer
+
    Revision 1.647  2005/05/05 09:26:16  ritt
    Added error handling for invalid XML file
 
@@ -1216,7 +1219,7 @@ char *return_buffer;
 int return_buffer_size;
 int strlen_retbuf;
 int keep_alive;
-char header_buffer[1000];
+char header_buffer[20000];
 int return_length;
 char host_name[256];
 char referer[256];
@@ -22291,6 +22294,8 @@ void server_loop(void)
                   if (p != NULL) {
                      length = strlen(p + 4);
                      header_length = (int) (p - return_buffer);
+                     if (header_length+100 > sizeof(header_buffer))
+                        header_length = sizeof(header_buffer)-100;
                      memcpy(header_buffer, return_buffer, header_length);
                      sprintf(header_buffer + header_length, "\r\nContent-Length: %d\r\n\r\n", length);
                      send(_sock, header_buffer, strlen(header_buffer), 0);
