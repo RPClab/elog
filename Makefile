@@ -45,8 +45,8 @@ regex.o: src/regex.c src/regex.h
 mxml.o: $(MXMLDIR)/mxml.c $(MXMLDIR)/mxml.h
 	$(CC) $(CFLAGS) -DHAVE_STRLCPY -c -o mxml.o $(MXMLDIR)/mxml.c
 
-strlcpy.o: src/strlcpy.c src/strlcpy.h
-	$(CC) $(CFLAGS) -c -o strlcpy.o src/strlcpy.c
+strlcpy.o: $(MXMLDIR)/strlcpy.c $(MXMLDIR)/strlcpy.h
+	$(CC) $(CFLAGS) -c -o strlcpy.o $(MXMLDIR)/strlcpy.c
 
 elogd: src/elogd.c regex.o mxml.o strlcpy.o
 	$(CC) $(CFLAGS) -I$(MXMLDIR) -o elogd src/elogd.c regex.o mxml.o strlcpy.o $(LIBS)

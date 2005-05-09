@@ -216,7 +216,7 @@ SOURCE=..\..\mxml\mxml.c
 "$(INTDIR)\mxml.obj"	"$(INTDIR)\mxml.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) /D "HAVE_STRLCPY" $(SOURCE)
 
-SOURCE=..\src\strlcpy.c
+SOURCE=..\..\mxml\strlcpy.c
 "$(INTDIR)\strlcpy.obj"	"$(INTDIR)\strlcpy.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) /D "HAVE_STRLCPY" $(SOURCE)
 

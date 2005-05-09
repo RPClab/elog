@@ -176,7 +176,7 @@
 				RelativePath="..\src\regex.c">
 			</File>
 			<File
-				RelativePath="..\src\strlcpy.c">
+				RelativePath="..\..\mxml\strlcpy.c">
 			</File>
 		</Filter>
 		<Filter
