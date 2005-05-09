@@ -43,7 +43,7 @@ regex.o: src/regex.c src/regex.h
 	$(CC) $(CFLAGS) -c -o regex.o src/regex.c
 
 mxml.o: $(MXMLDIR)/mxml.c $(MXMLDIR)/mxml.h
-	$(CC) $(CFLAGS) -DHAVE_STRLCPY -c -o mxml.o $(MXMLDIR)/mxml.c
+	$(CC) $(CFLAGS) -c -o mxml.o $(MXMLDIR)/mxml.c
 
 strlcpy.o: $(MXMLDIR)/strlcpy.c $(MXMLDIR)/strlcpy.h
 	$(CC) $(CFLAGS) -c -o strlcpy.o $(MXMLDIR)/strlcpy.c
