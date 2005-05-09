@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.650  2005/05/09 11:02:26  ritt
+   Change '(' to '\(' in quick filters for regex matching
+
    Revision 1.649  2005/05/09 07:50:00  ritt
    Re-applied mod (?) to show copy/move targets in drop-down box
 
@@ -14787,7 +14790,7 @@ void build_ref(char *ref, int size, char *mode, char *expand)
 
 void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands, BOOL threaded)
 {
-   int cur_exp, n, i, j, index;
+   int cur_exp, n, i, j, i1, i2, index;
    char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH], list[MAX_N_LIST][NAME_LENGTH], option[NAME_LENGTH];
 
    rsprintf("<tr><td class=\"menuframe\">\n");
@@ -14942,12 +14945,19 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
                         getcfg(lbs->name, str, comment, sizeof(comment));
                      }
 
-                     strcpy(option, attr_options[i][j]);
-                     if (strchr(option, '{'))
-                        *strchr(option, '{') = 0;
-
                      if (comment[0] == 0)
-                        strcpy(comment, option);
+                        strcpy(comment, attr_options[i][j]);
+
+                     for (i1=i2=0 ; i1<=(int)strlen(attr_options[i][j]) ; i1++) {
+                        if (attr_options[i][j][i1] == '(') {
+                           option[i2++] = '\\';
+                           option[i2++] = '(';
+                        } else if (attr_options[i][j][i1] == '{') {
+                           option[i2]= 0;
+                           break;
+                        } else
+                           option[i2++] = attr_options[i][j][i1];
+                     }
 
                      if (isparam(attr_list[i])
                          && strieq(option, getparam(attr_list[i])))
