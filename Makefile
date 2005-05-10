@@ -23,14 +23,14 @@ MANDIR = /usr/local/man
 MXMLDIR = ../mxml
 
 INSTALL = /usr/bin/install
-RM = /bin/rm
+RM = /bin/rm -f
 
 ifeq ($(OSTYPE),solaris)
 CC = gcc
 LIBS += -lsocket -lnsl
 CFLAGS =
 INSTALL = /usr/ucb/install
-RM = /usr/bin/rm
+RM = /usr/bin/rm -f
 endif
 
 ifeq ($(OSTYPE),darwin)
