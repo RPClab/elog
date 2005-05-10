@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.654  2005/05/10 11:27:23  ritt
+   Supersede 'Display mode' by cookie
+
    Revision 1.653  2005/05/10 07:17:48  ritt
    Store list mode in cookie
 
@@ -15633,16 +15636,20 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    strcpy(mode, "Summary");
    show_attachments = FALSE;
 
-   /* superseede mode from cookie */
-   if (isparam("elmode"))
-      strcpy(mode, getparam("elmode"));
-
-   /* for page display, get mode from config file */
    if (past_n || last_n || page_n) {
+      /* for page display, get mode from config file */
       if (getcfg(lbs->name, "Display Mode", str, sizeof(str)))
          strcpy(mode, str);
-      if (*getparam("mode"))
+   
+      /* supersede mode from cookie */
+      if (isparam("elmode"))
+         strcpy(mode, getparam("elmode"));
+
+      /* supersede mode from direct parameter */
+      if (isparam("mode"))
          strcpy(mode, getparam("mode"));
+
+
    } else {
       /* for find result, get mode from find form */
       strcpy(mode, getparam("mode"));
