@@ -1,6 +1,6 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.5.8)
+# (for 2.5.9)
 # A more recent version may be available at :
 # http://midas.psi.ch/cgi-bin/cvsweb/elog/eloglang.french
 #
@@ -349,13 +349,9 @@ Subscribe to logbooks = S'abonner aux registres
 enable automatic email notifications = activer les notifications par mél.
 Set all = Activer tout
 Set none = Désactiver tout
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Set current time = 
-Please enter hour for attribute '%s' = 
-Please enter minute for attribute '%s' = 
-Please enter second for attribute '%s' = 
-No admin user has been defined in configuration file = 
-Duplicate = 
+Set current time = Régler l'heure courante
+Please enter hour for attribute '%s' = Entrez l'heure pour l'attribut '%s'
+Please enter minute for attribute '%s' =  Entrez les minutes pour l'attribut '%s'
+Please enter second for attribute '%s' =  Entrez les secondes pour l'attribut '%s'
+No admin user has been defined in configuration file = Aucun utilisateur n'est défini comme administrateur dans le fichier de configuration
+Duplicate = Dupliquer
