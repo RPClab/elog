@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.655  2005/05/11 14:00:08  ritt
+   Added confimation dialog for removing users
+
    Revision 1.654  2005/05/10 11:27:23  ritt
    Supersede 'Display mode' by cookie
 
@@ -10655,10 +10658,10 @@ int remove_user(LOGBOOK * lbs, char *user)
 
    mxml_delete_node(node);
 
-   if (!mxml_write_tree(file_name, lbs->pwd_xml_tree))
-      return FALSE;
+   if (get_password_file(lbs, file_name, sizeof(file_name)))
+      return mxml_write_tree(file_name, lbs->pwd_xml_tree);
 
-   return TRUE;
+   return FALSE;
 }
 
 /*------------------------------------------------------------------*/
@@ -10682,18 +10685,30 @@ void show_config_page(LOGBOOK * lbs)
    else
       strcpy(logbook, "global");
 
-   /*---- header ----*/
-
-   show_standard_header(lbs, TRUE, loc("ELOG user config"), ".", FALSE, NULL);
-
-   /*---- title ----*/
-
-   show_standard_title(logbook, "", 0);
-
    /* get user */
    strcpy(user, getparam("unm"));
    if (isparam("cfg_user"))
       strcpy(user, getparam("cfg_user"));
+
+   /*---- header ----*/
+
+   show_standard_header(lbs, TRUE, loc("ELOG user config"), ".", FALSE, NULL);
+
+   /*---- javascript to warn removal of user ----*/
+   rsprintf("<script type=\"text/javascript\">\n");
+   rsprintf("<!--\n\n");
+   rsprintf("function chkrem()\n");
+   rsprintf("{\n");
+   sprintf(str, loc("Really remove user %s?"), user);
+   rsprintf("    var subm = confirm(\"%s\");\n", str);
+   rsprintf("    return subm;\n");
+   rsprintf("}\n\n");
+   rsprintf("//-->\n");
+   rsprintf("</script>\n\n");
+
+   /*---- title ----*/
+
+   show_standard_title(logbook, "", 0);
 
    /*---- menu buttons ----*/
 
@@ -10821,7 +10836,7 @@ void show_config_page(LOGBOOK * lbs)
 
    rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change password"));
-   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Remove user"));
+   rsprintf("<input type=submit name=cmd value=\"%s\" onClick=\"return chkrem();\">\n", loc("Remove user"));
 
    if (is_admin_user(logbook, getparam("unm"))) {
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("New user"));
