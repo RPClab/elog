@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.656  2005/05/12 20:02:12  ritt
+   Version 2.5.9-3
+
    Revision 1.655  2005/05/11 14:00:08  ritt
    Added confimation dialog for removing users
 
@@ -1080,7 +1083,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.9-2"
+#define VERSION "2.5.9-3"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
