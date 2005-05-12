@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.657  2005/05/12 20:59:31  ritt
+   Added printf() to avoid windows crash on long config files
+
    Revision 1.656  2005/05/12 20:02:12  ritt
    Version 2.5.9-3
 
@@ -3332,7 +3335,7 @@ int parse_config_file(char *file_name)
       if (*p == '[') {
          p++;
          pstr = str;
-         while (*p && *p != ']' && *p != '\n' && *p != '\r')
+         while (*p && *p != ']' && *p != '\n' && *p != '\r' && (int)pstr-(int)str < 10000)
             *pstr++ = *p++;
          *pstr = 0;
 
@@ -3352,7 +3355,7 @@ int parse_config_file(char *file_name)
             p++;
          while (p && *p && *p != '[') {
             pstr = str;
-            while (*p && *p != '=' && *p != '\n' && *p != '\r')
+            while (*p && *p != '=' && *p != '\n' && *p != '\r' && (int)pstr-(int)str < 10000)
                *pstr++ = *p++;
             *pstr-- = 0;
             while (pstr > str && (*pstr == ' ' || *pstr == '\t' || *pstr == '='))
@@ -3378,7 +3381,7 @@ int parse_config_file(char *file_name)
                while (*p == ' ' || *p == '\t')
                   p++;
                pstr = str;
-               while (*p && *p != '\n' && *p != '\r')
+               while (*p && *p != '\n' && *p != '\r' && (int)pstr-(int)str < 10000)
                   *pstr++ = *p++;
                *pstr-- = 0;
                while (*pstr == ' ' || *pstr == '\t')
@@ -22974,6 +22977,8 @@ int main(int argc, char *argv[])
    time_t now;
    struct tm *tms;
    struct stat finfo;
+
+   printf(""); /* needed by windows, otherwis crash on long config files ??? */
 
 #ifdef OS_UNIX
    /* save gid/uid to regain later */
