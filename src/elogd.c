@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.658  2005/05/12 21:13:52  ritt
+   Changed xmalloc to avoid crash when running as a service
+
    Revision 1.657  2005/05/12 20:59:31  ritt
    Added printf() to avoid windows crash on long config files
 
@@ -3311,7 +3314,7 @@ int parse_config_file(char *file_name)
    char *str, *buffer, *p, *pstr;
    int index, i, j, fh, length;
 
-   str = xmalloc(10000);
+   str = xmalloc(20000);
 
    /* open configuration file */
    fh = open(file_name, O_RDONLY | O_BINARY);
@@ -22977,8 +22980,6 @@ int main(int argc, char *argv[])
    time_t now;
    struct tm *tms;
    struct stat finfo;
-
-   printf(""); /* needed by windows, otherwis crash on long config files ??? */
 
 #ifdef OS_UNIX
    /* save gid/uid to regain later */
