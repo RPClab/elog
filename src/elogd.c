@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.659  2005/05/14 11:14:10  ritt
+   Version 2.5.9-4
+
    Revision 1.658  2005/05/12 21:13:52  ritt
    Changed xmalloc to avoid crash when running as a service
 
@@ -1089,7 +1092,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.9-3"
+#define VERSION "2.5.9-4"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -14163,7 +14166,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      else
                         strftime(str, sizeof(str), format, pts);
 
-                     if (disp_attr_link == NULL || disp_attr_link[i])
+                     if (disp_attr_link == NULL || disp_attr_link[index])
                         rsprintf("<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", sclass, ref, str);
                      else
                         rsprintf("<td class=\"%s\">%s</td>\n", sclass, str);
@@ -14181,7 +14184,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      else
                         strftime(str, sizeof(str), format, pts);
 
-                     if (disp_attr_link == NULL || disp_attr_link[i])
+                     if (disp_attr_link == NULL || disp_attr_link[index])
                         rsprintf("<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", sclass, ref, str);
                      else
                         rsprintf("<td class=\"%s\">%s</td>\n", sclass, str);
@@ -14200,7 +14203,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      if (is_html(attrib[i]))
                         rsputs(attrib[i]);
                      else {
-                        if (disp_attr_link == NULL || disp_attr_link[i])
+                        if (disp_attr_link == NULL || disp_attr_link[index])
                            rsprintf("<a href=\"%s\">", ref);
 
                         sprintf(str, "Display %s", attr_list[i]);
@@ -14232,7 +14235,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                            rsputs2(display);
                         }
 
-                        if (disp_attr_link == NULL || disp_attr_link[i])
+                        if (disp_attr_link == NULL || disp_attr_link[index])
                            rsprintf("</a>");
 
                         /* at least one space to produce non-empty table cell */
@@ -16629,15 +16632,15 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
           getcfg(lbs->name, "Guest list display", str, sizeof(str)) && !isparam("unm")) {
 
          strcpy(list, str);
-
-         n = strbreak(list, (char (*)[NAME_LENGTH]) gattr, MAX_N_ATTR, ",");
-         for (j = 0; j < n; j++)
-            if (strieq(gattr + j * NAME_LENGTH, "text"))
-               break;
-
-         if (j == n)
-            show_text = FALSE;
       }
+
+      n = strbreak(list, (char (*)[NAME_LENGTH]) gattr, MAX_N_ATTR, ",");
+      for (j = 0; j < n; j++)
+         if (strieq(gattr + j * NAME_LENGTH, "text"))
+            break;
+
+      if (j == n)
+         show_text = FALSE;
 
       if (list[0]) {
          n_attr_disp = strbreak(list, disp_attr, MAX_N_ATTR, ",");
