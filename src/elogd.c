@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.660  2005/05/14 21:45:37  ritt
+   Implemented first ELCode tags
+
    Revision 1.659  2005/05/14 11:14:10  ritt
    Version 2.5.9-4
 
@@ -5992,6 +5995,255 @@ void rsputs3(const char *text)
 
 /*------------------------------------------------------------------*/
 
+typedef struct {
+   char *pattern;
+   char *subst;
+} PATTERN_LIST;
+
+PATTERN_LIST pattern_list[] = {
+
+   /* smileys */
+   { ":))","<img src=\"icons/happy.png\">"    },
+   { ":)", "<img src=\"icons/smile.png\">"    },
+   { ":(", "<img src=\"icons/frown.png\">"    },
+   { ";)", "<img src=\"icons/wink.png\">"     },
+   { ":D", "<img src=\"icons/biggrin.png\">"  },
+   { "?)", "<img src=\"icons/confused.png\">" },
+   { ";(", "<img src=\"icons/crying.png\">"   },
+   { ":]", "<img src=\"icons/pleased.png\">"  },
+   { ":O", "<img src=\"icons/yawn.png\">"     },
+   { "8)", "<img src=\"icons/cool.png\">"     },
+   { "8o", "<img src=\"icons/eek.png\">"      },
+   { "X(", "<img src=\"icons/mad.png\">"      },
+   { ":P", "<img src=\"icons/tongue.png\">"   },
+
+   /* formatting */
+   { "[b]", "<b>"     },
+   { "[/b]", "</b>"   },
+   { "[u]", "<u>"     },
+   { "[/u]", "</u>"   },
+   { "[i]", "<i>"     },
+   { "[/i]", "</i>"   },
+
+   { "[center]", "<center>"               },
+   { "[/center]", "</center>"             },
+   { "[color=", "<font color=\"%s\">"     },
+   { "[/color]", "</font>"                },
+   { "[size=", "<font size=\"%s\">"       },
+   { "[/size]", "</font>"                 },
+   { "[code]", "<code>"                   },
+   { "[/code]", "</code>"                 },
+
+   /* lists */
+   { "[list]", "<ul>"                     },
+   { "[*]", "<li>"                        },
+   { "[/list]", "</ul>"                   },
+   { "[list=", "<ol type=\"%s\">"         },
+
+   /* URLs */
+   { "[url=",  "<a href=\"%s\">"          },
+   { "[url]",  "<a href=\"%s\">%s"        },
+   { "[/url]", "</a>"                     },
+   { "[email]","<a href=\"mailto:%s\">%s" },
+   { "[/email]", "</a>"                   },
+   { "[img]",  "<img src=\"%s\">"         },
+   { "[/img]", ""                         },
+
+   { "", "" }
+};
+
+void rsputs_elcode(const char *str)
+{
+   int i, j, k, l, m, n;
+   char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[256];
+
+   if (strlen_retbuf + (int) (2 * strlen(str) + 1000) >= return_buffer_size) {
+      return_buffer = xrealloc(return_buffer, return_buffer_size + 100000);
+      memset(return_buffer + return_buffer_size, 0, 100000);
+      return_buffer_size += 100000;
+   }
+
+   j = strlen_retbuf;
+   for (i = 0; i < (int) strlen(str); i++) {
+      for (l = 0; key_list[l][0]; l++) {
+         if (strncmp(str + i, key_list[l], strlen(key_list[l])) == 0) {
+            p = (char *) (str + i + strlen(key_list[l]));
+            i += strlen(key_list[l]);
+            for (k = 0; *p && strcspn(p, " \t\n\r({[)}]\"") && k < (int) sizeof(link); k++, i++)
+               link[k] = *p++;
+            link[k] = 0;
+            i--;
+
+            /* link may not end with a '.'/',' (like in a sentence) */
+            if (link[k - 1] == '.' || link[k - 1] == ',') {
+               link[k - 1] = 0;
+               k--;
+               i--;
+            }
+
+            /* check if link contains coloring */
+            p = strchr(link, '\001');
+            if (p != NULL) {
+               strlcpy(link_text, link, sizeof(link_text));
+
+               /* skip everything between '<' and '>' */
+               pd = p;
+               while (*pd && *pd != '\002')
+                  *p = *pd++;
+
+               strcpy(p, pd + 1);
+
+               /* skip '</B>' */
+               p = strchr(link, '\001');
+               if (p != NULL) {
+                  pd = p;
+
+                  while (*pd && *pd != '\002')
+                     *p = *pd++;
+
+                  strcpy(p, pd + 1);
+               }
+
+               /* correct link text */
+               for (n = 0; n < (int) strlen(link_text); n++) {
+                  switch (link_text[n]) {
+                     /* the translation for the search highliting */
+                  case '\001':
+                     link_text[n] = '<';
+                     break;
+                  case '\002':
+                     link_text[n] = '>';
+                     break;
+                  case '\003':
+                     link_text[n] = '\"';
+                     break;
+                  case '\004':
+                     link_text[n] = ' ';
+                     break;
+                  }
+               }
+
+            } else
+               strlcpy(link_text, link, sizeof(link_text));
+
+            if (strcmp(key_list[l], "elog:") == 0) {
+               strlcpy(tmp, link, sizeof(tmp));
+               if (strchr(tmp, '/'))
+                  *strchr(tmp, '/') = 0;
+
+               for (m = 0; m < (int) strlen(tmp); m++)
+                  if (!isdigit(tmp[m]))
+                     break;
+
+               if (m < (int) strlen(tmp))
+                  /* if link contains reference to other logbook, add ".." in front */
+                  sprintf(return_buffer + j, "<a href=\"../%s\">elog:%s</a>", link, link_text);
+               else if (link[0] == '/')
+                  sprintf(return_buffer + j, "<a href=\"%d%s\">elog:%s</a>",
+                          _current_message_id, link, link_text);
+               else
+                  sprintf(return_buffer + j, "<a href=\"%s\">elog:%s</a>", link, link_text);
+            } else if (strcmp(key_list[l], "mailto:") == 0) {
+                  sprintf(return_buffer + j, "<a href=\"mailto:%s\">%s</a>", link, link_text);
+            } else {
+               sprintf(return_buffer + j, "<a href=\"%s", key_list[l]);
+               j += strlen(return_buffer + j);
+               strlen_retbuf = j;
+
+               /* link can contain special characters */
+               rsputs2(link);
+               j = strlen_retbuf;
+
+               sprintf(return_buffer + j, "\">%s", key_list[l]);
+               j += strlen(return_buffer + j);
+               strlen_retbuf = j;
+
+               /* link_text can contain special characters */
+               rsputs2(link_text);
+               j = strlen_retbuf;
+               sprintf(return_buffer + j, "</a>");
+            }
+
+            j += strlen(return_buffer + j);
+            break;
+         }
+      }
+      if (key_list[l][0])
+         continue;
+
+      for (l = 0; pattern_list[l].pattern[0] ; l++) {
+         if (strncmp(str + i, pattern_list[l].pattern, strlen(pattern_list[l].pattern)) == 0) {
+            
+            if (pattern_list[l].pattern[strlen(pattern_list[l].pattern)-1] == '=') {
+               i += strlen(pattern_list[l].pattern);
+               for (k=0 ; str[i] != ']' && k<(int)sizeof(attrib)-1; k++)
+                  attrib[k] = str[i++];
+               attrib[k] = 0;
+               sprintf(return_buffer + j, pattern_list[l].subst, attrib);
+               j += strlen(return_buffer + j);
+            } else {
+               strcpy(return_buffer + j, pattern_list[l].subst);
+               j += strlen(pattern_list[l].subst);
+               i += strlen(pattern_list[l].pattern) - 1; // 1 gets added in for loop...
+            }
+            break;
+         }
+      }
+      if (pattern_list[l].pattern[0])
+         continue;
+
+      if (strncmp(str + i, "<br>", 4) == 0) {
+         strcpy(return_buffer + j, "<br />");
+         j += 6;
+         i += 3;
+      } else
+         switch (str[i]) {
+         case '\n':
+            strcat(return_buffer, "<br />");
+            j += 6;
+            break;
+         case '&':
+            strcat(return_buffer, "&amp;");
+            j += 5;
+            break;
+         case '<':
+            strcat(return_buffer, "&lt;");
+            j += 4;
+            break;
+         case '>':
+            strcat(return_buffer, "&gt;");
+            j += 4;
+            break;
+
+            /* the translation for the search highliting */
+         case '\001':
+            strcat(return_buffer, "<");
+            j++;
+            break;
+         case '\002':
+            strcat(return_buffer, ">");
+            j++;
+            break;
+         case '\003':
+            strcat(return_buffer, "\"");
+            j++;
+            break;
+         case '\004':
+            strcat(return_buffer, " ");
+            j++;
+            break;
+
+         default:
+            return_buffer[j++] = str[i];
+         }
+   }
+
+   return_buffer[j] = 0;
+   strlen_retbuf = j;
+}
+
+/*------------------------------------------------------------------*/
+
 void rsprintf(const char *format, ...)
 {
    va_list argptr;
@@ -8025,7 +8277,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 {
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
        format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr,
-       attr_index[MAX_N_ATTR];
+       attr_index[MAX_N_ATTR], enc_selected;
    char str[2 * NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80], comment[10000], reply_string[256],
        list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80],
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
@@ -8063,7 +8315,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
 
       /* get encoding */
-      strcpy(encoding, atoi(getparam("html")) == 1 ? "HTML" : "plain");
+      strcpy(encoding, getparam("encoding"));
    } else {
       if (message_id) {
          /* get message for reply/edit */
@@ -9231,35 +9483,45 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       rsprintf("</textarea><br>\n");
 
-      /* HTML check box */
+      /* Encoding radio buttons */
+      
+      /* Default is ELCode */
+      enc_selected = 0; 
+      /* Overwrite from config file */
+      if (getcfg(lbs->name, "Default Encoding", str, sizeof(str))) 
+         enc_selected = atoi(str);
+
+      /* Overwrite from current entry */
       if (message_id) {
-         if (getcfg(lbs->name, "HTML default", str, sizeof(str))) {
-            if (atoi(str) < 2) {
-               if (encoding[0] == 'H')
-                  rsprintf("<input type=checkbox checked name=html value=1>%s\n", loc("Submit as HTML text"));
-               else
-                  rsprintf("<input type=checkbox name=html value=1>%s\n", loc("Submit as HTML text"));
-            } else if (atoi(str) == 3) {
-               rsprintf("<input type=hidden name=html value=1>\n");
-            }
-         } else {
-            if (encoding[0] == 'H')
-               rsprintf("<input type=checkbox checked name=html value=1>%s\n", loc("Submit as HTML text"));
-            else
-               rsprintf("<input type=checkbox name=html value=1>%s\n", loc("Submit as HTML text"));
-         }
-      } else {
-         if (getcfg(lbs->name, "HTML default", str, sizeof(str))) {
-            if (atoi(str) == 0) {
-               rsprintf("<input type=checkbox name=html value=1>%s\n", loc("Submit as HTML text"));
-            } else if (atoi(str) == 1) {
-               rsprintf("<input type=checkbox checked name=html value=1>%s\n", loc("Submit as HTML text"));
-            } else if (atoi(str) == 3) {
-               rsprintf("<input type=hidden name=html value=1>\n");
-            }
-         } else
-            rsprintf("<input type=checkbox name=html value=1>%s\n", loc("Submit as HTML text"));
+        if (encoding[0] == 'E')
+           enc_selected = 0;
+        else if (encoding[0] == 'p')
+           enc_selected = 1;
+        else if (encoding[0] == 'H')
+           enc_selected = 2;
       }
+           
+      rsprintf("<b>%s</b>: ", loc("Encoding"));
+
+      if (enc_selected == 0)
+         rsprintf("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" checked>");
+      else
+         rsprintf("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\">");
+      rsprintf("<label for=\"ELCode\"><a target=\"_blank\" href=\"?cmd=HelpELCode\">ELCode</a>&nbsp;&nbsp;</label>\n");
+
+      if (enc_selected == 1)
+         rsprintf("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" checked>");
+      else
+         rsprintf("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\">");
+      rsprintf("<label for=\"plain\">plain&nbsp;&nbsp;</label>\n");
+
+      if (enc_selected == 2)
+         rsprintf("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" checked>");
+      else
+         rsprintf("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\">");
+      rsprintf("<label for=\"HTML\">HTML&nbsp;&nbsp;</label>\n");
+
+      rsprintf("<br>\n");
    }
 
    /* Suppress email check box */
@@ -9267,15 +9529,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          && atoi(str) == 1)) {
       if (getcfg(lbs->name, "Suppress default", str, sizeof(str))) {
          if (atoi(str) == 0) {
-            rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
             rsprintf("<input type=checkbox name=suppress value=1>%s\n", loc("Suppress Email notification"));
          } else if (atoi(str) == 1) {
-            rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
             rsprintf("<input type=checkbox checked name=suppress value=1>%s\n",
                      loc("Suppress Email notification"));
          }
       } else {
-         rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
          rsprintf("<input type=checkbox name=suppress value=1>%s\n", loc("Suppress Email notification"));
       }
    }
@@ -14705,7 +14964,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          strcat(menu_str, "Create new logbook, ");
       }
 
-      strcat(menu_str, "Help, ");
+      strcat(menu_str, "Help, HelpELCode, ");
 
    } else {
       /* check for admin command */
@@ -14756,7 +15015,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
    if (str[0])
       strlcat(menu_str, str, sizeof(menu_str));
    else {
-      strlcat(menu_str, "New, Find, Select, Last x, Help, ", sizeof(menu_str));
+      strlcat(menu_str, "New, Find, Select, Last x, Help, HelpELCode, ", sizeof(menu_str));
 
       if (getcfg(lbs->name, "Password file", str, sizeof(str)))
          strlcat(menu_str, "Admin, Config, Logout, ", sizeof(menu_str));
@@ -16341,7 +16600,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                strcat(menu_str, "Synchronize, ");
 
             strcpy(str, loc("Last x"));
-            strcat(menu_str, "Last x, Help");
+            strcat(menu_str, "Last x, Help, ");
          }
 
          n = strbreak(menu_str, menu_item, MAX_N_LIST, ",");
@@ -17828,7 +18087,7 @@ void submit_elog(LOGBOOK * lbs)
    message_id =
        el_submit(lbs, message_id, bedit, date, attr_list, attrib, n_attr,
                  getparam("text"), in_reply_to, reply_to,
-                 *getparam("html") ? "HTML" : "plain", att_file, TRUE, NULL);
+                 getparam("encoding"), att_file, TRUE, NULL);
 
    if (message_id <= 0) {
       sprintf(str, loc("New entry cannot be written to directory \"%s\""), lbs->data_dir);
@@ -18948,7 +19207,9 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             rsputs("<pre class=\"messagepre\">");
             rsputs2(text);
             rsputs("</pre>");
-         } else
+         } else if (strieq(encoding, "ELCode"))
+            rsputs_elcode(text);
+         else
             rsputs(text);
 
          rsputs("</td></tr>\n");
@@ -20822,6 +21083,26 @@ void interprete(char *lbook, char *path)
       f = fopen(file_name, "r");
       if (f == NULL)
          redirect(lbs, "http://midas.psi.ch/elog/eloghelp_en.html");
+      else {
+         fclose(f);
+         send_file_direct(file_name);
+      }
+      return;
+   }
+
+   if (strieq(command, loc("HelpELCode"))) {
+      /* send local help file */
+      strlcpy(file_name, resource_dir, sizeof(file_name));
+      strlcat(file_name, "elcode_", sizeof(file_name));
+      if (getcfg("global", "Language", str, sizeof(str))) {
+         str[2] = 0;
+         strlcat(file_name, str, sizeof(file_name));
+      } else
+         strlcat(file_name, "en", sizeof(file_name));
+      strlcat(file_name, ".html", sizeof(file_name));
+      f = fopen(file_name, "r");
+      if (f == NULL)
+         redirect(lbs, "http://midas.psi.ch/elog/elcode_en.html");
       else {
          fclose(f);
          send_file_direct(file_name);
