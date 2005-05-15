@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.661  2005/05/15 12:43:30  ritt
+   Implemented url and img tags
+
    Revision 1.660  2005/05/14 21:45:37  ritt
    Implemented first ELCode tags
 
@@ -1369,7 +1372,6 @@ int attr_flags_default[] = {
    0
 };
 
-
 struct {
    char ext[32];
    char type[32];
@@ -1559,6 +1561,16 @@ char *stristr(const char *str, const char *pattern)
    }
 
    return NULL;
+}
+
+void strextract(const char *str, char delim, char *extr, int size)
+/* extract a substinr "extr" from "str" until "delim" is found */
+{
+   int i;
+
+   for (i=0 ; str[i] != delim && i<size-1; i++)
+      extr[i] = str[i];
+   extr[i] = 0;
 }
 
 static BOOL chkext(const char *str, const char *ext)
@@ -6035,19 +6047,26 @@ PATTERN_LIST pattern_list[] = {
    { "[/code]", "</code>"                 },
 
    /* lists */
+   { "[list]\r", "<ul>"                   },
    { "[list]", "<ul>"                     },
    { "[*]", "<li>"                        },
+   { "[/list]\r", "</ul>"                 },
    { "[/list]", "</ul>"                   },
    { "[list=", "<ol type=\"%s\">"         },
 
    /* URLs */
-   { "[url=",  "<a href=\"%s\">"          },
-   { "[url]",  "<a href=\"%s\">%s"        },
-   { "[/url]", "</a>"                     },
-   { "[email]","<a href=\"mailto:%s\">%s" },
-   { "[/email]", "</a>"                   },
-   { "[img]",  "<img src=\"%s\">"         },
-   { "[/img]", ""                         },
+   { "[url=",  "<a href=\"%#\">%s</a>"        },
+   { "[url]",  "<a href=\"%#\">%s</a>"        },
+   { "[/url]", ""                             },
+   { "[email]","<a href=\"mailto:%#\">%s</a>" },
+   { "[/email]", ""                           },
+   { "[img]",  "<img src=\"%#\">"             },
+   { "[/img]", ""                             },
+
+   /* quote */
+   { "[quote=",  "*"                      },
+   { "[quote]",  "*"                      },
+   { "[/quote]", "</td></tr></table><p />"  },
 
    { "", "" }
 };
@@ -6055,7 +6074,8 @@ PATTERN_LIST pattern_list[] = {
 void rsputs_elcode(const char *str)
 {
    int i, j, k, l, m, n;
-   char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[256];
+   char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[1000], hattrib[1000], 
+      value[1000], subst[1000];
 
    if (strlen_retbuf + (int) (2 * strlen(str) + 1000) >= return_buffer_size) {
       return_buffer = xrealloc(return_buffer, return_buffer_size + 100000);
@@ -6174,14 +6194,52 @@ void rsputs_elcode(const char *str)
       for (l = 0; pattern_list[l].pattern[0] ; l++) {
          if (strncmp(str + i, pattern_list[l].pattern, strlen(pattern_list[l].pattern)) == 0) {
             
-            if (pattern_list[l].pattern[strlen(pattern_list[l].pattern)-1] == '=') {
+            if (strstr(pattern_list[l].subst, "%#")) {
+               
+               /* special substitutions */
+               if (pattern_list[l].pattern[strlen(pattern_list[l].pattern)-1] == '=') {
+                  i += strlen(pattern_list[l].pattern);
+                  strextract(str+i, ']', attrib, sizeof(attrib));
+                  i += strlen(attrib)+1;
+                  if (strncmp(attrib, "http://", 7) != 0)  /* add http:// if missing */
+                     sprintf(hattrib, "http://%s", attrib);
+                  else
+                     strlcpy(hattrib, attrib, sizeof(hattrib));
+                  strextract(str+i, '[', value, sizeof(value));
+                  i += strlen(value)-1;
+                  strlcpy(subst, pattern_list[l].subst, sizeof(subst));
+                  *strchr(subst, '#') = 's';
+                  sprintf(return_buffer + j, subst, hattrib, value);
+                  j += strlen(return_buffer + j);
+               } else if (pattern_list[l].pattern[strlen(pattern_list[l].pattern)-1] != '=') {
+
+                  i += strlen(pattern_list[l].pattern);
+                  strextract(str+i, '[', attrib, sizeof(attrib));
+                  i += strlen(attrib)-1;
+                  strlcpy(hattrib, attrib, sizeof(hattrib));
+                  /* add http:// if missing */
+                  if (strncmp(attrib, "http://", 7) != 0 && 
+                     strstr(pattern_list[l].subst, "mailto") == NULL && 
+                     strstr(pattern_list[l].subst, "img") == NULL )
+                     sprintf(hattrib, "http://%s", attrib);
+                  strlcpy(subst, pattern_list[l].subst, sizeof(subst));
+                  *strchr(subst, '#') = 's';
+                  sprintf(return_buffer + j, subst, hattrib, attrib);
+                  j += strlen(return_buffer + j);
+               }
+
+            } else if (pattern_list[l].pattern[strlen(pattern_list[l].pattern)-1] == '=') {
+            
+               /* extract sting after '=' and put it into '%s' of subst */
                i += strlen(pattern_list[l].pattern);
-               for (k=0 ; str[i] != ']' && k<(int)sizeof(attrib)-1; k++)
-                  attrib[k] = str[i++];
-               attrib[k] = 0;
+               strextract(str+i, ']', attrib, sizeof(attrib));
+               i += strlen(attrib);
                sprintf(return_buffer + j, pattern_list[l].subst, attrib);
                j += strlen(return_buffer + j);
-            } else {
+            
+            } else{
+
+               /* simple substitution */
                strcpy(return_buffer + j, pattern_list[l].subst);
                j += strlen(pattern_list[l].subst);
                i += strlen(pattern_list[l].pattern) - 1; // 1 gets added in for loop...
@@ -6198,9 +6256,11 @@ void rsputs_elcode(const char *str)
          i += 3;
       } else
          switch (str[i]) {
+         case '\r':
+            strcat(return_buffer, "<br />\r\n");
+            j += 7;
+            break;
          case '\n':
-            strcat(return_buffer, "<br />");
-            j += 6;
             break;
          case '&':
             strcat(return_buffer, "&amp;");
