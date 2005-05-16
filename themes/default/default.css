@@ -546,6 +546,27 @@ td {
   cursor:pointer;
 }
 
+.quotetable {
+  width:98%;
+  align:center;
+  background-color:black;
+  border:0px;
+  padding:0px;
+}
+
+.quotetitle {
+  background-color:#486090; 
+  padding:3px;
+  font-size:12px;
+  font-weight:bold;
+  color:white;
+}
+
+.quote {
+  background-color:#FFFFB0; 
+  padding:10px;
+}
+
 /* ELOG home page link at bottom of page */
 .bottomlink {
   font-family:sans-serif; 
