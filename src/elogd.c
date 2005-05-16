@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.662  2005/05/16 20:02:39  ritt
+   Implemented smiley bar
+
    Revision 1.661  2005/05/15 12:43:30  ritt
    Implemented url and img tags
 
@@ -6015,19 +6018,23 @@ typedef struct {
 PATTERN_LIST pattern_list[] = {
 
    /* smileys */
-   { ":))","<img src=\"icons/happy.png\">"    },
-   { ":)", "<img src=\"icons/smile.png\">"    },
-   { ":(", "<img src=\"icons/frown.png\">"    },
-   { ";)", "<img src=\"icons/wink.png\">"     },
-   { ":D", "<img src=\"icons/biggrin.png\">"  },
-   { "?)", "<img src=\"icons/confused.png\">" },
-   { ";(", "<img src=\"icons/crying.png\">"   },
-   { ":]", "<img src=\"icons/pleased.png\">"  },
-   { ":O", "<img src=\"icons/yawn.png\">"     },
-   { "8)", "<img src=\"icons/cool.png\">"     },
-   { "8o", "<img src=\"icons/eek.png\">"      },
-   { "X(", "<img src=\"icons/mad.png\">"      },
-   { ":P", "<img src=\"icons/tongue.png\">"   },
+   { ":))", "<img src=\"icons/happy.png\">"    },
+   { ":-))","<img src=\"icons/happy.png\">"    },
+   { ":)",  "<img src=\"icons/smile.png\">"    },
+   { ":-)", "<img src=\"icons/smile.png\">"    },
+   { ":(",  "<img src=\"icons/frown.png\">"    },
+   { ":-("  "<img src=\"icons/frown.png\">"    },
+   { ";)",  "<img src=\"icons/wink.png\">"     },
+   { ";-)", "<img src=\"icons/wink.png\">"     },
+   { ":D",  "<img src=\"icons/biggrin.png\">"  },
+   { "?)",  "<img src=\"icons/confused.png\">" },
+   { ";(",  "<img src=\"icons/crying.png\">"   },
+   { ":]",  "<img src=\"icons/pleased.png\">"  },
+   { ":O",  "<img src=\"icons/yawn.png\">"     },
+   { "8)",  "<img src=\"icons/cool.png\">"     },
+   { "8o",  "<img src=\"icons/eek.png\">"      },
+   { "X(",  "<img src=\"icons/mad.png\">"      },
+   { ":P",  "<img src=\"icons/tongue.png\">"   },
 
    /* formatting */
    { "[b]", "<b>"     },
@@ -6043,6 +6050,8 @@ PATTERN_LIST pattern_list[] = {
    { "[/color]", "</font>"                },
    { "[size=", "<font size=\"%s\">"       },
    { "[/size]", "</font>"                 },
+   { "[font=", "<font face=\"%s\">"       },
+   { "[/font]", "</font>"                 },
    { "[code]", "<code>"                   },
    { "[/code]", "</code>"                 },
 
@@ -6064,9 +6073,10 @@ PATTERN_LIST pattern_list[] = {
    { "[/img]", ""                             },
 
    /* quote */
-   { "[quote=",  "*"                      },
-   { "[quote]",  "*"                      },
-   { "[/quote]", "</td></tr></table><p />"  },
+   { "[quote=",  "<table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><br /><tr><td class=\"quote\">" },
+   { "[quote]",  "<table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><br /><tr><td class=\"quote\">" },
+   { "[/quote]\r", "</td></tr></table><p />"  },
+   { "[/quote]", "</td></tr></table><p />"    },
 
    { "", "" }
 };
@@ -6192,12 +6202,34 @@ void rsputs_elcode(const char *str)
          continue;
 
       for (l = 0; pattern_list[l].pattern[0] ; l++) {
-         if (strncmp(str + i, pattern_list[l].pattern, strlen(pattern_list[l].pattern)) == 0) {
+         if (strnicmp(str + i, pattern_list[l].pattern, strlen(pattern_list[l].pattern)) == 0) {
             
-            if (strstr(pattern_list[l].subst, "%#")) {
+            if (stristr(pattern_list[l].pattern, "[quote")) { 
+               if (pattern_list[l].pattern[strlen(pattern_list[l].pattern)-1] == '=') {
+                  i += strlen(pattern_list[l].pattern);
+                  strextract(str+i, ']', attrib, sizeof(attrib));
+                  i += strlen(attrib)+1;
+
+                  if (attrib[0] == '\"')
+                     strcpy(attrib, attrib+1);
+                  if (attrib[strlen(attrib)-1] == '\"')
+                     attrib[strlen(attrib)-1] = 0;
+
+                  sprintf(value, loc("%s wrote"), attrib);
+                  sprintf(return_buffer + j, pattern_list[l].subst, value);
+                  j += strlen(return_buffer + j);
+               } else {
+                  sprintf(return_buffer + j, pattern_list[l].subst, loc("Quote"));
+                  j += strlen(return_buffer + j);
+                  i += strlen(pattern_list[l].pattern) - 1; // 1 gets added in for loop...
+               }
+            }
+
+            else if (strstr(pattern_list[l].subst, "%#")) {
                
                /* special substitutions */
                if (pattern_list[l].pattern[strlen(pattern_list[l].pattern)-1] == '=') {
+               
                   i += strlen(pattern_list[l].pattern);
                   strextract(str+i, ']', attrib, sizeof(attrib));
                   i += strlen(attrib)+1;
@@ -6210,15 +6242,22 @@ void rsputs_elcode(const char *str)
                   strlcpy(subst, pattern_list[l].subst, sizeof(subst));
                   *strchr(subst, '#') = 's';
                   sprintf(return_buffer + j, subst, hattrib, value);
+
                   j += strlen(return_buffer + j);
+               
                } else if (pattern_list[l].pattern[strlen(pattern_list[l].pattern)-1] != '=') {
 
                   i += strlen(pattern_list[l].pattern);
                   strextract(str+i, '[', attrib, sizeof(attrib));
                   i += strlen(attrib)-1;
                   strlcpy(hattrib, attrib, sizeof(hattrib));
+
+                  /* change /x to id/x for images */
+                  if (strnicmp(attrib, "elog:/", 6) == 0)
+                     sprintf(hattrib, "%d%s", _current_message_id, attrib+5);
+
                   /* add http:// if missing */
-                  if (strncmp(attrib, "http://", 7) != 0 && 
+                  else if (strnicmp(attrib, "http://", 7) != 0 && 
                      strstr(pattern_list[l].subst, "mailto") == NULL && 
                      strstr(pattern_list[l].subst, "img") == NULL )
                      sprintf(hattrib, "http://%s", attrib);
@@ -6250,7 +6289,7 @@ void rsputs_elcode(const char *str)
       if (pattern_list[l].pattern[0])
          continue;
 
-      if (strncmp(str + i, "<br>", 4) == 0) {
+      if (strnicmp(str + i, "<br>", 4) == 0) {
          strcpy(return_buffer + j, "<br />");
          j += 6;
          i += 3;
@@ -8332,18 +8371,42 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
 
 /*------------------------------------------------------------------*/
 
+void ricon(char *name, char *comment, char *elcode)
+{
+   rsprintf("<img align=\"middle\" name=\"%s\" src=\"icons/elc_%s.png\" alt=\"%s\" title=\"%s\" border=\"0\"",
+      name, name, comment, comment);
+   rsprintf(" onclick=\"elcode(document.form1.Text, '%s','')\"", elcode);
+   rsprintf(" onmousedown=\"document.images.%s.src='icons/eld_%s.png'\"", name, name);
+   rsprintf(" onmouseup=\"document.images.%s.src='icons/elc_%s.png'\"", name, name);
+   rsprintf(" onmouseover=\"this.style.cursor='hand';\" />");
+}
+
+/*------------------------------------------------------------------*/
+
+void rsicon(char *name, char *comment, char *elcode)
+{
+   rsprintf("<img align=\"middle\" name=\"%s\" src=\"icons/elc_%s.png\" alt=\"%s\" title=\"%s\" border=\"0\"",
+      name, name, comment, comment);
+   rsprintf(" onclick=\"elcode(document.form1.Text, '','%s')\"", elcode);
+   rsprintf(" onmousedown=\"document.images.%s.src='icons/eld_%s.png'\"", name, name);
+   rsprintf(" onmouseup=\"document.images.%s.src='icons/elc_%s.png'\"", name, name);
+   rsprintf(" onmouseover=\"this.style.cursor='hand';\" />");
+}
+
+/*------------------------------------------------------------------*/
+
 void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload, BOOL breedit,
-                    BOOL bduplicate)
+                    BOOL bduplicate, BOOL preview)
 {
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
        format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr,
-       attr_index[MAX_N_ATTR], enc_selected;
+       attr_index[MAX_N_ATTR], enc_selected, show_smileys;
    char str[2 * NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80], comment[10000], reply_string[256],
        list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80],
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
        att[MAX_ATTACHMENTS][256], encoding[80], slist[MAX_N_ATTR + 10][NAME_LENGTH],
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
-       condition[256], ua[NAME_LENGTH], mid[80], title[256], login_name[256];
+       condition[256], ua[NAME_LENGTH], mid[80], title[256], login_name[256], cookie[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -8402,6 +8465,36 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
    }
 
+   /* Determine encoding */
+   enc_selected = 0; /*Default is ELCode */
+   /* Overwrite from config file */
+   if (getcfg(lbs->name, "Default Encoding", str, sizeof(str))) 
+      enc_selected = atoi(str);
+
+   /* detrmine if smiley bar should be displayed */
+   show_smileys = 1;
+   cookie[0] = 0;
+   if (isparam("hsm") && atoi(getparam("hsm")) == 1)            /* cookie */
+      show_smileys = 0;
+   if (isparam("smcmd") && strieq(getparam("smcmd"), "hsm")) {  /* turn off */
+      show_smileys = 0;
+      strcpy(cookie, "hsm=1");
+   }
+   if (isparam("smcmd") && strieq(getparam("smcmd"), "ssm")) {  /* turn on */
+      show_smileys = 1;
+      strcpy(cookie, "hsm=0");
+   }
+
+   /* Overwrite from current entry */
+   if (message_id) {
+      if (encoding[0] == 'E')
+         enc_selected = 0;
+      else if (encoding[0] == 'p')
+         enc_selected = 1;
+      else if (encoding[0] == 'H')
+         enc_selected = 2;
+   }
+         
    /* check for preset attributes without any condition */
    set_condition("");
    for (index = 0; index < lbs->n_attr; index++) {
@@ -8662,7 +8755,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* header */
-   show_html_header(lbs, FALSE, "ELOG", FALSE, FALSE, NULL);
+   show_html_header(lbs, FALSE, "ELOG", FALSE, FALSE, cookie);
 
    /* java script for checking required attributes and to check for cancelled edits */
    rsprintf("<script type=\"text/javascript\">\n");
@@ -8792,55 +8885,101 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("}\n\n");
 
    /* mark_submit() gets called via "Back" button */
-   rsprintf("function mark_submit()\n");
-   rsprintf("{\n");
-   rsprintf("  submitted = true;\n");
-   rsprintf("  return true;\n");
-   rsprintf("}\n\n");
+   rsprintf("function mark_submit()                        \n");
+   rsprintf("{                                             \n");
+   rsprintf("  submitted = true;                           \n");
+   rsprintf("  return true;                                \n");
+   rsprintf("}                                             \n\n");
 
    /* chkupload() gets called via "Upload" button */
-   rsprintf("function chkupload()\n");
-   rsprintf("{\n");
-   rsprintf("  if (document.form1.attfile.value == \"\") {\n");
-   rsprintf("    alert(\"%s\");\n", loc("No attachment file specified"));
-   rsprintf("    return false;\n");
-   rsprintf("  }\n");
-   rsprintf("  submitted = true;\n");
-   rsprintf("  return true;\n");
-   rsprintf("}\n\n");
+   rsprintf("function chkupload()                          \n");
+   rsprintf("{                                             \n");
+   rsprintf("  if (document.form1.attfile.value == \"\") { \n");
+   rsprintf("    alert(\"%s\");                            \n", loc("No attachment file specified"));
+   rsprintf("    return false;                             \n");
+   rsprintf("  }                                           \n");
+   rsprintf("  submitted = true;                           \n");
+   rsprintf("  return true;                                \n");
+   rsprintf("}                                             \n\n");
 
    /* cond_submit() gets called via selection of new conditional attribute */
-   rsprintf("function cond_submit()\n");
-   rsprintf("{\n");
-   rsprintf("  submitted = true;\n");
-   rsprintf("  document.form1.submit();\n");
-   rsprintf("}\n\n");
+   rsprintf("function cond_submit()                        \n");
+   rsprintf("{                                             \n");
+   rsprintf("  submitted = true;                           \n");
+   rsprintf("  document.form1.submit();                    \n");
+   rsprintf("}                                             \n\n");
 
    /* abandon() gets called "onUnload" */
-   rsprintf("function unload()\n");
-   rsprintf("{\n");
-   rsprintf("  if (!submitted && modified) {\n");
-   rsprintf("    var subm = confirm(\"%s\");\n", loc("Submit modified ELOG entry?"));
-   rsprintf("    if (subm) {\n");
-   rsprintf("      document.form1.jcmd.value = \"%s\";\n", loc("Submit"));
-   rsprintf("      document.form1.submit();\n");
-   rsprintf("    } else {\n");
-   rsprintf("      document.form1.jcmd.value = \"%s\";\n", loc("Back"));
-   rsprintf("      document.form1.submit();\n");
-   rsprintf("    }\n");
-   rsprintf("  }\n");
-   rsprintf("  if (!submitted && !modified) {\n");
-   rsprintf("    document.form1.jcmd.value = \"%s\";\n", loc("Back"));
-   rsprintf("    document.form1.submit();\n");
-   rsprintf("    }\n");
-   rsprintf("}\n\n");
+   rsprintf("function unload()                             \n");
+   rsprintf("{                                             \n");
+   rsprintf("  if (!submitted && modified) {               \n");
+   rsprintf("    var subm = confirm(\"%s\");               \n", loc("Submit modified ELOG entry?"));
+   rsprintf("    if (subm) {                               \n");
+   rsprintf("      document.form1.jcmd.value = \"%s\";     \n", loc("Submit"));
+   rsprintf("      document.form1.submit();                \n");
+   rsprintf("    } else {                                  \n");
+   rsprintf("      document.form1.jcmd.value = \"%s\";     \n", loc("Back"));
+   rsprintf("      document.form1.submit();                \n");
+   rsprintf("    }                                         \n");
+   rsprintf("  }                                           \n");
+   rsprintf("  if (!submitted && !modified) {              \n");
+   rsprintf("    document.form1.jcmd.value = \"%s\";       \n", loc("Back"));
+   rsprintf("    document.form1.submit();                  \n");
+   rsprintf("    }                                         \n");
+   rsprintf("}                                             \n\n");
 
    /* mod() gets called via throuch "onchange" event */
-   rsprintf("function mod()\n");
-   rsprintf("{\n");
-   rsprintf("  modified = true;\n");
-   rsprintf("  window.status = \"%s\";\n", loc("Entry has been modified"));
-   rsprintf("}\n\n");
+   rsprintf("function mod()                                \n");
+   rsprintf("{                                             \n");
+   rsprintf("  modified = true;                            \n");
+   rsprintf("  window.status = \"%s\";                     \n", loc("Entry has been modified"));
+   rsprintf("}                                             \n\n");
+
+   /* switch_smileys turn on/off the smiley bar by setting the smcmd, which in turn
+      sets the hsm=0/hsm=1 cookie */
+   rsprintf("function switch_smileys()                     \n");
+   rsprintf("{                                             \n");
+   if (show_smileys)
+      rsprintf("   document.form1.smcmd.value = 'hsm';     \n");
+   else
+      rsprintf("   document.form1.smcmd.value = 'ssm';     \n");
+   rsprintf("   document.form1.submit();                   \n");
+   rsprintf("}                                             \n\n");
+
+
+   /* elcode() gets called by selecting ELCode buttons */
+   rsprintf("function elcode(text, tag, value)                               \n");
+   rsprintf("{                                                               \n");
+   rsprintf("   var selection = '';                                          \n");
+   rsprintf("   var str;                                                     \n");
+   rsprintf("  	                                                             \n");
+   rsprintf("   selection = text.value.substring(text.selectionStart, text.selectionEnd);  \n");
+   rsprintf("   if (tag == '')                                                             \n");
+   rsprintf("      str = selection + value;                                                \n");
+   rsprintf("   else if (value == '')                                                      \n");
+   rsprintf("      str = '[' + tag + ']' + selection + '[/' + tag + ']';                   \n");
+   rsprintf("   else                                                                       \n");
+   rsprintf("      str = '[' + tag + '=' + value + ']' + selection + '[/' + tag + ']';     \n");
+   rsprintf("                                                               \n");
+   rsprintf("	 start     = text.selectionStart;                            \n");
+   rsprintf("	 end       = text.textLength;                                \n");
+   rsprintf("	 endtext   = text.value.substring(text.selectionEnd, end);   \n");
+   rsprintf("	 starttext = text.value.substring(0, start);                 \n");
+   rsprintf("	 text.value = starttext + str + endtext;                     \n");
+   rsprintf("   if (selection.length > 0) {                                 \n");
+   rsprintf("	    text.selectionStart = start;                             \n");
+   rsprintf("	    text.selectionEnd   = text.selectionStart + str.length;  \n");
+   rsprintf("   } else {                                                    \n");
+   rsprintf("      if (tag == '')                                           \n");
+   rsprintf("         text.selectionStart = start + value.length;           \n");
+   rsprintf("      else                                                     \n");
+   rsprintf("         text.selectionStart = start + tag.length + 2;         \n");
+   rsprintf("	    text.selectionEnd   = text.selectionStart;               \n");
+   rsprintf("   }                                                           \n");
+   rsprintf("                                                               \n");
+   rsprintf("	 text.focus();                                               \n");
+   rsprintf("}                                                              \n");
+
 
    rsprintf("//-->\n");
    rsprintf("</script>\n\n");
@@ -8872,6 +9011,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    rsprintf("<input type=hidden name=\"jcmd\">\n");
+   rsprintf("<input type=hidden name=\"smcmd\">\n");
 
    /*---- title row ----*/
 
@@ -8886,6 +9026,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    rsprintf
        ("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n", loc("Submit"));
+   rsprintf
+       ("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n", loc("Preview"));
    rsprintf
        ("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submit();\">\n", loc("Back"));
    rsprintf("</span></td></tr>\n\n");
@@ -9332,8 +9474,134 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
    }
 
+   if (preview) {
+      _current_message_id = message_id;
+      rsprintf("<tr><td colspan=2 class=\"messageframe\">\n");
+
+      if (strieq(encoding, "plain")) {
+         rsputs("<pre class=\"messagepre\">");
+         rsputs2(text);
+         rsputs("</pre>");
+      } else if (strieq(encoding, "ELCode"))
+         rsputs_elcode(text);
+      else
+         rsputs(text);
+
+      rsprintf("</td></tr>\n");
+   }
+
+   if (enc_selected == 0) {
+      rsprintf("<tr><td colspan=2 class=\"menuframe\">\n");
+
+      ricon("bold", loc("bold text"), "B");
+      ricon("italic", loc("italics text"), "I");
+      ricon("underline", loc("underlined text"), "U");
+
+      rsprintf(" ");
+      ricon("center", loc("centered text"), "CENTER");
+
+      rsprintf(" ");
+      ricon("url", loc("insert hyperlink"), "URL");
+      ricon("email", loc("insert email"), "EMAIL");
+      ricon("image", loc("insert image"), "IMG");
+
+      rsprintf(" ");
+      ricon("quote", loc("insert quote"), "QUOTE");
+      ricon("list", loc("insert list"), "LIST");
+
+      rsprintf(" ");
+      ricon("code", loc("insert code"), "CODE");
+
+      if (show_smileys)
+         rsprintf(" <img align=\"middle\" name=\"smileys\" src=\"icons/eld_smile.png\" alt=\"%s\" title=\"%s\" border=\"0\"",
+            loc("hide the smiley bar"), loc("hide the smiley bar"));
+      else
+         rsprintf(" <img align=\"middle\" name=\"smileys\" src=\"icons/elc_smile.png\" alt=\"%s\" title=\"%s\" border=\"0\"",
+            loc("show the smiley bar"), loc("show the smiley bar"));
+      rsprintf(" onclick=\"switch_smileys()\"");
+      rsprintf(" onmouseover=\"this.style.cursor='hand';\" />\n");
+
+      rsprintf(" <select name=\"font\" ");
+      rsprintf("onchange=\"elcode(document.form1.Text,'FONT',this.options[this.selectedIndex].value);");
+      rsprintf("this.selectedIndex=0;\">\n");
+      rsprintf("<option value=\"0\">%s</option>\n", loc("FONT"));
+      rsprintf("<option value=\"arial\">Arial</option>\n");
+      rsprintf("<option value=\"comic sans ms\">Comic Sans MS</option>\n");
+      rsprintf("<option value=\"courier\">Courier New</option>\n");
+      rsprintf("<option value=\"tahoma\">Tahoma</option>\n");
+      rsprintf("<option value=\"times new roman\">Times New Roman</option>\n");
+      rsprintf("<option value=\"verdana\">Verdana</option>\n");
+      rsprintf("</select>\n");
+
+      rsprintf(" <select name=\"size\" ");
+      rsprintf("onchange=\"elcode(document.form1.Text,'SIZE',this.options[this.selectedIndex].value);");
+      rsprintf("this.selectedIndex=0;\">\n");
+      rsprintf("<option value=\"0\">%s</option>\n", loc("SIZE"));
+      rsprintf("<option value=\"1\">1</option>\n");
+      rsprintf("<option value=\"2\">2</option>\n");
+      rsprintf("<option value=\"3\">3</option>\n");
+      rsprintf("<option value=\"4\">4</option>\n");
+      rsprintf("<option value=\"5\">5</option>\n");
+      rsprintf("<option value=\"6\">6</option>\n");
+      rsprintf("</select>\n");
+
+      rsprintf(" <select name=\"color\" ");
+      rsprintf("onchange=\"elcode(document.form1.Text,'COLOR',this.options[this.selectedIndex].value);");
+      rsprintf("this.selectedIndex=0;\">\n");
+      rsprintf("<option value=\"0\">%s</option>\n", loc("COLOR"));
+      rsprintf("<option value=\"blue\" style=\"color:blue\">blue</option>\n");
+      rsprintf("<option value=\"darkblue\" style=\"color:darkblue\">dark-blue</option>\n");
+      rsprintf("<option value=\"orange\" style=\"color:orange\">orange</option>\n");
+      rsprintf("<option value=\"red\" style=\"color:red\">red</option>\n");
+      rsprintf("<option value=\"darkred\" style=\"color:darkred\">dark red</option>\n");
+      rsprintf("<option value=\"green\" style=\"color:green\">green</option>\n");
+      rsprintf("<option value=\"darkgreen\" style=\"color:darkgreen\">dark-green</option>\n");
+      rsprintf("<option value=\"pink\" style=\"color:deeppink\">pink</option>\n");
+      rsprintf("<option value=\"purple\" style=\"color:purple\">purple</option>\n");
+      rsprintf("<option value=\"chocolate\" style=\"color:chocolate\">chocolate</option>\n");
+      rsprintf("</select>");
+
+      rsprintf("</td></tr>\n");
+   }
+
+   /* main box for text box and icons */
+   rsprintf("<tr><td colspan=2 class=\"attribvalue\">\n");
+   if (enc_selected == 0)
+      rsprintf("<table border=\"0\"><tr><td class=\"menuframe\">\n");
+
+   if (enc_selected == 0 && show_smileys) {
+
+      rsicon("smile", loc("smiling"), ":)");
+      rsprintf("<br />\n");   
+      rsicon("happy", loc("happy"), ":))");
+      rsprintf("<br />\n");   
+      rsicon("wink", loc("winking"), ";)");                   
+      rsprintf("<br />\n");   
+      rsicon("biggrin", loc("big grin"), ":D");
+      rsprintf("<br />\n");   
+      rsicon("crying", loc("crying"), ";(");
+      rsprintf("<br />\n");   
+      rsicon("cool", loc("cool"), "8)");
+      rsprintf("<br />\n");   
+      rsicon("frown", loc("frowning"), ":(");
+      rsprintf("<br />\n");   
+      rsicon("confused", loc("confused"), "?)");
+      rsprintf("<br />\n");   
+      rsicon("eek", loc("eek"), "8o");
+      rsprintf("<br />\n");   
+      rsicon("mad", loc("mad"), "X(");
+      rsprintf("<br />\n");   
+      rsicon("pleased", loc("pleased"), ":]");
+      rsprintf("<br />\n");   
+      rsicon("tongue", loc("tongue"), ":P");
+      rsprintf("<br />\n");   
+      rsicon("yawn", loc("yawn"), ":O");
+
+      rsprintf("</td><td class=\"attribvalue\">\n");
+   }
+
    /* set textarea width */
-   width = 76;
+   width = 112;
 
    if (getcfg(lbs->name, "Message width", str, sizeof(str)))
       width = atoi(str);
@@ -9367,8 +9635,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    height = 20;
    if (getcfg(lbs->name, "Message height", str, sizeof(str)))
       height = atoi(str);
-
-   rsprintf("<tr><td colspan=2 class=\"attribvalue\">\n");
 
    if (breply)
       /* hidden text for original message */
@@ -9463,36 +9729,42 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                if (!getcfg(lbs->name, "Reply string", reply_string, sizeof(reply_string)))
                   strcpy(reply_string, "> ");
 
-               do {
-                  if (strchr(p, '\n')) {
-                     *strchr(p, '\n') = 0;
+               if (enc_selected == 0) {
+                  rsprintf("[quote]");
+                  rsputs(text);
+                  rsprintf("[/quote]\r\n");
+               } else {
+                  do {
+                     if (strchr(p, '\n')) {
+                        *strchr(p, '\n') = 0;
 
-                     if (encoding[0] == 'H') {
-                        rsputs3(reply_string);
-                        rsprintf("%s<br>\n", p);
+                        if (encoding[0] == 'H') {
+                           (reply_string);
+                           rsprintf("%s<br>\n", p);
+                        } else {
+                           rsputs(reply_string);
+                           rsputs3(p);
+                           rsprintf("\n");
+                        }
+
+                        p += strlen(p) + 1;
+                        if (*p == '\n')
+                           p++;
                      } else {
-                        rsputs(reply_string);
-                        rsputs3(p);
-                        rsprintf("\n");
+                        if (encoding[0] == 'H') {
+                           rsputs3(reply_string);
+                           rsprintf("%s<p>\n", p);
+                        } else {
+                           rsputs(reply_string);
+                           rsputs3(p);
+                           rsprintf("\n\n");
+                        }
+
+                        break;
                      }
 
-                     p += strlen(p) + 1;
-                     if (*p == '\n')
-                        p++;
-                  } else {
-                     if (encoding[0] == 'H') {
-                        rsputs3(reply_string);
-                        rsprintf("%s<p>\n", p);
-                     } else {
-                        rsputs(reply_string);
-                        rsputs3(p);
-                        rsprintf("\n\n");
-                     }
-
-                     break;
-                  }
-
-               } while (TRUE);
+                  } while (TRUE);
+               }
             }
 
             if (getcfg(lbs->name, "Append on reply", str, sizeof(str))) {
@@ -9545,40 +9817,24 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       /* Encoding radio buttons */
       
-      /* Default is ELCode */
-      enc_selected = 0; 
-      /* Overwrite from config file */
-      if (getcfg(lbs->name, "Default Encoding", str, sizeof(str))) 
-         enc_selected = atoi(str);
-
-      /* Overwrite from current entry */
-      if (message_id) {
-        if (encoding[0] == 'E')
-           enc_selected = 0;
-        else if (encoding[0] == 'p')
-           enc_selected = 1;
-        else if (encoding[0] == 'H')
-           enc_selected = 2;
-      }
-           
       rsprintf("<b>%s</b>: ", loc("Encoding"));
 
       if (enc_selected == 0)
          rsprintf("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" checked>");
       else
-         rsprintf("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\">");
+         rsprintf("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" onclick=\"document.form1.submit()\">");
       rsprintf("<label for=\"ELCode\"><a target=\"_blank\" href=\"?cmd=HelpELCode\">ELCode</a>&nbsp;&nbsp;</label>\n");
 
       if (enc_selected == 1)
          rsprintf("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" checked>");
       else
-         rsprintf("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\">");
+         rsprintf("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" onclick=\"document.form1.submit()\">");
       rsprintf("<label for=\"plain\">plain&nbsp;&nbsp;</label>\n");
 
       if (enc_selected == 2)
          rsprintf("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" checked>");
       else
-         rsprintf("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\">");
+         rsprintf("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" onclick=\"document.form1.submit()\">");
       rsprintf("<label for=\"HTML\">HTML&nbsp;&nbsp;</label>\n");
 
       rsprintf("<br>\n");
@@ -9652,6 +9908,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    rsprintf("</tr>\n");
 
+   if (enc_selected == 0)
+      rsprintf("</table></td></tr>\n");
+
    if (!getcfg(lbs->name, "Enable attachments", str, sizeof(str))
        || atoi(str) > 0) {
       i = 0;
@@ -9702,6 +9961,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
    rsprintf
        ("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n", loc("Submit"));
+   rsprintf
+       ("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n", loc("Preview"));
    rsprintf
        ("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submit();\">\n", loc("Back"));
    rsprintf("</span></td></tr>\n\n");
@@ -15083,7 +15344,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          strlcat(menu_str, "Config, ", sizeof(menu_str));
    }
 
-   strcpy(other_str, "Update, Upload, Submit, Back, Search, Save, Download, CSV Import, ");
+   strcpy(other_str, "Update, Upload, Submit, Preview, Back, Search, Save, Download, CSV Import, ");
    strcat(other_str, "Cancel, First, Last, Previous, Next, Requested, Forgot, ");
 
    /* admin commands */
@@ -19261,7 +19522,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       }
 
       if (show_text) {
-         rsprintf("<tr><td class=\"messageframe\">\n");
+         rsprintf("<tr><td class=\"messageframe\">");
 
          if (strieq(encoding, "plain")) {
             rsputs("<pre class=\"messagepre\">");
@@ -19274,13 +19535,20 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
          rsputs("</td></tr>\n");
 
+         n_hidden = 0;
          for (i = 0, n_attachments = 0; i < MAX_ATTACHMENTS; i++) {
             att_hide[i] = 0;
+
+            sprintf(str, "[img]elog:/%d[/img]", i+1);
+            if (strieq(encoding, "ELCode") &&
+               strstr(text, str)) {
+               att_hide[i] = 1;
+               n_hidden++;
+            }
             if (attachment[i][0])
                n_attachments++;
          }
 
-         n_hidden = 0;
          if (isparam("hide")) {
             strlcpy(str, getparam("hide"), sizeof(str));
             p = strtok(str, ",");
@@ -19288,6 +19556,16 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                if (atoi(p) < MAX_ATTACHMENTS) {
                   att_hide[atoi(p)] = 1;
                   n_hidden++;
+               }
+               p = strtok(NULL, ",");
+            }
+         }
+         if (isparam("show")) {
+            strlcpy(str, getparam("show"), sizeof(str));
+            p = strtok(str, ",");
+            while (p != NULL) {
+               if (atoi(p) < MAX_ATTACHMENTS) {
+                  att_hide[atoi(p)] = 0;
                }
                p = strtok(NULL, ",");
             }
@@ -19358,6 +19636,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                         if (att_hide[i] && i != index) {
                            rsprintf("%d,", i);
                         }
+                     rsprintf("&show=%d", index);
                      rsprintf("\">%s</a>", loc("Show"));
                   } else {
                      rsprintf("<a href=\"%d?hide=", message_id);
@@ -19383,8 +19662,13 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                      for (i = 0; i < MAX_ATTACHMENTS; i++)
                         if (att_hide[i])
                            break;
-                     if (i < MAX_ATTACHMENTS)
-                        rsprintf("&nbsp;|&nbsp;<a href=\"%d\">%s</a>", message_id, loc("Show all"));
+                     if (i < MAX_ATTACHMENTS) {
+                        rsprintf("&nbsp;|&nbsp;<a href=\"%d?show=", message_id);
+                        for (i = 0; i < MAX_ATTACHMENTS; i++)
+                           if (att_hide[i])
+                              rsprintf("%d,", i);
+                        rsprintf("\">%s</a>", loc("Show all"));
+                     }
                   }
 
                   rsprintf("</span>\n");
@@ -20928,7 +21212,7 @@ void interprete(char *lbook, char *path)
 
    if (strieq(command, loc("New")) || strieq(command, loc("Edit")) || strieq(command, loc("Reply")) ||
        strieq(command, loc("Duplicate")) || strieq(command, loc("Delete")) || strieq(command, loc("Upload"))
-       || strieq(command, loc("Submit"))) {
+       || strieq(command, loc("Submit")) || strieq(command, loc("Preview"))) {
       sprintf(str, "%s?cmd=%s", path, command);
       if (!check_password(lbs, "Write password", getparam("wpwd"), str))
          return;
@@ -21171,7 +21455,7 @@ void interprete(char *lbook, char *path)
    }
 
    if (strieq(command, loc("New"))) {
-      show_edit_form(lbs, 0, FALSE, FALSE, FALSE, FALSE, FALSE);
+      show_edit_form(lbs, 0, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE);
       return;
    }
 
@@ -21196,39 +21480,44 @@ void interprete(char *lbook, char *path)
                unsetparam(str);
          }
 
-         show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE, FALSE, FALSE);
+         show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE, FALSE, FALSE, FALSE);
          return;
       }
    }
 
    message_id = atoi(dec_path);
    if (strieq(command, loc("Upload"))) {
-      show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE, FALSE, FALSE);
+      show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, TRUE, FALSE, FALSE, FALSE);
       return;
    }
 
    if (strieq(command, loc("Edit"))) {
       if (message_id) {
-         show_edit_form(lbs, message_id, FALSE, TRUE, FALSE, FALSE, FALSE);
+         show_edit_form(lbs, message_id, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE);
          return;
       }
    }
 
    if (strieq(command, loc("Reply"))) {
-      show_edit_form(lbs, message_id, TRUE, FALSE, FALSE, FALSE, FALSE);
+      show_edit_form(lbs, message_id, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE);
       return;
    }
 
    if (strieq(command, loc("Update"))) {
-      show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, FALSE, TRUE, FALSE);
+      show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, FALSE, TRUE, FALSE, FALSE);
       return;
    }
 
    if (strieq(command, loc("Duplicate"))) {
       if (message_id) {
-         show_edit_form(lbs, message_id, FALSE, FALSE, FALSE, FALSE, TRUE);
+         show_edit_form(lbs, message_id, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE);
          return;
       }
+   }
+
+   if (strieq(command, loc("Preview"))) {
+      show_edit_form(lbs, atoi(getparam("edit_id")), FALSE, TRUE, FALSE, TRUE, FALSE, TRUE);
+      return;
    }
 
    if (strieq(command, loc("Submit"))
