@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.667  2005/05/17 11:28:19  ritt
+   Version 2.6.0-beta
+
    Revision 1.666  2005/05/17 11:26:14  ritt
    Remove hard wraps for textarea in non-plain mode
 
@@ -1113,7 +1116,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.5.9-4"
+#define VERSION "2.6.0-beta"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
