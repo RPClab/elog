@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.664  2005/05/17 11:08:48  ritt
+   Added IE javascript
+
    Revision 1.663  2005/05/17 07:02:46  ritt
    Changed 'set current time' to 'insert current time'
 
@@ -2620,7 +2623,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    char *str, *p, boundary[256], file_name[MAX_PATH_LENGTH];
    time_t now;
    struct tm *ts;
-   char list[1024][NAME_LENGTH], buffer[256], charset[256], subject_enc[2000];
+   char list[1024][NAME_LENGTH], buffer[256], charset[256], subject_enc[2000], decoded[256];
 
    memset(error, 0, error_size);
 
@@ -2673,17 +2676,89 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       write_logfile(lbs, str);
    } while (str[0]);
 
-   snprintf(str, strsize - 1, "HELO %s\r\n", host_name);
-   send(s, str, strlen(str), 0);
-   if (verbose)
-      efputs(str);
-   write_logfile(lbs, str);
-   recv_string(s, str, strsize, 3000);
-   if (verbose)
-      efputs(str);
-   write_logfile(lbs, str);
-   if (!check_smtp_error(str, 250, error, error_size))
-      goto smtp_error;
+   if (getcfg(lbs->name, "SMTP username", str, strsize)) {
+      
+      snprintf(str, strsize - 1, "EHLO %s\r\n", host_name);
+      send(s, str, strlen(str), 0);
+      if (verbose)
+         efputs(str);
+      write_logfile(lbs, str);
+     
+      do {
+         recv_string(s, str, strsize, 3000);
+         if (verbose)
+            efputs(str);
+         write_logfile(lbs, str);
+         if (!check_smtp_error(str, 250, error, error_size))
+            goto smtp_error;
+      } while (stristr(str, " OK") == NULL);
+
+   } else {
+      
+      snprintf(str, strsize - 1, "HELO %s\r\n", host_name);
+
+      send(s, str, strlen(str), 0);
+      if (verbose)
+         efputs(str);
+      write_logfile(lbs, str);
+      recv_string(s, str, strsize, 3000);
+      if (verbose)
+         efputs(str);
+      write_logfile(lbs, str);
+      if (!check_smtp_error(str, 250, error, error_size))
+         goto smtp_error;
+   }
+
+   /* optional authentication */
+   if (getcfg(lbs->name, "SMTP username", str, strsize)) {
+      
+      snprintf(str, strsize - 1, "AUTH LOGIN\r\n");
+      send(s, str, strlen(str), 0);
+      if (verbose)
+         efputs(str);
+      write_logfile(lbs, str);
+      recv_string(s, str, strsize, 3000);
+      if (strchr(str, '\r'))
+         *strchr(str, '\r') = 0;
+      base64_decode(str+4, decoded);
+      strcat(decoded, "\n");
+      if (verbose)
+         efputs(decoded);
+      write_logfile(lbs, decoded);
+      if (!check_smtp_error(str, 334, error, error_size))
+         goto smtp_error;
+
+      getcfg(lbs->name, "SMTP username", decoded, sizeof(decoded));
+      base64_encode(decoded, str);
+      strcat(str, "\r\n");
+      send(s, str, strlen(str), 0);
+      if (verbose)
+         efputs(str);
+      write_logfile(lbs, str);
+      recv_string(s, str, strsize, 3000);
+      if (strchr(str, '\r'))
+         *strchr(str, '\r') = 0;
+      base64_decode(str+4, decoded);
+      strcat(decoded, "\n");
+      if (verbose)
+         efputs(decoded);
+      write_logfile(lbs, decoded);
+      if (!check_smtp_error(str, 334, error, error_size))
+         goto smtp_error;
+
+      getcfg(lbs->name, "SMTP password", str, strsize);
+      strcat(str, "\r\n");
+      send(s, str, strlen(str), 0);
+      if (verbose)
+         efputs(str);
+      write_logfile(lbs, str);
+      recv_string(s, str, strsize, 3000);
+      if (verbose)
+         efputs(str);
+      write_logfile(lbs, str);
+      if (!check_smtp_error(str, 235, error, error_size))
+         goto smtp_error;
+   }
 
    snprintf(str, strsize - 1, "MAIL FROM: %s\r\n", from);
    send(s, str, strlen(str), 0);
@@ -8951,38 +9026,81 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
 
    /* elcode() gets called by selecting ELCode buttons */
-   rsprintf("function elcode(text, tag, value)                               \n");
-   rsprintf("{                                                               \n");
-   rsprintf("   var selection = '';                                          \n");
-   rsprintf("   var str;                                                     \n");
-   rsprintf("  	                                                             \n");
-   rsprintf("   selection = text.value.substring(text.selectionStart, text.selectionEnd);  \n");
-   rsprintf("   if (tag == '')                                                             \n");
-   rsprintf("      str = selection + value;                                                \n");
-   rsprintf("   else if (value == '')                                                      \n");
-   rsprintf("      str = '[' + tag + ']' + selection + '[/' + tag + ']';                   \n");
-   rsprintf("   else                                                                       \n");
-   rsprintf("      str = '[' + tag + '=' + value + ']' + selection + '[/' + tag + ']';     \n");
-   rsprintf("                                                               \n");
-   rsprintf("	 start     = text.selectionStart;                            \n");
-   rsprintf("	 end       = text.textLength;                                \n");
-   rsprintf("	 endtext   = text.value.substring(text.selectionEnd, end);   \n");
-   rsprintf("	 starttext = text.value.substring(0, start);                 \n");
-   rsprintf("	 text.value = starttext + str + endtext;                     \n");
-   rsprintf("   if (selection.length > 0) {                                 \n");
-   rsprintf("	    text.selectionStart = start;                             \n");
-   rsprintf("	    text.selectionEnd   = text.selectionStart + str.length;  \n");
-   rsprintf("   } else {                                                    \n");
-   rsprintf("      if (tag == '')                                           \n");
-   rsprintf("         text.selectionStart = start + value.length;           \n");
-   rsprintf("      else                                                     \n");
-   rsprintf("         text.selectionStart = start + tag.length + 2;         \n");
-   rsprintf("	    text.selectionEnd   = text.selectionStart;               \n");
-   rsprintf("   }                                                           \n");
-   rsprintf("                                                               \n");
-   rsprintf("	 text.focus();                                               \n");
-   rsprintf("}                                                              \n");
-
+   if (stristr(browser, "MSIE") && !stristr(browser, "opera")) { /* Internet Explorer */
+      rsprintf("function elcode(text, tag, value)                               \n");
+      rsprintf("{                                                               \n");
+      rsprintf("	 text.focus();                                                \n");
+      rsprintf("   sel = document.selection;                                    \n");
+      rsprintf("   rng = sel.createRange();                                     \n");
+      rsprintf("   rng.colapse;                                                 \n");
+      rsprintf("                                                                \n");
+      rsprintf("   is_range = rng.text.length > 0;                              \n");
+      rsprintf("   if (tag == '')                                               \n");
+      rsprintf("      str = rng.text + value;                                   \n");
+      rsprintf("   else if (value == '')                                        \n");
+      rsprintf("      str = '[' + tag + ']' + rng.text + '[/' + tag + ']';      \n");
+      rsprintf("   else                                                         \n");
+      rsprintf("      str = '[' + tag + '=' + value + ']' + rng.text + '[/' + tag + ']'; \n");
+      rsprintf("                                                                \n");
+      rsprintf("   rng.text = str;                                              \n");
+      rsprintf("   if (!is_range) {                                             \n");
+      rsprintf("      rng.moveStart('character', -tag.length-3);                \n");
+      rsprintf("      rng.moveEnd('character', -tag.length-3);                  \n");
+      rsprintf("      rng.select();                                             \n");
+      rsprintf("   }                                                            \n");
+      rsprintf("                                                                \n");
+      rsprintf("	 text.focus();                                                \n");
+      rsprintf("}                                                               \n");
+   } else if (stristr(browser, "Mozilla") && !stristr(browser, "opera") && !stristr(browser, "konqueror")) {
+      /* mozilla, firefox, netscape */
+      rsprintf("function elcode(text, tag, value)                               \n");
+      rsprintf("{                                                               \n");
+      rsprintf("   var selection = '';                                          \n");
+      rsprintf("   var str;                                                     \n");
+      rsprintf("                                                                \n");
+      rsprintf("   selection = text.value.substring(text.selectionStart, text.selectionEnd);  \n");
+      rsprintf("                                                                              \n");
+      rsprintf("   if (tag == '')                                                             \n");
+      rsprintf("      str = selection + value;                                                \n");
+      rsprintf("   else if (value == '')                                                      \n");
+      rsprintf("      str = '[' + tag + ']' + selection + '[/' + tag + ']';                   \n");
+      rsprintf("   else                                                                       \n");
+      rsprintf("      str = '[' + tag + '=' + value + ']' + selection + '[/' + tag + ']';     \n");
+      rsprintf("                                                                \n");
+      rsprintf("	 start     = text.selectionStart;                             \n");
+      rsprintf("	 end       = text.textLength;                                 \n");
+      rsprintf("	 endtext   = text.value.substring(text.selectionEnd, end);    \n");
+      rsprintf("	 starttext = text.value.substring(0, start);                  \n");
+      rsprintf("	 text.value = starttext + str + endtext;                      \n");
+      rsprintf("   if (selection.length > 0) {                                  \n");
+      rsprintf("	    text.selectionStart = start;                              \n");
+      rsprintf("	    text.selectionEnd   = text.selectionStart + str.length;   \n");
+      rsprintf("   } else {                                                     \n");
+      rsprintf("      if (tag == '')                                            \n");
+      rsprintf("         text.selectionStart = start + value.length;            \n");
+      rsprintf("      else                                                      \n");
+      rsprintf("         text.selectionStart = start + tag.length + 2;          \n");
+      rsprintf("	    text.selectionEnd   = text.selectionStart;                \n");
+      rsprintf("   }                                                            \n");
+      rsprintf("                                                                \n");
+      rsprintf("	 text.focus();                                                \n");
+      rsprintf("}                                                               \n");
+   } else {
+      rsprintf("function elcode(text, tag, value)                               \n");
+      rsprintf("{                                                               \n");
+      rsprintf("   var str;                                                     \n");
+      rsprintf("                                                                \n");
+      rsprintf("   if (tag == '')                                               \n");
+      rsprintf("      str = value;                                              \n");
+      rsprintf("   else if (value == '')                                        \n");
+      rsprintf("      str = '[' + tag + ']' + '[/' + tag + ']';                 \n");
+      rsprintf("   else                                                         \n");
+      rsprintf("      str = '[' + tag + '=' + value + ']' + '[/' + tag + ']';   \n");
+      rsprintf("                                                                \n");
+      rsprintf("	 text.value += str;                                           \n");
+      rsprintf("	 text.focus();                                                \n");
+      rsprintf("}                                                               \n");
+   }
 
    rsprintf("//-->\n");
    rsprintf("</script>\n\n");
@@ -23263,7 +23381,7 @@ void create_password(char *logbook, char *name, char *pwd)
          eprintf("Cannot create \"%s\".\n", config_file);
          return;
       }
-      sprintf(str, "[%s]\n%s=%s\n", logbook, name, pwd);
+      sprintf(str, "[%s]\n%s = %s\n", logbook, name, pwd);
       write(fh, str, strlen(str));
       close(fh);
       eprintf("File \"%s\" created with password in logbook \"%s\".\n", config_file, logbook);
@@ -23292,7 +23410,7 @@ void create_password(char *logbook, char *name, char *pwd)
             /* replace existing password */
             i = (int) (p - cfgbuffer);
             write(fh, cfgbuffer, i);
-            sprintf(str, "%s=%s\n", name, pwd);
+            sprintf(str, "%s = %s\n", name, pwd);
             write(fh, str, strlen(str));
             eprintf("Password replaced in logbook \"%s\".\n", logbook);
             while (*p && *p != '\n')
@@ -23317,7 +23435,7 @@ void create_password(char *logbook, char *name, char *pwd)
             p++;
          i = (int) (p - cfgbuffer);
          write(fh, cfgbuffer, i);
-         sprintf(str, "%s=%s\n", name, pwd);
+         sprintf(str, "%s = %s\n", name, pwd);
          write(fh, str, strlen(str));
          eprintf("Password added to logbook \"%s\".\n", logbook);
          /* write remainder of file */
@@ -23330,7 +23448,7 @@ void create_password(char *logbook, char *name, char *pwd)
    } else {                     /* write new logbook entry */
 
       write(fh, cfgbuffer, strlen(cfgbuffer));
-      sprintf(str, "\n[%s]\n%s=%s\n\n", logbook, name, pwd);
+      sprintf(str, "\n[%s]\n%s = %s\n\n", logbook, name, pwd);
       write(fh, str, strlen(str));
       eprintf("Password added to new logbook \"%s\".\n", logbook);
    }
@@ -23611,8 +23729,8 @@ int run_service(void)
 int main(int argc, char *argv[])
 {
    int i, j, n, fh, tcp_port_cl, silent, sync_flag;
-   char read_pwd[80], write_pwd[80], admin_pwd[80], str[256], logbook[256],
-       clone_url[256], error_str[256], file_name[256];
+   char read_pwd[80], write_pwd[80], admin_pwd[80], smtp_pwd[80], str[256], 
+      logbook[256], clone_url[256], error_str[256], file_name[256];
    time_t now;
    struct tm *tms;
    struct stat finfo;
@@ -23630,8 +23748,8 @@ int main(int argc, char *argv[])
    tzset();
 
    /* initialize variables */
-   read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = clone_url[0] = 0;
-   logbook_dir[0] = resource_dir[0] = logbook_dir[0] = 0;
+   read_pwd[0] = write_pwd[0] = admin_pwd[0] = smtp_pwd[0] = 0;
+   logbook[0] = clone_url[0] = logbook_dir[0] = resource_dir[0] = logbook_dir[0] = 0;
    silent = tcp_port_cl = sync_flag = 0;
    use_keepalive = TRUE;
    running_as_daemon = FALSE;
@@ -23669,7 +23787,7 @@ int main(int argc, char *argv[])
          sync_flag = 1;
       else if (argv[i][0] == '-' && argv[i][1] == 'M')
          sync_flag = 2;
-      else if (argv[i][1] == 't') {
+      else if (argv[i][1] == 'T') {
          time(&now);
          tms = localtime(&now);
          printf("Actual date/time: %02d%02d%02d_%02d%02d%02d\n",
@@ -23716,6 +23834,8 @@ int main(int argc, char *argv[])
             strcpy(write_pwd, argv[++i]);
          else if (argv[i][1] == 'a')
             strcpy(admin_pwd, argv[++i]);
+         else if (argv[i][1] == 't')
+            strcpy(smtp_pwd, argv[++i]);
          else if (argv[i][1] == 'l')
             strcpy(logbook, argv[++i]);
          else if (argv[i][1] == 'n')
@@ -23729,7 +23849,7 @@ int main(int argc, char *argv[])
             printf("%s\n", ELOGID);
             printf("usage: elogd [-a <pwd>] [-C <url>] [-c <file>] [-D] [-d <dir>] ");
             printf("[-f <file>] [-h] [-k] [-l <logbook>] [-M] [-m] [-n <hostname>] ");
-            printf("[-p <port>] [-r <pwd>] [-S] [-s <dir>] [-v] [-w <pwd>] [-x]\n\n");
+            printf("[-p <port>] [-r <pwd>] [-S] [-s <dir>] [-t <pwd>] [-v] [-w <pwd>] [-x]\n\n");
             printf("       -a <pwd> create/overwrite admin password in config file\n");
             printf("       -C <url> clone remote elogd configuration\n");
             printf("       -c <file> specify configuration file\n");
@@ -23748,6 +23868,7 @@ int main(int argc, char *argv[])
             printf("       -r <pwd> create/overwrite read password in config file\n");
             printf("       -S be silent\n");
             printf("       -s <dir> specify resource directory (themes, icons, ...)\n");
+            printf("       -t <pwd> create/overwrite SMTP password in config file\n");
             printf("       -v debugging output\n");
             printf("       -w <pwd> create/overwrite write password in config file\n");
             printf("       -x enable execution of shell commands\n\n");
@@ -24001,6 +24122,12 @@ int main(int argc, char *argv[])
    if (admin_pwd[0]) {
       do_crypt(admin_pwd, str);
       create_password(logbook, "Admin Password", str);
+      exit(EXIT_SUCCESS);
+   }
+
+   if (smtp_pwd[0]) {
+      do_crypt(smtp_pwd, str);
+      create_password("global", "SMTP Password", str);
       exit(EXIT_SUCCESS);
    }
 
