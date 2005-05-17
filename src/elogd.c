@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.666  2005/05/17 11:26:14  ritt
+   Remove hard wraps for textarea in non-plain mode
+
    Revision 1.665  2005/05/17 11:21:16  ritt
    Added strnieq()
 
@@ -9756,7 +9759,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       width = atoi(str);
 
    /* increased width according to longest line */
-   if (message_id) {
+   if (message_id && enc_selected == 1) {
       p = text;
       do {
          pend = strchr(p, '\n');
@@ -9822,8 +9825,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       else
          strcpy(str, "");
 
-      rsprintf
-          ("<textarea rows=%d cols=%d wrap=hard %s name=\"Text\" onChange=\"mod();\">", height, width, str);
+      if (enc_selected == 1)
+         /* use hard wrapping only for plain text */
+         rsprintf("<textarea rows=%d cols=%d wrap=hard %s name=\"Text\" onChange=\"mod();\">", 
+                    height, width, str);
+      else
+         rsprintf("<textarea rows=%d cols=%d %s name=\"Text\" onChange=\"mod();\">", 
+                    height, width, str);
 
       if (bedit) {
          if (!preset_text) {
