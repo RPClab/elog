@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.669  2005/05/17 21:00:53  ritt
+   Put JS in separate file
+
    Revision 1.668  2005/05/17 13:00:47  ritt
    Fixed bug with missing 'full' view
 
@@ -6323,7 +6326,7 @@ void rsputs_elcode(const char *str)
                if (pattern_list[l].pattern[strlen(pattern_list[l].pattern)-1] == '=') {
                   i += strlen(pattern_list[l].pattern);
                   strextract(str+i, ']', attrib, sizeof(attrib));
-                  i += strlen(attrib)+1;
+                  i += strlen(attrib);
 
                   if (attrib[0] == '\"')
                      strcpy(attrib, attrib+1);
@@ -8265,6 +8268,38 @@ BOOL is_author(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], char *owner)
 
 /*------------------------------------------------------------------*/
 
+BOOL get_author(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], char *author)
+{
+   char str[NAME_LENGTH], preset[NAME_LENGTH];
+   int i;
+
+   /* search attribute which contains full_name of author */
+   for (i = 0; i < lbs->n_attr; i++) {
+      sprintf(str, "Preset %s", attr_list[i]);
+      if (getcfg(lbs->name, str, preset, sizeof(preset))) {
+         if (stristr(preset, "$long_name")) {
+            strcpy(author, attrib[i]);
+            return TRUE;
+         }
+      }
+   }
+
+   /* if not found, search attribute which contains short_name of author */
+   for (i = 0; i < lbs->n_attr; i++) {
+      sprintf(str, "Preset %s", attr_list[i]);
+      if (getcfg(lbs->name, str, preset, sizeof(preset))) {
+         if (stristr(preset, "$short_name")) {
+            strcpy(author, attrib[i]);
+            return TRUE;
+         }
+      }
+   }
+
+   return FALSE;
+}
+
+/*------------------------------------------------------------------*/
+
 BOOL is_cond_attr(int index)
 {
    int i;
@@ -8486,11 +8521,11 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
 
 /*------------------------------------------------------------------*/
 
-void ricon(char *name, char *comment, char *elcode)
+void ricon(char *name, char *comment, char *onclick)
 {
    rsprintf("<img align=\"middle\" name=\"%s\" src=\"icons/elc_%s.png\" alt=\"%s\" title=\"%s\" border=\"0\"",
       name, name, comment, comment);
-   rsprintf(" onclick=\"elcode(document.form1.Text, '%s','')\"", elcode);
+   rsprintf(" onclick=\"%s\"", onclick);
    rsprintf(" onmousedown=\"document.images.%s.src='icons/eld_%s.png'\"", name, name);
    rsprintf(" onmouseup=\"document.images.%s.src='icons/elc_%s.png'\"", name, name);
    rsprintf(" onmouseover=\"this.style.cursor='hand';\" />");
@@ -9000,147 +9035,83 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("}\n\n");
 
    /* mark_submit() gets called via "Back" button */
-   rsprintf("function mark_submit()                        \n");
-   rsprintf("{                                             \n");
-   rsprintf("  submitted = true;                           \n");
-   rsprintf("  return true;                                \n");
-   rsprintf("}                                             \n\n");
+   rsprintf("function mark_submit()\n");
+   rsprintf("{\n");
+   rsprintf("  submitted = true;\n");
+   rsprintf("  return true;\n");
+   rsprintf("}\n\n");
 
    /* chkupload() gets called via "Upload" button */
-   rsprintf("function chkupload()                          \n");
-   rsprintf("{                                             \n");
-   rsprintf("  if (document.form1.attfile.value == \"\") { \n");
-   rsprintf("    alert(\"%s\");                            \n", loc("No attachment file specified"));
-   rsprintf("    return false;                             \n");
-   rsprintf("  }                                           \n");
-   rsprintf("  submitted = true;                           \n");
-   rsprintf("  return true;                                \n");
-   rsprintf("}                                             \n\n");
+   rsprintf("function chkupload()\n");
+   rsprintf("{\n");
+   rsprintf("  if (document.form1.attfile.value == \"\") {\n");
+   rsprintf("    alert(\"%s\");\n", loc("No attachment file specified"));
+   rsprintf("    return false;\n");
+   rsprintf("  }\n");
+   rsprintf("  submitted = true;\n");
+   rsprintf("  return true;\n");
+   rsprintf("}\n\n");
 
    /* cond_submit() gets called via selection of new conditional attribute */
-   rsprintf("function cond_submit()                        \n");
-   rsprintf("{                                             \n");
-   rsprintf("  submitted = true;                           \n");
-   rsprintf("  document.form1.submit();                    \n");
-   rsprintf("}                                             \n\n");
+   rsprintf("function cond_submit()\n");
+   rsprintf("{\n");
+   rsprintf("  submitted = true;\n");
+   rsprintf("  document.form1.submit();\n");
+   rsprintf("}\n\n");
 
    /* abandon() gets called "onUnload" */
-   rsprintf("function unload()                             \n");
-   rsprintf("{                                             \n");
-   rsprintf("  if (!submitted && modified) {               \n");
-   rsprintf("    var subm = confirm(\"%s\");               \n", loc("Submit modified ELOG entry?"));
-   rsprintf("    if (subm) {                               \n");
-   rsprintf("      document.form1.jcmd.value = \"%s\";     \n", loc("Submit"));
-   rsprintf("      document.form1.submit();                \n");
-   rsprintf("    } else {                                  \n");
-   rsprintf("      document.form1.jcmd.value = \"%s\";     \n", loc("Back"));
-   rsprintf("      document.form1.submit();                \n");
-   rsprintf("    }                                         \n");
-   rsprintf("  }                                           \n");
-   rsprintf("  if (!submitted && !modified) {              \n");
-   rsprintf("    document.form1.jcmd.value = \"%s\";       \n", loc("Back"));
-   rsprintf("    document.form1.submit();                  \n");
-   rsprintf("    }                                         \n");
-   rsprintf("}                                             \n\n");
+   rsprintf("function unload()\n");
+   rsprintf("{\n");
+   rsprintf("  if (!submitted && modified) {\n");
+   rsprintf("    var subm = confirm(\"%s\");\n", loc("Submit modified ELOG entry?"));
+   rsprintf("    if (subm) {\n");
+   rsprintf("      document.form1.jcmd.value = \"%s\";\n", loc("Submit"));
+   rsprintf("      document.form1.submit();\n");
+   rsprintf("    } else {\n");
+   rsprintf("      document.form1.jcmd.value = \"%s\";\n", loc("Back"));
+   rsprintf("      document.form1.submit();\n");
+   rsprintf("    }\n");
+   rsprintf("  }\n");
+   rsprintf("  if (!submitted && !modified) {\n");
+   rsprintf("    document.form1.jcmd.value = \"%s\";\n", loc("Back"));
+   rsprintf("    document.form1.submit();\n");
+   rsprintf("    }\n");
+   rsprintf("}\n\n");
 
    /* mod() gets called via throuch "onchange" event */
-   rsprintf("function mod()                                \n");
-   rsprintf("{                                             \n");
-   rsprintf("  modified = true;                            \n");
-   rsprintf("  window.status = \"%s\";                     \n", loc("Entry has been modified"));
-   rsprintf("}                                             \n\n");
+   rsprintf("function mod()\n");
+   rsprintf("{\n");
+   rsprintf("  modified = true;\n");
+   rsprintf("  window.status = \"%s\";\n", loc("Entry has been modified"));
+   rsprintf("}\n\n");
 
    /* switch_smileys turn on/off the smiley bar by setting the smcmd, which in turn
       sets the hsm=0/hsm=1 cookie */
-   rsprintf("function switch_smileys()                     \n");
-   rsprintf("{                                             \n");
+   rsprintf("function switch_smileys()\n");
+   rsprintf("{\n");
    if (show_smileys)
-      rsprintf("   document.form1.smcmd.value = 'hsm';     \n");
+      rsprintf("   document.form1.smcmd.value = 'hsm';\n");
    else
-      rsprintf("   document.form1.smcmd.value = 'ssm';     \n");
-   rsprintf("   document.form1.submit();                   \n");
-   rsprintf("}                                             \n\n");
+      rsprintf("   document.form1.smcmd.value = 'ssm';\n");
+   rsprintf("   document.form1.submit();\n");
+   rsprintf("}\n\n");
 
-
-   /* elcode() gets called by selecting ELCode buttons */
-   if (stristr(browser, "MSIE") && !stristr(browser, "opera")) { /* Internet Explorer */
-      rsprintf("function elcode(text, tag, value)                               \n");
-      rsprintf("{                                                               \n");
-      rsprintf("	 text.focus();                                                \n");
-      rsprintf("   sel = document.selection;                                    \n");
-      rsprintf("   rng = sel.createRange();                                     \n");
-      rsprintf("   rng.colapse;                                                 \n");
-      rsprintf("                                                                \n");
-      rsprintf("   is_range = rng.text.length > 0;                              \n");
-      rsprintf("   if (tag == '')                                               \n");
-      rsprintf("      str = rng.text + value;                                   \n");
-      rsprintf("   else if (value == '')                                        \n");
-      rsprintf("      str = '[' + tag + ']' + rng.text + '[/' + tag + ']';      \n");
-      rsprintf("   else                                                         \n");
-      rsprintf("      str = '[' + tag + '=' + value + ']' + rng.text + '[/' + tag + ']'; \n");
-      rsprintf("                                                                \n");
-      rsprintf("   rng.text = str;                                              \n");
-      rsprintf("   if (!is_range) {                                             \n");
-      rsprintf("      rng.moveStart('character', -tag.length-3);                \n");
-      rsprintf("      rng.moveEnd('character', -tag.length-3);                  \n");
-      rsprintf("      rng.select();                                             \n");
-      rsprintf("   }                                                            \n");
-      rsprintf("                                                                \n");
-      rsprintf("	 text.focus();                                                \n");
-      rsprintf("}                                                               \n");
-   } else if (stristr(browser, "Mozilla") && !stristr(browser, "opera") && !stristr(browser, "konqueror")) {
-      /* mozilla, firefox, netscape */
-      rsprintf("function elcode(text, tag, value)                               \n");
-      rsprintf("{                                                               \n");
-      rsprintf("   var selection = '';                                          \n");
-      rsprintf("   var str;                                                     \n");
-      rsprintf("                                                                \n");
-      rsprintf("   selection = text.value.substring(text.selectionStart, text.selectionEnd);  \n");
-      rsprintf("                                                                              \n");
-      rsprintf("   if (tag == '')                                                             \n");
-      rsprintf("      str = selection + value;                                                \n");
-      rsprintf("   else if (value == '')                                                      \n");
-      rsprintf("      str = '[' + tag + ']' + selection + '[/' + tag + ']';                   \n");
-      rsprintf("   else                                                                       \n");
-      rsprintf("      str = '[' + tag + '=' + value + ']' + selection + '[/' + tag + ']';     \n");
-      rsprintf("                                                                \n");
-      rsprintf("	 start     = text.selectionStart;                             \n");
-      rsprintf("	 end       = text.textLength;                                 \n");
-      rsprintf("	 endtext   = text.value.substring(text.selectionEnd, end);    \n");
-      rsprintf("	 starttext = text.value.substring(0, start);                  \n");
-      rsprintf("	 text.value = starttext + str + endtext;                      \n");
-      rsprintf("   if (selection.length > 0) {                                  \n");
-      rsprintf("	    text.selectionStart = start;                              \n");
-      rsprintf("	    text.selectionEnd   = text.selectionStart + str.length;   \n");
-      rsprintf("   } else {                                                     \n");
-      rsprintf("      if (tag == '')                                            \n");
-      rsprintf("         text.selectionStart = start + value.length;            \n");
-      rsprintf("      else                                                      \n");
-      rsprintf("         text.selectionStart = start + tag.length + 2;          \n");
-      rsprintf("	    text.selectionEnd   = text.selectionStart;                \n");
-      rsprintf("   }                                                            \n");
-      rsprintf("                                                                \n");
-      rsprintf("	 text.focus();                                                \n");
-      rsprintf("}                                                               \n");
-   } else {
-      rsprintf("function elcode(text, tag, value)                               \n");
-      rsprintf("{                                                               \n");
-      rsprintf("   var str;                                                     \n");
-      rsprintf("                                                                \n");
-      rsprintf("   if (tag == '')                                               \n");
-      rsprintf("      str = value;                                              \n");
-      rsprintf("   else if (value == '')                                        \n");
-      rsprintf("      str = '[' + tag + ']' + '[/' + tag + ']';                 \n");
-      rsprintf("   else                                                         \n");
-      rsprintf("      str = '[' + tag + '=' + value + ']' + '[/' + tag + ']';   \n");
-      rsprintf("                                                                \n");
-      rsprintf("	 text.value += str;                                           \n");
-      rsprintf("	 text.focus();                                                \n");
-      rsprintf("}                                                               \n");
-   }
+   /* strings for elcode.js */
+   rsprintf("linkText_prompt = '%s';\n", loc("Enter name of hypelink"));
+   rsprintf("linkURL_prompt  = '%s';\n", loc("Enter URL of hypelink"));
+   if (stristr(browser, "MSIE") && !stristr(browser, "opera"))
+      rsprintf("browser = 'MSIE';\n");
+   else if (stristr(browser, "Mozilla") && !stristr(browser, "opera") && !stristr(browser, "konqueror"))
+      rsprintf("browser = 'Mozilla';\n");
+   else
+      rsprintf("browser = 'Other';\n");
 
    rsprintf("//-->\n");
-   rsprintf("</script>\n\n");
+   rsprintf("</script>\n");
+   
+   /* optionally load ELCode JavaScript code */
+   if (enc_selected == 0)
+      rsprintf("<script type=\"text/javascript\" src=\"../elcode.js\"></script>\n\n");
 
    /* external script if requested */
    if (isparam("js")) {
@@ -9649,26 +9620,26 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    if (enc_selected == 0) {
-      rsprintf("<tr><td colspan=2 class=\"menuframe\">\n");
+      rsprintf("<tr><td colspan=2 class=\"toolframe\">\n");
 
-      ricon("bold", loc("bold text"), "B");
-      ricon("italic", loc("italics text"), "I");
-      ricon("underline", loc("underlined text"), "U");
-
-      rsprintf(" ");
-      ricon("center", loc("centered text"), "CENTER");
+      ricon("bold", loc("bold text"), "elcode(document.form1.Text, 'B','')");
+      ricon("italic", loc("italics text"), "elcode(document.form1.Text, 'I','')");
+      ricon("underline", loc("underlined text"), "elcode(document.form1.Text, 'U','')");
 
       rsprintf(" ");
-      ricon("url", loc("insert hyperlink"), "URL");
-      ricon("email", loc("insert email"), "EMAIL");
-      ricon("image", loc("insert image"), "IMG");
+      ricon("center", loc("centered text"), "elcode(document.form1.Text, 'CENTER','')");
 
       rsprintf(" ");
-      ricon("quote", loc("insert quote"), "QUOTE");
-      ricon("list", loc("insert list"), "LIST");
+      ricon("url", loc("insert hyperlink"), "queryURL(document.form1.Text)");
+      ricon("email", loc("insert email"), "elcode(document.form1.Text, 'EMAIL','')");
+      ricon("image", loc("insert image"), "elcode(document.form1.Text, 'IMG','')");
 
       rsprintf(" ");
-      ricon("code", loc("insert code"), "CODE");
+      ricon("quote", loc("insert quote"), "elcode(document.form1.Text, 'QUOTE','')");
+      ricon("list", loc("insert list"), "elcode(document.form1.Text, 'LIST','')");
+
+      rsprintf(" ");
+      ricon("code", loc("insert code"), "elcode(document.form1.Text, 'CODE','')");
 
       if (show_smileys)
          rsprintf(" <img align=\"middle\" name=\"smileys\" src=\"icons/eld_smile.png\" alt=\"%s\" title=\"%s\" border=\"0\"",
@@ -9893,7 +9864,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   strcpy(reply_string, "> ");
 
                if (enc_selected == 0) {
-                  rsprintf("[quote]");
+
+                  /* check for author */
+                  if (get_author(lbs, attrib, str))
+                     rsprintf("[quote=\"%s\"]", str);
+                  else
+                     rsprintf("[quote]");
                   rsputs(text);
                   rsprintf("[/quote]\r\n");
                } else {
@@ -15031,7 +15007,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             else
                rsputs("&nbsp;");
             rsputs("</pre>");
-         } else if (text[0])
+         } else if (strieq(encoding, "ELCode"))
+            rsputs_elcode(text);
+         else if (text[0])
             rsputs(text);
          else
             rsputs("&nbsp;");
@@ -15080,7 +15058,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             rsputs("<pre>");
             rsputs2(text);
             rsputs("</pre>");
-         } else
+         } else if (strieq(encoding, "ELCode"))
+            rsputs_elcode(text);
+         else
             rsputs(text);
 
          rsprintf("</td></tr>\n");
@@ -15769,7 +15749,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
          }
       }
 
-      rsprintf("&nbsp;<b>%d %s</b>", n_msg, loc("Entries"));
+      rsprintf("&nbsp;<b>%d %s</b>&nbsp;", n_msg, loc("Entries"));
 
       rsprintf("</td>\n");
    }
@@ -22892,8 +22872,8 @@ void server_loop(void)
 
             if (chkext(logbook, ".gif") || chkext(logbook, ".jpg") ||
                 chkext(logbook, ".jpg") || chkext(logbook, ".png") ||
-                chkext(logbook, ".ico") || chkext(logbook, ".htm")
-                || chkext(logbook, ".css")) {
+                chkext(logbook, ".ico") || chkext(logbook, ".htm") ||
+                chkext(logbook, ".css") || chkext(logbook, ".js")) {
                /* check if file in resource directory */
                strlcpy(str, resource_dir, sizeof(str));
                strlcat(str, logbook, sizeof(str));

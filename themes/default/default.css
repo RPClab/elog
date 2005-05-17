@@ -237,6 +237,14 @@ td {
   vertical-align:middle;
 }
 
+.toolframe {
+  border:1px solid #486090;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  background-color:#E0E0E0;
+  padding:2px;
+}
+
 /* frame table in listings */
 .listframe {
   border:1px solid #0000FF;
