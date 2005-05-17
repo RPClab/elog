@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.671  2005/05/17 21:15:35  ritt
+   Hide smileys by default
+
    Revision 1.670  2005/05/17 21:12:36  ritt
    Use orig_author for reply quoting
 
@@ -8628,7 +8631,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       enc_selected = atoi(str);
 
    /* detrmine if smiley bar should be displayed */
-   show_smileys = 1;
+   show_smileys = 0;
    cookie[0] = 0;
    if (isparam("hsm") && atoi(getparam("hsm")) == 1)            /* cookie */
       show_smileys = 0;
