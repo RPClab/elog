@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.665  2005/05/17 11:21:16  ritt
+   Added strnieq()
+
    Revision 1.664  2005/05/17 11:08:48  ritt
    Added IE javascript
 
@@ -1537,6 +1540,31 @@ BOOL strieq(const char *str1, const char *str2)
    }
 
    if (*str2)
+      return FALSE;
+
+   return TRUE;
+}
+
+BOOL strnieq(const char *str1, const char *str2, int n)
+{
+   char c1, c2;
+   int i;
+
+   if (str1 == NULL && str2 == NULL && n == 0)
+      return TRUE;
+   if (str1 == NULL || str2 == NULL)
+      return FALSE;
+   if ((int)strlen(str1) < n || (int)strlen(str2) < n)
+      return FALSE;
+
+   for (i=0 ; i<n && *str1 ; i++) {
+      c1 = *str1++;
+      c2 = *str2++;
+      if (my_toupper(c1) != my_toupper(c2))
+         return FALSE;
+   }
+
+   if (i < n)
       return FALSE;
 
    return TRUE;
@@ -6101,7 +6129,7 @@ PATTERN_LIST pattern_list[] = {
    { ":)",  "<img src=\"icons/smile.png\">"    },
    { ":-)", "<img src=\"icons/smile.png\">"    },
    { ":(",  "<img src=\"icons/frown.png\">"    },
-   { ":-("  "<img src=\"icons/frown.png\">"    },
+   { ":-(", "<img src=\"icons/frown.png\">"    },
    { ";)",  "<img src=\"icons/wink.png\">"     },
    { ";-)", "<img src=\"icons/wink.png\">"     },
    { ":D",  "<img src=\"icons/biggrin.png\">"  },
@@ -6280,7 +6308,7 @@ void rsputs_elcode(const char *str)
          continue;
 
       for (l = 0; pattern_list[l].pattern[0] ; l++) {
-         if (strnicmp(str + i, pattern_list[l].pattern, strlen(pattern_list[l].pattern)) == 0) {
+         if (strnieq(str + i, pattern_list[l].pattern, strlen(pattern_list[l].pattern))) {
             
             if (stristr(pattern_list[l].pattern, "[quote")) { 
                if (pattern_list[l].pattern[strlen(pattern_list[l].pattern)-1] == '=') {
@@ -6331,11 +6359,11 @@ void rsputs_elcode(const char *str)
                   strlcpy(hattrib, attrib, sizeof(hattrib));
 
                   /* change /x to id/x for images */
-                  if (strnicmp(attrib, "elog:/", 6) == 0)
+                  if (strnieq(attrib, "elog:/", 6))
                      sprintf(hattrib, "%d%s", _current_message_id, attrib+5);
 
                   /* add http:// if missing */
-                  else if (strnicmp(attrib, "http://", 7) != 0 && 
+                  else if (!strnieq(attrib, "http://", 7) && 
                      strstr(pattern_list[l].subst, "mailto") == NULL && 
                      strstr(pattern_list[l].subst, "img") == NULL )
                      sprintf(hattrib, "http://%s", attrib);
@@ -6367,7 +6395,7 @@ void rsputs_elcode(const char *str)
       if (pattern_list[l].pattern[0])
          continue;
 
-      if (strnicmp(str + i, "<br>", 4) == 0) {
+      if (strnieq(str + i, "<br>", 4)) {
          strcpy(return_buffer + j, "<br />");
          j += 6;
          i += 3;
@@ -9860,7 +9888,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         *strchr(p, '\n') = 0;
 
                         if (encoding[0] == 'H') {
-                           (reply_string);
+                           rsputs3(reply_string);
                            rsprintf("%s<br>\n", p);
                         } else {
                            rsputs(reply_string);
