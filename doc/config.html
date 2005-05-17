@@ -220,6 +220,19 @@ This defines the SMTP host needed to send automatic email notifications. The hos
 name you can get from your email program or your local system administrator.
 <p>
 
+<LI><b><code>SMTP username = &lt;username&gt;</code></b>
+<br>
+Some SMTP server require username/passowrd authentication. This option specifies
+the SMTP user name, while the option <code><b>SMTP password</b></code> can be created
+or modified via the <code><b>-t</b></code> switch when starting elogd. This is
+necessary since the password is encrypted. To set your SMPT password, enter on
+the command line:
+
+<pre>
+elogd -t &lt;your password&gt;
+</pre>
+<p>
+
 <LI><b><code>Logfile = &lt;file&gt;</code></b>
 <br>
 This option specifies a filename which logs all login/logout activities and
