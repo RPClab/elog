@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.663  2005/05/17 07:02:46  ritt
+   Changed 'set current time' to 'insert current time'
+
    Revision 1.662  2005/05/16 20:02:39  ritt
    Implemented smiley bar
 
@@ -8263,7 +8266,7 @@ void show_time_selector(int hour, int min, int sec, char *index)
    rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
    rsprintf("  document.write(\"<a href=\\\"javascript:settime_%s()\\\">\");\n", index);
    rsprintf("  document.writeln(\"<img src=\\\"clock.png\\\" align=\\\"middle\\\" border=\\\"0\\\" ");
-   rsprintf("alt=\\\"%s\\\"></a>\");\n", loc("Set current time"));
+   rsprintf("alt=\\\"%s\\\"></a>\");\n", loc("Insert current time"));
 
    rsprintf("//-->\n");
    rsprintf("</script>\n");
