@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.670  2005/05/17 21:12:36  ritt
+   Use orig_author for reply quoting
+
    Revision 1.669  2005/05/17 21:00:53  ritt
    Put JS in separate file
 
@@ -8556,7 +8559,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
        att[MAX_ATTACHMENTS][256], encoding[80], slist[MAX_N_ATTR + 10][NAME_LENGTH],
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
-       condition[256], ua[NAME_LENGTH], mid[80], title[256], login_name[256], cookie[256];
+       condition[256], ua[NAME_LENGTH], mid[80], title[256], login_name[256], cookie[256], orig_author[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -8570,6 +8573,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    text = xmalloc(TEXT_SIZE);
    text[0] = 0;
+   orig_author[0] = 0;
 
    if (breedit || bupload) {
       /* get date from parameter */
@@ -8596,6 +8600,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          size = TEXT_SIZE;
          el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
                      text, &size, orig_tag, reply_tag, att, encoding, locked_by);
+
+         get_author(lbs, attrib, orig_author);
 
          if (bedit) {
             if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1) {
@@ -9866,8 +9872,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                if (enc_selected == 0) {
 
                   /* check for author */
-                  if (get_author(lbs, attrib, str))
-                     rsprintf("[quote=\"%s\"]", str);
+                  if (orig_author[0])
+                     rsprintf("[quote=\"%s\"]", orig_author);
                   else
                      rsprintf("[quote]");
                   rsputs(text);
