@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.668  2005/05/17 13:00:47  ritt
+   Fixed bug with missing 'full' view
+
    Revision 1.667  2005/05/17 11:28:19  ritt
    Version 2.6.0-beta
 
@@ -17379,7 +17382,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          if (strieq(gattr + j * NAME_LENGTH, "text"))
             break;
 
-      if (j == n)
+      if (n > 0 && j == n)
          show_text = FALSE;
 
       if (list[0]) {
