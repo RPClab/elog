@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.673  2005/05/27 12:29:00  ritt
+   Fixed problem that encoding could not be selected on new entries
+
    Revision 1.672  2005/05/27 10:59:51  ritt
    Fixed bug with <br / ...text...>
 
@@ -8648,7 +8651,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* Overwrite from current entry */
-   if (message_id) {
+   if (encoding[0]) {
       if (encoding[0] == 'E')
          enc_selected = 0;
       else if (encoding[0] == 'p')
