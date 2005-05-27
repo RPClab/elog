@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.672  2005/05/27 10:59:51  ritt
+   Fixed bug with <br / ...text...>
+
    Revision 1.671  2005/05/17 21:15:35  ritt
    Hide smileys by default
 
@@ -6421,7 +6424,7 @@ void rsputs_elcode(const char *str)
          switch (str[i]) {
          case '\r':
             strcat(return_buffer, "<br />\r\n");
-            j += 7;
+            j += 8;
             break;
          case '\n':
             break;
