@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.674  2005/05/27 12:39:17  ritt
+   Applied patch from Emiliano
+
    Revision 1.673  2005/05/27 12:29:00  ritt
    Fixed problem that encoding could not be selected on new entries
 
@@ -17370,15 +17373,15 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
           getcfg(lbs->name, "Guest list display", str, sizeof(str)) && !isparam("unm")) {
 
          strcpy(list, str);
+
+         n = strbreak(list, (char (*)[NAME_LENGTH]) gattr, MAX_N_ATTR, ",");
+         for (j = 0; j < n; j++)
+            if (strieq(gattr + j * NAME_LENGTH, "text"))
+               break;
+
+         if (n > 0 && j == n)
+            show_text = FALSE;
       }
-
-      n = strbreak(list, (char (*)[NAME_LENGTH]) gattr, MAX_N_ATTR, ",");
-      for (j = 0; j < n; j++)
-         if (strieq(gattr + j * NAME_LENGTH, "text"))
-            break;
-
-      if (n > 0 && j == n)
-         show_text = FALSE;
 
       if (list[0]) {
          n_attr_disp = strbreak(list, disp_attr, MAX_N_ATTR, ",");
