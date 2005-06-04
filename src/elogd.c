@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.675  2005/06/04 08:52:15  ritt
+   Fixed 'pippo-bug' of 'list display' option
+
    Revision 1.674  2005/05/27 12:39:17  ritt
    Applied patch from Emiliano
 
@@ -16264,7 +16267,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
        sort_attr[MAX_N_ATTR + 4][NAME_LENGTH], mode_cookie[80];
    char *p, *pt, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
    BOOL show_attachments, threaded, csv, xml, raw, mode_commands, expand, filtering, disp_filter,
-       show_text, searched, found, disp_attr_link[MAX_N_ATTR + 4];
+       show_text, text_in_attr, searched, found, disp_attr_link[MAX_N_ATTR + 4];
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2;
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
@@ -17364,6 +17367,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
       size = printable ? 2 : 3;
       show_text = TRUE;
+      text_in_attr = FALSE;
 
       list[0] = 0;
       getcfg(lbs->name, "List display", list, 10000);
@@ -17381,11 +17385,15 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
          if (n > 0 && j == n)
             show_text = FALSE;
+         else
+            text_in_attr = TRUE;
       }
 
       if (list[0]) {
          n_attr_disp = strbreak(list, disp_attr, MAX_N_ATTR, ",");
-         if (show_text)
+         
+         /* if text is in guest display list, adjust number of *real* attributes */
+         if (text_in_attr)
             n_attr_disp--;
 
          if (search_all) {
