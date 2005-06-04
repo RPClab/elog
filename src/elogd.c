@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.676  2005/06/04 10:55:08  ritt
+   Only use letters in randomly generated recovery password
+
    Revision 1.675  2005/06/04 08:52:15  ritt
    Fixed 'pippo-bug' of 'list display' option
 
@@ -11635,8 +11638,8 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
 
             /* create random password */
             srand((unsigned int) time(NULL));
-            for (i = 0; i < 6; i++)
-               str[i] = rand() & 0x7F;
+            for (i = 0; i < 8; i++)
+               str[i] = 'A' + (rand() % 25);
             str[i] = 0;
             base64_encode(str, pwd);
             do_crypt(pwd, pwd_encrypted);
