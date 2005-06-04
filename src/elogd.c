@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.677  2005/06/04 11:58:20  ritt
+   Switched login page to POST method
+
    Revision 1.676  2005/06/04 10:55:08  ritt
    Only use letters in randomly generated recovery password
 
@@ -8620,22 +8623,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      text, &size, orig_tag, reply_tag, att, encoding, locked_by);
 
          get_author(lbs, attrib, orig_author);
-
-         if (bedit) {
-            if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1) {
-               if (*getparam("full_name"))
-                  strcpy(str, getparam("full_name"));
-               else
-                  strcpy(str, loc("user"));
-
-               strcat(str, " ");
-               strcat(str, loc("on"));
-               strcat(str, " ");
-               strcat(str, rem_host);
-
-               el_lock_message(lbs, message_id, str);
-            }
-         }
       }
    }
 
@@ -8861,6 +8848,23 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          show_error(str);
          xfree(text);
          return;
+      }
+   }
+
+   /* check for locking */
+   if (message_id && bedit && !breedit && !bupload) {
+      if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1) {
+         if (*getparam("full_name"))
+            strcpy(str, getparam("full_name"));
+         else
+            strcpy(str, loc("user"));
+
+         strcat(str, " ");
+         strcat(str, loc("on"));
+         strcat(str, " ");
+         strcat(str, rem_host);
+
+         el_lock_message(lbs, message_id, str);
       }
    }
 
@@ -20446,7 +20450,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
       /* set focus on name field */
       rsprintf("<body OnLoad=\"document.form1.uname.focus();\">\n");
 
-      rsprintf("<form name=form1 method=\"GET\" action=\"\">\n\n");
+      rsprintf("<form name=form1 method=\"POST\" action=\"./\" enctype=\"multipart/form-data\">\n\n");
 
       /* define hidden fields for current destination */
       rsprintf("<input type=hidden name=redir value=\"%s\">\n", redir);
