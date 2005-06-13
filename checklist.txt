@@ -11,7 +11,7 @@ On PC4534:
 - Do a "make indent"
 - Do a "make loc"
 - Translate new strings in eloglang.german
-- c:\elog> cvs commit -m "Version x.x.x-1" 
+- c:\elog> cvs tag release-x.x.x-y 
 - build xxx-1
 
 On PC5082:
