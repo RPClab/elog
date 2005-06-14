@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.679  2005/06/14 13:09:04  ritt
+   Use absolute http:// links for smileys
+
    Revision 1.678  2005/06/13 09:03:31  ritt
    Implemented last_activity, HTML email
 
@@ -1555,6 +1558,7 @@ void highlight_searchtext(regex_t * re_buf, char *src, char *dst, BOOL hidden);
 int parse_config_file(char *config_file);
 PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size);
 int load_password_files();
+void compose_base_url(LOGBOOK *lbs, char *base_url, int size);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -2680,7 +2684,7 @@ int check_smtp_error(char *str, int expected, char *error, int error_size)
 /*-------------------------------------------------------------------*/
 
 INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
-             char *subject, char *text, BOOL email_to, char *url,
+             char *subject, char *text, BOOL email_to, char *url, char *content_type,
              char att_file[MAX_ATTACHMENTS][256], char *error, int error_size)
 {
    struct sockaddr_in bind_addr;
@@ -2966,15 +2970,15 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
          efputs(str);
       write_logfile(lbs, str);
 
-      snprintf(str, strsize - 1, "--%s\r\nContent-Type: text/plain; charset=\"%s\"\r\n\r\n",
-               boundary, charset);
+      snprintf(str, strsize - 1, "--%s\r\nContent-Type: %s; charset=\"%s\"\r\n\r\n",
+               boundary, content_type, charset);
 
       send(s, str, strlen(str), 0);
       if (verbose)
          efputs(str);
       write_logfile(lbs, str);
    } else {
-      snprintf(str, strsize - 1, "Content-Type: text/plain; charset=\"%s\"\r\n\r\n", charset);
+      snprintf(str, strsize - 1, "Content-Type: %s; charset=\"%s\"\r\n\r\n", content_type, charset);
       send(s, str, strlen(str), 0);
       if (verbose)
          efputs(str);
@@ -6163,23 +6167,23 @@ typedef struct {
 PATTERN_LIST pattern_list[] = {
 
    /* smileys */
-   { ":))", "<img src=\"icons/happy.png\">"    },
-   { ":-))","<img src=\"icons/happy.png\">"    },
-   { ":)",  "<img src=\"icons/smile.png\">"    },
-   { ":-)", "<img src=\"icons/smile.png\">"    },
-   { ":(",  "<img src=\"icons/frown.png\">"    },
-   { ":-(", "<img src=\"icons/frown.png\">"    },
-   { ";)",  "<img src=\"icons/wink.png\">"     },
-   { ";-)", "<img src=\"icons/wink.png\">"     },
-   { ":D",  "<img src=\"icons/biggrin.png\">"  },
-   { "?)",  "<img src=\"icons/confused.png\">" },
-   { ";(",  "<img src=\"icons/crying.png\">"   },
-   { ":]",  "<img src=\"icons/pleased.png\">"  },
-   { ":O",  "<img src=\"icons/yawn.png\">"     },
-   { "8)",  "<img src=\"icons/cool.png\">"     },
-   { "8o",  "<img src=\"icons/eek.png\">"      },
-   { "X(",  "<img src=\"icons/mad.png\">"      },
-   { ":P",  "<img src=\"icons/tongue.png\">"   },
+   { ":))", "<img src=\"%s/icons/happy.png\">"    },
+   { ":-))","<img src=\"%sicons/happy.png\">"    },
+   { ":)",  "<img src=\"%sicons/smile.png\">"    },
+   { ":-)", "<img src=\"%sicons/smile.png\">"    },
+   { ":(",  "<img src=\"%sicons/frown.png\">"    },
+   { ":-(", "<img src=\"%sicons/frown.png\">"    },
+   { ";)",  "<img src=\"%sicons/wink.png\">"     },
+   { ";-)", "<img src=\"%sicons/wink.png\">"     },
+   { ":D",  "<img src=\"%sicons/biggrin.png\">"  },
+   { "?)",  "<img src=\"%sicons/confused.png\">" },
+   { ";(",  "<img src=\"%sicons/crying.png\">"   },
+   { ":]",  "<img src=\"%sicons/pleased.png\">"  },
+   { ":O",  "<img src=\"%sicons/yawn.png\">"     },
+   { "8)",  "<img src=\"%sicons/cool.png\">"     },
+   { "8o",  "<img src=\"%sicons/eek.png\">"      },
+   { "X(",  "<img src=\"%sicons/mad.png\">"      },
+   { ":P",  "<img src=\"%sicons/tongue.png\">"   },
 
    /* formatting */
    { "[b]", "<b>"     },
@@ -6226,11 +6230,11 @@ PATTERN_LIST pattern_list[] = {
    { "", "" }
 };
 
-void rsputs_elcode(const char *str)
+void rsputs_elcode(LOGBOOK *lbs, const char *str)
 {
    int i, j, k, l, m, n;
    char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[1000], hattrib[1000], 
-      value[1000], subst[1000];
+      value[1000], subst[1000], base_url[256];
 
    if (strlen_retbuf + (int) (2 * strlen(str) + 1000) >= return_buffer_size) {
       return_buffer = xrealloc(return_buffer, return_buffer_size + 100000);
@@ -6443,8 +6447,15 @@ void rsputs_elcode(const char *str)
             } else{
 
                /* simple substitution */
-               strcpy(return_buffer + j, pattern_list[l].subst);
-               j += strlen(pattern_list[l].subst);
+               strcpy(link, pattern_list[l].subst);
+               if (strstr(link, "%s")) {
+                  strcpy(tmp, link);
+                  compose_base_url(lbs, base_url, sizeof(base_url));
+                  sprintf(link, tmp, base_url);
+               }
+
+               strcpy(return_buffer + j, link);
+               j += strlen(link);
                i += strlen(pattern_list[l].pattern) - 1; // 1 gets added in for loop...
             }
             break;
@@ -6726,6 +6737,34 @@ void extract_host(char *str)
 
       strcpy(str2, ph);
       strcpy(str, str2);
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+void compose_base_url(LOGBOOK *lbs, char *base_url, int size)
+{
+   /* try to get URL from referer */
+   if (!getcfg("global", "URL", base_url, size)) {
+      if (referer[0])
+         strcpy(base_url, referer);
+      else {
+         if (elog_tcp_port == 80)
+            sprintf(base_url, "http://%s/", host_name);
+         else
+            sprintf(base_url, "http://%s:%d/", host_name, elog_tcp_port);
+         if (lbs) {
+            strlcat(base_url, lbs->name_enc, size);
+            strlcat(base_url, "/", size);
+         }
+      }
+   } else {
+      if (base_url[strlen(base_url) - 1] != '/')
+         strlcat(base_url, "/", size);
+      if (lbs) {
+         strlcat(base_url, lbs->name_enc, size);
+         strlcat(base_url, "/", size);
+      }
    }
 }
 
@@ -9663,7 +9702,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsputs2(text);
          rsputs("</pre>");
       } else if (strieq(encoding, "ELCode"))
-         rsputs_elcode(text);
+         rsputs_elcode(lbs, text);
       else
          rsputs(text);
 
@@ -11322,8 +11361,8 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
          sprintf(url + strlen(url), "?cmd=Login&unm=%s", getparam("new_user_name"));
          sprintf(mail_text + strlen(mail_text), "%s %s\r\n", loc("You can access it at"), url);
 
-         sendmail(lbs, smtp_host, mail_from, getparam("new_user_email"), subject, mail_text, TRUE, url, NULL,
-                  NULL, 0);
+         sendmail(lbs, smtp_host, mail_from, getparam("new_user_email"), subject, mail_text, 
+            TRUE, url, "text/plain", NULL, NULL, 0);
       } else {
          if (getcfg(lbs->name, "Admin user", admin_user, sizeof(admin_user))) {
             pl = strtok(admin_user, " ,");
@@ -11391,8 +11430,8 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
                              loc("Logbook"), url, getparam("new_user_name"), pl);
                   }
 
-                  sendmail(lbs, smtp_host, mail_from, email_addr, subject, mail_text, TRUE, url, NULL, NULL,
-                           0);
+                  sendmail(lbs, smtp_host, mail_from, email_addr, subject, mail_text, TRUE, 
+                           url, "text/plain", NULL, NULL, 0);
                }
 
                pl = strtok(NULL, " ,");
@@ -11722,7 +11761,8 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             strlcat(mail_text, "\r\n\r\n", sizeof(mail_text));
             sprintf(mail_text + strlen(mail_text), "ELOG Version %s\r\n", VERSION);
 
-            if (sendmail(lbs, smtp_host, mail_from, user_email, subject, mail_text, TRUE, url, NULL, NULL, 0)
+            if (sendmail(lbs, smtp_host, mail_from, user_email, subject, mail_text, TRUE, 
+                         url, "text/plain", NULL, NULL, 0)
                 != -1) {
                /* save new password */
                change_pwd(lbs, login_name, pwd_encrypted);
@@ -15061,7 +15101,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                rsputs("&nbsp;");
             rsputs("</pre>");
          } else if (strieq(encoding, "ELCode"))
-            rsputs_elcode(text);
+            rsputs_elcode(lbs, text);
          else if (text[0])
             rsputs(text);
          else
@@ -15112,7 +15152,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             rsputs2(text);
             rsputs("</pre>");
          } else if (strieq(encoding, "ELCode"))
-            rsputs_elcode(text);
+            rsputs_elcode(lbs, text);
          else
             rsputs(text);
 
@@ -17828,7 +17868,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
 {
    int i, j, k, n, flags, status, html;
    char str[NAME_LENGTH + 100], str2[256], mail_from[256], *mail_text, smtp_host[256],
-       subject[256], format[256], error[256];
+       subject[256], format[256], error[256], content_type[256];
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
    char list[MAX_PARAM][NAME_LENGTH], url[256], comment[256];
    time_t ltime;
@@ -17870,6 +17910,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
             sprintf(mail_text + strlen(mail_text), loc("A old entry has been updated on %s"), host_name);
          else
             sprintf(mail_text + strlen(mail_text), loc("A new entry has been submitted on %s"), host_name);
+         strcat(mail_text, ":");
       }
 
       if (html)
@@ -17879,8 +17920,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
    }
 
    if (html)
-      sprintf(mail_text + strlen(mail_text), "<table border=\"3\">\r\n");
-
+      sprintf(mail_text + strlen(mail_text), "<table border=\"3\" cellpadding=\"4\">\r\n");
 
    if (flags & 32)
       if (html) {
@@ -18002,7 +18042,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
          if (encoding[0] == 'E') {
             sprintf(mail_text + strlen(mail_text), "\r\n<HR>\r\n");
             strlen_retbuf = 0;
-            rsputs_elcode(getparam("text"));
+            rsputs_elcode(lbs, getparam("text"));
             strlcpy(mail_text + strlen(mail_text), return_buffer, TEXT_SIZE + 1000 - strlen(mail_text));
             strlen_retbuf = 0;
          } else
@@ -18014,25 +18054,30 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
    if (html)
       strcpy(mail_text + strlen(mail_text), "\r\n</html></body>\r\n");
 
+   if (html)
+      strcpy(content_type, "text/html");
+   else
+      strcpy(content_type, "text/plain");
+
    status = 0;
    if (flags & 16) {
       if (getcfg(lbs->name, "Omit Email to", str, sizeof(str)) && atoi(str) == 1)
          status =
-             sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url, att_file, error,
-                      sizeof(error));
+             sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, 
+                      url, content_type, att_file, error, sizeof(error));
       else
          status =
-             sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url, att_file, error,
-                      sizeof(error));
+             sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, 
+                      url, content_type, att_file, error, sizeof(error));
    } else {
       if (getcfg(lbs->name, "Omit Email to", str, sizeof(str)) && atoi(str) == 1)
          status =
-             sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, url, NULL, error,
-                      sizeof(error));
+             sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE, 
+                      url, content_type, NULL, error, sizeof(error));
       else
          status =
-             sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, url, NULL, error,
-                      sizeof(error));
+             sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE, 
+                      url, content_type, NULL, error, sizeof(error));
    }
 
    if (status < 0) {
@@ -19792,7 +19837,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             rsputs2(text);
             rsputs("</pre>");
          } else if (strieq(encoding, "ELCode"))
-            rsputs_elcode(text);
+            rsputs_elcode(lbs, text);
          else
             rsputs(text);
 
