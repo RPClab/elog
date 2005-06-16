@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.680  2005/06/16 11:19:37  ritt
+   Applied patch from Emiliano with strftime workaround
+
    Revision 1.679  2005/06/14 13:09:04  ritt
    Use absolute http:// links for smileys
 
@@ -1532,7 +1535,7 @@ int run_service(void);
 void show_error(char *error);
 BOOL enum_user_line(LOGBOOK * lbs, int n, char *user, int size);
 int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name,
-                  char *email, BOOL email_notify[1000], int *last_access);
+                  char *email, BOOL email_notify[1000], time_t *last_access);
 int strbreak(char *str, char list[][NAME_LENGTH], int size, char *brk);
 int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH],
                   char att_file[MAX_ATTACHMENTS][256], char *sh_cmd);
@@ -1675,6 +1678,11 @@ static BOOL chkext(const char *str, const char *ext)
    return TRUE;
 }
 
+/* workaroud for some gcc versions bug for "%c" format (see strftime(3) */
+size_t my_strftime(char *s, size_t max, const char *fmt, const struct tm *tm) 
+{
+   return strftime(s, max, fmt, tm);
+}
 /*---- Safe malloc wrappers with out of memory checking from GNU ---*/
 
 static void memory_error_and_abort(char *func)
@@ -8052,7 +8060,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
                if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
                   strcpy(format, DEFAULT_DATE_FORMAT);
 
-               strftime(value[i], NAME_LENGTH, format, ts);
+               my_strftime(value[i], NAME_LENGTH, format, ts);
 
             } else
                strcpy(value[i], attrib[i]);
@@ -8091,7 +8099,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
       if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
          strcpy(format, DEFAULT_TIME_FORMAT);
 
-      strftime(str, sizeof(str), format, ts);
+      my_strftime(str, sizeof(str), format, ts);
    } else
       sprintf(str, "%d", (int) t);
    strcpy(value[i++], str);
@@ -8104,7 +8112,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
       if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
          strcpy(format, DEFAULT_TIME_FORMAT);
 
-      strftime(str, sizeof(str), format, ts);
+      my_strftime(str, sizeof(str), format, ts);
    } else
       sprintf(str, "%d", (int) t);
    strcpy(value[i++], str);
@@ -8131,7 +8139,7 @@ void add_subst_time(LOGBOOK * lbs,
       strcpy(format, DEFAULT_TIME_FORMAT);
    ltime = date_to_ltime(date);
    pts = localtime(&ltime);
-   strftime(str, sizeof(str), format, pts);
+   my_strftime(str, sizeof(str), format, pts);
 
    add_subst_list(list, value, item, str, i);
 }
@@ -9273,10 +9281,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       ltime = date_to_ltime(date);
       pts = localtime(&ltime);
-      strftime(str, sizeof(str), format, pts);
+      my_strftime(str, sizeof(str), format, pts);
    } else {
       if (getcfg(lbs->name, "Time format", format, sizeof(format)))
-         strftime(str, sizeof(str), format, localtime(&now));
+         my_strftime(str, sizeof(str), format, localtime(&now));
       else
          strcpy(str, ctime(&now));
       strcpy(date, ctime(&now));
@@ -9392,7 +9400,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             if (ltime == 0)
                strcpy(str, "-");
             else
-               strftime(str, sizeof(str), format, pts);
+               my_strftime(str, sizeof(str), format, pts);
 
          } else
             strlcpy(str, attrib[index], sizeof(str));
@@ -14903,7 +14911,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
             ltime = date_to_ltime(date);
             pts = localtime(&ltime);
-            strftime(str, sizeof(str), format, pts);
+            my_strftime(str, sizeof(str), format, pts);
 
             if (strieq(mode, "Threaded")) {
                if (skip_comma) {
@@ -14976,7 +14984,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      if (ltime == 0)
                         strcpy(str, "-");
                      else
-                        strftime(str, sizeof(str), format, pts);
+                        my_strftime(str, sizeof(str), format, pts);
 
                      if (disp_attr_link == NULL || disp_attr_link[index])
                         rsprintf("<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", sclass, ref, str);
@@ -14994,7 +15002,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      if (ltime == 0)
                         strcpy(str, "-");
                      else
-                        strftime(str, sizeof(str), format, pts);
+                        my_strftime(str, sizeof(str), format, pts);
 
                      if (disp_attr_link == NULL || disp_attr_link[index])
                         rsprintf("<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", sclass, ref, str);
@@ -17283,7 +17291,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
          rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("New entries since"));
          memcpy(&tms, localtime(&ltime_start), sizeof(struct tm));
-         strftime(str, sizeof(str), "%c", &tms);
+         my_strftime(str, sizeof(str), "%c", &tms);
          rsprintf("<td class=\"attribvalue\">%s</td></tr>", str);
          rsprintf("</table></td></tr>\n\n");
       }
@@ -17345,7 +17353,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                         strcpy(format, DEFAULT_DATE_FORMAT);
                      else
                         strcpy(format, DEFAULT_TIME_FORMAT);
-                     strftime(str, sizeof(str), format, &tms);
+                     my_strftime(str, sizeof(str), format, &tms);
                      if (ltime2 > 0)
                         rsprintf("%s %s", loc("From"), str);
                      else
@@ -17357,7 +17365,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                         strcpy(format, DEFAULT_DATE_FORMAT);
                      else
                         strcpy(format, DEFAULT_TIME_FORMAT);
-                     strftime(str, sizeof(str), format, &tms);
+                     my_strftime(str, sizeof(str), format, &tms);
                      if (ltime1 > 0)
                         rsprintf(" %s %s", loc("to"), str);
                      else
@@ -17866,7 +17874,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
                   char attrib[MAX_N_ATTR][NAME_LENGTH], char *mail_param, int old_mail,
                   char att_file[MAX_ATTACHMENTS][256], char *encoding)
 {
-   int i, j, k, n, flags, status, html;
+   int i, j, k, n, flags, status, html=0;
    char str[NAME_LENGTH + 100], str2[256], mail_from[256], *mail_text, smtp_host[256],
        subject[256], format[256], error[256], content_type[256];
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
@@ -17922,12 +17930,13 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
    if (html)
       sprintf(mail_text + strlen(mail_text), "<table border=\"3\" cellpadding=\"4\">\r\n");
 
-   if (flags & 32)
+   if (flags & 32) {
       if (html) {
          sprintf(mail_text + strlen(mail_text), "<tr><td bgcolor=\"#CCCCFF\">%s URL</td>", loc("Logbook"));
          sprintf(mail_text + strlen(mail_text), "<td bgcolor=\"#DDEEBB\">%s</td></tr>\r\n", lbs->name);
-      } else
+      } else 
          sprintf(mail_text + strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), lbs->name);
+   }
 
    if (flags & 2) {
       for (j = 0; j < lbs->n_attr; j++) {
@@ -17950,7 +17959,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
             if (ltime == 0)
                strcpy(comment, "-");
             else
-               strftime(comment, sizeof(str), format, pts);
+               my_strftime(comment, sizeof(str), format, pts);
          } else if (attr_flags[j] & AF_DATETIME) {
 
             if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
@@ -17961,7 +17970,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
             if (ltime == 0)
                strcpy(comment, "-");
             else
-               strftime(comment, sizeof(str), format, pts);
+               my_strftime(comment, sizeof(str), format, pts);
          }
 
          if (!comment[0])
@@ -19593,7 +19602,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
       ltime = date_to_ltime(date);
       pts = localtime(&ltime);
-      strftime(str, sizeof(str), format, pts);
+      my_strftime(str, sizeof(str), format, pts);
 
       rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;%s:&nbsp;<b>%s</b>\n", loc("Entry time"), str);
 
@@ -19743,7 +19752,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             if (ltime == 0)
                strcpy(str, "-");
             else
-               strftime(str, sizeof(str), format, pts);
+               my_strftime(str, sizeof(str), format, pts);
 
             rsprintf("%s:</td><td class=\"%s\">%s&nbsp</td>\n", attr_list[i], class_value, str);
 
@@ -19757,7 +19766,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             if (ltime == 0)
                strcpy(str, "-");
             else
-               strftime(str, sizeof(str), format, pts);
+               my_strftime(str, sizeof(str), format, pts);
 
             rsprintf("%s:</td><td class=\"%s\">%s&nbsp</td>\n", attr_list[i], class_value, str);
 
@@ -20317,7 +20326,7 @@ int load_password_files()
 /*------------------------------------------------------------------*/
 
 int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name,
-                  char *email, BOOL email_notify[1000], int *last_logout)
+                  char *email, BOOL email_notify[1000], time_t *last_logout)
 {
    int i, j;
    char str[256], global[256], orig_topgroup[256];
