@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.681  2005/06/16 19:52:19  ritt
+   Version 2.6.0-beta2
+
    Revision 1.680  2005/06/16 11:19:37  ritt
    Applied patch from Emiliano with strftime workaround
 
@@ -1155,7 +1158,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.6.0-beta"
+#define VERSION "2.6.0-beta2"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
