@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.682  2005/06/16 20:36:26  ritt
+   Fixed problem with reverse sort in quick filters
+
    Revision 1.681  2005/06/16 19:52:19  ritt
    Version 2.6.0-beta2
 
@@ -10315,6 +10318,8 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf("<input type=checkbox id=\"printable\" name=\"printable\" value=1>");
    rsprintf("<label for=\"printable\">%s<br></label>\n", loc("Printable output"));
 
+   /* put hidden reverse=0, which gets used if the reverse checkbox is unchecked and "reverse sort=1" is in elogd.cfg */
+   rsprintf("<input type=hidden name=\"reverse\" value=0>\n");
    if (getcfg(lbs->name, "Reverse sort", str, sizeof(str)) && atoi(str) == 1)
       rsprintf("<input type=checkbox id=\"reverse\" name=\"reverse\" value=1 checked>");
    else
@@ -16406,14 +16411,6 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                strcpy(pt1, pt2);
             }
          }
-      }
-      /* add reverse=0 if not present */
-      if (strstr(_cmdline, "reverse=") == NULL && getcfg(lbs->name, "Reverse sort", str, sizeof(str))
-          && atoi(str) == 1) {
-         if (strchr(_cmdline, '?'))
-            strlcat(_cmdline, "&reverse=0", sizeof(_cmdline));
-         else
-            strlcat(_cmdline, "?reverse=0", sizeof(_cmdline));
       }
       if (_cmdline[strlen(_cmdline) - 1] == '&')
          _cmdline[strlen(_cmdline) - 1] = 0;
