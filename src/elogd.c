@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.683  2005/06/17 20:31:41  ritt
+   Fixed bug with user activation and global password files
+
    Revision 1.682  2005/06/16 20:36:26  ritt
    Fixed problem with reverse sort in quick filters
 
@@ -11603,7 +11606,7 @@ void show_config_page(LOGBOOK * lbs)
 
       /* show "update" button only of javascript is not enabled */
       rsprintf("<noscript>\n");
-      rsprintf("<input type=submit value=\\\"%s\\\">\n", loc("Update"));
+      rsprintf("<input type=submit value=\"%s\">\n", loc("Update"));
       rsprintf("</noscript>\n");
    }
 
@@ -20506,8 +20509,25 @@ void set_user_login_time(LOGBOOK * lbs, char *user)
 
 BOOL enum_user_line(LOGBOOK * lbs, int n, char *user, int size)
 {
-   char str[256];
+   char str[256], file_name[256];
+   int i;
    PMXML_NODE node;
+
+   if (lbs == NULL) {
+      getcfg(NULL, "password file", file_name, sizeof(file_name));
+      for (i = 0; lb_list[i].name[0]; i++) {
+         getcfg(lb_list[i].name, "password file", str, sizeof(str));
+         if (strieq(file_name, str))
+            break;
+      }
+      if (lb_list[i].name[0] == 0)
+         lbs = &lb_list[0];
+      else
+         lbs = &lb_list[i];
+   }
+
+   if (!lbs)
+      return FALSE;
 
    if (lbs->pwd_xml_tree == NULL)
       return FALSE;
