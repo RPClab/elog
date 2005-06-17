@@ -112,7 +112,7 @@ specified by the <b><code>Subdir</b></code> option.
 
 The language setting determines the language of the <code><b>elogd</b></code> output. Not
 affected by this setting are the configuration file options and the commands specified with the
-optional <code><b>Menu commands</b></code> and <code><b>Find menu commands</b></code>, which
+optional <code><b>Menu commands</b></code> and <code><b>List menu commands</b></code>, which
 have to be specified in English and are translated automatically by elogd. The attribute names
 are unaffected by the language setting and have to be translated manually.<br><br>
 
@@ -570,7 +570,7 @@ the current logbook are shown as a possible destination. With the configurations
 it is possible to specify a list of destination logbooks, separated by commata. This can
 make sense if only certain logbooks make sense as destinations.<p>
 
-<li><b><code>Find Menu commands = &lt;list&gt;</code></b>
+<li><b><code>List Menu commands = &lt;list&gt;</code></b>
 <br>
 This option specifies the menu commands displayed on top of the listing page.
 Although all commands from a above are possible,
@@ -603,11 +603,11 @@ Guest menu commands = List, Find, Login, Help
 Note that the presence of this option opens user access also to the find result or elog
 listing page, which usually contains some config command. So it is useful to combine
 the <b><code>Guest menu commands</b></code> option with the following
-<b><code>Guest Find Menu commands</b></code> option to restrict the access to the
+<b><code>Guest List Menu commands</b></code> option to restrict the access to the
 find result page as well.
 <p>
 
-<li><b><code>Guest Find Menu commands = &lt;list&gt;</code></b>
+<li><b><code>Guest List Menu commands = &lt;list&gt;</code></b>
 </br>
 Same as <b>Guest Menu commands</b> but for the find result page.<p>
 
@@ -633,9 +633,9 @@ if someone is logged in (using the option "Password file"). The <code><b>list</b
 consists of comma separated attributes, including the word <i>text</i>, if one
 wants to display the entry body text for guests.<p>
 
-<li><b><code>Find Menu text = &lt;file&gt;</code></b>
+<li><b><code>List Menu text = &lt;file&gt;</code></b>
 </br>
-The same for the find result page. One example would be following text to
+The same for the list page. One example would be following text to
 switch between the different display modi:<br>
 
 <pre>

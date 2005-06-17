@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.684  2005/06/17 20:45:40  ritt
+   Changed 'find menu' to 'list menu'
+
    Revision 1.683  2005/06/17 20:31:41  ritt
    Fixed bug with user activation and global password files
 
@@ -15582,11 +15585,17 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
       }
    }
 
-   /* check find menu commands */
+   /* check list menu commands */
    str[0] = 0;
-   if (!getcfg(lbs->name, "Guest Find Menu commands", str, sizeof(str))
+   if (!getcfg(lbs->name, "Guest List Menu commands", str, sizeof(str))
        || *getparam("unm") != 0)
-      getcfg(lbs->name, "Find Menu commands", str, sizeof(str));
+      getcfg(lbs->name, "list menu commands", str, sizeof(str));
+
+   if (!str[0]) {
+      if (!getcfg(lbs->name, "Guest Find Menu commands", str, sizeof(str))
+         || *getparam("unm") != 0)
+         getcfg(lbs->name, "Find Menu commands", str, sizeof(str));
+   }
 
    if (str[0])
       strlcat(menu_str, str, sizeof(menu_str));
@@ -17162,6 +17171,12 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
              || *getparam("unm") != 0)
             getcfg(lbs->name, "Find menu commands", menu_str, sizeof(menu_str));
 
+         if (!menu_str[0]) {
+            if (!getcfg(lbs->name, "Guest list menu commands", menu_str, sizeof(menu_str))
+               || *getparam("unm") != 0)
+               getcfg(lbs->name, "list menu commands", menu_str, sizeof(menu_str));
+         }
+
          /* default menu commands */
          if (menu_str[0] == 0) {
             strcpy(menu_str, "New, Find, Select, CSV Import, ");
@@ -17224,9 +17239,11 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          rsprintf("</span></td></tr>\n\n");
       }
 
-      /*---- find menu text ----*/
+      /*---- list menu text ----*/
 
-      if (getcfg(lbs->name, "find menu text", str, sizeof(str)) && !printable) {
+      if ((getcfg(lbs->name, "find menu text", str, sizeof(str)) ||
+           getcfg(lbs->name, "list menu text", str, sizeof(str)))
+           && !printable) {
          FILE *f;
          char file_name[256], *buf;
 
