@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.685  2005/06/24 20:22:33  ritt
+   Fixed bug with conditional attributes and quick filters
+
    Revision 1.684  2005/06/17 20:45:40  ritt
    Changed 'find menu' to 'list menu'
 
@@ -15850,22 +15853,22 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
                      if (comment[0] == 0)
                         strcpy(comment, attr_options[i][j]);
 
-                     for (i1=i2=0 ; i1<=(int)strlen(attr_options[i][j]) ; i1++) {
-                        if (attr_options[i][j][i1] == '(') {
+                     for (i1=i2=0 ; i1<=(int)comment ; i1++) {
+                        if (comment[i1] == '(') {
                            option[i2++] = '\\';
                            option[i2++] = '(';
-                        } else if (attr_options[i][j][i1] == '{') {
+                        } else if (comment[i1] == '{') {
                            option[i2]= 0;
                            break;
                         } else
-                           option[i2++] = attr_options[i][j][i1];
+                           option[i2++] = comment[i1];
                      }
 
                      if (isparam(attr_list[i])
                          && strieq(option, getparam(attr_list[i])))
-                        rsprintf("<option selected value=\"%s\">%s\n", option, comment);
+                        rsprintf("<option selected value=\"%s\">%s\n", option, option);
                      else
-                        rsprintf("<option value=\"%s\">%s\n", option, comment);
+                        rsprintf("<option value=\"%s\">%s\n", option, option);
                   }
                }
 
