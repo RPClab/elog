@@ -55,6 +55,8 @@ function elcode1(text, tag, value, selection)
 
    if (tag == '')
       str = selection + value;
+   else if (tag == 'LIST')
+      str = '[LIST]\r\n[*] ' + selection + '\r\n[/LIST]';
    else if (value == '')
       str = '['+tag+']' + selection + '[/'+tag+']';
    else
@@ -62,6 +64,8 @@ function elcode1(text, tag, value, selection)
 
    if	(tag == '')
       pos = value.length;
+   else if (tag == 'LIST')
+      pos = 11;
    else if (value == '')
       pos = tag.length + 2;
    else
