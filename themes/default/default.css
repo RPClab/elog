@@ -553,6 +553,31 @@ td {
   cursor:pointer;
 }
 
+.uploadwindow {
+  margin:0px;
+  color:black;
+  background-color:white;
+  font-family:sans-serif;
+  padding:0px;
+}
+
+.uploadtext 
+{
+  background-color:#CCCCFF;
+  border:1px solid #0000FF;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  padding:3px;
+}
+
+.uploadvalue {
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  background-color:#DDEEBB;
+  padding:3px;
+}
+
 .quotetable {
   width:98%;
   align:center;
