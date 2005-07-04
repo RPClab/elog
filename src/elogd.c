@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.687  2005/07/04 20:17:25  ritt
+   Put absolute link for CSS
+
    Revision 1.686  2005/06/30 05:18:43  ritt
    Added image insertion by JScript
 
@@ -1580,6 +1583,8 @@ int parse_config_file(char *config_file);
 PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size);
 int load_password_files();
 void compose_base_url(LOGBOOK * lbs, char *base_url, int size);
+void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command);
+char *loc(char *orig);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -2748,13 +2753,16 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    bind_addr.sin_port = htons((short) 25);
 
    phe = gethostbyname(smtp_host);
-   if (phe == NULL)
-      return -1;
+   if (phe == NULL) {
+      strcpy(error, loc("Cannot lookup server name"));
+      return 1;
+   }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 
    if (connect(s, (void *) &bind_addr, sizeof(bind_addr)) < 0) {
       closesocket(s);
-      return -1;
+      strcpy(error, loc("Cannot connect to server"));
+      return 1;
    }
 
    strsize = TEXT_SIZE + 1000;
@@ -7230,16 +7238,16 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
    rsprintf("<html><head><title>%s</title>\n", title);
 
    /* Cascading Style Sheet */
-   strlcpy(css, "default.css", sizeof(css));
+   compose_base_url(lbs, css, sizeof(css));
 
    if (lbs != NULL && getcfg(lbs->name, "CSS", str, sizeof(str)))
-      strlcpy(css, str, sizeof(css));
-
+      strlcat(css, str, sizeof(css));
    else if (lbs == NULL && getcfg("global", "CSS", str, sizeof(str)))
-      strlcpy(css, str, sizeof(css));
+      strlcat(css, str, sizeof(css));
+   else
+      strlcat(css, "default.css", sizeof(css));
 
    rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">\n", css);
-
    rsprintf("<link rel=\"shortcut icon\" href=\"favicon.ico\">\n");
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\">\n");
 
@@ -7860,6 +7868,31 @@ void set_login_cookies(LOGBOOK * lbs, char *user, char *enc_pwd)
          set_cookie(lbs, "urem", "1", global, "8760");  /* one year = 24*365 */
       else
          set_cookie(lbs, "urem", "0", global, "8760");
+   }
+
+   set_redir(lbs, getparam("redir"));
+}
+
+/*------------------------------------------------------------------*/
+
+void remove_all_login_cookies(LOGBOOK *lbs)
+{
+   int i;
+
+   rsprintf("HTTP/1.1 302 Found\r\n");
+   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+   if (use_keepalive) {
+      rsprintf("Connection: Keep-Alive\r\n");
+      rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+   }
+
+   /* remove global cookies */
+   set_cookie(NULL, "unm", "", TRUE, "");
+   set_cookie(NULL, "upwd", "", TRUE, "");
+
+   for (i = 0; lb_list[i].name[0]; i++) {
+      set_cookie(&lb_list[i], "unm", "", 0, "");
+      set_cookie(&lb_list[i], "upwd", "", 0, "");
    }
 
    set_redir(lbs, getparam("redir"));
@@ -11692,11 +11725,15 @@ void show_config_page(LOGBOOK * lbs)
 
       if (!getcfg_topgroup() || strieq(getcfg_topgroup(), lb_list[i].top_group)) {
 
-         if (email_notify[i])
-            rsprintf("<input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
-         else
-            rsprintf("<input type=checkbox id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
-         rsprintf("<label for=\"lb%d\">%s</label><br>\n", i, lb_list[i].name);
+         /* check if user has access */
+         if (!isparam("unm") || check_login_user(&lb_list[i], getparam("unm"))) {
+
+            if (email_notify[i])
+               rsprintf("<input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
+            else
+               rsprintf("<input type=checkbox id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
+            rsprintf("<label for=\"lb%d\">%s</label><br>\n", i, lb_list[i].name);
+         }
       }
    }
 
@@ -17997,12 +18034,11 @@ void show_elog_thread(LOGBOOK * lbs, int message_id)
 
 void format_email_text(LOGBOOK * lbs, char *mail_to, int message_id,
                        char attrib[MAX_N_ATTR][NAME_LENGTH], char *mail_param, int old_mail,
-                       char att_file[MAX_ATTACHMENTS][256], char *encoding, char *mail_text)
+                       char att_file[MAX_ATTACHMENTS][256], char *encoding, char *url, char *mail_text)
 {
    int j, k, flags;
-   char str[NAME_LENGTH + 100], str2[256], mail_from[256], subject[256], format[256];
-   char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
-   char url[256], comment[256];
+   char str[NAME_LENGTH + 100], str2[256], mail_from[256], format[256];
+   char comment[256];
    time_t ltime;
    struct tm *pts;
 
@@ -18089,41 +18125,6 @@ void format_email_text(LOGBOOK * lbs, char *mail_to, int message_id,
       }
    }
 
-   /* compose subject from attributes */
-   if (getcfg(lbs->name, "Use Email Subject", subject, sizeof(subject))) {
-      j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-      sprintf(str, "%d", message_id);
-      add_subst_list(slist, svalue, "message id", str, &j);
-      strsubst(subject, sizeof(subject), slist, svalue, j);
-   } else {
-      if (old_mail)
-         strcpy(subject, "Updated ELOG entry");
-      else
-         strcpy(subject, "New ELOG entry");
-   }
-
-   /* try to get URL from referer */
-
-   if (!getcfg("global", "URL", str, sizeof(str))) {
-      if (referer[0])
-         strcpy(str, referer);
-      else {
-         if (elog_tcp_port == 80)
-            sprintf(str, "http://%s/", host_name);
-         else
-            sprintf(str, "http://%s:%d/", host_name, elog_tcp_port);
-         strcat(str, lbs->name);
-         strcat(str, "/");
-      }
-   } else {
-      if (str[strlen(str) - 1] != '/')
-         strlcat(str, "/", sizeof(str));
-      strlcat(str, lbs->name_enc, sizeof(str));
-      strlcat(str, "/", sizeof(str));
-   }
-
-   sprintf(url, "%s%d", str, message_id);
-
    if (flags & 4)
       sprintf(mail_text + strlen(mail_text), "\r\n%s URL         : %s\r\n", loc("Logbook"), url);
 
@@ -18139,12 +18140,11 @@ void format_email_text(LOGBOOK * lbs, char *mail_to, int message_id,
 
 void format_email_html(LOGBOOK * lbs, char *mail_to, int message_id,
                        char attrib[MAX_N_ATTR][NAME_LENGTH], char *mail_param, int old_mail,
-                       char att_file[MAX_ATTACHMENTS][256], char *encoding, char *mail_text)
+                       char att_file[MAX_ATTACHMENTS][256], char *encoding, char *url, char *mail_text)
 {
    int j, k, flags;
-   char str[NAME_LENGTH + 100], str2[256], mail_from[256], subject[256], format[256];
-   char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
-   char url[256], comment[256];
+   char str[NAME_LENGTH + 100], str2[256], mail_from[256], format[256];
+   char comment[256];
    time_t ltime;
    struct tm *pts;
 
@@ -18180,7 +18180,7 @@ void format_email_html(LOGBOOK * lbs, char *mail_to, int message_id,
    sprintf(mail_text + strlen(mail_text), "<table border=\"3\" cellpadding=\"4\">\r\n");
 
    if (flags & 32) {
-      sprintf(mail_text + strlen(mail_text), "<tr><td bgcolor=\"#CCCCFF\">%s URL</td>", loc("Logbook"));
+      sprintf(mail_text + strlen(mail_text), "<tr><td bgcolor=\"#CCCCFF\">%s</td>", loc("Logbook"));
       sprintf(mail_text + strlen(mail_text), "<td bgcolor=\"#DDEEBB\">%s</td></tr>\r\n", lbs->name);
    }
 
@@ -18234,41 +18234,6 @@ void format_email_html(LOGBOOK * lbs, char *mail_to, int message_id,
       }
    }
 
-   /* compose subject from attributes */
-   if (getcfg(lbs->name, "Use Email Subject", subject, sizeof(subject))) {
-      j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-      sprintf(str, "%d", message_id);
-      add_subst_list(slist, svalue, "message id", str, &j);
-      strsubst(subject, sizeof(subject), slist, svalue, j);
-   } else {
-      if (old_mail)
-         strcpy(subject, "Updated ELOG entry");
-      else
-         strcpy(subject, "New ELOG entry");
-   }
-
-   /* try to get URL from referer */
-
-   if (!getcfg("global", "URL", str, sizeof(str))) {
-      if (referer[0])
-         strcpy(str, referer);
-      else {
-         if (elog_tcp_port == 80)
-            sprintf(str, "http://%s/", host_name);
-         else
-            sprintf(str, "http://%s:%d/", host_name, elog_tcp_port);
-         strcat(str, lbs->name);
-         strcat(str, "/");
-      }
-   } else {
-      if (str[strlen(str) - 1] != '/')
-         strlcat(str, "/", sizeof(str));
-      strlcat(str, lbs->name_enc, sizeof(str));
-      strlcat(str, "/", sizeof(str));
-   }
-
-   sprintf(url, "%s%d", str, message_id);
-
    if (flags & 4) {
       sprintf(mail_text + strlen(mail_text),
               "<tr><td bgcolor=\"#CCCCFF\">%s URL</td><td bgcolor=\"#DDEEBB\">", loc("Logbook"));
@@ -18298,14 +18263,33 @@ void format_email_html(LOGBOOK * lbs, char *mail_to, int message_id,
 
 /*------------------------------------------------------------------*/
 
+void format_email_html2(LOGBOOK * lbs, char *mail_to, int message_id,
+                       char attrib[MAX_N_ATTR][NAME_LENGTH], char *mail_param, int old_mail,
+                       char att_file[MAX_ATTACHMENTS][256], char *encoding, char *url, char *mail_text)
+{
+   char str[256], *p;
+
+   sprintf(str, "%d", message_id);
+
+   strlen_retbuf = 0;
+   show_elog_entry(lbs, str, "email");
+   p = strstr(return_buffer, "\r\n\r\n");
+   if (p)
+      strlcpy(mail_text + strlen(mail_text), p+4, TEXT_SIZE + 1000 - strlen(mail_text));
+   strlen_retbuf = 0;
+}
+
+/*------------------------------------------------------------------*/
+
 int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
                   char attrib[MAX_N_ATTR][NAME_LENGTH], char *mail_param, int old_mail,
                   char att_file[MAX_ATTACHMENTS][256], char *encoding)
 {
-   int i, n, flags, status, html = 0;
+   int i, n, flags, status, mail_encoding;
    char str[NAME_LENGTH + 100], mail_from[256], *mail_text, smtp_host[256],
        subject[256], error[256], content_type[256];
    char list[MAX_PARAM][NAME_LENGTH], url[256];
+   char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
 
    if (!getcfg("global", "SMTP host", smtp_host, sizeof(smtp_host))) {
       show_error(loc("No SMTP host defined in [global] section of configuration file"));
@@ -18317,33 +18301,49 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
       flags = atoi(str);
 
    /* get initial HTML flag from message encoding */
+   mail_encoding = 1; // 1:text, 2:short HTML, 4:full HTML
    if (encoding[0] == 'E' || encoding[0] == 'H')
-      html = 1;
+      mail_encoding = 2; 
 
    /* overwrite with config setting */
-   if (getcfg(lbs->name, "Email encoding", str, sizeof(str))) {
-      if (atoi(str) == 1)
-         html = 0;
-      else if (atoi(str) == 2)
-         html = 1;
-   }
+   if (getcfg(lbs->name, "Email encoding", str, sizeof(str)))
+      mail_encoding = atoi(str);
 
    retrieve_email_from(lbs, mail_from, attrib);
+
+   /* compose subject from attributes */
+   if (getcfg(lbs->name, "Use Email Subject", subject, sizeof(subject))) {
+      i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+      sprintf(str, "%d", message_id);
+      add_subst_list(slist, svalue, "message id", str, &i);
+      strsubst(subject, sizeof(subject), slist, svalue, i);
+   } else {
+      if (old_mail)
+         strcpy(subject, "Updated ELOG entry");
+      else
+         strcpy(subject, "New ELOG entry");
+   }
+
+   compose_base_url(lbs, str, sizeof(str));
+   sprintf(url, "%s%d", str, message_id);
 
    mail_text = xmalloc(TEXT_SIZE + 1000);
    mail_text[0] = 0;
 
-   if (html)
-      format_email_html(lbs, mail_to, message_id, attrib, mail_param, old_mail, att_file, encoding,
-                        mail_text);
-   else
+   if (mail_encoding & 1)
       format_email_text(lbs, mail_to, message_id, attrib, mail_param, old_mail, att_file, encoding,
-                        mail_text);
+                        url, mail_text);
+   else if (mail_encoding & 2)
+      format_email_html(lbs, mail_to, message_id, attrib, mail_param, old_mail, att_file, encoding,
+                        url, mail_text);
+   else if (mail_encoding & 4)
+      format_email_html2(lbs, mail_to, message_id, attrib, mail_param, old_mail, att_file, encoding,
+                        url, mail_text);
 
-   if (html)
-      strcpy(content_type, "text/html");
-   else
+   if (mail_encoding & 1)
       strcpy(content_type, "text/plain");
+   else
+      strcpy(content_type, "text/html");
 
    status = 0;
    if (flags & 16) {
@@ -19472,7 +19472,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
        gattr[MAX_N_ATTR][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], *p,
        lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256], class_name[80], class_value[80], fl[8][NAME_LENGTH];
    FILE *f;
-   BOOL first, show_text, display_inline, subtable;
+   BOOL first, show_text, display_inline, subtable, email;
    struct tm *pts;
    struct stat st;
    time_t ltime;
@@ -19480,6 +19480,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    message_id = atoi(dec_path);
    message_error = EL_SUCCESS;
    _current_message_id = message_id;
+   email = strieq(command, "email");
 
    /* check for guest access */
    if (!getcfg(lbs->name, "Guest Menu commands", menu_str, sizeof(menu_str))
@@ -19656,136 +19657,139 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
    /*---- title ----*/
 
-   show_standard_title(lbs->name, "", 0);
+   if (!email)
+      show_standard_title(lbs->name, "", 0);
 
    /*---- menu buttons ----*/
 
-   rsprintf("<tr><td class=\"menuframe\">\n");
-   rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
-   rsprintf("<tr><td class=\"menu1\">\n");
+   if (!email) {
+      rsprintf("<tr><td class=\"menuframe\">\n");
+      rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
+      rsprintf("<tr><td class=\"menu1\">\n");
 
-   n = strbreak(menu_str, menu_item, MAX_N_LIST, ",");
+      n = strbreak(menu_str, menu_item, MAX_N_LIST, ",");
 
-   for (i = 0; i < n; i++) {
-      /* display menu item */
-      strcpy(cmd, menu_item[i]);
+      for (i = 0; i < n; i++) {
+         /* display menu item */
+         strcpy(cmd, menu_item[i]);
 
-      /* only display allowed commands */
-      if (!is_user_allowed(lbs, cmd))
-         continue;
+         /* only display allowed commands */
+         if (!is_user_allowed(lbs, cmd))
+            continue;
 
-      if (strieq(cmd, "Copy to") || strieq(cmd, "Move to")) {
-         rsprintf("&nbsp;<input type=submit name=cmd value=\"%s\">\n", loc(cmd));
-         if (strieq(cmd, "Copy to"))
-            rsprintf("<select name=destc>\n");
-         else
-            rsprintf("<select name=destm>\n");
+         if (strieq(cmd, "Copy to") || strieq(cmd, "Move to")) {
+            rsprintf("&nbsp;<input type=submit name=cmd value=\"%s\">\n", loc(cmd));
+            if (strieq(cmd, "Copy to"))
+               rsprintf("<select name=destc>\n");
+            else
+               rsprintf("<select name=destm>\n");
 
-         if (getcfg(lbs->name, cmd, str, sizeof(str))) {
-            n_log = strbreak(str, lbk_list, MAX_N_LIST, ",");
+            if (getcfg(lbs->name, cmd, str, sizeof(str))) {
+               n_log = strbreak(str, lbk_list, MAX_N_LIST, ",");
 
-            for (j = 0; j < n_log; j++)
-               rsprintf("<option value=\"%s\">%s\n", lbk_list[j], lbk_list[j]);
-         } else {
-            for (j = 0;; j++) {
-               if (!enumgrp(j, str))
-                  break;
+               for (j = 0; j < n_log; j++)
+                  rsprintf("<option value=\"%s\">%s\n", lbk_list[j], lbk_list[j]);
+            } else {
+               for (j = 0;; j++) {
+                  if (!enumgrp(j, str))
+                     break;
 
-               if (!is_logbook(str))
-                  continue;
+                  if (!is_logbook(str))
+                     continue;
 
-               if (strieq(str, lbs->name))
-                  continue;
+                  if (strieq(str, lbs->name))
+                     continue;
 
-               rsprintf("<option value=\"%s\">%s\n", str, str);
+                  rsprintf("<option value=\"%s\">%s\n", str, str);
+               }
             }
+            rsprintf("</select>\n");
+
+            if (i < n - 1)
+               rsprintf("&nbsp|\n");
+         } else {
+            strcpy(str, loc(menu_item[i]));
+            url_encode(str, sizeof(str));
+
+            if (i < n - 1)
+               rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;|\n", message_id, str, loc(menu_item[i]));
+            else
+               rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;\n", message_id, str, loc(menu_item[i]));
          }
-         rsprintf("</select>\n");
-
-         if (i < n - 1)
-            rsprintf("&nbsp|\n");
-      } else {
-         strcpy(str, loc(menu_item[i]));
-         url_encode(str, sizeof(str));
-
-         if (i < n - 1)
-            rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;|\n", message_id, str, loc(menu_item[i]));
-         else
-            rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;\n", message_id, str, loc(menu_item[i]));
-      }
-   }
-
-   rsprintf("</td>\n\n");
-
-   /*---- next/previous buttons ----*/
-
-   if (!getcfg(lbs->name, "Enable browsing", str, sizeof(str)) || atoi(str) == 1) {
-      rsprintf("<td class=\"menu1a\" width=\"10%%\" nowrap align=right>\n");
-
-      /* check if first.png exists, just put link there if not */
-      strlcpy(file_name, resource_dir, sizeof(file_name));
-      if (file_name[0] && file_name[strlen(file_name) - 1] != DIR_SEPARATOR)
-         strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
-      strlcat(file_name, "themes", sizeof(file_name));
-      strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
-      if (theme_name[0]) {
-         strlcat(file_name, theme_name, sizeof(file_name));
-         strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
-      }
-      strlcat(file_name, "first.png", sizeof(file_name));
-      if (stat(file_name, &st) >= 0) {
-         rsprintf("<input type=image name=cmd_first alt=\"%s\" src=\"first.png\">\n", loc("First entry"));
-         rsprintf("<input type=image name=cmd_previous alt=\"%s\" src=\"previous.png\">\n",
-                  loc("Previous entry"));
-         rsprintf("<input type=image name=cmd_next alt=\"%s\" src=\"next.png\">\n", loc("Next entry"));
-         rsprintf("<input type=image name=cmd_last alt=\"%s\" src=\"last.png\">\n", loc("Last entry"));
-      } else {
-         rsprintf("<a href=\"%d?cmd=%s\">|&lt;</a>&nbsp;\n", message_id, loc("First"));
-         rsprintf("<a href=\"%d?cmd=%s\">&lt;</a>&nbsp;\n", message_id, loc("Previous"));
-         rsprintf("<a href=\"%d?cmd=%s\">&gt;</a>&nbsp;\n", message_id, loc("Next"));
-         rsprintf("<a href=\"%d?cmd=%s\">&gt;|</a>&nbsp;\n", message_id, loc("Last"));
       }
 
-      rsprintf("</td></tr>\n");
-   }
+      rsprintf("</td>\n\n");
 
-   rsprintf("</table></td></tr>\n\n");
+      /*---- next/previous buttons ----*/
 
-   /*---- menu text ----*/
+      if (!getcfg(lbs->name, "Enable browsing", str, sizeof(str)) || atoi(str) == 1) {
+         rsprintf("<td class=\"menu1a\" width=\"10%%\" nowrap align=right>\n");
 
-   if (getcfg(lbs->name, "menu text", str, sizeof(str))) {
-      FILE *f;
-      char file_name[256], *buf;
-
-      rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
-
-      /* check if file starts with an absolute directory */
-      if (str[0] == DIR_SEPARATOR || str[1] == ':')
-         strcpy(file_name, str);
-      else {
+         /* check if first.png exists, just put link there if not */
          strlcpy(file_name, resource_dir, sizeof(file_name));
-         strlcat(file_name, str, sizeof(file_name));
+         if (file_name[0] && file_name[strlen(file_name) - 1] != DIR_SEPARATOR)
+            strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+         strlcat(file_name, "themes", sizeof(file_name));
+         strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+         if (theme_name[0]) {
+            strlcat(file_name, theme_name, sizeof(file_name));
+            strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+         }
+         strlcat(file_name, "first.png", sizeof(file_name));
+         if (stat(file_name, &st) >= 0) {
+            rsprintf("<input type=image name=cmd_first alt=\"%s\" src=\"first.png\">\n", loc("First entry"));
+            rsprintf("<input type=image name=cmd_previous alt=\"%s\" src=\"previous.png\">\n",
+                     loc("Previous entry"));
+            rsprintf("<input type=image name=cmd_next alt=\"%s\" src=\"next.png\">\n", loc("Next entry"));
+            rsprintf("<input type=image name=cmd_last alt=\"%s\" src=\"last.png\">\n", loc("Last entry"));
+         } else {
+            rsprintf("<a href=\"%d?cmd=%s\">|&lt;</a>&nbsp;\n", message_id, loc("First"));
+            rsprintf("<a href=\"%d?cmd=%s\">&lt;</a>&nbsp;\n", message_id, loc("Previous"));
+            rsprintf("<a href=\"%d?cmd=%s\">&gt;</a>&nbsp;\n", message_id, loc("Next"));
+            rsprintf("<a href=\"%d?cmd=%s\">&gt;|</a>&nbsp;\n", message_id, loc("Last"));
+         }
+
+         rsprintf("</td></tr>\n");
       }
 
-      f = fopen(file_name, "rb");
-      if (f != NULL) {
-         fseek(f, 0, SEEK_END);
-         size = TELL(fileno(f));
-         fseek(f, 0, SEEK_SET);
+      rsprintf("</table></td></tr>\n\n");
 
-         buf = xmalloc(size + 1);
-         fread(buf, 1, size, f);
-         buf[size] = 0;
-         fclose(f);
+      /*---- menu text ----*/
+
+      if (getcfg(lbs->name, "menu text", str, sizeof(str))) {
+         FILE *f;
+         char file_name[256], *buf;
+
+         rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
+
+         /* check if file starts with an absolute directory */
+         if (str[0] == DIR_SEPARATOR || str[1] == ':')
+            strcpy(file_name, str);
+         else {
+            strlcpy(file_name, resource_dir, sizeof(file_name));
+            strlcat(file_name, str, sizeof(file_name));
+         }
+
+         f = fopen(file_name, "rb");
+         if (f != NULL) {
+            fseek(f, 0, SEEK_END);
+            size = TELL(fileno(f));
+            fseek(f, 0, SEEK_SET);
+
+            buf = xmalloc(size + 1);
+            fread(buf, 1, size, f);
+            buf[size] = 0;
+            fclose(f);
 
 
-         rsputs(buf);
+            rsputs(buf);
 
-      } else
-         rsprintf("<center><b>Error: file <i>\"%s\"</i> not found</b></center>", file_name);
+         } else
+            rsprintf("<center><b>Error: file <i>\"%s\"</i> not found</b></center>", file_name);
 
-      rsprintf("</span></td></tr>");
-   }
+         rsprintf("</span></td></tr>");
+      }
+   } // if (!email)
 
    /*---- message ----*/
 
@@ -19870,6 +19874,12 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
       } else
          sprintf(display, "%d", message_id);
+
+      if (email) {
+         compose_base_url(lbs, str, sizeof(str));
+         sprintf(str+strlen(str), "%d", message_id);
+         rsprintf("ELOG: <a href=\"%s\"><b>%s</b></a>&nbsp;&nbsp;", str, lbs->name);
+      }
 
       rsprintf("%s:&nbsp;<b>%s</b>\n", loc("Message ID"), display);
 
@@ -20333,7 +20343,9 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    rsprintf("\r\n</table><!-- show_standard_title -->\r\n");
 
    show_bottom_text(lbs);
-   rsprintf("</form></body></html>\r\n");
+   if (!email)
+      rsprintf("</form>\n");
+   rsprintf("</body></html>\r\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -20818,9 +20830,14 @@ BOOL enum_user_line(LOGBOOK * lbs, int n, char *user, int size)
 
 BOOL check_login_user(LOGBOOK * lbs, char *user)
 {
-   int i, n;
+   int i, n, status;
    char str[1000];
    char list[MAX_N_LIST][NAME_LENGTH];
+
+   /* check if usr is in password file */
+   status = get_user_line(lbs, user, NULL, NULL, NULL, NULL, NULL);
+   if (status == 2)
+      return FALSE;
 
    /* treat admin user as login user */
    if (getcfg(lbs->name, "Admin user", str, sizeof(str)) && user[0]) {
@@ -21039,7 +21056,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
          setparam("redir", str);
 
          /* remove remaining cookies */
-         set_login_cookies(lbs, "", "");
+         remove_all_login_cookies(lbs);
       } else {
          getcfg(lbs->name, "Password file", full_name, sizeof(full_name));
          sprintf(str, loc("Cannot open file <b>%s</b>"), full_name);
