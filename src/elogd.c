@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.688  2005/07/04 20:43:39  ritt
+   'Show all entries' keeps parameters from original search
+
    Revision 1.687  2005/07/04 20:17:25  ritt
    Put absolute link for CSS
 
@@ -15746,7 +15749,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 
 /*------------------------------------------------------------------*/
 
-void build_ref(char *ref, int size, char *mode, char *expand)
+void build_ref(char *ref, int size, char *mode, char *expand, char *new_entries)
 {
    char str[1000];
 
@@ -15764,6 +15767,10 @@ void build_ref(char *ref, int size, char *mode, char *expand)
    /* eliminate old expand if new one is present */
    if (expand[0])
       subst_param(ref, size, "expand", expand);
+
+   /* eliminate old new_entries if new one is present */
+   if (new_entries[0])
+      subst_param(ref, size, "new_entries", new_entries);
 
    /* eliminate old last= */
    subst_param(ref, size, "last", getparam("last"));
@@ -15793,7 +15800,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
             sprintf(ref, "page%d", page_n);
          else
             ref[0] = 0;
-         build_ref(ref, sizeof(ref), "full", "");
+         build_ref(ref, sizeof(ref), "full", "", "");
          rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;|", ref, loc("Full"));
       }
 
@@ -15801,14 +15808,14 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
          sprintf(ref, "page%d", page_n);
       else
          ref[0] = 0;
-      build_ref(ref, sizeof(ref), "summary", "");
+      build_ref(ref, sizeof(ref), "summary", "", "");
       rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;|", ref, loc("Summary"));
 
       if (page_n != 1)
          sprintf(ref, "page%d", page_n);
       else
          ref[0] = 0;
-      build_ref(ref, sizeof(ref), "threaded", "");
+      build_ref(ref, sizeof(ref), "threaded", "", "");
       rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;", ref, loc("Threaded"));
 
       if (threaded) {
@@ -15825,7 +15832,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
 
          if (cur_exp > 0) {
             sprintf(str, "%d", cur_exp > 0 ? cur_exp - 1 : 0);
-            build_ref(ref, sizeof(ref), "", str);
+            build_ref(ref, sizeof(ref), "", str, "");
             rsprintf("|&nbsp;<a href=\"%s\">%s</a>&nbsp;", ref, loc("Collapse"));
          } else
             rsprintf("|&nbsp;%s&nbsp;", loc("Collapse"));
@@ -15836,7 +15843,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
             else
                ref[0] = 0;
             sprintf(str, "%d", cur_exp < 3 ? cur_exp + 1 : 3);
-            build_ref(ref, sizeof(ref), "", str);
+            build_ref(ref, sizeof(ref), "", str, "");
             rsprintf("|&nbsp;<a href=\"%s\">%s</a>&nbsp;", ref, loc("Expand"));
          } else
             rsprintf("|&nbsp;%s&nbsp;", loc("Expand"));
@@ -15847,10 +15854,14 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
 
    rsprintf("<td class=\"menu2b\">\n");
 
-   if (!isparam("new_entries"))
-      rsprintf("<a href=\"?new_entries=1\">%s</a>&nbsp;&nbsp;", loc("Show only new entries"));
-   else
-      rsprintf("<a href=\".\">%s</a>&nbsp;&nbsp;", loc("Show all entries"));
+   ref[0] = 0;
+   if (!isparam("new_entries") || atoi(getparam("new_entries")) == 0) {
+      build_ref(ref, sizeof(ref), "", "", "1");
+      rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;", ref, loc("Show only new entries"));
+   } else {
+      build_ref(ref, sizeof(ref), "", "", "0");
+      rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;", ref, loc("Show all entries"));
+   }
 
    if (getcfg(lbs->name, "Quick filter", str, sizeof(str))) {
 
@@ -15987,7 +15998,7 @@ void show_page_navigation(int n_msg, int page_n, int n_page)
 
    if (page_n > 1) {
       sprintf(ref, "page%d", page_n - 1);
-      build_ref(ref, sizeof(ref), "", "");
+      build_ref(ref, sizeof(ref), "", "", "");
 
       rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;", ref, loc("Previous"));
    }
@@ -15999,7 +16010,7 @@ void show_page_navigation(int n_msg, int page_n, int n_page)
 
       for (i = 1; i <= num_pages; i++) {
          sprintf(ref, "page%d", i);
-         build_ref(ref, sizeof(ref), "", "");
+         build_ref(ref, sizeof(ref), "", "", "");
 
          if (i <= 3 || (i >= page_n - 1 && i <= page_n + 1)
              || i >= num_pages - 2) {
@@ -16035,14 +16046,14 @@ void show_page_navigation(int n_msg, int page_n, int n_page)
 
    if (page_n != -1 && n_page < n_msg && page_n * n_page < n_msg) {
       sprintf(ref, "page%d", page_n + 1);
-      build_ref(ref, sizeof(ref), "", "");
+      build_ref(ref, sizeof(ref), "", "", "");
 
       rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;", ref, loc("Next"));
    }
 
    if (page_n != -1 && n_page < n_msg) {
       sprintf(ref, "page");
-      build_ref(ref, sizeof(ref), "", "");
+      build_ref(ref, sizeof(ref), "", "", "");
 
       rsprintf("<a href=\"%s\">%s</a>\n", ref, loc("All"));
    }
@@ -17397,7 +17408,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
          }
       }
 
-      if (isparam("new_entries")) {
+      if (isparam("new_entries") && atoi(getparam("new_entries")) == 1) {
          rsprintf("<tr><td class=\"listframe\">\n");
          rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
          rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("New entries since"));
