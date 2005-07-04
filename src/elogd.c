@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.689  2005/07/04 20:50:41  ritt
+   Replaced <nowrap>
+
    Revision 1.688  2005/07/04 20:43:39  ritt
    'Show all entries' keeps parameters from original search
 
@@ -9623,21 +9626,21 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                } else if (attr_flags[index] & AF_MULTI) {
 
                   /* display multiple check boxes */
-                  rsprintf("<td%s class=\"attribvalue\">\n", title);
+                  rsprintf("<td%s nowrap class=\"attribvalue\">\n", title);
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      sprintf(str, "%s_%d", ua, i);
 
                      if (strstr(attrib[index], attr_options[index][i]))
                         rsprintf
-                            ("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
+                            ("<input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
                              str, str, attr_options[index][i]);
                      else
                         rsprintf
-                            ("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
+                            ("<input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
                              str, str, attr_options[index][i]);
 
-                     rsprintf("<label for=\"%s\">%s</label></nobr>\n", str, attr_options[index][i]);
+                     rsprintf("<label for=\"%s\">%s</label>\n", str, attr_options[index][i]);
 
                      if (format_flags[index] & AFF_MULTI_LINE)
                         rsprintf("<br>");
