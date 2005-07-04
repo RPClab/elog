@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.691  2005/07/04 21:12:58  ritt
+   Put separate table around icons
+
    Revision 1.690  2005/07/04 21:03:24  ritt
    Replaced more <nowrap>
 
@@ -9660,24 +9663,27 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                } else if (attr_flags[index] & AF_RADIO) {
                   /* display radio buttons */
-                  rsprintf("<td%s nowrap class=\"attribvalue\">\n", title);
+                  rsprintf("<td%s class=\"attribvalue\">\n", title);
+                  rsprintf("<table cellpadding=0 cellspacing=0><tr>\n");
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      if (strstr(attrib[index], attr_options[index][i]))
                         rsprintf
-                            ("<input type=radio id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
+                            ("<td nowrap><input type=radio id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
                              attr_options[index][i], ua, attr_options[index][i]);
                      else
                         rsprintf
-                            ("<input type=radio id=\"%s\" name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
+                            ("<td nowrap><input type=radio id=\"%s\" name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
                              attr_options[index][i], ua, attr_options[index][i]);
 
                      rsprintf("<label for=\"%s\">%s</label>\n",
                               attr_options[index][i], attr_options[index][i]);
 
+                     rsprintf("</td>\n");
                      if (format_flags[index] & AFF_MULTI_LINE)
                         rsprintf("<br>");
                   }
+                  rsprintf("</tr></table>\n");
 
                   if (attr_flags[index] & AF_EXTENDABLE) {
                      sprintf(str, loc("Add %s"), attr_list[index]);
@@ -9691,15 +9697,16 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                } else if (attr_flags[index] & AF_ICON) {
                   /* display icons */
                   rsprintf("<td%s nowrap class=\"attribvalue\">\n", title);
+                  rsprintf("<table cellpadding=0 cellspacing=0><tr>\n");
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      if (strstr(attrib[index], attr_options[index][i]))
                         rsprintf
-                            ("<input type=radio checked name=\"%s\" value=\"%s\" onChange=\"mod();\">",
+                            ("<td nowrap><input type=radio checked name=\"%s\" value=\"%s\" onChange=\"mod();\">",
                              ua, attr_options[index][i]);
                      else
                         rsprintf
-                            ("<input type=radio name=\"%s\" value=\"%s\" onChange=\"mod();\">",
+                            ("<td nowrap><input type=radio name=\"%s\" value=\"%s\" onChange=\"mod();\">",
                              ua, attr_options[index][i]);
 
                      sprintf(str, "Icon comment %s", attr_options[index][i]);
@@ -9712,11 +9719,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         rsprintf("<img src=\"icons/%s\" alt=\"%s\">\n",
                                  attr_options[index][i], attr_options[index][i]);
 
+                     rsprintf("</td>\n");
                      if (format_flags[index] & AFF_MULTI_LINE)
                         rsprintf("<br>");
                   }
 
-                  rsprintf("</td>\n");
+                  rsprintf("</table></td>\n");
 
                } else {
 
