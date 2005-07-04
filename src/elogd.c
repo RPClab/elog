@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.690  2005/07/04 21:03:24  ritt
+   Replaced more <nowrap>
+
    Revision 1.689  2005/07/04 20:50:41  ritt
    Replaced <nowrap>
 
@@ -9657,19 +9660,19 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                } else if (attr_flags[index] & AF_RADIO) {
                   /* display radio buttons */
-                  rsprintf("<td%s class=\"attribvalue\">\n", title);
+                  rsprintf("<td%s nowrap class=\"attribvalue\">\n", title);
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      if (strstr(attrib[index], attr_options[index][i]))
                         rsprintf
-                            ("<nobr><input type=radio id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
+                            ("<input type=radio id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
                              attr_options[index][i], ua, attr_options[index][i]);
                      else
                         rsprintf
-                            ("<nobr><input type=radio id=\"%s\" name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
+                            ("<input type=radio id=\"%s\" name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
                              attr_options[index][i], ua, attr_options[index][i]);
 
-                     rsprintf("<label for=\"%s\">%s</label></nobr>\n",
+                     rsprintf("<label for=\"%s\">%s</label>\n",
                               attr_options[index][i], attr_options[index][i]);
 
                      if (format_flags[index] & AFF_MULTI_LINE)
@@ -9687,26 +9690,26 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                } else if (attr_flags[index] & AF_ICON) {
                   /* display icons */
-                  rsprintf("<td%s class=\"attribvalue\">\n", title);
+                  rsprintf("<td%s nowrap class=\"attribvalue\">\n", title);
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      if (strstr(attrib[index], attr_options[index][i]))
                         rsprintf
-                            ("<nobr><input type=radio checked name=\"%s\" value=\"%s\" onChange=\"mod();\">",
+                            ("<input type=radio checked name=\"%s\" value=\"%s\" onChange=\"mod();\">",
                              ua, attr_options[index][i]);
                      else
                         rsprintf
-                            ("<nobr><input type=radio name=\"%s\" value=\"%s\" onChange=\"mod();\">",
+                            ("<input type=radio name=\"%s\" value=\"%s\" onChange=\"mod();\">",
                              ua, attr_options[index][i]);
 
                      sprintf(str, "Icon comment %s", attr_options[index][i]);
                      getcfg(lbs->name, str, comment, sizeof(comment));
 
                      if (comment[0])
-                        rsprintf("<img src=\"icons/%s\" alt=\"%s\"></nobr>\n",
+                        rsprintf("<img src=\"icons/%s\" alt=\"%s\">\n",
                                  attr_options[index][i], comment);
                      else
-                        rsprintf("<img src=\"icons/%s\" alt=\"%s\"></nobr>\n",
+                        rsprintf("<img src=\"icons/%s\" alt=\"%s\">\n",
                                  attr_options[index][i], attr_options[index][i]);
 
                      if (format_flags[index] & AFF_MULTI_LINE)
@@ -18046,9 +18049,8 @@ void show_elog_thread(LOGBOOK * lbs, int message_id)
 
 /*------------------------------------------------------------------*/
 
-void format_email_text(LOGBOOK * lbs, char *mail_to, int message_id,
-                       char attrib[MAX_N_ATTR][NAME_LENGTH], char *mail_param, int old_mail,
-                       char att_file[MAX_ATTACHMENTS][256], char *encoding, char *url, char *mail_text)
+void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], int old_mail,
+                       char *url, char *mail_text)
 {
    int j, k, flags;
    char str[NAME_LENGTH + 100], str2[256], mail_from[256], format[256];
@@ -18152,9 +18154,8 @@ void format_email_text(LOGBOOK * lbs, char *mail_to, int message_id,
 
 /*------------------------------------------------------------------*/
 
-void format_email_html(LOGBOOK * lbs, char *mail_to, int message_id,
-                       char attrib[MAX_N_ATTR][NAME_LENGTH], char *mail_param, int old_mail,
-                       char att_file[MAX_ATTACHMENTS][256], char *encoding, char *url, char *mail_text)
+void format_email_html(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], int old_mail,
+                       char *encoding, char *url, char *mail_text)
 {
    int j, k, flags;
    char str[NAME_LENGTH + 100], str2[256], mail_from[256], format[256];
@@ -18277,9 +18278,7 @@ void format_email_html(LOGBOOK * lbs, char *mail_to, int message_id,
 
 /*------------------------------------------------------------------*/
 
-void format_email_html2(LOGBOOK * lbs, char *mail_to, int message_id,
-                       char attrib[MAX_N_ATTR][NAME_LENGTH], char *mail_param, int old_mail,
-                       char att_file[MAX_ATTACHMENTS][256], char *encoding, char *url, char *mail_text)
+void format_email_html2(LOGBOOK * lbs, int message_id, int old_mail, char *mail_text)
 {
    char str[256], *p;
 
@@ -18345,14 +18344,11 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
    mail_text[0] = 0;
 
    if (mail_encoding & 1)
-      format_email_text(lbs, mail_to, message_id, attrib, mail_param, old_mail, att_file, encoding,
-                        url, mail_text);
+      format_email_text(lbs, attrib, old_mail, url, mail_text);
    else if (mail_encoding & 2)
-      format_email_html(lbs, mail_to, message_id, attrib, mail_param, old_mail, att_file, encoding,
-                        url, mail_text);
+      format_email_html(lbs, attrib, old_mail, encoding, url, mail_text);
    else if (mail_encoding & 4)
-      format_email_html2(lbs, mail_to, message_id, attrib, mail_param, old_mail, att_file, encoding,
-                        url, mail_text);
+      format_email_html2(lbs, message_id, old_mail, mail_text);
 
    if (mail_encoding & 1)
       strcpy(content_type, "text/plain");
