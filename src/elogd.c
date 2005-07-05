@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.695  2005/07/05 20:28:58  ritt
+   Converted links to absolute URLs for threads
+
    Revision 1.694  2005/07/05 20:00:43  ritt
    Removed wrong '&'
 
@@ -6280,11 +6283,11 @@ PATTERN_LIST pattern_list[] = {
 
    /* quote */
    {"[quote=",
-    "<table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><br /><tr><td class=\"quote\">"},
+    "<table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
    {"[quote]",
-    "<table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><br /><tr><td class=\"quote\">"},
-   {"[/quote]\r", "</td></tr></table><p />"},
-   {"[/quote]", "</td></tr></table><p />"},
+    "<table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
+   {"[/quote]\r", "</td></tr></table>"},
+   {"[/quote]", "</td></tr></table>"},
 
    {"", ""}
 };
@@ -14849,7 +14852,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    svalue = xmalloc((MAX_N_ATTR + 10) * NAME_LENGTH);
 
    _current_message_id = message_id;
-   sprintf(ref, "../%s/%d", lbs->name_enc, message_id);
+   compose_base_url(NULL, ref, sizeof(ref));
+   sprintf(ref+strlen(ref), "%s/%d", lbs->name_enc, message_id);
 
    if (strieq(mode, "Summary")) {
       if (number % 2 == 1)
@@ -18127,9 +18131,9 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], int 
 
       } else {
          if (old_mail)
-            sprintf(mail_text + strlen(mail_text), loc("A old entry has been updated on %s"), host_name);
+            sprintf(mail_text + strlen(mail_text), loc("A old ELOG entry has been updated"));
          else
-            sprintf(mail_text + strlen(mail_text), loc("A new entry has been submitted on %s"), host_name);
+            sprintf(mail_text + strlen(mail_text), loc("A new ELOG entry has been submitted"));
          strcat(mail_text, ":");
       }
 
@@ -18337,7 +18341,10 @@ void format_email_html2(LOGBOOK * lbs, int message_id, int old_mail, char *mail_
    sprintf(str, "%d", message_id);
 
    strlen_retbuf = 0;
-   show_elog_entry(lbs, str, "email");
+   if (old_mail)
+      show_elog_entry(lbs, str, "oldemail");
+   else
+      show_elog_entry(lbs, str, "email");
    p = strstr(return_buffer, "\r\n\r\n");
    if (p)
       strlcpy(mail_text + strlen(mail_text), p+4, TEXT_SIZE + 1000 - strlen(mail_text));
@@ -19542,7 +19549,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    message_id = atoi(dec_path);
    message_error = EL_SUCCESS;
    _current_message_id = message_id;
-   email = strieq(command, "email");
+   email = strieq(command, "email") || strieq(command, "oldemail");
 
    /* check for guest access */
    if (!getcfg(lbs->name, "Guest Menu commands", menu_str, sizeof(menu_str))
@@ -19906,6 +19913,15 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       }
 
       /*---- display message ID ----*/
+
+      if (email) {
+         rsprintf("<tr><td class=\"title1\">\n");
+         if (strieq(command, "oldemail"))
+            rsprintf("%s:", loc("A old ELOG entry has been updated"));
+         else
+            rsprintf("%s:", loc("A new ELOG entry has been submitted"));
+         rsprintf("</td></tr>\n");
+      }
 
       if (locked_by && locked_by[0]) {
          sprintf(str, "%s %s", loc("Entry is currently edited by"), locked_by);
