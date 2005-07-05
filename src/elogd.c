@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.697  2005/07/05 20:49:22  ritt
+   Made reply_to links absolute
+
    Revision 1.696  2005/07/05 20:39:16  ritt
    Fixed <br> for quotes
 
@@ -19959,10 +19962,10 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       if (email) {
          compose_base_url(lbs, str, sizeof(str));
          sprintf(str+strlen(str), "%d", message_id);
-         rsprintf("ELOG: <a href=\"%s\"><b>%s</b></a>&nbsp;&nbsp;", str, lbs->name);
-      }
-
-      rsprintf("%s:&nbsp;<b>%s</b>\n", loc("Message ID"), display);
+         rsprintf("%s:&nbsp;<b>%s</b>&nbsp;&nbsp;", loc("Logbook"), lbs->name);
+         rsprintf("%s:&nbsp;<a href=\"%s\"><b>%d</b></a>", loc("Message ID"), str, message_id);
+      } else
+        rsprintf("%s:&nbsp;<b>%s</b>\n", loc("Message ID"), display);
 
       /*---- display date ----*/
 
@@ -19980,7 +19983,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       if (message_error != EL_FILE_ERROR && (reply_tag[0] || orig_tag[0])) {
 
          if (orig_tag[0]) {
-            sprintf(ref, "%s", orig_tag);
+            compose_base_url(lbs, ref, sizeof(ref));
+            sprintf(ref+strlen(ref), "%s", orig_tag);
             rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;%s:&nbsp;", loc("In reply to"));
             rsprintf("<b><a href=\"%s\">%s</a></b>\n", ref, orig_tag);
          }
@@ -19989,7 +19993,9 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
             p = strtok(reply_tag, ",");
             do {
-               rsprintf("<a href=\"%s\">%s</a>\n", p, p);
+               compose_base_url(lbs, ref, sizeof(ref));
+               sprintf(ref+strlen(ref), "%s", p);
+               rsprintf("<a href=\"%s\">%s</a>\n", ref, p);
 
                p = strtok(NULL, ",");
 
