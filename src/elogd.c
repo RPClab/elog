@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.692  2005/07/05 09:45:41  ritt
+   Fixed bug with new_entries cut
+
    Revision 1.691  2005/07/04 21:12:58  ritt
    Put separate table around icons
 
@@ -16728,7 +16731,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
    /*---- apply last login cut ----*/
 
-   if (isparam("new_entries") && isparam("unm"))
+   if (isparam("new_entries") && atoi(getparam("new_entries")) == 1 && isparam("unm"))
       get_user_line(lbs, getparam("unm"), NULL, NULL, NULL, NULL, &ltime_start);
 
    /*---- assemble message list ----*/
