@@ -163,6 +163,7 @@ td {
 /* logbook title, left, middle and right cell */
 
 .title1 {
+  padding:5px;
   background-color:#486090;
   border-bottom:1px solid black;
   border-top:1px solid #E0E0E0;
