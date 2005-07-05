@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.696  2005/07/05 20:39:16  ritt
+   Fixed <br> for quotes
+
    Revision 1.695  2005/07/05 20:28:58  ritt
    Converted links to absolute URLs for threads
 
@@ -6283,10 +6286,10 @@ PATTERN_LIST pattern_list[] = {
 
    /* quote */
    {"[quote=",
-    "<table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
+    "<br /><table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
    {"[quote]",
-    "<table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
-   {"[/quote]\r", "</td></tr></table>"},
+    "<br /><table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
+   {"[/quote]\r", "</td></tr></table><br />"},
    {"[/quote]", "</td></tr></table>"},
 
    {"", ""}
