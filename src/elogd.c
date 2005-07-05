@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.694  2005/07/05 20:00:43  ritt
+   Removed wrong '&'
+
    Revision 1.693  2005/07/05 19:06:27  ritt
    Use <tr> for AF_MULTI_LINE
 
@@ -1603,6 +1606,7 @@ int load_password_files();
 void compose_base_url(LOGBOOK * lbs, char *base_url, int size);
 void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command);
 char *loc(char *orig);
+void strencode(char *text);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -6477,12 +6481,13 @@ void rsputs_elcode(LOGBOOK * lbs, const char *str)
 
                   /* change /x to id/x for images */
                   if (strnieq(attrib, "elog:/", 6)) {
+                     compose_base_url(lbs, hattrib, sizeof(hattrib));
                      if (_current_message_id == 0) {
                         sprintf(param, "attachment%d", atoi(attrib + 6)-1);
                         if (isparam(param))
-                           strcpy(hattrib, getparam(param));
+                           strlcat(hattrib, getparam(param), sizeof(hattrib));
                      } else
-                       sprintf(hattrib, "%d%s", _current_message_id, attrib + 5);
+                       sprintf(hattrib+strlen(hattrib), "%d%s", _current_message_id, attrib + 5);
                   }
 
                   /* add http:// if missing */
@@ -7703,7 +7708,10 @@ void show_standard_title(char *logbook, char *text, int printable)
    if (!getcfg(logbook, "Comment", str, sizeof(str)))
       strcpy(str, logbook);
 
-   rsprintf("&nbsp;&nbsp;%s%s&nbsp;</td>\n", str, text);
+   rsprintf("&nbsp;&nbsp;");
+   rsputs3(str);
+   rsputs3(text);
+   rsprintf("&nbsp;</td>\n");
 
    /* middle cell */
    if (*getparam("full_name"))
@@ -11550,7 +11558,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
                      for (i = 0; lb_list[i].name[0]; i++) {
                         sprintf(str, "sub_lb%d", i);
                         if (isparam(str) && atoi(getparam(str)) == 1)
-                           sprintf(mail_text + strlen(mail_text), "&%s=1", str);
+                           sprintf(mail_text + strlen(mail_text), "&amp;%s=1", str);
                      }
 
                      sprintf(mail_text + strlen(mail_text), "&encpwd=%s&unm=%s\r\n", enc_pwd, pl);
@@ -14831,7 +14839,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    char str[NAME_LENGTH], ref[256], thumb_name[256], *nowrap, sclass[80], format[256],
        file_name[MAX_PATH_LENGTH], *slist, *svalue;
    char display[NAME_LENGTH], attr_icon[80];
-   int i, j, i_line, index, colspan;
+   int i, j, i_line, index, colspan, n_attachments;
    BOOL skip_comma;
    FILE *f;
    struct tm *pts;
@@ -14840,6 +14848,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    slist = xmalloc((MAX_N_ATTR + 10) * NAME_LENGTH);
    svalue = xmalloc((MAX_N_ATTR + 10) * NAME_LENGTH);
 
+   _current_message_id = message_id;
    sprintf(ref, "../%s/%d", lbs->name_enc, message_id);
 
    if (strieq(mode, "Summary")) {
@@ -15294,7 +15303,22 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          rsprintf("</td></tr>\n");
       }
 
-      if (!show_attachments && attachment[0][0]) {
+      /* count number of attachments */
+      n_attachments = 0;
+      if (show_attachments) {
+         for (index = 0; index < MAX_ATTACHMENTS; index++) {
+            if (attachment[index][0]) {
+               /* check if attachment is inlined */
+               sprintf(str, "[img]elog:/%d[/img]", index + 1);
+               if (strieq(encoding, "ELCode") && stristr(text, str))
+                  continue;
+
+               n_attachments++;
+            }
+         }
+      }
+
+      if (n_attachments) {
          rsprintf("<tr><td class=\"messagelist\" colspan=%d>", colspan);
 
          if (attachment[1][0])
@@ -15304,7 +15328,13 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       }
 
       for (index = 0; index < MAX_ATTACHMENTS; index++) {
-         if (attachment[index][0]) {
+         if (show_attachments && attachment[index][0]) {
+
+            /* check if attachment is inlined */
+            sprintf(str, "[img]elog:/%d[/img]", index + 1);
+            if (strieq(encoding, "ELCode") && stristr(text, str))
+               continue;
+
             strcpy(str, attachment[index]);
             str[13] = 0;
             sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[index] + 14);
@@ -15380,7 +15410,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          }
       }
 
-      if (!show_attachments && attachment[0][0])
+      if (n_attachments)
          rsprintf("</td></tr>\n");
    }
 
@@ -17287,7 +17317,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
          /* store current command line as hidden parameter for page navigation */
          if (str[0] && !strieq(str, "?")) {
-            rsprintf("<input type=hidden name=lastcmd value=\"%s\">\n", str);
+            rsprintf("<input type=hidden name=lastcmd value=\"");
+            rsputs3(str);
+            rsprintf("\">\n", str);
          }
 
          if (!getcfg(lbs->name, "Guest Find menu commands", menu_str, sizeof(menu_str))
@@ -17346,7 +17378,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                      else
                         strcat(str, "?select=1");
                   }
-                  rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;|\n", str, loc("Select"));
+                  rsprintf("&nbsp;<a href=\"");
+                  rsputs3(str);
+                  rsprintf("\">%s</a>&nbsp;|\n", loc("Select"));
                } else {
                   strcpy(str, loc(menu_item[i]));
                   url_encode(str, sizeof(str));
@@ -17728,8 +17762,11 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
             if (strieq(disp_attr[i], "Edit") || strieq(disp_attr[i], "Delete"))
                rsprintf("<th class=\"listtitle\">%s</th>\n", disp_attr[i]);
-            else
-               rsprintf("<th class=\"listtitle\"><a href=\"%s\">%s</a>%s</th>\n", ref, disp_attr[i], img);
+            else {
+               rsprintf("<th class=\"listtitle\"><a href=\"");
+               rsputs3(ref);
+               rsprintf("\">%s</a>%s</th>\n", disp_attr[i], img);
+            }
          }
 
          if (!strieq(mode, "Full") && n_line > 0 && show_text)
@@ -19616,7 +19653,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                if (strchr(str, '?') == NULL)
                   sprintf(str + strlen(str), "?%s=1", lattr);
                else
-                  sprintf(str + strlen(str), "&%s=1", lattr);
+                  sprintf(str + strlen(str), "&amp;%s=1", lattr);
             }
          }
 
@@ -20265,7 +20302,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                         if (att_hide[i] && i != index) {
                            rsprintf("%d,", i);
                         }
-                     rsprintf("&show=%d", index);
+                     rsprintf("&amp;show=%d", index);
                      rsprintf("\">%s</a>", loc("Show"));
                   } else {
                      rsprintf("<a href=\"%d?hide=", message_id);
