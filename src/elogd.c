@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.693  2005/07/05 19:06:27  ritt
+   Use <tr> for AF_MULTI_LINE
+
    Revision 1.692  2005/07/05 09:45:41  ritt
    Fixed bug with new_entries cut
 
@@ -7284,10 +7287,10 @@ void show_standard_header(LOGBOOK * lbs, BOOL expires, char *title, char *path, 
 
    show_top_text(lbs);
 
-   if (path)
+   if (path && path[0])
       rsprintf("<form name=form1 method=\"GET\" action=\"%s\">\n\n", path);
    else
-      rsprintf("<form name=form1 method=\"GET\" action=\"\">\n\n");
+      rsprintf("<form name=form1 method=\"GET\" action=\".\">\n\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -9723,11 +9726,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                                  attr_options[index][i], attr_options[index][i]);
 
                      rsprintf("</td>\n");
-                     if (format_flags[index] & AFF_MULTI_LINE)
-                        rsprintf("<br>");
+                     if ((format_flags[index] & AFF_MULTI_LINE) && attr_options[index][i+1][0]) {
+                        rsprintf("</tr><tr>\n");
+                     }
                   }
 
-                  rsprintf("</table></td>\n");
+                  rsprintf("</tr></table></td>\n");
 
                } else {
 
