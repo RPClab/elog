@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.699  2005/07/07 19:47:11  ritt
+   Tooltips only for logbooks, not groups
+
    Revision 1.698  2005/07/07 18:24:13  ritt
    Added tooltip to logbook selection bar
 
@@ -7651,15 +7654,16 @@ void show_standard_title(char *logbook, char *text, int printable)
             strlcpy(str, pnode->member[i]->name, sizeof(str));
 
             /* build reference to first logbook in group */
-            if (pnode->member[i]->member == NULL)
+            comment[0] = 0;
+            if (pnode->member[i]->member == NULL) {
+               getcfg(ref, "Comment", comment, sizeof(comment));
                strlcpy(ref, str, sizeof(ref));  // current node is logbook
-            else {
+            } else {
                flb = pnode->member[i]->member[0];       // current node is group
                while (flb->member)      // so traverse hierarchy
                   flb = flb->member[0];
                strlcpy(ref, flb->name, sizeof(ref));
             }
-            getcfg(ref, "Comment", comment, sizeof(comment));
             url_encode(ref, sizeof(ref));
 
             if (is_logbook_in_group(pnode->member[i], logbook)) {
