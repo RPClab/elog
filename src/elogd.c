@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.698  2005/07/07 18:24:13  ritt
+   Added tooltip to logbook selection bar
+
    Revision 1.697  2005/07/05 20:49:22  ritt
    Made reply_to links absolute
 
@@ -7607,7 +7610,7 @@ void add_logbook_to_group(LOGBOOK * lbs, char *new_name)
 
 void show_standard_title(char *logbook, char *text, int printable)
 {
-   char str[256], ref[256], sclass[32];
+   char str[256], ref[256], sclass[32], comment[256];
    int i, j, level;
    LBLIST phier, pnode, pnext, flb;
 
@@ -7656,6 +7659,7 @@ void show_standard_title(char *logbook, char *text, int printable)
                   flb = flb->member[0];
                strlcpy(ref, flb->name, sizeof(ref));
             }
+            getcfg(ref, "Comment", comment, sizeof(comment));
             url_encode(ref, sizeof(ref));
 
             if (is_logbook_in_group(pnode->member[i], logbook)) {
@@ -7680,7 +7684,14 @@ void show_standard_title(char *logbook, char *text, int printable)
 
             if (!pnode->member[i]->is_top) {
 
-               rsprintf("<span class=\"%s\"><a href=\"../%s/\">", sclass, ref);
+               rsprintf("<span class=\"%s\">", sclass);
+
+               if (comment[0]) {
+                  rsprintf("<a href=\"../%s/\" title=\"", ref);
+                  rsputs3(comment);
+                  rsprintf("\">");
+               } else
+                  rsprintf("<a href=\"../%s/\">", ref, comment);
 
                strlcpy(str, pnode->member[i]->name, sizeof(str));
 
@@ -9917,11 +9928,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* main box for text box and icons */
    rsprintf("<tr><td colspan=2 class=\"attribvalue\">\n");
    if (enc_selected == 0)
-      rsprintf("<table border=\"0\">\n");
+      rsprintf("<table border=\"0\"><tr>\n");
 
    if (enc_selected == 0 && show_smileys) {
 
-      rsprintf("<tr><td class=\"menuframe\">\n");
+      rsprintf("<td class=\"menuframe\">\n");
       rsicon("smile", loc("smiling"), ":)");
       rsprintf("<br />\n");
       rsicon("happy", loc("happy"), ":))");
@@ -9952,7 +9963,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    if (enc_selected == 0)
-      rsprintf("<tr><td class=\"attribvalue\">\n");
+      rsprintf("<td class=\"attribvalue\">\n");
 
    /* set textarea width */
    width = 112;
