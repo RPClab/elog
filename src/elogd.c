@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.700  2005/07/07 20:02:43  ritt
+   Added 'suppress default = 3'
+
    Revision 1.699  2005/07/07 19:47:11  ritt
    Tooltips only for logbooks, not groups
 
@@ -10232,6 +10235,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             rsprintf("<input type=checkbox checked name=suppress value=1>%s\n",
                      loc("Suppress Email notification"));
          }
+
       } else {
          rsprintf("<input type=checkbox name=suppress value=1>%s\n", loc("Suppress Email notification"));
       }
@@ -19108,6 +19112,8 @@ void submit_elog(LOGBOOK * lbs)
    /*---- email notifications ----*/
 
    suppress = atoi(getparam("suppress"));
+   if (getcfg(lbs->name, "Suppress default", str, sizeof(str)) && atoi(str) == 3) 
+      suppress = 3;
 
    /* check for mail submissions */
    mail_param[0] = 0;
@@ -19116,7 +19122,8 @@ void submit_elog(LOGBOOK * lbs)
    mail_to_size = 256;
 
    if (suppress) {
-      strcpy(mail_param, "?suppress=1");
+      if (suppress != 3)
+         strcpy(mail_param, "?suppress=1");
    } else {
       if (!(*getparam("edit_id")
             && getcfg(lbs->name, "Suppress Email on edit", str, sizeof(str))
