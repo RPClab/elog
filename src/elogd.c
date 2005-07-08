@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.701  2005/07/08 20:18:04  ritt
+   Treat attributes with <img> as HTML
+
    Revision 1.700  2005/07/07 20:02:43  ritt
    Added 'suppress default = 3'
 
@@ -5920,6 +5923,11 @@ int is_html(char *s)
    str[i] = 0;
 
    if (strstr(str, "<A HREF") && strchr(str, '>')) {
+      xfree(str);
+      return TRUE;
+   }
+
+   if (strstr(str, "<IMG") && strchr(str, '>')) {
       xfree(str);
       return TRUE;
    }
