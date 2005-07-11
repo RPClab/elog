@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.702  2005/07/11 10:28:04  ritt
+   Added 'title' to all icons for FireFox
+
    Revision 1.701  2005/07/08 20:18:04  ritt
    Treat attributes with <img> as HTML
 
@@ -7763,7 +7766,7 @@ void show_standard_title(char *logbook, char *text, int printable)
    if (getcfg(logbook, "Title image", str, sizeof(str)))
       rsprintf(str);
    else
-      rsprintf("<img border=0 src=\"elog.png\" alt=\"ELOG logo\">");
+      rsprintf("<img border=0 src=\"elog.png\" alt=\"ELOG logo\" title=\"ELOG logo\">");
 
    if (getcfg(logbook, "Title image URL", str, sizeof(str)))
       rsprintf("</a>\n");
@@ -9762,11 +9765,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      getcfg(lbs->name, str, comment, sizeof(comment));
 
                      if (comment[0])
-                        rsprintf("<img src=\"icons/%s\" alt=\"%s\">\n",
-                                 attr_options[index][i], comment);
+                        rsprintf("<img src=\"icons/%s\" alt=\"%s\" title=\"%s\">\n",
+                                 attr_options[index][i], comment, comment);
                      else
-                        rsprintf("<img src=\"icons/%s\" alt=\"%s\">\n",
-                                 attr_options[index][i], attr_options[index][i]);
+                        rsprintf("<img src=\"icons/%s\" alt=\"%s\" title=\"%s\">\n",
+                                 attr_options[index][i], attr_options[index][i], attr_options[index][i]);
 
                      rsprintf("</td>\n");
                      if ((format_flags[index] & AFF_MULTI_LINE) && attr_options[index][i+1][0]) {
@@ -10595,7 +10598,7 @@ void show_find_form(LOGBOOK * lbs)
 
                if (comment[0] == 0)
                   strcpy(comment, option);
-               rsprintf("<img src=\"icons/%s\" alt=\"%s\"></nobr>\n", option, comment);
+               rsprintf("<img src=\"icons/%s\" alt=\"%s\" title=\"%s\"></nobr>\n", option, comment, comment);
             }
          }
 
@@ -14917,7 +14920,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
       if (locked_by && locked_by[0]) {
          sprintf(str, "%s %s", loc("Entry is currently edited by"), locked_by);
-         rsprintf("<img src=\"stop.png\" alt=\"%s\">&nbsp;", str);
+         rsprintf("<img src=\"stop.png\" alt=\"%s\" title=\"%s\">&nbsp;", str, str);
       }
 
       /* show select box */
@@ -14953,17 +14956,17 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          rsprintf("<a href=\"%s\">", ref);
 
       if (attr_icon[0])
-         rsprintf("<img border=0 src=\"icons/%s\" alt=\"%s\">&nbsp;", attr_icon, attr_icon);
+         rsprintf("<img border=0 src=\"icons/%s\" alt=\"%s\" title=\"%s\">&nbsp;", attr_icon, attr_icon, attr_icon);
       else {
          /* if top level only, display reply icon if message has a reply */
          if (getcfg(lbs->name, "Top level only", str, sizeof(str)) && atoi(str) == 1 && reply_to[0])
-            rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\">&nbsp;", loc("Reply"));
+            rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\" title=\"%s\">&nbsp;", loc("Reply"), loc("Reply"));
          else {
             /* display standard icons */
             if (level == 0)
-               rsprintf("<img border=0 src=\"entry.png\" alt=\"%s\">&nbsp;", loc("Entry"));
+               rsprintf("<img border=0 src=\"entry.png\" alt=\"%s\" title=\"%s\">&nbsp;", loc("Entry"), loc("Entry"));
             else
-               rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\">&nbsp;", loc("Reply"));
+               rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\" title=\"%s\">&nbsp;", loc("Reply"), loc("Reply"));
          }
       }
       if (highlight != message_id)
@@ -15016,16 +15019,16 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          if (strieq(disp_attr[index], loc("ID"))) {
             if (strieq(mode, "Threaded")) {
                if (level == 0)
-                  rsprintf("<img border=0 src=\"entry.png\" alt=\"%s\">&nbsp;", loc("Entry"));
+                  rsprintf("<img border=0 src=\"entry.png\" alt=\"%s\" title=\"%s\">&nbsp;", loc("Entry"), loc("Entry"));
                else
-                  rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\">&nbsp;", loc("Reply"));
+                  rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\" title=\"%s\">&nbsp;", loc("Reply"), loc("Reply"));
 
             } else {
                rsprintf("<td class=\"%s\">", sclass);
 
                if (locked_by && locked_by[0]) {
                   sprintf(str, "%s %s", loc("Entry is currently edited by"), locked_by);
-                  rsprintf("<img src=\"stop.png\" alt=\"%s\">&nbsp;", str);
+                  rsprintf("<img src=\"stop.png\" alt=\"%s\" title=\"%s\">&nbsp;", str, str);
                }
 
                if (getcfg(lbs->name, "ID display", display, sizeof(display))) {
@@ -15067,14 +15070,14 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          if (strieq(disp_attr[index], loc("Edit"))) {
             if (!strieq(mode, "Threaded")) {
                rsprintf("<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref, loc("Edit"));
-               rsprintf("<img src=\"edit.png\" border=0 alt=\"%s\"></a></td>\n", loc("Edit entry"));
+               rsprintf("<img src=\"edit.png\" border=0 alt=\"%s\" title=\"%s\"></a></td>\n", loc("Edit entry"), loc("Edit entry"));
             }
          }
 
          if (strieq(disp_attr[index], loc("Delete"))) {
             if (!strieq(mode, "Threaded")) {
                rsprintf("<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref, loc("Delete"));
-               rsprintf("<img src=\"delete.png\" border=0 alt=\"%s\"></a></td>\n", loc("Delete entry"));
+               rsprintf("<img src=\"delete.png\" border=0 alt=\"%s\" title=\"%s\"></a></td>\n", loc("Delete entry"), loc("Delte entry"));
             }
          }
 
@@ -15122,8 +15125,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
                   else if (attr_flags[i] & AF_ICON) {
                      if (attrib[i][0])
-                        rsprintf("&nbsp;<img border=0 src=\"icons/%s\" alt=\"%s\">&nbsp;", attrib[i],
-                                 attrib[i]);
+                        rsprintf("&nbsp;<img border=0 src=\"icons/%s\" alt=\"%s\" title=\"%s\">&nbsp;", attrib[i],
+                                 attrib[i], attrib[i]);
                   }
 
                   else {
@@ -15186,7 +15189,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   else if (attr_flags[i] & AF_ICON) {
                      rsprintf("<td class=\"%s\">", sclass);
                      if (attrib[i][0])
-                        rsprintf("<img border=0 src=\"icons/%s\" alt=\"%s\">", attrib[i], attrib[i]);
+                        rsprintf("<img border=0 src=\"icons/%s\" alt=\"%s\" title=\"%s\">", attrib[i], attrib[i], attrib[i]);
                      rsprintf("&nbsp;</td>");
                   }
 
@@ -15393,7 +15396,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   if (show_attachments) {
                      rsprintf("<tr><td colspan=%d class=\"attachmentframe\">\n", colspan);
                      rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
-                     rsprintf("<img src=\"%s.thumb\" alt=\"%s\"></a>\n", ref, attachment[index] + 14);
+                     rsprintf("<img src=\"%s.thumb\" alt=\"%s\" title=\"%s\"></a>\n", ref, attachment[index] + 14, attachment[index] + 14);
                      rsprintf("</td></tr>\n\n");
                   }
                } else {
@@ -15404,7 +15407,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      if (show_attachments) {
                         rsprintf("</td></tr><tr>");
                         rsprintf("<td colspan=%d class=\"attachmentframe\">", colspan);
-                        rsprintf("<img src=\"%s\" alt=\"%s\">", ref, attachment[index] + 14);
+                        rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\">", ref, attachment[index] + 14, attachment[index] + 14);
                         rsprintf("</td></tr>\n");
                      }
                   } else {
@@ -17793,9 +17796,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
             img[0] = 0;
             if (strcmp(getparam("sort"), disp_attr[i]) == 0)
-               sprintf(img, "<img align=top src=\"up.png\" alt=\"%s\">", loc("up"));
+               sprintf(img, "<img align=top src=\"up.png\" alt=\"%s\" title=\"%s\">", loc("up"), loc("up"));
             else if (strcmp(getparam("rsort"), disp_attr[i]) == 0)
-               sprintf(img, "<img align=top src=\"down.png\" alt=\"%s\">", loc("down"));
+               sprintf(img, "<img align=top src=\"down.png\" alt=\"%s\" title=\"%s\">", loc("down"), loc("down"));
 
             if (strieq(disp_attr[i], "Edit") || strieq(disp_attr[i], "Delete"))
                rsprintf("<th class=\"listtitle\">%s</th>\n", disp_attr[i]);
@@ -19842,11 +19845,11 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          }
          strlcat(file_name, "first.png", sizeof(file_name));
          if (stat(file_name, &st) >= 0) {
-            rsprintf("<input type=image name=cmd_first alt=\"%s\" src=\"first.png\">\n", loc("First entry"));
-            rsprintf("<input type=image name=cmd_previous alt=\"%s\" src=\"previous.png\">\n",
-                     loc("Previous entry"));
-            rsprintf("<input type=image name=cmd_next alt=\"%s\" src=\"next.png\">\n", loc("Next entry"));
-            rsprintf("<input type=image name=cmd_last alt=\"%s\" src=\"last.png\">\n", loc("Last entry"));
+            rsprintf("<input type=image name=cmd_first alt=\"%s\"  title=\"%s\" src=\"first.png\">\n", loc("First entry"), loc("First entry"));
+            rsprintf("<input type=image name=cmd_previous alt=\"%s\"  title=\"%s\" src=\"previous.png\">\n",
+                     loc("Previous entry"), loc("Previous entry"));
+            rsprintf("<input type=image name=cmd_next alt=\"%s\" title=\"%s\" src=\"next.png\">\n", loc("Next entry"), loc("Next entry"));
+            rsprintf("<input type=image name=cmd_last alt=\"%s\" title=\"%s\" src=\"last.png\">\n", loc("Last entry"), loc("Last entry"));
          } else {
             rsprintf("<a href=\"%d?cmd=%s\">|&lt;</a>&nbsp;\n", message_id, loc("First"));
             rsprintf("<a href=\"%d?cmd=%s\">&lt;</a>&nbsp;\n", message_id, loc("Previous"));
@@ -19961,8 +19964,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
       if (locked_by && locked_by[0]) {
          sprintf(str, "%s %s", loc("Entry is currently edited by"), locked_by);
-         rsprintf("<tr><td nowrap colspan=2 class=\"errormsg\"><img src=\"stop.png\" alt=\"%s\">\n",
-                  loc("stop"));
+         rsprintf("<tr><td nowrap colspan=2 class=\"errormsg\"><img src=\"stop.png\" alt=\"%s\"  title=\"%s\">\n",
+                  loc("stop"), loc("stop"));
          rsprintf("%s<br>%s</td></tr>\n", str, loc("You can \"steal\" the lock by editing this entry"));
       }
 
@@ -20101,7 +20104,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             if (*getparam(lattr) == '1')
                rsprintf("<input type=\"checkbox\" checked name=\"%s\" value=\"1\">&nbsp;", lattr);
             else
-               rsprintf("<input alt=\"text\" type=\"checkbox\" name=\"%s\" value=\"1\">&nbsp;", lattr);
+               rsprintf("<input alt=\"text\" title=\"text\"type=\"checkbox\" name=\"%s\" value=\"1\">&nbsp;", lattr);
          }
 
          /* display checkbox for boolean attributes */
@@ -20122,9 +20125,9 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                getcfg(lbs->name, str, comment, sizeof(comment));
 
                if (comment[0])
-                  rsprintf("<img src=\"icons/%s\" alt=\"%s\">", attrib[i], comment);
+                  rsprintf("<img src=\"icons/%s\" alt=\"%s\" title=\"%s\">", attrib[i], comment, comment);
                else
-                  rsprintf("<img src=\"icons/%s\" alt=\"%s\">", attrib[i], attrib[i]);
+                  rsprintf("<img src=\"icons/%s\" alt=\"%s\" title=\"%s\">", attrib[i], attrib[i], attrib[i]);
             }
             rsprintf("&nbsp;</td>\n");
          } else if ((attr_flags[i] & AF_MULTI)
@@ -20405,12 +20408,12 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                   if (file_exist(thumb_name)) {
                      rsprintf("<tr><td class=\"attachmentframe\">\n");
                      rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
-                     rsprintf("<img src=\"%s.thumb\" alt=\"%s\"></a>\n", ref, attachment[index] + 14);
+                     rsprintf("<img src=\"%s.thumb\" alt=\"%s\" title=\"%s\"></a>\n", ref, attachment[index] + 14, attachment[index] + 14);
                      rsprintf("</td></tr>\n\n");
                   } else if (is_image(att)) {
                      rsprintf("<tr><td class=\"attachmentframe\">\n");
                      rsprintf("<a name=\"att%d\"></a>\n", index + 1);
-                     rsprintf("<img src=\"%s\" alt=\"%s\">\n", ref, attachment[index] + 14);
+                     rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\">\n", ref, attachment[index] + 14, attachment[index] + 14);
                      rsprintf("</td></tr>\n\n");
                   } else {
                      if (is_ascii(file_name)) {
@@ -21648,14 +21651,14 @@ void show_calendar(LOGBOOK * lbs)
    /* link to previous year */
    rsprintf("&nbsp;&nbsp;");
    rsprintf("<a href=\"?i=%s&m=%d&y=%d\">", index, cur_mon, cur_year - 1);
-   rsprintf("<img border=0 align=\"absmiddle\" src=\"cal_prev.png\" alt=\"%s\"></a>", loc("Previous Year"));
+   rsprintf("<img border=0 align=\"absmiddle\" src=\"cal_prev.png\" alt=\"%s\" title=\"%s\"></a>", loc("Previous Year"), loc("Previous Year"));
 
    /* current year */
    rsprintf("&nbsp;%d&nbsp;", cur_year);
 
    /* link to next year */
    rsprintf("<a href=\"?i=%s&m=%d&y=%d\">", index, cur_mon, cur_year + 1);
-   rsprintf("<img border=0 align=\"absmiddle\" src=\"cal_next.png\" alt=\"%s\"></a>", loc("Next Year"));
+   rsprintf("<img border=0 align=\"absmiddle\" src=\"cal_next.png\" alt=\"%s\" title=\"%s\"></a>", loc("Next Year"), loc("Next Year"));
 
    /* go to first day of month */
    ts->tm_mday = 1;
