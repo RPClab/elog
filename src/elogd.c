@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.703  2005/07/16 10:18:17  ritt
+   Added '\' as escape character for HTML and ELCode tags
+
    Revision 1.702  2005/07/11 10:28:04  ritt
    Added 'title' to all icons for FireFox
 
@@ -5914,9 +5917,11 @@ void logd(const char *format, ...)
 
 /*------------------------------------------------------------------*/
 
+char *html_tags[] = { "<B>", "<I>", "<P>", "<HR>", "" };
+
 int is_html(char *s)
 {
-   char *str;
+   char *str, *p;
    int i;
 
    str = xstrdup(s);
@@ -5925,20 +5930,24 @@ int is_html(char *s)
       str[i] = toupper(s[i]);
    str[i] = 0;
 
-   if (strstr(str, "<A HREF") && strchr(str, '>')) {
+   p = strstr(str, "<A HREF");
+   if (p && strchr(str, '>') && p > str && *(p-1) != '\\') {
       xfree(str);
       return TRUE;
    }
 
-   if (strstr(str, "<IMG") && strchr(str, '>')) {
+   p = strstr(str, "<IMG");
+   if (p && strchr(str, '>') && p > str && *(p-1) != '\\') {
       xfree(str);
       return TRUE;
    }
 
-   if (strstr(str, "<BR>") || strstr(str, "<HR>") || strstr(str, "<B>") || strstr(str, "<I>") ||
-       strstr(str, "<P>")) {
-      xfree(str);
-      return TRUE;
+   for (i=0 ; html_tags[i][0] ; i++) {
+      p = strstr(str, html_tags[i]);
+      if (p && strchr(str, '>') && p > str && *(p-1) != '\\') {
+         xfree(str);
+         return TRUE;
+      }
    }
 
    xfree(str);
@@ -6185,7 +6194,13 @@ void rsputs2(const char *str)
                j += 4;
                break;
 
-               /* the translation for the search highliting */
+            /* suppress escape character '\' in front of HTML or ELCode tag */
+            case '\\':
+               if (str[i+1] != '<' && str[i+1] != '[')
+                  return_buffer[j++] = str[i];
+               break;
+
+            /* the translation for the search highliting */
             case '\001':
                strcat(return_buffer, "<");
                j++;
@@ -6251,6 +6266,9 @@ typedef struct {
 } PATTERN_LIST;
 
 PATTERN_LIST pattern_list[] = {
+
+   /* escape */
+   {"\\[", "["},
 
    /* smileys */
    {":))", "<img src=\"%s/icons/happy.png\">"},
