@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.706  2005/07/20 20:13:11  ritt
+   Made 'list' work together with 'start page = 0?cmd=Last'
+
    Revision 1.705  2005/07/20 19:37:42  ritt
    Do not interprete ELCode inside [code]...[/code]
 
@@ -22254,7 +22257,7 @@ void interprete(char *lbook, char *path)
 
    /* check for "List" button */
    if (strieq(command, loc("List"))) {
-      redirect(lbs, "");
+      show_elog_list(lbs, 0, 0, 1, NULL);
       return;
    }
 
