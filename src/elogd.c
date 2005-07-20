@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.705  2005/07/20 19:37:42  ritt
+   Do not interprete ELCode inside [code]...[/code]
+
    Revision 1.704  2005/07/20 18:53:00  ritt
    Added 'email attributes' option
 
@@ -6341,7 +6344,7 @@ PATTERN_LIST pattern_list[] = {
 
 void rsputs_elcode(LOGBOOK * lbs, const char *str)
 {
-   int i, j, k, l, m, n;
+   int i, j, k, l, m, n, interprete_elcode;
    char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[1000], hattrib[1000],
        value[1000], subst[1000], base_url[256], param[256];
 
@@ -6351,6 +6354,7 @@ void rsputs_elcode(LOGBOOK * lbs, const char *str)
       return_buffer_size += 100000;
    }
 
+   interprete_elcode = TRUE;
    j = strlen_retbuf;
    for (i = 0; i < (int) strlen(str); i++) {
       for (l = 0; key_list[l][0]; l++) {
@@ -6462,122 +6466,132 @@ void rsputs_elcode(LOGBOOK * lbs, const char *str)
       for (l = 0; pattern_list[l].pattern[0]; l++) {
          if (strnieq(str + i, pattern_list[l].pattern, strlen(pattern_list[l].pattern))) {
 
-            if (stristr(pattern_list[l].pattern, "[quote")) {
-               if (pattern_list[l].pattern[strlen(pattern_list[l].pattern) - 1] == '=') {
+            if (stricmp(pattern_list[l].pattern, "[/code]") == 0) 
+               interprete_elcode = TRUE;
+
+            if (interprete_elcode) {
+
+               if (stristr(pattern_list[l].pattern, "[quote")) {
+                  if (pattern_list[l].pattern[strlen(pattern_list[l].pattern) - 1] == '=') {
+                     i += strlen(pattern_list[l].pattern);
+                     strextract(str + i, ']', attrib, sizeof(attrib));
+                     i += strlen(attrib);
+
+                     if (attrib[0] == '\"')
+                        strcpy(attrib, attrib + 1);
+                     if (attrib[strlen(attrib) - 1] == '\"')
+                        attrib[strlen(attrib) - 1] = 0;
+
+                     sprintf(value, loc("%s wrote"), attrib);
+                     sprintf(return_buffer + j, pattern_list[l].subst, value);
+                     j += strlen(return_buffer + j);
+                  } else {
+                     sprintf(return_buffer + j, pattern_list[l].subst, loc("Quote"));
+                     j += strlen(return_buffer + j);
+                     i += strlen(pattern_list[l].pattern) - 1;     // 1 gets added in for loop...
+                  }
+               }
+
+               else if (strstr(pattern_list[l].subst, "%#")) {
+
+                  /* special substitutions */
+                  if (pattern_list[l].pattern[strlen(pattern_list[l].pattern) - 1] == '=') {
+
+                     i += strlen(pattern_list[l].pattern);
+                     strextract(str + i, ']', attrib, sizeof(attrib));
+                     i += strlen(attrib) + 1;
+
+                     if (strncmp(attrib, "elog:", 5) == 0) {       /* eval elog: */
+                        strlcpy(tmp, attrib + 5, sizeof(tmp));
+                        if (strchr(tmp, '/'))
+                           *strchr(tmp, '/') = 0;
+
+                        for (m = 0; m < (int) strlen(tmp); m++)
+                           if (!isdigit(tmp[m]))
+                              break;
+
+                        if (m < (int) strlen(tmp))
+                           /* if link contains reference to other logbook, add ".." in front */
+                           sprintf(hattrib, "../%s", attrib + 5);
+                        else if (attrib[5] == '/')
+                           sprintf(hattrib, "%d%s", _current_message_id, attrib + 5);
+                        else
+                           sprintf(hattrib, "%s", attrib + 5);
+
+                     } else if (strncmp(attrib, "http://", 7) != 0)        /* add http:// if missing */
+                        sprintf(hattrib, "http://%s", attrib);
+                     else
+                        strlcpy(hattrib, attrib, sizeof(hattrib));
+
+                     strextract(str + i, '[', value, sizeof(value));
+                     i += strlen(value) - 1;
+                     strlcpy(subst, pattern_list[l].subst, sizeof(subst));
+                     *strchr(subst, '#') = 's';
+                     sprintf(return_buffer + j, subst, hattrib, value);
+
+                     j += strlen(return_buffer + j);
+
+                  } else if (pattern_list[l].pattern[strlen(pattern_list[l].pattern) - 1] != '=') {
+
+                     i += strlen(pattern_list[l].pattern);
+                     strextract(str + i, '[', attrib, sizeof(attrib));
+                     i += strlen(attrib) - 1;
+                     strlcpy(hattrib, attrib, sizeof(hattrib));
+
+                     /* change /x to id/x for images */
+                     if (strnieq(attrib, "elog:/", 6)) {
+                        compose_base_url(lbs, hattrib, sizeof(hattrib));
+                        if (_current_message_id == 0) {
+                           sprintf(param, "attachment%d", atoi(attrib + 6)-1);
+                           if (isparam(param))
+                              strlcat(hattrib, getparam(param), sizeof(hattrib));
+                        } else
+                        sprintf(hattrib+strlen(hattrib), "%d%s", _current_message_id, attrib + 5);
+                     }
+
+                     /* add http:// if missing */
+                     else if (!strnieq(attrib, "http://", 7) &&
+                              strstr(pattern_list[l].subst, "mailto") == NULL &&
+                              strstr(pattern_list[l].subst, "img") == NULL)
+                        sprintf(hattrib, "http://%s", attrib);
+                     strlcpy(subst, pattern_list[l].subst, sizeof(subst));
+                     *strchr(subst, '#') = 's';
+                     sprintf(return_buffer + j, subst, hattrib, attrib);
+                     j += strlen(return_buffer + j);
+                  }
+
+               } else if (pattern_list[l].pattern[strlen(pattern_list[l].pattern) - 1] == '=') {
+
+                  /* extract sting after '=' and put it into '%s' of subst */
                   i += strlen(pattern_list[l].pattern);
                   strextract(str + i, ']', attrib, sizeof(attrib));
                   i += strlen(attrib);
-
-                  if (attrib[0] == '\"')
-                     strcpy(attrib, attrib + 1);
-                  if (attrib[strlen(attrib) - 1] == '\"')
-                     attrib[strlen(attrib) - 1] = 0;
-
-                  sprintf(value, loc("%s wrote"), attrib);
-                  sprintf(return_buffer + j, pattern_list[l].subst, value);
+                  sprintf(return_buffer + j, pattern_list[l].subst, attrib);
                   j += strlen(return_buffer + j);
+
                } else {
-                  sprintf(return_buffer + j, pattern_list[l].subst, loc("Quote"));
-                  j += strlen(return_buffer + j);
-                  i += strlen(pattern_list[l].pattern) - 1;     // 1 gets added in for loop...
-               }
-            }
 
-            else if (strstr(pattern_list[l].subst, "%#")) {
-
-               /* special substitutions */
-               if (pattern_list[l].pattern[strlen(pattern_list[l].pattern) - 1] == '=') {
-
-                  i += strlen(pattern_list[l].pattern);
-                  strextract(str + i, ']', attrib, sizeof(attrib));
-                  i += strlen(attrib) + 1;
-
-                  if (strncmp(attrib, "elog:", 5) == 0) {       /* eval elog: */
-                     strlcpy(tmp, attrib + 5, sizeof(tmp));
-                     if (strchr(tmp, '/'))
-                        *strchr(tmp, '/') = 0;
-
-                     for (m = 0; m < (int) strlen(tmp); m++)
-                        if (!isdigit(tmp[m]))
-                           break;
-
-                     if (m < (int) strlen(tmp))
-                        /* if link contains reference to other logbook, add ".." in front */
-                        sprintf(hattrib, "../%s", attrib + 5);
-                     else if (attrib[5] == '/')
-                        sprintf(hattrib, "%d%s", _current_message_id, attrib + 5);
-                     else
-                        sprintf(hattrib, "%s", attrib + 5);
-
-                  } else if (strncmp(attrib, "http://", 7) != 0)        /* add http:// if missing */
-                     sprintf(hattrib, "http://%s", attrib);
-                  else
-                     strlcpy(hattrib, attrib, sizeof(hattrib));
-
-                  strextract(str + i, '[', value, sizeof(value));
-                  i += strlen(value) - 1;
-                  strlcpy(subst, pattern_list[l].subst, sizeof(subst));
-                  *strchr(subst, '#') = 's';
-                  sprintf(return_buffer + j, subst, hattrib, value);
-
-                  j += strlen(return_buffer + j);
-
-               } else if (pattern_list[l].pattern[strlen(pattern_list[l].pattern) - 1] != '=') {
-
-                  i += strlen(pattern_list[l].pattern);
-                  strextract(str + i, '[', attrib, sizeof(attrib));
-                  i += strlen(attrib) - 1;
-                  strlcpy(hattrib, attrib, sizeof(hattrib));
-
-                  /* change /x to id/x for images */
-                  if (strnieq(attrib, "elog:/", 6)) {
-                     compose_base_url(lbs, hattrib, sizeof(hattrib));
-                     if (_current_message_id == 0) {
-                        sprintf(param, "attachment%d", atoi(attrib + 6)-1);
-                        if (isparam(param))
-                           strlcat(hattrib, getparam(param), sizeof(hattrib));
-                     } else
-                       sprintf(hattrib+strlen(hattrib), "%d%s", _current_message_id, attrib + 5);
+                  /* simple substitution */
+                  strcpy(link, pattern_list[l].subst);
+                  if (strstr(link, "%s")) {
+                     strcpy(tmp, link);
+                     compose_base_url(lbs, base_url, sizeof(base_url));
+                     sprintf(link, tmp, base_url);
                   }
 
-                  /* add http:// if missing */
-                  else if (!strnieq(attrib, "http://", 7) &&
-                           strstr(pattern_list[l].subst, "mailto") == NULL &&
-                           strstr(pattern_list[l].subst, "img") == NULL)
-                     sprintf(hattrib, "http://%s", attrib);
-                  strlcpy(subst, pattern_list[l].subst, sizeof(subst));
-                  *strchr(subst, '#') = 's';
-                  sprintf(return_buffer + j, subst, hattrib, attrib);
-                  j += strlen(return_buffer + j);
+                  strcpy(return_buffer + j, link);
+                  j += strlen(link);
+                  i += strlen(pattern_list[l].pattern) - 1;        // 1 gets added in for loop...
                }
+            } // interprete_elcode
 
-            } else if (pattern_list[l].pattern[strlen(pattern_list[l].pattern) - 1] == '=') {
+            if (stricmp(pattern_list[l].pattern, "[code]") == 0) 
+               interprete_elcode = FALSE;
 
-               /* extract sting after '=' and put it into '%s' of subst */
-               i += strlen(pattern_list[l].pattern);
-               strextract(str + i, ']', attrib, sizeof(attrib));
-               i += strlen(attrib);
-               sprintf(return_buffer + j, pattern_list[l].subst, attrib);
-               j += strlen(return_buffer + j);
-
-            } else {
-
-               /* simple substitution */
-               strcpy(link, pattern_list[l].subst);
-               if (strstr(link, "%s")) {
-                  strcpy(tmp, link);
-                  compose_base_url(lbs, base_url, sizeof(base_url));
-                  sprintf(link, tmp, base_url);
-               }
-
-               strcpy(return_buffer + j, link);
-               j += strlen(link);
-               i += strlen(pattern_list[l].pattern) - 1;        // 1 gets added in for loop...
-            }
             break;
          }
       }
-      if (pattern_list[l].pattern[0])
+      if ((interprete_elcode && pattern_list[l].pattern[0]) || stricmp(pattern_list[l].pattern, "[code]") == 0)
          continue;
 
       if (strnieq(str + i, "<br>", 4)) {
