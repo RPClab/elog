@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility
 
   $Log$
+  Revision 1.26  2005/07/20 19:01:56  ritt
+  Removed 'host:' for HTML/1.0
+
   Revision 1.25  2005/03/21 16:16:52  ritt
   Version 2.8.1-1
 
@@ -421,7 +424,6 @@ INT retrieve_elog(char *host, int port, char *subdir, char *experiment,
       sprintf(request + strlen(request), "%s/%d?cmd=download", experiment, message_id);
    strcat(request, " HTTP/1.0\r\n");
 
-   sprintf(request + strlen(request), "Host: %s\r\n", host_name);
    sprintf(request + strlen(request), "User-Agent: ELOG\r\n");
 
    first = 1;
