@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.707  2005/07/20 20:27:54  ritt
+   Fixed bug with non-interpreted <b> in attributes
+
    Revision 1.706  2005/07/20 20:13:11  ritt
    Made 'list' work together with 'start page = 0?cmd=Last'
 
@@ -5926,7 +5929,7 @@ void logd(const char *format, ...)
 
 /*------------------------------------------------------------------*/
 
-char *html_tags[] = { "<B>", "<I>", "<P>", "<HR>", "" };
+char *html_tags[] = { "<A HREF=", "<IMG ", "<B>", "<I>", "<P>", "<HR>", "" };
 
 int is_html(char *s)
 {
@@ -5939,21 +5942,9 @@ int is_html(char *s)
       str[i] = toupper(s[i]);
    str[i] = 0;
 
-   p = strstr(str, "<A HREF");
-   if (p && strchr(str, '>') && p > str && *(p-1) != '\\') {
-      xfree(str);
-      return TRUE;
-   }
-
-   p = strstr(str, "<IMG");
-   if (p && strchr(str, '>') && p > str && *(p-1) != '\\') {
-      xfree(str);
-      return TRUE;
-   }
-
    for (i=0 ; html_tags[i][0] ; i++) {
       p = strstr(str, html_tags[i]);
-      if (p && strchr(str, '>') && p > str && *(p-1) != '\\') {
+      if (p && strchr(p, '>') && (p == str || (p > str && *(p-1) != '\\'))) {
          xfree(str);
          return TRUE;
       }
