@@ -1541,6 +1541,7 @@ individual logbook sections, one has to log in to each logbook separately.<p>
 <LI><b><code>Use Email Heading Edit = &lt;string&gt;</code></b>
 <LI><b><code>Omit Email To = 0|1</code></b>
 <LI><b><code>Suppress Email to users = 0|1</code></b>
+<LI><b><code>Email attributes = &lt;list&gt;</code></b>
 
 </ul>
 <p>
@@ -1555,43 +1556,44 @@ contain attributes via the <b>"$"</b> substitution. If a logbook contains for
 example an attribute <i>name</i> which contains email names, then one can
 put <i>$name@domain</i> to form a valid email address.<p>
 
-Multiple <b><code>Email xxx</code></b > statements may occur in a configuration
-file. If either the attribute or the value contains one or more blanks the string
-must be enclosed with quotation marks, as in:
-<p>
-<ul><code>Email type "Normal routine" = ...</code></ul>
-<p>
-The statement <b><code>Email All = &lt;list&gt;</code></b> sends an
-email notification independent of the type and category. The <b><code>Use
-Email Subject = &lt;string&gt;</b></code> statement specifies which text is
-used as the email subject. The text can contain <b><code>$&lt;attribute&gt;
-</code></b>statements which are substituted with the current value of that
-attribute. For a full list of possible substitutions, see the
-"<I>Subst &lt;attribute&gt;</I>" option. The <b><code>Use Email Heading
-= &lt;string&gt;</code></b> specifies the text for the email heading line.
-Default is <i>"A new entry has been submitted on [host]"</i>. The option
-<b><code>Use Email Heading Edit = &lt;string&gt;</code></b> works the same
-way for updated (edited) entries.<p>
+Multiple <b><code>Email xxx</code></b > statements may occur in a configuration 
+file. If either the attribute or the value contains one or more blanks the 
+string must be enclosed with quotation marks, as in: <p> <ul><code>Email type 
+"Normal routine" = ...</code></ul> <p> The statement <b><code>Email All = 
+&lt;list&gt;</code></b> sends an email notification independent of the type and 
+category. The <b><code>Use Email Subject = &lt;string&gt;</b></code> statement 
+specifies which text is used as the email subject. The text can contain 
+<b><code>$&lt;attribute&gt; </code></b>statements which are substituted with the 
+current value of that attribute. For a full list of possible substitutions, see 
+the "<I>Subst &lt;attribute&gt;</I>" option. The <b><code>Use Email Heading = 
+&lt;string&gt;</code></b> specifies the text for the email heading line. Default 
+is <i>"A new entry has been submitted on [host]"</i>. The option <b><code>Use 
+Email Heading Edit = &lt;string&gt;</code></b> works the same way for updated 
+(edited) entries.<p>
 
-The option <b><code>Use Email From = &lt;string&gt;
-</code></b> is used for the "<I>From:</I>" field in the email.
-Since more and more email servers do not accept invalid <I>"From:"</I> addresses in
-order to reduce spam mail, it might be important that a "real" email address is used in
-the <I>"From:"</I> field. By default, the email address of the currently logged in
-user is used for the <I>"From:"</I> field. If no user is logged in, or the current
-user has not specified a email address in the password database, the setting
-of the option <b><code>Use Email From</code></b> is used for the "<I>From:</I>" field.
-Only if this option is not specified, a generic address <I>ELOG@&lt;hostname&gt;</I>
-is used, which might be rejected by the SMTP server however.<p>
+The option <b><code>Use Email From = &lt;string&gt; </code></b> is used for the 
+"<I>From:</I>" field in the email. Since more and more email servers do not 
+accept invalid <I>"From:"</I> addresses in order to reduce spam mail, it might 
+be important that a "real" email address is used in the <I>"From:"</I> field. By 
+default, the email address of the currently logged in user is used for the 
+<I>"From:"</I> field. If no user is logged in, or the current user has not 
+specified a email address in the password database, the setting of the option 
+<b><code>Use Email From</code></b> is used for the "<I>From:</I>" field. Only if 
+this option is not specified, a generic address <I>ELOG@&lt;hostname&gt;</I> is 
+used, which might be rejected by the SMTP server however.<p>
 
-If the flag <b><code>
-Omit Email To</b></code> is set to <b>1</b>, the <i>To:</i> field in the email is
-left empty instead set to the real email address of the recipients. This can
-be useful if one recipient should not see the email addresses of the other recipients.
-<p>
-The flag <b><code>Suppress Email to users</b></code> can be set to <b>"1"</b> if email should
-only be sent to the recipients of the <b><code>Email &lt;attribute&gt; &lt;value&gt; = &lt;list&gt;</code></b>
-statements but not to the users who have registerd for automatic email notification.<p>
+If the flag <b><code>Omit Email To</b></code> is set to <b>1</b>, the <i>To:</i> 
+field in the email is left empty instead set to the real email address of the 
+recipients. This can be useful if one recipient should not see the email 
+addresses of the other recipients. <p> The flag <b><code>Suppress Email to 
+users</b></code> can be set to <b>"1"</b> if email should only be sent to the 
+recipients of the <b><code>Email &lt;attribute&gt; &lt;value&gt; = 
+&lt;list&gt;</code></b> statements but not to the users who have registerd for 
+automatic email notification.<p>
+
+If one wants to send only some attributes but not all in an email notification, 
+one can use the option <b><code>Email attributes = &lt;list&gt;</code></b>, 
+where a subset of the attributes can be specified as well as their order.
 
 <a name="flags"><hr>
 <div class=section>&nbsp; Flags &nbsp;</div>
@@ -1715,6 +1717,22 @@ to <b>6</b>. Default is <b>63</b> (send everything).
 </br>
 If this flag is <b>1</b>, no email notifications are sent for edited messages,
 only for new messages. The default is <b>0</b>.
+<p>
+
+<li><b><code>Email Encoding = &lt;n&gt;</code></b>
+</br>
+Specifies in which encoding an email is sent. &lt;n&gt; is the sum of following
+flags:<br>
+
+<ul>
+<li>1 : Plain text
+<li>2 : HTML in the form of the plain text, but with ELCode interpreted
+<li>4 : Full HTML page as shown in elog
+</ul>
+
+So to send email in plain text and full HTML, set &lt;n&gt;
+to <b>5</b>. Most email clients have the possibility then to switch from one view
+to the other. Default is <b>2</b> (send everything).
 <p>
 
 <li><b><code>Back to main = 0|1</code></b>

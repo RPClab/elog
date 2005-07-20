@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.704  2005/07/20 18:53:00  ritt
+   Added 'email attributes' option
+
    Revision 1.703  2005/07/16 10:18:17  ritt
    Added '\' as escape character for HTML and ELCode tags
 
@@ -3442,7 +3445,7 @@ void check_config_file(BOOL force)
          parse_config_file(config_file);
       }
    } else
-      eprintf("Cannot stat() config file; %s\n", strerror(errno));
+      eprintf("Cannot stat() config file \"%s\": %s\n", config_file, strerror(errno));
 }
 
 /*-------------------------------------------------------------------*/
@@ -18162,9 +18165,9 @@ void show_elog_thread(LOGBOOK * lbs, int message_id)
 void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], int old_mail,
                        char *url, char *mail_text)
 {
-   int j, k, flags;
-   char str[NAME_LENGTH + 100], str2[256], mail_from[256], format[256];
-   char comment[256];
+   int i, j, k, flags, n_email_attr, attr_index[MAX_N_ATTR];
+   char str[NAME_LENGTH + 100], str2[256], mail_from[256], format[256],
+      list[MAX_N_ATTR][NAME_LENGTH], comment[256];
    time_t ltime;
    struct tm *pts;
 
@@ -18198,33 +18201,53 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], int 
       sprintf(mail_text + strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), lbs->name);
 
    if (flags & 2) {
-      for (j = 0; j < lbs->n_attr; j++) {
+
+      if (getcfg(lbs->name, "Email attributes", str, sizeof(str))) {
+         n_email_attr = strbreak(str, list, MAX_N_ATTR, ",");
+         for (i = 0; i < n_email_attr; i++) {
+            for (j = 0; j < lbs->n_attr; j++)
+               if (strieq(attr_list[j], list[i]))
+                  break;
+            if (!strieq(attr_list[j], list[i]))
+               /* attribute not found */
+               j = 0;
+            attr_index[i] = j;
+         }
+      } else {
+         for (i = 0; i < lbs->n_attr; i++)
+            attr_index[i] = i;
+         n_email_attr = lbs->n_attr;
+      }
+
+      for (j = 0; j < n_email_attr; j++) {
+
+         i = attr_index[j];
          strcpy(str, "                                                                       ");
-         memcpy(str, attr_list[j], strlen(attr_list[j]));
+         memcpy(str, attr_list[i], strlen(attr_list[i]));
 
          comment[0] = 0;
-         if (attr_flags[j] & AF_ICON) {
+         if (attr_flags[i] & AF_ICON) {
 
-            sprintf(str2, "Icon comment %s", attrib[j]);
+            sprintf(str2, "Icon comment %s", attrib[i]);
             getcfg(lbs->name, str2, comment, sizeof(comment));
 
-         } else if (attr_flags[j] & AF_DATE) {
+         } else if (attr_flags[i] & AF_DATE) {
 
             if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
                strcpy(format, DEFAULT_DATE_FORMAT);
 
-            ltime = atoi(attrib[j]);
+            ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
             if (ltime == 0)
                strcpy(comment, "-");
             else
                my_strftime(comment, sizeof(str), format, pts);
-         } else if (attr_flags[j] & AF_DATETIME) {
+         } else if (attr_flags[i] & AF_DATETIME) {
 
             if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
                strcpy(format, DEFAULT_TIME_FORMAT);
 
-            ltime = atoi(attrib[j]);
+            ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
             if (ltime == 0)
                strcpy(comment, "-");
@@ -18233,10 +18256,10 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], int 
          }
 
          if (!comment[0])
-            strcpy(comment, attrib[j]);
+            strcpy(comment, attrib[i]);
 
-         if (strieq(attr_options[j][0], "boolean"))
-            strcpy(comment, atoi(attrib[j]) ? loc("Yes") : loc("No"));
+         if (strieq(attr_options[i][0], "boolean"))
+            strcpy(comment, atoi(attrib[i]) ? loc("Yes") : loc("No"));
 
          for (k = strlen(str) - 1; k > 0; k--)
             if (str[k] != ' ')
@@ -18267,9 +18290,9 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], int 
 void format_email_html(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], int old_mail,
                        char *encoding, char *url, char *mail_text)
 {
-   int j, k, flags;
-   char str[NAME_LENGTH + 100], str2[256], mail_from[256], format[256];
-   char comment[256];
+   int i, j, k, flags, n_email_attr, attr_index[MAX_N_ATTR];
+   char str[NAME_LENGTH + 100], str2[256], mail_from[256], format[256],
+      list[MAX_N_ATTR][NAME_LENGTH], comment[256];
    time_t ltime;
    struct tm *pts;
 
@@ -18310,33 +18333,53 @@ void format_email_html(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], int 
    }
 
    if (flags & 2) {
-      for (j = 0; j < lbs->n_attr; j++) {
+
+      if (getcfg(lbs->name, "Email attributes", str, sizeof(str))) {
+         n_email_attr = strbreak(str, list, MAX_N_ATTR, ",");
+         for (i = 0; i < n_email_attr; i++) {
+            for (j = 0; j < lbs->n_attr; j++)
+               if (strieq(attr_list[j], list[i]))
+                  break;
+            if (!strieq(attr_list[j], list[i]))
+               /* attribute not found */
+               j = 0;
+            attr_index[i] = j;
+         }
+      } else {
+         for (i = 0; i < lbs->n_attr; i++)
+            attr_index[i] = i;
+         n_email_attr = lbs->n_attr;
+      }
+
+      for (j = 0; j < n_email_attr; j++) {
+
+         i = attr_index[j];
          strcpy(str, "                                                                       ");
-         memcpy(str, attr_list[j], strlen(attr_list[j]));
+         memcpy(str, attr_list[i], strlen(attr_list[i]));
 
          comment[0] = 0;
-         if (attr_flags[j] & AF_ICON) {
+         if (attr_flags[i] & AF_ICON) {
 
-            sprintf(str2, "Icon comment %s", attrib[j]);
+            sprintf(str2, "Icon comment %s", attrib[i]);
             getcfg(lbs->name, str2, comment, sizeof(comment));
 
-         } else if (attr_flags[j] & AF_DATE) {
+         } else if (attr_flags[i] & AF_DATE) {
 
             if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
                strcpy(format, DEFAULT_DATE_FORMAT);
 
-            ltime = atoi(attrib[j]);
+            ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
             if (ltime == 0)
                strcpy(comment, "-");
             else
                my_strftime(comment, sizeof(str), format, pts);
-         } else if (attr_flags[j] & AF_DATETIME) {
+         } else if (attr_flags[i] & AF_DATETIME) {
 
             if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
                strcpy(format, DEFAULT_TIME_FORMAT);
 
-            ltime = atoi(attrib[j]);
+            ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
             if (ltime == 0)
                strcpy(comment, "-");
@@ -18345,16 +18388,16 @@ void format_email_html(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], int 
          }
 
          if (!comment[0])
-            strcpy(comment, attrib[j]);
+            strcpy(comment, attrib[i]);
 
-         if (strieq(attr_options[j][0], "boolean"))
-            strcpy(comment, atoi(attrib[j]) ? loc("Yes") : loc("No"));
+         if (strieq(attr_options[i][0], "boolean"))
+            strcpy(comment, atoi(attrib[i]) ? loc("Yes") : loc("No"));
 
          for (k = strlen(str) - 1; k > 0; k--)
             if (str[k] != ' ')
                break;
 
-         sprintf(mail_text + strlen(mail_text), "<tr><td bgcolor=\"#CCCCFF\">%s</td>", attr_list[j]);
+         sprintf(mail_text + strlen(mail_text), "<tr><td bgcolor=\"#CCCCFF\">%s</td>", attr_list[i]);
          sprintf(mail_text + strlen(mail_text), "<td bgcolor=\"#DDEEBB\">%s</td></tr>\r\n", comment);
       }
    }
