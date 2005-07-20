@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.708  2005/07/20 21:24:01  ritt
+   Implemented conditional attributes also for display
+
    Revision 1.707  2005/07/20 20:27:54  ritt
    Fixed bug with non-interpreted <b> in attributes
 
@@ -6194,12 +6197,6 @@ void rsputs2(const char *str)
                j += 4;
                break;
 
-            /* suppress escape character '\' in front of HTML or ELCode tag */
-            case '\\':
-               if (str[i+1] != '<' && str[i+1] != '[')
-                  return_buffer[j++] = str[i];
-               break;
-
             /* the translation for the search highliting */
             case '\001':
                strcat(return_buffer, "<");
@@ -6613,7 +6610,7 @@ void rsputs_elcode(LOGBOOK * lbs, const char *str)
             j += 4;
             break;
 
-            /* the translation for the search highliting */
+         /* the translation for the search highliting */
          case '\001':
             strcat(return_buffer, "<");
             j++;
@@ -19637,17 +19634,18 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
 void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 {
-   int size, i, j, n, n_log, status, fh, length, message_error, index, n_hidden,
+   int size, i, j, k, n, n_log, status, fh, length, message_error, index, n_hidden,
        message_id, orig_message_id, format_flags[MAX_N_ATTR], att_hide[MAX_ATTACHMENTS],
-       att_inline[MAX_ATTACHMENTS], n_attachments, n_lines;
+       att_inline[MAX_ATTACHMENTS], n_attachments, n_lines, n_disp_attr, attr_index[MAX_N_ATTR];
    char str[2 * NAME_LENGTH], ref[256], file_enc[256], thumb_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
-   char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256],
+   char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], condition[256],
        orig_tag[80], reply_tag[MAX_REPLY_TO * 10], display[NAME_LENGTH],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        att[256], lattr[256], mid[80], menu_item[MAX_N_LIST][NAME_LENGTH], format[80],
        slist[MAX_N_ATTR + 10][NAME_LENGTH], file_name[MAX_PATH_LENGTH],
        gattr[MAX_N_ATTR][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], *p,
-       lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256], class_name[80], class_value[80], fl[8][NAME_LENGTH];
+       lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256], class_name[80], class_value[80], fl[8][NAME_LENGTH],
+       list[MAX_N_ATTR][NAME_LENGTH];
    FILE *f;
    BOOL first, show_text, display_inline, subtable, email;
    struct tm *pts;
@@ -19807,6 +19805,36 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       }
    } else
       message_error = EL_EMPTY;
+
+   /*---- check for conditional attribute ----*/
+
+   condition[0] = 0;
+   for (index = 0; index < lbs->n_attr; index++) {
+      for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
+
+         if (strchr(attr_options[index][i], '{') && strchr(attr_options[index][i], '}')) {
+
+            strlcpy(str, attr_options[index][i], sizeof(str));
+            *strchr(str, '{') = 0;
+
+            if (strieq(str, attrib[index])) {
+               strlcpy(str, strchr(attr_options[index][i], '{') + 1, sizeof(str));
+               if (*strchr(str, '}'))
+                  *strchr(str, '}') = 0;
+
+               if (condition[0] == 0)
+                  strlcpy(condition, str, sizeof(condition));
+               else {
+                  strlcat(condition, ",", sizeof(condition));
+                  strlcat(condition, str, sizeof(condition));
+               }
+
+               set_condition(condition);
+               scan_attributes(lbs->name);
+            }
+         }
+      }
+   }
 
    /*---- header ----*/
 
@@ -20129,17 +20157,36 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       rsprintf("<tr><td><table width=\"100%%\" cellpadding=0 cellspacing=0>");
       subtable = 0;
 
-      for (i = 0; i < lbs->n_attr; i++) {
+      /* generate list of attributes to show */
+      if (getcfg(lbs->name, "Show attributes", str, sizeof(str))) {
+         n_disp_attr = strbreak(str, list, MAX_N_ATTR, ",");
+         for (i = 0; i < n_disp_attr; i++) {
+            for (j = 0; j < lbs->n_attr; j++)
+               if (strieq(attr_list[j], list[i]))
+                  break;
+            if (!strieq(attr_list[j], list[i]))
+               /* attribute not found */
+               j = 0;
+            attr_index[i] = j;
+         }
+      } else {
+         for (i = 0; i < lbs->n_attr; i++)
+            attr_index[i] = i;
+         n_disp_attr = lbs->n_attr;
+      }
 
+      for (j = 0; j < n_disp_attr; j++) {
+
+         i = attr_index[j];
          if (getcfg(lbs->name, "Password file", str, sizeof(str)) &&
              getcfg(lbs->name, "Guest display", str, sizeof(str)) && !isparam("unm")) {
 
             n = strbreak(str, gattr, MAX_N_ATTR, ",");
-            for (j = 0; j < n; j++)
-               if (strieq(gattr[j], attr_list[i]))
+            for (k = 0; k < n; k++)
+               if (strieq(gattr[k], attr_list[i]))
                   break;
 
-            if (j == n)
+            if (k == n)
                continue;
          }
 
