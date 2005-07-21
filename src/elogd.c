@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.709  2005/07/21 09:19:13  ritt
+   Put back erraneously deleted lines
+
    Revision 1.708  2005/07/20 21:24:01  ritt
    Implemented conditional attributes also for display
 
@@ -6195,6 +6198,12 @@ void rsputs2(const char *str)
             case '>':
                strcat(return_buffer, "&gt;");
                j += 4;
+               break;
+            
+            /* suppress escape character '\' in front of HTML or ELCode tag */  	 
+            case '\\': 	 
+               if (str[i+1] != '<' && str[i+1] != '[') 	 
+                  return_buffer[j++] = str[i]; 	 
                break;
 
             /* the translation for the search highliting */
