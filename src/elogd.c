@@ -6,8 +6,8 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
-   Revision 1.711  2005/07/22 21:13:12  ritt
-   Made conditional attributes also work for email notification
+   Revision 1.712  2005/07/22 21:33:41  ritt
+   Added line break for thread display
 
    Revision 1.710  2005/07/22 12:34:47  ritt
    Added <pre> to [code]
@@ -15303,9 +15303,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
       if (strieq(mode, "Threaded")) {
          if (highlight != message_id)
-            rsprintf("</a>");
+            rsprintf("</a>\n");
          else
-            rsprintf("</b>");
+            rsprintf("</b>\n");
       }
    }
 
