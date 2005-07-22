@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.711  2005/07/22 21:13:12  ritt
+   Made conditional attributes also work for email notification
+
    Revision 1.710  2005/07/22 12:34:47  ritt
    Added <pre> to [code]
 
@@ -1655,6 +1658,7 @@ void compose_base_url(LOGBOOK * lbs, char *base_url, int size);
 void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command);
 char *loc(char *orig);
 void strencode(char *text);
+int scan_attributes(char *logbook);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -3497,6 +3501,42 @@ int is_logbook(char *logbook)
 void set_condition(char *c)
 {
    strlcpy(_condition, c, sizeof(_condition));
+}
+
+/*-------------------------------------------------------------------*/
+
+void evaluate_conditions(LOGBOOK *lbs, char attrib[MAX_N_ATTR][NAME_LENGTH])
+{
+   char condition[256], str[256];
+   int index, i;
+
+   condition[0] = 0;
+   for (index = 0; index < lbs->n_attr; index++) {
+      for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
+
+         if (strchr(attr_options[index][i], '{') && strchr(attr_options[index][i], '}')) {
+
+            strlcpy(str, attr_options[index][i], sizeof(str));
+            *strchr(str, '{') = 0;
+
+            if (strieq(str, attrib[index])) {
+               strlcpy(str, strchr(attr_options[index][i], '{') + 1, sizeof(str));
+               if (*strchr(str, '}'))
+                  *strchr(str, '}') = 0;
+
+               if (condition[0] == 0)
+                  strlcpy(condition, str, sizeof(condition));
+               else {
+                  strlcat(condition, ",", sizeof(condition));
+                  strlcat(condition, str, sizeof(condition));
+               }
+
+               set_condition(condition);
+               scan_attributes(lbs->name);
+            }
+         }
+      }
+   }
 }
 
 /*-------------------------------------------------------------------*/
@@ -8816,7 +8856,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
        att[MAX_ATTACHMENTS][256], encoding[80], slist[MAX_N_ATTR + 10][NAME_LENGTH],
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
-       condition[256], ua[NAME_LENGTH], mid[80], title[256], login_name[256], cookie[256], orig_author[256];
+       ua[NAME_LENGTH], mid[80], title[256], login_name[256], cookie[256], orig_author[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -8965,38 +9005,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* evaluate conditional attributes */
-   condition[0] = 0;
-   for (index = 0; index < lbs->n_attr; index++) {
-      for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
 
-         if (strchr(attr_options[index][i], '{') && strchr(attr_options[index][i], '}')) {
-
-            strlcpy(str, attr_options[index][i], sizeof(str));
-            *strchr(str, '{') = 0;
-
-            if (strieq(str, attrib[index])) {
-               strlcpy(str, strchr(attr_options[index][i], '{') + 1, sizeof(str));
-               if (*strchr(str, '}'))
-                  *strchr(str, '}') = 0;
-
-               if (condition[0] == 0)
-                  strlcpy(condition, str, sizeof(condition));
-               else {
-                  strlcat(condition, ",", sizeof(condition));
-                  strlcat(condition, str, sizeof(condition));
-               }
-
-               set_condition(condition);
-               n_attr = scan_attributes(lbs->name);
-            }
-         }
-      }
-   }
-
-   set_condition(condition);
+   evaluate_conditions(lbs, attrib);
 
    /* rescan attributes if condition set */
-   if (condition[0]) {
+   if (_condition[0]) {
       n_attr = scan_attributes(lbs->name);
       if (breedit)
          attrib_from_param(n_attr, attrib);
@@ -9478,8 +9491,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("<td class=\"attribvalue\">%s\n", str);
    rsprintf("<input type=hidden name=entry_date value=\"%s\"></td></tr>\n", date);
 
-   if (condition[0])
-      rsprintf("<input type=hidden name=condition value=\"%s\"></td></tr>\n", condition);
+   if (_condition[0])
+      rsprintf("<input type=hidden name=condition value=\"%s\"></td></tr>\n", _condition);
 
    /* retrieve attribute flags */
    for (i = 0; i < n_attr; i++) {
@@ -10419,7 +10432,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("</form></body></html>\r\n");
 
    /* rescan unconditional attributes */
-   if (condition[0])
+   if (_condition[0])
       scan_attributes(lbs->name);
 
    xfree(text);
@@ -18487,6 +18500,8 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
       return 0;
    }
 
+   evaluate_conditions(lbs, attrib);
+
    flags = 63;
    if (getcfg(lbs->name, "Email format", str, sizeof(str)))
       flags = atoi(str);
@@ -19655,7 +19670,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
        message_id, orig_message_id, format_flags[MAX_N_ATTR], att_hide[MAX_ATTACHMENTS],
        att_inline[MAX_ATTACHMENTS], n_attachments, n_lines, n_disp_attr, attr_index[MAX_N_ATTR];
    char str[2 * NAME_LENGTH], ref[256], file_enc[256], thumb_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
-   char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], condition[256],
+   char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256],
        orig_tag[80], reply_tag[MAX_REPLY_TO * 10], display[NAME_LENGTH],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        att[256], lattr[256], mid[80], menu_item[MAX_N_LIST][NAME_LENGTH], format[80],
@@ -19825,33 +19840,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
    /*---- check for conditional attribute ----*/
 
-   condition[0] = 0;
-   for (index = 0; index < lbs->n_attr; index++) {
-      for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
-
-         if (strchr(attr_options[index][i], '{') && strchr(attr_options[index][i], '}')) {
-
-            strlcpy(str, attr_options[index][i], sizeof(str));
-            *strchr(str, '{') = 0;
-
-            if (strieq(str, attrib[index])) {
-               strlcpy(str, strchr(attr_options[index][i], '{') + 1, sizeof(str));
-               if (*strchr(str, '}'))
-                  *strchr(str, '}') = 0;
-
-               if (condition[0] == 0)
-                  strlcpy(condition, str, sizeof(condition));
-               else {
-                  strlcat(condition, ",", sizeof(condition));
-                  strlcat(condition, str, sizeof(condition));
-               }
-
-               set_condition(condition);
-               scan_attributes(lbs->name);
-            }
-         }
-      }
-   }
+   evaluate_conditions(lbs, attrib);
 
    /*---- header ----*/
 
@@ -20211,7 +20200,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          strcpy(class_value, "attribvalue");
 
          sprintf(str, "Format %s", attr_list[i]);
-         if (getcfg(lbs->name, str, format, sizeof(format)), ",") {
+         if (getcfg(lbs->name, str, format, sizeof(format))) {
             n = strbreak(format, fl, 8, ",");
             if (n > 1)
                strlcpy(class_name, fl[1], sizeof(class_name));
@@ -20316,16 +20305,16 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
             sprintf(str, "Display %s", attr_list[i]);
             if (getcfg(lbs->name, str, display, sizeof(display))) {
-               j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
+               k = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
                                     (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
                sprintf(str, "%d", message_id);
                add_subst_list((char (*)[NAME_LENGTH]) slist,
-                              (char (*)[NAME_LENGTH]) svalue, "message id", str, &j);
+                              (char (*)[NAME_LENGTH]) svalue, "message id", str, &k);
                add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
-                              (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
+                              (char (*)[NAME_LENGTH]) svalue, "entry time", date, &k);
 
                strsubst(display, sizeof(display), (char (*)[NAME_LENGTH]) slist,
-                        (char (*)[NAME_LENGTH]) svalue, j);
+                        (char (*)[NAME_LENGTH]) svalue, k);
 
             } else
                strcpy(display, attrib[i]);
