@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.710  2005/07/22 12:34:47  ritt
+   Added <pre> to [code]
+
    Revision 1.709  2005/07/21 09:19:13  ritt
    Put back erraneously deleted lines
 
@@ -6311,8 +6314,8 @@ PATTERN_LIST pattern_list[] = {
    {"[/size]", "</font>"},
    {"[font=", "<font face=\"%s\">"},
    {"[/font]", "</font>"},
-   {"[code]", "<code>"},
-   {"[/code]", "</code>"},
+   {"[code]", "<code><pre>"},
+   {"[/code]", "</pre></code>"},
 
    /* lists */
    {"[list]\r", "<ul>"},
@@ -6601,8 +6604,13 @@ void rsputs_elcode(LOGBOOK * lbs, const char *str)
       } else
          switch (str[i]) {
          case '\r':
-            strcat(return_buffer, "<br />\r\n");
-            j += 8;
+            if (interprete_elcode) {
+               strcat(return_buffer, "<br />\r\n");
+               j += 8;
+            } else {
+               strcat(return_buffer, "\r\n");
+               j += 2;
+            }
             break;
          case '\n':
             break;
