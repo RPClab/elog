@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.713  2005/07/23 13:35:21  ritt
+   Replaced tcp_hostname by listen_interface
+
    Revision 1.712  2005/07/22 21:33:41  ritt
    Added line break for thread display
 
@@ -1416,7 +1419,7 @@ char browser[256];
 char config_file[256];
 char resource_dir[256];
 char logbook_dir[256];
-char tcp_hostname[256];
+char listen_interface[256];
 char theme_name[80];
 char http_host[256];
 
@@ -3225,10 +3228,12 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
 
 void split_url(char *url, char *host, int *port, char *subdir, char *param)
 {
-   char *p;
+   char *p, str[256];
 
-   host[0] = subdir[0] = param[0] = 0;
-   *port = 80;
+   if (host) host[0] = 0;
+   if (port) *port = 80;
+   if (subdir) subdir[0] = 0;
+   if (param) param[0] = 0;
 
    p = url;
    if (strncmp(url, "http://", 7) == 0)
@@ -3236,29 +3241,37 @@ void split_url(char *url, char *host, int *port, char *subdir, char *param)
    if (strncmp(url, "https://", 8) == 0)
       p += 8;
 
-   strncpy(host, p, 256);
-   if (strchr(host, '/')) {
-      strncpy(subdir, strchr(host, '/'), 256);
-      *strchr(host, '/') = 0;
+   strncpy(str, p, sizeof(str));
+   if (strchr(str, '/')) {
+      if (subdir)
+         strncpy(subdir, strchr(str, '/'), 256);
+      *strchr(str, '/') = 0;
    }
 
-   if (strchr(host, '?')) {
-      strncpy(subdir, strchr(host, '?'), 256);
-      *strchr(host, '?') = 0;
+   if (strchr(str, '?')) {
+      if (subdir)
+         strncpy(subdir, strchr(str, '?'), 256);
+      *strchr(str, '?') = 0;
    }
 
-   if (strchr(host, ':')) {
-      *port = atoi(strchr(host, ':') + 1);
-      *strchr(host, ':') = 0;
+   if (strchr(str, ':')) {
+      if (port)
+         *port = atoi(strchr(str, ':') + 1);
+      *strchr(str, ':') = 0;
    }
 
-   if (strchr(subdir, '?')) {
-      strncpy(param, strchr(subdir, '?'), 256);
-      *strchr(subdir, '?') = 0;
-   }
+   if (host)
+      strcpy(host, str);
 
-   if (subdir[0] == 0)
-      strcpy(subdir, "/");
+   if (subdir) {
+      if (strchr(subdir, '?')) {
+         strncpy(param, strchr(subdir, '?'), 256);
+         *strchr(subdir, '?') = 0;
+      }
+
+      if (subdir[0] == 0)
+         strcpy(subdir, "/");
+   }
 }
 
 /*-------------------------------------------------------------------*/
@@ -6965,7 +6978,7 @@ void set_location(LOGBOOK * lbs, char *rel_path)
          getcfg("global", "URL", str, sizeof(str));
 
       /* if HTTP request comes from localhost, use localhost as
-         absolute link (needed if running on DSL at home */
+         absolute link (needed if running on DSL at home) */
       if (!str[0] && strstr(http_host, "localhost")) {
          strcpy(str, "http://localhost");
          if (elog_tcp_port != 80)
@@ -13175,7 +13188,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 {
    int size, i, n, status, fh, port, sock, content_length, header_length, remote_id, n_attr;
    char str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
-   char host_name[256], subdir[256], param[256], local_host_name[256], url[256];
+   char subdir[256], param[256], remote_host_name[256], url[256];
    char date[80], *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256], *buffer;
    char *content, *p, boundary[80], request[10000], response[10000];
@@ -13201,7 +13214,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    for (n_attr = 0; attr_list[n_attr][0]; n_attr++);
 
    combine_url(lbs, host, "", url, sizeof(url));
-   split_url(url, host_name, &port, subdir, param);
+   split_url(url, remote_host_name, &port, subdir, param);
 
    /* create socket */
    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -13210,20 +13223,17 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
       return -1;
    }
 
-   /* get local host name */
-   gethostname(local_host_name, sizeof(local_host_name));
-
    /* compose remote address */
    memset(&bind_addr, 0, sizeof(bind_addr));
    bind_addr.sin_family = AF_INET;
    bind_addr.sin_addr.s_addr = 0;
    bind_addr.sin_port = htons((unsigned short) port);
 
-   phe = gethostbyname(host_name);
+   phe = gethostbyname(remote_host_name);
    if (phe == NULL) {
       closesocket(sock);
       xfree(text);
-      sprintf(error_str, loc("Cannot resolve host name \"%s\""), host_name);
+      sprintf(error_str, loc("Cannot resolve host name \"%s\""), remote_host_name);
       return -1;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
@@ -13233,7 +13243,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    if (status != 0) {
       closesocket(sock);
       xfree(text);
-      sprintf(error_str, loc("Cannot connect to host %s, port %d"), host_name, port);
+      sprintf(error_str, loc("Cannot connect to host %s, port %d"), remote_host_name, port);
       return -1;
    }
 
@@ -13348,7 +13358,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    strcat(request, " HTTP/1.0\r\n");
 
    sprintf(request + strlen(request), "Content-Type: multipart/form-data; boundary=%s\r\n", boundary);
-   sprintf(request + strlen(request), "Host: %s\r\n", local_host_name);
+   sprintf(request + strlen(request), "Host: %s\r\n", host_name);
    sprintf(request + strlen(request), "User-Agent: ELOGD\r\n");
    sprintf(request + strlen(request), "Content-Length: %d\r\n", content_length);
 
@@ -13567,7 +13577,7 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
 {
    int i, n, status, port, sock, content_length, header_length;
    char str[256];
-   char host_name[256], subdir[256], param[256], local_host_name[256];
+   char subdir[256], param[256], remote_host_name[256];
    char *content, *p, boundary[80], request[10000], response[10000];
    struct hostent *phe;
    struct sockaddr_in bind_addr;
@@ -13575,7 +13585,7 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
    error_str[0] = 0;
 
    combine_url(lbs, server, "", str, sizeof(str));
-   split_url(str, host_name, &port, subdir, param);
+   split_url(str, remote_host_name, &port, subdir, param);
 
    /* create socket */
    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -13583,19 +13593,16 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
       return;
    }
 
-   /* get local host name */
-   gethostname(local_host_name, sizeof(local_host_name));
-
    /* compose remote address */
    memset(&bind_addr, 0, sizeof(bind_addr));
    bind_addr.sin_family = AF_INET;
    bind_addr.sin_addr.s_addr = 0;
    bind_addr.sin_port = htons((unsigned short) port);
 
-   phe = gethostbyname(host_name);
+   phe = gethostbyname(remote_host_name);
    if (phe == NULL) {
       closesocket(sock);
-      sprintf(error_str, loc("Cannot resolve host name \"%s\""), host_name);
+      sprintf(error_str, loc("Cannot resolve host name \"%s\""), remote_host_name);
       return;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
@@ -13604,7 +13611,7 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
    status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
    if (status != 0) {
       closesocket(sock);
-      sprintf(error_str, loc("Cannot connect to host %s, port %d"), host_name, port);
+      sprintf(error_str, loc("Cannot connect to host %s, port %d"), remote_host_name, port);
       return;
    }
 
@@ -13645,7 +13652,7 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
    strcat(request, " HTTP/1.0\r\n");
 
    sprintf(request + strlen(request), "Content-Type: multipart/form-data; boundary=%s\r\n", boundary);
-   sprintf(request + strlen(request), "Host: %s\r\n", local_host_name);
+   sprintf(request + strlen(request), "Host: %s\r\n", host_name);
    sprintf(request + strlen(request), "User-Agent: ELOGD\r\n");
    sprintf(request + strlen(request), "Content-Length: %d\r\n", content_length);
 
@@ -23259,18 +23266,18 @@ void server_loop(void)
    memset(&serv_addr, 0, sizeof(serv_addr));
    serv_addr.sin_family = AF_INET;
    /* if no hostname given with the -n flag, listen on any interface */
-   if (tcp_hostname[0] == 0)
+   if (listen_interface[0] == 0)
       serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
    else {
       /* look up the given hostname. gethostbyname() will take a hostname
          or an IP address */
-      phe = gethostbyname(tcp_hostname);
+      phe = gethostbyname(listen_interface);
       if (!phe) {
-         eprintf("Cannot find address for -n %s\n", tcp_hostname);
+         eprintf("Cannot find address for -n %s\n", listen_interface);
          exit(EXIT_FAILURE);
       }
       if (phe->h_addrtype != AF_INET) {
-         eprintf("Non Internet address for -n %s\n", tcp_hostname);
+         eprintf("Non Internet address for -n %s\n", listen_interface);
          exit(EXIT_FAILURE);
       }
       memcpy(&serv_addr.sin_addr.s_addr, phe->h_addr_list[0], phe->h_length);
@@ -23289,18 +23296,19 @@ void server_loop(void)
       exit(EXIT_FAILURE);
    }
 
-   /* get host name for mail notification */
-   if (tcp_hostname[0])
-      strlcpy(host_name, tcp_hostname, sizeof(host_name));
-   else
+   /* get local host name */
+   if (getcfg("global", "URL", str, sizeof(str))) 
+      split_url(str, host_name, NULL, NULL, NULL);
+   else {
       gethostname(host_name, sizeof(host_name));
 
-   phe = gethostbyname(host_name);
-   if (phe != NULL)
-      phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
-   /* if domain name is not in host name, hope to get it from phe */
-   if (strchr(host_name, '.') == NULL && phe != NULL)
-      strcpy(host_name, phe->h_name);
+      phe = gethostbyname(host_name);
+      if (phe != NULL)
+         phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
+      /* if domain name is not in host name, hope to get it from phe */
+      if (strchr(host_name, '.') == NULL && phe != NULL)
+         strcpy(host_name, phe->h_name);
+   }
 
    /* open configuration file */
    getcfg("dummy", "dummy", str, sizeof(str));
@@ -24834,7 +24842,7 @@ int main(int argc, char *argv[])
          else if (argv[i][1] == 'l')
             strcpy(logbook, argv[++i]);
          else if (argv[i][1] == 'n')
-            strlcpy(tcp_hostname, argv[++i], sizeof(tcp_hostname));
+            strlcpy(listen_interface, argv[++i], sizeof(listen_interface));
 #ifdef OS_UNIX
          else if (argv[i][1] == 'f')
             strlcpy(pidfile, argv[++i], sizeof(pidfile));
@@ -24858,7 +24866,7 @@ int main(int argc, char *argv[])
             printf("       -h this help\n");
             printf("       -k do not use keep-alive\n");
             printf("       -l <logbook> specify logbook for -r, -w and -m commands\n");
-            printf("       -n <hostname> TCP/IP hostname\n");
+            printf("       -n <interface> interface to listen on\n");
             printf("       -p <port> TCP/IP port\n");
             printf("       -r <pwd> create/overwrite read password in config file\n");
             printf("       -S be silent\n");
