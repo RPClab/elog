@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.716  2005/07/23 16:40:20  ritt
+   Added even more CR's
+
    Revision 1.715  2005/07/23 16:30:42  ritt
    Fixed {n} display with ROptions
 
@@ -15028,24 +15031,24 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       }
 
       if (highlight != message_id)
-         rsprintf("<a href=\"%s\">", ref);
+         rsprintf("\n<a href=\"%s\">", ref);
 
       if (attr_icon[0])
-         rsprintf("<img border=0 src=\"icons/%s\" alt=\"%s\" title=\"%s\">&nbsp;", attr_icon, attr_icon, attr_icon);
+         rsprintf("\n<img border=0 src=\"icons/%s\" alt=\"%s\" title=\"%s\">\n&nbsp;", attr_icon, attr_icon, attr_icon);
       else {
          /* if top level only, display reply icon if message has a reply */
          if (getcfg(lbs->name, "Top level only", str, sizeof(str)) && atoi(str) == 1 && reply_to[0])
-            rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\" title=\"%s\">&nbsp;", loc("Reply"), loc("Reply"));
+            rsprintf("\n<img border=0 src=\"reply.png\" alt=\"%s\" title=\"%s\">\n&nbsp;", loc("Reply"), loc("Reply"));
          else {
             /* display standard icons */
             if (level == 0)
-               rsprintf("<img border=0 src=\"entry.png\" alt=\"%s\" title=\"%s\">&nbsp;", loc("Entry"), loc("Entry"));
+               rsprintf("\n<img border=0 src=\"entry.png\" alt=\"%s\" title=\"%s\">\n&nbsp;", loc("Entry"), loc("Entry"));
             else
-               rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\" title=\"%s\">&nbsp;", loc("Reply"), loc("Reply"));
+               rsprintf("\n<img border=0 src=\"reply.png\" alt=\"%s\" title=\"%s\">\n&nbsp;", loc("Reply"), loc("Reply"));
          }
       }
       if (highlight != message_id)
-         rsprintf("</a>");
+         rsprintf("</a>\n");
 
       j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
       sprintf(str, "%d", message_id);
@@ -15056,9 +15059,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       strsubst(display, sizeof(display), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
 
       if (highlight != message_id)
-         rsprintf("<a href=\"%s\">", ref);
+         rsprintf("\n<a href=\"%s\">\n", ref);
       else
-         rsprintf("<b>");
+         rsprintf("\n<b>");
 
       if (is_html(display))
          rsputs(display);
@@ -15066,9 +15069,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          rsputs2(display);
 
       if (highlight != message_id)
-         rsprintf("</a>", ref);
+         rsprintf("</a>\n", ref);
       else
-         rsprintf("</b>");
+         rsprintf("</b>\n");
    } else {
       /* show select box */
       if (select && !strieq(mode, "Threaded")) {
@@ -15084,9 +15087,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
       if (strieq(mode, "Threaded")) {
          if (highlight != message_id)
-            rsprintf("<a href=\"%s\">", ref);
+            rsprintf("\n<a href=\"%s\">\n", ref);
          else
-            rsprintf("<b>");
+            rsprintf("\n<b>");
       }
 
       skip_comma = TRUE;
@@ -15094,16 +15097,16 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          if (strieq(disp_attr[index], loc("ID"))) {
             if (strieq(mode, "Threaded")) {
                if (level == 0)
-                  rsprintf("<img border=0 src=\"entry.png\" alt=\"%s\" title=\"%s\">&nbsp;", loc("Entry"), loc("Entry"));
+                  rsprintf("\n<img border=0 src=\"entry.png\" alt=\"%s\" title=\"%s\">&nbsp;", loc("Entry"), loc("Entry"));
                else
-                  rsprintf("<img border=0 src=\"reply.png\" alt=\"%s\" title=\"%s\">&nbsp;", loc("Reply"), loc("Reply"));
+                  rsprintf("\n<img border=0 src=\"reply.png\" alt=\"%s\" title=\"%s\">&nbsp;", loc("Reply"), loc("Reply"));
 
             } else {
                rsprintf("<td class=\"%s\">", sclass);
 
                if (locked_by && locked_by[0]) {
                   sprintf(str, "%s %s", loc("Entry is currently edited by"), locked_by);
-                  rsprintf("<img src=\"stop.png\" alt=\"%s\" title=\"%s\">&nbsp;", str, str);
+                  rsprintf("\n<img src=\"stop.png\" alt=\"%s\" title=\"%s\">&nbsp;", str, str);
                }
 
                if (getcfg(lbs->name, "ID display", display, sizeof(display))) {
@@ -15121,7 +15124,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                } else
                   sprintf(display, "%d", message_id);
 
-               rsprintf("<a href=\"%s\">&nbsp;&nbsp;%s&nbsp;&nbsp;</a>\n", ref, display);
+               rsprintf("\n<a href=\"%s\">&nbsp;&nbsp;%s&nbsp;&nbsp;</a>\n", ref, display);
                rsprintf("</td>\n");
             }
          }
@@ -15135,24 +15138,24 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   rsprintf(", %s", lbs->name);
             } else {
                if (disp_attr_link == NULL || disp_attr_link[index])
-                  rsprintf("<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", sclass, nowrap, ref,
+                  rsprintf("\n<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", sclass, nowrap, ref,
                            lbs->name);
                else
-                  rsprintf("<td class=\"%s\" %s>%s</td>\n", sclass, nowrap, lbs->name);
+                  rsprintf("\n<td class=\"%s\" %s>%s</td>\n", sclass, nowrap, lbs->name);
             }
          }
 
          if (strieq(disp_attr[index], loc("Edit"))) {
             if (!strieq(mode, "Threaded")) {
-               rsprintf("<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref, loc("Edit"));
-               rsprintf("<img src=\"edit.png\" border=0 alt=\"%s\" title=\"%s\"></a></td>\n", loc("Edit entry"), loc("Edit entry"));
+               rsprintf("\n<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref, loc("Edit"));
+               rsprintf("\n<img src=\"edit.png\" border=0 alt=\"%s\" title=\"%s\"></a></td>\n", loc("Edit entry"), loc("Edit entry"));
             }
          }
 
          if (strieq(disp_attr[index], loc("Delete"))) {
             if (!strieq(mode, "Threaded")) {
-               rsprintf("<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref, loc("Delete"));
-               rsprintf("<img src=\"delete.png\" border=0 alt=\"%s\" title=\"%s\"></a></td>\n", loc("Delete entry"), loc("Delte entry"));
+               rsprintf("\n<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref, loc("Delete"));
+               rsprintf("\n<img src=\"delete.png\" border=0 alt=\"%s\" title=\"%s\"></a></td>\n", loc("Delete entry"), loc("Delte entry"));
             }
          }
 
@@ -15172,9 +15175,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   rsprintf(", %s", str);
             } else {
                if (disp_attr_link == NULL || disp_attr_link[index])
-                  rsprintf("<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", sclass, nowrap, ref, str);
+                  rsprintf("\n<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", sclass, nowrap, ref, str);
                else
-                  rsprintf("<td class=\"%s\" %s>%s</td>\n", sclass, nowrap, str);
+                  rsprintf("\n<td class=\"%s\" %s>%s</td>\n", sclass, nowrap, str);
             }
          }
 
@@ -15200,7 +15203,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
                   else if (attr_flags[i] & AF_ICON) {
                      if (attrib[i][0])
-                        rsprintf("&nbsp;<img border=0 src=\"icons/%s\" alt=\"%s\" title=\"%s\">&nbsp;", attrib[i],
+                        rsprintf("&nbsp;\n<img border=0 src=\"icons/%s\" alt=\"%s\" title=\"%s\">&nbsp;", attrib[i],
                                  attrib[i], attrib[i]);
                   }
 
@@ -15220,9 +15223,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                } else {
                   if (strieq(attr_options[i][0], "boolean")) {
                      if (atoi(attrib[i]) == 1)
-                        rsprintf("<td class=\"%s\"><input type=checkbox checked disabled></td>\n", sclass);
+                        rsprintf("\n<td class=\"%s\"><input type=checkbox checked disabled></td>\n", sclass);
                      else
-                        rsprintf("<td class=\"%s\"><input type=checkbox disabled></td>\n", sclass);
+                        rsprintf("\n<td class=\"%s\"><input type=checkbox disabled></td>\n", sclass);
                   }
 
                   else if (attr_flags[i] & AF_DATE) {
@@ -15238,9 +15241,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                         my_strftime(str, sizeof(str), format, pts);
 
                      if (disp_attr_link == NULL || disp_attr_link[index])
-                        rsprintf("<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", sclass, ref, str);
+                        rsprintf("\n<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", sclass, ref, str);
                      else
-                        rsprintf("<td class=\"%s\">%s</td>\n", sclass, str);
+                        rsprintf("\n<td class=\"%s\">%s</td>\n", sclass, str);
                   }
 
                   else if (attr_flags[i] & AF_DATETIME) {
@@ -15256,15 +15259,15 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                         my_strftime(str, sizeof(str), format, pts);
 
                      if (disp_attr_link == NULL || disp_attr_link[index])
-                        rsprintf("<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", sclass, ref, str);
+                        rsprintf("\n<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", sclass, ref, str);
                      else
-                        rsprintf("<td class=\"%s\">%s</td>\n", sclass, str);
+                        rsprintf("\n<td class=\"%s\">%s</td>\n", sclass, str);
                   }
 
                   else if (attr_flags[i] & AF_ICON) {
                      rsprintf("<td class=\"%s\">", sclass);
                      if (attrib[i][0])
-                        rsprintf("<img border=0 src=\"icons/%s\" alt=\"%s\" title=\"%s\">", attrib[i], attrib[i], attrib[i]);
+                        rsprintf("\n<img border=0 src=\"icons/%s\" alt=\"%s\" title=\"%s\">", attrib[i], attrib[i], attrib[i]);
                      rsprintf("&nbsp;</td>");
                   }
 
@@ -15365,12 +15368,10 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             rsputs(text);
          else
             rsputs("&nbsp;");
-
       }
 
       rsprintf("</td></tr>\n");
    }
-
 
    if (strieq(mode, "Summary") && n_line > 0 && show_text) {
       rsprintf("<td class=\"summary\">");
