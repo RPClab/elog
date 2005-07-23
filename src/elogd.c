@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.714  2005/07/23 16:22:14  ritt
+   Added condition evaluation in list display
+
    Revision 1.713  2005/07/23 13:35:21  ritt
    Replaced tcp_hostname by listen_interface
 
@@ -3524,6 +3527,7 @@ void evaluate_conditions(LOGBOOK *lbs, char attrib[MAX_N_ATTR][NAME_LENGTH])
    int index, i;
 
    condition[0] = 0;
+   set_condition("");
    for (index = 0; index < lbs->n_attr; index++) {
       for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
 
@@ -9018,7 +9022,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* evaluate conditional attributes */
-
    evaluate_conditions(lbs, attrib);
 
    /* rescan attributes if condition set */
@@ -15000,6 +15003,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
    nowrap = printable ? "" : "nowrap";
    skip_comma = FALSE;
+
+   evaluate_conditions(lbs, attrib);
 
    if (strieq(mode, "Threaded")
        && getcfg(lbs->name, "Thread display", display, sizeof(display))) {
