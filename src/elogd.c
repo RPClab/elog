@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.715  2005/07/23 16:30:42  ritt
+   Fixed {n} display with ROptions
+
    Revision 1.714  2005/07/23 16:22:14  ritt
    Added condition evaluation in list display
 
@@ -9791,17 +9794,21 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   rsprintf("<table cellpadding=0 cellspacing=0><tr>\n");
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
-                     if (strstr(attrib[index], attr_options[index][i]))
+                     strlcpy(str, attr_options[index][i], sizeof(str));
+                     if (strchr(str, '{'))
+                        *strchr(str, '{') = 0;
+
+                     if (strstr(attrib[index], attr_options[index][i])
+                        || strieq(str, attrib[index]))
                         rsprintf
                             ("<td nowrap><input type=radio id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
-                             attr_options[index][i], ua, attr_options[index][i]);
+                             str, ua, str);
                      else
                         rsprintf
                             ("<td nowrap><input type=radio id=\"%s\" name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
-                             attr_options[index][i], ua, attr_options[index][i]);
+                             str, ua, str);
 
-                     rsprintf("<label for=\"%s\">%s</label>\n",
-                              attr_options[index][i], attr_options[index][i]);
+                     rsprintf("<label for=\"%s\">%s</label>\n", str, str);
 
                      rsprintf("</td>\n");
                      if (format_flags[index] & AFF_MULTI_LINE)
