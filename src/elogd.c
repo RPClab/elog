@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.720  2005/07/25 20:09:38  ritt
+   Made elog: links abolute for email notification
+
    Revision 1.719  2005/07/25 19:25:37  ritt
    Implemented 'change <attrib>' and 'list change <attrib>'
 
@@ -6142,10 +6145,10 @@ void rsputs(const char *str)
 
 char *key_list[] = { "http://", "https://", "ftp://", "mailto:", "elog:", "file://", "" };
 
-void rsputs2(const char *str)
+void rsputs2(LOGBOOK *lbs, const char *str)
 {
    int i, j, k, l, m, n;
-   char *p, *pd, link[1000], link_text[1000], tmp[1000];
+   char *p, *pd, link[1000], link_text[1000], tmp[1000], base_url[256];
 
    if (strlen_retbuf + (int) (2 * strlen(str) + 1000) >= return_buffer_size) {
       return_buffer = xrealloc(return_buffer, return_buffer_size + 100000);
@@ -6225,14 +6228,19 @@ void rsputs2(const char *str)
                   if (!isdigit(tmp[m]))
                      break;
 
-               if (m < (int) strlen(tmp))
-                  /* if link contains reference to other logbook, add ".." in front */
-                  sprintf(return_buffer + j, "<a href=\"../%s\">elog:%s</a>", link, link_text);
-               else if (link[0] == '/')
-                  sprintf(return_buffer + j, "<a href=\"%d%s\">elog:%s</a>",
+               if (m < (int) strlen(tmp)) {
+                  /* if link contains reference to other logbook, put logbook explicitly */
+                  compose_base_url(NULL, base_url, sizeof(base_url));              
+                  sprintf(return_buffer + j, "<a href=\"%s%s\">elog:%s</a>", base_url, link, link_text);
+               } else if (link[0] == '/') {
+                  compose_base_url(lbs, base_url, sizeof(base_url));              
+                  sprintf(return_buffer + j, "<a href=\"%s%d%s\">elog:%s</a>", base_url,
                           _current_message_id, link, link_text);
-               else
-                  sprintf(return_buffer + j, "<a href=\"%s\">elog:%s</a>", link, link_text);
+               } else {
+                  compose_base_url(lbs, base_url, sizeof(base_url));              
+                  sprintf(return_buffer + j, "<a href=\"%s%s\">elog:%s</a>", base_url, link, link_text);
+               }
+
             } else if (strcmp(key_list[l], "mailto:") == 0) {
                sprintf(return_buffer + j, "<a href=\"mailto:%s\">%s</a>", link, link_text);
             } else {
@@ -6241,7 +6249,7 @@ void rsputs2(const char *str)
                strlen_retbuf = j;
 
                /* link can contain special characters */
-               rsputs2(link);
+               rsputs2(lbs, link);
                j = strlen_retbuf;
 
                sprintf(return_buffer + j, "\">%s", key_list[l]);
@@ -6249,7 +6257,7 @@ void rsputs2(const char *str)
                strlen_retbuf = j;
 
                /* link_text can contain special characters */
-               rsputs2(link_text);
+               rsputs2(lbs, link_text);
                j = strlen_retbuf;
                sprintf(return_buffer + j, "</a>");
             }
@@ -6508,14 +6516,18 @@ void rsputs_elcode(LOGBOOK * lbs, const char *str)
                   if (!isdigit(tmp[m]))
                      break;
 
-               if (m < (int) strlen(tmp))
-                  /* if link contains reference to other logbook, add ".." in front */
-                  sprintf(return_buffer + j, "<a href=\"../%s\">elog:%s</a>", link, link_text);
-               else if (link[0] == '/')
-                  sprintf(return_buffer + j, "<a href=\"%d%s\">elog:%s</a>",
+               if (m < (int) strlen(tmp)) {
+                  /* if link contains reference to other logbook, put logbook explicitly */
+                  compose_base_url(NULL, base_url, sizeof(base_url));              
+                  sprintf(return_buffer + j, "<a href=\"%s%s\">elog:%s</a>", base_url, link, link_text);
+               } else if (link[0] == '/') {
+                  compose_base_url(lbs, base_url, sizeof(base_url));              
+                  sprintf(return_buffer + j, "<a href=\"%s%d%s\">elog:%s</a>", base_url,
                           _current_message_id, link, link_text);
-               else
-                  sprintf(return_buffer + j, "<a href=\"%s\">elog:%s</a>", link, link_text);
+               } else {
+                  compose_base_url(lbs, base_url, sizeof(base_url));              
+                  sprintf(return_buffer + j, "<a href=\"%s%s\">elog:%s</a>", base_url, link, link_text);
+               }
             } else if (strcmp(key_list[l], "mailto:") == 0) {
                sprintf(return_buffer + j, "<a href=\"mailto:%s\">%s</a>", link, link_text);
             } else {
@@ -6524,7 +6536,7 @@ void rsputs_elcode(LOGBOOK * lbs, const char *str)
                strlen_retbuf = j;
 
                /* link can contain special characters */
-               rsputs2(link);
+               rsputs2(lbs, link);
                j = strlen_retbuf;
 
                sprintf(return_buffer + j, "\">%s", key_list[l]);
@@ -6532,7 +6544,7 @@ void rsputs_elcode(LOGBOOK * lbs, const char *str)
                strlen_retbuf = j;
 
                /* link_text can contain special characters */
-               rsputs2(link_text);
+               rsputs2(lbs, link_text);
                j = strlen_retbuf;
                sprintf(return_buffer + j, "</a>");
             }
@@ -9639,7 +9651,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             strlcpy(str, attrib[index], sizeof(str));
 
          rsprintf("<td%s class=\"attribvalue\">\n", title);
-         rsputs2(str);
+         rsputs2(lbs, str);
          rsprintf("&nbsp;");
 
          if (attr_flags[index] & AF_MULTI) {
@@ -9950,7 +9962,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       if (strieq(encoding, "plain")) {
          rsputs("<pre class=\"messagepre\">");
-         rsputs2(text);
+         rsputs2(lbs, text);
          rsputs("</pre>");
       } else if (strieq(encoding, "ELCode"))
          rsputs_elcode(lbs, text);
@@ -15081,7 +15093,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       if (is_html(display))
          rsputs(display);
       else
-         rsputs2(display);
+         rsputs2(lbs, display);
 
       if (highlight != message_id)
          rsprintf("</a>\n", ref);
@@ -15210,7 +15222,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                         if (is_html(attrib[i]))
                            rsputs(attrib[i]);
                         else
-                           rsputs2(attrib[i]);
+                           rsputs2(lbs, attrib[i]);
 
                         rsprintf("&nbsp");
                      }
@@ -15232,7 +15244,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      if (is_html(attrib[i]))
                         rsputs(attrib[i]);
                      else
-                        rsputs2(attrib[i]);
+                        rsputs2(lbs, attrib[i]);
 
                   }
                } else {
@@ -15321,7 +15333,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                               highlight_searchtext(re_buf, display, str, TRUE);
                               strlcpy(display, str, sizeof(display));
                            }
-                           rsputs2(display);
+                           rsputs2(lbs, display);
                         }
 
                         if (disp_attr_link == NULL || disp_attr_link[index])
@@ -15373,7 +15385,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          if (strieq(encoding, "plain")) {
             rsputs("<pre>");
             if (text[0])
-               rsputs2(text);
+               rsputs2(lbs, text);
             else
                rsputs("&nbsp;");
             rsputs("</pre>");
@@ -15424,7 +15436,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
          if (strieq(encoding, "plain")) {
             rsputs("<pre>");
-            rsputs2(text);
+            rsputs2(lbs, text);
             rsputs("</pre>");
          } else if (strieq(encoding, "ELCode"))
             rsputs_elcode(lbs, text);
@@ -15527,7 +15539,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                            while (!feof(f)) {
                               str[0] = 0;
                               fgets(str, sizeof(str), f);
-                              rsputs2(str);
+                              rsputs2(lbs, str);
                            }
                            fclose(f);
                         }
@@ -20298,7 +20310,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                while (*p == ' ')
                   p++;
 
-               rsputs2(p);
+               rsputs2(lbs, p);
 
                p = strtok(NULL, "|");
 
@@ -20357,7 +20369,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             if (is_html(display))
                rsputs(display);
             else
-               rsputs2(display);
+               rsputs2(lbs, display);
 
             rsprintf("&nbsp;</td>\n");
          }
@@ -20408,7 +20420,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
          if (strieq(encoding, "plain")) {
             rsputs("<pre class=\"messagepre\">");
-            rsputs2(text);
+            rsputs2(lbs, text);
             rsputs("</pre>");
          } else if (strieq(encoding, "ELCode"))
             rsputs_elcode(lbs, text);
@@ -20592,7 +20604,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
                               if (n_lines < 1000) {
                                  if (!chkext(att, ".HTML"))
-                                    rsputs2(str);
+                                    rsputs2(lbs, str);
                                  else
                                     rsputs(str);
                               }
