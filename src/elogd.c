@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.719  2005/07/25 19:25:37  ritt
+   Implemented 'change <attrib>' and 'list change <attrib>'
+
    Revision 1.718  2005/07/25 18:37:21  ritt
    Remove </ br> after [/code]
 
@@ -6387,10 +6390,10 @@ PATTERN_LIST pattern_list[] = {
    {"[/size]", "</font>"},
    {"[font=", "<font face=\"%s\">"},
    {"[/font]", "</font>"},
-   {"\r\n[code]", "<code><pre>"},
-   {"[code]", "<code><pre>"},
-   {"[/code]\r\n", "</pre></code>"},
-   {"[/code]", "</pre></code>"},
+   {"\r\n[code]", "<pre>"},
+   {"[code]", "<pre>"},
+   {"[/code]\r\n", "</pre>"},
+   {"[/code]", "</pre>"},
 
    /* lists */
    {"[list]\r", "<ul>"},
@@ -15292,7 +15295,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                         if (disp_attr_link == NULL || disp_attr_link[index])
                            rsprintf("<a href=\"%s\">", ref);
 
-                        sprintf(str, "Display %s", attr_list[i]);
+                        sprintf(str, "List Change %s", attr_list[i]);
                         if (getcfg(lbs->name, str, display, sizeof(display))) {
                            j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
                                                 (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
@@ -20335,7 +20338,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          } else {
             rsprintf("%s:</td><td class=\"%s\">\n", attr_list[i], class_value);
 
-            sprintf(str, "Display %s", attr_list[i]);
+            sprintf(str, "Change %s", attr_list[i]);
             if (getcfg(lbs->name, str, display, sizeof(display))) {
                k = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
                                     (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
@@ -21777,11 +21780,11 @@ void show_calendar(LOGBOOK * lbs)
       strcpy(index, "1");
 
    show_html_header(lbs, FALSE, loc("Calendar"), TRUE, FALSE, NULL);
-   rsprintf("<body class=\"calwindow\"><form name=form1 method=\"GET\" action=\"\">\n");
+   rsprintf("<body class=\"calwindow\"><form name=form1 method=\"GET\" action=\".\">\n");
    rsprintf("<input type=hidden name=\"i\" value=\"%s\">\n", index);
    rsprintf("<input type=hidden name=\"y\" value=\"%d\">\n", cur_year);
 
-   rsprintf("<script language=\"JavaScript\">\n\n");
+   rsprintf("<script type=\"text/javascript\">\n\n");
    rsprintf("function submit_day(day)\n");
    rsprintf("{\n");
    rsprintf("  opener.document.form1.d%s.value = day;\n", index, cur_year);
@@ -21804,14 +21807,14 @@ void show_calendar(LOGBOOK * lbs)
 
    /* link to previous year */
    rsprintf("&nbsp;&nbsp;");
-   rsprintf("<a href=\"?i=%s&m=%d&y=%d\">", index, cur_mon, cur_year - 1);
+   rsprintf("<a href=\"?i=%s&amp;m=%d&amp;y=%d\">", index, cur_mon, cur_year - 1);
    rsprintf("<img border=0 align=\"absmiddle\" src=\"cal_prev.png\" alt=\"%s\" title=\"%s\"></a>", loc("Previous Year"), loc("Previous Year"));
 
    /* current year */
    rsprintf("&nbsp;%d&nbsp;", cur_year);
 
    /* link to next year */
-   rsprintf("<a href=\"?i=%s&m=%d&y=%d\">", index, cur_mon, cur_year + 1);
+   rsprintf("<a href=\"?i=%s&amp;m=%d&amp;y=%d\">", index, cur_mon, cur_year + 1);
    rsprintf("<img border=0 align=\"absmiddle\" src=\"cal_next.png\" alt=\"%s\" title=\"%s\"></a>", loc("Next Year"), loc("Next Year"));
 
    /* go to first day of month */
@@ -21860,7 +21863,7 @@ void show_calendar(LOGBOOK * lbs)
          break;
    }
 
-   rsprintf("</form></body></html>\n");
+   rsprintf("</table>\n</form></body></html>\n");
 }
 
 /*------------------------------------------------------------------*/
