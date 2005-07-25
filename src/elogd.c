@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.718  2005/07/25 18:37:21  ritt
+   Remove </ br> after [/code]
+
    Revision 1.717  2005/07/25 18:04:12  ritt
    Applied pointer casting patch from Recai
 
@@ -6384,7 +6387,9 @@ PATTERN_LIST pattern_list[] = {
    {"[/size]", "</font>"},
    {"[font=", "<font face=\"%s\">"},
    {"[/font]", "</font>"},
+   {"\r\n[code]", "<code><pre>"},
    {"[code]", "<code><pre>"},
+   {"[/code]\r\n", "</pre></code>"},
    {"[/code]", "</pre></code>"},
 
    /* lists */
@@ -6539,7 +6544,7 @@ void rsputs_elcode(LOGBOOK * lbs, const char *str)
       for (l = 0; pattern_list[l].pattern[0]; l++) {
          if (strnieq(str + i, pattern_list[l].pattern, strlen(pattern_list[l].pattern))) {
 
-            if (stricmp(pattern_list[l].pattern, "[/code]") == 0) 
+            if (stristr(pattern_list[l].pattern, "[/code]")) 
                interprete_elcode = TRUE;
 
             if (interprete_elcode) {
@@ -6658,13 +6663,13 @@ void rsputs_elcode(LOGBOOK * lbs, const char *str)
                }
             } // interprete_elcode
 
-            if (stricmp(pattern_list[l].pattern, "[code]") == 0) 
+            if (stristr(pattern_list[l].pattern, "[code]")) 
                interprete_elcode = FALSE;
 
             break;
          }
       }
-      if ((interprete_elcode && pattern_list[l].pattern[0]) || stricmp(pattern_list[l].pattern, "[code]") == 0)
+      if ((interprete_elcode && pattern_list[l].pattern[0]) || stristr(pattern_list[l].pattern, "[code]"))
          continue;
 
       if (strnieq(str + i, "<br>", 4)) {
@@ -23468,7 +23473,7 @@ void server_loop(void)
       if (status != -1) {       // if no HUP signal is received
          if (FD_ISSET(lsock, &readfds)) {
             len = sizeof(acc_addr);
-            _sock = accept(lsock, (struct sockaddr *) &acc_addr, (socklen_t *) &len);
+            _sock = accept(lsock, (struct sockaddr *) &acc_addr, (void *) &len);
             /* find new entry in socket table */
             for (i = 0; i < N_MAX_CONNECTION; i++)
                if (ka_sock[i] == 0)
