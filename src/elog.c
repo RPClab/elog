@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility
 
   $Log$
+  Revision 1.27  2005/07/25 18:04:12  ritt
+  Applied pointer casting patch from Recai
+
   Revision 1.26  2005/07/20 19:01:56  ritt
   Removed 'host:' for HTML/1.0
 
@@ -290,13 +293,14 @@ void url_encode(char *ps, int size)
 Encode the given string in-place by adding %XX escapes
 \********************************************************************/
 {
-   unsigned char *pd, *p, str[NAME_LENGTH];
+   unsigned char *pd, *p;
+   char str[NAME_LENGTH];
 
-   pd = str;
-   p = ps;
+   pd = (unsigned char *) str;
+   p = (unsigned char *) ps;
    while (*p && (int) pd < (int) str + 250) {
       if (strchr("%&=#?+", *p) || *p > 127) {
-         sprintf(pd, "%%%02X", *p);
+         sprintf((char *) pd, "%%%02X", *p);
          pd += 3;
          p++;
       } else if (*p == ' ') {

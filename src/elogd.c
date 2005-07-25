@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.717  2005/07/25 18:04:12  ritt
+   Applied pointer casting patch from Recai
+
    Revision 1.716  2005/07/23 16:40:20  ritt
    Added even more CR's
 
@@ -2202,13 +2205,14 @@ void url_encode(char *ps, int size)
 Encode the given string in-place by adding %XX escapes
 \********************************************************************/
 {
-   unsigned char *pd, *p, str[NAME_LENGTH];
+   unsigned char *pd, *p;
+   char str[NAME_LENGTH];
 
-   pd = str;
-   p = ps;
+   pd = (unsigned char *) str;
+   p = (unsigned char *) ps;
    while (*p && (int) pd < (int) str + 250) {
       if (strchr("%&=#?+", *p) || *p > 127) {
-         sprintf(pd, "%%%02X", *p);
+         sprintf((char *) pd, "%%%02X", *p);
          pd += 3;
          p++;
       } else if (*p == ' ') {
@@ -2227,13 +2231,14 @@ void url_slash_encode(char *ps, int size)
 Do the same including '/' characters
 \********************************************************************/
 {
-   unsigned char *pd, *p, str[NAME_LENGTH];
+   unsigned char *pd, *p;
+   char str[NAME_LENGTH];
 
-   pd = str;
-   p = ps;
+   pd = (unsigned char *) str;
+   p = (unsigned char *) ps;
    while (*p && (int) pd < (int) str + 250) {
       if (strchr("%&=#?+/", *p) || *p > 127) {
-         sprintf(pd, "%%%02X", *p);
+         sprintf((char *) pd, "%%%02X", *p);
          pd += 3;
          p++;
       } else if (*p == ' ') {
@@ -2254,10 +2259,11 @@ void str_escape(char *ps, int size)
 Encode the given string in-place by adding \\ escapes for `$"\
 \********************************************************************/
 {
-   unsigned char *pd, *p, str[NAME_LENGTH];
+   unsigned char *pd, *p;
+   char str[NAME_LENGTH];
 
-   pd = str;
-   p = ps;
+   pd = (unsigned char *) str;
+   p = (unsigned char *) ps;
    while (*p && (int) pd < (int) str + 250) {
       if (strchr("'$\"\\", *p)) {
          *pd++ = '\\';
@@ -2339,7 +2345,7 @@ void base64_encode(unsigned char *s, unsigned char *d)
 {
    unsigned int t, pad;
 
-   pad = 3 - strlen(s) % 3;
+   pad = 3 - strlen((char *)s) % 3;
    if (pad == 3)
       pad = 0;
    while (*s) {
@@ -2399,7 +2405,7 @@ void do_crypt(char *s, char *d)
 #ifdef HAVE_CRYPT
    strcpy(d, crypt(s, "el"));
 #else
-   base64_encode(s, d);
+   base64_encode((unsigned char *) s, (unsigned char *) d);
 #endif
 }
 
@@ -2921,7 +2927,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
          goto smtp_error;
 
       getcfg(lbs->name, "SMTP username", decoded, sizeof(decoded));
-      base64_encode(decoded, str);
+      base64_encode((unsigned char *) decoded, (unsigned char *) str);
       strcat(str, "\r\n");
       send(s, str, strlen(str), 0);
       if (verbose)
@@ -3010,7 +3016,8 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    strcpy(subject_enc, "=?");
    strlcat(subject_enc, charset, sizeof(subject_enc));
    strlcat(subject_enc, "?B?", sizeof(subject_enc));
-   base64_encode(subject, subject_enc + strlen(subject_enc));
+   base64_encode((unsigned char *) subject,
+                 (unsigned char *) (subject_enc + strlen(subject_enc)));
    strlcat(subject_enc, "?=", sizeof(subject_enc));
 
    snprintf(str, strsize - 1, "From: %s\r\nSubject: %s\r\n", from, subject_enc);
@@ -3176,7 +3183,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
                if (n <= 0)
                   break;
 
-               base64_bufenc(buffer, n, str);
+               base64_bufenc((unsigned char *) buffer, n, str);
                strcat(str, "\r\n");
                send(s, str, strlen(str), 0);
                if (verbose)
@@ -3346,7 +3353,7 @@ int retrieve_url(char *url, char **buffer, char *rpwd)
 
    if (rpwd && rpwd[0]) {
       sprintf(auth, "anybody:%s", rpwd);
-      base64_encode(auth, pwd_enc);
+      base64_encode((unsigned char *) auth, (unsigned char *) pwd_enc);
       sprintf(str + strlen(str), "Authorization: Basic %s\r\n", pwd_enc);
    }
 
@@ -11972,7 +11979,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             for (i = 0; i < 8; i++)
                str[i] = 'A' + (rand() % 25);
             str[i] = 0;
-            base64_encode(str, pwd);
+            base64_encode((unsigned char *) str, (unsigned char *) pwd);
             do_crypt(pwd, pwd_encrypted);
 
             /* send email with new password */
@@ -23461,7 +23468,7 @@ void server_loop(void)
       if (status != -1) {       // if no HUP signal is received
          if (FD_ISSET(lsock, &readfds)) {
             len = sizeof(acc_addr);
-            _sock = accept(lsock, (struct sockaddr *) &acc_addr, &len);
+            _sock = accept(lsock, (struct sockaddr *) &acc_addr, (socklen_t *) &len);
             /* find new entry in socket table */
             for (i = 0; i < N_MAX_CONNECTION; i++)
                if (ka_sock[i] == 0)
