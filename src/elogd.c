@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.726  2005/07/26 18:15:19  ritt
+   Added 'reply comment'
+
    Revision 1.725  2005/07/26 18:11:06  ritt
    Changed 'summary page title' to 'list page title'
 
@@ -10161,6 +10164,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    if (getcfg(lbs->name, "Message comment", comment, sizeof(comment))
        && !message_id) {
+      rsputs(comment);
+      rsputs("<br>\n");
+   }
+
+   if (getcfg(lbs->name, "Reply comment", comment, sizeof(comment))
+       && breply) {
       rsputs(comment);
       rsputs("<br>\n");
    }
