@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.721  2005/07/26 07:03:41  ritt
+   Set correct message_id for threaded display
+
    Revision 1.720  2005/07/25 20:09:38  ritt
    Made elog: links abolute for email notification
 
@@ -6974,17 +6977,18 @@ void compose_base_url(LOGBOOK * lbs, char *base_url, int size)
 {
    /* try to get URL from referer */
    if (!getcfg("global", "URL", base_url, size)) {
-      if (referer[0])
-         strcpy(base_url, referer);
-      else {
-         if (elog_tcp_port == 80)
-            sprintf(base_url, "http://%s/", host_name);
-         else
-            sprintf(base_url, "http://%s:%d/", host_name, elog_tcp_port);
-         if (lbs) {
-            strlcat(base_url, lbs->name_enc, size);
-            strlcat(base_url, "/", size);
-         }
+      if (referer[0] && stristr(referer, "https:"))
+         strcpy(base_url, "https://");
+      else
+         strcpy(base_url, "http://");
+
+      if (elog_tcp_port == 80)
+         sprintf(base_url+strlen(base_url), "%s/", host_name);
+      else
+         sprintf(base_url+strlen(base_url), "%s:%d/", host_name, elog_tcp_port);
+      if (lbs) {
+         strlcat(base_url, lbs->name_enc, size);
+         strlcat(base_url, "/", size);
       }
    } else {
       if (base_url[strlen(base_url) - 1] != '/')
@@ -20102,6 +20106,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       }
 
       /*---- display message ID ----*/
+
+      _current_message_id = message_id;
 
       if (email) {
          rsprintf("<tr><td class=\"title1\">\n");
