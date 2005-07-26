@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.723  2005/07/26 07:59:46  ritt
+   Added $elogbook
+
    Revision 1.722  2005/07/26 07:27:00  ritt
    Version 2.6.0-beta3
 
@@ -8353,6 +8356,10 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
 
    /* add logbook */
    strcpy(list[i], "logbook");
+   strlcpy(value[i++], lbs->name, NAME_LENGTH);
+
+   /* add logbook */
+   strcpy(list[i], "elogbook");
    strlcpy(value[i++], lbs->name_enc, NAME_LENGTH);
 
    /* add date */
