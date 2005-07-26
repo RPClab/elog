@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.725  2005/07/26 18:11:06  ritt
+   Changed 'summary page title' to 'list page title'
+
    Revision 1.724  2005/07/26 09:55:43  ritt
    Changed 'rss feed' to 'alternate'
 
@@ -17375,7 +17378,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
    /*---- header ----*/
 
-   if (getcfg(lbs->name, "Summary Page Title", str, sizeof(str))) {
+   if (getcfg(lbs->name, "List Page Title", str, sizeof(str))) {
       i = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, NULL, TRUE);
       strsubst(str, sizeof(str), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, i);
       strip_html(str);
