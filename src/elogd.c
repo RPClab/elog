@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.727  2005/07/26 18:21:27  ritt
+   Added 'Edit page title'
+
    Revision 1.726  2005/07/26 18:15:19  ritt
    Added 'reply comment'
 
@@ -9266,7 +9269,15 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* header */
-   show_html_header(lbs, FALSE, "ELOG", FALSE, FALSE, cookie);
+
+   if (getcfg(lbs->name, "Edit Page Title", str, sizeof(str))) {
+      i = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, NULL, TRUE);
+      strsubst(str, sizeof(str), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, i);
+      strip_html(str);
+   } else
+      sprintf(str, "ELOG %s", lbs->name);
+
+   show_html_header(lbs, FALSE, str, FALSE, FALSE, cookie);
 
    /* java script for checking required attributes and to check for cancelled edits */
    rsprintf("<script type=\"text/javascript\">\n");
