@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.722  2005/07/26 07:27:00  ritt
+   Version 2.6.0-beta3
+
    Revision 1.721  2005/07/26 07:03:41  ritt
    Set correct message_id for threaded display
 
@@ -1275,7 +1278,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.6.0-beta2"
+#define VERSION "2.6.0-beta3"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
