@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.724  2005/07/26 09:55:43  ritt
+   Changed 'rss feed' to 'alternate'
+
    Revision 1.723  2005/07/26 07:59:46  ritt
    Added $elogbook
 
@@ -7447,7 +7450,7 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\">\n");
 
    if (rss_feed) {
-      rsprintf("<link rel=\"rss feed\" type=\"application/rss+xml\" ");
+      rsprintf("<link rel=\"alternate\" type=\"application/rss+xml\" ");
       rsprintf("title=\"ELOG %s\" ", lbs->name);
       rsprintf("href=\"elog.rdf\">\n");
    }
