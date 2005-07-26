@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.728  2005/07/26 19:19:01  ritt
+   Use rsputs3 for quotes
+
    Revision 1.727  2005/07/26 18:21:27  ritt
    Added 'Edit page title'
 
@@ -10272,7 +10275,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      rsprintf("[quote=\"%s\"]", orig_author);
                   else
                      rsprintf("[quote]");
-                  rsputs(text);
+                  rsputs3(text);
                   rsprintf("[/quote]\r\n");
                } else {
                   do {
