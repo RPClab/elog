@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.729  2005/07/27 18:42:53  ritt
+   Fixed HTML errors
+
    Revision 1.728  2005/07/26 19:19:01  ritt
    Use rsputs3 for quotes
 
@@ -12151,7 +12154,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
 
       rsprintf("</td></tr></table>\n\n");
       show_bottom_text(lbs);
-      rsprintf("</body></html>\r\n");
+      rsprintf("</form></body></html>\r\n");
    }
 }
 
@@ -12165,9 +12168,9 @@ void show_new_user_page(LOGBOOK * lbs)
    /*---- header ----*/
 
    show_html_header(lbs, TRUE, loc("ELOG new user"), TRUE, FALSE, NULL);
-   rsprintf("<body><center><p><p>\n");
+   rsprintf("<body><center><br><br>\n");
    show_top_text(lbs);
-   rsprintf("<form name=form1 method=\"GET\" action=\"\">\n\n");
+   rsprintf("<form name=form1 method=\"GET\" action=\".\">\n\n");
 
    /*---- title ----*/
 
@@ -12192,7 +12195,7 @@ void show_new_user_page(LOGBOOK * lbs)
 
    rsprintf("<tr><td nowrap>%s:</td>\n", loc("Login name"));
    rsprintf("<td><input type=text size=40 name=new_user_name></td>\n");
-   rsprintf("<td nowrap align=left><i><font size=2>(%s)</i></font></td></tr>\n",
+   rsprintf("<td nowrap align=left><font size=2><i>(%s)</i></font></td></tr>\n",
             loc("name may not contain blanks"));
 
    rsprintf("<tr><td nowrap>%s:</td>\n", loc("Full name"));
@@ -12255,11 +12258,11 @@ void show_new_user_page(LOGBOOK * lbs)
    rsprintf("<tr><td nowrap>%s:</td>\n", loc("Retype password"));
    rsprintf("<td colspan=2><input type=password size=40 name=newpwd2>\n");
 
-   rsprintf("</td></tr></table></td></tr>\n");
+   rsprintf("</td></tr></table>\n");
 
    rsprintf("</td></tr></table>\n\n");
    show_bottom_text(lbs);
-   rsprintf("</body></html>\r\n");
+   rsprintf("</form></center></body></html>\r\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -21350,7 +21353,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
       rsprintf("<td align=left class=\"dlgform\"><input type=password name=upassword></td></tr>\n");
 
       if (!getcfg(lbs->name, "Login expiration", str, sizeof(str)) || atof(str) > 0) {
-         rsprintf("<td align=center colspan=2 class=\"dlgform\">");
+         rsprintf("<tr><td align=center colspan=2 class=\"dlgform\">");
 
          if (isparam("urem") && atoi(getparam("urem")) == 0)
             rsprintf("<input type=checkbox name=remember value=1>\n");
@@ -21366,7 +21369,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
       if (getcfg(lbs->name, "Self register", str, sizeof(str)) && atoi(str) > 0) {
          strcpy(str, loc("New user"));
          url_encode(str, sizeof(str));
-         rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"?cmd=%s\">%s</td></tr>",
+         rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"?cmd=%s\">%s</a></td></tr>",
                   str, loc("Register as new user"));
       }
 
@@ -21380,7 +21383,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
           ("<center><a class=\"bottomlink\" href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></center>",
            VERSION);
 
-      rsprintf("</body></html>\r\n");
+      rsprintf("</form></body></html>\r\n");
 
       return FALSE;
    } else {
@@ -21506,7 +21509,9 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
          rsprintf("<br>\n");
          str[0] = 0;
          getcfg(lb_list[index].name, "Comment", str, sizeof(str));
-         rsprintf("<span class=\"selcomment\">%s</span></td>\n", str);
+         rsprintf("<span class=\"selcomment\">");
+         rsputs3(str);
+         rsprintf("</span></td>\n");
          rsprintf("<td nowrap class=\"selentries\">");
          rsprintf("%d", *lb_list[index].n_el_index);
          rsprintf("</td>\n");
