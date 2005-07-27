@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.730  2005/07/27 20:51:24  ritt
+   Added validity check for year in date/time attributes
+
    Revision 1.729  2005/07/27 18:42:53  ritt
    Fixed HTML errors
 
@@ -9406,6 +9409,19 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("    return false;\n");
          rsprintf("  }\n");
       }
+
+      if (attr_flags[i] & (AF_DATE | AF_DATETIME)) {
+         rsprintf("  for (var i=0 ; i<document.form1.y%d.value.length ; i++)\n", i);
+         rsprintf("    if ((document.form1.y%d.value.charAt(i) < \"0\" ||\n", i);
+         rsprintf("         document.form1.y%d.value.charAt(i) > \"9\")) { break }\n", i);
+         rsprintf("  if (i<document.form1.y%d.value.length) {\n", i);
+         sprintf(str, loc("Please enter numeric value for year of attribute '%s'"), attr_list[i]);
+         rsprintf("    alert(\"%s\");\n", str);
+         rsprintf("    document.form1.y%d.focus();\n", i);
+         rsprintf("    return false;\n");
+         rsprintf("  }\n");
+      }
+
    }
 
    rsprintf("  submitted = true;\n");
