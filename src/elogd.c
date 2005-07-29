@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.731  2005/07/29 08:37:06  ritt
+   Added 'filter menu text'
+
    Revision 1.730  2005/07/27 20:51:24  ritt
    Added validity check for year in date/time attributes
 
@@ -16040,7 +16043,7 @@ void build_ref(char *ref, int size, char *mode, char *expand, char *new_entries)
 
 void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands, BOOL threaded)
 {
-   int cur_exp, n, i, j, i1, i2, index;
+   int cur_exp, n, i, j, i1, i2, index, size;
    char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH], list[MAX_N_LIST][NAME_LENGTH], option[NAME_LENGTH];
 
    rsprintf("<tr><td class=\"menuframe\">\n");
@@ -16231,9 +16234,40 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
             }
          }
       }
-
-      rsprintf("&nbsp;<b>%d %s</b>&nbsp;", n_msg, loc("Entries"));
    }
+
+   /*---- filter menu text ----*/
+
+   if (getcfg(lbs->name, "filter menu text", str, sizeof(str))) {
+      FILE *f;
+      char file_name[256], *buf;
+
+      /* check if file starts with an absolute directory */
+      if (str[0] == DIR_SEPARATOR || str[1] == ':')
+         strcpy(file_name, str);
+      else {
+         strlcpy(file_name, resource_dir, sizeof(file_name));
+         strlcat(file_name, str, sizeof(file_name));
+      }
+
+      f = fopen(file_name, "rb");
+      if (f != NULL) {
+         fseek(f, 0, SEEK_END);
+         size = TELL(fileno(f));
+         fseek(f, 0, SEEK_SET);
+
+         buf = xmalloc(size + 1);
+         fread(buf, 1, size, f);
+         buf[size] = 0;
+         fclose(f);
+
+         rsputs(buf);
+
+      } else
+         rsprintf("<center><b>Error: file <i>\"%s\"</i> not found</b></center>", file_name);
+   }
+
+   rsprintf("&nbsp;<b>%d %s</b>&nbsp;", n_msg, loc("Entries"));
 
    rsprintf("</td></tr></table></td></tr>\n\n");
 }
