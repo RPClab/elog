@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.733  2005/07/29 14:35:11  ritt
+   Added icons for 'show new/all'
+
    Revision 1.732  2005/07/29 09:06:33  ritt
    Moved 'filter menu text' left of 'show only new entries'
 
@@ -16150,10 +16153,12 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
    ref[0] = 0;
    if (!isparam("new_entries") || atoi(getparam("new_entries")) == 0) {
       build_ref(ref, sizeof(ref), "", "", "1");
-      rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;", ref, loc("Show only new entries"));
+      rsprintf("<a href=\"%s\"><img align=\"middle\" border=\"0\" src=\"new_entry.png\" alt=\"%s\" title=\"%s\"></a>&nbsp;&nbsp;", 
+         ref, loc("Show only new entries"), loc("Show only new entries"));
    } else {
       build_ref(ref, sizeof(ref), "", "", "0");
-      rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;", ref, loc("Show all entries"));
+      rsprintf("<a href=\"%s\"><img align=\"middle\" border=\"0\" src=\"all_entry.png\" alt=\"%s\" title=\"%s\"></a>&nbsp;&nbsp;", 
+         ref, loc("Show all entries"), loc("Show all entries"));
    }
 
    if (getcfg(lbs->name, "Quick filter", str, sizeof(str))) {
