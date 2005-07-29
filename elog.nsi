@@ -77,6 +77,10 @@ Section "ELOG system (required)" SecSystem
   SetOutPath $INSTDIR\doc
   File doc\*.*
 
+  ; script directory
+  SetOutPath $INSTDIR\scripts
+  File scripts\*.*
+
   ; src directory
   SetOutPath $INSTDIR\src
   File src\*.c
@@ -188,6 +192,9 @@ Section "Uninstall"
 
   Delete $INSTDIR\doc\*
   RMDir $INSTDIR\doc
+
+  Delete $INSTDIR\scripts\*
+  RMDir $INSTDIR\scripts
 
   Delete $INSTDIR\src\*
   RMDir $INSTDIR\src
