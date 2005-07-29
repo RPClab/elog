@@ -1,14 +1,14 @@
 $@MID@$: 1
 Date: Thu Nov 08 18:37:57 2001
-Thread:                0                0
 Author: Stefan Ritt
 Type: Routine
 Category: General
 Subject: Welcome
-
-Encoding: plain
+Attachment: 
+Encoding: ELCode
 ========================================
-Congratulations for installing ELOG sucessfully!
+[B]Congratulations for installing ELOG sucessfully!
+[/B]
 
 This is a demo entry to ensure the elogd server is working correctly. 
-Click "New" to add new pages and "Delete" to delete this page.
+Click [I]"New"[/I] to add new pages and [I]"Delete"[/I] to delete this page.
