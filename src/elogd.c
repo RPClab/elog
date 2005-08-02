@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.734  2005/08/02 18:39:12  ritt
+   Remove obsolete options
+
    Revision 1.733  2005/07/29 14:35:11  ritt
    Added icons for 'show new/all'
 
@@ -10651,10 +10654,8 @@ void show_find_form(LOGBOOK * lbs)
 
    rsprintf("<tr><td class=\"form2\"><b>%s:</b><br>", loc("Options"));
 
-   if (!getcfg(lbs->name, "Number attachments", str, sizeof(str)) || atoi(str) > 0) {
-      rsprintf("<input type=checkbox id=\"attach\" name=\"attach\" value=1>");
-      rsprintf("<label for=\"attach\">%s<br></label>\n", loc("Show attachments"));
-   }
+   rsprintf("<input type=checkbox id=\"attach\" name=\"attach\" value=1>");
+   rsprintf("<label for=\"attach\">%s<br></label>\n", loc("Show attachments"));
 
    rsprintf("<input type=checkbox id=\"printable\" name=\"printable\" value=1>");
    rsprintf("<label for=\"printable\">%s<br></label>\n", loc("Printable output"));
@@ -15134,16 +15135,11 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       if (attr_icon[0])
          rsprintf("\n<img border=0 src=\"icons/%s\" alt=\"%s\" title=\"%s\">\n&nbsp;", attr_icon, attr_icon, attr_icon);
       else {
-         /* if top level only, display reply icon if message has a reply */
-         if (getcfg(lbs->name, "Top level only", str, sizeof(str)) && atoi(str) == 1 && reply_to[0])
+         /* display standard icons */
+         if (level == 0)
+            rsprintf("\n<img border=0 src=\"entry.png\" alt=\"%s\" title=\"%s\">\n&nbsp;", loc("Entry"), loc("Entry"));
+         else
             rsprintf("\n<img border=0 src=\"reply.png\" alt=\"%s\" title=\"%s\">\n&nbsp;", loc("Reply"), loc("Reply"));
-         else {
-            /* display standard icons */
-            if (level == 0)
-               rsprintf("\n<img border=0 src=\"entry.png\" alt=\"%s\" title=\"%s\">\n&nbsp;", loc("Entry"), loc("Entry"));
-            else
-               rsprintf("\n<img border=0 src=\"reply.png\" alt=\"%s\" title=\"%s\">\n&nbsp;", loc("Reply"), loc("Reply"));
-         }
       }
       if (highlight != message_id)
          rsprintf("</a>\n");

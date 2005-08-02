@@ -1222,7 +1222,7 @@ Same as before, but gets added after the previous entry.
 <p>
 
 <li><b><code>Prepend on edit = &lt;string&gt;</code></b>
-<li><b><code>Apend on edit = &lt;string&gt;</code></b>
+<li><b><code>Append on edit = &lt;string&gt;</code></b>
 </br>
 Same as before, but for editing entries.
 <p>
@@ -1707,6 +1707,12 @@ have been updated recently. If this value is set to <b>2</b>, the resubmit box
 is not displayed at all. The default is <b>0</b>.
 <p>
 
+<li><b><code>Resubmit replies = 0|1</code></b> </br> If this flag is set to 
+<b>1</b> and an entry is resubmited as a new entry and this entry has replies, 
+all replies of this entry are resubmittes as new entries as well. The default is 
+<b>0</b>. 
+<p>
+
 <li><b><code>Display Email recipients = 0|1</code></b>
 </br>
 If this flag is <b>1</b>, the email recipients are displayed when a logbook
@@ -1848,6 +1854,23 @@ text body should be preserved. The default is <b>0</b>.
 This switch has two meanings. First, it defines the default state of the
 <code><b>Case sensitive</b></code> check box in the "Find" page. Second, it determines
 if the quick filters are case sensitive or not. The default is <b>0</b>.
+<p>
+
+<li><b><code>Mode commands = 0|1</code></b> 
+</br> 
+If this flag is missing or set to <b>1</b>, the links "Full", "Summary" and 
+"Threaded" are shown on the top of the listing page. If this flag is set to 
+<b>0</b>, these commands are hidden. This might be useful in logbooks where only 
+one mode makes sense for example. 
+<p>
+
+<li><b><code>Suppress execute default = 0|1</code></b> 
+</br> 
+External scripts can be called with the <code><b>Execute new/edit/delete</b></code>
+options. If these options are enabled, a checkbox appears which lets the user
+suppress execution of the external script. The setting of this flag determines
+the default state of this checkbox. In logbooks where a script should only be
+ocasionally executed, it could make sense to set this flag to <b>1</b>.
 <p>
 
 </ul><p>
