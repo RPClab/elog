@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.736  2005/08/03 20:43:28  ritt
+   Improved smileys
+
    Revision 1.735  2005/08/03 20:30:19  ritt
    Implemented 'resolve host names'
 
@@ -6422,12 +6425,17 @@ PATTERN_LIST pattern_list[] = {
    {":D", "<img src=\"%sicons/biggrin.png\">"},
    {"?)", "<img src=\"%sicons/confused.png\">"},
    {";(", "<img src=\"%sicons/crying.png\">"},
+   {";-(", "<img src=\"%sicons/crying.png\">"},
    {":]", "<img src=\"%sicons/pleased.png\">"},
+   {":-]", "<img src=\"%sicons/pleased.png\">"},
    {":O", "<img src=\"%sicons/yawn.png\">"},
+   {":-O", "<img src=\"%sicons/yawn.png\">"},
    {"8)", "<img src=\"%sicons/cool.png\">"},
+   {"8-)", "<img src=\"%sicons/cool.png\">"},
    {"8o", "<img src=\"%sicons/eek.png\">"},
    {"X(", "<img src=\"%sicons/mad.png\">"},
    {":P", "<img src=\"%sicons/tongue.png\">"},
+   {":-P", "<img src=\"%sicons/tongue.png\">"},
 
    /* formatting */
    {"[b]", "<b>"},
