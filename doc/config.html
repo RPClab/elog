@@ -277,6 +277,14 @@ if used under <i>stunnel</i>, and it has to contain the directory if used under 
 <br>
 The user and group to run the elogd daemon under when started by root.<p>
 
+<LI><b><code>Resolve host names = 0|1</code></b>
+<br>
+Resolve remote host names if set to <b>1</b>. If set to <b>0</b>, which is the
+default, only IP numbers are stored in any log file. If the <b><code>hosts allow/deny</code></b>
+options are used with host names, this setting must be set to <b>1</b>. If turned
+on, the DNS server is contacted on each HTTP request to elog, which can slow down
+the server considerably for slow DNS servers.<p>
+
 </UL>
 
 <hr>

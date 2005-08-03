@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.735  2005/08/03 20:30:19  ritt
+   Implemented 'resolve host names'
+
    Revision 1.734  2005/08/02 18:39:12  ritt
    Remove obsolete options
 
@@ -3694,7 +3697,8 @@ void free_config()
          xfree(lb_config[i].config_param[j].uparam);
          xfree(lb_config[i].config_param[j].value);
       }
-      xfree(lb_config[i].config_param);
+      if (lb_config[i].config_param)
+         xfree(lb_config[i].config_param);
       xfree(lb_config[i].section_name);
    }
    xfree(lb_config);
@@ -3745,6 +3749,7 @@ int parse_config_file(char *file_name)
             lb_config = xrealloc(lb_config, sizeof(LB_CONFIG) * (n_lb_config + 1));
          lb_config[n_lb_config].section_name = xmalloc(strlen(str) + 1);
          lb_config[n_lb_config].n_params = 0;
+         lb_config[n_lb_config].config_param = NULL;
          strcpy(lb_config[n_lb_config].section_name, str);
 
          /* enumerate parameters */
@@ -23619,11 +23624,16 @@ void server_loop(void)
             /* save remote host address */
             memcpy(&remote_addr[i_conn], &(acc_addr.sin_addr), sizeof(rem_addr));
             memcpy(&rem_addr, &(acc_addr.sin_addr), sizeof(rem_addr));
-            phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
-            if (phe != NULL)
-               strcpy(remote_host[i_conn], phe->h_name);
-            else
+            
+            if (getcfg("global", "Resolve host names", str, sizeof(str)) && atoi(str) == 1) {
+               phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
+               if (phe != NULL)
+                  strcpy(remote_host[i_conn], phe->h_name);
+               else
+                  strcpy(remote_host[i_conn], (char *) inet_ntoa(rem_addr));
+            } else
                strcpy(remote_host[i_conn], (char *) inet_ntoa(rem_addr));
+            
             strcpy(rem_host, remote_host[i_conn]);
 #ifdef DEBUG_CONN
             eprintf("## open new connection %d\n", i_conn);
@@ -23890,12 +23900,18 @@ void server_loop(void)
 #else
                rem_addr.s_addr = inet_addr(str);
 #endif
-               phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
-               if (phe != NULL) {
-                  strcpy(remote_host[i_conn], phe->h_name);
-                  strcpy(rem_host, remote_host[i_conn]);
-               }
-            }
+
+               if (getcfg("global", "Resolve host names", str, sizeof(str)) && atoi(str) == 1) {
+                  phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
+                  if (phe != NULL)
+                     strcpy(remote_host[i_conn], phe->h_name);
+                  else
+                     strcpy(remote_host[i_conn], (char *) inet_ntoa(rem_addr));
+               } else
+                  strcpy(remote_host[i_conn], (char *) inet_ntoa(rem_addr));
+
+               strcpy(rem_host, remote_host[i_conn]);
+             }
 
             memset(return_buffer, 0, return_buffer_size);
             strlen_retbuf = 0;
