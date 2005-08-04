@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility
 
   $Log$
+  Revision 1.28  2005/08/04 19:27:58  ritt
+  Implemented encoding=0,1,2
+
   Revision 1.27  2005/07/25 18:04:12  ritt
   Applied pointer casting patch from Recai
 
@@ -330,6 +333,38 @@ void sgets(char *string, int size)
 
 /*------------------------------------------------------------------*/
 
+void add_crlf(char *buffer, int bufsize)
+{
+   char *p;
+   char *tmpbuf;
+
+   tmpbuf = malloc(bufsize);
+
+   /* convert \n -> \r\n */
+   p = buffer;
+   while ((p = strstr(p, "\n")) != NULL) {
+
+      if (p > buffer && *(p - 1) == '\r') {
+         p++;
+         continue;
+      }
+
+      if ((int) strlen(buffer) + 2 >= bufsize) {
+         free(tmpbuf);
+         return;
+      }
+
+      strlcpy(tmpbuf, p, bufsize);
+      *(p++) = '\r';
+      strlcpy(p, tmpbuf, bufsize - ((int) p - (int) buffer));
+      p++;
+   }
+
+   free(tmpbuf);
+}
+
+/*------------------------------------------------------------------*/
+
 char request[100000], response[100000], *content;
 
 INT retrieve_elog(char *host, int port, char *subdir, char *experiment,
@@ -582,7 +617,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
                 int reply,
                 int edit,
                 int suppress,
-                int html,
+                int encoding,
                 char attrib_name[MAX_N_ATTR][NAME_LENGTH],
                 char attrib[MAX_N_ATTR][NAME_LENGTH],
                 int n_attr,
@@ -604,7 +639,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
     int    reply            Reply to existing message
     int    edit             Edit existing message
     int    suppress         Suppress Email notification
-    int    html             Submit as HTML
+    int    encoding         0:ELCode,1:plain,2:HTML
     char   *attrib_name     Attribute names
     char   *attrib          Attribute values
     char   *text            Message text
@@ -621,7 +656,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
    int status, sock, i, n, header_length, content_length, index;
    struct hostent *phe;
    struct sockaddr_in bind_addr;
-   char host_name[256], boundary[80], str[80], *encoding, *p;
+   char host_name[256], boundary[80], str[80], *p, *old_encoding;
    char old_attrib_name[MAX_N_ATTR][NAME_LENGTH], old_attrib[MAX_N_ATTR][NAME_LENGTH];
 
 #if defined( _MSC_VER )
@@ -691,14 +726,14 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
       n_attr = i;
 
       /* check encoding */
-      encoding = "plain";
+      old_encoding = "plain";
 
       for (i = 0; i < n_attr; i++)
          if (equal_ustring(attrib_name[i], "encoding"))
             break;
 
       if (i < n_attr)
-         encoding = attrib[i];
+         old_encoding = attrib[i];
 
       strlcpy(new_text, text, sizeof(new_text));
 
@@ -710,7 +745,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
          if (strchr(p, '\n')) {
             *strchr(p, '\n') = 0;
 
-            if (encoding[0] == 'H') {
+            if (old_encoding[0] == 'H') {
                strlcat(text, "> ", TEXT_SIZE);
                strlcat(text, p, TEXT_SIZE);
                strlcat(text, "<br>\n", TEXT_SIZE);
@@ -724,7 +759,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
             if (*p == '\n')
                p++;
          } else {
-            if (encoding[0] == 'H') {
+            if (old_encoding[0] == 'H') {
                strlcat(text, "> ", TEXT_SIZE);
                strlcat(text, p, TEXT_SIZE);
                strlcat(text, "<p>\n", TEXT_SIZE);
@@ -831,9 +866,15 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
       sprintf(content + strlen(content),
               "%s\r\nContent-Disposition: form-data; name=\"suppress\"\r\n\r\n1\r\n", boundary);
 
-   if (html)
+   if (encoding == 0)
       sprintf(content + strlen(content),
-              "%s\r\nContent-Disposition: form-data; name=\"html\"\r\n\r\n1\r\n", boundary);
+            "%s\r\nContent-Disposition: form-data; name=\"encoding\"\r\n\r\nELCode\r\n", boundary);
+   else if (encoding == 1)
+      sprintf(content + strlen(content),
+            "%s\r\nContent-Disposition: form-data; name=\"encoding\"\r\n\r\nplain\r\n", boundary);
+   else if (encoding == 2)
+      sprintf(content + strlen(content),
+            "%s\r\nContent-Disposition: form-data; name=\"encoding\"\r\n\r\nHTML\r\n", boundary);
 
    for (i = 0; i < n_attr; i++) {
       strcpy(str, attrib_name[i]);
@@ -983,12 +1024,12 @@ int main(int argc, char *argv[])
    char host_name[256], logbook[32], textfile[256], password[80], subdir[256];
    char *buffer[MAX_ATTACHMENTS], attachment[MAX_ATTACHMENTS][256];
    INT att_size[MAX_ATTACHMENTS];
-   INT i, n, fh, n_att, n_attr, size, port, reply, edit, suppress, html;
+   INT i, n, fh, n_att, n_attr, size, port, reply, edit, encoding, suppress;
    char attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 
    text[0] = textfile[0] = uname[0] = upwd[0] = suppress = 0;
    host_name[0] = logbook[0] = password[0] = subdir[0] = 0;
-   n_att = n_attr = reply = edit = html = 0;
+   n_att = n_attr = reply = edit = encoding = 0;
    port = 80;
 
    for (i = 0; i < MAX_ATTACHMENTS; i++) {
@@ -1003,8 +1044,6 @@ int main(int argc, char *argv[])
          verbose = 1;
       else if (argv[i][0] == '-' && argv[i][1] == 'x')
          suppress = 1;
-      else if (argv[i][0] == '-' && argv[i][1] == 'H')
-         html = 1;
       else {
          if (argv[i][0] == '-') {
             if (i + 1 >= argc || argv[i + 1][0] == '-')
@@ -1039,6 +1078,8 @@ int main(int argc, char *argv[])
                reply = atoi(argv[++i]);
             else if (argv[i][1] == 'e')
                edit = atoi(argv[++i]);
+            else if (argv[i][1] == 'n')
+               encoding = atoi(argv[++i]);
             else if (argv[i][1] == 'm')
                strcpy(textfile, argv[++i]);
             else {
@@ -1055,7 +1096,7 @@ int main(int argc, char *argv[])
                printf("           [-r <id>]                Reply to existing message\n");
                printf("           [-e <id>]                Edit existing message\n");
                printf("           [-x]                     Suppress email notification\n");
-               printf("           [-H]                     Submit entry in HTML format\n");
+               printf("           [-n 0|1|2]               Encoding: 0:ELcode,1:plain,2:HTML\n");
                printf("           -m <textfile>] | <text>\n");
                printf("\nArguments with blanks must be enclosed in quotes\n");
                printf("The elog message can either be submitted on the command line, piped in like\n");
@@ -1126,6 +1167,9 @@ int main(int argc, char *argv[])
          text[n - 1] = 0;
    }
 
+   /* change CR -> CRLF for unix text files */
+   add_crlf(text, sizeof(text));
+
    /*---- open attachment file ----*/
 
    for (i = 0; i < MAX_ATTACHMENTS; i++) {
@@ -1155,7 +1199,7 @@ int main(int argc, char *argv[])
 
    /* now submit message */
    submit_elog(host_name, port, subdir, logbook, password,
-               uname, upwd, reply, edit, suppress, html, attr_name, attrib, n_attr, text,
+               uname, upwd, reply, edit, suppress, encoding, attr_name, attrib, n_attr, text,
                attachment, buffer, att_size);
 
    for (i = 0; i < MAX_ATTACHMENTS; i++)
