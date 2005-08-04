@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.738  2005/08/04 20:06:23  ritt
+   Added error output if password file cannot be written
+
    Revision 1.737  2005/08/04 18:28:48  ritt
    Implemented 'Email Format = 64' for only attachment names
 
@@ -11842,21 +11845,33 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 
 int remove_user(LOGBOOK * lbs, char *user)
 {
-   char file_name[256], str[256];
+   char file_name[256], str[1000];
    PMXML_NODE node;
 
-   if (lbs->pwd_xml_tree == NULL)
+   if (lbs->pwd_xml_tree == NULL) {
+      show_error("No password file loaded");
       return FALSE;
+   }
 
    sprintf(str, "/list/user[name=%s]", user);
    node = mxml_find_node(lbs->pwd_xml_tree, str);
-   if (node == NULL)
+   if (node == NULL) {
+      sprintf("User \"%s\" not found in password fiel", user);
+      show_error(str);
       return FALSE;
+   }
 
    mxml_delete_node(node);
 
-   if (get_password_file(lbs, file_name, sizeof(file_name)))
-      return mxml_write_tree(file_name, lbs->pwd_xml_tree);
+   if (get_password_file(lbs, file_name, sizeof(file_name))) {
+      if (!mxml_write_tree(file_name, lbs->pwd_xml_tree)) {
+         sprintf(str, loc("Cannot write to file <b>%s</b>"), file_name);
+         strcat(str, ": ");
+         strcat(str, strerror(errno));
+         show_error(str);
+         return FALSE;
+      }
+   }
 
    return FALSE;
 }
@@ -22940,7 +22955,8 @@ void interprete(char *lbook, char *path)
    }
 
    if (strieq(command, loc("Remove user"))) {
-      remove_user(lbs, getparam("config"));
+      if (!remove_user(lbs, getparam("config")))
+         return;
       /* if removed user is current user, do logout */
       if (strieq(getparam("config"), getparam("unm"))) {
          /* log activity */
