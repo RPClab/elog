@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.737  2005/08/04 18:28:48  ritt
+   Implemented 'Email Format = 64' for only attachment names
+
    Revision 1.736  2005/08/03 20:43:28  ritt
    Improved smileys
 
@@ -18357,7 +18360,8 @@ void show_elog_thread(LOGBOOK * lbs, int message_id)
 
 /*------------------------------------------------------------------*/
 
-void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], int old_mail,
+void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], 
+                       char att_file[MAX_ATTACHMENTS][256], int old_mail,
                        char *url, char *mail_text)
 {
    int i, j, k, flags, n_email_attr, attr_index[MAX_N_ATTR];
@@ -18472,6 +18476,12 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], int 
    if (flags & 4)
       sprintf(mail_text + strlen(mail_text), "\r\n%s URL         : %s\r\n", loc("Logbook"), url);
 
+   if (flags & 64) {
+      for (i=0 ; i<MAX_ATTACHMENTS && att_file[i][0] ; i++)
+         sprintf(mail_text + strlen(mail_text), "\r\n%s %d        : %s (%s/%d)\r\n", 
+            loc("Attachment"), i+1, att_file[i]+14, url, i+1);
+   }
+
    if (flags & 8) {
       if (*getparam("text")) {
          sprintf(mail_text + strlen(mail_text),
@@ -18482,7 +18492,8 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], int 
 
 /*------------------------------------------------------------------*/
 
-void format_email_html(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], int old_mail,
+void format_email_html(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], 
+                       char att_file[MAX_ATTACHMENTS][256], int old_mail,
                        char *encoding, char *url, char *mail_text)
 {
    int i, j, k, flags, n_email_attr, attr_index[MAX_N_ATTR];
@@ -18603,6 +18614,14 @@ void format_email_html(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], int 
       sprintf(mail_text + strlen(mail_text), "<a href=\"%s\">%s</a></td></tr>\r\n", url, url);
    }
 
+   if (flags & 64) { 
+      for (i=0 ; i<MAX_ATTACHMENTS && att_file[i][0] ; i++) {
+         sprintf(mail_text + strlen(mail_text), 
+                 "<tr><td bgcolor=\"#CCCCFF\">%s %d</td><td bgcolor=\"#DDEEBB\">", loc("Attachment"), i+1);
+         sprintf(mail_text + strlen(mail_text), "<a href=\"%s/%d\">%s</a></td></tr>\r\n", url, i+1, att_file[i]+14);
+      }
+   }
+
    sprintf(mail_text + strlen(mail_text), "</table>\r\n");
 
    if (flags & 8) {
@@ -18697,9 +18716,9 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
    mail_text[0] = 0;
 
    if (mail_encoding & 1)
-      format_email_text(lbs, attrib, old_mail, url, mail_text);
+      format_email_text(lbs, attrib, att_file, old_mail, url, mail_text);
    else if (mail_encoding & 2)
-      format_email_html(lbs, attrib, old_mail, encoding, url, mail_text);
+      format_email_html(lbs, attrib, att_file, old_mail, encoding, url, mail_text);
    else if (mail_encoding & 4)
       format_email_html2(lbs, message_id, old_mail, mail_text);
 
@@ -21106,10 +21125,13 @@ int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name,
 
       return 1;
    } else {
-      if (user[0])
-         return 3;
-      else
+      if (!user[0])
          return 1;
+
+      /* open password file */
+      load_password_files();
+      return get_user_line(lbs, user, password, full_name,
+                  email, email_notify, last_logout);
    }
 }
 
