@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.739  2005/08/04 20:26:17  ritt
+   Do not distinguish between invalid user name and invalid password for security reasons
+
    Revision 1.738  2005/08/04 20:06:23  ritt
    Added error output if password file cannot be written
 
@@ -13218,11 +13221,8 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index, char 
       if (isparam("debug"))
          rsputs(text);
 
-      if (strstr(text, "?wusr="))
-         sprintf(error_str, loc("User \"%s\" has no access to remote logbook"), getparam("unm"));
-      else if (strstr(text, "?wpwd="))
-         sprintf(error_str,
-                 loc("Passwords for user \"%s\" do not match locally and remotely"), getparam("unm"));
+      if (strstr(text, "?fail="))
+         sprintf(error_str, loc("Invalid user name \"%s\" or password for remote logbook"), getparam("unm"));
       else {
          strlcpy(str, p + 9, sizeof(str));
          if (strchr(str, '?'))
@@ -13542,10 +13542,8 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    /* check response status */
    if (strstr(response, "302 Found")) {
       if (strstr(response, "Location:")) {
-         if (strstr(response, "wpwd"))
-            sprintf(error_str, "Invalid password\n");
-         else if (strstr(response, "wusr"))
-            sprintf(error_str, "Invalid user name\n");
+         if (strstr(response, "fail"))
+            sprintf(error_str, "Invalid user name or password\n");
 
          strlcpy(str, strstr(response, "Location:") + 9, sizeof(str));
          if (strchr(str, '\n'))
@@ -13834,10 +13832,8 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
    /* check response status */
    if (strstr(response, "302 Found")) {
       if (strstr(response, "Location:")) {
-         if (strstr(response, "wpwd"))
-            sprintf(error_str, "Invalid password\n");
-         else if (strstr(response, "wusr"))
-            sprintf(error_str, "Invalid user name\n");
+         if (strstr(response, "fail"))
+            sprintf(error_str, "Invalid usr name or password\n");
       }
    } else if (strstr(response, "Logbook Selection"))
       sprintf(error_str, "No logbook specified\n");
@@ -14118,7 +14114,7 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
       /* check for logbook access */
       if (strstr(p, loc("Please login")) || strstr(p, "GetPwdFile") || status == 302) {
 
-         if (strstr(buffer, "?wusr=") || strstr(buffer, "?wpwd="))
+         if (strstr(buffer, "?fail="))
             eprintf("\nInvalid username or password.");
 
          if (strstr(p, loc("Please login")) == NULL && strstr(p, "GetPwdFile") && isparam("unm"))
@@ -20797,12 +20793,12 @@ BOOL check_password(LOGBOOK * lbs, char *name, char *password, char *redir)
       if (strcmp(password, str) == 0)
          return TRUE;
 
-      if (!isparam("wpwd") && password[0]) {
+      if (!isparam("fail") && password[0]) {
          strlcpy(str, redir, sizeof(str));
          if (strchr(str, '?'))
-            strlcat(str, "&wpwd=1", sizeof(str));
+            strlcat(str, "&fail=1", sizeof(str));
          else
-            strlcat(str, "?wpwd=1", sizeof(str));
+            strlcat(str, "?fail=1", sizeof(str));
          redirect(lbs, str);
          return FALSE;
       }
@@ -20812,7 +20808,7 @@ BOOL check_password(LOGBOOK * lbs, char *name, char *password, char *redir)
 
       rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
 
-      if (isparam("wpwd"))
+      if (isparam("fail"))
          rsprintf("<tr><td class=\"dlgerror\">%s!</td></tr>\n", loc("Wrong password"));
 
       rsprintf("<tr><td class=\"dlgtitle\">\n");
@@ -21368,32 +21364,8 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
       return FALSE;
    }
 
-   /* display error message for invalid user */
-   if (isparam("iusr")) {
-      /* header */
-      show_html_header(NULL, FALSE, "ELOG error", TRUE, FALSE, NULL);
-
-      rsprintf("<body><center>\n");
-      rsprintf("<table class=\"dlgframe\" width=\"50%%\" cellpadding=1 cellspacing=0>");
-      sprintf(str, loc("User <i>\"%s\"</i> has no access to logbook <i>\"%s\"</i>"),
-              getparam("iusr"), lbs->name);
-      rsprintf("<tr><td class=\"errormsg\">%s</td></tr>\n", str);
-
-      rsprintf("<tr><td class=\"errormsg\">");
-      rsprintf("<a href=\"?LO=1\">%s</a></td></tr>", loc("Login as different user"));
-
-      rsprintf("<tr><td class=\"errormsg\">");
-      rsprintf("<a href=\"../\">%s</a></td></tr>", loc("Goto logbook selection page"));
-
-      rsprintf("</table>\n");
-      rsprintf("</center></body></html>\n");
-
-      return FALSE;
-   }
-
    if (!check_login_user(lbs, user)) {
-      sprintf(str, "?iusr=%s", user);
-
+      sprintf(str, "?fail=1", user);
       redirect(lbs, str);
       return FALSE;
    }
@@ -21405,8 +21377,8 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
          return TRUE;
       }
 
-      if (!isparam("wpwd") && password[0]) {
-         redirect(lbs, "?wpwd=1");
+      if (!isparam("fail") && password[0]) {
+         redirect(lbs, "?fail=1");
          return FALSE;
       }
 
@@ -21438,11 +21410,8 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
 
       rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
 
-      if (isparam("wpwd"))
-         rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n", loc("Wrong password"));
-
-      if (isparam("wusr")) {
-         sprintf(str, loc("Invalid user name <i>\"%s\"</i>"), getparam("wusr"));
+      if (isparam("fail")) {
+         sprintf(str, loc("Invalid user name or password"));
          rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n", str);
       }
 
@@ -21493,7 +21462,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
    } else {
       if (status == 2) {
 
-         sprintf(str, "?wusr=%s", user);
+         sprintf(str, "?fail");
          setparam("redir", str);
 
          /* remove remaining cookies */
@@ -22447,8 +22416,7 @@ void interprete(char *lbook, char *path)
 
       /* check if guest access */
       if (!(getcfg(lbs->name, "Guest menu commands", str, sizeof(str))
-            && *getparam("unm") == 0 && !isparam("wpwd")
-            && !isparam("wusr"))) {
+            && *getparam("unm") == 0 && !isparam("fail"))) {
          if (strcmp(path, css) != 0) {
             /* if no guest menu commands but self register, evaluate new user commands */
             if (getcfg(lbs->name, "Self register", str, sizeof(str)) && atoi(str) > 0) {

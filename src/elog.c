@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility
 
   $Log$
+  Revision 1.29  2005/08/04 20:26:35  ritt
+  Do not distinguish between invalid user name and invalid password for security reasons
+
   Revision 1.28  2005/08/04 19:27:58  ritt
   Implemented encoding=0,1,2
 
@@ -578,10 +581,8 @@ INT retrieve_elog(char *host, int port, char *subdir, char *experiment,
 
    if (strstr(response, "302 Found")) {
       if (strstr(response, "Location:")) {
-         if (strstr(response, "wpwd"))
-            printf("Error: Invalid password\n");
-         else if (strstr(response, "wusr"))
-            printf("Error: Invalid user name\n");
+         if (strstr(response, "fail"))
+            printf("Error: Invalid user name or password\n");
          else {
             strncpy(str, strstr(response, "Location:") + 10, sizeof(str));
             if (strchr(str, '?'))
@@ -979,10 +980,8 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
    /* check response status */
    if (strstr(response, "302 Found")) {
       if (strstr(response, "Location:")) {
-         if (strstr(response, "wpwd"))
-            printf("Error: Invalid password\n");
-         else if (strstr(response, "wusr"))
-            printf("Error: Invalid user name\n");
+         if (strstr(response, "fail"))
+            printf("Error: Invalid user name or password\n");
          else {
             strncpy(str, strstr(response, "Location:") + 10, sizeof(str));
             if (strchr(str, '?'))
