@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.741  2005/08/05 10:35:49  ritt
+   Fixed problem with long subjects by splitting it into separate encoded words
+
    Revision 1.740  2005/08/05 09:58:45  ritt
    Fixed login problem with protected selection pages and top groups
 
@@ -2887,7 +2890,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    char *str, *p, boundary[256], file_name[MAX_PATH_LENGTH];
    time_t now;
    struct tm *ts;
-   char list[1024][NAME_LENGTH], buffer[256], charset[256], subject_enc[2000], decoded[256];
+   char list[1024][NAME_LENGTH], buffer[256], charset[256], subject_enc[5000], decoded[256];
 
    memset(error, 0, error_size);
 
@@ -3082,12 +3085,21 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       efputs(str);
    write_logfile(lbs, str);
 
-   strcpy(subject_enc, "=?");
-   strlcat(subject_enc, charset, sizeof(subject_enc));
-   strlcat(subject_enc, "?B?", sizeof(subject_enc));
-   base64_encode((unsigned char *) subject,
-                 (unsigned char *) (subject_enc + strlen(subject_enc)));
-   strlcat(subject_enc, "?=", sizeof(subject_enc));
+   memset(subject_enc, 0, sizeof(subject_enc));
+   for (i=0 ; i<(int)strlen(subject) ; i+=40) {
+      strlcpy(buffer, subject+i, sizeof(buffer));
+      buffer[40] = 0;
+      strlcat(subject_enc, "=?", sizeof(subject_enc));
+      strlcat(subject_enc, charset, sizeof(subject_enc));
+      strlcat(subject_enc, "?B?", sizeof(subject_enc));
+      base64_encode((unsigned char *) buffer,
+                  (unsigned char *) (subject_enc + strlen(subject_enc)));
+      strlcat(subject_enc, "?=", sizeof(subject_enc));
+      if (strlen(subject+i) < 40)
+         break;
+
+      strlcat(subject_enc, "\r\n ", sizeof(subject_enc)); // another encoded-word
+   }
 
    snprintf(str, strsize - 1, "From: %s\r\nSubject: %s\r\n", from, subject_enc);
    send(s, str, strlen(str), 0);
