@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.742  2005/08/05 10:41:13  ritt
+   Version 2.6.0-beta4
+
    Revision 1.741  2005/08/05 10:35:49  ritt
    Fixed problem with long subjects by splitting it into separate encoded words
 
@@ -1335,7 +1338,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.6.0-beta3"
+#define VERSION "2.6.0-beta4"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
