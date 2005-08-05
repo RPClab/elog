@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.740  2005/08/05 09:58:45  ritt
+   Fixed login problem with protected selection pages and top groups
+
    Revision 1.739  2005/08/04 20:26:17  ritt
    Do not distinguish between invalid user name and invalid password for security reasons
 
@@ -21078,7 +21081,7 @@ int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name,
          if (lb_list[i].top_group[0])
             setcfg_topgroup(lb_list[i].top_group);
          getcfg(lb_list[i].name, "Password file", str, sizeof(str));
-         if (strieq(str, global)) {
+         if (str[0] && strieq(str, global)) {
             lbs = lb_list + i;
             break;
          }
@@ -21365,8 +21368,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
    }
 
    if (!check_login_user(lbs, user)) {
-      sprintf(str, "?fail=1", user);
-      redirect(lbs, str);
+      redirect(lbs, "?fail=1");
       return FALSE;
    }
 
@@ -23064,7 +23066,7 @@ void decode_get(char *logbook, char *string)
 
 /*------------------------------------------------------------------*/
 
-void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
+void decode_post(char *logbook, LOGBOOK * lbs, char *string, char *boundary, int length)
 {
    int n_att, size, header_size;
    char *pinit, *p, *ptmp, *buffer, *pbody,
@@ -23263,7 +23265,11 @@ void decode_post(LOGBOOK * lbs, char *string, char *boundary, int length)
          return;                /* invalid request */
 
    } while ((int) (string - pinit) < length);
-   interprete(lbs->name, "");
+
+   if (lbs)
+      interprete(lbs->name, "");
+   else
+      interprete(logbook, "");
 }
 
 /*------------------------------------------------------------------*/
@@ -24269,7 +24275,11 @@ void server_loop(void)
                   for (i = 0; lb_list[i].name[0]; i++)
                      if (strieq(logbook, lb_list[i].name))
                         break;
-                  decode_post(&lb_list[i], net_buffer + header_length, boundary, content_length);
+                  if (!lb_list[i].name[0])
+                     /* must be login page of top group */
+                     decode_post(logbook, NULL, net_buffer + header_length, boundary, content_length);
+                  else
+                     decode_post(logbook, &lb_list[i], net_buffer + header_length, boundary, content_length);
                } else {
                   net_buffer[50] = 0;
                   sprintf(str, "Unknown request:<p>%s", net_buffer);
