@@ -45,6 +45,7 @@ where one can enter messages but not change them afterwards.
 <LI><a href=#13>I cannot pass the login page, it's always redisplayed even if I put in the right password?
 <LI><a href=#14>How can I change an attribute for an entire thread? We have an attribute "open problem/fixed"
 which should be changed for the whole thread if that problem has been fixed.
+<LI><a href=#15>Can I use RSS feeds with password protected logbooks?
 </OL>
 
 <hr>
@@ -270,6 +271,16 @@ the second one more like an archive, make separate back-ups, or deleting some en
 after some time, while keeping the open issues untouched.
 <p>
 </UL>
+
+<LI><a name=15><b>Can I use RSS feeds with password protected logbooks?</b>
+<p>
+RSS feeds normally only work for logbooks which have at least public read access (via
+the guest menu commands). There is however a way to allow only restricted read access
+and still use RSS feeds. This is done by adding an additional read password via the
+<code><b>elogd -r &lt;pwd&gt; -l &lt;logbook&gt;</b></code> command. This password
+(username may be any) can then be used in an RSS reader for restricted access. One reader
+which has been successfully used with this kind of authentication is 
+<a href="http://www.rssreader.com">RSSReader</a>.<p>
 
 </OL>
 
