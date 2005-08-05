@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.743  2005/08/05 15:27:21  ritt
+   Implemented 'Subtext' quick filter
+
    Revision 1.742  2005/08/05 10:41:13  ritt
    Version 2.6.0-beta4
 
@@ -16893,6 +16896,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             else
                subst_param(str, sizeof(str), attr_list[i], getparam(attr_list[i]));
          }
+
+      /* do the same for subtext */
+      if (isparam("subtext")) 
+         subst_param(str, sizeof(str), "subtext", getparam("subtext"));
 
       redirect(lbs, str);
       return;
