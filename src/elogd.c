@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.745  2005/08/06 19:14:04  ritt
+   Fixed bug in stristr()
+
    Revision 1.744  2005/08/06 07:22:24  ritt
    Fixed bug with removing users
 
@@ -1823,11 +1826,14 @@ char *stristr(const char *str, const char *pattern)
       c2 = *pp;
       if (my_toupper(c1) == my_toupper(c2)) {
          while (*pp) {
-            c1 = *ps++;
-            c2 = *pp++;
+            c1 = *ps;
+            c2 = *pp;
 
             if (my_toupper(c1) != my_toupper(c2))
                break;
+
+            ps++;
+            pp++;
          }
 
          if (!*pp)
@@ -2195,7 +2201,7 @@ void redirect_to_stderr(void)
 
 /*------------------------------------------------------------------*/
 
-void strsubst(char *string, int size, char name[][NAME_LENGTH], char value[][NAME_LENGTH], int n)
+void strsubst_list(char *string, int size, char name[][NAME_LENGTH], char value[][NAME_LENGTH], int n)
 /* subsitute "$name" with value corresponding to name */
 {
    int i, j;
@@ -2243,6 +2249,35 @@ void strsubst(char *string, int size, char name[][NAME_LENGTH], char value[][NAM
 
    /* return result */
    strlcpy(string, tmp, size);
+}
+
+/*------------------------------------------------------------------*/
+
+void strsubst(char *string, int size, char *pattern, char *subst)
+/* subsitute "pattern" with "subst" in "string" */
+{
+   char *tail, *p;
+   int s;
+
+   p = string;
+   for (p = stristr(p, pattern); p != NULL; p = stristr(p, pattern)) {
+
+      if (strlen(pattern) == strlen(subst)) {
+         memcpy(p, subst, strlen(subst));
+      } else if (strlen(pattern) > strlen(subst)) {
+         memcpy(p, subst, strlen(subst));
+         strcpy(p+strlen(subst), p+strlen(pattern));
+      } else {
+         tail = xmalloc(strlen(p)-strlen(pattern)+1);
+         strcpy(tail, p+strlen(pattern));
+         s = size - ((int)p - (int)string);
+         strlcpy(p, subst, s);
+         strlcat(p, tail, s);
+         xfree(tail);
+      }
+
+      p += strlen(subst);
+   }
 }
 
 /*------------------------------------------------------------------*/
@@ -4301,7 +4336,7 @@ void retrieve_email_from(LOGBOOK * lbs, char *ret, char attrib[MAX_N_ATTR][NAME_
 
    if (attrib) {
       i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-      strsubst(str, sizeof(str), slist, svalue, i);
+      strsubst_list(str, sizeof(str), slist, svalue, i);
 
       /* remove possible 'mailto:' */
       if ((p = strstr(str, "mailto:")) != NULL)
@@ -6719,15 +6754,19 @@ void rsputs_elcode(LOGBOOK * lbs, const char *str)
                      i += strlen(attrib) - 1;
                      strlcpy(hattrib, attrib, sizeof(hattrib));
 
-                     /* change /x to id/x for images */
-                     if (strnieq(attrib, "elog:/", 6)) {
+                     /* replace elog:x/x for images */
+                     if (strnieq(attrib, "elog:", 5)) {
                         compose_base_url(lbs, hattrib, sizeof(hattrib));
-                        if (_current_message_id == 0) {
-                           sprintf(param, "attachment%d", atoi(attrib + 6)-1);
-                           if (isparam(param))
-                              strlcat(hattrib, getparam(param), sizeof(hattrib));
-                        } else
-                        sprintf(hattrib+strlen(hattrib), "%d%s", _current_message_id, attrib + 5);
+                        if (attrib[5] == '/') {
+                           if (_current_message_id == 0) {
+                              sprintf(param, "attachment%d", atoi(attrib + 6)-1);
+                              if (isparam(param))
+                                 strlcat(hattrib, getparam(param), sizeof(hattrib));
+                           } else
+                              sprintf(hattrib+strlen(hattrib), "%d%s", _current_message_id, attrib + 5);
+                        } else {
+                           strlcat(hattrib, attrib+5, sizeof(hattrib));
+                        }
                      }
 
                      /* add http:// if missing */
@@ -9101,7 +9140,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             /* do not format date for date attributes */
             i = build_subst_list(lbs, slist, svalue, attrib,
                                  (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
-            strsubst(preset, sizeof(preset), slist, svalue, i);
+            strsubst_list(preset, sizeof(preset), slist, svalue, i);
 
             /* check for index substitution */
             if (!bedit && strchr(preset, '%')) {
@@ -9125,7 +9164,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             /* do not format date for date attributes */
             i = build_subst_list(lbs, slist, svalue, attrib,
                                  (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
-            strsubst(preset, sizeof(preset), slist, svalue, i);
+            strsubst_list(preset, sizeof(preset), slist, svalue, i);
 
             /* check for index substitution */
             if (!bedit && strchr(preset, '%')) {
@@ -9171,7 +9210,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             /* do not format date for date attributes */
             i = build_subst_list(lbs, slist, svalue, attrib,
                                  (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
-            strsubst(preset, sizeof(preset), slist, svalue, i);
+            strsubst_list(preset, sizeof(preset), slist, svalue, i);
 
             /* check for index substitution */
             if (!bedit && strchr(preset, '%')) {
@@ -9195,7 +9234,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             /* do not format date for date attributes */
             i = build_subst_list(lbs, slist, svalue, attrib,
                                  (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
-            strsubst(preset, sizeof(preset), slist, svalue, i);
+            strsubst_list(preset, sizeof(preset), slist, svalue, i);
 
             /* check for index substitution */
             if (!bedit && strchr(preset, '%')) {
@@ -9296,7 +9335,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                sprintf(str, "%d", message_id);
                add_subst_list(slist, svalue, "message id", str, &i);
                add_subst_time(lbs, slist, svalue, "entry time", date, &i);
-               strsubst(preset, sizeof(preset), slist, svalue, i);
+               strsubst_list(preset, sizeof(preset), slist, svalue, i);
                strcpy(attrib[index], preset);
             }
          }
@@ -9317,7 +9356,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             add_subst_list(slist, svalue, "message id", str, &i);
             add_subst_time(lbs, slist, svalue, "entry time", date, &i);
 
-            strsubst(preset, sizeof(preset), slist, svalue, i);
+            strsubst_list(preset, sizeof(preset), slist, svalue, i);
             if (strlen(preset) > NAME_LENGTH - 100) {
                if (strstr(preset + 100, "<br>")) {
                   strlcpy(str, strstr(preset + 100, "<br>"), sizeof(str));
@@ -9339,7 +9378,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    if (getcfg(lbs->name, "Edit Page Title", str, sizeof(str))) {
       i = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, NULL, TRUE);
-      strsubst(str, sizeof(str), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, i);
+      strsubst_list(str, sizeof(str), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, i);
       strip_html(str);
    } else
       sprintf(str, "ELOG %s", lbs->name);
@@ -10302,7 +10341,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
             if (!bupload)
                if (getcfg(lbs->name, "Prepend on edit", str, sizeof(str))) {
-                  strsubst(str, sizeof(str), slist, svalue, j);
+                  strsubst_list(str, sizeof(str), slist, svalue, j);
                   while (strstr(str, "\\n"))
                      memcpy(strstr(str, "\\n"), "\r\n", 2);
                   rsputs3(str);
@@ -10314,7 +10353,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
             if (!bupload)
                if (getcfg(lbs->name, "Append on edit", str, sizeof(str))) {
-                  strsubst(str, sizeof(str), slist, svalue, j);
+                  strsubst_list(str, sizeof(str), slist, svalue, j);
                   while (strstr(str, "\\n"))
                      memcpy(strstr(str, "\\n"), "\r\n", 2);
                   rsputs3(str);
@@ -10333,7 +10372,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                add_subst_list(slist, svalue, "message id", mid, &j);
                add_subst_time(lbs, slist, svalue, "entry time", date, &j);
 
-               strsubst(str, sizeof(str), slist, svalue, j);
+               strsubst_list(str, sizeof(str), slist, svalue, j);
                while (strstr(str, "\\n"))
                   memcpy(strstr(str, "\\n"), "\r\n", 2);
                rsputs3(str);
@@ -10394,7 +10433,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                sprintf(mid, "%d", message_id);
                add_subst_list(slist, svalue, "message id", mid, &j);
                add_subst_time(lbs, slist, svalue, "entry time", date, &j);
-               strsubst(str, sizeof(str), slist, svalue, j);
+               strsubst_list(str, sizeof(str), slist, svalue, j);
                while (strstr(str, "\\n"))
                   memcpy(strstr(str, "\\n"), "\r\n", 2);
                rsputs3(str);
@@ -10427,7 +10466,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             xfree(buffer);
          } else {
             j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-            strsubst(str, sizeof(str), slist, svalue, j);
+            strsubst_list(str, sizeof(str), slist, svalue, j);
             while (strstr(str, "\\n"))
                memcpy(strstr(str, "\\n"), "\r\n", 2);
             rsputs3(str);
@@ -15201,7 +15240,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
                      "entry time", date, &j);
 
-      strsubst(display, sizeof(display), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
+      strsubst_list(display, sizeof(display), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
 
       if (highlight != message_id)
          rsprintf("\n<a href=\"%s\">\n", ref);
@@ -15263,7 +15302,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
                                  (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
 
-                  strsubst(display, sizeof(display), (char (*)[NAME_LENGTH]) slist,
+                  strsubst_list(display, sizeof(display), (char (*)[NAME_LENGTH]) slist,
                            (char (*)[NAME_LENGTH]) svalue, j);
 
                } else
@@ -15435,7 +15474,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                            add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
                                           (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
 
-                           strsubst(display, sizeof(display), (char (*)[NAME_LENGTH]) slist,
+                           strsubst_list(display, sizeof(display), (char (*)[NAME_LENGTH]) slist,
                                     (char (*)[NAME_LENGTH]) svalue, j);
 
                         } else
@@ -16688,7 +16727,7 @@ void show_rss_feed(LOGBOOK * lbs)
          add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
                         "entry time", date, &i);
 
-         strsubst(title, sizeof(title), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, i);
+         strsubst_list(title, sizeof(title), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, i);
       } else {
 
          title[0] = 0;
@@ -17232,7 +17271,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
             add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
                            (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
 
-            strsubst(str, sizeof(str), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
+            strsubst_list(str, sizeof(str), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
             setparam(attr_list[i], str);
          }
 
@@ -17341,7 +17380,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                   add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
                                  (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
 
-                  strsubst(str, sizeof(str), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
+                  strsubst_list(str, sizeof(str), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
                            j);
                   setparam(attr_list[i], str);
                }
@@ -17515,7 +17554,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
 
    if (getcfg(lbs->name, "List Page Title", str, sizeof(str))) {
       i = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, NULL, TRUE);
-      strsubst(str, sizeof(str), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, i);
+      strsubst_list(str, sizeof(str), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, i);
       strip_html(str);
    } else
       sprintf(str, "ELOG %s", lbs->name);
@@ -18740,7 +18779,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
       i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
       sprintf(str, "%d", message_id);
       add_subst_list(slist, svalue, "message id", str, &i);
-      strsubst(subject, sizeof(subject), slist, svalue, i);
+      strsubst_list(subject, sizeof(subject), slist, svalue, i);
    } else {
       if (old_mail)
          strcpy(subject, "Updated ELOG entry");
@@ -18843,7 +18882,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
    i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
    sprintf(str, "%d", message_id);
    add_subst_list(slist, svalue, "message id", str, &i);
-   strsubst(shell_cmd, sizeof(shell_cmd), slist, svalue, i);
+   strsubst_list(shell_cmd, sizeof(shell_cmd), slist, svalue, i);
 
    if (att_file && stristr(shell_cmd, "$attachments")) {
       /* substitute attachments */
@@ -19364,7 +19403,7 @@ void submit_elog(LOGBOOK * lbs)
       if (!*getparam("edit_id")) {
          sprintf(str, "Subst %s", attr_list[i]);
          if (getcfg(lbs->name, str, subst_str, sizeof(subst_str))) {
-            strsubst(subst_str, sizeof(subst_str), slist, svalue, n);
+            strsubst_list(subst_str, sizeof(subst_str), slist, svalue, n);
             strcpy(attrib[i], subst_str);
          }
       }
@@ -19436,6 +19475,15 @@ void submit_elog(LOGBOOK * lbs)
    if (resubmit_orig)
       message_id = el_move_message_thread(lbs, resubmit_orig);
 
+   /*---- replace relative elog:/x link by elog:n/x link */
+   if (stristr(getparam("text"), "elog:/")) {
+      p = getparam("text");
+      sprintf(str, "elog:%d/", message_id);
+      strsubst(p, TEXT_SIZE, "elog:/", str);
+      el_submit(lbs, message_id, bedit, date, attr_list, attrib, n_attr,
+                p, in_reply_to, reply_to, getparam("encoding"), att_file, TRUE, NULL);
+   }
+
    /*---- email notifications ----*/
 
    suppress = atoi(getparam("suppress"));
@@ -19499,7 +19547,7 @@ void submit_elog(LOGBOOK * lbs)
                   sprintf(str, "%d", message_id);
                   add_subst_list(slist, svalue, "message id", str, &j);
                   add_subst_time(lbs, slist, svalue, "entry time", date, &j);
-                  strsubst(mail_list[i], NAME_LENGTH, slist, svalue, j);
+                  strsubst_list(mail_list[i], NAME_LENGTH, slist, svalue, j);
 
                   /* remove possible 'mailto:' */
                   if ((p = strstr(mail_list[i], "mailto:")) != NULL)
@@ -20071,7 +20119,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          sprintf(mid, "%d", message_id);
          add_subst_list(slist, svalue, "message id", mid, &i);
          add_subst_time(lbs, slist, svalue, "entry time", date, &i);
-         strsubst(str, sizeof(str), slist, svalue, i);
+         strsubst_list(str, sizeof(str), slist, svalue, i);
          strip_html(str);
       } else
          strcpy(str, "ELOG");
@@ -20310,7 +20358,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
                         (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
 
-         strsubst(display, sizeof(display), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
+         strsubst_list(display, sizeof(display), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
 
       } else
          sprintf(display, "%d", message_id);
@@ -20533,7 +20581,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist,
                               (char (*)[NAME_LENGTH]) svalue, "entry time", date, &k);
 
-               strsubst(display, sizeof(display), (char (*)[NAME_LENGTH]) slist,
+               strsubst_list(display, sizeof(display), (char (*)[NAME_LENGTH]) slist,
                         (char (*)[NAME_LENGTH]) svalue, k);
 
             } else
@@ -20608,9 +20656,12 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             att_hide[i] = 0;
 
             sprintf(str, "[img]elog:/%d[/img]", i + 1);
-            if (strieq(encoding, "ELCode") && stristr(text, str)) {
+            if (strieq(encoding, "ELCode") && stristr(text, str))
                att_inline[i] = 1;
-            }
+            sprintf(str, "[img]elog:%d/%d[/img]", message_id, i + 1);
+            if (strieq(encoding, "ELCode") && stristr(text, str))
+               att_inline[i] = 1;
+
             if (attachment[i][0])
                n_attachments++;
          }
@@ -21638,7 +21689,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
             sprintf(mid, "%d", message_id);
             add_subst_list(slist, svalue, "message id", mid, &j);
             add_subst_time(&lb_list[index], slist, svalue, "entry time", date, &j);
-            strsubst(str, sizeof(str), slist, svalue, j);
+            strsubst_list(str, sizeof(str), slist, svalue, j);
             rsputs(str);
          }
          rsprintf("</td></tr>\n");
