@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.744  2005/08/06 07:22:24  ritt
+   Fixed bug with removing users
+
    Revision 1.743  2005/08/05 15:27:21  ritt
    Implemented 'Subtext' quick filter
 
@@ -11880,7 +11883,7 @@ int remove_user(LOGBOOK * lbs, char *user)
    sprintf(str, "/list/user[name=%s]", user);
    node = mxml_find_node(lbs->pwd_xml_tree, str);
    if (node == NULL) {
-      sprintf("User \"%s\" not found in password fiel", user);
+      sprintf(str, loc("User \"%s\" not found in password file"), user);
       show_error(str);
       return FALSE;
    }
@@ -11897,7 +11900,7 @@ int remove_user(LOGBOOK * lbs, char *user)
       }
    }
 
-   return FALSE;
+   return TRUE;
 }
 
 /*------------------------------------------------------------------*/
