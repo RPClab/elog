@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.746  2005/09/06 07:15:43  ritt
+   Show HTML logbook comment properly
+
    Revision 1.745  2005/08/06 19:14:04  ritt
    Fixed bug in stristr()
 
@@ -7931,7 +7934,7 @@ void show_standard_title(char *logbook, char *text, int printable)
             /* build reference to first logbook in group */
             comment[0] = 0;
             if (pnode->member[i]->member == NULL) {
-               getcfg(ref, "Comment", comment, sizeof(comment));
+               getcfg(pnode->member[i]->name, "Comment", comment, sizeof(comment));
                strlcpy(ref, str, sizeof(ref));  // current node is logbook
             } else {
                flb = pnode->member[i]->member[0];       // current node is group
@@ -7970,7 +7973,7 @@ void show_standard_title(char *logbook, char *text, int printable)
                   rsputs3(comment);
                   rsprintf("\">");
                } else
-                  rsprintf("<a href=\"../%s/\">", ref, comment);
+                  rsprintf("<a href=\"../%s/\">", ref);
 
                strlcpy(str, pnode->member[i]->name, sizeof(str));
 
@@ -8008,7 +8011,12 @@ void show_standard_title(char *logbook, char *text, int printable)
       strcpy(str, logbook);
 
    rsprintf("&nbsp;&nbsp;");
-   rsputs3(str);
+   
+   if (is_html(str))
+      rsputs(str);
+   else
+      rsputs3(str);
+
    rsputs3(text);
    rsprintf("&nbsp;</td>\n");
 
@@ -21661,7 +21669,10 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
          str[0] = 0;
          getcfg(lb_list[index].name, "Comment", str, sizeof(str));
          rsprintf("<span class=\"selcomment\">");
-         rsputs3(str);
+         if (is_html(str))
+            rsputs(str);
+         else
+            rsputs3(str);
          rsprintf("</span></td>\n");
          rsprintf("<td nowrap class=\"selentries\">");
          rsprintf("%d", *lb_list[index].n_el_index);
