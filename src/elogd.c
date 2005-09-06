@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.747  2005/09/06 12:26:01  ritt
+   Fixed bug with subtext quick filter
+
    Revision 1.746  2005/09/06 07:15:43  ritt
    Show HTML logbook comment properly
 
@@ -16283,11 +16286,12 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
          } else {
             rsprintf("<input type=submit value=\"%s:\">&nbsp;\n", list[index]);
 
+            /* check if attribute has options */
             for (i = 0; i < MAX_N_ATTR; i++)
-               if (strieq(attr_list[i], list[index]))
+               if (attr_list[i][0] == 0 || strieq(attr_list[i], list[index]))
                   break;
 
-            if (attr_options[i][0][0] == 0) {
+            if (attr_list[i][0] == 0 || attr_options[i][0][0] == 0) {
 
                if (attr_flags[i] & (AF_DATE | AF_DATETIME)) {
 
