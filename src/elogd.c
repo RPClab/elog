@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.749  2005/09/09 19:54:05  ritt
+   Fixed problem with 'list' command
+
    Revision 1.748  2005/09/09 09:05:16  ritt
    Fixed problem with extendable attributes which are fixed during edit
 
@@ -20204,10 +20207,17 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             strcpy(str, loc(menu_item[i]));
             url_encode(str, sizeof(str));
 
-            if (i < n - 1)
-               rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;|\n", message_id, str, loc(menu_item[i]));
-            else
-               rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;\n", message_id, str, loc(menu_item[i]));
+            if (i < n - 1) {
+               if (strieq(menu_item[i], "list"))
+                  rsprintf("&nbsp;<a href=\".\">%s</a>&nbsp;|\n", loc(menu_item[i]));
+               else
+                  rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;|\n", message_id, str, loc(menu_item[i]));
+            } else {
+               if (strieq(menu_item[i], "list"))
+                  rsprintf("&nbsp;<a href=\".\">%s</a>&nbsp;\n", loc(menu_item[i]));
+               else
+                  rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;\n", message_id, str, loc(menu_item[i]));
+            }
          }
       }
 
