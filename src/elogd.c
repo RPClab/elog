@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.750  2005/09/09 20:59:46  ritt
+   Fixed infinite redirection with ?fail=1
+
    Revision 1.749  2005/09/09 19:54:05  ritt
    Fixed problem with 'list' command
 
@@ -21470,6 +21473,11 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
    }
 
    if (!check_login_user(lbs, user)) {
+      if (isparam("fail")) {
+         /* remove remaining cookies */
+         remove_all_login_cookies(lbs);
+         return FALSE;
+      }
       redirect(lbs, "?fail=1");
       return FALSE;
    }
