@@ -23,7 +23,6 @@
 </div>
 <p>
 
-
 ELOG is distributed both as source code and as precompiled binaries for
 various platforms. In addition to major versions, minor releases are made
 containing bug fixes or some new and not yet completely debugged code. This
@@ -37,7 +36,12 @@ CVS tree, use:<P>
 <b>setenv CVS_RSH ssh</b>    (or "export CVS_RSH=ssh" for bash & Co)<br>
 <b>cvs -d :ext:cvs@midas.psi.ch:/usr/local/cvsroot checkout elog</b><br>
 cvs@midas.psi.ch's password: <b>cvs</b><br>
+<b>cvs -d :ext:cvs@midas.psi.ch:/usr/local/cvsroot checkout mxml</b><br>
+cvs@midas.psi.ch's password: <b>cvs</b><br>
 </code><p>
+	
+Building elogd and installing it from CVS works in the same way as building
+it from the tarball. Issue in the elog directory a "make", followed by a "make install".<p>
 News for each version can be seen in the
 <a href="http://midas.psi.ch/elog/download/ChangeLog">changelog</a><p>
 
