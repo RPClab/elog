@@ -46,6 +46,7 @@ where one can enter messages but not change them afterwards.
 <LI><a href=#14>How can I change an attribute for an entire thread? We have an attribute "open problem/fixed"
 which should be changed for the whole thread if that problem has been fixed.
 <LI><a href=#15>Can I use RSS feeds with password protected logbooks?
+<LI><a href=#16>How can I mark a whole thread open or closed?
 </OL>
 
 <hr>
@@ -281,6 +282,31 @@ and still use RSS feeds. This is done by adding an additional read password via 
 (username may be any) can then be used in an RSS reader for restricted access. One reader
 which has been successfully used with this kind of authentication is 
 <a href="http://www.rssreader.com">RSSReader</a>.<p>
+
+<LI><a name=16><b>How can I make a whole thread open or closed?</b>
+<p>
+Sometime people want to mark a whole thread in a way. An example is a to-do list,
+where they want a special icon on high priority things, and have this icon disappear
+one the task is finished. This can be easily done with icons. The configuration could
+look like this:
+
+<pre>
+Attributes = Author, Status, Subject
+IOptions Status = icon1.gif, icon2.gif, icon4.gif
+Preset Status = icon4.gif
+Preset on reply status = icon2.gif
+Icon comment icon1.gif = Closed entry
+Icon comment icon4.gif = Open entry
+Thread display = $Author $Subject
+Thread icon = Status
+</pre><p>
+
+New entries get an exclamation mark icon for example ("Preset status = ..."). Replies
+to this entry get a reply icon. Once the thread should be closed, one simple edits
+the top entry in that thread and changes the icon. The icon1.gif from the distribution 
+is maybe not ideally suited for that, but one could make a green check mark icon for example
+for that. The "Thread display" and "Thread icon" make this icon appear at the left side
+of the threaded display.
 
 </OL>
 
