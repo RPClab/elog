@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.748  2005/09/09 09:05:16  ritt
+   Fixed problem with extendable attributes which are fixed during edit
+
    Revision 1.747  2005/09/06 12:26:01  ritt
    Fixed bug with subtext quick filter
 
@@ -9797,8 +9800,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       /* if attribute cannot be changed, just display text */
       if ((attr_flags[index] & AF_LOCKED) ||
-          (bedit && (attr_flags[index] & AF_FIXED_EDIT)) || (message_id && !bedit
-                                                             && (attr_flags[index] & AF_FIXED_REPLY))) {
+          ((bedit && !breedit && !bupload) && (attr_flags[index] & AF_FIXED_EDIT)) || 
+          (message_id && !bedit && (attr_flags[index] & AF_FIXED_REPLY))) {
+
          if (attr_flags[index] & AF_DATE) {
 
             if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
