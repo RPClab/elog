@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.751  2005/09/18 13:45:31  ritt
+   Limit summary lines to 40 characters
+
    Revision 1.750  2005/09/09 20:59:46  ritt
    Fixed infinite redirection with ?fail=1
 
@@ -15164,7 +15167,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    char str[NAME_LENGTH], ref[256], thumb_name[256], *nowrap, sclass[80], format[256],
        file_name[MAX_PATH_LENGTH], *slist, *svalue;
    char display[NAME_LENGTH], attr_icon[80];
-   int i, j, i_line, index, colspan, n_attachments;
+   int i, j, i_line, index, colspan, n_attachments, line_len;
    BOOL skip_comma;
    FILE *f;
    struct tm *pts;
@@ -15580,10 +15583,19 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
    if (strieq(mode, "Summary") && n_line > 0 && show_text) {
       rsprintf("<td class=\"summary\">");
-      for (i = i_line = 0; i < (int) sizeof(str) - 1; i++) {
+      
+      for (i = i_line = line_len = 0; i < (int) sizeof(str) - 1; line_len++,i++) {
          str[i] = text[i];
-         if (str[i] == '\n')
+         if (str[i] == '\n') {
             i_line++;
+            line_len = 0;
+         } else
+            /* limit line length to 40 characters */
+            if (line_len > 40 && text[i] == ' ') {
+               str[i] = '\n';
+               i_line++;
+               line_len = 0;
+            }
 
          if (i_line == n_line)
             break;
