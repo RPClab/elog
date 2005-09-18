@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.752  2005/09/18 14:00:46  ritt
+   Limit summary lines to 150 characters in threaded mode
+
    Revision 1.751  2005/09/18 13:45:31  ritt
    Limit summary lines to 40 characters
 
@@ -15545,10 +15548,18 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       rsprintf("<tr><td class=\"summary\">");
 
       if (expand == 2) {
-         for (i = i_line = 0; i < (int) sizeof(str) - 1; i++) {
+         for (i = i_line = line_len = 0; i < (int) sizeof(str) - 1; i++,line_len++) {
             str[i] = text[i];
-            if (str[i] == '\n')
+            if (str[i] == '\n') {
                i_line++;
+               line_len = 0;
+            } else
+               /* limit line length to 150 characters */
+               if (line_len > 150 && text[i] == ' ') {
+                  str[i] = '\n';
+                  i_line++;
+                  line_len = 0;
+               }
 
             if (i_line == n_line)
                break;
