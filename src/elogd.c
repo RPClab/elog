@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.753  2005/09/18 15:47:46  ritt
+   Implemented show/hide attachments in full view
+
    Revision 1.752  2005/09/18 14:00:46  ritt
    Limit summary lines to 150 characters in threaded mode
 
@@ -15662,15 +15665,6 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          }
       }
 
-      if (n_attachments) {
-         rsprintf("<tr><td class=\"messagelist\" colspan=%d>", colspan);
-
-         if (attachment[1][0])
-            rsprintf("%s: ", loc("Attachments"));
-         else
-            rsprintf("%s: ", loc("Attachment"));
-      }
-
       for (index = 0; index < MAX_ATTACHMENTS; index++) {
          if (show_attachments && attachment[index][0]) {
 
@@ -16144,7 +16138,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 
 /*------------------------------------------------------------------*/
 
-void build_ref(char *ref, int size, char *mode, char *expand, char *new_entries)
+void build_ref(char *ref, int size, char *mode, char *expand, char *attach, char *new_entries)
 {
    char str[1000];
 
@@ -16163,6 +16157,10 @@ void build_ref(char *ref, int size, char *mode, char *expand, char *new_entries)
    if (expand[0])
       subst_param(ref, size, "expand", expand);
 
+   /* eliminate old attach if new one is present */
+   if (attach[0])
+      subst_param(ref, size, "attach", attach);
+
    /* eliminate old new_entries if new one is present */
    if (new_entries[0])
       subst_param(ref, size, "new_entries", new_entries);
@@ -16177,7 +16175,7 @@ void build_ref(char *ref, int size, char *mode, char *expand, char *new_entries)
 
 /*------------------------------------------------------------------*/
 
-void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands, BOOL threaded)
+void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands, char *mode)
 {
    int cur_exp, n, i, j, i1, i2, index, size;
    char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH], list[MAX_N_LIST][NAME_LENGTH], option[NAME_LENGTH];
@@ -16195,25 +16193,58 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
             sprintf(ref, "page%d", page_n);
          else
             ref[0] = 0;
-         build_ref(ref, sizeof(ref), "full", "", "");
-         rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;|", ref, loc("Full"));
+         build_ref(ref, sizeof(ref), "full", "", "", "");
+
+         if (strieq(mode, "full"))
+            rsprintf("&nbsp;%s&nbsp;|", loc("Full"));
+         else
+            rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;|", ref, loc("Full"));
       }
 
       if (page_n != 1)
          sprintf(ref, "page%d", page_n);
       else
          ref[0] = 0;
-      build_ref(ref, sizeof(ref), "summary", "", "");
-      rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;|", ref, loc("Summary"));
+      build_ref(ref, sizeof(ref), "summary", "", "", "");
+
+      if (strieq(mode, "summary"))
+         rsprintf("&nbsp;%s&nbsp;|", loc("Summary"));
+      else
+         rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;|", ref, loc("Summary"));
 
       if (page_n != 1)
          sprintf(ref, "page%d", page_n);
       else
          ref[0] = 0;
-      build_ref(ref, sizeof(ref), "threaded", "", "");
-      rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;", ref, loc("Threaded"));
+      build_ref(ref, sizeof(ref), "threaded", "", "", "");
 
-      if (threaded) {
+      if (strieq(mode, "threaded"))
+         rsprintf("&nbsp;%s&nbsp;", loc("Threaded"));
+      else
+         rsprintf("&nbsp;<a href=\"%s\">%s</a>&nbsp;", ref, loc("Threaded"));
+
+      if (strieq(mode, "full")) {
+         if (page_n != 1)
+            sprintf(ref, "page%d", page_n);
+         else
+            ref[0] = 0;
+
+         cur_exp = 0;
+         if (isparam("elattach"))
+            cur_exp = atoi(getparam("elattach"));
+         if (isparam("attach"))
+            cur_exp = atoi(getparam("attach"));
+
+         if (cur_exp) {
+            build_ref(ref, sizeof(ref), "", "", "0", "");
+            rsprintf("|&nbsp;<a href=\"%s\">%s</a>&nbsp;", ref, loc("Hide attachments"));
+         } else {
+            build_ref(ref, sizeof(ref), "", "", "1", "");
+            rsprintf("|&nbsp;<a href=\"%s\">%s</a>&nbsp;", ref, loc("Show attachments"));
+         }
+      }
+
+      if (strieq(mode, "threaded")) {
          if (page_n != 1)
             sprintf(ref, "page%d", page_n);
          else
@@ -16227,7 +16258,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
 
          if (cur_exp > 0) {
             sprintf(str, "%d", cur_exp > 0 ? cur_exp - 1 : 0);
-            build_ref(ref, sizeof(ref), "", str, "");
+            build_ref(ref, sizeof(ref), "", str, "", "");
             rsprintf("|&nbsp;<a href=\"%s\">%s</a>&nbsp;", ref, loc("Collapse"));
          } else
             rsprintf("|&nbsp;%s&nbsp;", loc("Collapse"));
@@ -16238,7 +16269,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
             else
                ref[0] = 0;
             sprintf(str, "%d", cur_exp < 3 ? cur_exp + 1 : 3);
-            build_ref(ref, sizeof(ref), "", str, "");
+            build_ref(ref, sizeof(ref), "", str, "", "");
             rsprintf("|&nbsp;<a href=\"%s\">%s</a>&nbsp;", ref, loc("Expand"));
          } else
             rsprintf("|&nbsp;%s&nbsp;", loc("Expand"));
@@ -16282,11 +16313,11 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
 
    ref[0] = 0;
    if (!isparam("new_entries") || atoi(getparam("new_entries")) == 0) {
-      build_ref(ref, sizeof(ref), "", "", "1");
+      build_ref(ref, sizeof(ref), "", "", "", "1");
       rsprintf("<a href=\"%s\"><img align=\"middle\" border=\"0\" src=\"new_entry.png\" alt=\"%s\" title=\"%s\"></a>&nbsp;&nbsp;", 
          ref, loc("Show only new entries"), loc("Show only new entries"));
    } else {
-      build_ref(ref, sizeof(ref), "", "", "0");
+      build_ref(ref, sizeof(ref), "", "", "", "0");
       rsprintf("<a href=\"%s\"><img align=\"middle\" border=\"0\" src=\"all_entry.png\" alt=\"%s\" title=\"%s\"></a>&nbsp;&nbsp;", 
          ref, loc("Show all entries"), loc("Show all entries"));
    }
@@ -16427,7 +16458,7 @@ void show_page_navigation(int n_msg, int page_n, int n_page)
 
    if (page_n > 1) {
       sprintf(ref, "page%d", page_n - 1);
-      build_ref(ref, sizeof(ref), "", "", "");
+      build_ref(ref, sizeof(ref), "", "", "", "");
 
       rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;", ref, loc("Previous"));
    }
@@ -16439,7 +16470,7 @@ void show_page_navigation(int n_msg, int page_n, int n_page)
 
       for (i = 1; i <= num_pages; i++) {
          sprintf(ref, "page%d", i);
-         build_ref(ref, sizeof(ref), "", "", "");
+         build_ref(ref, sizeof(ref), "", "", "", "");
 
          if (i <= 3 || (i >= page_n - 1 && i <= page_n + 1)
              || i >= num_pages - 2) {
@@ -16475,14 +16506,14 @@ void show_page_navigation(int n_msg, int page_n, int n_page)
 
    if (page_n != -1 && n_page < n_msg && page_n * n_page < n_msg) {
       sprintf(ref, "page%d", page_n + 1);
-      build_ref(ref, sizeof(ref), "", "", "");
+      build_ref(ref, sizeof(ref), "", "", "", "");
 
       rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;", ref, loc("Next"));
    }
 
    if (page_n != -1 && n_page < n_msg) {
       sprintf(ref, "page");
-      build_ref(ref, sizeof(ref), "", "", "");
+      build_ref(ref, sizeof(ref), "", "", "", "");
 
       rsprintf("<a href=\"%s\">%s</a>\n", ref, loc("All"));
    }
@@ -17074,9 +17105,19 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       show_attachments = FALSE; /* hide attachments */
    }
 
-   /* supersede mode if in parameter */
-   if (*getparam("attach"))
-      show_attachments = (*getparam("attach") > 0);
+   /* supersede attachment mode if in cookie */
+   if (isparam("elattach"))
+      show_attachments = atoi(getparam("elattach"));
+
+   /* supersede attachment mode if in parameter */
+   if (isparam("attach"))
+      show_attachments = atoi(getparam("attach"));
+
+   /* set cookie if attachment mode changed in full view */
+   if (mode_cookie[0] == 0 && strieq(mode, "Full")) {
+      if (!isparam("elattach") || atoi(getparam("elattach")) != show_attachments)
+         sprintf(mode_cookie, "elattach=%d", show_attachments);
+   }
 
    /*---- convert dates to ltime ----*/
 
@@ -18007,7 +18048,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
       /*---- page navigation ----*/
 
       if (!printable) {
-         show_page_filters(lbs, n_msg, page_n, mode_commands, threaded);
+         show_page_filters(lbs, n_msg, page_n, mode_commands, mode);
          show_page_navigation(n_msg, page_n, n_page);
       }
 
