@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.754  2005/09/19 19:14:41  ritt
+   Improved quote table in html email notification
+
    Revision 1.753  2005/09/18 15:47:46  ritt
    Implemented show/hide attachments in full view
 
@@ -6578,7 +6581,9 @@ PATTERN_LIST pattern_list[] = {
    {"", ""}
 };
 
-void rsputs_elcode(LOGBOOK * lbs, const char *str)
+char *email_quote_table = "<table width=100%% border=1 align=\"left\" cellpadding=3><tr><td bgcolor=#486090><font color=white>%s:</font></td></tr><tr><td bgcolor=#FFFFB0>";
+
+void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 {
    int i, j, k, l, m, n, interprete_elcode;
    char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[1000], hattrib[1000],
@@ -6723,10 +6728,16 @@ void rsputs_elcode(LOGBOOK * lbs, const char *str)
                         attrib[strlen(attrib) - 1] = 0;
 
                      sprintf(value, loc("%s wrote"), attrib);
-                     sprintf(return_buffer + j, pattern_list[l].subst, value);
+                     if (email_notify)
+                        sprintf(return_buffer + j, email_quote_table, value);
+                     else
+                        sprintf(return_buffer + j, pattern_list[l].subst, value);
                      j += strlen(return_buffer + j);
                   } else {
-                     sprintf(return_buffer + j, pattern_list[l].subst, loc("Quote"));
+                     if (email_notify)
+                        sprintf(return_buffer + j, email_quote_table, loc("Quote"));
+                     else
+                        sprintf(return_buffer + j, pattern_list[l].subst, loc("Quote"));
                      j += strlen(return_buffer + j);
                      i += strlen(pattern_list[l].pattern) - 1;     // 1 gets added in for loop...
                   }
@@ -10148,7 +10159,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsputs2(lbs, text);
          rsputs("</pre>");
       } else if (strieq(encoding, "ELCode"))
-         rsputs_elcode(lbs, text);
+         rsputs_elcode(lbs, FALSE, text);
       else
          rsputs(text);
 
@@ -15585,7 +15596,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                rsputs("&nbsp;");
             rsputs("</pre>");
          } else if (strieq(encoding, "ELCode"))
-            rsputs_elcode(lbs, text);
+            rsputs_elcode(lbs, FALSE, text);
          else if (text[0])
             rsputs(text);
          else
@@ -15643,7 +15654,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             rsputs2(lbs, text);
             rsputs("</pre>");
          } else if (strieq(encoding, "ELCode"))
-            rsputs_elcode(lbs, text);
+            rsputs_elcode(lbs, FALSE, text);
          else
             rsputs(text);
 
@@ -18795,7 +18806,7 @@ void format_email_html(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH],
          if (encoding[0] == 'E') {
             sprintf(mail_text + strlen(mail_text), "\r\n<HR>\r\n");
             strlen_retbuf = 0;
-            rsputs_elcode(lbs, getparam("text"));
+            rsputs_elcode(lbs, TRUE, getparam("text"));
             strlcpy(mail_text + strlen(mail_text), return_buffer, TEXT_SIZE + 1000 - strlen(mail_text));
             strlen_retbuf = 0;
          } else
@@ -20737,7 +20748,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             rsputs2(lbs, text);
             rsputs("</pre>");
          } else if (strieq(encoding, "ELCode"))
-            rsputs_elcode(lbs, text);
+            rsputs_elcode(lbs, FALSE, text);
          else
             rsputs(text);
 
