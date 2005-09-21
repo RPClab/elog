@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.755  2005/09/21 06:47:32  ritt
+   Added '\' escape for smileys
+
    Revision 1.754  2005/09/19 19:14:41  ritt
    Improved quote table in html email notification
 
@@ -6505,9 +6508,6 @@ typedef struct {
 
 PATTERN_LIST pattern_list[] = {
 
-   /* escape */
-   {"\\[", "["},
-
    /* smileys */
    {":))", "<img src=\"%s/icons/happy.png\">"},
    {":-))", "<img src=\"%sicons/happy.png\">"},
@@ -6585,7 +6585,7 @@ char *email_quote_table = "<table width=100%% border=1 align=\"left\" cellpaddin
 
 void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 {
-   int i, j, k, l, m, n, interprete_elcode;
+   int i, j, k, l, m, n, interprete_elcode, escape_char;
    char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[1000], hattrib[1000],
        value[1000], subst[1000], base_url[256], param[256];
 
@@ -6596,6 +6596,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
    }
 
    interprete_elcode = TRUE;
+   escape_char = FALSE;
    j = strlen_retbuf;
    for (i = 0; i < (int) strlen(str); i++) {
       for (l = 0; key_list[l][0]; l++) {
@@ -6713,6 +6714,17 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 
             if (stristr(pattern_list[l].pattern, "[/code]")) 
                interprete_elcode = TRUE;
+
+            /* check for escape character */
+            if (i > 0 && str[i - 1] == '\\') {
+
+               j--;
+               strcpy(return_buffer + j, pattern_list[l].pattern);
+               j += strlen(pattern_list[l].pattern);
+               i += strlen(pattern_list[l].pattern) - 1;        // 1 gets added in for loop...
+
+               break;
+            }
 
             if (interprete_elcode) {
 
