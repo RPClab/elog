@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.756  2005/10/04 17:55:44  ritt
+   Modifications made on flight CA931
+
    Revision 1.755  2005/09/21 06:47:32  ritt
    Added '\' escape for smileys
 
@@ -8732,29 +8735,56 @@ void show_change_pwd_page(LOGBOOK * lbs)
 
 /*------------------------------------------------------------------*/
 
-int get_last_index(LOGBOOK * lbs, int index)
+void get_auto_index(LOGBOOK * lbs, int index, char *format, char *retstr, int size)
 /* return value of specific attribute of last entry, can be used to
 auto-increment tags */
 {
-   int i, message_id;
-   char str[80], attrib[MAX_N_ATTR][NAME_LENGTH], att[MAX_ATTACHMENTS][256];
+   int i, message_id, loc, len, old_index;
+   char str[NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH], att[MAX_ATTACHMENTS][256];
+   time_t now;
 
+   if (strchr(format, '%') == NULL && strchr(format, '#') == NULL) {
+      strlcpy(retstr, format, size);
+      return;
+   }
+
+   time(&now);
+   my_strftime(retstr, size, format, localtime(&now));
+
+   if (strchr(retstr, '#') == NULL)
+      return;
+
+   /* record location and length of ###'s */
+   for (i=loc=0,len=1 ; i<(int)strlen(retstr) ; i++) {
+      if (retstr[i] == '#') {
+         if (loc == 0)
+            loc = i;
+         if (i>0 && retstr[i-1] == '#')
+            len++;
+      }
+   }
+
+   /* get attribute from last entry */
    str[0] = 0;
    message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
 
-   if (!message_id)
-      return 0;
+   if (!message_id) {
+      /* start with 1 */
+      sprintf(retstr+loc, "%0*d", len, 1);
+      return;
+   }
 
    el_retrieve(lbs, message_id, NULL, attr_list, attrib, lbs->n_attr, NULL, 0, NULL, NULL, att, NULL, NULL);
 
-   strcpy(str, attrib[index]);
+   /* if date part changed, start over with inded */
+   if (strncmp(attrib[index], retstr, loc) != 0)
+      old_index = 0;
+   else
+      /* retrieve old index */
+      old_index = atoi(attrib[index]+loc);
 
-   /* look for first digit, return value */
-   for (i = 0; i < (int) strlen(str); i++)
-      if (isdigit(str[i]))
-         break;
-
-   return atoi(str + i);
+   /* increment index */
+   sprintf(retstr+loc, "%0*d", len, old_index+1);
 }
 
 /*------------------------------------------------------------------*/
@@ -9197,10 +9227,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             /* check for index substitution */
             if (!bedit && strchr(preset, '%')) {
                /* get index */
-               i = get_last_index(lbs, index);
-
-               strcpy(str, preset);
-               sprintf(preset, str, i + 1);
+               get_auto_index(lbs, index, preset, str, sizeof(str));
+               strcpy(preset, str);
             }
 
             if (!strchr(preset, '%'))
@@ -9221,10 +9249,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             /* check for index substitution */
             if (!bedit && strchr(preset, '%')) {
                /* get index */
-               i = get_last_index(lbs, index);
-
-               strcpy(str, preset);
-               sprintf(preset, str, i + 1);
+               get_auto_index(lbs, index, preset, str, sizeof(str));
+               strcpy(preset, str);
             }
 
             if (!strchr(preset, '%'))
@@ -9267,10 +9293,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             /* check for index substitution */
             if (!bedit && strchr(preset, '%')) {
                /* get index */
-               i = get_last_index(lbs, index);
-
-               strcpy(str, preset);
-               sprintf(preset, str, i + 1);
+               get_auto_index(lbs, index, preset, str, sizeof(str));
+               strcpy(preset, str);
             }
 
             if (!strchr(preset, '%'))
@@ -9291,10 +9315,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             /* check for index substitution */
             if (!bedit && strchr(preset, '%')) {
                /* get index */
-               i = get_last_index(lbs, index);
-
-               strcpy(str, preset);
-               sprintf(preset, str, i + 1);
+               get_auto_index(lbs, index, preset, str, sizeof(str));
+               strcpy(preset, str);
             }
 
             if (!strchr(preset, '%'))
@@ -10562,14 +10584,16 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          && atoi(str) == 1)) {
       if (getcfg(lbs->name, "Suppress default", str, sizeof(str))) {
          if (atoi(str) == 0) {
-            rsprintf("<input type=checkbox name=suppress value=1>%s\n", loc("Suppress Email notification"));
+            rsprintf("<input type=\"checkbox\" name=\"suppress\" id=\"suppress\" value=\"1\">");
+            rsprintf("<label for=\"suppress\">%s</label>\n", loc("Suppress Email notification"));
          } else if (atoi(str) == 1) {
-            rsprintf("<input type=checkbox checked name=suppress value=1>%s\n",
-                     loc("Suppress Email notification"));
+            rsprintf("<input type=\"checkbox\" checked name=\"suppress\" id=\"suppress\" value=\"1\">");
+            rsprintf("<label for=\"suppress\">%s</label>\n", loc("Suppress Email notification"));
          }
 
       } else {
-         rsprintf("<input type=checkbox name=suppress value=1>%s\n", loc("Suppress Email notification"));
+         rsprintf("<input type=\"checkbox\" name=\"suppress\" id=\"suppress\" value=\"1\">");
+         rsprintf("<label for=\"suppress\">%s</label>\n", loc("Suppress Email notification"));
       }
    }
 
@@ -10578,16 +10602,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       if (getcfg(lbs->name, "Suppress execute default", str, sizeof(str))) {
          if (atoi(str) == 0) {
             rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-            rsprintf("<input type=checkbox name=shell_suppress value=1>%s\n",
-                     loc("Suppress shell execution"));
+            rsprintf("<input type=\"checkbox\" name=\"shell_suppress\" id=\"shell_suppress\" value=1>");
+            rsprintf("<label for=\"shell_suppress\">%s</label>\n", loc("Suppress shell execution"));
          } else if (atoi(str) == 1) {
             rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-            rsprintf("<input type=checkbox checked name=shell_suppress value=1>%s\n",
-                     loc("Suppress shell execution"));
+            rsprintf("<input type=\"checkbox\" checked name=\"shell_suppress\" id=\"shell_suppress\" value=1>");
+            rsprintf("<label for=\"shell_suppress\">%s</label>\n", loc("Suppress shell execution"));
          }
       } else {
          rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-         rsprintf("<input type=checkbox name=shell_suppress value=1>%s\n", loc("Suppress shell execution"));
+         rsprintf("<input type=\"checkbox\" name=\"shell_suppress\" id=\"shell_suppress\" value=1>");
+         rsprintf("<label for=\"shell_suppress\">%s</label>\n", loc("Suppress shell execution"));
       }
    }
 
@@ -10595,16 +10620,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       if (getcfg(lbs->name, "Suppress execute default", str, sizeof(str))) {
          if (atoi(str) == 0) {
             rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-            rsprintf("<input type=checkbox name=shell_suppress value=1>%s\n",
-                     loc("Suppress shell execution"));
+            rsprintf("<input type=\"checkbox\" name=\"shell_suppress\" id=\"shell_suppress\" value=1>");
+            rsprintf("<label for=\"shell_suppress\">%s</label>\n", loc("Suppress shell execution"));
          } else if (atoi(str) == 1) {
             rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-            rsprintf("<input type=checkbox checked name=shell_suppress value=1>%s\n",
-                     loc("Suppress shell execution"));
+            rsprintf("<input type=\"checkbox\" checked name=\"shell_suppress\" id=\"shell_suppress\" value=1>");
+            rsprintf("<label for=\"shell_suppress\">%s</label>\n", loc("Suppress shell execution"));
          }
       } else {
          rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-         rsprintf("<input type=checkbox name=shell_suppress value=1>%s\n", loc("Suppress shell execution"));
+         rsprintf("<input type=\"checkbox\" name=\"shell_suppress\" id=\"shell_suppress\" value=1>");
+         rsprintf("<label for=\"shell_suppress\">%s</label>\n", loc("Suppress shell execution"));
       }
    }
 
@@ -10613,14 +10639,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       if (getcfg(lbs->name, "Resubmit default", str, sizeof(str))) {
          if (atoi(str) == 0) {
             rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-            rsprintf("<input type=checkbox name=resubmit value=1>%s\n", loc("Resubmit as new entry"));
+            rsprintf("<input type=\"checkbox\" name=\"resubmit\" id=\"resubmit\" value=1>");
+            rsprintf("<label for=\"resubmit\">%s</lable>\n", loc("Resubmit as new entry"));
          } else if (atoi(str) == 1) {
             rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-            rsprintf("<input type=checkbox checked name=resubmit value=1>%s\n", loc("Resubmit as new entry"));
+            rsprintf("<input type=\"checkbox\" checked name=\"resubmit\" id=\"resubmit\" value=1>");
+            rsprintf("<label for=\"resubmit\">%s</lable>\n", loc("Resubmit as new entry"));
          }
       } else {
          rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-         rsprintf("<input type=checkbox name=resubmit value=1>%s\n", loc("Resubmit as new entry"));
+         rsprintf("<input type=\"checkbox\" name=\"resubmit\" id=\"resubmit\" value=1>");
+         rsprintf("<label for=\"resubmit\">%s</lable>\n", loc("Resubmit as new entry"));
       }
    }
 

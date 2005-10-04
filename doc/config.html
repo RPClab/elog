@@ -861,11 +861,12 @@ attribute which has an options list, the preset value is selected in the drop
 down box by default.<br><br>
 
 A special option are automatically generated tags, which are automatically incremented
-for each new message. This is achieved by putting a "%" into the preset string, which
-is used as a <i>printf</i> format specifier. A statement like
+for each new message. This is achieved by putting #'s into the preset string, which
+is used as a placeholder for the incrementing index. Each "#" stands for one digit, 
+thus the statement
 <p>
 <pre>
-Preset Number = XYZ-%05d
+Preset Number = XYZ-#####
 </pre>
 results in automatically created attributes <i>"Number"</i> of the form<p>
 <pre>
@@ -873,9 +874,32 @@ XYZ-00001
 XYZ-00002
 XYZ-00003
 </pre>
-and so on.
+and so on. In addition to the #'s one may specify format specifiers which are passed
+to the <a href="http://www.gnu.org/manual/glibc-2.2.3/html_node/libc_427.html#IDX2636">
+strftime</a> function. This allows to create tags wich contain the current year, month
+and so on. Once the date part of the attribute changes, the index restarts from one.
+The statement
 <p>
-
+<pre>
+Preset Number = XYZ-%Y-%b-###
+</pre>
+results in automatically created attributes <i>"Number"</i> of the form<p>
+<pre>
+XYZ-2005-Oct-001
+XYZ-2005-Oct-002
+XYZ-2005-Oct-003
+</pre>
+<p>
+and
+<p>
+<pre>
+XYZ-2005-Nov-001
+XYZ-2005-Nov-002
+</pre>
+<p>
+on the next month.
+<p>
+	
 <LI><b><code>Preset text = &lt;string&gt; or &lt;file&gt;</code></b>
 <br>
 This preset value is used for the main body text. It can be a string or a file,
