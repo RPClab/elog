@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.757  2005/10/05 11:05:55  ritt
+   Fixed problem with 'POST' in search text
+
    Revision 1.756  2005/10/04 17:55:44  ritt
    Modifications made on flight CA931
 
@@ -23959,12 +23962,12 @@ void server_loop(void)
                }
 
                /* finish when empty line received */
-               if (strstr(net_buffer, "GET") != NULL && strstr(net_buffer, "POST") == NULL) {
+               if (strncmp(net_buffer, "GET", 3) == 0 && strncmp(net_buffer, "POST", 4) != 0) {
                   if (len > 4 && strcmp(&net_buffer[len - 4], "\r\n\r\n") == 0)
                      break;
                   if (len > 6 && strcmp(&net_buffer[len - 6], "\r\r\n\r\r\n") == 0)
                      break;
-               } else if (strstr(net_buffer, "POST") != NULL) {
+               } else if (strncmp(net_buffer, "POST", 4) == 0) {
                   if (header_length == 0) {
                      /* extract logbook */
                      strlcpy(str, net_buffer + 6, sizeof(str));
@@ -24208,7 +24211,7 @@ void server_loop(void)
             strcpy(logbook_enc, logbook);
             url_decode(logbook);
             /* check for trailing '/' after logbook */
-            if (strstr(net_buffer, "POST") == NULL) {   // fix for konqueror
+            if (strncmp(net_buffer, "POST", 4) != 0) {   // fix for konqueror
                if (logbook[0] && *p == ' ') {
                   if (!chkext(logbook, ".css") && !chkext(logbook, ".htm")
                       && !chkext(logbook, ".gif") && !chkext(logbook, ".jpg")
