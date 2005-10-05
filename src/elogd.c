@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.759  2005/10/05 11:37:57  ritt
+   Mode cookies expire after ten years
+
    Revision 1.758  2005/10/05 11:29:16  ritt
    Show 'top text' in edit form
 
@@ -7283,7 +7286,10 @@ void set_cookie(LOGBOOK * lbs, char *name, char *value, BOOL global, char *expir
    else
       strcpy(lb_name, "global");
 
-   rsprintf("Set-Cookie: %s=%s;", name, value);
+   if (value != NULL)
+      rsprintf("Set-Cookie: %s=%s;", name, value);
+   else
+      rsprintf("Set-Cookie: %s;", name);
 
    /* add path */
    if (global) {
@@ -7310,7 +7316,7 @@ void set_cookie(LOGBOOK * lbs, char *name, char *value, BOOL global, char *expir
    exp = atof(expiration);
 
    /* to clear a cookie, set expiration date to yesterday */
-   if (value[0] == 0)
+   if (value != NULL && value[0] == 0)
       exp = -24;
 
    /* add expriation date */
@@ -7546,7 +7552,8 @@ void show_http_header(LOGBOOK * lbs, BOOL expires, char *cookie)
       rsprintf("Content-Type: text/html;charset=%s\r\n", DEFAULT_HTTP_CHARSET);
 
    if (cookie && cookie[0]) {
-      rsprintf("Set-Cookie: %s;", cookie);
+
+      set_cookie(lbs, cookie, NULL, FALSE, "99999"); /* ten years by default */
 
       if (getcfg(lbs->name, "URL", str, sizeof(str))) {
          extract_path(str);
