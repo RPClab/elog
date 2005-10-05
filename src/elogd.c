@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.758  2005/10/05 11:29:16  ritt
+   Show 'top text' in edit form
+
    Revision 1.757  2005/10/05 11:05:55  ritt
    Fixed problem with 'POST' in search text
 
@@ -9698,6 +9701,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    else
       rsprintf("<body%s>\n", script);
 
+   show_top_text(lbs);
    rsprintf("<form name=form1 method=\"POST\" action=\"./\" ");
    rsprintf("enctype=\"multipart/form-data\">\n");
 
