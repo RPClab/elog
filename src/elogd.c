@@ -6,6 +6,9 @@
    Contents:     Web server program for Electronic Logbook ELOG
 
    $Log$
+   Revision 1.760  2005/10/05 12:37:42  ritt
+   Version 2.6.0-beta5
+
    Revision 1.759  2005/10/05 11:37:57  ritt
    Mode cookies expire after ten years
 
@@ -1389,7 +1392,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.6.0-beta4"
+#define VERSION "2.6.0-beta5"
 char cvs_revision[] = "$Id$";
 
 /* ELOG identification */
