@@ -5,7 +5,7 @@
 
    Contents:     Web server program for Electronic Logbook ELOG
 
-   $ID$
+   $ID:$
 
 \********************************************************************/
 
