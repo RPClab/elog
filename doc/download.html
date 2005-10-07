@@ -29,18 +29,19 @@ containing bug fixes or some new and not yet completely debugged code. This
 is usually the case if some user asks for some new features, which are then
 implemented and sent to the user for testing. The minor releases are named
 <b><code>x.y.z-r</code></b> where <b><code>r</code></b> is the release number.
-A <a href="http://midas.psi.ch/cgi-bin/cvsweb/elog/src/elogd.c">CVS web access</a> to the
+A <a href="http://savannah.psi.ch/viewcvs/trunk?root=elog">web access</a> to the
 source code contains the complete development history of ELOG. To check out the complete
-CVS tree, use:<P>
+Subversion tree, use:<P>
 <code>
-<b>setenv CVS_RSH ssh</b>    (or "export CVS_RSH=ssh" for bash & Co)<br>
-<b>cvs -d :ext:cvs@midas.psi.ch:/usr/local/cvsroot checkout elog</b><br>
-cvs@midas.psi.ch's password: <b>cvs</b><br>
-<b>cvs -d :ext:cvs@midas.psi.ch:/usr/local/cvsroot checkout mxml</b><br>
-cvs@midas.psi.ch's password: <b>cvs</b><br>
+<b>svn checkout svn+ssh://svn@savannah.psi.ch:/afs/psi.ch/project/meg/svn/elog/trunk elog</b><br>
+svn@midas.psi.ch's password: <b>svn</b><br>
+(you might have to enter the password several times...)<br>
+<b>svn checkout svn+ssh://svn@savannah.psi.ch:/afs/psi.ch/project/meg/svn/mxml/trunk mxml</b><br>
+svn@midas.psi.ch's password: <b>svn</b><br>
+(you might have to enter the password several times...)<br>
 </code><p>
 	
-Building elogd and installing it from CVS works in the same way as building
+Building elogd and installing it from Subversion works in the same way as building
 it from the tarball. Issue in the elog directory a "make", followed by a "make install".<p>
 News for each version can be seen in the
 <a href="http://midas.psi.ch/elog/download/ChangeLog">changelog</a><p>
