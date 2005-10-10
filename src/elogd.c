@@ -8296,8 +8296,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("}\n\n");
 
    /* strings for elcode.js */
-   rsprintf("linkText_prompt = '%s';\n", loc("Enter name of hypelink"));
-   rsprintf("linkURL_prompt  = '%s';\n", loc("Enter URL of hypelink"));
+   rsprintf("linkText_prompt = '%s';\n", loc("Enter name of hyperlink"));
+   rsprintf("linkURL_prompt  = '%s';\n", loc("Enter URL of hyperlink"));
    if (stristr(browser, "MSIE") && !stristr(browser, "opera"))
       rsprintf("browser = 'MSIE';\n");
    else if (stristr(browser, "Mozilla") && !stristr(browser, "opera") && !stristr(browser, "konqueror"))
