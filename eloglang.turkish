@@ -3,6 +3,8 @@
 # To use Turkish translation, add the following lines to [global]:
 #   charset = utf-8
 #   language = turkish
+# A more recent version may be available at :
+# http://savannah.psi.ch/viewcvs/trunk/eloglang.turkish?root=elog&
 #
 
 New = Yeni

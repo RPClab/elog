@@ -2,7 +2,7 @@
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
 # (for 2.5.9)
 # A more recent version may be available at :
-# http://midas.psi.ch/cgi-bin/cvsweb/elog/eloglang.french
+# http://savannah.psi.ch/viewcvs/trunk/eloglang.french?root=elog&
 #
 
 New = Créer
@@ -50,11 +50,9 @@ This is the first entry = Ceci est la première entrée
 Email sent to = Mél envoyé à
 Email notification suppressed = Notification mél désactivée
 please select = choisissez
-Submit as HTML text = Code HTML
 Suppress Email notification = Désactiver la notification mél.
 Resubmit as new entry = Positionner comme une nouvelle entrée
 Attachment = Attachement
-Attachments = Attachements
 Reply to this = Réponse
 In reply to = En réponse à
 Fields marked with = Les champs marqués
@@ -157,9 +155,6 @@ moved successfully from "%s" to "%s" = déplacés avec succès de "%s" à "%s"
 copied successfully from "%s" to "%s" = copiés avec succès de "%s" à "%s"
 Only user <i>%s</i> can delete this entry = Seul l'utilisateur <i>%s</i> peut supprimer cette entrée
 Search text also in attributes = Rechercher également le texte dans les attributs
-Goto logbook selection page = Aller à la page de sélection des registres
-Login as different user = Se connecter sous un compte différent
-User <i>"%s"</i> has no access to logbook <i>"%s"</i> = L'utilisateur <i>"%s"</i> n'a pas accès au registre <i>"%s"</i>
 Date = Date
 ID = ID
 Remember me on this computer = Mémoriser mon identité sur cet ordinateur
@@ -177,7 +172,6 @@ Password recovery for ELOG %s = Récupération de mot de passe sur ELOG %s
 Host = Ordinateur
 Your ELOG account has been activated = Votre compte ELOG a été activé
 Maximum number of attachments reached = Le nombre maximal d'attachements a été atteint
-Invalid user name <i>"%s"</i> = Le nom d'utilisateur <i>"%s"</i> est incorrect
 on = sur
 Entry is currently edited by = Entrée actuellement en cours de modification par
 Old password = Ancien mot de passe
@@ -226,8 +220,6 @@ Entries = Entrées
 Cannot connect to remote server "%s" = Impossible de se connecter au serveur distant "%s"
 Remote server is not an ELOG server = Le serveur distant n'est pas un serveur ELOG
 Incorrect remote ELOG server version %s = La version du serveur ELOG distant est incorrecte (%s)
-User "%s" has no access to remote logbook = L'utilisateur "%s" n'a pas accès au registre distant
-Passwords for user "%s" do not match locally and remotely = Les mots de passe local et distant de l'utilisateur "%s" ne correspondent pas
 Error accessing remote logbook = Erreur lors de l'accès au registre distant
 Invalid HTTP header = En-tête HTTP invalide
 No user name supplied to access remote logbook = Aucun nom d'utilisateur n'a été fourni pour l'accès au registre distant
@@ -355,3 +347,65 @@ Please enter minute for attribute '%s' =  Entrez les minutes pour l'attribut '%s
 Please enter second for attribute '%s' =  Entrez les secondes pour l'attribut '%s'
 No admin user has been defined in configuration file = Aucun utilisateur n'est défini comme administrateur dans le fichier de configuration
 Duplicate = Dupliquer
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Cannot lookup server name = 
+Cannot connect to server = 
+%s wrote = 
+Quote = 
+Please enter numeric value for year of attribute '%s' = 
+Enter name of hypelink = 
+Enter URL of hypelink = 
+Preview = 
+bold text = 
+italics text = 
+underlined text = 
+centered text = 
+insert hyperlink = 
+insert email = 
+insert image = 
+insert quote = 
+insert list = 
+insert code = 
+hide the smiley bar = 
+show the smiley bar = 
+FONT = 
+SIZE = 
+COLOR = 
+smiling = 
+happy = 
+winking = 
+big grin = 
+crying = 
+cool = 
+frowning = 
+confused = 
+eek = 
+mad = 
+pleased = 
+tongue = 
+yawn = 
+Encoding = 
+User "%s" not found in password file = 
+Cannot write to file <b>%s</b> = 
+Really remove user %s? = 
+Invalid user name "%s" or password for remote logbook = 
+Delte entry = 
+Hide attachments = 
+Show only new entries = 
+Show all entries = 
+New entries since = 
+A old ELOG entry has been updated = 
+A new ELOG entry has been submitted = 
+Cannot open file "%s" = 
+Invalid user name or password = 
+Upload image = 
+Please enter filename or URL = 
+Maximum allowed file size is = 
+Enter filename or URL = 
+Image uploaded successfully = 
+Image "%s" uploaded successfully = 
+HelpELCode = 
+Cannot retrieve file from URL "%s" = 

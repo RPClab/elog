@@ -22,14 +22,17 @@ Global
 	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
 		{8D6EBED8-48F3-4719-907E-7BE46A3C0FA4}.Debug.ActiveCfg = Debug|Win32
+		{8D6EBED8-48F3-4719-907E-7BE46A3C0FA4}.Debug.Build.0 = Debug|Win32
 		{8D6EBED8-48F3-4719-907E-7BE46A3C0FA4}.Release.ActiveCfg = Release|Win32
 		{FD6FCAF3-A94B-40FA-AE52-07705DE2E519}.Debug.ActiveCfg = Debug|Win32
+		{FD6FCAF3-A94B-40FA-AE52-07705DE2E519}.Debug.Build.0 = Debug|Win32
 		{FD6FCAF3-A94B-40FA-AE52-07705DE2E519}.Release.ActiveCfg = Release|Win32
 		{CB6EB7FE-CC3D-4548-B8B8-8DDA05916759}.Debug.ActiveCfg = Debug|Win32
 		{CB6EB7FE-CC3D-4548-B8B8-8DDA05916759}.Debug.Build.0 = Debug|Win32
 		{CB6EB7FE-CC3D-4548-B8B8-8DDA05916759}.Release.ActiveCfg = Release|Win32
 		{CB6EB7FE-CC3D-4548-B8B8-8DDA05916759}.Release.Build.0 = Release|Win32
 		{77ED3530-9382-4830-8513-9729C051A93E}.Debug.ActiveCfg = Debug|Win32
+		{77ED3530-9382-4830-8513-9729C051A93E}.Debug.Build.0 = Debug|Win32
 		{77ED3530-9382-4830-8513-9729C051A93E}.Release.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
