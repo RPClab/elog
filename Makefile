@@ -1,4 +1,3 @@
-#
 # Simple makefile for elogd
 #
 # S. Ritt, May 12th 2000
@@ -21,9 +20,13 @@ DESTDIR = /usr/local/bin
 SDESTDIR = /usr/local/sbin
 MANDIR = /usr/local/man
 MXMLDIR = ../mxml
+BINOWNER = bin
+BINGROUP = bin
 
 INSTALL = /usr/bin/install
 RM = /bin/rm -f
+
+OSTYPE = $(shell uname)
 
 ifeq ($(OSTYPE),solaris)
 CC = gcc
@@ -33,8 +36,14 @@ INSTALL = /usr/ucb/install
 RM = /usr/bin/rm -f
 endif
 
+ifeq ($(OSTYPE),Darwin)
+OSTYPE=darwin
+endif
+
 ifeq ($(OSTYPE),darwin)
 CC = cc
+BINOWNER = root
+BINGROUP = admin
 endif
 
 all: $(EXECS)
@@ -78,8 +87,8 @@ loc:
 
 install: $(EXECS)
 	$(INSTALL) -m 0755 -d $(DESTDIR) $(SDESTDIR) $(MANDIR)/man1/ $(MANDIR)/man8/
-	$(INSTALL) -m 0755 -o bin -g bin elog elconv $(DESTDIR)
-	$(INSTALL) -m 0755 -o bin -g bin elogd $(SDESTDIR)
+	$(INSTALL) -m 0755 -o ${BINOWNER} -g ${BINGROUP} elog elconv $(DESTDIR)
+	$(INSTALL) -m 0755 -o ${BINOWNER} -g ${BINGROUP} elogd $(SDESTDIR)
 	$(INSTALL) -m 0644 man/elog.1 man/elconv.1 $(MANDIR)/man1/
 	$(INSTALL) -m 0644 man/elogd.8 $(MANDIR)/man8/
 
