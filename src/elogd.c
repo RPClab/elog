@@ -4941,6 +4941,14 @@ void rsputs2(LOGBOOK *lbs, const char *str)
    for (i = 0; i < (int) strlen(str); i++) {
       for (l = 0; key_list[l][0]; l++) {
          if (strncmp(str + i, key_list[l], strlen(key_list[l])) == 0) {
+
+            /* check for escape character */
+            if (i > 0 && *(str + i - 1) == '\\') {
+               j--;
+               *(return_buffer + j) = 0;
+               continue;
+            }
+
             p = (char *) (str + i + strlen(key_list[l]));
             i += strlen(key_list[l]);
             for (k = 0; *p && strcspn(p, " \t\n\r({[)}]\"") && k < (int) sizeof(link); k++, i++)
@@ -5234,6 +5242,14 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
    for (i = 0; i < (int) strlen(str); i++) {
       for (l = 0; key_list[l][0]; l++) {
          if (strncmp(str + i, key_list[l], strlen(key_list[l])) == 0) {
+
+            /* check for escape character */
+            if (i > 0 && *(str + i - 1) == '\\') {
+               j--;
+               *(return_buffer + j) = 0;
+               continue;
+            }
+
             p = (char *) (str + i + strlen(key_list[l]));
             i += strlen(key_list[l]);
             for (k = 0; *p && strcspn(p, " \t\n\r({[)}]\"") && k < (int) sizeof(link); k++, i++)
