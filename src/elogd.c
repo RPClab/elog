@@ -11,7 +11,7 @@
 
 /* Version of ELOG */
 #define VERSION "2.6.0-beta5"
-char cvs_revision[] = "$Id$";
+char svn_revision[] = "$Id$";
 
 /* ELOG identification */
 static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
@@ -5430,7 +5430,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                         else
                            sprintf(hattrib, "%s", attrib + 5);
 
-                     } else if (strncmp(attrib, "http://", 7) != 0)        /* add http:// if missing */
+                     } else if (strstr(attrib, "://", 7) == 0)        /* add http:// if missing */
                         sprintf(hattrib, "http://%s", attrib);
                      else
                         strlcpy(hattrib, attrib, sizeof(hattrib));
@@ -22377,7 +22377,7 @@ void server_loop(void)
 
    /* about to entering the server loop, welcome user with a brief info */
    eprintf("%s ", ELOGID);
-   strcpy(str, cvs_revision + 15);
+   strcpy(str, svn_revision + 13);
    if (strchr(str, ' '))
       *strchr(str, ' ') = 0;
    eprintf("revision %s\n", str);
