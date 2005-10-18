@@ -15578,7 +15578,7 @@ void highlight_searchtext(regex_t * re_buf, char *src, char *dst, int hidden)
          size = pmatch[0].rm_so;
 
          /* abort if zero length match, for example from "m*" */
-         if (size == 0) {
+         if (pmatch[0].rm_eo - pmatch[0].rm_so == 0) {
             status = REG_NOMATCH;
             strcpy(pt1, pt);
             break;
@@ -17072,7 +17072,9 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
                text1[i] = 0;
              */
 
-            highlight_searchtext(re_buf, text, text1, strieq(encoding, "plain") || !strieq(mode, "Full"));
+            highlight_searchtext(re_buf, text, text1, strieq(encoding, "plain") || 
+                                                      strieq(encoding, "ELCode") || 
+                                                      !strieq(mode, "Full"));
             strlcpy(text, text1, TEXT_SIZE);
          }
 
