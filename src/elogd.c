@@ -5430,7 +5430,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                         else
                            sprintf(hattrib, "%s", attrib + 5);
 
-                     } else if (strstr(attrib, "://", 7) == 0)        /* add http:// if missing */
+                     } else if (strstr(attrib, "://") == 0)        /* add http:// if missing */
                         sprintf(hattrib, "http://%s", attrib);
                      else
                         strlcpy(hattrib, attrib, sizeof(hattrib));
