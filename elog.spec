@@ -80,6 +80,7 @@ install -m 0755 elog  $RPM_BUILD_ROOT%{prefix}/bin
 install -m 0755 elconv $RPM_BUILD_ROOT%{prefix}/bin
 
 install -m 0644 resources/eloghelp* $RPM_BUILD_ROOT%{prefix}/resources/elog
+install -m 0644 resources/elcode* $RPM_BUILD_ROOT%{prefix}/resources/elog
 install -m 0644 resources/eloglang* $RPM_BUILD_ROOT%{prefix}/resources/elog
 cp -r themes $RPM_BUILD_ROOT%{prefix}/elog
 cp -r logbooks $RPM_BUILD_ROOT%{prefix}/elog
@@ -105,6 +106,7 @@ rm -rf $RPM_BUILD_ROOT
 %prefix/sbin/elogd
 %prefix/elog/resources/eloghelp*
 %prefix/elog/resources/eloglang*
+%prefix/elog/resources/elcode*
 %prefix/elog/themes
 %prefix/elog/logbooks
 %config(noreplace) %prefix/elog/elogd.cfg
