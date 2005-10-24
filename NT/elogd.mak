@@ -214,11 +214,11 @@ SOURCE=..\src\regex.c
 
 SOURCE=..\..\mxml\mxml.c
 "$(INTDIR)\mxml.obj"	"$(INTDIR)\mxml.sbr" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) /D "HAVE_STRLCPY" $(SOURCE)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 SOURCE=..\..\mxml\strlcpy.c
 "$(INTDIR)\strlcpy.obj"	"$(INTDIR)\strlcpy.sbr" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) /D "HAVE_STRLCPY" $(SOURCE)
+	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 !ENDIF 
 
