@@ -73,17 +73,17 @@ indent:
 	indent $(IFLAGS) src/locext.c
 
 loc:
-	locext src\elogd.c eloglang.brazilian
-	locext src\elogd.c eloglang.bulgarian
-	locext src\elogd.c eloglang.dutch
-	locext src\elogd.c eloglang.french
-	locext src\elogd.c eloglang.german
-	locext src\elogd.c eloglang.spanish
-	locext src\elogd.c eloglang.italian
-	locext src\elogd.c eloglang.japanese
-	locext src\elogd.c eloglang.danish
-	locext src\elogd.c eloglang.zh_CN-GB2312
-	locext src\elogd.c eloglang.zh_CN-UTF8
+	locext src\elogd.c resources\eloglang.brazilian
+	locext src\elogd.c resources\eloglang.bulgarian 
+	locext src\elogd.c resources\eloglang.dutch
+	locext src\elogd.c resources\eloglang.french
+	locext src\elogd.c resources\eloglang.german
+	locext src\elogd.c resources\eloglang.spanish
+	locext src\elogd.c resources\eloglang.italian
+	locext src\elogd.c resources\eloglang.japanese
+	locext src\elogd.c resources\eloglang.danish
+	locext src\elogd.c resources\eloglang.zh_CN-GB2312
+	locext src\elogd.c resources\eloglang.zh_CN-UTF8
 
 install: $(EXECS)
 	$(INSTALL) -m 0755 -d $(DESTDIR) $(SDESTDIR) $(MANDIR)/man1/ $(MANDIR)/man8/

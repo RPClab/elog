@@ -40,6 +40,8 @@ access control, etc. Moreover, a single server can host several weblogs, and
 each weblog can be totally different from the rest. 
 
 %changelog
+* Fon Oct 24 2005 Stefan Ritt <stefan.ritt@psi.ch>
+- Added resources/ directory
 * Fri Mar 14 2003 Stefan Ritt <stefan.ritt@psi.ch>
 - Added %post to change ownership of elog files
 * Thu Jan 30 2003 Stefan Ritt <stefan.ritt@psi.ch>
@@ -77,8 +79,8 @@ install -m 0755 elogd $RPM_BUILD_ROOT%{prefix}/sbin
 install -m 0755 elog  $RPM_BUILD_ROOT%{prefix}/bin
 install -m 0755 elconv $RPM_BUILD_ROOT%{prefix}/bin
 
-install -m 0644 eloghelp* $RPM_BUILD_ROOT%{prefix}/elog
-install -m 0644 eloglang* $RPM_BUILD_ROOT%{prefix}/elog
+install -m 0644 resources/eloghelp* $RPM_BUILD_ROOT%{prefix}/resources/elog
+install -m 0644 resources/eloglang* $RPM_BUILD_ROOT%{prefix}/resources/elog
 cp -r themes $RPM_BUILD_ROOT%{prefix}/elog
 cp -r logbooks $RPM_BUILD_ROOT%{prefix}/elog
 install -m 0644 elogd.cfg $RPM_BUILD_ROOT%{prefix}/elog
@@ -101,8 +103,8 @@ rm -rf $RPM_BUILD_ROOT
 %doc	README COPYING doc
 %prefix/bin/*
 %prefix/sbin/elogd
-%prefix/elog/eloghelp*
-%prefix/elog/eloglang*
+%prefix/elog/resources/eloghelp*
+%prefix/elog/resources/eloglang*
 %prefix/elog/themes
 %prefix/elog/logbooks
 %config(noreplace) %prefix/elog/elogd.cfg
