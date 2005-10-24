@@ -425,6 +425,7 @@ int scan_attributes(char *logbook);
 /*---- Funcions from the MIDAS library -----------------------------*/
 
 #define my_toupper(_c)    ( ((_c)>='a' && (_c)<='z') ? ((_c)-'a'+'A') : (_c) )
+#define my_tolower(_c)    ( ((_c)>='A' && (_c)<='Z') ? ((_c)-'A'+'a') : (_c) )
 
 BOOL strieq(const char *str1, const char *str2)
 {
@@ -544,6 +545,31 @@ static BOOL chkext(const char *str, const char *ext)
 size_t my_strftime(char *s, size_t max, const char *fmt, const struct tm * tm)
 {
    return strftime(s, max, fmt, tm);
+}
+
+/*---- Compose RFC2822 compliant date ---*/
+
+void get_rfc2822_date(char *date, int size, time_t ltime)
+{
+   time_t now;
+   char buf[256];
+   int offset;
+   struct tm *ts;
+
+   /* switch locale temporarily back to english to comply with RFC2822 date format */
+   setlocale(LC_ALL, "C");
+
+   if (ltime == 0)
+      time(&now);
+   else
+      now = ltime;
+   ts = localtime(&now);
+   strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S", ts);
+   offset = (-(int) timezone);
+   if (ts->tm_isdst)
+      offset += 3600;
+   snprintf(date, size - 1, "%s %+03d%02d", buf, (int) (offset / 3600),
+            (int) ((abs((int) offset) / 60) % 60));
 }
 
 /*---- Safe malloc wrappers with out of memory checking from GNU ---*/
@@ -2781,6 +2807,8 @@ int check_language()
 
    /* force re-read configuration file if changed */
    strlcpy(file_name, resource_dir, sizeof(file_name));
+   strlcat(file_name, "resources", sizeof(file_name));
+   strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
    strlcat(file_name, "eloglang.", sizeof(file_name));
    strlcat(file_name, language, sizeof(file_name));
 
@@ -2956,20 +2984,41 @@ time_t date_to_ltime(char *date)
 
    memset(&tms, 0, sizeof(struct tm));
 
-   for (i = 0; i < 12; i++)
-      if (strncmp(date + 4, mname[i], 3) == 0)
-         break;
-   tms.tm_mon = i;
+   if (strlen(date) > 25) {
 
-   tms.tm_mday = atoi(date + 8);
-   tms.tm_hour = atoi(date + 11);
-   tms.tm_min = atoi(date + 14);
-   tms.tm_sec = atoi(date + 17);
-   tms.tm_year = atoi(date + 20) - 1900;
-   tms.tm_isdst = -1;
+      /* RFC2822 compliant date */
+      for (i = 0; i < 12; i++)
+         if (strncmp(date + 8, mname[i], 3) == 0)
+            break;
+      tms.tm_mon = i;
 
-   if (tms.tm_year < 90)
-      tms.tm_year += 100;
+      tms.tm_mday = atoi(date + 5);
+      tms.tm_hour = atoi(date + 17);
+      tms.tm_min = atoi(date + 20);
+      tms.tm_sec = atoi(date + 23);
+      tms.tm_year = atoi(date + 12) - 1900;
+      tms.tm_isdst = -1;
+
+      if (tms.tm_year < 90)
+         tms.tm_year += 100;
+   } else {
+
+      /* ctime() complient date */
+      for (i = 0; i < 12; i++)
+         if (strncmp(date + 4, mname[i], 3) == 0)
+            break;
+      tms.tm_mon = i;
+
+      tms.tm_mday = atoi(date + 8);
+      tms.tm_hour = atoi(date + 11);
+      tms.tm_min = atoi(date + 14);
+      tms.tm_sec = atoi(date + 17);
+      tms.tm_year = atoi(date + 20) - 1900;
+      tms.tm_isdst = -1;
+
+      if (tms.tm_year < 90)
+         tms.tm_year += 100;
+   }
 
    return mktime(&tms);
 }
@@ -4054,8 +4103,8 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 \********************************************************************/
 {
    INT n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id;
-   char file_name[256], dir[256], str[NAME_LENGTH];
-   time_t now, ltime;
+   char file_name[256], dir[256], str[NAME_LENGTH], date_str[256];
+   time_t ltime;
    char *message, *p, *buffer;
    char attachment_all[64 * MAX_ATTACHMENTS];
 
@@ -4117,7 +4166,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       message[size] = 0;
 
       if (strieq(date, "<keep>"))
-         el_decode(message, "Date: ", date);
+         el_decode(message, "Date: ", date_str);
       if (strieq(reply_to, "<keep>"))
          el_decode(message, "Reply to: ", reply_to);
       if (strieq(in_reply_to, "<keep>"))
@@ -4138,22 +4187,21 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       lseek(fh, lbs->el_index[index].offset, SEEK_SET);
    } else {
       /* create new message */
-      if (!date[0]) {
-         time(&now);
-         strcpy(date, ctime(&now));
-         date[24] = 0;
-      }
+      if (!date[0])
+         get_rfc2822_date(date_str, sizeof(date_str), 0);
+      else
+         strlcpy(date_str, date, sizeof(date_str));
 
       for (i = 0; i < 12; i++)
-         if (strncmp(date + 4, mname[i], 3) == 0)
+         if (strncmp(date_str + 8, mname[i], 3) == 0)
             break;
 
-      ltime = date_to_ltime(date);
+      ltime = date_to_ltime(date_str);
 
       if (date[8] == ' ')
          date[8] = '0';
 
-      sprintf(file_name, "%c%c%02d%c%ca.log", date[22], date[23], i + 1, date[8], date[9]);
+      sprintf(file_name, "%c%c%02d%c%ca.log", date_str[14], date_str[15], i + 1, date_str[5], date_str[6]);
 
       sprintf(str, "%s%s", dir, file_name);
       fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
@@ -4203,7 +4251,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
    /* compose message */
 
    sprintf(message, "$@MID@$: %d\n", message_id);
-   sprintf(message + strlen(message), "Date: %s\n", date);
+   sprintf(message + strlen(message), "Date: %s\n", date_str);
 
    if (reply_to[0])
       sprintf(message + strlen(message), "Reply to: %s\n", reply_to);
@@ -21538,16 +21586,19 @@ void interprete(char *lbook, char *path)
 
       /* send local help file */
       strlcpy(file_name, resource_dir, sizeof(file_name));
+      strlcat(file_name, "resources", sizeof(file_name));
+      strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
       strlcat(file_name, "eloghelp_", sizeof(file_name));
       if (getcfg("global", "Language", str, sizeof(str))) {
-         str[2] = 0;
+         for (i=0 ; i<(int)strlen(str) ; i++)
+            str[i] = my_tolower(str[i]);
          strlcat(file_name, str, sizeof(file_name));
       } else
-         strlcat(file_name, "en", sizeof(file_name));
+         strlcat(file_name, "english", sizeof(file_name));
       strlcat(file_name, ".html", sizeof(file_name));
       f = fopen(file_name, "r");
       if (f == NULL)
-         redirect(lbs, "http://midas.psi.ch/elog/eloghelp_en.html");
+         redirect(lbs, "http://midas.psi.ch/elog/eloghelp_english.html");
       else {
          fclose(f);
          send_file_direct(file_name);
@@ -21558,16 +21609,19 @@ void interprete(char *lbook, char *path)
    if (strieq(command, loc("HelpELCode"))) {
       /* send local help file */
       strlcpy(file_name, resource_dir, sizeof(file_name));
+      strlcat(file_name, "resources", sizeof(file_name));
+      strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
       strlcat(file_name, "elcode_", sizeof(file_name));
       if (getcfg("global", "Language", str, sizeof(str))) {
-         str[2] = 0;
+         for (i=0 ; i<(int)strlen(str) ; i++)
+            str[i] = my_tolower(str[i]);
          strlcat(file_name, str, sizeof(file_name));
       } else
-         strlcat(file_name, "en", sizeof(file_name));
+         strlcat(file_name, "english", sizeof(file_name));
       strlcat(file_name, ".html", sizeof(file_name));
       f = fopen(file_name, "r");
       if (f == NULL)
-         redirect(lbs, "http://midas.psi.ch/elog/elcode_en.html");
+         redirect(lbs, "http://midas.psi.ch/elog/elcode_english.html");
       else {
          fclose(f);
          send_file_direct(file_name);
