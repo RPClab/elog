@@ -71,7 +71,6 @@ Section "ELOG system (required)" SecSystem
   File nt\release\elogd.exe
   File nt\release\elog.exe
   File nt\release\elconv.exe
-  File eloghelp_en.html
 
   ; doc directory
   SetOutPath $INSTDIR\doc
@@ -81,11 +80,17 @@ Section "ELOG system (required)" SecSystem
   SetOutPath $INSTDIR\scripts
   File scripts\*.*
 
+  ; resources directory
+  SetOutPath $INSTDIR\resources
+  File resources\eloghelp_english.html
+
   ; src directory
   SetOutPath $INSTDIR\src
   File src\*.c
   File \mxml\mxml.c
   File \mxml\mxml.h
+  File \mxml\strlcpy.c
+  File \mxml\strlcpy.h
 
   ; config file
   SetOutPath $INSTDIR
@@ -131,9 +136,8 @@ SectionEnd
 
 ; optional section
 Section "Multi-language support" SecLang
-  SetOutPath $INSTDIR
-  File eloghelp_*.html
-  File eloglang.*
+  SetOutPath $INSTDIR\resources
+  File resources\*.*
 SectionEnd
 
 ; optional section
@@ -195,6 +199,9 @@ Section "Uninstall"
 
   Delete $INSTDIR\scripts\*
   RMDir $INSTDIR\scripts
+
+  Delete $INSTDIR\resources\*
+  RMDir $INSTDIR\resources
 
   Delete $INSTDIR\src\*
   RMDir $INSTDIR\src
