@@ -4789,7 +4789,6 @@ void write_logfile(LOGBOOK * lbs, const char *format, ...)
    fh = open(file_name, O_RDWR | O_BINARY | O_CREAT | O_APPEND, 0644);
    if (fh < 0)
       return;
-   //lseek(fh, 0, SEEK_END);
 
    now = time(0);
    strftime(buf, sizeof(buf), "%d-%b-%Y %H:%M:%S", localtime(&now));
