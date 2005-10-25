@@ -22869,6 +22869,13 @@ void server_loop(void)
                strcpy(rem_host, remote_host[i_conn]);
              }
 
+            if (_logging_level > 3) {
+               strlcpy(str, net_buffer, sizeof(str));
+               if (strchr(str, '\r'))
+                  *strchr(str, '\r') = 0;
+               write_logfile(NULL, "%s: %s", rem_host, str);
+            }
+
             memset(return_buffer, 0, return_buffer_size);
             strlen_retbuf = 0;
             if (strncmp(net_buffer, "GET", 3) != 0 && strncmp(net_buffer, "POST", 4) != 0)
@@ -23227,6 +23234,12 @@ void server_loop(void)
             if (return_length != -1) {
                if (return_length == 0)
                   return_length = strlen_retbuf;
+
+               if (_logging_level > 3) {
+                  strlcpy(str, net_buffer, sizeof(str));
+                  write_logfile(NULL, "Return %d bytes", return_length);
+               }
+
                if ((keep_alive && strstr(return_buffer, "Content-Length") == NULL)
                    || strstr(return_buffer, "Content-Length") > strstr(return_buffer, "\r\n\r\n")) {
                   /*---- add content-length ----*/
