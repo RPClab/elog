@@ -6296,7 +6296,9 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
    rsprintf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n");
 
    /* page title */
-   rsprintf("<html><head><title>%s</title>\n", title);
+   rsprintf("<html><head>\n");
+   rsprintf("<META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW">\n");
+   rsprintf("<title>%s</title>\n", title);
 
    /* Cascading Style Sheet */
    compose_base_url(lbs, css, sizeof(css));
