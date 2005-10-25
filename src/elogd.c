@@ -4765,7 +4765,7 @@ void write_logfile(LOGBOOK * lbs, const char *format, ...)
    char file_name[2000];
    va_list argptr;
    char str[10000];
-   FILE *f;
+   int fh;
    time_t now;
    char buf[10000];
 
@@ -4786,9 +4786,10 @@ void write_logfile(LOGBOOK * lbs, const char *format, ...)
    vsprintf(str, (char *) format, argptr);
    va_end(argptr);
 
-   f = fopen(file_name, "a");
-   if (!f)
+   fh = open(file_name, O_RDWR | O_BINARY | O_CREAT | O_APPEND, 0644);
+   if (fh < 0)
       return;
+   //lseek(fh, 0, SEEK_END);
 
    now = time(0);
    strftime(buf, sizeof(buf), "%d-%b-%Y %H:%M:%S", localtime(&now));
@@ -4806,9 +4807,9 @@ void write_logfile(LOGBOOK * lbs, const char *format, ...)
    if (buf[strlen(buf) - 1] != '\n')
       strlcat(buf, "\n", sizeof(buf));
 
-   fprintf(f, buf);
+   write(fh, buf, strlen(buf));
 
-   fclose(f);
+   close(fh);
 }
 
 /*------------------------------------------------------------------*/
@@ -22873,7 +22874,7 @@ void server_loop(void)
                strlcpy(str, net_buffer, sizeof(str));
                if (strchr(str, '\r'))
                   *strchr(str, '\r') = 0;
-               write_logfile(NULL, "%s: %s", rem_host, str);
+               write_logfile(NULL, "%s", str);
             }
 
             memset(return_buffer, 0, return_buffer_size);
