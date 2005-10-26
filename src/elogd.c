@@ -396,7 +396,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
                   char att_file[MAX_ATTACHMENTS][256], char *sh_cmd);
 BOOL isparam(char *param);
 char *getparam(char *param);
-void write_logfile(LOGBOOK * lbs, const char *format, ...);
+void write_logfile(LOGBOOK * lbs, const char *str);
 BOOL check_login_user(LOGBOOK * lbs, char *user);
 LBLIST get_logbook_hierarchy(void);
 BOOL is_logbook_in_group(LBLIST pgrp, char *logbook);
@@ -1629,7 +1629,8 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
 
    if (verbose)
       eprintf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
-   write_logfile(lbs, "Email from %s to %s, SMTP host %s:\n", from, to, smtp_host);
+   sprintf(buffer, "Email from %s to %s, SMTP host %s:\n", from, to, smtp_host);
+   write_logfile(lbs, buffer);
 
    if (!getcfg("global", "charset", charset, sizeof(charset)))
       strcpy(charset, DEFAULT_HTTP_CHARSET);
@@ -4441,8 +4442,10 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
       return EL_FILE_ERROR;
    }
 
-   if (_logging_level > 1)
-      write_logfile(lbs, "DELETE entry #%d", message_id);
+   if (_logging_level > 1) {
+      sprintf(str, "DELETE entry #%d", message_id);
+      write_logfile(lbs, str);
+   }
 
    message[i] = 0;
 
@@ -4760,10 +4763,9 @@ int el_lock_message(LOGBOOK * lbs, int message_id, char *user)
 
 /*------------------------------------------------------------------*/
 
-void write_logfile(LOGBOOK * lbs, const char *format, ...)
+void write_logfile(LOGBOOK * lbs, const char *text)
 {
    char file_name[2000];
-   va_list argptr;
    char str[10000];
    int fh;
    time_t now;
@@ -4782,10 +4784,6 @@ void write_logfile(LOGBOOK * lbs, const char *format, ...)
       strlcat(file_name, str, sizeof(file_name));
    }
 
-   va_start(argptr, format);
-   vsprintf(str, (char *) format, argptr);
-   va_end(argptr);
-
    fh = open(file_name, O_RDWR | O_BINARY | O_CREAT | O_APPEND, 0644);
    if (fh < 0)
       return;
@@ -4802,7 +4800,7 @@ void write_logfile(LOGBOOK * lbs, const char *format, ...)
    if (lbs)
       sprintf(buf + strlen(buf), "{%s} ", lbs->name);
 
-   strlcat(buf, str, sizeof(buf));
+   strlcat(buf, text, sizeof(buf)-1);
    if (buf[strlen(buf) - 1] != '\n')
       strlcat(buf, "\n", sizeof(buf));
 
@@ -13380,8 +13378,10 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                all_identical = FALSE;
 
-               if (_logging_level > 1)
-                  write_logfile(lbs, "MIRROR send entry #%d", message_id);
+               if (_logging_level > 1) {
+                  sprintf(str, "MIRROR send entry #%d", message_id);
+                  write_logfile(lbs, str);
+               }
 
                /* submit local message */
                if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
@@ -13421,8 +13421,10 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                   flush_return_buffer();
                }
 
-               if (_logging_level > 1)
-                  write_logfile(lbs, "MIRROR receive entry #%d", message_id);
+               if (_logging_level > 1) {
+                  sprintf(str, "MIRROR receive entry #%d", message_id);
+                  write_logfile(lbs, str);
+               }
 
                if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
                    || atoi(str) == 0) {
@@ -13465,8 +13467,10 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                } else {
 
-                  if (_logging_level > 1)
-                     write_logfile(lbs, "MIRROR conflict entry #%d", message_id);
+                  if (_logging_level > 1) {
+                     sprintf(str, "MIRROR conflict entry #%d", message_id);
+                     write_logfile(lbs, str);
+                  }
 
                   combine_url(lbs, list[index], "", str, sizeof(str));
 
@@ -13498,8 +13502,10 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                all_identical = FALSE;
 
-               if (_logging_level > 1)
-                  write_logfile(lbs, "MIRROR send entry #%d", message_id);
+               if (_logging_level > 1) {
+                  sprintf(str, "MIRROR send entry #%d", message_id);
+                  write_logfile(lbs, str);
+               }
 
                /* submit local message */
                if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
@@ -13561,8 +13567,10 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                   } else {
 
-                     if (_logging_level > 1)
-                        write_logfile(lbs, "MIRROR delete local entry #%d", message_id);
+                     if (_logging_level > 1) {
+                        sprintf(str, "MIRROR delete local entry #%d", message_id);
+                        write_logfile(lbs, str);
+                     }
 
                      if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
                          || atoi(str) == 0) {
@@ -13591,9 +13599,10 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
             all_identical = FALSE;
 
-            if (_logging_level > 1)
-               write_logfile(lbs, "MIRROR send entry #%d", message_id);
-
+            if (_logging_level > 1) {
+               sprintf(str, "MIRROR send entry #%d", message_id);
+               write_logfile(lbs, str);
+            }
             remote_id = 0;
             if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
                 || atoi(str) == 0) {
@@ -13632,8 +13641,10 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                if (md5_remote[i].message_id > max_id)
                   max_id = md5_remote[i].message_id;
 
-            if (_logging_level > 1)
-               write_logfile(lbs, "MIRROR change entry #%d to #%d", message_id, max_id + 1);
+            if (_logging_level > 1) {
+               sprintf(str, "MIRROR change entry #%d to #%d", message_id, max_id + 1);
+               write_logfile(lbs, str);
+            }
 
             /* rearrange local message not to conflict with remote message */
             if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str))
@@ -13761,8 +13772,10 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                      } else {
 
-                        if (_logging_level > 1)
-                           write_logfile(lbs, "MIRROR delete remote entry #%d", message_id);
+                        if (_logging_level > 1) {
+                           sprintf(str, "MIRROR delete remote entry #%d", message_id);
+                           write_logfile(lbs, str);
+                        }
 
                         sprintf(str, "%d?cmd=%s&confirm=%s", message_id, loc("Delete"), loc("Yes"));
                         combine_url(lbs, list[index], str, url, sizeof(url));
@@ -17744,7 +17757,8 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
       strlcat(shell_cmd, tail, sizeof(shell_cmd));
    }
 
-   write_logfile(lbs, "SHELL \"%s\"", shell_cmd);
+   sprintf(str, "SHELL \"%s\"", shell_cmd);
+   write_logfile(lbs, str);
 
    system(shell_cmd);
 
@@ -18295,9 +18309,11 @@ void submit_elog(LOGBOOK * lbs)
 
    if (_logging_level > 1) {
       if (isparam("edit_id"))
-         write_logfile(lbs, "EDIT entry #%d", message_id);
+         sprintf(str, "EDIT entry #%d", message_id);
       else
-         write_logfile(lbs, "NEW entry #%d", message_id);
+         sprintf(str, "NEW entry #%d", message_id);
+
+      write_logfile(lbs, str);
    }
 
    message_id =
@@ -18939,8 +18955,10 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       if (status != EL_SUCCESS)
          message_error = status;
       else {
-         if (_logging_level > 2)
-            write_logfile(lbs, "READ entry #%d", message_id);
+         if (_logging_level > 2) {
+            sprintf(str, "READ entry #%d", message_id);
+            write_logfile(lbs, str);
+         }
       }
    } else
       message_error = EL_EMPTY;
@@ -21177,14 +21195,16 @@ void interprete(char *lbook, char *path)
          /* check if password correct */
          do_crypt(getparam("upassword"), enc_pwd);
          /* log logins */
-         write_logfile(NULL, "LOGIN user \"%s\" (attempt) for logbook selection page", getparam("uname"));
+         sprintf(str, "LOGIN user \"%s\" (attempt) for logbook selection page", getparam("uname"));
+         write_logfile(NULL, str);
          if (isparam("redir"))
             strcpy(str, getparam("redir"));
          else
             strcpy(str, getparam("cmdline"));
          if (!check_user_password(NULL, getparam("uname"), enc_pwd, str))
             return;
-         write_logfile(NULL, "LOGIN user \"%s\" (success)", getparam("uname"));
+         sprintf(str, "LOGIN user \"%s\" (success)", getparam("uname"));
+         write_logfile(NULL, str);
          /* set cookies */
          set_login_cookies(NULL, getparam("uname"), enc_pwd);
          return;
@@ -21302,14 +21322,16 @@ void interprete(char *lbook, char *path)
       /* check if password correct */
       do_crypt(getparam("upassword"), enc_pwd);
       /* log logins */
-      write_logfile(lbs, "LOGIN user \"%s\" (attempt)", getparam("uname"));
+      sprintf(str, "LOGIN user \"%s\" (attempt)", getparam("uname"));
+      write_logfile(lbs, str);
       if (isparam("redir"))
          strcpy(str, getparam("redir"));
       else
          strcpy(str, getparam("cmdline"));
       if (!check_user_password(lbs, getparam("uname"), enc_pwd, str))
          return;
-      write_logfile(lbs, "LOGIN user \"%s\" (success)", getparam("uname"));
+      sprintf(str, "LOGIN user \"%s\" (success)", getparam("uname"));
+      write_logfile(lbs, str);
       /* set cookies */
       set_login_cookies(lbs, getparam("uname"), enc_pwd);
       return;
@@ -22875,7 +22897,7 @@ void server_loop(void)
                strlcpy(str, net_buffer, sizeof(str));
                if (strchr(str, '\r'))
                   *strchr(str, '\r') = 0;
-               write_logfile(NULL, "%s", str);
+               write_logfile(NULL, str);
             }
 
             memset(return_buffer, 0, return_buffer_size);
@@ -23239,7 +23261,8 @@ void server_loop(void)
 
                if (_logging_level > 3) {
                   strlcpy(str, net_buffer, sizeof(str));
-                  write_logfile(NULL, "Return %d bytes", return_length);
+                  sprintf(str, "Return %d bytes", return_length);
+                  write_logfile(NULL, str);
                }
 
                if ((keep_alive && strstr(return_buffer, "Content-Length") == NULL)
