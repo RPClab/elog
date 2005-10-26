@@ -4168,6 +4168,8 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 
       if (strieq(date, "<keep>"))
          el_decode(message, "Date: ", date_str);
+      else
+         strlcpy(date_str, date, sizeof(date_str));
       if (strieq(reply_to, "<keep>"))
          el_decode(message, "Reply to: ", reply_to);
       if (strieq(in_reply_to, "<keep>"))
@@ -4198,9 +4200,6 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
             break;
 
       ltime = date_to_ltime(date_str);
-
-      if (date[8] == ' ')
-         date[8] = '0';
 
       sprintf(file_name, "%c%c%02d%c%ca.log", date_str[14], date_str[15], i + 1, date_str[5], date_str[6]);
 
