@@ -7808,7 +7808,7 @@ void rsicon(char *name, char *comment, char *elcode)
 /*------------------------------------------------------------------*/
 
 void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload, BOOL breedit,
-                    BOOL bduplicate, BOOL preview)
+                    BOOL bduplicate, BOOL bpreview)
 {
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
        format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr,
@@ -8883,7 +8883,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
    }
 
-   if (preview) {
+   if (bpreview) {
       _current_message_id = message_id;
       rsprintf("<tr><td colspan=2 class=\"messageframe\">\n");
 
@@ -9086,7 +9086,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          preset_text = FALSE;
 
       /* user preset on reedit only if preset is under condition */
-      if (breedit && getcfg(lbs->name, "Preset text", str, sizeof(str)) == 2)
+      if (breedit && !bpreview && !bupload && getcfg(lbs->name, "Preset text", str, sizeof(str)) == 2)
          preset_text = TRUE;
    }
 
