@@ -18331,6 +18331,10 @@ void submit_elog(LOGBOOK * lbs)
    if (resubmit_orig)
       message_id = el_move_message_thread(lbs, resubmit_orig);
 
+   /* retrieve submission date */
+   if (date[0] == 0)
+      el_retrieve(lbs, message_id, date, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
    /*---- replace relative elog:/x link by elog:n/x link */
    if (stristr(getparam("text"), "elog:/")) {
       p = getparam("text");
@@ -21408,8 +21412,11 @@ void interprete(char *lbook, char *path)
    /* check for "Back" button */
    if (strieq(command, loc("Back"))) {
       if (isparam("edit_id")) {
+         
          /* unlock message */
-         el_lock_message(lbs, atoi(getparam("edit_id")), NULL);
+         if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1)
+            el_lock_message(lbs, atoi(getparam("edit_id")), NULL);
+
          /* redirect to message */
          sprintf(str, "../%s/%s", logbook_enc, getparam("edit_id"));
       } else
