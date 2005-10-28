@@ -20495,6 +20495,8 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
       /* do not display top groups */
       if (!plb->is_top) {
 
+         compose_base_url(NULL, ref, sizeof(ref));
+
          rsprintf("<tr>");
          for (i = 0; i < level; i++)
             rsprintf("<td class=\"selspace\">&nbsp;</td>\n");
@@ -20502,22 +20504,31 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
          for (i = 0; i < level; i++)
             rsprintf("&nbsp;&nbsp;");
          if (expand) {
-            if (pparent == NULL)
-               sprintf(ref, ".");
-            else
-               sprintf(ref, "?gexp=%s", pparent->name);
 
             if (expand_all)
-               rsprintf("%s", plb->name);
-            else
-               rsprintf("<a href=\"%s\">- %s</a> ", ref, plb->name);
+               rsprintf(plb->name);
+            else {
+               if (pparent != NULL) {
+                  if (getcfg_topgroup())
+                     rsprintf("<a href=\"%s%s/?gexp=%s\">- %s</a> ", ref, getcfg_topgroup(), pparent->name, plb->name);
+                  else
+                     rsprintf("<a href=\"%s?gexp=%s\">- %s</a> ", ref, pparent->name, plb->name);
+               } else {
+                  if (getcfg_topgroup())
+                     rsprintf("<a href=\"%s%s/\">- %s</a> ", ref, getcfg_topgroup(), plb->name);
+                  else
+                     rsprintf("<a href=\"%s\">- %s</a> ", ref, plb->name);
+               }
+            }
          } else {
-            sprintf(ref, "?gexp=%s", plb->name);
-
             if (expand_all)
-               rsprintf("%s", plb->name);
-            else
-               rsprintf("<a href=\"%s\">+ %s</a> ", ref, plb->name);
+               rsprintf(plb->name);
+            else {
+               if (getcfg_topgroup())
+                  rsprintf("<a href=\"%s%s/?gexp=%s\">+ %s</a> ", ref, getcfg_topgroup(), plb->name, plb->name);
+               else
+                  rsprintf("<a href=\"%s?gexp=%s\">+ %s</a> ", ref, plb->name, plb->name);
+            }
          }
 
          rsprintf("</td></tr>\n");
@@ -20536,15 +20547,18 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
                break;
          if (!lb_list[index].name[0])
             return;
+
          rsprintf("<tr>");
          for (j = 0; j < level; j++)
             rsprintf("<td class=\"selspace\">&nbsp;</td>\n");
          rsprintf("<td colspan=%d class=\"sellogbook\">", 10 - level);
-         /* add one ".." if we are under top group */
-         if (btop)
-            rsprintf("<a href=\"../%s/\">%s</a>", lb_list[index].name_enc, lb_list[index].name);
-         else
-            rsprintf("<a href=\"%s/\">%s</a>", lb_list[index].name_enc, lb_list[index].name);
+         
+         compose_base_url(&lb_list[index], ref, sizeof(ref));
+//         if (btop)
+//            rsprintf("<a href=\"../%s/\">%s</a>", lb_list[index].name_enc, lb_list[index].name);
+
+         rsprintf("<a href=\"%s\">%s</a>", ref, lb_list[index].name);
+
          if (getcfg(lb_list[index].name, "Read password", str, sizeof(str))
              || (getcfg(lb_list[index].name, "Password file", str, sizeof(str))
                  && !getcfg(lb_list[index].name, "Guest menu commands", str, sizeof(str))))
@@ -21362,7 +21376,8 @@ void interprete(char *lbook, char *path)
 
    /* deliver icons without password */
    if (chkext(path, ".gif") || chkext(path, ".jpg") ||
-       chkext(path, ".png") || chkext(path, ".ico") || chkext(path, ".htm") || chkext(path, ".css")) {
+       chkext(path, ".png") || chkext(path, ".ico") || 
+       chkext(path, ".htm") || chkext(path, ".css")) {
       /* check if file in resource directory */
       strlcpy(str, resource_dir, sizeof(str));
       strlcat(str, path, sizeof(str));
