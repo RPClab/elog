@@ -2981,7 +2981,8 @@ char *month_name(int m)
 time_t date_to_ltime(char *date)
 {
    struct tm tms;
-   int i;
+   int i, date_zone, local_zone;
+   time_t ltime;
 
    memset(&tms, 0, sizeof(struct tm));
 
@@ -3002,6 +3003,20 @@ time_t date_to_ltime(char *date)
 
       if (tms.tm_year < 90)
          tms.tm_year += 100;
+
+      ltime = mktime(&tms);
+
+      /* correct for difference between local time zone (used by mktime) and time zone of date */
+      date_zone = atoi(date+26);
+      date_zone = (abs(date_zone) % 100)*60 + (date_zone)/100*3600;
+
+      tzset();
+      local_zone = timezone;
+      if (tms.tm_isdst)
+         local_zone -= 3600;
+
+      ltime = ltime - local_zone - date_zone;
+
    } else {
 
       /* ctime() complient date */
@@ -3019,9 +3034,11 @@ time_t date_to_ltime(char *date)
 
       if (tms.tm_year < 90)
          tms.tm_year += 100;
+
+      ltime = mktime(&tms);
    }
 
-   return mktime(&tms);
+   return ltime;
 }
 
 /*-------------------------------------------------------------------*/
