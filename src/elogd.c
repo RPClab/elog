@@ -406,7 +406,7 @@ void free_logbook_hierarchy(LBLIST root);
 void show_top_text(LOGBOOK * lbs);
 void show_bottom_text(LOGBOOK * lbs);
 int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n);
-void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *info);
+void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL default_page, char *info);
 int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_value);
 int read_password(char *pwd, int size);
 int getcfg(char *group, char *param, char *value, int vsize);
@@ -11946,7 +11946,7 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
    }
 
    sprintf(str, loc("%d entries successfully imported"), n_imported);
-   show_elog_list(lbs, 0, 0, 1, str);
+   show_elog_list(lbs, 0, 0, 0, TRUE, str);
 }
 
 /*------------------------------------------------------------------*/
@@ -15682,7 +15682,7 @@ void highlight_searchtext(regex_t * re_buf, char *src, char *dst, int hidden)
 
 /*------------------------------------------------------------------*/
 
-void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *info)
+void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL default_page, char *info)
 {
    int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line, flags;
    int current_year, current_month, current_day, printable, n_logbook,
@@ -15832,7 +15832,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    strcpy(mode, "Summary");
    show_attachments = FALSE;
 
-   if (past_n || last_n || page_n) {
+   if (past_n || last_n || page_n || default_page) {
       /* for page display, get mode from config file */
       if (getcfg(lbs->name, "Display Mode", str, sizeof(str)))
          strcpy(mode, str);
@@ -16379,13 +16379,16 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, char *inf
    n_page = 1000000;
    i_start = 0;
    i_stop = n_msg - 1;
-   if (page_n) {
+   if (page_n || default_page) {
       if (getcfg(lbs->name, "Entries per page", str, sizeof(str)))
          n_page = atoi(str);
       else
          n_page = 20;
       if (isparam("npp"))
          n_page = atoi(getparam("npp"));
+
+      if (default_page)
+         page_n = reverse ? 1 : (n_msg - 1)/n_page + 1;
 
       if (page_n != -1) {
          i_start = (page_n - 1) * n_page;
@@ -21432,7 +21435,7 @@ void interprete(char *lbook, char *path)
 
    /* check for "List" button */
    if (strieq(command, loc("List"))) {
-      show_elog_list(lbs, 0, 0, 1, NULL);
+      show_elog_list(lbs, 0, 0, 0, TRUE, NULL);
       return;
    }
 
@@ -21464,22 +21467,22 @@ void interprete(char *lbook, char *path)
 
    /* check for lastxx and pastxx and listxx */
    if (strncmp(path, "past", 4) == 0 && isdigit(path[4]) && *getparam("cmd") == 0) {
-      show_elog_list(lbs, atoi(path + 4), 0, 0, NULL);
+      show_elog_list(lbs, atoi(path + 4), 0, 0, FALSE, NULL);
       return;
    }
 
    if (strncmp(path, "last", 4) == 0 && !chkext(path, ".png") &&
        (!isparam("cmd") || strieq(getparam("cmd"), loc("Select")))
        && !isparam("newpwd")) {
-      show_elog_list(lbs, 0, atoi(path + 4), 0, NULL);
+      show_elog_list(lbs, 0, atoi(path + 4), 0, FALSE, NULL);
       return;
    }
 
    if (strncmp(path, "page", 4) == 0 && *getparam("cmd") == 0) {
       if (!path[4])
-         show_elog_list(lbs, 0, 0, -1, NULL);
+         show_elog_list(lbs, 0, 0, -1, FALSE, NULL);
       else
-         show_elog_list(lbs, 0, 0, atoi(path + 4), NULL);
+         show_elog_list(lbs, 0, 0, atoi(path + 4), FALSE, NULL);
       return;
    }
 
@@ -21753,7 +21756,7 @@ void interprete(char *lbook, char *path)
          return;
       }
 
-      show_elog_list(lbs, 0, 0, 1, NULL);
+      show_elog_list(lbs, 0, 0, 0, TRUE, NULL);
       return;
    }
 
@@ -21987,7 +21990,7 @@ void interprete(char *lbook, char *path)
 
    /* show page listing or display single entry */
    if (dec_path[0] == 0)
-      show_elog_list(lbs, 0, 0, 1, NULL);
+      show_elog_list(lbs, 0, 0, 0, TRUE, NULL);
    else
       show_elog_entry(lbs, dec_path, command);
    return;
