@@ -1653,14 +1653,14 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    phe = gethostbyname(smtp_host);
    if (phe == NULL) {
       strcpy(error, loc("Cannot lookup server name"));
-      return 1;
+      return -1;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 
    if (connect(s, (void *) &bind_addr, sizeof(bind_addr)) < 0) {
       closesocket(s);
       strcpy(error, loc("Cannot connect to server"));
-      return 1;
+      return -1;
    }
 
    strsize = TEXT_SIZE + 1000;
@@ -10938,7 +10938,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
    int i;
    char str[1000], login_name[256], full_name[256], user_email[256],
        name[256], pwd[256], redir[256], pwd_encrypted[256], smtp_host[256],
-       mail_from[256], subject[256], mail_text[1000], url[1000];
+       mail_from[256], subject[256], mail_text[1000], url[1000], error[1000];
 
    if (isparam("login_name")) {
       /* seach in pwd file */
@@ -11018,7 +11018,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             sprintf(mail_text + strlen(mail_text), "ELOG Version %s\r\n", VERSION);
 
             if (sendmail(lbs, smtp_host, mail_from, user_email, subject, mail_text, TRUE,
-                         url, "text/plain", NULL, NULL, 0)
+                         url, "text/plain", NULL, error, 0)
                 != -1) {
                /* save new password */
                change_pwd(lbs, login_name, pwd_encrypted);
@@ -11040,6 +11040,8 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
                return;
             } else {
                sprintf(str, loc("Error sending Email via <i>\"%s\"</i>"), smtp_host);
+               strlcat(str, ": ", sizeof(str));
+               strlcat(str, error, sizeof(str));
                show_error(str);
                return;
             }
