@@ -8732,7 +8732,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                } else if (attr_flags[index] & AF_MULTI) {
 
                   /* display multiple check boxes */
-                  rsprintf("<td%s nowrap class=\"attribvalue\">\n", title);
+                  rsprintf("<td%s class=\"attribvalue\">\n", title);
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      sprintf(str, "%s_%d", ua, i);
@@ -8800,7 +8800,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                } else if (attr_flags[index] & AF_ICON) {
                   /* display icons */
-                  rsprintf("<td%s nowrap class=\"attribvalue\">\n", title);
+                  rsprintf("<td%s class=\"attribvalue\">\n", title);
                   rsprintf("<table cellpadding=0 cellspacing=0><tr>\n");
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
