@@ -421,6 +421,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command);
 char *loc(char *orig);
 void strencode(char *text);
 int scan_attributes(char *logbook);
+int is_inline_attachment(int message_id, char *text, int i);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -1600,10 +1601,114 @@ INT recv_string(int sock, char *buffer, INT buffer_size, INT millisec)
 
 /*-------------------------------------------------------------------*/
 
+void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to,
+                         char *url, char *mail_text, int size, int mail_encoding, 
+                         int n_attachments, char *multipart_boundary)
+{
+   char buffer[256], charset[256], subject_enc[5000];
+   char buf[80], str[256];
+   int  i, offset, multipart;
+   time_t now;
+   struct tm *ts;
+
+   i = 0;
+   if (mail_encoding & 1) i++;
+   if (mail_encoding & 2) i++;
+   if (mail_encoding & 4) i++;
+   multipart = i>1;
+
+   if (!getcfg("global", "charset", charset, sizeof(charset)))
+      strcpy(charset, DEFAULT_HTTP_CHARSET);
+
+   /* switch locale temporarily back to english to comply with RFC2822 date format */
+   setlocale(LC_ALL, "C");
+
+   time(&now);
+   ts = localtime(&now);
+   strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S", ts);
+   offset = (-(int) timezone);
+   if (ts->tm_isdst)
+      offset += 3600;
+   if (verbose) {
+      sprintf(str, "timezone: %d, offset: %d\n", (int) timezone, (int) offset);
+      efputs(str);
+   }
+   snprintf(mail_text+strlen(mail_text), size-strlen(mail_text)-1, "Date: %s %+03d%02d\r\n", buf, (int) (offset / 3600),
+            (int) ((abs((int) offset) / 60) % 60));
+
+   getcfg("global", "Language", str, sizeof(str));
+   if (str[0])
+      setlocale(LC_ALL, str);
+
+   strlcat(mail_text, "To: ", size);
+   strlcat(mail_text, to, size);
+   strlcat(mail_text, "\r\n", size);
+
+   snprintf(mail_text+strlen(mail_text), size-strlen(mail_text)-1, "From: %s\r\n", from);
+   snprintf(mail_text+strlen(mail_text), size-strlen(mail_text)-1, "User-Agent: Elog Version %s\r\n", VERSION);
+
+   if (multipart)
+      strlcat(mail_text, "MIME-Version: 1.0\r\n", size);
+
+   memset(subject_enc, 0, sizeof(subject_enc));
+
+   for (i=0 ; i<(int)strlen(subject) ; i++)
+      if (subject[i] > 127)
+         break;
+
+   if (i<(int)strlen(subject)) {
+      /* subject contains local characters, so encode it using charset */
+      for (i=0 ; i<(int)strlen(subject) ; i+=40) {
+         strlcpy(buffer, subject+i, sizeof(buffer));
+         buffer[40] = 0;
+         strlcat(subject_enc, "=?", sizeof(subject_enc));
+         strlcat(subject_enc, charset, sizeof(subject_enc));
+         strlcat(subject_enc, "?B?", sizeof(subject_enc));
+         base64_encode((unsigned char *) buffer,
+                     (unsigned char *) (subject_enc + strlen(subject_enc)));
+         strlcat(subject_enc, "?=", sizeof(subject_enc));
+         if (strlen(subject+i) < 40)
+            break;
+
+         strlcat(subject_enc, "\r\n ", sizeof(subject_enc)); // another encoded-word
+      }
+   } else
+      strlcpy(subject_enc, subject, sizeof(subject_enc));
+
+   snprintf(mail_text+strlen(mail_text), size-strlen(mail_text)-1, "Subject: %s\r\n", subject_enc);
+
+   if (url)
+      snprintf(mail_text+strlen(mail_text), size-strlen(mail_text)-1, "X-Elog-URL: %s\r\n", url);
+
+   strlcat(mail_text, "X-Elog-submit-type: web|elog\r\n", size);
+
+   if (multipart) {
+
+      sprintf(multipart_boundary, "------------%04X%04X%04X", rand(), rand(), rand());
+      snprintf(mail_text+strlen(mail_text), size-strlen(mail_text)-1, 
+         "Content-Type: multipart/alternative;\r\n boundary=\"%s\"\r\n\r\n", multipart_boundary);
+
+      strlcat(mail_text, "This is a multi-part message in MIME format.\r\n", size);
+   } else {
+      if (n_attachments) {
+         sprintf(multipart_boundary, "------------%04X%04X%04X", rand(), rand(), rand());
+         snprintf(mail_text+strlen(mail_text), size-strlen(mail_text)-1, 
+            "Content-Type: multipart/mixed;\r\n boundary=\"%s\"\r\n\r\n", multipart_boundary);
+
+      strlcat(mail_text, "This is a multi-part message in MIME format.\r\n", size);
+      } else {
+         multipart_boundary[0] = 0;
+      }
+   }
+}
+
+/*-------------------------------------------------------------------*/
+
 int check_smtp_error(char *str, int expected, char *error, int error_size)
 {
    if (atoi(str) != expected) {
-      strlcpy(error, str + 4, error_size);
+      if (error)
+         strlcpy(error, str + 4, error_size);
       return 0;
    }
 
@@ -1613,17 +1718,13 @@ int check_smtp_error(char *str, int expected, char *error, int error_size)
 /*-------------------------------------------------------------------*/
 
 INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
-             char *subject, char *text, BOOL email_to, char *url, char *content_type,
-             char att_file[MAX_ATTACHMENTS][256], char *error, int error_size)
+             char *text, char *error, int error_size)
 {
    struct sockaddr_in bind_addr;
    struct hostent *phe;
-   int i, n, s, offset, strsize, n_att, index, fh;
-   char buf[80];
-   char *str, *p, boundary[256], file_name[MAX_PATH_LENGTH];
-   time_t now;
-   struct tm *ts;
-   char list[1024][NAME_LENGTH], buffer[256], charset[256], subject_enc[5000], decoded[256];
+   int i, n, s, strsize;
+   char *str, *p;
+   char list[1024][NAME_LENGTH], buffer[256], decoded[256];
 
    memset(error, 0, error_size);
 
@@ -1631,14 +1732,6 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       eprintf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
    sprintf(buffer, "Email from %s to %s, SMTP host %s:\n", from, to, smtp_host);
    write_logfile(lbs, buffer);
-
-   if (!getcfg("global", "charset", charset, sizeof(charset)))
-      strcpy(charset, DEFAULT_HTTP_CHARSET);
-
-   /* count attachments */
-   n_att = 0;
-   if (att_file)
-      for (n_att = 0; att_file[n_att][0] && n_att < MAX_ATTACHMENTS; n_att++);
 
    /* create a new socket for connecting to remote server */
    s = socket(AF_INET, SOCK_STREAM, 0);
@@ -1652,14 +1745,16 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
 
    phe = gethostbyname(smtp_host);
    if (phe == NULL) {
-      strcpy(error, loc("Cannot lookup server name"));
+      if (error)
+         strlcpy(error, loc("Cannot lookup server name"), error_size);
       return -1;
    }
    memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 
    if (connect(s, (void *) &bind_addr, sizeof(bind_addr)) < 0) {
       closesocket(s);
-      strcpy(error, loc("Cannot connect to server"));
+      if (error)
+         strlcpy(error, loc("Cannot connect to server"), error_size);
       return -1;
    }
 
@@ -1764,7 +1859,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
          goto smtp_error;
    }
 
-   snprintf(str, strsize - 1, "MAIL FROM: %s\r\n", from);
+   snprintf(str, strsize - 1, "MAIL FROM: %s SIZE=%d\r\n", from, strlen(text));
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
@@ -1809,125 +1904,6 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
    if (!check_smtp_error(str, 354, error, error_size))
       goto smtp_error;
 
-   if (email_to)
-      snprintf(str, strsize - 1, "To: %s\r\n", to);
-   else
-      snprintf(str, strsize - 1, "To: ELOG\r\n");
-
-   send(s, str, strlen(str), 0);
-   if (verbose)
-      efputs(str);
-   write_logfile(lbs, str);
-
-   memset(subject_enc, 0, sizeof(subject_enc));
-   for (i=0 ; i<(int)strlen(subject) ; i+=40) {
-      strlcpy(buffer, subject+i, sizeof(buffer));
-      buffer[40] = 0;
-      strlcat(subject_enc, "=?", sizeof(subject_enc));
-      strlcat(subject_enc, charset, sizeof(subject_enc));
-      strlcat(subject_enc, "?B?", sizeof(subject_enc));
-      base64_encode((unsigned char *) buffer,
-                  (unsigned char *) (subject_enc + strlen(subject_enc)));
-      strlcat(subject_enc, "?=", sizeof(subject_enc));
-      if (strlen(subject+i) < 40)
-         break;
-
-      strlcat(subject_enc, "\r\n ", sizeof(subject_enc)); // another encoded-word
-   }
-
-   snprintf(str, strsize - 1, "From: %s\r\nSubject: %s\r\n", from, subject_enc);
-   send(s, str, strlen(str), 0);
-   if (verbose)
-      efputs(str);
-   write_logfile(lbs, str);
-
-   snprintf(str, strsize - 1, "X-Mailer: Elog, Version %s\r\n", VERSION);
-   send(s, str, strlen(str), 0);
-   if (verbose)
-      efputs(str);
-   write_logfile(lbs, str);
-
-   if (url) {
-      snprintf(str, strsize - 1, "X-Elog-URL: %s\r\n", url);
-      send(s, str, strlen(str), 0);
-      if (verbose)
-         efputs(str);
-      write_logfile(lbs, str);
-   }
-
-   snprintf(str, strsize - 1, "X-Elog-submit-type: web|elog\r\n");
-   send(s, str, strlen(str), 0);
-   if (verbose)
-      efputs(str);
-   write_logfile(lbs, str);
-
-   /* switch locale temporarily back to english to comply with RFC2822 date format */
-   setlocale(LC_ALL, "C");
-
-   time(&now);
-   ts = localtime(&now);
-   strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S", ts);
-   offset = (-(int) timezone);
-   if (ts->tm_isdst)
-      offset += 3600;
-   if (verbose) {
-      snprintf(str, strsize - 1, "timezone: %d, offset: %d\n", (int) timezone, (int) offset);
-      efputs(str);
-   }
-   snprintf(str, strsize - 1, "Date: %s %+03d%02d\r\n", buf, (int) (offset / 3600),
-            (int) ((abs((int) offset) / 60) % 60));
-   send(s, str, strlen(str), 0);
-   if (verbose)
-      efputs(str);
-   write_logfile(lbs, str);
-
-   getcfg("global", "Language", str, sizeof(str));
-   if (str[0])
-      setlocale(LC_ALL, str);
-
-   if (n_att > 0) {
-      snprintf(str, strsize - 1, "MIME-Version: 1.0\r\n");
-      send(s, str, strlen(str), 0);
-      if (verbose)
-         efputs(str);
-      write_logfile(lbs, str);
-
-      sprintf(boundary, "%04X-%04X=:%04X", rand(), rand(), rand());
-      snprintf(str, strsize - 1, "Content-Type: MULTIPART/MIXED; BOUNDARY=\"%s\"\r\n\r\n", boundary);
-      send(s, str, strlen(str), 0);
-      if (verbose)
-         efputs(str);
-      write_logfile(lbs, str);
-
-      snprintf(str, strsize - 1,
-               "  This message is in MIME format.  The first part should be readable text,\r\n");
-      send(s, str, strlen(str), 0);
-      if (verbose)
-         efputs(str);
-      write_logfile(lbs, str);
-
-      snprintf(str, strsize - 1,
-               "  while the remaining parts are likely unreadable without MIME-aware tools.\r\n\r\n");
-      send(s, str, strlen(str), 0);
-      if (verbose)
-         efputs(str);
-      write_logfile(lbs, str);
-
-      snprintf(str, strsize - 1, "--%s\r\nContent-Type: %s; charset=\"%s\"\r\n\r\n",
-               boundary, content_type, charset);
-
-      send(s, str, strlen(str), 0);
-      if (verbose)
-         efputs(str);
-      write_logfile(lbs, str);
-   } else {
-      snprintf(str, strsize - 1, "Content-Type: %s; charset=\"%s\"\r\n\r\n", content_type, charset);
-      send(s, str, strlen(str), 0);
-      if (verbose)
-         efputs(str);
-      write_logfile(lbs, str);
-   }
-
    /* analyze text for "." at beginning of line */
    p = text;
    str[0] = 0;
@@ -1938,97 +1914,13 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to,
       strlcat(str, "\r\n..\r\n", strsize);
    }
    strlcat(str, p, strsize);
-   strlcat(str, "\r\n\r\n", strsize);
+   /* add ".<CR>" to signal end of message */
+   strlcat(str, ".\r\n", strsize);
+
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
-
-   if (n_att > 0) {
-      snprintf(str, strsize - 1, "--%s\r\n", boundary);
-      send(s, str, strlen(str), 0);
-      if (verbose)
-         efputs(str);
-      write_logfile(lbs, str);
-
-      for (index = 0; index < n_att; index++) {
-         /* return proper Content-Type for file type */
-         for (i = 0; i < (int) strlen(att_file[index]); i++)
-            str[i] = toupper(att_file[index][i]);
-         str[i] = 0;
-
-         for (i = 0; filetype[i].ext[0]; i++)
-            if (strstr(str, filetype[i].ext))
-               break;
-
-         if (filetype[i].ext[0])
-            snprintf(str, strsize - 1, "Content-Type: %s; name=\"%s\"\r\n",
-                     filetype[i].type, att_file[index] + 14);
-         else if (strchr(str, '.') == NULL)
-            snprintf(str, strsize - 1, "Content-Type: text/plain; name=\"%s\"\r\n", att_file[index] + 14);
-         else
-            snprintf(str, strsize - 1,
-                     "Content-Type: application/octet-stream; name=\"%s\"\r\n", att_file[index] + 14);
-
-         send(s, str, strlen(str), 0);
-         if (verbose)
-            efputs(str);
-         write_logfile(lbs, str);
-
-         snprintf(str, strsize - 1, "Content-Transfer-Encoding: BASE64\r\n");
-         send(s, str, strlen(str), 0);
-         if (verbose)
-            efputs(str);
-         write_logfile(lbs, str);
-
-         snprintf(str, strsize - 1,
-                  "Content-Disposition: attachment; filename=\"%s\"\r\n\r\n", att_file[index] + 14);
-         send(s, str, strlen(str), 0);
-         if (verbose)
-            efputs(str);
-         write_logfile(lbs, str);
-
-         /* encode file */
-         strlcpy(file_name, lbs->data_dir, sizeof(file_name));
-         strlcat(file_name, att_file[index], sizeof(file_name));
-
-         fh = open(file_name, O_RDONLY | O_BINARY);
-         if (fh > 0) {
-            do {
-               n = read(fh, buffer, 45);
-               if (n <= 0)
-                  break;
-
-               base64_bufenc((unsigned char *) buffer, n, str);
-               strcat(str, "\r\n");
-               send(s, str, strlen(str), 0);
-               if (verbose)
-                  efputs(str);
-            } while (1);
-
-            close(fh);
-         }
-
-         /* send boundary */
-         if (index < n_att - 1)
-            snprintf(str, strsize - 1, "\r\n--%s\r\n", boundary);
-         else
-            snprintf(str, strsize - 1, "\r\n--%s--\r\n", boundary);
-
-         send(s, str, strlen(str), 0);
-         if (verbose)
-            efputs(str);
-         write_logfile(lbs, str);
-      }
-   }
-
-   /* send ".<CR>" to signal end of message */
-   snprintf(str, strsize - 1, ".\r\n");
-   send(s, str, strlen(str), 0);
-   if (verbose)
-      efputs(str);
-   write_logfile(lbs, str);
-
-   recv_string(s, str, strsize, 3000);
+   recv_string(s, str, strsize, 10000);
    if (verbose)
       efputs(str);
    write_logfile(lbs, str);
@@ -3051,40 +2943,50 @@ void check_config()
 
 /*-------------------------------------------------------------------*/
 
-void retrieve_email_from(LOGBOOK * lbs, char *ret, char attrib[MAX_N_ATTR][NAME_LENGTH])
+void retrieve_email_from(LOGBOOK * lbs, char *ret, char *ret_name, char attrib[MAX_N_ATTR][NAME_LENGTH])
 {
-   char str[256], *p, login_name[256];
+   char email_from[256], email_from_name[256], str[256], *p, login_name[256];
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
    int i;
 
    if (!getcfg(lbs->name, "Use Email from", str, sizeof(str))) {
-      if (isparam("user_email") && *getparam("user_email"))
-         strcpy(str, getparam("user_email"));
-      else
-         sprintf(str, "ELog@%s", host_name);
+      if (isparam("user_email") && *getparam("user_email")) {
+         sprintf(email_from_name, "%s <%s>", getparam("full_name"), getparam("user_email"));
+         strlcpy(email_from, getparam("user_email"), sizeof(email_from));
+      } else {
+         sprintf(email_from_name, "ELog <ELog@%s>", host_name);
+         sprintf(email_from, "ELog@%s", host_name);
+      }
    }
 
    if (attrib) {
       i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-      strsubst_list(str, sizeof(str), slist, svalue, i);
+      strsubst_list(email_from_name, sizeof(email_from_name), slist, svalue, i);
+      strsubst_list(email_from, sizeof(email_from), slist, svalue, i);
 
       /* remove possible 'mailto:' */
-      if ((p = strstr(str, "mailto:")) != NULL)
+      if ((p = strstr(email_from_name, "mailto:")) != NULL)
+         strcpy(p, p + 7);
+      if ((p = strstr(email_from, "mailto:")) != NULL)
          strcpy(p, p + 7);
    }
 
    /* if nothing available, figure out email from an administrator */
-   if (strchr(str, '@') == NULL) {
+   if (strchr(email_from, '@') == NULL) {
       for (i = 0;; i++) {
          if (!enum_user_line(lbs, i, login_name, sizeof(login_name)))
             break;
-         get_user_line(lbs, login_name, NULL, NULL, str, NULL, NULL);
-         if (is_admin_user(lbs->name, login_name) && strchr(str, '@'))
+         get_user_line(lbs, login_name, NULL, NULL, email_from, NULL, NULL);
+         sprintf(email_from_name, "%s <%s>", login_name, email_from);
+         if (is_admin_user(lbs->name, login_name) && strchr(email_from, '@'))
             break;
       }
    }
 
-   strcpy(ret, str);
+   if (ret)
+      strcpy(ret, email_from);
+   if (ret_name)
+      strcpy(ret_name, email_from_name);
 }
 
 /*------------------------------------------------------------------*/
@@ -5514,16 +5416,28 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 
                      /* replace elog:x/x for images */
                      if (strnieq(attrib, "elog:", 5)) {
-                        compose_base_url(lbs, hattrib, sizeof(hattrib));
-                        if (attrib[5] == '/') {
-                           if (_current_message_id == 0) {
-                              sprintf(param, "attachment%d", atoi(attrib + 6)-1);
-                              if (isparam(param))
-                                 strlcat(hattrib, getparam(param), sizeof(hattrib));
-                           } else
-                              sprintf(hattrib+strlen(hattrib), "%d%s", _current_message_id, attrib + 5);
+                        if (email_notify) {
+                           retrieve_email_from(lbs, link, NULL, NULL);
+                           p = strchr(attrib, '/');
+                           if (p)
+                              m = atoi(p+1)-1;
+                           if (strchr(link, '@'))
+                              p = strchr(link, '@')+1;
+                           else
+                              p = link;
+                           sprintf(hattrib, "cid:att%d@%s", m, p);
                         } else {
-                           strlcat(hattrib, attrib+5, sizeof(hattrib));
+                           compose_base_url(lbs, hattrib, sizeof(hattrib));
+                           if (attrib[5] == '/') {
+                              if (_current_message_id == 0) {
+                                 sprintf(param, "attachment%d", atoi(attrib + 6)-1);
+                                 if (isparam(param))
+                                    strlcat(hattrib, getparam(param), sizeof(hattrib));
+                               } else
+                                 sprintf(hattrib+strlen(hattrib), "%d%s", _current_message_id, attrib + 5);
+                           } else {
+                              strlcat(hattrib, attrib+5, sizeof(hattrib));
+                           }
                         }
                      }
 
@@ -8732,7 +8646,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                } else if (attr_flags[index] & AF_MULTI) {
 
                   /* display multiple check boxes */
-                  rsprintf("<td%s class=\"attribvalue\">\n", title);
+                  rsprintf("<td%s nowrap class=\"attribvalue\">\n", title);
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      sprintf(str, "%s_%d", ua, i);
@@ -8800,7 +8714,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                } else if (attr_flags[index] & AF_ICON) {
                   /* display icons */
-                  rsprintf("<td%s class=\"attribvalue\">\n", title);
+                  rsprintf("<td%s nowrap class=\"attribvalue\">\n", title);
                   rsprintf("<table cellpadding=0 cellspacing=0><tr>\n");
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
@@ -9019,7 +8933,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<br />\n");
       rsicon("confused", loc("confused"), "?)");
       rsprintf("<br />\n");
-      rsicon("eek", loc("eek"), "8o");
+      rsicon("astonished", loc("astonished"), "8o");
       rsprintf("<br />\n");
       rsicon("mad", loc("mad"), "X(");
       rsprintf("<br />\n");
@@ -10454,8 +10368,8 @@ int save_config(char *buffer, char *error)
 
 int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 {
-   char file_name[256], str[256], *pl, new_pwd[80], new_pwd2[80];
-   char smtp_host[256], email_addr[256], mail_from[256], subject[256], mail_text[2000];
+   char file_name[256], str[256], *pl, new_pwd[80], new_pwd2[80], smtp_host[256], 
+      email_addr[256], mail_from[256], mail_from_name[256], subject[256], mail_text[2000];
    char admin_user[80], enc_pwd[80], url[256];
    int i, self_register;
    PMXML_NODE node, subnode;
@@ -10591,18 +10505,19 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
          }
       }
 
-      retrieve_email_from(lbs, mail_from, NULL);
+      retrieve_email_from(lbs, mail_from, mail_from_name, NULL);
 
       if (activate) {
-         sprintf(subject, loc("Your ELOG account has been activated"));
+         compose_email_header(lbs, loc("Your ELOG account has been activated"), mail_from_name, getparam("new_user_email"), 
+            NULL, mail_text, sizeof(mail_text), FALSE, 0, NULL);
+
          sprintf(mail_text, loc("Your ELOG account has been activated on host"));
          sprintf(mail_text + strlen(mail_text), " %s", host_name);
          sprintf(mail_text + strlen(mail_text), ".\r\n\r\n");
          sprintf(url + strlen(url), "?cmd=Login&unm=%s", getparam("new_user_name"));
          sprintf(mail_text + strlen(mail_text), "%s %s\r\n", loc("You can access it at"), url);
 
-         sendmail(lbs, smtp_host, mail_from, getparam("new_user_email"), subject, mail_text,
-                  TRUE, url, "text/plain", NULL, NULL, 0);
+         sendmail(lbs, smtp_host, mail_from, getparam("new_user_email"), mail_text, NULL, 0);
       } else {
          if (getcfg(lbs->name, "Admin user", admin_user, sizeof(admin_user))) {
             pl = strtok(admin_user, " ,");
@@ -10670,8 +10585,9 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
                              loc("Logbook"), url, getparam("new_user_name"), pl);
                   }
 
-                  sendmail(lbs, smtp_host, mail_from, email_addr, subject, mail_text, TRUE,
-                           url, "text/plain", NULL, NULL, 0);
+                  compose_email_header(lbs, subject, mail_from_name, email_addr, 
+                     NULL, mail_text, sizeof(mail_text), FALSE, 0, NULL);
+                  sendmail(lbs, smtp_host, mail_from, email_addr, mail_text, NULL, 0);
                }
 
                pl = strtok(NULL, " ,");
@@ -10938,7 +10854,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
    int i;
    char str[1000], login_name[256], full_name[256], user_email[256],
        name[256], pwd[256], redir[256], pwd_encrypted[256], smtp_host[256],
-       mail_from[256], subject[256], mail_text[1000], url[1000], error[1000];
+       mail_from[256], mail_from_name[256], subject[256], mail_text[1000], url[1000], error[1000];
 
    if (isparam("login_name")) {
       /* seach in pwd file */
@@ -10999,7 +10915,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             sprintf(str, "?redir=%s&uname=%s&upassword=%s", redir, login_name, pwd);
             strlcat(url, str, sizeof(url));
 
-            retrieve_email_from(lbs, mail_from, NULL);
+            retrieve_email_from(lbs, mail_from, mail_from_name, NULL);
 
             if (lbs)
                sprintf(subject, loc("Password recovery for ELOG %s"), lbs->name);
@@ -11017,8 +10933,9 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             strlcat(mail_text, "\r\n\r\n", sizeof(mail_text));
             sprintf(mail_text + strlen(mail_text), "ELOG Version %s\r\n", VERSION);
 
-            if (sendmail(lbs, smtp_host, mail_from, user_email, subject, mail_text, TRUE,
-                         url, "text/plain", NULL, error, 0)
+            compose_email_header(lbs, subject, mail_from_name, user_email, NULL, 
+               mail_text, sizeof(mail_text), FALSE, 0, NULL);
+            if (sendmail(lbs, smtp_host, mail_from, user_email, mail_text, error, sizeof(error))
                 != -1) {
                /* save new password */
                change_pwd(lbs, login_name, pwd_encrypted);
@@ -14153,7 +14070,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          if (strieq(disp_attr[index], loc("Delete"))) {
             if (!strieq(mode, "Threaded")) {
                rsprintf("\n<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref, loc("Delete"));
-               rsprintf("\n<img src=\"delete.png\" border=0 alt=\"%s\" title=\"%s\"></a></td>\n", loc("Delete entry"), loc("Delte entry"));
+               rsprintf("\n<img src=\"delete.png\" border=0 alt=\"%s\" title=\"%s\"></a></td>\n", loc("Delete entry"), loc("Delete entry"));
             }
          }
 
@@ -16121,7 +16038,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL defa
          flags |= REG_ICASE;
       status = regcomp(re_buf, str, flags);
       if (status) {
-         sprintf(line, loc("Error in regular expression \"%s\": "), str);
+         sprintf(line, loc("Error in regular expression \"%s\""), str);
+         strlcat(line, ": ", sizeof(line));
          regerror(status, re_buf, str, sizeof(str));
          strlcat(line, str, sizeof(line));
          show_error(line);
@@ -16152,7 +16070,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL defa
 
          status = regcomp(re_buf + i + 1, str, flags);
          if (status) {
-            sprintf(line, loc("Error in regular expression \"%s\": "), str);
+            sprintf(line, loc("Error in regular expression \"%s\""), str);
+            strlcat(line, ": ", sizeof(line));
             regerror(status, re_buf + i + 1, str, sizeof(str));
             strlcat(line, str, sizeof(line));
             show_error(line);
@@ -17313,21 +17232,123 @@ void show_elog_thread(LOGBOOK * lbs, int message_id)
 
 /*------------------------------------------------------------------*/
 
+int has_attachments(LOGBOOK * lbs, int message_id)
+{
+   char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH];
+
+   el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, attachment, NULL, NULL);
+   return attachment[0][0] > 0;
+}
+
+/*------------------------------------------------------------------*/
+
+void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type, char att_file[MAX_ATTACHMENTS][256], 
+                              char *mail_text, int size, char *multipart_boundary, int content_id)
+{
+   int i, index, n_att, fh, n, is_inline;
+   char str[256], file_name[256], buffer[256], email_from[256], *p;
+
+   /* count attachments */
+   for (n_att = 0; att_file[n_att][0] && n_att < MAX_ATTACHMENTS; n_att++);
+
+   for (index = 0; index < MAX_ATTACHMENTS; index++) {
+      
+      if (att_file[index][0] == 0)
+         continue;
+
+      is_inline = is_inline_attachment(message_id, getparam("text"), index);
+      if (attachment_type == 1 && is_inline)
+         continue;
+      if (attachment_type == 2 && !is_inline)
+         continue;
+
+      snprintf(mail_text+strlen(mail_text), size-strlen(mail_text)-1, "\r\n--%s\r\n", multipart_boundary);
+
+      /* return proper Content-Type for file type */
+      for (i = 0; i < (int) strlen(att_file[index]) && i<(int)sizeof(str)-1; i++)
+         str[i] = toupper(att_file[index][i]);
+      str[i] = 0;
+
+      for (i = 0; filetype[i].ext[0]; i++)
+         if (strstr(str, filetype[i].ext))
+            break;
+
+      if (filetype[i].ext[0])
+         snprintf(str, sizeof(str), "Content-Type: %s; name=\"%s\"\r\n",
+                  filetype[i].type, att_file[index] + 14);
+      else if (strchr(str, '.') == NULL)
+         snprintf(str, sizeof(str), "Content-Type: text/plain; name=\"%s\"\r\n", att_file[index] + 14);
+      else
+         snprintf(str, sizeof(str),
+                  "Content-Type: application/octet-stream; name=\"%s\"\r\n", att_file[index] + 14);
+
+      strlcat(mail_text, str, size);
+
+      strlcat(mail_text, "Content-Transfer-Encoding: BASE64\r\n", size);
+
+      if (content_id) {
+         retrieve_email_from(lbs, email_from, NULL, NULL);
+         if (strchr(email_from, '@'))
+            p = strchr(email_from, '@')+1;
+         else
+            p = email_from;
+         snprintf(mail_text+strlen(mail_text), size-strlen(mail_text)-1,
+                  "Content-ID: <att%d@%s>\r\n", index, p);
+         snprintf(mail_text+strlen(mail_text), size-strlen(mail_text)-1,
+                  "Content-Disposition: inline; filename=\"%s\"\r\n\r\n", att_file[index] + 14);
+      } else
+         snprintf(mail_text+strlen(mail_text), size-strlen(mail_text)-1,
+                  "Content-Disposition: attachment; filename=\"%s\"\r\n\r\n", att_file[index] + 14);
+
+      /* encode file */
+      strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+      strlcat(file_name, att_file[index], sizeof(file_name));
+
+      fh = open(file_name, O_RDONLY | O_BINARY);
+      if (fh > 0) {
+         do {
+            n = read(fh, buffer, 45);
+            if (n <= 0)
+               break;
+
+            base64_bufenc((unsigned char *) buffer, n, str);
+            strlcat(mail_text, str, size);
+            strlcat(mail_text, "\r\n", size);
+         } while (1);
+
+         close(fh);
+      }
+   }
+}
+
+/*------------------------------------------------------------------*/
+
 void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], 
                        char att_file[MAX_ATTACHMENTS][256], int old_mail,
-                       char *url, char *mail_text)
+                       char *url, char *multipart_boundary, char *mail_text, int size)
 {
    int i, j, k, flags, n_email_attr, attr_index[MAX_N_ATTR];
-   char str[NAME_LENGTH + 100], str2[256], mail_from[256], format[256],
-      list[MAX_N_ATTR][NAME_LENGTH], comment[256];
+   char str[NAME_LENGTH + 100], str2[256], mail_from[256], mail_from_name[256], 
+      format[256], list[MAX_N_ATTR][NAME_LENGTH], comment[256], charset[256];
    time_t ltime;
    struct tm *pts;
+
+   if (multipart_boundary[0]) {
+      if (!getcfg("global", "charset", charset, sizeof(charset)))
+         strcpy(charset, DEFAULT_HTTP_CHARSET);
+
+      strlcat(mail_text, "--", size);
+      strlcat(mail_text, multipart_boundary, size);
+      strlcat(mail_text, "\r\n", size);
+      sprintf(mail_text + strlen(mail_text), "Content-Type: text/plain; charset=%s; format=flowed\r\n", charset);
+      sprintf(mail_text + strlen(mail_text), "Content-Transfer-Encoding: 7bit\r\n\r\n");
+   }
 
    flags = 63;
    if (getcfg(lbs->name, "Email format", str, sizeof(str)))
       flags = atoi(str);
 
-   retrieve_email_from(lbs, mail_from, attrib);
+   retrieve_email_from(lbs, mail_from, mail_from_name, attrib);
 
    if (flags & 1) {
       if (getcfg(lbs->name, "Use Email heading", str, sizeof(str))) {
@@ -17441,27 +17462,55 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH],
                  "\r\n=================================\r\n\r\n%s", getparam("text"));
       }
    }
+
+   strlcat(mail_text, "\r\n\r\n", size);
 }
 
 /*------------------------------------------------------------------*/
 
-void format_email_html(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], 
+void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], 
                        char att_file[MAX_ATTACHMENTS][256], int old_mail,
-                       char *encoding, char *url, char *mail_text)
+                       char *encoding, char *url, char *multipart_boundary, char *mail_text, int size)
 {
-   int i, j, k, flags, n_email_attr, attr_index[MAX_N_ATTR];
-   char str[NAME_LENGTH + 100], str2[256], mail_from[256], format[256],
-      list[MAX_N_ATTR][NAME_LENGTH], comment[256];
+   int i, j, k, flags, n_email_attr, attr_index[MAX_N_ATTR], attachments_present;
+   char str[NAME_LENGTH + 100], str2[256], mail_from[256], mail_from_name[256], format[256],
+      list[MAX_N_ATTR][NAME_LENGTH], comment[256], charset[256], multipart_boundary_related[256];
    time_t ltime;
    struct tm *pts;
 
-   retrieve_email_from(lbs, mail_from, attrib);
+   if (!getcfg("global", "charset", charset, sizeof(charset)))
+      strcpy(charset, DEFAULT_HTTP_CHARSET);
+
+   if (multipart_boundary[0]) {
+      strlcat(mail_text, "--", size);
+      strlcat(mail_text, multipart_boundary, size);
+      strlcat(mail_text, "\r\n", size);
+   }
+
+   attachments_present = has_attachments(lbs, message_id);
+
+   if (attachments_present) {
+      sprintf(multipart_boundary_related, "------------%04X%04X%04X", rand(), rand(), rand());
+      snprintf(mail_text+strlen(mail_text), size-strlen(mail_text)-1, 
+         "Content-Type: multipart/related;\r\n boundary=\"%s\"\r\n\r\n", multipart_boundary_related);
+      strlcat(mail_text, "--", size);
+      strlcat(mail_text, multipart_boundary_related, size);
+      strlcat(mail_text, "\r\n", size);
+   }
+
+   snprintf(mail_text+strlen(mail_text), size-strlen(mail_text)-1, 
+      "Content-Type: text/html; charset=\"%s\"\r\n", charset);
+   snprintf(mail_text + strlen(mail_text), size-strlen(mail_text)-1, 
+      "Content-Transfer-Encoding: 7bit\r\n\r\n");
+
+   retrieve_email_from(lbs, mail_from, mail_from_name, attrib);
 
    flags = 63;
    if (getcfg(lbs->name, "Email format", str, sizeof(str)))
       flags = atoi(str);
 
-   strcpy(mail_text + strlen(mail_text), "<html><body>\r\n");
+   strcpy(mail_text + strlen(mail_text), "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\r\n");
+   strcpy(mail_text + strlen(mail_text), "<html>\r\n<head>\r\n  <title></title>\r\n</head>\r\n<body>\r\n");
 
    if (flags & 1) {
       strcpy(mail_text + strlen(mail_text), "<h3>\r\n");
@@ -17593,16 +17642,49 @@ void format_email_html(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH],
       }
    }
 
-   strcpy(mail_text + strlen(mail_text), "\r\n</html></body>\r\n");
+   strcpy(mail_text + strlen(mail_text), "\r\n</html></body>\r\n\r\n");
+
+   if (attachments_present) {
+      format_email_attachments(lbs, message_id, 2, att_file, mail_text, size, multipart_boundary_related, TRUE);
+      strlcat(mail_text, "--", size);
+      strlcat(mail_text, multipart_boundary_related, size);
+      strlcat(mail_text, "--\r\n\r\n", size);
+   }
 }
 
 /*------------------------------------------------------------------*/
 
-void format_email_html2(LOGBOOK * lbs, int message_id, int old_mail, char *mail_text)
+void format_email_html2(LOGBOOK * lbs, int message_id, char att_file[MAX_ATTACHMENTS][256],
+                        int old_mail, char *multipart_boundary, char *mail_text, int size)
 {
-   char str[256], *p;
+   char str[256], charset[256], multipart_boundary_related[256], *p;
+   int  attachments_present;
 
    sprintf(str, "%d", message_id);
+   if (!getcfg("global", "charset", charset, sizeof(charset)))
+      strcpy(charset, DEFAULT_HTTP_CHARSET);
+
+   if (multipart_boundary[0]) {
+      strlcat(mail_text, "--", size);
+      strlcat(mail_text, multipart_boundary, size);
+      strlcat(mail_text, "\r\n", size);
+   }
+
+   attachments_present = has_attachments(lbs, message_id);
+
+   if (attachments_present) {
+      sprintf(multipart_boundary_related, "------------%04X%04X%04X", rand(), rand(), rand());
+      snprintf(mail_text+strlen(mail_text), size-strlen(mail_text)-1, 
+         "Content-Type: multipart/related;\r\n boundary=\"%s\"\r\n\r\n", multipart_boundary_related);
+      strlcat(mail_text, "--", size);
+      strlcat(mail_text, multipart_boundary_related, size);
+      strlcat(mail_text, "\r\n", size);
+   }
+
+   snprintf(mail_text+strlen(mail_text), size-strlen(mail_text)-1, 
+      "Content-Type: text/html; charset=\"%s\"\r\n", charset);
+   snprintf(mail_text + strlen(mail_text), size-strlen(mail_text)-1, 
+      "Content-Transfer-Encoding: 7bit\r\n\r\n");
 
    strlen_retbuf = 0;
    if (old_mail)
@@ -17611,8 +17693,16 @@ void format_email_html2(LOGBOOK * lbs, int message_id, int old_mail, char *mail_
       show_elog_entry(lbs, str, "email");
    p = strstr(return_buffer, "\r\n\r\n");
    if (p)
-      strlcpy(mail_text + strlen(mail_text), p+4, TEXT_SIZE + 1000 - strlen(mail_text));
+      strlcpy(mail_text + strlen(mail_text), p+4, size - strlen(mail_text));
    strlen_retbuf = 0;
+   strlcat(mail_text, "\r\n", size);
+
+   if (attachments_present) {
+      format_email_attachments(lbs, message_id, 0, att_file, mail_text, size, multipart_boundary_related, TRUE);
+      strlcat(mail_text, "--", size);
+      strlcat(mail_text, multipart_boundary_related, size);
+      strlcat(mail_text, "--\r\n\r\n", size);
+   }
 }
 
 /*------------------------------------------------------------------*/
@@ -17621,11 +17711,12 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
                   char attrib[MAX_N_ATTR][NAME_LENGTH], char *mail_param, int old_mail,
                   char att_file[MAX_ATTACHMENTS][256], char *encoding)
 {
-   int i, n, flags, status, mail_encoding;
-   char str[NAME_LENGTH + 100], mail_from[256], *mail_text, smtp_host[256],
-       subject[256], error[256], content_type[256];
+   int i, n, flags, status, mail_encoding, mail_text_size, n_attachments;
+   char str[NAME_LENGTH + 100], mail_from[256], mail_from_name[256], *mail_text, smtp_host[256],
+       subject[256], error[256];
    char list[MAX_PARAM][NAME_LENGTH], url[256];
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
+   char multipart_boundary[80];
 
    if (!getcfg("global", "SMTP host", smtp_host, sizeof(smtp_host))) {
       show_error(loc("No SMTP host defined in [global] section of configuration file"));
@@ -17647,7 +17738,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
    if (getcfg(lbs->name, "Email encoding", str, sizeof(str)))
       mail_encoding = atoi(str);
 
-   retrieve_email_from(lbs, mail_from, attrib);
+   retrieve_email_from(lbs, mail_from, mail_from_name, attrib);
 
    /* compose subject from attributes */
    if (getcfg(lbs->name, "Use Email Subject", subject, sizeof(subject))) {
@@ -17662,51 +17753,56 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
          strcpy(subject, "New ELOG entry");
    }
 
+   /* count attachments */
+   n_attachments = 0;
+   if (att_file)
+      for (i = 0; att_file[i][0] && i < MAX_ATTACHMENTS; i++) {
+         if ((mail_encoding & 6) == 0 || !is_inline_attachment(message_id, getparam("text"), i))
+            n_attachments++;
+      }
+
    compose_base_url(lbs, str, sizeof(str));
    sprintf(url, "%s%d", str, message_id);
 
-   mail_text = xmalloc(TEXT_SIZE + 1000);
+   mail_text_size = MAX_CONTENT_LENGTH + 1000;
+   mail_text = xmalloc(mail_text_size);
    mail_text[0] = 0;
 
-   if (mail_encoding & 1)
-      format_email_text(lbs, attrib, att_file, old_mail, url, mail_text);
-   else if (mail_encoding & 2)
-      format_email_html(lbs, attrib, att_file, old_mail, encoding, url, mail_text);
-   else if (mail_encoding & 4)
-      format_email_html2(lbs, message_id, old_mail, mail_text);
+   if (getcfg(lbs->name, "Omit Email to", str, sizeof(str)) && atoi(str) == 1)
+      strcpy(mail_to, "ELOG");
+
+   compose_email_header(lbs, subject, mail_from_name, mail_to, url, mail_text, mail_text_size, mail_encoding, n_attachments, multipart_boundary);
 
    if (mail_encoding & 1)
-      strcpy(content_type, "text/plain");
-   else
-      strcpy(content_type, "text/html");
+      format_email_text(lbs, attrib, att_file, old_mail, url, multipart_boundary, mail_text, mail_text_size);
+   if (mail_encoding & 2)
+      format_email_html(lbs, message_id, attrib, att_file, old_mail, encoding, url, multipart_boundary, mail_text, mail_text_size);
+   if (mail_encoding & 4)
+      format_email_html2(lbs, message_id, att_file, old_mail, multipart_boundary, mail_text, mail_text_size);
 
-   status = 0;
-   if (flags & 16) {
-      if (getcfg(lbs->name, "Omit Email to", str, sizeof(str)) && atoi(str) == 1)
-         status =
-             sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE,
-                      url, content_type, att_file, error, sizeof(error));
+   if (n_attachments && (flags & 16)) {
+      if ((mail_encoding & 6) > 0)
+         /* only non-inline attachements */
+         format_email_attachments(lbs, message_id, 1, att_file, mail_text, mail_text_size, multipart_boundary, FALSE);
       else
-         status =
-             sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE,
-                      url, content_type, att_file, error, sizeof(error));
-   } else {
-      if (getcfg(lbs->name, "Omit Email to", str, sizeof(str)) && atoi(str) == 1)
-         status =
-             sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, FALSE,
-                      url, content_type, NULL, error, sizeof(error));
-      else
-         status =
-             sendmail(lbs, smtp_host, mail_from, mail_to, subject, mail_text, TRUE,
-                      url, content_type, NULL, error, sizeof(error));
+         /* all attachments */
+         format_email_attachments(lbs, message_id, 0, att_file, mail_text, mail_text_size, multipart_boundary, FALSE);
    }
+
+   if (multipart_boundary[0]) {
+      strlcat(mail_text, "--", mail_text_size);
+      strlcat(mail_text, multipart_boundary, mail_text_size);
+      strlcat(mail_text, "--\r\n\r\n", mail_text_size);
+   }
+
+   status = sendmail(lbs, smtp_host, mail_from, mail_to, mail_text, error, sizeof(error));
 
    if (status < 0) {
       sprintf(str, loc("Error sending Email via <i>\"%s\"</i>"), smtp_host);
       url_encode(str, sizeof(str));
       sprintf(mail_param, "?error=%s", str);
    } else if (error[0]) {
-      sprintf(str, loc("Error sending Email via <i>\"%s\"</i>: "), smtp_host);
+      sprintf(str, loc("Error sending Email via <i>\"%s\"</i>"), smtp_host);
       strlcat(str, error, sizeof(str));
       url_encode(str, sizeof(str));
       sprintf(mail_param, "?error=%s", str);
@@ -18748,66 +18844,25 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
       str[0] = 0;
    redirect(lbs, str);
    return;
+}
 
-   /* old status message, removed until someone complains...
-      if (source_id)
-      sprintf(str, "%d", source_id);
-      else
-      str[0] = 0;
-      show_standard_header(lbs, FALSE, loc("Copy ELog entry"), str, FALSE);
+/*------------------------------------------------------------------*/
 
-      rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
-      rsprintf("<tr><td colspan=2 class=\"dlgtitle\">\n");
+int is_inline_attachment(int message_id, char *text, int i)
+{
+   char str[256];
 
-      if (n_done == 0)
-      rsprintf(loc("No entry selected"));
-      else {
-      if (n_done == 1)
-      rsprintf(loc("One entry"));
-      else
-      rsprintf(loc("%d messages"), n_done);
+   if (text == NULL)
+      return 0;
 
-      if (n_done_reply) {
-      rsprintf(" ");
+   sprintf(str, "[img]elog:/%d[/img]", i + 1);
+   if (stristr(text, str))
+      return 1;
+   sprintf(str, "[img]elog:%d/%d[/img]", message_id, i + 1);
+   if (stristr(text, str))
+      return 1;
 
-      if (n_done == 1)
-      rsprintf(loc("and its replies"));
-      else
-      rsprintf(loc("and their replies"));
-      }
-
-      rsprintf(" ");
-
-      if (move)
-      rsprintf(loc("moved successfully from \"%s\" to \"%s\""), lbs->name, lbs_dest->name);
-      else
-      rsprintf(loc("copied successfully from \"%s\" to \"%s\""), lbs->name, lbs_dest->name);
-      }
-
-      rsprintf("</b></tr>\n");
-      if (source_id)
-      rsprintf
-      ("<tr><td align=center class=\"dlgform\">%s <a href=\"../%s/%d\">%s</td></tr>\n",
-      loc("Go to"), lbs->name, source_id, lbs->name);
-      else {
-      strcpy(str, getparam("lastcmd"));
-      url_decode(str);
-
-      rsprintf
-      ("<tr><td align=center class=\"dlgform\">%s <a href=\"../%s/%s\">%s</td></tr>\n",
-      loc("Go to"), lbs->name, str, lbs->name);
-      }
-
-      rsprintf
-      ("<tr><td align=center class=\"dlgform\">%s <a href=\"../%s/\">%s</td></tr>\n",
-      loc("Go to"), lbs_dest->name, lbs_dest->name);
-
-      rsprintf("</table>\n");
-      show_bottom_text(lbs);
-      rsprintf("</body></html>\r\n");
-
-      return;
-    */
+   return 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -18825,7 +18880,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
        slist[MAX_N_ATTR + 10][NAME_LENGTH], file_name[MAX_PATH_LENGTH],
        gattr[MAX_N_ATTR][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], *p,
        lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256], class_name[80], class_value[80], fl[8][NAME_LENGTH],
-       list[MAX_N_ATTR][NAME_LENGTH];
+       list[MAX_N_ATTR][NAME_LENGTH], email_from[256];
    FILE *f;
    BOOL first, show_text, display_inline, subtable, email;
    struct tm *pts;
@@ -19008,11 +19063,16 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       } else
          strcpy(str, "ELOG");
 
-      sprintf(ref, "%d", message_id);
-      if (str[0])
-         show_standard_header(lbs, TRUE, str, ref, FALSE, NULL);
-      else
-         show_standard_header(lbs, TRUE, lbs->name, ref, FALSE, NULL);
+      if (email) {
+         show_html_header(lbs, FALSE, str, TRUE, FALSE, NULL);
+         rsprintf("<body>\n");
+      } else {
+         sprintf(ref, "%d", message_id);
+         if (str[0])
+            show_standard_header(lbs, TRUE, str, ref, FALSE, NULL);
+         else
+            show_standard_header(lbs, TRUE, lbs->name, ref, FALSE, NULL);
+      }
    } else
       show_standard_header(lbs, TRUE, "", "", FALSE, NULL);
 
@@ -19535,7 +19595,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             rsputs2(lbs, text);
             rsputs("</pre>");
          } else if (strieq(encoding, "ELCode"))
-            rsputs_elcode(lbs, FALSE, text);
+            rsputs_elcode(lbs, email, text);
          else
             rsputs(text);
 
@@ -19546,11 +19606,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             att_inline[i] = 0;
             att_hide[i] = 0;
 
-            sprintf(str, "[img]elog:/%d[/img]", i + 1);
-            if (strieq(encoding, "ELCode") && stristr(text, str))
-               att_inline[i] = 1;
-            sprintf(str, "[img]elog:%d/%d[/img]", message_id, i + 1);
-            if (strieq(encoding, "ELCode") && stristr(text, str))
+            if (strieq(encoding, "ELCode") && is_inline_attachment(message_id, text, i))
                att_inline[i] = 1;
 
             if (attachment[i][0])
@@ -19603,7 +19659,15 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                str[13] = 0;
                strcpy(file_enc, attachment[index] + 14);
                url_encode(file_enc, sizeof(file_enc));  /* for file names with special characters like "+" */
-               sprintf(ref, "%s/%s", str, file_enc);
+               if (email) {
+                  retrieve_email_from(lbs, email_from, NULL, NULL);
+                  if (strchr(email_from, '@'))
+                     p = strchr(email_from, '@')+1;
+                  else
+                     p = email_from;
+                  sprintf(ref, "cid:att%d@%s", index, p);
+               } else
+                  sprintf(ref, "%s/%s", str, file_enc);
 
                /* overall table */
                rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>\n");
@@ -19612,8 +19676,11 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                    ("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s %d:</td>\n",
                     loc("Attachment"), index + 1);
 
-               rsprintf("<td class=\"attribvalue\"><a href=\"%s\" target=\"_blank\">%s</a>\n", ref,
-                        attachment[index] + 14);
+               if (email)
+                  rsprintf("<td class=\"attribvalue\">%s\n", attachment[index] + 14);
+               else
+                  rsprintf("<td class=\"attribvalue\"><a href=\"%s\" target=\"_blank\">%s</a>\n", ref,
+                           attachment[index] + 14);
 
                rsprintf("&nbsp;<span class=\"bytes\">");
 
@@ -19634,52 +19701,54 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                   display_inline = 1;
 
                if (display_inline) {
-                  rsprintf("<span class=\"bytes\">");
-
                   /* hide this / show this */
-                  rsprintf("&nbsp;|&nbsp;");
-                  if (att_hide[index]) {
-                     rsprintf("<a href=\"%d?hide=", message_id);
-                     for (i = 0; i < MAX_ATTACHMENTS; i++)
-                        if (att_hide[i] && i != index) {
-                           rsprintf("%d,", i);
-                        }
-                     rsprintf("&amp;show=%d", index);
-                     rsprintf("\">%s</a>", loc("Show"));
-                  } else {
-                     rsprintf("<a href=\"%d?hide=", message_id);
-                     for (i = 0; i < MAX_ATTACHMENTS; i++)
-                        if (att_hide[i] || i == index) {
-                           rsprintf("%d,", i);
-                        }
-                     rsprintf("\">%s</a>", loc("Hide"));
-                  }
+                  if (!email) {
+                     rsprintf("<span class=\"bytes\">");
+   
+                     rsprintf("&nbsp;|&nbsp;");
+                     if (att_hide[index]) {
+                        rsprintf("<a href=\"%d?hide=", message_id);
+                        for (i = 0; i < MAX_ATTACHMENTS; i++)
+                           if (att_hide[i] && i != index) {
+                              rsprintf("%d,", i);
+                           }
+                        rsprintf("&amp;show=%d", index);
+                        rsprintf("\">%s</a>", loc("Show"));
+                     } else {
+                        rsprintf("<a href=\"%d?hide=", message_id);
+                        for (i = 0; i < MAX_ATTACHMENTS; i++)
+                           if (att_hide[i] || i == index) {
+                              rsprintf("%d,", i);
+                           }
+                        rsprintf("\">%s</a>", loc("Hide"));
+                     }
 
-                  /* hide all */
-                  if (n_hidden < n_attachments) {
-                     rsprintf("&nbsp;|&nbsp;<a href=\"%d?hide=", message_id);
-                     for (i = 0; i < MAX_ATTACHMENTS; i++)
-                        if (attachment[i][0]) {
-                           rsprintf("%d,", i);
-                        }
-                     rsprintf("\">%s</a>", loc("Hide all"));
-                  }
+                     /* hide all */
+                     if (n_hidden < n_attachments) {
+                        rsprintf("&nbsp;|&nbsp;<a href=\"%d?hide=", message_id);
+                        for (i = 0; i < MAX_ATTACHMENTS; i++)
+                           if (attachment[i][0]) {
+                              rsprintf("%d,", i);
+                           }
+                        rsprintf("\">%s</a>", loc("Hide all"));
+                     }
 
-                  /* show all */
-                  if (n_hidden > 0) {
-                     for (i = 0; i < MAX_ATTACHMENTS; i++)
-                        if (att_hide[i])
-                           break;
-                     if (i < MAX_ATTACHMENTS) {
-                        rsprintf("&nbsp;|&nbsp;<a href=\"%d?show=", message_id);
+                     /* show all */
+                     if (n_hidden > 0) {
                         for (i = 0; i < MAX_ATTACHMENTS; i++)
                            if (att_hide[i])
-                              rsprintf("%d,", i);
-                        rsprintf("\">%s</a>", loc("Show all"));
+                              break;
+                        if (i < MAX_ATTACHMENTS) {
+                           rsprintf("&nbsp;|&nbsp;<a href=\"%d?show=", message_id);
+                           for (i = 0; i < MAX_ATTACHMENTS; i++)
+                              if (att_hide[i])
+                                 rsprintf("%d,", i);
+                           rsprintf("\">%s</a>", loc("Show all"));
+                        }
                      }
-                  }
 
-                  rsprintf("</span>\n");
+                     rsprintf("</span>\n");
+                  }
                }
 
                rsprintf("</td></tr></table></td></tr>\n");
