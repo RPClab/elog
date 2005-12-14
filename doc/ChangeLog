@@ -1,3 +1,95 @@
+
+Version 2.6.0, released Dec 14th, 2005
+======================================
+
+- Major new feature: Implemented ELCode tags
+- Improved error handling of uploaded images
+- Implemented first version of inline images in email notification
+- Removed "nowrap" from attribute display in edit form
+- Fixed crash on password reminder with invalid SMTP server
+- Implemented absolute redirection via URL statement in logbook selection page
+- Implemented proper time zone handling when sorting entries
+- Show last page in list display per default if reverse sort is off
+- Implemented logging level 4
+- Removed help/language files from main directory and put them in resources directory
+- Renamed help and language files
+- Added time zone to elog entry
+- Fixed problem with search highlighting and ELCode
+- Fixed problem with [URL="file://...]
+- Removed fixed text size in class "messagepre"
+- Implemented escape character for http://, mailto:, etc.
+- Added darwin specific changed from Exaos Lee
+- Added Chinese language files
+- Mode cookies expire after ten years
+- Fixed problem with 'POST' in search text
+- Modifications made on flight CA931
+- Added '\' escape for smileys
+- Implemented show/hide attachments in full view
+- Limit summary lines to 150 characters in threaded mode
+- Fixed infinite redirection with ?fail=1
+- Fixed problem with extendable attributes which are fixed during edit
+- Fixed bug with subtext quick filter
+- Show HTML logbook comment properly
+- Implemented 'Subtext' quick filter
+- Fixed problem with long subjects by splitting it into separate encoded words
+- Fixed login problem with protected selection pages and top groups
+- Do not distinguish between invalid user name and invalid password for security reasons
+- Added error output if password file cannot be written
+- Implemented 'Email Format = 64' for only attachment names
+- Implemented 'resolve host names'
+- Added icons for 'show new/all'
+- Added 'filter menu text'
+- Added validity check for year in date/time attributes
+- Added 'Edit page title'
+- Added 'reply comment'
+- Changed 'summary page title' to 'list page title'
+- Changed 'rss feed' to 'alternate'
+- Added $elogbook
+- Made elog: links abolute for email notification
+- Implemented 'change <attrib>' and 'list change <attrib>'
+- Applied pointer casting patch from Recai
+- Fixed {n} display with ROptions
+- Added condition evaluation in list display
+- Replaced tcp_hostname by listen_interface
+- Added line break for thread display
+- Made conditional attributes also work for email notification
+- Implemented conditional attributes also for display
+- Made 'list' work together with 'start page = 0?cmd=Last'
+- Do not interprete ELCode inside [code]...[/code]
+- Removed 'host:' for HTML/1.0
+- Added 'email attributes' option
+- Added '\' as escape character for HTML and ELCode tags
+- Added 'title' to all icons for FireFox
+- Treat attributes with <img> as HTML
+- Added 'suppress default = 3'
+- Added tooltip to logbook selection bar
+- Added 'default encoding'
+- Converted links to absolute URLs for threads
+- 'Show all entries' keeps parameters from original search
+- Put absolute link for CSS
+- Added image insertion by JScript
+- Added [*] for LIST
+- Changed 'find menu' to 'list menu'
+- Fixed bug with user activation and global password files
+- Fixed problem with reverse sort in quick filters
+- Applied patch from Emiliano with strftime workaround
+- Use absolute http:// links for smileys
+- Implemented last_activity, HTML email
+- Switched login page to POST method
+- Only use letters in randomly generated recovery password
+- Fixed 'pippo-bug' of 'list display' option
+- Fixed problem that encoding could not be selected on new entries
+- Use orig_author for reply quoting
+- Changed default font
+- Remove hard wraps for textarea in non-plain mode
+- Added smpt username
+- Changed 'set current time' to 'insert current time'
+- Added confimation dialog for removing users
+- Supersede 'Display mode' by cookie
+- Store list mode in cookie
+- Change '(' to '\(' in quick filters for regex matching
+
+
 Version 2.5.9, released May 2nd, 2005
 =====================================
 

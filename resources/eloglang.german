@@ -337,11 +337,6 @@ Please enter minute for attribute '%s' = Bitte Minute eingeben für Attribut '%s'
 Please enter second for attribute '%s' = Bitte Sekunde eingeben für Attribut '%s'
 No admin user has been defined in configuration file = In der Konfigurationsdatei ist kein Benutzer mit Administrationsrechten eingetragen
 Duplicate = Duplizieren
-
-
-#
-#---- please translate following items and then remove this comment ----#
-#
 Cannot lookup server name = Kann Server Name nicht finden
 Cannot connect to server = Kann mit Server nicht verbinden
 %s wrote = %s schrieb
@@ -400,3 +395,5 @@ Enter name of hyperlink = Name von Hyperlink eingeben
 Enter URL of hyperlink = URL von Hyperlink eingeben
 astonished = erstaunt
 Error in regular expression "%s" = Fehler in regulärem Ausdruck "%s"
+File not found at URL "%s" = Datei bei URL "%s" nicht gefunden
+

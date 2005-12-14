@@ -869,13 +869,13 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
 
    if (encoding == 0)
       sprintf(content + strlen(content),
-            "%s\r\nContent-Disposition: form-data; name=\"encoding\"\r\n\r\nELCode\r\n", boundary);
+              "%s\r\nContent-Disposition: form-data; name=\"encoding\"\r\n\r\nELCode\r\n", boundary);
    else if (encoding == 1)
       sprintf(content + strlen(content),
-            "%s\r\nContent-Disposition: form-data; name=\"encoding\"\r\n\r\nplain\r\n", boundary);
+              "%s\r\nContent-Disposition: form-data; name=\"encoding\"\r\n\r\nplain\r\n", boundary);
    else if (encoding == 2)
       sprintf(content + strlen(content),
-            "%s\r\nContent-Disposition: form-data; name=\"encoding\"\r\n\r\nHTML\r\n", boundary);
+              "%s\r\nContent-Disposition: form-data; name=\"encoding\"\r\n\r\nHTML\r\n", boundary);
 
    for (i = 0; i < n_attr; i++) {
       strcpy(str, attrib_name[i]);
