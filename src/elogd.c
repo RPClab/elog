@@ -1601,7 +1601,7 @@ INT recv_string(int sock, char *buffer, INT buffer_size, INT millisec)
 
 /*-------------------------------------------------------------------*/
 
-void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to,
+void compose_email_header(char *subject, char *from, char *to,
                           char *url, char *mail_text, int size, int mail_encoding,
                           int n_attachments, char *multipart_boundary)
 {
@@ -1657,7 +1657,7 @@ void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to,
    memset(subject_enc, 0, sizeof(subject_enc));
 
    for (i = 0; i < (int) strlen(subject); i++)
-      if (subject[i] > 127)
+      if (subject[i] < 0)
          break;
 
    if (i < (int) strlen(subject)) {
@@ -5210,6 +5210,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
    interprete_elcode = TRUE;
    escape_char = FALSE;
    j = strlen_retbuf;
+   m = 0;
    for (i = 0; i < (int) strlen(str); i++) {
       for (l = 0; key_list[l][0]; l++) {
          if (strncmp(str + i, key_list[l], strlen(key_list[l])) == 0) {
@@ -10517,7 +10518,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
       retrieve_email_from(lbs, mail_from, mail_from_name, NULL);
 
       if (activate) {
-         compose_email_header(lbs, loc("Your ELOG account has been activated"), mail_from_name,
+         compose_email_header(loc("Your ELOG account has been activated"), mail_from_name,
                               getparam("new_user_email"), NULL, mail_text, sizeof(mail_text), FALSE, 0, NULL);
 
          sprintf(mail_text, loc("Your ELOG account has been activated on host"));
@@ -10594,7 +10595,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
                              loc("Logbook"), url, getparam("new_user_name"), pl);
                   }
 
-                  compose_email_header(lbs, subject, mail_from_name, email_addr,
+                  compose_email_header(subject, mail_from_name, email_addr,
                                        NULL, mail_text, sizeof(mail_text), FALSE, 0, NULL);
                   sendmail(lbs, smtp_host, mail_from, email_addr, mail_text, NULL, 0);
                }
@@ -10942,7 +10943,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             strlcat(mail_text, "\r\n\r\n", sizeof(mail_text));
             sprintf(mail_text + strlen(mail_text), "ELOG Version %s\r\n", VERSION);
 
-            compose_email_header(lbs, subject, mail_from_name, user_email, NULL,
+            compose_email_header(subject, mail_from_name, user_email, NULL,
                                  mail_text, sizeof(mail_text), FALSE, 0, NULL);
             if (sendmail(lbs, smtp_host, mail_from, user_email, mail_text, error, sizeof(error))
                 != -1) {
@@ -17801,7 +17802,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
    if (getcfg(lbs->name, "Omit Email to", str, sizeof(str)) && atoi(str) == 1)
       strcpy(mail_to, "ELOG");
 
-   compose_email_header(lbs, subject, mail_from_name, mail_to, url, mail_text, mail_text_size, mail_encoding,
+   compose_email_header(subject, mail_from_name, mail_to, url, mail_text, mail_text_size, mail_encoding,
                         n_attachments, multipart_boundary);
 
    if (mail_encoding & 1)
