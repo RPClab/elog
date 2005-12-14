@@ -22140,7 +22140,7 @@ void decode_get(char *logbook, char *string)
 
 void decode_post(char *logbook, LOGBOOK * lbs, char *string, char *boundary, int length)
 {
-   int n_att, size, header_size;
+   int n_att, size, status, header_size;
    char *pinit, *p, *ptmp, *buffer, *pbody,
        file_name[MAX_PATH_LENGTH], full_name[MAX_PATH_LENGTH],
        str[NAME_LENGTH], line[NAME_LENGTH], item[NAME_LENGTH];
@@ -22276,7 +22276,7 @@ void decode_post(char *logbook, LOGBOOK * lbs, char *string, char *boundary, int
                   /* check for URL */
                   if (stristr(file_name, "http://")) {
                      size = retrieve_url(file_name, &buffer, NULL);
-                     if (size == 0) {
+                     if (size <= 0) {
                         sprintf(str, loc("Cannot retrieve file from URL \"%s\""), file_name);
                         show_error(str);
                         return;
@@ -22291,6 +22291,16 @@ void decode_post(char *logbook, LOGBOOK * lbs, char *string, char *boundary, int
                      }
                      pbody += 4;
                      header_size = (int)pbody - (int)buffer;
+
+                     /* check for file found */
+                     if (strchr(buffer, ' ')) {
+                        status = atoi(strchr(buffer, ' ')+1);
+                        if (status != 200) {
+                           sprintf(str, loc("File not found at URL \"%s\""), file_name);
+                           show_error(str);
+                           return;
+                        }
+                     }
 
                      el_submit_attachment(lbs, file_name, pbody, size - header_size, full_name);
                      xfree(buffer);
