@@ -11,30 +11,31 @@ On PC4534:
 - Do a "make indent"
 - Do a "make loc"
 - Translate new strings in eloglang.german
-- c:\elog> cvs tag release-x.x.x-y 
+- c:\elog> svn ci -m "Release x.x.x-y"
+- Copy Tag to file:///y:/svn/elog/tags/version_x.x.x, name it "Version x.x.x"
 - build xxx-1
 
 On PC5082:
 
-- cvs update
+- svn update
 - Increase version in elog.spec
 - build x.x.x 1
 
 Declare new version at freshmeat.
 
 
-Checklist for new ELOG release
-==============================
+Checklist for new ELOG intermediate release
+===========================================
 
 On PC4534:
 
 - Put all new options in doc/config.html
 - Increse release in elogd.c "x.x.x-y"
-- c:\elog> cvs commit -m "Version x.x.x-y" 
+- c:\elog> svn ci -m "Version x.x.x-y" 
 - build xxx-y
 
 On PC5082:
 
-- cvs update
+- svn update
 - Increse release in elog.spec
 - build x.x.x y
