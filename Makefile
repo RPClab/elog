@@ -12,11 +12,11 @@ ifndef PREFIX
 PREFIX     = /usr/local
 endif
 
-ELOGDIR    = $(PREFIX)/elog
-DESTDIR    = $(PREFIX)/bin
-SDESTDIR   = $(PREFIX)/sbin
-MANDIR     = $(PREFIX)/man
-RCDIR      = /etc/rc.d/init.d
+ELOGDIR    = $(ROOT)$(PREFIX)/elog
+DESTDIR    = $(ROOT)$(PREFIX)/bin
+SDESTDIR   = $(ROOT)$(PREFIX)/sbin
+MANDIR     = $(ROOT)$(PREFIX)/man
+RCDIR      = $(ROOT)/etc/rc.d/init.d
 
 #############################################################
 
@@ -32,9 +32,6 @@ endif
 CC = gcc
 IFLAGS = -kr -nut -i3 -l110
 EXECS = elog elogd elconv
-DESTDIR = /usr/local/bin
-SDESTDIR = /usr/local/sbin
-MANDIR = /usr/local/man
 MXMLDIR = ../mxml
 BINOWNER = bin
 BINGROUP = bin
@@ -102,8 +99,10 @@ loc:
 	locext src\elogd.c resources\eloglang.zh_CN-UTF8
 
 install: $(EXECS)
+	echo $(PREFIX)
 	@$(INSTALL) -m 0755 -d $(DESTDIR) $(SDESTDIR) $(MANDIR)/man1/ $(MANDIR)/man8/
-	@$(INSTALL) -m 0755 -d $(ELOGDIR)/scripts/ $(ELOGDIR)/resources/ $(ELOGDIR)/themes/default/icons
+	@$(INSTALL) -m 0755 -d $(ELOGDIR)/scripts/ $(ELOGDIR)/resources/ $(ELOGDIR)/themes/default/icons 
+	@$(INSTALL) -m 0755 -d $(ELOGDIR)/logbooks/demo
 	@$(INSTALL) -v -m 0755 -o ${BINOWNER} -g ${BINGROUP} elog elconv $(DESTDIR)
 	@$(INSTALL) -v -m 0755 -o ${BINOWNER} -g ${BINGROUP} elogd $(SDESTDIR)
 	@$(INSTALL) -v -m 0644 man/elog.1 man/elconv.1 $(MANDIR)/man1/
@@ -120,6 +119,11 @@ install: $(EXECS)
           do \
           install -D -m 0644 $$file $(ELOGDIR)/themes/default/`basename $$file` ;\
           done
+
+	@echo "Installing example logbook to $(ELOGDIR)/logbooks/demo"	
+	@if [ ! -f $(ELOGDIR)/logbooks/demo ]; then  \
+	  install -v -m 0644 logbooks/demo/* $(ELOGDIR)/logbooks/demo ; \
+	fi
 
 	@sed "s#\@PREFIX\@#$(PREFIX)#g" elogd.init_template > elogd.init
 	@$(INSTALL) -v -D -m 0755 elogd.init $(RCDIR)/elogd
