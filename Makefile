@@ -102,39 +102,31 @@ loc:
 	locext src\elogd.c resources\eloglang.zh_CN-UTF8
 
 install: $(EXECS)
-	$(INSTALL) -m 0755 -d $(DESTDIR) $(SDESTDIR) $(MANDIR)/man1/ $(MANDIR)/man8/
-	$(INSTALL) -v -m 0755 -o ${BINOWNER} -g ${BINGROUP} elog elconv $(DESTDIR)
-	$(INSTALL) -v -m 0755 -o ${BINOWNER} -g ${BINGROUP} elogd $(SDESTDIR)
-	$(INSTALL) -v -m 0644 man/elog.1 man/elconv.1 $(MANDIR)/man1/
-	$(INSTALL) -v -m 0644 man/elogd.8 $(MANDIR)/man8/
-	$(INSTALL) -v -m 0644 man/elogd.8 $(MANDIR)/man8/
+	@$(INSTALL) -m 0755 -d $(DESTDIR) $(SDESTDIR) $(MANDIR)/man1/ $(MANDIR)/man8/
+	@$(INSTALL) -m 0755 -d $(ELOGDIR)/scripts/ $(ELOGDIR)/resources/ $(ELOGDIR)/themes/default/icons
+	@$(INSTALL) -v -m 0755 -o ${BINOWNER} -g ${BINGROUP} elog elconv $(DESTDIR)
+	@$(INSTALL) -v -m 0755 -o ${BINOWNER} -g ${BINGROUP} elogd $(SDESTDIR)
+	@$(INSTALL) -v -m 0644 man/elog.1 man/elconv.1 $(MANDIR)/man1/
+	@$(INSTALL) -v -m 0644 man/elogd.8 $(MANDIR)/man8/
+	@$(INSTALL) -v -m 0644 man/elogd.8 $(MANDIR)/man8/
+	@$(INSTALL) -v -m 0644 scripts/* $(ELOGDIR)/scripts/
 
-	@echo "Installing scripts to $(ELOGDIR)/scripts/"
-	@for file in `find scripts -type f | grep -v .svn` ; \
-          do \
-          install -D -m 644 $$file $(ELOGDIR)/scripts/`basename $$file` ; \
-          done
-	@echo "Installing resources to $(ELOGDIR)/resources/"
-	@for file in `find resources -type f | grep -v .svn` ; \
-          do \
-          install -D -m 644 $$file $(ELOGDIR)/resources/`basename $$file` ; \
-          done
-	@echo "Installing themes to $(ELOGDIR)/themes/"
+	@echo "Installing resources to $(ELOGDIR)/resources"	
+	@$(INSTALL) -m 0644 resources/* $(ELOGDIR)/resources/
+
+	@echo "Installing themes to $(ELOGDIR)/themes"	
+	@$(INSTALL) -m 0644 themes/default/icons/* $(ELOGDIR)/themes/default/icons/
 	@for file in `find themes/default -type f | grep -v .svn` ; \
           do \
-          install -D -m 644 $$file $(ELOGDIR)/themes/default/`basename $$file` ; \
+          install -D -m 0644 $$file $(ELOGDIR)/themes/default/`basename $$file` ;\
           done
-	@for file in `find themes/default/icons -type f | grep -v .svn` ; \
-          do \
-          install -D -m 644 $$file $(ELOGDIR)/themes/default/icons/`basename $$file` ; \
-          done
+
+	@sed "s#\@PREFIX\@#$(PREFIX)#g" elogd.init_template > elogd.init
+	@$(INSTALL) -v -D -m 0755 elogd.init $(RCDIR)/elogd
 
 	@if [ ! -f $(ELOGDIR)/elogd.cfg ]; then  \
 	  install -v -m 644 elogd.cfg $(ELOGDIR)/elogd.cfg ; \
 	fi
-
-	@sed "s#\@PREFIX\@#$(PREFIX)#g" elogd.init_template > elogd.init
-	install -v -D -m 755 elogd.init $(RCDIR)/elogd
 
 restart:
 	$(RCDIR)/elogd restart
