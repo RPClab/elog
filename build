@@ -28,7 +28,7 @@ mkdir $dir/../mxml
 
 # checkout files
 echo Updating files...
-cvs update
+svn up
 
 # copy files to archive
 cp src/*.c $dir/src
