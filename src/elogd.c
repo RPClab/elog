@@ -2968,6 +2968,9 @@ void retrieve_email_from(LOGBOOK * lbs, char *ret, char *ret_name, char attrib[M
          sprintf(email_from_name, "ELog <ELog@%s>", host_name);
          sprintf(email_from, "ELog@%s", host_name);
       }
+   } else {
+      strlcpy(email_from, str, sizeof(email_from));
+      strlcpy(email_from_name, str, sizeof(email_from));
    }
 
    if (attrib) {
