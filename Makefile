@@ -2,7 +2,23 @@
 #
 # S. Ritt, May 12th 2000
 # install/clean section by Th. Bullinger, Apr. 26th, 2002
+#############################################################
+
 #
+# Directories for installation, modify if needed
+#
+
+ifndef PREFIX
+PREFIX     = /usr/local
+endif
+
+ELOGDIR    = $(PREFIX)/elog
+DESTDIR    = $(PREFIX)/bin
+SDESTDIR   = $(PREFIX)/sbin
+MANDIR     = $(PREFIX)/man
+RCDIR      = /etc/rc.d/init.d
+
+#############################################################
 
 ifndef DEBUG
 # Default compilation flags unless stated otherwise.
@@ -10,7 +26,7 @@ ifndef DEBUG
 CFLAGS += -O3 -funroll-loops -fomit-frame-pointer -W -Wall
 else
 # Build with e.g. 'make DEBUG=1' to turn on debugging.
-CFLAGS += -g -O -W -Wall -DDEBUG=1
+CFLAGS += -g -O -W -Wall
 endif
 
 CC = gcc
@@ -87,13 +103,41 @@ loc:
 
 install: $(EXECS)
 	$(INSTALL) -m 0755 -d $(DESTDIR) $(SDESTDIR) $(MANDIR)/man1/ $(MANDIR)/man8/
-	$(INSTALL) -m 0755 -o ${BINOWNER} -g ${BINGROUP} elog elconv $(DESTDIR)
-	$(INSTALL) -m 0755 -o ${BINOWNER} -g ${BINGROUP} elogd $(SDESTDIR)
-	$(INSTALL) -m 0644 man/elog.1 man/elconv.1 $(MANDIR)/man1/
-	$(INSTALL) -m 0644 man/elogd.8 $(MANDIR)/man8/
+	$(INSTALL) -v -m 0755 -o ${BINOWNER} -g ${BINGROUP} elog elconv $(DESTDIR)
+	$(INSTALL) -v -m 0755 -o ${BINOWNER} -g ${BINGROUP} elogd $(SDESTDIR)
+	$(INSTALL) -v -m 0644 man/elog.1 man/elconv.1 $(MANDIR)/man1/
+	$(INSTALL) -v -m 0644 man/elogd.8 $(MANDIR)/man8/
+	$(INSTALL) -v -m 0644 man/elogd.8 $(MANDIR)/man8/
+
+	@echo "Installing scripts to $(ELOGDIR)/scripts/"
+	@for file in `find scripts -type f | grep -v .svn` ; \
+          do \
+          install -D -m 644 $$file $(ELOGDIR)/scripts/`basename $$file` ; \
+          done
+	@echo "Installing resources to $(ELOGDIR)/resources/"
+	@for file in `find resources -type f | grep -v .svn` ; \
+          do \
+          install -D -m 644 $$file $(ELOGDIR)/resources/`basename $$file` ; \
+          done
+	@echo "Installing themes to $(ELOGDIR)/themes/"
+	@for file in `find themes/default -type f | grep -v .svn` ; \
+          do \
+          install -D -m 644 $$file $(ELOGDIR)/themes/default/`basename $$file` ; \
+          done
+	@for file in `find themes/default/icons -type f | grep -v .svn` ; \
+          do \
+          install -D -m 644 $$file $(ELOGDIR)/themes/default/icons/`basename $$file` ; \
+          done
+
+	@if [ ! -f $(ELOGDIR)/elogd.cfg ]; then  \
+	  install -v -m 644 elogd.cfg $(ELOGDIR)/elogd.cfg ; \
+	fi
+
+	@sed "s#\@PREFIX\@#$(PREFIX)#g" elogd.init_template > elogd.init
+	install -v -D -m 755 elogd.init $(RCDIR)/elogd
 
 restart:
-	/etc/rc.d/init.d/elogd restart
+	$(RCDIR)/elogd restart
 clean:
 	-$(RM) *~ $(EXECS) regex.o mxml.o strlcpy.o
 
