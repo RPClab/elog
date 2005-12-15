@@ -2,7 +2,7 @@
 # Japanese translation by Satoshi Mihara (mihara@icepp.s.u-tokyo.ac.jp)
 #      Shift_JISコードを使用してください。
 # A more recent version may be available at :
-# http://savannah.psi.ch/viewcvs/trunk/eloglang.japanese?root=elog&
+# http://savannah.psi.ch/websvn/listing.php?repname=elog&path=%2Ftrunk%2Fresources%2F
 #
 
 Change %s = %s 変更
