@@ -23,14 +23,9 @@ RCDIR      = $(ROOT)/etc/rc.d/init.d
 
 #############################################################
 
-ifndef DEBUG
 # Default compilation flags unless stated otherwise.
 # Add "-DHAVE_CRYPT" and "-lcrypt" to use crypt() function.
 CFLAGS += -O3 -funroll-loops -fomit-frame-pointer -W -Wall
-else
-# Build with e.g. 'make DEBUG=1' to turn on debugging.
-CFLAGS += -g -O -W -Wall
-endif
 
 CC = gcc
 IFLAGS = -kr -nut -i3 -l110
