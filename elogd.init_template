@@ -1,7 +1,10 @@
 #!/bin/sh
 
 # chkconfig: 3 90 10
-# description: Start elog
+# description: ELOG is a weblog with integrated database
+# processname: elogd
+# config: @PREFIX@/elog/elogd.cfg
+# pidfile: /var/run/elogd.pid
 
 # Source function library.
 . /etc/rc.d/init.d/functions
