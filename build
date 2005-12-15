@@ -19,6 +19,8 @@ mkdir $dir/doc
 mkdir $dir/src
 mkdir $dir/man
 mkdir $dir/contrib
+mkdir $dir/scripts
+mkdir $dir/resources
 mkdir $dir/themes
 mkdir $dir/themes/default
 mkdir $dir/themes/default/icons
@@ -41,12 +43,13 @@ cp COPYING $dir
 cp README $dir
 cp elogd.init_template $dir
 
-cp eloghelp_??.html $dir
-cp eloglang.* $dir
+cp eloghelp_*.html $dir/resources
+cp eloglang.* $dir/resources
 
 cp doc/* $dir/doc
 cp man/* $dir/man
 cp contrib/* $dir/contrib
+cp scripts/* $dir/scripts
 
 cp themes/default/* $dir/themes/default
 cp themes/default/icons/* $dir/themes/default/icons
