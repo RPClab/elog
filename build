@@ -27,6 +27,7 @@ set archive = elog-$version-$release.tar.gz
 perl -wapi.bak -e 's&^(Version:\s+).*$&${1}'"${version}"'&;s&^(Release:\s+).*$&${1}'"${release}"'&;' elog.spec
 
 # create temporary directory
+rm -Rf $dir/../mxml
 rm -Rf $dir
 mkdir $dir
 mkdir $dir/doc
@@ -43,7 +44,7 @@ mkdir $dir/logbooks/demo
 mkdir $dir/../mxml
 
 # make sure we have up-to-date files
-if ( !$?noupdate ) then
+if ( ! $?noupdate ) then
   echo Updating files...
   ( cd ../mxml ; svn update )
   svn update

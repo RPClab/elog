@@ -12,10 +12,13 @@ ifndef PREFIX
 PREFIX     = /usr/local
 endif
 
+ifndef MANDIR
+MANDIR     = $(ROOT)$(PREFIX)/man
+endif
+
 ELOGDIR    = $(ROOT)$(PREFIX)/elog
 DESTDIR    = $(ROOT)$(PREFIX)/bin
 SDESTDIR   = $(ROOT)$(PREFIX)/sbin
-MANDIR     = $(ROOT)$(PREFIX)/man
 RCDIR      = $(ROOT)/etc/rc.d/init.d
 
 #############################################################
@@ -62,7 +65,7 @@ endif
 all: $(EXECS)
 
 regex.o: src/regex.c src/regex.h
-	$(CC) $(CFLAGS) -c -o regex.o src/regex.c
+	$(CC) $(CFLAGS) -w -c -o regex.o src/regex.c
 
 mxml.o: $(MXMLDIR)/mxml.c $(MXMLDIR)/mxml.h
 	$(CC) $(CFLAGS) -c -o mxml.o $(MXMLDIR)/mxml.c
@@ -99,7 +102,6 @@ loc:
 	locext src\elogd.c resources\eloglang.zh_CN-UTF8
 
 install: $(EXECS)
-	echo $(PREFIX)
 	@$(INSTALL) -m 0755 -d $(DESTDIR) $(SDESTDIR) $(MANDIR)/man1/ $(MANDIR)/man8/
 	@$(INSTALL) -m 0755 -d $(ELOGDIR)/scripts/ $(ELOGDIR)/resources/ $(ELOGDIR)/themes/default/icons 
 	@$(INSTALL) -m 0755 -d $(ELOGDIR)/logbooks/demo

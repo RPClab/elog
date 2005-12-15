@@ -2,7 +2,7 @@
 
 Name:       elog
 Summary:    elog is a standalone electronic web logbook
-Version:    2.5.6
+Version:    2.6.0
 Release:    1
 Copyright:  GPL
 Group:      Applications/Networking
@@ -40,7 +40,7 @@ access control, etc. Moreover, a single server can host several weblogs, and
 each weblog can be totally different from the rest. 
 
 %changelog
-* Fon Oct 24 2005 Stefan Ritt <stefan.ritt@psi.ch>
+* Fri Oct 24 2005 Stefan Ritt <stefan.ritt@psi.ch>
 - Added resources/ directory
 * Fri Mar 14 2003 Stefan Ritt <stefan.ritt@psi.ch>
 - Added %post to change ownership of elog files
@@ -63,7 +63,7 @@ each weblog can be totally different from the rest.
 
 %pre
 %{_sbindir}/groupadd -r elog 2>/dev/null || :
-%{_sbindir}/useradd -d %{prefix}/elog -s /bin/false \
+%{_sbindir}/useradd -d / -s /bin/false \
    -g elog -M -r elog 2>/dev/null || :
 
 %build
@@ -71,27 +71,7 @@ make
 sed "s#\@PREFIX\@#%{prefix}#g" elogd.init_template > elogd.init
 
 %install
-mkdir -p $RPM_BUILD_ROOT%{prefix}/elog
-mkdir -p $RPM_BUILD_ROOT%{prefix}/sbin
-mkdir -p $RPM_BUILD_ROOT%{prefix}/bin
-mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
-install -m 0755 elogd $RPM_BUILD_ROOT%{prefix}/sbin
-install -m 0755 elog  $RPM_BUILD_ROOT%{prefix}/bin
-install -m 0755 elconv $RPM_BUILD_ROOT%{prefix}/bin
-
-install -m 0644 resources/eloghelp* $RPM_BUILD_ROOT%{prefix}/resources/elog
-install -m 0644 resources/elcode* $RPM_BUILD_ROOT%{prefix}/resources/elog
-install -m 0644 resources/eloglang* $RPM_BUILD_ROOT%{prefix}/resources/elog
-cp -r themes $RPM_BUILD_ROOT%{prefix}/elog
-cp -r logbooks $RPM_BUILD_ROOT%{prefix}/elog
-install -m 0644 elogd.cfg $RPM_BUILD_ROOT%{prefix}/elog
-install -m 0755 elogd.init $RPM_BUILD_ROOT/etc/rc.d/init.d/elogd
-
-mkdir -p $RPM_BUILD_ROOT%{_mandir}/man1
-mkdir -p $RPM_BUILD_ROOT%{_mandir}/man8
-install -m 644 man/elog.1 $RPM_BUILD_ROOT%{_mandir}/man1
-install -m 644 man/elconv.1 $RPM_BUILD_ROOT%{_mandir}/man1
-install -m 644 man/elogd.8 $RPM_BUILD_ROOT%{_mandir}/man8
+make install ROOT=$RPM_BUILD_ROOT MANDIR=$RPM_BUILD_ROOT%{_mandir}
 
 %post
 chown -R elog:elog $RPM_BUILD_ROOT%{prefix}/elog
@@ -101,15 +81,15 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%doc	README COPYING doc
-%prefix/bin/*
-%prefix/sbin/elogd
-%prefix/elog/resources/eloghelp*
-%prefix/elog/resources/eloglang*
-%prefix/elog/resources/elcode*
-%prefix/elog/themes
-%prefix/elog/logbooks
-%config(noreplace) %prefix/elog/elogd.cfg
 /etc/rc.d/init.d/elogd
 %{_mandir}/man1/*
 %{_mandir}/man8/*
+%doc	README COPYING doc
+%defattr(-,elog,elog)
+%prefix/bin/*
+%prefix/sbin/elogd
+%prefix/elog/resources/*
+%prefix/elog/scripts/*
+%prefix/elog/themes
+%prefix/elog/logbooks
+%config(noreplace) %prefix/elog/elogd.cfg
