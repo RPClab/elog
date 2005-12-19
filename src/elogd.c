@@ -21022,6 +21022,9 @@ int do_self_register(LOGBOOK * lbs, char *command)
 {
    char str[256];
 
+   if (command = NULL)
+      return 1;
+
    /* display new user page if "self register" is clicked */
    if (strieq(command, loc("New user"))) {
       show_new_user_page(lbs);
@@ -21395,7 +21398,7 @@ void interprete(char *lbook, char *path)
 
       /* check for self register */
       if (getcfg(group, "Self register", str, sizeof(str)) && atoi(str) > 0) {
-         if (!isparam("cmd") || !do_self_register(NULL, getparam("cmd")))
+         if (!do_self_register(NULL, getparam("cmd")))
             return;
       }
 
