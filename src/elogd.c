@@ -1925,6 +1925,12 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    /* add ".<CR>" to signal end of message */
    strlcat(str, ".\r\n", strsize);
 
+   /* check if buffer exceeded */
+   if (strlen(str) == strsize-1) {
+      strlcpy(error, loc("Entry size too large for email notification"), error_size);
+      goto smtp_error;
+   }
+
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
@@ -17906,10 +17912,12 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
 
    if (status < 0) {
       sprintf(str, loc("Error sending Email via <i>\"%s\"</i>"), smtp_host);
+      strlcat(str, ": ", sizeof(str));
       url_encode(str, sizeof(str));
       sprintf(mail_param, "?error=%s", str);
    } else if (error[0]) {
       sprintf(str, loc("Error sending Email via <i>\"%s\"</i>"), smtp_host);
+      strlcat(str, ": ", sizeof(str));
       strlcat(str, error, sizeof(str));
       url_encode(str, sizeof(str));
       sprintf(mail_param, "?error=%s", str);
