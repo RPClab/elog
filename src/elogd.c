@@ -11176,7 +11176,7 @@ void show_new_user_page(LOGBOOK * lbs)
 
 void show_elog_delete(LOGBOOK * lbs, int message_id)
 {
-   int i, status, reply, next, nsel;
+   int i, status, reply=0, next, nsel;
    char str[256], in_reply_to[80], reply_to[MAX_REPLY_TO * 10], owner[256];
    char attrib[MAX_N_ATTR][NAME_LENGTH];
 
@@ -11214,7 +11214,7 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
             }
          } else {
             if (isparam("nsel")) {
-               for (i = reply = 0; i < atoi(getparam("nsel")); i++) {
+               for (i = 0; i < atoi(getparam("nsel")); i++) {
                   sprintf(str, "s%d", i);
                   if (isparam(str))
                      status = el_delete_message(lbs, atoi(getparam(str)), TRUE, NULL, TRUE, TRUE);
@@ -11280,7 +11280,8 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
          }
 
          if (isparam("nsel")) {
-            for (i = reply = 0; i < atoi(getparam("nsel")); i++) {
+            reply = FALSE;
+            for (i = 0; i < atoi(getparam("nsel")); i++) {
                sprintf(str, "s%d", i);
                if (isparam(str)) {
                   rsprintf("#%s ", getparam(str));
