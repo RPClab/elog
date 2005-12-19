@@ -1766,7 +1766,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
       return -1;
    }
 
-   strsize = TEXT_SIZE + 1000;
+   strsize = MAX_CONTENT_LENGTH + 1000;
    str = xmalloc(strsize);
 
    recv_string(s, str, strsize, 10000);
