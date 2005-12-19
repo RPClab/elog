@@ -1926,7 +1926,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    strlcat(str, ".\r\n", strsize);
 
    /* check if buffer exceeded */
-   if (strlen(str) == strsize-1) {
+   if ((int)strlen(str) == strsize-1) {
       strlcpy(error, loc("Entry size too large for email notification"), error_size);
       goto smtp_error;
    }
