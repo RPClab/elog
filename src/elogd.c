@@ -18572,14 +18572,14 @@ void submit_elog(LOGBOOK * lbs)
       p = getparam("text");
       sprintf(str, "elog:%d/", message_id);
       strsubst(p, TEXT_SIZE, "elog:/", str);
-      el_submit(lbs, message_id, bedit, date, attr_list, attrib, n_attr,
+      el_submit(lbs, message_id, TRUE, date, attr_list, attrib, n_attr,
          p, in_reply_to, reply_to, 
          isparam("encoding") ? getparam("encoding") : "plain", att_file, TRUE, NULL);
    }
 
    /*---- email notifications ----*/
 
-   suppress = isparam("suprress") ? atoi(getparam("suppress")) : 0;
+   suppress = isparam("suppress") ? atoi(getparam("suppress")) : 0;
    if (getcfg(lbs->name, "Suppress default", str, sizeof(str)) && atoi(str) == 3)
       suppress = 3;
 
