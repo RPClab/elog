@@ -891,11 +891,193 @@ void redirect_to_stderr(void)
 
 /*------------------------------------------------------------------*/
 
+int subst_shell(char *cmd, char *result, int size)
+{
+#ifdef OS_WINNT
+
+   HANDLE hChildStdinRd, hChildStdinWr, hChildStdinWrDup,
+       hChildStdoutRd, hChildStdoutWr,
+       hChildStderrRd, hChildStderrWr, hSaveStdin, hSaveStdout, hSaveStderr;
+
+   SECURITY_ATTRIBUTES saAttr;
+   PROCESS_INFORMATION piProcInfo;
+   STARTUPINFO siStartInfo;
+   char buffer[256];
+   DWORD dwRead, dwAvail, i;
+
+   /* Set the bInheritHandle flag so pipe handles are inherited. */
+   saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+   saAttr.bInheritHandle = TRUE;
+   saAttr.lpSecurityDescriptor = NULL;
+
+   /* Save the handle to the current STDOUT. */
+   hSaveStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+
+   /* Create a pipe for the child's STDOUT. */
+   if (!CreatePipe(&hChildStdoutRd, &hChildStdoutWr, &saAttr, 0))
+      return 0;
+
+   /* Set a write handle to the pipe to be STDOUT. */
+   if (!SetStdHandle(STD_OUTPUT_HANDLE, hChildStdoutWr))
+      return 0;
+
+   /* Save the handle to the current STDERR. */
+   hSaveStderr = GetStdHandle(STD_ERROR_HANDLE);
+
+   /* Create a pipe for the child's STDERR. */
+   if (!CreatePipe(&hChildStderrRd, &hChildStderrWr, &saAttr, 0))
+      return 0;
+
+   /* Set a read handle to the pipe to be STDERR. */
+   if (!SetStdHandle(STD_ERROR_HANDLE, hChildStderrWr))
+      return 0;
+
+   /* Save the handle to the current STDIN. */
+   hSaveStdin = GetStdHandle(STD_INPUT_HANDLE);
+
+   /* Create a pipe for the child's STDIN. */
+   if (!CreatePipe(&hChildStdinRd, &hChildStdinWr, &saAttr, 0))
+      return 0;
+
+   /* Set a read handle to the pipe to be STDIN. */
+   if (!SetStdHandle(STD_INPUT_HANDLE, hChildStdinRd))
+      return 0;
+
+   /* Duplicate the write handle to the pipe so it is not inherited. */
+   if (!DuplicateHandle(GetCurrentProcess(), hChildStdinWr, GetCurrentProcess(), &hChildStdinWrDup, 0, FALSE,   /* not inherited */
+                        DUPLICATE_SAME_ACCESS))
+      return 0;
+
+   CloseHandle(hChildStdinWr);
+
+   /* Now create the child process. */
+   memset(&siStartInfo, 0, sizeof(siStartInfo));
+   siStartInfo.cb = sizeof(STARTUPINFO);
+   siStartInfo.lpReserved = NULL;
+   siStartInfo.lpReserved2 = NULL;
+   siStartInfo.cbReserved2 = 0;
+   siStartInfo.lpDesktop = NULL;
+   siStartInfo.dwFlags = 0;
+
+   /* command to execute */
+   sprintf(buffer, "cmd /q /c %s", cmd);
+
+   if (!CreateProcess(NULL, buffer,   /* command line */
+                      NULL,           /* process security attributes */
+                      NULL,           /* primary thread security attributes */
+                      TRUE,           /* handles are inherited */
+                      0,              /* creation flags */
+                      NULL,           /* use parent's environment */
+                      NULL,           /* use parent's current directory */
+                      &siStartInfo,   /* STARTUPINFO pointer */
+                      &piProcInfo))   /* receives PROCESS_INFORMATION */
+      return 0;
+
+   /* After process creation, restore the saved STDIN and STDOUT. */
+   SetStdHandle(STD_INPUT_HANDLE, hSaveStdin);
+   SetStdHandle(STD_OUTPUT_HANDLE, hSaveStdout);
+   SetStdHandle(STD_ERROR_HANDLE, hSaveStderr);
+
+   memset(result, 0, size);
+
+   do {
+      do {
+         if (!PeekNamedPipe(hChildStdoutRd, buffer, 256, &dwRead, &dwAvail, NULL))
+            break;
+         if (dwRead > 0) {
+            ReadFile(hChildStdoutRd, buffer, 256, &dwRead, NULL);
+            buffer[dwRead] = 0;
+            strlcat(result, buffer, size);
+         }
+      } while (dwAvail > 0);
+
+      /* query stderr */
+      do {
+         if (!PeekNamedPipe(hChildStderrRd, buffer, 256, &dwRead, &dwAvail, NULL))
+            break;
+         if (dwRead > 0) {
+            ReadFile(hChildStderrRd, buffer, 256, &dwRead, NULL);
+            buffer[dwRead] = 0;
+            strlcat(result, buffer, size);
+         }
+      } while (dwAvail > 0);
+
+      /* check if subprocess still alive */
+      if (!GetExitCodeProcess(piProcInfo.hProcess, &i))
+         break;
+      if (i != STILL_ACTIVE)
+         break;
+
+   } while (TRUE);
+
+   CloseHandle(hChildStdinWrDup);
+   CloseHandle(hChildStdinRd);
+   CloseHandle(hChildStderrRd);
+   CloseHandle(hChildStdoutRd);
+
+   /* strip trailing CR/LF */
+   while (strlen(result) > 0 && (result[strlen(result)-1] == '\r' || result[strlen(result)-1] == '\n'))
+      result[strlen(result)-1] = 0;
+
+   return 1;
+
+#endif                          /* OS_WINNT */
+
+#ifdef OS_UNIX
+#ifndef NO_PTY
+   pid_t pid;
+   int i, pipe;
+   char line[32], buffer[1024], shell[32];
+   fd_set readfds;
+
+   if ((pid = forkpty(&pipe, line, NULL, NULL)) < 0)
+      return 0;
+   else if (pid > 0) {
+      /* parent process */
+
+      write(pipe, cmd, strlen(cmd));
+      result[0] = 0;
+
+      do {
+         FD_ZERO(&readfds);
+         FD_SET(pipe, &readfds);
+
+         select(FD_SETSIZE, (void *) &readfds, NULL, NULL, NULL);
+
+         if (FD_ISSET(pipe, &readfds)) {
+            memset(buffer, 0, sizeof(buffer));
+            i = read(pipe, buffer, sizeof(buffer));
+            if (i <= 0)
+               break;
+            strlcat(result, buffer, size);
+         }
+
+      } while (1);
+   } else {
+      /* child process */
+
+      if (getenv("SHELL"))
+         strlcpy(shell, getenv("SHELL"), sizeof(shell));
+      else
+         strcpy(shell, "/bin/sh");
+      execl(shell, shell, 0);
+   }
+#else
+   assert(FALSE);
+#endif                          /* NO_PTY */
+
+   return 1;
+
+#endif                          /* OS_UNIX */
+}
+
+/*------------------------------------------------------------------*/
+
 void strsubst_list(char *string, int size, char name[][NAME_LENGTH], char value[][NAME_LENGTH], int n)
 /* subsitute "$name" with value corresponding to name */
 {
    int i, j;
-   char tmp[2 * NAME_LENGTH], str[2 * NAME_LENGTH], uattr[2 * NAME_LENGTH], *ps, *pt, *p;
+   char tmp[2 * NAME_LENGTH], str[2 * NAME_LENGTH], uattr[2 * NAME_LENGTH], *ps, *pt, *p, result[10000];
 
    pt = tmp;
    ps = string;
@@ -913,24 +1095,51 @@ void strsubst_list(char *string, int size, char name[][NAME_LENGTH], char value[
       for (j = 0; j < (int) strlen(str); j++)
          str[j] = toupper(str[j]);
 
-      /* search name */
-      for (i = 0; i < n; i++) {
-         strlcpy(uattr, name[i], sizeof(uattr));
-         for (j = 0; j < (int) strlen(uattr); j++)
-            uattr[j] = toupper(uattr[j]);
+      if (strncmp(str, "SHELL(", 6) == 0) {
+         ps += 7;
+         if (strrchr(p, '\"')) {
+            ps += (int) strrchr(p, '\"') - (int) p - 5;
+            if (strchr(ps, ')'))
+               ps = strchr(ps, ')')+1;
+         } else {
+            if (strchr(ps, ')'))
+               ps = strchr(ps, ')')+1;
+         }
 
-         if (strncmp(str, uattr, strlen(uattr)) == 0)
-            break;
-      }
+         if (str[6] = '"') {
+            strcpy(str, p+7);
+            if (strrchr(str, '\"'))
+               *strrchr(str, '\"') = 0;
+         } else {
+            strcpy(str, p+6);
+            if (strrchr(str, ')'))
+               *strrchr(str, ')') = 0;
+         }
+         subst_shell(str, result, sizeof(result));
 
-      /* copy value */
-      if (i < n) {
-         strlcpy(pt, value[i], sizeof(tmp) - ((int) pt - (int) tmp));
+         strlcpy(pt, result, sizeof(tmp) - ((int) pt - (int) tmp));
          pt += strlen(pt);
-         ps = p + strlen(uattr);
+
       } else {
-         *pt++ = '$';
-         ps = p;
+         /* search name */
+         for (i = 0; i < n; i++) {
+            strlcpy(uattr, name[i], sizeof(uattr));
+            for (j = 0; j < (int) strlen(uattr); j++)
+               uattr[j] = toupper(uattr[j]);
+
+            if (strncmp(str, uattr, strlen(uattr)) == 0)
+               break;
+         }
+
+         /* copy value */
+         if (i < n) {
+            strlcpy(pt, value[i], sizeof(tmp) - ((int) pt - (int) tmp));
+            pt += strlen(pt);
+            ps = p + strlen(uattr);
+         } else {
+            *pt++ = '$';
+            ps = p;
+         }
       }
    }
 
