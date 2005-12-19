@@ -21030,7 +21030,7 @@ int do_self_register(LOGBOOK * lbs, char *command)
 {
    char str[256];
 
-   if (command = NULL)
+   if (command == NULL)
       return 1;
 
    /* display new user page if "self register" is clicked */
