@@ -1028,22 +1028,23 @@ int subst_shell(char *cmd, char *result, int size)
 #ifndef NO_PTY
    pid_t pid;
    int i, pipe;
-   char line[32], buffer[1024], shell[32];
+   char line[32], buffer[256], shell[1024];
    fd_set readfds;
+   struct timeval timeout;
 
    if ((pid = forkpty(&pipe, line, NULL, NULL)) < 0)
       return 0;
    else if (pid > 0) {
       /* parent process */
-
-      write(pipe, cmd, strlen(cmd));
       result[0] = 0;
 
       do {
          FD_ZERO(&readfds);
          FD_SET(pipe, &readfds);
+         timeout.tv_sec = 3;
+         timeout.tv_usec = 0;
 
-         select(FD_SETSIZE, (void *) &readfds, NULL, NULL, NULL);
+         select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
 
          if (FD_ISSET(pipe, &readfds)) {
             memset(buffer, 0, sizeof(buffer));
@@ -1052,7 +1053,8 @@ int subst_shell(char *cmd, char *result, int size)
                break;
             buffer[i] = 0;
             strlcat(result, buffer, size);
-         }
+         } else
+	    break;
 
       } while (1);
 
@@ -1067,7 +1069,8 @@ int subst_shell(char *cmd, char *result, int size)
          strlcpy(shell, getenv("SHELL"), sizeof(shell));
       else
          strcpy(shell, "/bin/sh");
-      execl(shell, shell, 0);
+
+      execl(shell, shell, "-c", cmd, NULL);
    }
 #else
    assert(FALSE);

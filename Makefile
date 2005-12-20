@@ -39,6 +39,9 @@ RM = /bin/rm -f
 
 OSTYPE = $(shell uname)
 
+# -lutil needed for forkpty()
+LIBS += -lutil
+
 ifeq ($(OSTYPE),solaris)
 CC = gcc
 LIBS += -lsocket -lnsl
