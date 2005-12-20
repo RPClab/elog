@@ -103,6 +103,7 @@ typedef int BOOL;
 #include <grp.h>
 #include <syslog.h>
 #include <termios.h>
+#include <pty.h>
 
 #define closesocket(s) close(s)
 
@@ -1049,10 +1050,16 @@ int subst_shell(char *cmd, char *result, int size)
             i = read(pipe, buffer, sizeof(buffer));
             if (i <= 0)
                break;
+            buffer[i] = 0;
             strlcat(result, buffer, size);
          }
 
       } while (1);
+
+      /* strip trailing CR/LF */
+      while (strlen(result) > 0 && (result[strlen(result)-1] == '\r' || result[strlen(result)-1] == '\n'))
+         result[strlen(result)-1] = 0;
+
    } else {
       /* child process */
 
@@ -1106,7 +1113,7 @@ void strsubst_list(char *string, int size, char name[][NAME_LENGTH], char value[
                ps = strchr(ps, ')')+1;
          }
 
-         if (str[6] = '"') {
+         if (str[6] == '"') {
             strcpy(str, p+7);
             if (strrchr(str, '\"'))
                *strrchr(str, '\"') = 0;
