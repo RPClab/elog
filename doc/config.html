@@ -1063,11 +1063,21 @@ text. This text can contain arbitrary fixed text and following values:
 <LI><b>$logbook</b>: The name of the current logbook
 <LI><b>$date</b>: The current date, formatted via "<I>Date format</I>"
 <LI><b>$utcdate</b>: The current UTC date (GMT) and time, formatted via "<I>Date format</I>"
+<LI><b>$shell(&lt;command&gt;)</b>: &lt;command&gt; gets passed to the operating system shell 
+  and the result is taken for substitution.
 </UL>
 <br>
 Following example use this feature to add the remote host name to the author:
 <br>
 <pre>Subst Author = $author from $remote_host</pre>
+<br>
+
+Following example substitutes an attribute with the contents of a file:
+<br>
+<pre>
+  Subst Info = $shell(cat /tmp/filename)              (Unix)
+  Subst Info = $shell(type c:\tmp\filename)           (Windows)
+</pre>
 <p>
 
 <LI><b><code>Remove on reply = &lt;list&gt;</code></b>
