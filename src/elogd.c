@@ -8057,6 +8057,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      text, &size, orig_tag, reply_tag, att, encoding, locked_by);
 
          get_author(lbs, attrib, orig_author);
+
+         /* strip attachments on duplicate */
+         if (bduplicate)
+            memset(att, 0, sizeof(att));
       }
    }
 
