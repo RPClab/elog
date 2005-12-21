@@ -18515,7 +18515,7 @@ void submit_elog(LOGBOOK * lbs)
       if (attr_flags[i] & AF_MULTI)
          strcat(ua, "_0");
 
-      if (isparam(ua) && attr_options[i][0][0]) {
+      if (isparam(ua) && *getparam(ua) && attr_options[i][0][0]) {
 
          if (strieq(attr_options[i][0], "boolean")) {
             if (atoi(getparam(ua)) != 0 && atoi(getparam(ua)) != 1) {
