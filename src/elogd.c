@@ -8098,7 +8098,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       sprintf(str, "Preset %s", attr_list[index]);
       if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0) {
 
-         if ((!bedit && !breply) ||     /* don't subst on edit or reply */
+         if ((!bedit && !breply && !bduplicate) ||     /* don't subst on edit or reply */
              (breedit && i == 2)) {     /* subst on reedit only if preset is under condition */
 
             /* do not format date for date attributes */
@@ -8164,7 +8164,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       sprintf(str, "Preset %s", attr_list[index]);
       if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0) {
 
-         if ((!bedit && !breply) ||     /* don't subst on edit or reply */
+         if ((!bedit && !breply && !bduplicate) ||     /* don't subst on edit or reply */
              (breedit && i == 2)) {     /* subst on reedit only if preset is under condition */
 
             /* do not format date for date attributes */
