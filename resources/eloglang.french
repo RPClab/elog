@@ -1,8 +1,8 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.5.9)
+# (for 2.6.0+)
 # A more recent version may be available at :
-# http://savannah.psi.ch/websvn/listing.php?repname=elog&path=%2Ftrunk%2Fresources%2F
+# http://savannah.psi.ch/viewcvs/trunk/eloglang.french?root=elog&
 #
 
 New = Créer
@@ -338,31 +338,28 @@ Please enter minute for attribute '%s' =  Entrez les minutes pour l'attribut '%s
 Please enter second for attribute '%s' =  Entrez les secondes pour l'attribut '%s'
 No admin user has been defined in configuration file = Aucun utilisateur n'est défini comme administrateur dans le fichier de configuration
 Duplicate = Dupliquer
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Cannot lookup server name = 
-Cannot connect to server = 
-%s wrote = 
-Quote = 
-Please enter numeric value for year of attribute '%s' = 
-Preview = 
-bold text = 
-italics text = 
-underlined text = 
-centered text = 
-insert hyperlink = 
-insert email = 
-insert image = 
-insert quote = 
-insert list = 
-insert code = 
-hide the smiley bar = 
-show the smiley bar = 
-FONT = 
-SIZE = 
-COLOR = 
+Cannot lookup server name = Impossible de résoudre le nom du serveur
+Cannot connect to server = Impossible de se connecter au serveur
+%s wrote = %s a écrit
+Quote = Citer
+Please enter numeric value for year of attribute '%s' = Indiquez une valeur numérique pour l'année de l'attribut '%s'
+Preview = Prévisualisation
+bold text = texte gras
+italics text = texte italique
+underlined text = texte souligné
+centered text = texte centré
+insert hyperlink = insérer lien
+insert email = insérer adresse de messagerie
+insert image = insérer image
+insert quote = insérer citation
+insert list = insérer liste
+insert code = insérer code
+hide the smiley bar = cacher la barre des smileys
+show the smiley bar = afficher la barre des smileys
+FONT = POLICE
+SIZE = TAILLE
+COLOR = COULEUR
+astonished = 
 smiling = 
 happy = 
 winking = 
@@ -375,29 +372,28 @@ mad =
 pleased = 
 tongue = 
 yawn = 
-Encoding = 
-User "%s" not found in password file = 
-Cannot write to file <b>%s</b> = 
-Really remove user %s? = 
-Invalid user name "%s" or password for remote logbook = 
-Hide attachments = 
-Show only new entries = 
-Show all entries = 
-New entries since = 
-A old ELOG entry has been updated = 
-A new ELOG entry has been submitted = 
-Cannot open file "%s" = 
-Invalid user name or password = 
-Upload image = 
-Please enter filename or URL = 
-Maximum allowed file size is = 
-Enter filename or URL = 
-Image uploaded successfully = 
-Image "%s" uploaded successfully = 
-HelpELCode = 
-Cannot retrieve file from URL "%s" = 
-Enter name of hyperlink = 
-Enter URL of hyperlink = 
-astonished = 
-Error in regular expression "%s" = 
-File not found at URL "%s" = 
+Encoding = Encodage
+User "%s" not found in password file = Utilisateur "%s" non trouvé dans le fichier des comptes
+Cannot write to file <b>%s</b> = Impossible d'écrire dans le fichier <b>%s</b>
+Really remove user %s? = Confirmer la suppression de l'utilisateur %s ?
+Invalid user name "%s" or password for remote logbook = Nom d'utilisateur "%s" ou mot de passe invalide pour l'accès au registre distant
+Hide attachments = Cacher les pièces jointes
+Show only new entries = Ne montrer que les nouvelles entrées
+Show all entries = Montrer toutes les entrées
+New entries since = Nouvelles entrées depuis
+A old ELOG entry has been updated = Une entrée ELOG existante a été mise à jour
+A new ELOG entry has been submitted = Une nouvelle entrée ELOG a été créée
+Cannot open file "%s" = Impossible d'ouvrir le fichier "%s"
+Invalid user name or password = Nom d'utilisateur ou mot de passe invalide
+Upload image = Télécharger une image
+Please enter filename or URL = Indiquez un nom de fichier ou une URL
+Maximum allowed file size is = La taille maximale autorisée pour les fichiers est de
+Enter filename or URL = Indiquez un nom de fichier ou une URL
+Image uploaded successfully = Image téléchargée avec succès
+Image "%s" uploaded successfully = Image "%s" téléchargée avec succès
+HelpELCode = AideELCode
+Cannot retrieve file from URL "%s" = Impossible d'importer le fichier depuis l'URL "%s"
+Enter name of hyperlink = Nom du lien
+Enter URL of hyperlink = URL du lien
+Error in regular expression "%s" = Erreur dans l'expression régulière "%s"
+File not found at URL "%s" = Fichier non trouvé à l'URL "%s"
