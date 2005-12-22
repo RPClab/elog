@@ -142,6 +142,8 @@ td {
 
 .ltab {
   background-color:#E0E0E0;
+  border-top:1px solid white;
+  border-left:1px solid white;
   border-right:1px solid gray;
 }
 
@@ -155,6 +157,7 @@ td {
 .sltab {
   background-color:#486090;
   color:white;
+  border-left:1px solid #E0E0E0;
   border-right:1px solid #084070;
 }
 
@@ -166,7 +169,6 @@ td {
   padding:5px;
   background-color:#486090;
   border-bottom:1px solid black;
-  border-top:1px solid #E0E0E0;
   border-left:1px solid #E0E0E0;
   color:white;
   font-size:medium;
@@ -180,7 +182,6 @@ td {
 .title2 {
   background-color:#486090;
   border-bottom:1px solid black;
-  border-top:1px solid #E0E0E0;
   color:white;
   font-size:medium;
   font-family:sans-serif;
@@ -189,7 +190,6 @@ td {
 
 .title3 {
   border-bottom:1px solid black;
-  border-top:1px solid #E0E0E0;
   border-right:1px solid black;
   background-color:#486090;
   text-align:right;

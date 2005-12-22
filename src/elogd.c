@@ -6912,7 +6912,7 @@ void show_standard_title(char *logbook, char *text, int printable)
          pnode = pnext;
          pnext = NULL;
 
-         if (pnode == NULL)
+         if (pnode == NULL || pnode->n_members == 0)
             break;
       }
    }
