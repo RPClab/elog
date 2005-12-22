@@ -9270,8 +9270,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    preset_text = getcfg(lbs->name, "Preset text", str, sizeof(str));
    if (preset_text) {
 
-      /* don't use preset text if editing */
-      if (bedit || bduplicate)
+      /* don't use preset text if editing or replying */
+      if (bedit || bduplicate || breply)
          preset_text = FALSE;
 
       /* user preset on reedit only if preset is under condition */
@@ -14173,7 +14173,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   char attrib[MAX_N_ATTR][NAME_LENGTH], int n_attr,
                   char *text, BOOL show_text,
                   char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], char *encoding,
-                  BOOL select, int *n_display, char *locked_by, int highlight, regex_t * re_buf)
+                  BOOL select, int *n_display, char *locked_by, int highlight, regex_t * re_buf,
+                  int highlight_mid)
 {
    char str[NAME_LENGTH], ref[256], thumb_name[256], *nowrap, sclass[80], format[256],
        file_name[MAX_PATH_LENGTH], *slist, *svalue;
@@ -14192,10 +14193,17 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    sprintf(ref + strlen(ref), "%s/%d", lbs->name_enc, message_id);
 
    if (strieq(mode, "Summary")) {
-      if (number % 2 == 1)
-         strcpy(sclass, "list1");
-      else
-         strcpy(sclass, "list2");
+      if (highlight_mid == message_id) {
+         if (number % 2 == 1)
+            strcpy(sclass, "list1h");
+         else
+            strcpy(sclass, "list2h");
+      } else {
+         if (number % 2 == 1)
+            strcpy(sclass, "list1");
+         else
+            strcpy(sclass, "list2");
+      }
    } else if (strieq(mode, "Full"))
       strcpy(sclass, "list1");
    else if (strieq(mode, "Threaded")) {
@@ -14205,10 +14213,17 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          else
             strcpy(sclass, "threadreply");
       } else {
-         if (level == 0)
-            strcpy(sclass, "thread");
-         else
-            strcpy(sclass, "threadreply");
+         if (highlight_mid == message_id) {
+            if (level == 0)
+               strcpy(sclass, "threadh");
+            else
+               strcpy(sclass, "threadreplyh");
+         } else {        
+            if (level == 0)
+               strcpy(sclass, "thread");
+            else
+               strcpy(sclass, "threadreply");
+         }
       }
    }
 
@@ -14777,7 +14792,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 void display_reply(LOGBOOK * lbs, int message_id, int printable,
                    int expand, int n_line, int n_attr_disp,
                    char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], BOOL show_text,
-                   int level, int highlight, regex_t * re_buf)
+                   int level, int highlight, regex_t * re_buf, int highlight_mid)
 {
    char *date, *text, *in_reply_to, *reply_to, *encoding, *locked_by, *attachment, *attrib, *p;
    int status, size;
@@ -14815,13 +14830,14 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable,
    display_line(lbs, message_id, 0, "threaded", expand, level, printable,
                 n_line, FALSE, date, in_reply_to, reply_to, n_attr_disp,
                 disp_attr, NULL, (void *) attrib, lbs->n_attr, text, show_text,
-                NULL, encoding, 0, NULL, locked_by, highlight, &re_buf[0]);
+                NULL, encoding, 0, NULL, locked_by, highlight, &re_buf[0], 
+                highlight_mid);
 
    if (reply_to[0]) {
       p = reply_to;
       do {
          display_reply(lbs, atoi(p), printable, expand, n_line, n_attr_disp,
-                       disp_attr, show_text, level + 1, highlight, &re_buf[0]);
+                       disp_attr, show_text, level + 1, highlight, &re_buf[0], highlight_mid);
 
          while (*p && isdigit(*p))
             p++;
@@ -15946,10 +15962,10 @@ void highlight_searchtext(regex_t * re_buf, char *src, char *dst, int hidden)
 
 void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL default_page, char *info)
 {
-   int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line, flags;
-   int current_year, current_month, current_day, printable, n_logbook,
+   int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line, flags, 
+       current_year, current_month, current_day, printable, n_logbook,
        n_display, reverse, n_attr_disp, total_n_msg, n_msg, search_all, message_id,
-       n_page, i_start, i_stop, in_reply_to_id;
+       n_page, i_start, i_stop, in_reply_to_id, page_mid;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH],
        *list, *text, *text1, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
@@ -16090,11 +16106,17 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL defa
          reverse = atoi(str);
    }
 
+   /* get message ID from "list" command */
+   if (isparam("id"))
+      page_mid = atoi(getparam("id"));
+   else
+      page_mid = 0;
+
    /* default mode */
    strcpy(mode, "Summary");
    show_attachments = FALSE;
 
-   if (past_n || last_n || page_n || default_page) {
+   if (past_n || last_n || page_n || page_mid || default_page) {
       /* for page display, get mode from config file */
       if (getcfg(lbs->name, "Display Mode", str, sizeof(str)))
          strcpy(mode, str);
@@ -16638,20 +16660,32 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL defa
 
    qsort(msg_list, n_msg, sizeof(MSG_LIST), reverse ? msg_compare_reverse : msg_compare);
 
+   /*---- search page for specific message ----*/
+
+   if (getcfg(lbs->name, "Entries per page", str, sizeof(str)))
+      n_page = atoi(str);
+   else
+      n_page = 20;
+   if (isparam("npp"))
+      n_page = atoi(getparam("npp"));
+
+   if (page_mid) {
+      default_page = 0;
+
+      for (i = 0; i < n_msg; i++)
+         if (msg_list[i].lbs->el_index[msg_list[i].index].message_id == page_mid)
+            break;
+
+      if (i<n_msg)
+         page_n = i / n_page + 1;
+   }
+
    /*---- number of messages per page ----*/
 
    n_attr_disp = n_line = 0;
-   n_page = 1000000;
    i_start = 0;
    i_stop = n_msg - 1;
    if (page_n || default_page) {
-      if (getcfg(lbs->name, "Entries per page", str, sizeof(str)))
-         n_page = atoi(str);
-      else
-         n_page = 20;
-      if (isparam("npp"))
-         n_page = atoi(getparam("npp"));
-
       if (default_page)
          page_n = reverse ? 1 : (n_msg - 1) / n_page + 1;
 
@@ -17393,16 +17427,6 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL defa
          /*---- add highlighting for searched subtext ----*/
 
          if (isparam("subtext")) {
-            /*
-               strcpy(str, getparam("subtext"));
-               for (i = 0; i < (int) strlen(str); i++)
-               str[i] = toupper(str[i]);
-
-               for (i = 0; i < (int) strlen(text); i++)
-               text1[i] = toupper(text[i]);
-               text1[i] = 0;
-             */
-
             highlight_searchtext(re_buf, text, text1, strieq(encoding, "plain") ||
                                  strieq(encoding, "ELCode") || !strieq(mode, "Full"));
             strlcpy(text, text1, TEXT_SIZE);
@@ -17424,14 +17448,14 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL defa
                       show_attachments, date, in_reply_to, reply_to,
                       n_attr_disp, disp_attr, disp_attr_link, attrib, lbs->n_attr, text, show_text,
                       attachment, encoding, isparam("select") ? atoi(getparam("select")) : 0, 
-                      &n_display, locked_by, 0, re_buf);
+                      &n_display, locked_by, 0, re_buf, page_mid);
 
          if (threaded) {
             if (reply_to[0] && expand > 0) {
                p = reply_to;
                do {
                   display_reply(msg_list[index].lbs, atoi(p), printable, expand, n_line,
-                                n_attr_disp, disp_attr, show_text, 1, 0, re_buf);
+                                n_attr_disp, disp_attr, show_text, 1, 0, re_buf, page_mid);
 
                   while (*p && isdigit(*p))
                      p++;
@@ -17484,7 +17508,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL defa
 
 /*------------------------------------------------------------------*/
 
-void show_elog_thread(LOGBOOK * lbs, int message_id)
+void show_elog_thread(LOGBOOK * lbs, int message_id, int highlight_mid)
 {
    int i, size, status, in_reply_to_id, head_id, n_display, n_attr_disp;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], *text, in_reply_to[80],
@@ -17538,12 +17562,12 @@ void show_elog_thread(LOGBOOK * lbs, int message_id)
                 0, "Threaded", 1, 0, FALSE, 0,
                 FALSE, date, in_reply_to, reply_to,
                 n_attr_disp, disp_attr, NULL, attrib, lbs->n_attr, text, FALSE,
-                attachment, encoding, 0, &n_display, locked_by, message_id, NULL);
+                attachment, encoding, 0, &n_display, locked_by, message_id, NULL, highlight_mid);
 
    if (reply_to[0]) {
       p = reply_to;
       do {
-         display_reply(lbs, atoi(p), FALSE, 1, 0, n_attr_disp, disp_attr, FALSE, 1, message_id, NULL);
+         display_reply(lbs, atoi(p), FALSE, 1, 0, n_attr_disp, disp_attr, FALSE, 1, message_id, NULL, highlight_mid);
 
          while (*p && isdigit(*p))
             p++;
@@ -19472,17 +19496,15 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             strcpy(str, loc(menu_item[i]));
             url_encode(str, sizeof(str));
 
-            if (i < n - 1) {
-               if (strieq(menu_item[i], "list"))
-                  rsprintf("&nbsp;<a href=\".\">%s</a>&nbsp;|\n", loc(menu_item[i]));
-               else
-                  rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;|\n", message_id, str, loc(menu_item[i]));
-            } else {
-               if (strieq(menu_item[i], "list"))
-                  rsprintf("&nbsp;<a href=\".\">%s</a>&nbsp;\n", loc(menu_item[i]));
-               else
-                  rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;\n", message_id, str, loc(menu_item[i]));
-            }
+            if (strieq(menu_item[i], "list")) 
+               rsprintf("&nbsp;<a href=\".?id=%d\">%s</a>&nbsp;\n", message_id, loc(menu_item[i]));
+            else 
+               rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;\n", message_id, str, loc(menu_item[i]));
+
+            if (i < n - 1)
+               rsprintf("|\n");
+            else
+               rsprintf("\n");
          }
       }
 
@@ -19565,7 +19587,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    /*---- message ----*/
 
    if (reply_tag[0] || orig_tag[0])
-      show_elog_thread(lbs, message_id);
+      show_elog_thread(lbs, message_id, 0);
 
    if (message_error == EL_EMPTY)
       rsprintf("<tr><td class=\"errormsg\" colspan=2>%s</td></tr>\n", loc("Logbook is empty"));

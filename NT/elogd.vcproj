@@ -175,6 +175,12 @@
 			</File>
 			<File
 				RelativePath="..\src\regex.c">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						WarningLevel="0"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\mxml\strlcpy.c">

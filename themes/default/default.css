@@ -282,6 +282,24 @@ td {
   text-align:center;
 }
 
+.list1h {
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  background-color:#DDEEBB;
+  text-align:center;
+  font-weight:bold;
+}
+
+.list2h {
+  border:1px solid #808040;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  background-color:#FFFFB0;
+  text-align:center;
+  font-weight:bold;
+}
+
 /* attachment line */
 
 .attachment {
@@ -307,6 +325,24 @@ td {
   border-left:1px solid white;
   background-color:#FFFFB0;
   text-align:left;
+}
+
+.threadh {
+  border:1px solid #308000;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  background-color:#DDEEBB;
+  text-align:left;
+  font-weight:bold
+}
+
+.threadreplyh {
+  border:1px solid #808040;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  background-color:#FFFFB0;
+  text-align:left;
+  font-weight:bold
 }
 
 /* attribute names and values on single message page */
