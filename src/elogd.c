@@ -15081,6 +15081,8 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          strcat(menu_str, ", ");
       }
 
+      strcat(menu_str, "HelpELCode, ");
+
       if (is_admin_user(lbs->name, getparam("unm"))) {
 
          if (getcfg(lbs->name, "Mirror server", str, sizeof(str)))
