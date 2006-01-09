@@ -9128,12 +9128,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("onchange=\"elcode(document.form1.Text,'FONT',this.options[this.selectedIndex].value);");
       rsprintf("this.selectedIndex=0;\">\n");
       rsprintf("<option value=\"0\">%s</option>\n", loc("FONT"));
-      rsprintf("<option value=\"arial\">Arial</option>\n");
-      rsprintf("<option value=\"comic sans ms\">Comic Sans MS</option>\n");
-      rsprintf("<option value=\"courier\">Courier New</option>\n");
-      rsprintf("<option value=\"tahoma\">Tahoma</option>\n");
-      rsprintf("<option value=\"times new roman\">Times New Roman</option>\n");
-      rsprintf("<option value=\"verdana\">Verdana</option>\n");
+
+      if (!getcfg(lbs->name, "Fonts", str, sizeof(str)))
+         strcpy(str, "Arial, Comic Sans MS, Courier New, Tahoma, Times New Roman, Verdana");
+
+      n = strbreak(str, list, MAX_N_ATTR, ",");
+      for (i=0 ; i<n ; i++)
+         rsprintf("<option value=\"%s\">%s</option>\n", list[i], list[i]);
+
       rsprintf("</select>\n");
 
       rsprintf(" <select name=\"size\" ");
