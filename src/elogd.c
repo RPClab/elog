@@ -14204,9 +14204,12 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          else
             strcpy(sclass, "list2");
       }
-   } else if (strieq(mode, "Full"))
-      strcpy(sclass, "list1");
-   else if (strieq(mode, "Threaded")) {
+   } else if (strieq(mode, "Full")) {
+      if (highlight_mid == message_id)
+         strcpy(sclass, "list1h");
+      else
+         strcpy(sclass, "list1");
+   } else if (strieq(mode, "Threaded")) {
       if (highlight) {
          if (highlight == message_id)
             strcpy(sclass, "thread");
