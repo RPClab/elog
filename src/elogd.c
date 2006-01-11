@@ -14783,9 +14783,6 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             }
          }
       }
-
-      if (n_attachments)
-         rsprintf("</td></tr>\n");
    }
 
    xfree(slist);
