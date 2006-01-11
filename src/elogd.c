@@ -16362,8 +16362,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL defa
       }
 
       /* check if sort by attribute */
-      if (isparam("sort") && (strieq(getparam("sort"), attr_list[i])
-          || strieq(getparam("rsort"), attr_list[i])))
+      if ((isparam("sort") && strieq(getparam("sort"), attr_list[i])) ||
+          (isparam("rsort") && strieq(getparam("rsort"), attr_list[i])))
          break;
    }
 
