@@ -15188,7 +15188,7 @@ void build_ref(char *ref, int size, char *mode, char *expand, char *attach, char
 {
    char str[1000];
 
-   if (isparam("cmdline") && strchr(getparam("cmdline"), '?'))
+   if (strchr(getparam("cmdline"), '?'))
       strlcat(ref, strchr(getparam("cmdline"), '?'), size);
 
    /* eliminate old search */
