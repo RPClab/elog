@@ -7037,8 +7037,8 @@ void show_bottom_text(LOGBOOK * lbs)
    } else
       /* add little logo */
       rsprintf
-          ("<center><a class=\"bottomlink\" title=\"%s\" href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></center>",
-           loc("Goto ELOG home page"), VERSION);
+          ("<center><a class=\"bottomlink\" title=\"%s\" href=\"http://midas.psi.ch/elog/\">ELOG V%s-%d</a></center>",
+           loc("Goto ELOG home page"), VERSION, atoi(svn_revision+13));
 }
 
 /*------------------------------------------------------------------*/
