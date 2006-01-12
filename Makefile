@@ -99,6 +99,9 @@ loc:
 	locext src\elogd.c resources\eloglang.zh_CN-GB2312
 	locext src\elogd.c resources\eloglang.zh_CN-UTF8
 
+update: $(EXECS)
+	@$(INSTALL) -v -m 0755 -o ${BINOWNER} -g ${BINGROUP} elogd $(SDESTDIR)
+
 install: $(EXECS)
 	@$(INSTALL) -m 0755 -d $(DESTDIR) $(SDESTDIR) $(MANDIR)/man1/ $(MANDIR)/man8/
 	@$(INSTALL) -m 0755 -d $(ELOGDIR)/scripts/ $(ELOGDIR)/resources/ $(ELOGDIR)/themes/default/icons 
