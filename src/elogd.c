@@ -2172,12 +2172,16 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    if (!check_smtp_error(str, 221, error, error_size))
       goto smtp_error;
 
+   closesocket(s);
+   xfree(str);
+   return 1;
+
  smtp_error:
 
    closesocket(s);
    xfree(str);
 
-   return 1;
+   return -1;
 }
 
 /*-------------------------------------------------------------------*/
@@ -10633,7 +10637,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 {
    char file_name[256], str[256], *pl, new_pwd[80], new_pwd2[80], smtp_host[256],
        email_addr[256], mail_from[256], mail_from_name[256], subject[256], mail_text[2000];
-   char admin_user[80], enc_pwd[80], url[256];
+   char admin_user[80], enc_pwd[80], url[256], error[2000];
    int i, self_register;
    PMXML_NODE node, subnode;
 
@@ -10673,6 +10677,13 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
             show_error(str);
             return 0;
          }
+      }
+
+      /* check for valid email address */
+      strlcpy(str, getparam("new_user_email"), sizeof(str));
+      if (strchr(str, '@') == NULL || strchr(str, '.') == NULL) {
+         show_error(loc("Please specify a valid email address"));
+         return 0;
       }
    }
 
@@ -10796,7 +10807,13 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
             sprintf(url + strlen(url), "?cmd=Login&unm=%s", getparam("new_user_name"));
             sprintf(mail_text + strlen(mail_text), "%s %s\r\n", loc("You can access it at"), url);
 
-            sendmail(lbs, smtp_host, mail_from, getparam("new_user_email"), mail_text, NULL, 0);
+            if (sendmail(lbs, smtp_host, mail_from, getparam("new_user_email"), mail_text, error, sizeof(error)) == -1) {
+               sprintf(str, loc("Cannot send email notification to \"%s\""), getparam("new_user_email"));
+               strlcat(str, " : ", sizeof(str));
+               strlcat(str, error, sizeof(str));
+               show_error(str);
+               return 0;
+            }
          }
       } else {
          if (getcfg(lbs->name, "Admin user", admin_user, sizeof(admin_user))) {
@@ -10880,7 +10897,13 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
                               loc("Logbook"), url, getparam("new_user_name"), pl);
                   }
 
-                  sendmail(lbs, smtp_host, mail_from, email_addr, mail_text, NULL, 0);
+                  if (sendmail(lbs, smtp_host, mail_from, email_addr, mail_text, error, sizeof(error)) == -1) {
+                     sprintf(str, loc("Cannot send email notification to \"%s\""), getparam("new_user_email"));
+                     strlcat(str, " : ", sizeof(str));
+                     strlcat(str, error, sizeof(str));
+                     show_error(str);
+                     return 0;
+                  };
                }
 
                pl = strtok(NULL, " ,");
@@ -20538,8 +20561,11 @@ int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name,
          strlcpy(full_name, mxml_get_value(node), 256);
       if ((node = mxml_find_node(user_node, "email")) != NULL && email && mxml_get_value(node))
          strlcpy(email, mxml_get_value(node), 256);
-      if ((node = mxml_find_node(user_node, "last_logout")) != NULL && last_logout && mxml_get_value(node))
+      if ((node = mxml_find_node(user_node, "last_logout")) != NULL && last_logout && mxml_get_value(node)) {
          *last_logout = date_to_ltime(mxml_get_value(node));
+         if (*last_logout == -1)
+            *last_logout = 0;
+      }
 
       if ((node = mxml_find_node(user_node, "email_notify")) != NULL && email_notify) {
          if (mxml_get_number_of_children(node)) {
