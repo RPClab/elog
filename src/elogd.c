@@ -15183,7 +15183,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 
 void build_ref(char *ref, int size, char *mode, char *expand, char *attach, char *new_entries)
 {
-   char str[1000];
+   char str[1000], *p;
 
    if (strchr(getparam("cmdline"), '?'))
       strlcat(ref, strchr(getparam("cmdline"), '?'), size);
@@ -15191,6 +15191,16 @@ void build_ref(char *ref, int size, char *mode, char *expand, char *attach, char
    /* eliminate old search */
    if (strstr(ref, "cmd=Search&"))
       strcpy(strstr(ref, "cmd=Search&"), strstr(ref, "cmd=Search&") + 11);
+
+   /* eliminate id=xxx */
+   if (strstr(ref, "id=")) {
+      p = strstr(ref, "id=")+3;
+      while (*p && isdigit(*p))
+         p++;
+      strcpy(strstr(ref, "id="), p);
+      if (strlen(ref) > 0 && ref[strlen(ref)-1] == '?')
+         ref[strlen(ref)-1] = 0;
+   }
 
    /* eliminate old mode if new one is present */
    if (mode[0])
@@ -15969,7 +15979,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL defa
    int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line, flags, 
        current_year, current_month, current_day, printable, n_logbook,
        n_display, reverse, n_attr_disp, total_n_msg, n_msg, search_all, message_id,
-       n_page, i_start, i_stop, in_reply_to_id, page_mid;
+       n_page, i_start, i_stop, in_reply_to_id, page_mid, page_mid_head;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH],
        *list, *text, *text1, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
@@ -16115,6 +16125,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL defa
       page_mid = atoi(getparam("id"));
    else
       page_mid = 0;
+   page_mid_head = 0;
 
    /* default mode */
    strcpy(mode, "Summary");
@@ -16591,6 +16602,10 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL defa
             if (msg_list[j].lbs == msg_list[index].lbs && msg_list[j].index == i)
                break;
 
+         if (page_mid &&
+             msg_list[index].lbs->el_index[msg_list[index].index].message_id == page_mid)
+            page_mid_head = message_id;
+
          if (j < index) {
             /* set date from current message, if later */
             if (strcmp(msg_list[j].string, msg_list[index].string) < 0)
@@ -16677,7 +16692,8 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL defa
       default_page = 0;
 
       for (i = 0; i < n_msg; i++)
-         if (msg_list[i].lbs->el_index[msg_list[i].index].message_id == page_mid)
+         if (msg_list[i].lbs->el_index[msg_list[i].index].message_id == page_mid ||
+             msg_list[i].lbs->el_index[msg_list[i].index].message_id == page_mid_head)
             break;
 
       if (i<n_msg)
