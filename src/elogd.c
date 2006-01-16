@@ -6976,7 +6976,7 @@ void show_top_text(LOGBOOK * lbs)
    char str[NAME_LENGTH];
    int size;
 
-   if (getcfg(lbs->name, "top text", str, sizeof(str))) {
+   if (getcfg(lbs->name, "top text", str, sizeof(str)) && str[0]) {
       FILE *f;
       char file_name[256], *buf;
 
