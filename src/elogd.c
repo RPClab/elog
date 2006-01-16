@@ -7016,28 +7016,30 @@ void show_bottom_text(LOGBOOK * lbs)
       FILE *f;
       char file_name[256], *buf;
 
-      /* check if file starts with an absolute directory */
-      if (str[0] == DIR_SEPARATOR || str[1] == ':')
-         strcpy(file_name, str);
-      else {
-         strlcpy(file_name, resource_dir, sizeof(file_name));
-         strlcat(file_name, str, sizeof(file_name));
+      if (str[0]) {
+         /* check if file starts with an absolute directory */
+         if (str[0] == DIR_SEPARATOR || str[1] == ':')
+            strcpy(file_name, str);
+         else {
+            strlcpy(file_name, resource_dir, sizeof(file_name));
+            strlcat(file_name, str, sizeof(file_name));
+         }
+
+         f = fopen(file_name, "rb");
+         if (f != NULL) {
+            fseek(f, 0, SEEK_END);
+            size = TELL(fileno(f));
+            fseek(f, 0, SEEK_SET);
+
+            buf = xmalloc(size + 1);
+            fread(buf, 1, size, f);
+            buf[size] = 0;
+            fclose(f);
+
+            rsputs(buf);
+         } else
+            rsputs(str);
       }
-
-      f = fopen(file_name, "rb");
-      if (f != NULL) {
-         fseek(f, 0, SEEK_END);
-         size = TELL(fileno(f));
-         fseek(f, 0, SEEK_SET);
-
-         buf = xmalloc(size + 1);
-         fread(buf, 1, size, f);
-         buf[size] = 0;
-         fclose(f);
-
-         rsputs(buf);
-      } else
-         rsputs(str);
    } else
       /* add little logo */
       rsprintf
