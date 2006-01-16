@@ -6201,7 +6201,7 @@ void redirect(LOGBOOK * lbs, char *rel_path)
 {
    /* redirect */
    rsprintf("HTTP/1.1 302 Found\r\n");
-   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+   rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision+13));
    if (use_keepalive) {
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
@@ -6406,7 +6406,7 @@ void show_http_header(LOGBOOK * lbs, BOOL expires, char *cookie)
    char str[256];
 
    rsprintf("HTTP/1.1 200 Document follows\r\n");
-   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+   rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision+13));
 
    if (getcfg("global", "charset", str, sizeof(str)))
       rsprintf("Content-Type: text/html;charset=%s\r\n", str);
@@ -6446,7 +6446,7 @@ void show_plain_header(int size, char *file_name)
 {
    /* header */
    rsprintf("HTTP/1.1 200 Document follows\r\n");
-   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+   rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision+13));
    rsprintf("Accept-Ranges: bytes\r\n");
 
    if (use_keepalive) {
@@ -7087,7 +7087,7 @@ void set_login_cookies(LOGBOOK * lbs, char *user, char *enc_pwd)
    int i;
 
    rsprintf("HTTP/1.1 302 Found\r\n");
-   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+   rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision+13));
    if (use_keepalive) {
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
@@ -7139,7 +7139,7 @@ void remove_all_login_cookies(LOGBOOK * lbs)
    int i;
 
    rsprintf("HTTP/1.1 302 Found\r\n");
-   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+   rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision+13));
    if (use_keepalive) {
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
@@ -7187,7 +7187,7 @@ void send_file_direct(char *file_name)
       lseek(fh, 0, SEEK_SET);
 
       rsprintf("HTTP/1.1 200 Document follows\r\n");
-      rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+      rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision+13));
       rsprintf("Accept-Ranges: bytes\r\n");
 
       /* set expiration time to one day */
@@ -12225,7 +12225,7 @@ int show_md5_page(LOGBOOK * lbs)
 
    /* header */
    rsprintf("HTTP/1.1 200 Document follows\r\n");
-   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+   rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision+13));
    rsprintf("Accept-Ranges: bytes\r\n");
    rsprintf("Connection: close\r\n");
    rsprintf("Content-Type: text/plain;charset=%s\r\n", DEFAULT_HTTP_CHARSET);
@@ -15805,7 +15805,7 @@ void show_rss_feed(LOGBOOK * lbs)
    struct tm *ts;
 
    rsprintf("HTTP/1.1 200 Document follows\r\n");
-   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+   rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision+13));
 
    if (!getcfg("global", "charset", charset, sizeof(charset)))
       strcpy(charset, DEFAULT_HTTP_CHARSET);
@@ -21821,7 +21821,7 @@ void interprete(char *lbook, char *path)
       if (!check_password(lbs, "Write password", enc_pwd, isparam("redir") ? getparam("redir") : ""))
          return;
       rsprintf("HTTP/1.1 302 Found\r\n");
-      rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+      rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision+13));
       if (use_keepalive) {
          rsprintf("Connection: Keep-Alive\r\n");
          rsprintf("Keep-Alive: timeout=60, max=10\r\n");
@@ -21845,7 +21845,7 @@ void interprete(char *lbook, char *path)
       if (!check_password(lbs, "Admin password", enc_pwd, isparam("redir") ? getparam("redir") : ""))
          return;
       rsprintf("HTTP/1.1 302 Found\r\n");
-      rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+      rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision+13));
       if (use_keepalive) {
          rsprintf("Connection: Keep-Alive\r\n");
          rsprintf("Keep-Alive: timeout=60, max=10\r\n");
@@ -23325,7 +23325,7 @@ void server_loop(void)
                } else if (strstr(net_buffer, "HEAD") != NULL) {
                   /* just return header */
                   rsprintf("HTTP/1.1 200 OK\r\n");
-                  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+                  rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision+13));
                   rsprintf("Connection: close\r\n");
                   rsprintf("Content-Type: text/html\r\n\r\n");
                   keep_alive = FALSE;
@@ -23764,7 +23764,7 @@ void server_loop(void)
             if (!authorized) {
                /* return request for authorization */
                rsprintf("HTTP/1.1 401 Authorization Required\r\n");
-               rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+               rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision+13));
                rsprintf("WWW-Authenticate: Basic realm=\"%s\"\r\n", logbook);
                rsprintf("Connection: close\r\n");
                rsprintf("Content-Type: text/html\r\n\r\n");
