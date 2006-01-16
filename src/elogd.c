@@ -8117,7 +8117,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             strsubst_list(preset, sizeof(preset), slist, svalue, i);
 
             /* check for index substitution */
-            if (!bedit && strchr(preset, '%')) {
+            if (!bedit && (strchr(preset, '%') || strchr(preset, '#'))) {
                /* get index */
                get_auto_index(lbs, index, preset, str, sizeof(str));
                strcpy(preset, str);
@@ -8139,7 +8139,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             strsubst_list(preset, sizeof(preset), slist, svalue, i);
 
             /* check for index substitution */
-            if (!bedit && strchr(preset, '%')) {
+            if (!bedit && (strchr(preset, '%') || strchr(preset, '#'))) {
                /* get index */
                get_auto_index(lbs, index, preset, str, sizeof(str));
                strcpy(preset, str);
@@ -8183,7 +8183,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             strsubst_list(preset, sizeof(preset), slist, svalue, i);
 
             /* check for index substitution */
-            if (!bedit && strchr(preset, '%')) {
+            if (!bedit && (strchr(preset, '%') || strchr(preset, '#'))) {
                /* get index */
                get_auto_index(lbs, index, preset, str, sizeof(str));
                strcpy(preset, str);
@@ -8205,7 +8205,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             strsubst_list(preset, sizeof(preset), slist, svalue, i);
 
             /* check for index substitution */
-            if (!bedit && strchr(preset, '%')) {
+            if (!bedit && (strchr(preset, '%') || strchr(preset, '#'))) {
                /* get index */
                get_auto_index(lbs, index, preset, str, sizeof(str));
                strcpy(preset, str);
