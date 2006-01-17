@@ -23788,9 +23788,9 @@ void server_loop(void)
                } else if (strncmp(net_buffer, "GET", 3) == 0) {
                   /* extract path and commands */
                   *strchr(net_buffer, '\r') = 0;
-                  if (!strstr(net_buffer, "HTTP"))
+                  if (!strstr(net_buffer, "HTTP/1"))
                      goto finished;
-                  *(strstr(net_buffer, "HTTP") - 1) = 0;
+                  *(strstr(net_buffer, "HTTP/1") - 1) = 0;
                   /* strip logbook from path */
                   p = net_buffer + 5;
                   for (i = 0; *p && *p != '/' && *p != '?'; p++);
