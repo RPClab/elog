@@ -8910,11 +8910,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                } else if (attr_flags[index] & AF_MULTI) {
 
                   /* display multiple check boxes */
-                  rsprintf("<td%s nowrap class=\"attribvalue\">\n", title);
+                  rsprintf("<td%s class=\"attribvalue\">\n", title);
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      sprintf(str, "%s_%d", ua, i);
 
+                     rsprintf("<span style=\"white-space:nowrap;\">\n");
                      if (strstr(attrib[index], attr_options[index][i]))
                         rsprintf
                             ("<input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
@@ -8925,6 +8926,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                              str, str, attr_options[index][i]);
 
                      rsprintf("<label for=\"%s\">%s</label>\n", str, attr_options[index][i]);
+                     rsprintf("</span>\n");
 
                      if (format_flags[index] & AFF_MULTI_LINE)
                         rsprintf("<br>");
@@ -8942,30 +8944,31 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                } else if (attr_flags[index] & AF_RADIO) {
                   /* display radio buttons */
                   rsprintf("<td%s class=\"attribvalue\">\n", title);
-                  rsprintf("<table cellpadding=0 cellspacing=0><tr>\n");
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      strlcpy(str, attr_options[index][i], sizeof(str));
                      if (strchr(str, '{'))
                         *strchr(str, '{') = 0;
 
+                     rsprintf("<span style=\"white-space:nowrap;\">\n");
+
                      if (strstr(attrib[index], attr_options[index][i])
                          || strieq(str, attrib[index]))
                         rsprintf
-                            ("<td nowrap><input type=radio id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
+                            ("<input type=radio id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
                              str, ua, str);
                      else
                         rsprintf
-                            ("<td nowrap><input type=radio id=\"%s\" name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
+                            ("<input type=radio id=\"%s\" name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
                              str, ua, str);
 
                      rsprintf("<label for=\"%s\">%s</label>\n", str, str);
 
-                     rsprintf("</td>\n");
+                     rsprintf("</span>\n");
+
                      if (format_flags[index] & AFF_MULTI_LINE)
                         rsprintf("<br>");
                   }
-                  rsprintf("</tr></table>\n");
 
                   if (attr_flags[index] & AF_EXTENDABLE) {
                      sprintf(str, loc("Add %s"), attr_list[index]);
@@ -8978,17 +8981,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                } else if (attr_flags[index] & AF_ICON) {
                   /* display icons */
-                  rsprintf("<td%s nowrap class=\"attribvalue\">\n", title);
+                  rsprintf("<td%s class=\"attribvalue\">\n", title);
                   rsprintf("<table cellpadding=0 cellspacing=0><tr>\n");
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      if (strstr(attrib[index], attr_options[index][i]))
                         rsprintf
-                            ("<td nowrap><input type=radio checked name=\"%s\" value=\"%s\" onChange=\"mod();\">",
+                            ("<td><input type=radio checked name=\"%s\" value=\"%s\" onChange=\"mod();\">",
                              ua, attr_options[index][i]);
                      else
                         rsprintf
-                            ("<td nowrap><input type=radio name=\"%s\" value=\"%s\" onChange=\"mod();\">",
+                            ("<td><input type=radio name=\"%s\" value=\"%s\" onChange=\"mod();\">",
                              ua, attr_options[index][i]);
 
                      sprintf(str, "Icon comment %s", attr_options[index][i]);
