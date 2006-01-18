@@ -131,8 +131,6 @@ static FILE *current_output_stream = NULL;      /* Currently used output stream 
 
 #define SYSLOG_PRIORITY LOG_NOTICE      /* Default priority for syslog facility */
 
-typedef int INT;
-
 #define TELL(fh) lseek(fh, 0, SEEK_CUR)
 
 #ifdef OS_WINNT
@@ -1108,7 +1106,7 @@ void strsubst_list(char *string, int size, char name[][NAME_LENGTH], char value[
       if (strncmp(str, "SHELL(", 6) == 0) {
          ps += 7;
          if (strrchr(p, '\"')) {
-            ps += (int) strrchr(p, '\"') - (int) p - 5;
+            ps += strrchr(p, '\"') - p - 5;
             if (strchr(ps, ')'))
                ps = strchr(ps, ')')+1;
          } else {
@@ -1127,7 +1125,7 @@ void strsubst_list(char *string, int size, char name[][NAME_LENGTH], char value[
          }
          subst_shell(str, result, sizeof(result));
 
-         strlcpy(pt, result, sizeof(tmp) - ((int) pt - (int) tmp));
+         strlcpy(pt, result, sizeof(tmp) - (pt - tmp));
          pt += strlen(pt);
 
       } else {
@@ -1143,7 +1141,7 @@ void strsubst_list(char *string, int size, char name[][NAME_LENGTH], char value[
 
          /* copy value */
          if (i < n) {
-            strlcpy(pt, value[i], sizeof(tmp) - ((int) pt - (int) tmp));
+            strlcpy(pt, value[i], sizeof(tmp) - (pt - tmp));
             pt += strlen(pt);
             ps = p + strlen(uattr);
          } else {
@@ -1154,7 +1152,7 @@ void strsubst_list(char *string, int size, char name[][NAME_LENGTH], char value[
    }
 
    /* copy remainder */
-   strlcpy(pt, ps, sizeof(tmp) - ((int) pt - (int) tmp));
+   strlcpy(pt, ps, sizeof(tmp) - (pt - tmp));
 
    /* return result */
    strlcpy(string, tmp, size);
@@ -1179,7 +1177,7 @@ void strsubst(char *string, int size, char *pattern, char *subst)
       } else {
          tail = xmalloc(strlen(p) - strlen(pattern) + 1);
          strcpy(tail, p + strlen(pattern));
-         s = size - ((int) p - (int) string);
+         s = size - (p - string);
          strlcpy(p, subst, s);
          strlcat(p, tail, s);
          xfree(tail);
@@ -1231,11 +1229,11 @@ Encode the given string in-place by adding %XX escapes
 \********************************************************************/
 {
    unsigned char *pd, *p;
-   char str[NAME_LENGTH];
+   unsigned char str[NAME_LENGTH];
 
-   pd = (unsigned char *) str;
+   pd = str;
    p = (unsigned char *) ps;
-   while (*p && (int) pd < (int) str + 250) {
+   while (*p && pd < str + 250) {
       if (strchr("%&=#?+", *p) || *p > 127) {
          sprintf((char *) pd, "%%%02X", *p);
          pd += 3;
@@ -1257,11 +1255,11 @@ Do the same including '/' characters
 \********************************************************************/
 {
    unsigned char *pd, *p;
-   char str[NAME_LENGTH];
+   unsigned char str[NAME_LENGTH];
 
-   pd = (unsigned char *) str;
+   pd = str;
    p = (unsigned char *) ps;
-   while (*p && (int) pd < (int) str + 250) {
+   while (*p && pd < str + 250) {
       if (strchr("%&=#?+/", *p) || *p > 127) {
          sprintf((char *) pd, "%%%02X", *p);
          pd += 3;
@@ -1285,11 +1283,11 @@ Encode the given string in-place by adding \\ escapes for `$"\
 \********************************************************************/
 {
    unsigned char *pd, *p;
-   char str[NAME_LENGTH];
+   unsigned char str[NAME_LENGTH];
 
-   pd = (unsigned char *) str;
+   pd = str;
    p = (unsigned char *) ps;
-   while (*p && (int) pd < (int) str + 250) {
+   while (*p && pd < str + 250) {
       if (strchr("'$\"\\", *p)) {
          *pd++ = '\\';
          *pd++ = *p++;
@@ -2135,7 +2133,7 @@ INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    p = text;
    str[0] = 0;
    while (strstr(p, "\r\n.\r\n")) {
-      i = (int) strstr(p, "\r\n.\r\n") - (int) p + 1;
+      i = strstr(p, "\r\n.\r\n") - p + 1;
       strlcat(str, p, i);
       p += i + 4;
       strlcat(str, "\r\n..\r\n", strsize);
@@ -2632,7 +2630,7 @@ int parse_config_file(char *file_name)
       if (*p == '[') {
          p++;
          pstr = str;
-         while (*p && *p != ']' && *p != '\n' && *p != '\r' && (int) pstr - (int) str < 10000)
+         while (*p && *p != ']' && *p != '\n' && *p != '\r' && pstr - str < 10000)
             *pstr++ = *p++;
          *pstr = 0;
 
@@ -2653,7 +2651,7 @@ int parse_config_file(char *file_name)
             p++;
          while (p && *p && *p != '[') {
             pstr = str;
-            while (*p && *p != '=' && *p != '\n' && *p != '\r' && (int) pstr - (int) str < 10000)
+            while (*p && *p != '=' && *p != '\n' && *p != '\r' && pstr - str < 10000)
                *pstr++ = *p++;
             *pstr-- = 0;
             while (pstr > str && (*pstr == ' ' || *pstr == '\t' || *pstr == '='))
@@ -2679,7 +2677,7 @@ int parse_config_file(char *file_name)
                while (*p == ' ' || *p == '\t')
                   p++;
                pstr = str;
-               while (*p && *p != '\n' && *p != '\r' && (int) pstr - (int) str < 10000)
+               while (*p && *p != '\n' && *p != '\r' && pstr - str < 10000)
                   *pstr++ = *p++;
                *pstr-- = 0;
                while (*pstr == ' ' || *pstr == '\t')
@@ -3554,12 +3552,12 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
                lbs->el_index[*lbs->n_el_index].file_time = date_to_ltime(date);
 
                lbs->el_index[*lbs->n_el_index].message_id = atoi(p + 8);
-               lbs->el_index[*lbs->n_el_index].offset = (int) p - (int) buffer;
+               lbs->el_index[*lbs->n_el_index].offset = p - buffer;
                lbs->el_index[*lbs->n_el_index].in_reply_to = atoi(in_reply_to);
 
                pn = strstr(p + 8, "$@MID@$:");
                if (pn)
-                  len = (int) pn - (int) p;
+                  len = pn - p;
                else
                   len = strlen(p);
 
@@ -3988,7 +3986,7 @@ INT el_retrieve(LOGBOOK * lbs,
    if (p == NULL)
       size = strlen(message);
    else
-      size = (int) p - (int) message;
+      size = p - message;
 
    message[size] = 0;
 
@@ -4202,7 +4200,7 @@ INT el_retrieve_attachment(LOGBOOK * lbs, int message_id, int n, char name[MAX_P
    if (p == NULL)
       size = strlen(message);
    else
-      size = (int) p - (int) message;
+      size = p - message;
 
    message[size] = 0;
 
@@ -4325,7 +4323,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       if (p == NULL)
          size = strlen(message);
       else
-         size = (int) p - (int) message;
+         size = p - message;
 
       message[size] = 0;
 
@@ -4633,7 +4631,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
    if (p == NULL)
       size = strlen(message);
    else
-      size = (int) p - (int) message;
+      size = p - message;
 
    message[size] = 0;
 
@@ -5840,7 +5838,7 @@ int setparam(char *param, char *value)
    if (strieq(param, "text")) {
       if (strlen(value) >= TEXT_SIZE) {
          sprintf(str,
-                 "Error: Entry text too big (%d bytes). Please increase TEXT_SIZE and recompile elogd\n",
+                 "Error: Entry text too big (%lu bytes). Please increase TEXT_SIZE and recompile elogd\n",
                  strlen(value));
          show_error(str);
          return 0;
@@ -5853,7 +5851,7 @@ int setparam(char *param, char *value)
    if (strieq(param, "cmdline")) {
       if (strlen(value) >= CMD_SIZE) {
          sprintf(str,
-                 "Error: Command line too big (%d bytes). Please increase CMD_SIZE and recompile elogd\n",
+                 "Error: Command line too big (%lu bytes). Please increase CMD_SIZE and recompile elogd\n",
                  strlen(value));
          show_error(str);
          return 0;
@@ -5870,7 +5868,7 @@ int setparam(char *param, char *value)
 
    if (i < MAX_PARAM) {
       if (strlen(param) >= NAME_LENGTH) {
-         sprintf(str, "Error: Parameter name too big (%d bytes).\n", strlen(param));
+         sprintf(str, "Error: Parameter name too big (%lu bytes).\n", strlen(param));
          show_error(str);
          return 0;
       }
@@ -5879,7 +5877,7 @@ int setparam(char *param, char *value)
 
       if (strlen(value) >= NAME_LENGTH) {
          sprintf(str,
-                 "Error: Parameter value for parameter <b>%s</b> too big (%d bytes). Please increase NAME_LENGTH and recompile elogd\n",
+                 "Error: Parameter value for parameter <b>%s</b> too big (%lu bytes). Please increase NAME_LENGTH and recompile elogd\n",
                  param, strlen(value));
          show_error(str);
          return 0;
@@ -9232,8 +9230,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          if (pend == NULL)
             pend = p + strlen(p);
 
-         if ((int) pend - (int) p + 1 > width)
-            width = (int) pend - (int) p + 1;
+         if (pend - p + 1 > width)
+            width = pend - p + 1;
 
          if (*pend == 0)
             break;
@@ -10170,7 +10168,7 @@ void adjust_crlf(char *buffer, int bufsize)
 
       strlcpy(tmpbuf, p, bufsize);
       *(p++) = '\r';
-      strlcpy(p, tmpbuf, bufsize - ((int) p - (int) buffer));
+      strlcpy(p, tmpbuf, bufsize - (p - buffer));
       p++;
    }
 
@@ -10546,7 +10544,7 @@ int create_logbook(LOGBOOK * oldlbs, char *logbook, char *templ)
             p1++;
 
       if (p2)
-         templ_length = (int) p2 - (int) p1;
+         templ_length = p2 - p1;
       else
          templ_length = strlen(p1);
    }
@@ -11829,7 +11827,7 @@ int show_download_page(LOGBOOK * lbs, char *path)
          if (p == NULL)
             size = strlen(message);
          else
-            size = (int) p - (int) message;
+            size = p - message;
 
          message[size] = 0;
       }
@@ -12811,7 +12809,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
                return -1;
             }
             p += 4;
-            header_size = (int) p - (int) message;
+            header_size = p - message;
 
             el_submit_attachment(lbs, attachment[i], p, size - header_size, NULL);
             xfree(message);
@@ -14941,7 +14939,7 @@ void subst_param(char *str, int size, char *param, char *value)
       p1 = s - 1;
 
       for (p2 = p1 + strlen(param) + 1; *p2 && *p2 != '&'; p2++);
-      strlcpy(p1, p2, size - ((int) p1 - (int) str));
+      strlcpy(p1, p2, size - (p1 - str));
 
       if (!strchr(str, '?') && strchr(str, '&'))
          *strchr(str, '&') = '?';
@@ -14963,17 +14961,17 @@ void subst_param(char *str, int size, char *param, char *value)
 
    p1 += strlen(param) + 1;
    for (p2 = p1; *p2 && *p2 != '&'; p2++);
-   len = (int) p2 - (int) p1;
+   len = p2 - p1;
    if (len > (int) strlen(value)) {
       /* new value is shorter than old one */
-      strlcpy(p1, value, size - ((int) p1 - (int) str));
-      strlcpy(p1 + strlen(value), p2, size - ((int) p1 + strlen(value) - (int) str));
+      strlcpy(p1, value, size - (p1 - str));
+      strlcpy(p1 + strlen(value), p2, size - (p1 + strlen(value) - str));
    } else {
       /* new value is longer than old one */
       s = xmalloc(size);
       strlcpy(s, p2, size);
-      strlcpy(p1, value, size - ((int) p1 - (int) str));
-      strlcat(p1, s, size - ((int) p1 + strlen(value) - (int) str));
+      strlcpy(p1, value, size - (p1 - str));
+      strlcat(p1, s, size - (p1 + strlen(value) - str));
       xfree(s);
    }
 
@@ -16032,7 +16030,7 @@ void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL defa
             pt1--;
          pt1++;
          strcpy(param, pt1);
-         param[(int) pt2 - (int) pt1] = 0;
+         param[pt2 - pt1] = 0;
          strcpy(pt1, pt2 + 2);
 
          /* remove param from lastcmd if present */
@@ -22715,7 +22713,7 @@ void decode_post(char *logbook, LOGBOOK * lbs, char *string, char *boundary, int
 
 
                /* check attachment size */
-               if (file_name[0] && (int) (p - string) == 0) {
+               if (file_name[0] && (p - string) == 0) {
 
                   /* check for URL */
                   if (stristr(file_name, "http://")) {
@@ -22734,7 +22732,7 @@ void decode_post(char *logbook, LOGBOOK * lbs, char *string, char *boundary, int
                         return;
                      }
                      pbody += 4;
-                     header_size = (int) pbody - (int) buffer;
+                     header_size = pbody - buffer;
 
                      /* check for file found */
                      if (strchr(buffer, ' ')) {
@@ -22982,7 +22980,7 @@ void server_loop(void)
 
    /* switch on reuse of port */
    flag = 1;
-   setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR, (char *) &flag, sizeof(INT));
+   setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR, (char *) &flag, sizeof(int));
    status = bind(lsock, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
    if (status < 0) {
       eprintf
@@ -23283,9 +23281,9 @@ void server_loop(void)
                      }
 
                      if (strstr(net_buffer, "\r\n\r\n"))
-                        header_length = (INT) strstr(net_buffer, "\r\n\r\n") - (INT) net_buffer + 4;
+                        header_length = strstr(net_buffer, "\r\n\r\n") - net_buffer + 4;
                      if (strstr(net_buffer, "\r\r\n\r\r\n"))
-                        header_length = (INT) strstr(net_buffer, "\r\r\n\r\r\n") - (INT) net_buffer + 6;
+                        header_length = strstr(net_buffer, "\r\r\n\r\r\n") - net_buffer + 6;
                      if (header_length)
                         net_buffer[header_length - 1] = 0;
 
