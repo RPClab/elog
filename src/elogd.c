@@ -16485,6 +16485,13 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   }
                }
 
+               /* search for parameter without '_' coming from quick filter */
+               if (isparam(attr_list[i])) {
+                  searched = TRUE;
+                  if (strstr(attrib[i], getparam(attr_list[i])))
+                     found = TRUE;
+               }
+
                if (searched && !found)
                   break;
 
@@ -16974,6 +16981,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                sprintf(str, "%s_%d", attr_list[i], j);
                if (isparam(str))
                   disp_filter = TRUE;
+               if (isparam(attr_list[i]))
+                  disp_filter = TRUE;
             }
          }
       }
@@ -17088,6 +17097,22 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                      else
                         strlcat(line, comment, sizeof(line));
                   }
+               }
+
+               if (isparam(attr_list[i])) {
+                  comment[0] = 0;
+                  if (attr_flags[i] & AF_ICON) {
+                     sprintf(str, "Icon comment %s", getparam(attr_list[i]));
+                     getcfg(lbs->name, str, comment, sizeof(comment));
+                  }
+
+                  if (line[0])
+                     strlcat(line, " | ", sizeof(line));
+
+                  if (comment[0] == 0)
+                     strlcat(line, getparam(attr_list[i]), sizeof(line));
+                  else
+                     strlcat(line, comment, sizeof(line));
                }
 
                if (line[0]) {
