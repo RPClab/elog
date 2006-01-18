@@ -17736,7 +17736,8 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH],
 {
    int i, j, k, flags, n_email_attr, attr_index[MAX_N_ATTR];
    char str[NAME_LENGTH + 100], str2[256], mail_from[256], mail_from_name[256],
-       format[256], list[MAX_N_ATTR][NAME_LENGTH], comment[256], charset[256];
+       format[256], list[MAX_N_ATTR][NAME_LENGTH], comment[256], charset[256],
+       heading[256], slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
    time_t ltime;
    struct tm *pts;
 
@@ -17759,13 +17760,16 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH],
    retrieve_email_from(lbs, mail_from, mail_from_name, attrib);
 
    if (flags & 1) {
-      if (getcfg(lbs->name, "Use Email heading", str, sizeof(str))) {
+      if (getcfg(lbs->name, "Use Email heading", heading, sizeof(heading))) {
          if (old_mail) {
-            if (!getcfg(lbs->name, "Use Email heading edit", str, sizeof(str)))
-               getcfg(lbs->name, "Use Email heading", str, sizeof(str));
+            if (!getcfg(lbs->name, "Use Email heading edit", heading, sizeof(heading)))
+               getcfg(lbs->name, "Use Email heading", heading, sizeof(heading));
          }
 
-         sprintf(mail_text + strlen(mail_text), str);
+         i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+         strsubst_list(heading, sizeof(heading), slist, svalue, i);
+
+         sprintf(mail_text + strlen(mail_text), heading);
 
       } else {
          if (old_mail)
@@ -17882,7 +17886,8 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
 {
    int i, j, k, flags, n_email_attr, attr_index[MAX_N_ATTR], attachments_present;
    char str[NAME_LENGTH + 100], str2[256], mail_from[256], mail_from_name[256], format[256],
-       list[MAX_N_ATTR][NAME_LENGTH], comment[256], charset[256], multipart_boundary_related[256];
+       list[MAX_N_ATTR][NAME_LENGTH], comment[256], charset[256], multipart_boundary_related[256],
+       heading[256], slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
    time_t ltime;
    struct tm *pts;
 
@@ -17923,13 +17928,16 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
 
    if (flags & 1) {
       strcpy(mail_text + strlen(mail_text), "<h3>\r\n");
-      if (getcfg(lbs->name, "Use Email heading", str, sizeof(str))) {
+      if (getcfg(lbs->name, "Use Email heading", heading, sizeof(heading))) {
          if (old_mail) {
-            if (!getcfg(lbs->name, "Use Email heading edit", str, sizeof(str)))
-               getcfg(lbs->name, "Use Email heading", str, sizeof(str));
+            if (!getcfg(lbs->name, "Use Email heading edit", heading, sizeof(heading)))
+               getcfg(lbs->name, "Use Email heading", heading, sizeof(heading));
          }
 
-         sprintf(mail_text + strlen(mail_text), str);
+         i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+         strsubst_list(heading, sizeof(heading), slist, svalue, i);
+
+         sprintf(mail_text + strlen(mail_text), heading);
 
       } else {
          if (old_mail)
