@@ -198,14 +198,14 @@ char _value[MAX_PARAM][NAME_LENGTH];
 char _mtext[TEXT_SIZE];
 char _cmdline[CMD_SIZE];
 char *_attachment_buffer;
-INT _attachment_size;
-INT _max_content_length = MAX_CONTENT_LENGTH;
+int _attachment_size;
+int _max_content_length = MAX_CONTENT_LENGTH;
 struct in_addr rem_addr;
 char rem_host[256];
-INT _sock;
+int _sock;
 BOOL verbose, use_keepalive, enable_execute = FALSE;
-INT _current_message_id;
-INT _logging_level;
+int _current_message_id;
+int _logging_level;
 
 char *mname[] = {
    "January",
@@ -405,7 +405,7 @@ void free_logbook_hierarchy(LBLIST root);
 void show_top_text(LOGBOOK * lbs);
 void show_bottom_text(LOGBOOK * lbs);
 int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n);
-void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL default_page, char *info);
+void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL default_page, char *info);
 int change_config_line(LOGBOOK * lbs, char *option, char *old_value, char *new_value);
 int read_password(char *pwd, int size);
 int getcfg(char *group, char *param, char *value, int vsize);
@@ -635,10 +635,10 @@ char *xstrdup(const char *string)
 
 /* Have vasprintf? (seems that only libc6 based Linux has this) */
 #ifdef __linux__
-#  define HAVE_VASPRINTF
+#  define HAVE_VASPRintF
 #endif
 
-#ifndef HAVE_VASPRINTF
+#ifndef HAVE_VASPRintF
 /* vasprintf implementation taken (and adapted) from GNU libiberty */
 
 static int int_vasprintf(char **result, const char *format, va_list args)
@@ -730,7 +730,7 @@ int vasprintf(char **result, const char *format, va_list args)
 {
    return int_vasprintf(result, format, args);
 }
-#endif                          /* ! HAVE_VASPRINTF */
+#endif                          /* ! HAVE_VASPRintF */
 
 /* Safe replacement for vasprintf (adapted code from Samba) */
 int xvasprintf(char **ptr, const char *format, va_list ap)
@@ -1778,9 +1778,9 @@ int setuser(char *str)
 
 /*-------------------------------------------------------------------*/
 
-INT recv_string(int sock, char *buffer, INT buffer_size, INT millisec)
+int recv_string(int sock, char *buffer, int buffer_size, int millisec)
 {
-   INT i, n;
+   int i, n;
    fd_set readfds;
    struct timeval timeout;
 
@@ -1943,7 +1943,7 @@ int check_smtp_error(char *str, int expected, char *error, int error_size)
 
 /*-------------------------------------------------------------------*/
 
-INT sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, char *error, int error_size)
+int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, char *error, int error_size)
 {
    struct sockaddr_in bind_addr;
    struct hostent *phe;
@@ -2244,7 +2244,7 @@ int retrieve_url(char *url, char **buffer, char *rpwd)
    struct hostent *phe;
    char str[256], host[256], subdir[256], param[256], auth[256], pwd_enc[256];
    int port, bufsize;
-   INT i, n;
+   int i, n;
    fd_set readfds;
    struct timeval timeout;
 
@@ -2361,7 +2361,7 @@ int retrieve_url(char *url, char **buffer, char *rpwd)
 
 /*-------------------------------------------------------------------*/
 
-INT ss_daemon_init()
+int ss_daemon_init()
 {
 #ifdef OS_UNIX
 
@@ -3371,7 +3371,7 @@ int fnmatch1(const char *pattern, const char *string)
 
 /*------------------------------------------------------------------*/
 
-INT ss_file_find(char *path, char *pattern, char **plist)
+int ss_file_find(char *path, char *pattern, char **plist)
 /********************************************************************\
 
  Routine: ss_file_find
@@ -3887,7 +3887,7 @@ int el_search_message(LOGBOOK * lbs, int mode, int message_id, BOOL head_only)
 
 /*------------------------------------------------------------------*/
 
-INT el_retrieve(LOGBOOK * lbs,
+int el_retrieve(LOGBOOK * lbs,
                 int message_id, char *date,
                 char attr_list[MAX_N_ATTR][NAME_LENGTH],
                 char attrib[MAX_N_ATTR][NAME_LENGTH], int n_attr,
@@ -4151,7 +4151,7 @@ void el_delete_attachment(LOGBOOK * lbs, char *file_name)
 
 /*------------------------------------------------------------------*/
 
-INT el_retrieve_attachment(LOGBOOK * lbs, int message_id, int n, char name[MAX_PATH_LENGTH])
+int el_retrieve_attachment(LOGBOOK * lbs, int message_id, int n, char name[MAX_PATH_LENGTH])
 {
    int i, index, size, fh;
    char file_name[256], *p;
@@ -4255,7 +4255,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 
    char   *afilename[]     File name of attachments
    char   *tag             If given, edit existing message
-   INT    *tag_size        Maximum size of tag
+   int    *tag_size        Maximum size of tag
    BOOL   mark_original    Tag original message for replies
    char   *locked_by       User/Host which locked message for edit
 
@@ -4264,7 +4264,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 
 \********************************************************************/
 {
-   INT n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id;
+   int n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id;
    char file_name[256], dir[256], str[NAME_LENGTH], date_str[256];
    time_t ltime;
    char *message, *p, *buffer;
@@ -4549,7 +4549,7 @@ void remove_reference(LOGBOOK * lbs, int message_id, int remove_id, BOOL reply_t
 
 /*------------------------------------------------------------------*/
 
-INT el_delete_message(LOGBOOK * lbs, int message_id,
+int el_delete_message(LOGBOOK * lbs, int message_id,
                       BOOL delete_attachments,
                       char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
                       BOOL delete_bw_ref, BOOL delete_reply_to)
@@ -4575,7 +4575,7 @@ INT el_delete_message(LOGBOOK * lbs, int message_id,
 
 \********************************************************************/
 {
-   INT i, index, n, size, fh, tail_size, old_offset;
+   int i, index, n, size, fh, tail_size, old_offset;
    char str[MAX_PATH_LENGTH], file_name[MAX_PATH_LENGTH], reply_to[MAX_REPLY_TO * 10], in_reply_to[256];
    char *buffer, *p;
    char *message, attachment_all[64 * MAX_ATTACHMENTS];
@@ -12398,7 +12398,7 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index, char 
 
 /*------------------------------------------------------------------*/
 
-INT send_tcp(int sock, char *buffer, unsigned int buffer_size, INT flags)
+int send_tcp(int sock, char *buffer, unsigned int buffer_size, int flags)
 /********************************************************************\
 
     Send network data over TCP port. Break buffer in smaller
@@ -16000,7 +16000,7 @@ void highlight_searchtext(regex_t * re_buf, char *src, char *dst, int hidden)
 
 /*------------------------------------------------------------------*/
 
-void show_elog_list(LOGBOOK * lbs, INT past_n, INT last_n, INT page_n, BOOL default_page, char *info)
+void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL default_page, char *info)
 {
    int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line, flags, 
        current_year, current_month, current_day, printable, n_logbook,
@@ -23072,7 +23072,7 @@ void server_loop(void)
 
    /* install signal handler */
    signal(SIGTERM, ctrlc_handler);
-   signal(SIGINT, ctrlc_handler);
+   signal(SIGint, ctrlc_handler);
    signal(SIGPIPE, SIG_IGN);
    signal(SIGHUP, hup_handler);
    /* give up root privilege */
@@ -23985,8 +23985,8 @@ int ss_getchar(BOOL reset)
 #elif defined(OS_WINNT)
 
    static BOOL init = FALSE;
-   static INT repeat_count = 0;
-   static INT repeat_char;
+   static int repeat_count = 0;
+   static int repeat_char;
    HANDLE hConsole;
    DWORD nCharsRead;
    INPUT_RECORD ir;
