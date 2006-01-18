@@ -5839,7 +5839,7 @@ int setparam(char *param, char *value)
       if (strlen(value) >= TEXT_SIZE) {
          sprintf(str,
                  "Error: Entry text too big (%lu bytes). Please increase TEXT_SIZE and recompile elogd\n",
-                 strlen(value));
+                 (unsigned long)strlen(value));
          show_error(str);
          return 0;
       }
@@ -5852,7 +5852,7 @@ int setparam(char *param, char *value)
       if (strlen(value) >= CMD_SIZE) {
          sprintf(str,
                  "Error: Command line too big (%lu bytes). Please increase CMD_SIZE and recompile elogd\n",
-                 strlen(value));
+                 (unsigned long)strlen(value));
          show_error(str);
          return 0;
       }
@@ -5868,7 +5868,7 @@ int setparam(char *param, char *value)
 
    if (i < MAX_PARAM) {
       if (strlen(param) >= NAME_LENGTH) {
-         sprintf(str, "Error: Parameter name too big (%lu bytes).\n", strlen(param));
+         sprintf(str, "Error: Parameter name too big (%lu bytes).\n", (unsigned long)strlen(param));
          show_error(str);
          return 0;
       }
@@ -5878,7 +5878,7 @@ int setparam(char *param, char *value)
       if (strlen(value) >= NAME_LENGTH) {
          sprintf(str,
                  "Error: Parameter value for parameter <b>%s</b> too big (%lu bytes). Please increase NAME_LENGTH and recompile elogd\n",
-                 param, strlen(value));
+                 param, (unsigned long)strlen(value));
          show_error(str);
          return 0;
       }
@@ -23072,7 +23072,7 @@ void server_loop(void)
 
    /* install signal handler */
    signal(SIGTERM, ctrlc_handler);
-   signal(SIGint, ctrlc_handler);
+   signal(SIGINT, ctrlc_handler);
    signal(SIGPIPE, SIG_IGN);
    signal(SIGHUP, hup_handler);
    /* give up root privilege */
