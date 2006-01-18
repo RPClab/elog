@@ -5433,7 +5433,7 @@ char *email_quote_table =
 
 void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 {
-   int i, j, k, l, m, n, interprete_elcode, escape_char;
+   int i, j, k, l, m, interprete_elcode, escape_char;
    char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[1000], hattrib[1000],
        value[1000], subst[1000], base_url[256], param[256];
 
@@ -5472,10 +5472,10 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                i--;
             }
 
+            strlcpy(link_text, link, sizeof(link_text));
+
             /* check if link contains coloring */
-            p = strchr(link, '\001');
-            if (p != NULL) {
-               strlcpy(link_text, link, sizeof(link_text));
+            while ((p = strchr(link, '\001')) != NULL) {
 
                /* skip everything between '<' and '>' */
                pd = p;
@@ -5494,28 +5494,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 
                   strcpy(p, pd + 1);
                }
-
-               /* correct link text */
-               for (n = 0; n < (int) strlen(link_text); n++) {
-                  switch (link_text[n]) {
-                     /* the translation for the search highliting */
-                  case '\001':
-                     link_text[n] = '<';
-                     break;
-                  case '\002':
-                     link_text[n] = '>';
-                     break;
-                  case '\003':
-                     link_text[n] = '\"';
-                     break;
-                  case '\004':
-                     link_text[n] = ' ';
-                     break;
-                  }
-               }
-
-            } else
-               strlcpy(link_text, link, sizeof(link_text));
+            }
 
             if (strcmp(key_list[l], "elog:") == 0) {
                strlcpy(tmp, link, sizeof(tmp));
