@@ -5716,9 +5716,9 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                   if (strstr(link, "%s")) {
                      strcpy(tmp, link);
                      if (email_notify)
-                        compose_base_url(NULL, base_url, sizeof(base_url));
+                        compose_base_url(lbs, base_url, sizeof(base_url));
                      else
-                        strlcpy(base_url, lbs->name_enc, sizeof(base_url));
+                        base_url[0] = 0;
                      sprintf(link, tmp, base_url);
                   }
 
