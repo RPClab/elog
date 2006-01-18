@@ -5369,7 +5369,7 @@ typedef struct {
 PATTERN_LIST pattern_list[] = {
 
    /* smileys */
-   {":))", "<img src=\"%s/icons/happy.png\">"},
+   {":))", "<img src=\"%sicons/happy.png\">"},
    {":-))", "<img src=\"%sicons/happy.png\">"},
    {":)", "<img src=\"%sicons/smile.png\">"},
    {":-)", "<img src=\"%sicons/smile.png\">"},
