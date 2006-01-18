@@ -6064,6 +6064,7 @@ void set_location(LOGBOOK * lbs, char *rel_path)
 {
    char str[NAME_LENGTH];
 
+   /* if path contains http(s), go directly there */
    if (strncmp(rel_path, "http://", 7) == 0) {
       rsputs("Location: ");
       rsputs(rel_path);
@@ -6071,55 +6072,107 @@ void set_location(LOGBOOK * lbs, char *rel_path)
       rsputs("Location: ");
       rsputs(rel_path);
    } else {
-      if (lbs)
-         getcfg(lbs->name, "URL", str, sizeof(str));
-      else
-         getcfg("global", "URL", str, sizeof(str));
 
-      /* if HTTP request comes from localhost, use localhost as
-         absolute link (needed if running on DSL at home) */
-      if (!str[0] && strstr(http_host, "localhost")) {
-         strcpy(str, "http://localhost");
-         if (elog_tcp_port != 80)
-            sprintf(str + strlen(str), ":%d", elog_tcp_port);
-         strcat(str, "/");
-      }
+      if (getcfg(lbs->name, "redirection", str, sizeof(str)) &&
+         atoi(str) == 1) {
 
-      if (!str[0]) {
-         /* assemble absolute path from host name and port */
-         sprintf(str, "http://%s", host_name);
-         if (elog_tcp_port != 80)
-            sprintf(str + strlen(str), ":%d", elog_tcp_port);
-         strcat(str, "/");
-      }
-
-      /* add trailing '/' if not present */
-      if (str[strlen(str) - 1] != '/')
-         strcat(str, "/");
-
-      rsputs("Location: ");
-      rsputs(str);
-
-      /* add top group if existing and not logbook */
-      if (!lbs && getcfg_topgroup()) {
-         rsputs(getcfg_topgroup());
-         rsputs("/");
-      }
-
-      if (strncmp(rel_path, "../", 3) == 0)
-         rsputs(rel_path + 3);
-      else if (strcmp(rel_path, ".") == 0) {
+         /* use relative redirection */
          if (lbs)
-            rsputs(lbs->name_enc);
-      } else if (rel_path[0] == '/')
-         rsputs(rel_path + 1);
-      else {
-         if (lbs) {
-            rsputs(lbs->name_enc);
+            getcfg(lbs->name, "URL", str, sizeof(str));
+         else
+            getcfg("global", "URL", str, sizeof(str));
+
+         if (!str[0]) {
+            /* assemble absolute path from host name and port */
+            sprintf(str, "http://%s", host_name);
+            if (elog_tcp_port != 80)
+               sprintf(str+strlen(str), ":%d", elog_tcp_port);
+            strcat(str, "/");
+         }
+
+         /* add trailing '/' if not present */
+         if (str[strlen(str) - 1] != '/')
+            strcat(str, "/");
+
+         rsputs("Location: ");
+         rsputs(str);
+
+         /* add top group if existing and not logbook */
+         if (!lbs && getcfg_topgroup()) {
+            rsputs(getcfg_topgroup());
             rsputs("/");
-            rsputs(rel_path);
-         } else
-            rsputs(rel_path);
+         }
+
+         if (strncmp(rel_path, "../", 3) == 0)
+            rsputs(rel_path + 3);
+         else if (strcmp(rel_path, ".") == 0) {
+            if (lbs)
+               rsputs(lbs->name_enc);
+         } else if (rel_path[0] == '/')
+            rsputs(rel_path + 1);
+         else {
+            if (lbs) {
+               rsputs(lbs->name_enc);
+               rsputs("/");
+               rsputs(rel_path);
+            } else
+               rsputs(rel_path);
+         }
+
+      } else {
+
+         /* use absolute redirection */
+         
+         if (lbs)
+            getcfg(lbs->name, "URL", str, sizeof(str));
+         else
+            getcfg("global", "URL", str, sizeof(str));
+
+         /* if HTTP request comes from localhost, use localhost as
+            absolute link (needed if running on DSL at home) */
+         if (!str[0] && strstr(http_host, "localhost")) {
+            strcpy(str, "http://localhost");
+            if (elog_tcp_port != 80)
+               sprintf(str + strlen(str), ":%d", elog_tcp_port);
+            strcat(str, "/");
+         }
+
+         if (!str[0]) {
+            /* assemble absolute path from host name and port */
+            sprintf(str, "http://%s", host_name);
+            if (elog_tcp_port != 80)
+               sprintf(str + strlen(str), ":%d", elog_tcp_port);
+            strcat(str, "/");
+         }
+
+         /* add trailing '/' if not present */
+         if (str[strlen(str) - 1] != '/')
+            strcat(str, "/");
+
+         rsputs("Location: ");
+         rsputs(str);
+
+         /* add top group if existing and not logbook */
+         if (!lbs && getcfg_topgroup()) {
+            rsputs(getcfg_topgroup());
+            rsputs("/");
+         }
+
+         if (strncmp(rel_path, "../", 3) == 0)
+            rsputs(rel_path + 3);
+         else if (strcmp(rel_path, ".") == 0) {
+            if (lbs)
+               rsputs(lbs->name_enc);
+         } else if (rel_path[0] == '/')
+            rsputs(rel_path + 1);
+         else {
+            if (lbs) {
+               rsputs(lbs->name_enc);
+               rsputs("/");
+               rsputs(rel_path);
+            } else
+               rsputs(rel_path);
+         }
       }
    }
 
@@ -6477,7 +6530,7 @@ void show_plain_header(int size, char *file_name)
 }
 
 void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head, BOOL rss_feed, char *cookie,
-                      int absolute_css)
+                      int absolute_link)
 {
    char css[256], str[256];
 
@@ -6492,7 +6545,7 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
    rsprintf("<title>%s</title>\n", title);
 
    /* Cascading Style Sheet */
-   if (absolute_css)
+   if (absolute_link)
       compose_base_url(lbs, css, sizeof(css));
    else
       css[0] = 0;
