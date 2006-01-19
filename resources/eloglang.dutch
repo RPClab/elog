@@ -397,3 +397,14 @@ Enter URL of hyperlink = Geef URL van de hyperlink
 astonished = verbaast
 Error in regular expression "%s" = Fout in reguliere expressie "%s"
 File not found at URL "%s" = Kan bestand niet gevonden bij URL "%s"
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Entry size too large for email notification = 
+Please specify a valid email address = 
+Cannot send email notification to "%s" = 
+Enable email notifications = 
+text = 
+From = 
+Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = 

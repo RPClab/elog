@@ -397,3 +397,11 @@ Enter name of hyperlink = Nom du lien
 Enter URL of hyperlink = URL du lien
 Error in regular expression "%s" = Erreur dans l'expression régulière "%s"
 File not found at URL "%s" = Fichier non trouvé à l'URL "%s"
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Entry size too large for email notification = 
+Please specify a valid email address = 
+Cannot send email notification to "%s" = 
+Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = 

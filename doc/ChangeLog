@@ -1,3 +1,35 @@
+Version 2.6.1, released Jan 19th, 2005
+======================================
+
+- Major security fix
+- Prohibit '..' in URLs
+- Use absolute links only for email notification
+- Added string substitution for email heading
+- Improved error display in sendmail()
+- Fixed quick filters with MOptions
+- Highlight search results in http link correctly
+- Removed (int)'s for 64-bit compatibility
+- Removed "nowrap" from MOptions and ROptions attributes in edit form
+- Fixed problem with attachments containing "HTTP" in their name
+- Fixed bug with ### presets
+- Added SVN revision to server version in HTTP header
+- Fixed problem with empty bottom and top text
+- Fixed bug with sorting attributes
+- Show SVN revision on bottom of page
+- Fixed wrong </td></tr> when showing attachments in list mode
+- Fixed problem with page navigation after "find" command
+- Implemented "Fonts = " option
+- Fixed HelpELCode page permission with guest menus
+- Highlight previous entry in full list mode
+- "List" link goes to corresponding listing page
+- Fixed problem with missing non-required attribute
+- Strip attachments on "duplicate"
+- Don't evaluate preset attributes on "duplicate"
+- Implemented $shell substitution
+- Fixed double entries when using inline images
+- Added warning it email notification buffer size exceeded
+- Increased mail notification buffer for long attachments
+- Fixed bug in self registering
 
 Version 2.6.0, released Dec 14th, 2005
 ======================================

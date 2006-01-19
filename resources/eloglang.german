@@ -396,4 +396,7 @@ Enter URL of hyperlink = URL von Hyperlink eingeben
 astonished = erstaunt
 Error in regular expression "%s" = Fehler in regulärem Ausdruck "%s"
 File not found at URL "%s" = Datei bei URL "%s" nicht gefunden
-
+Entry size too large for email notification = Eintrag zu groß für Email-Benachrichtigung
+Please specify a valid email address = Bitte eine gültige Email-Adresse eingeben
+Cannot send email notification to "%s" = Kann Email-Benachrichtigung nicht an "%s" senden
+Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = Fehler: Kommando "<b>%s</b>" ist nicht erlaubt für Benutzer "<b>%s</b>"

@@ -401,3 +401,7 @@ Cannot retrieve file from URL "%s" = No puedo obtener el archivo desde la URL "%
 astonished = 
 Error in regular expression "%s" = 
 File not found at URL "%s" = 
+Entry size too large for email notification = 
+Please specify a valid email address = 
+Cannot send email notification to "%s" = 
+Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = 
