@@ -23600,11 +23600,44 @@ void server_loop(void)
 
             p = strchr(net_buffer, '/') + 1;
 
+            /* check for ../.. to avoid serving of files on top of the elog directory */
+            for (i = 0; p[i] && p[i] != ' ' && p[i] != '?'; i++)
+               url[i] = p[i];
+            url[i] = 0;
+
+            if (strstr(url, "../..")) {
+               sprintf(str, "Invalid URL: %s", url);
+               show_error(str);
+               send(_sock, return_buffer, strlen_retbuf + 1, 0);
+               keep_alive = 0;
+               if (verbose) {
+                  eprintf("==== Return ================================\n");
+                  eputs(return_buffer);
+                  eprintf("\n\n");
+               }
+               goto finished;
+            }
+
             /* check if file is in scripts directory or in its subdirs */
             for (i = 0; p[i] && p[i] != ' ' && p[i] != '?'; i++)
                url[i] = (p[i] == '/') ? DIR_SEPARATOR : p[i];
             url[i] = 0;
             if (strchr(url, '.')) {
+
+               /* do not allow '..' in file name */
+               if (strstr(url, "..")) {
+                  sprintf(str, "Invalid URL: %s", url);
+                  show_error(str);
+                  send(_sock, return_buffer, strlen_retbuf + 1, 0);
+                  keep_alive = 0;
+                  if (verbose) {
+                     eprintf("==== Return ================================\n");
+                     eputs(return_buffer);
+                     eprintf("\n\n");
+                  }
+                  goto finished;
+               }
+
                strlcpy(str, resource_dir, sizeof(str));
                strlcat(str, "scripts", sizeof(str));
                strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
@@ -23684,6 +23717,21 @@ void server_loop(void)
                 chkext(logbook, ".jpg") || chkext(logbook, ".png") ||
                 chkext(logbook, ".ico") || chkext(logbook, ".htm") ||
                 chkext(logbook, ".css") || chkext(logbook, ".js")) {
+
+               /* do not allow '..' in file name */
+               if (strstr(logbook, "..")) {
+                  sprintf(str, "Invalid URL: %s", logbook);
+                  show_error(str);
+                  send(_sock, return_buffer, strlen_retbuf + 1, 0);
+                  keep_alive = 0;
+                  if (verbose) {
+                     eprintf("==== Return ================================\n");
+                     eputs(return_buffer);
+                     eprintf("\n\n");
+                  }
+                  goto finished;
+               }
+
                /* check if file in resource directory */
                strlcpy(str, resource_dir, sizeof(str));
                strlcat(str, logbook, sizeof(str));
