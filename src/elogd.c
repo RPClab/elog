@@ -5673,7 +5673,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                            if (email_notify)
                               compose_base_url(lbs, hattrib, sizeof(hattrib));
                            else
-                              strlcpy(hattrib, lbs->name_enc, sizeof(hattrib));
+                              hattrib[0] = 0;
                            if (attrib[5] == '/') {
                               if (_current_message_id == 0) {
                                  sprintf(param, "attachment%d", atoi(attrib + 6) - 1);
