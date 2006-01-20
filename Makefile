@@ -60,6 +60,14 @@ BINOWNER = root
 BINGROUP = admin
 endif
 
+ifeq ($(OSTYPE),FreeBSD)
+CC = gcc
+BINOWNER = root
+BINGROUP = wheel
+endif
+
+CFLAGS += -DOS_$(OSTYPE)
+
 all: $(EXECS)
 
 regex.o: src/regex.c src/regex.h

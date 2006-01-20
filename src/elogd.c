@@ -103,7 +103,11 @@ typedef int BOOL;
 #include <grp.h>
 #include <syslog.h>
 #include <termios.h>
+#ifdef OS_FreeBSD
+#include <libutil.h>
+#else
 #include <pty.h>
+#endif
 
 #define closesocket(s) close(s)
 

@@ -12,14 +12,14 @@ On PC4534:
 - Do a "make loc"
 - Translate new strings in eloglang.german
 - c:\elog> svn ci -m "Release x.x.x-y"
-- Copy Tag to file:///y:/svn/elog/tags/version_x.x.x, name it "Version x.x.x"
+- Create Tag from c:\elog to file:///y:/svn/elog/tags/version_x.x.x, name it "Version x.x.x"
 - build xxx-1
 
 On PC5082:
 
 - svn update
 - Increase version in elog.spec
-- build x.x.x 1
+- ./build x.x.x 1
 
 Declare new version at freshmeat.
 
@@ -37,5 +37,5 @@ On PC4534:
 On PC5082:
 
 - svn update
-- Increse release in elog.spec
+- (Increse release in elog.spec) should be done in script...
 - build x.x.x y
