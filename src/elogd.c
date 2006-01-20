@@ -7782,7 +7782,8 @@ BOOL is_author(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], char *owner)
                if (!isparam("full_name") || strstr(attrib[i], getparam("full_name")) == NULL) {
                   strcpy(owner, attrib[i]);
                   return FALSE;
-               }
+               } else
+                  break;
             }
          }
       }
@@ -18317,6 +18318,13 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
 
    status = sendmail(lbs, smtp_host, mail_from, mail_to, mail_text, error, sizeof(error));
 
+   {
+      int fh;
+      fh = open("mail.html", O_WRONLY | O_BINARY | O_CREAT | O_TRUNC, 0644);
+      write(fh, mail_text, strlen(mail_text));
+      close(fh);
+   }
+
    if (status < 0) {
       sprintf(str, loc("Error sending Email via <i>\"%s\"</i>"), smtp_host);
       if (error[0]) {
@@ -19607,7 +19615,9 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
    /*---- title ----*/
 
-   if (!email)
+   if (email)
+      rsprintf("<table class=\"frame\" cellpadding=0 cellspacing=0>\n");
+   else
       show_standard_title(lbs->name, "", 0);
 
    /*---- menu buttons ----*/
