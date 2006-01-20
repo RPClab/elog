@@ -18318,12 +18318,14 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
 
    status = sendmail(lbs, smtp_host, mail_from, mail_to, mail_text, error, sizeof(error));
 
+   /*
    {
       int fh;
       fh = open("mail.html", O_WRONLY | O_BINARY | O_CREAT | O_TRUNC, 0644);
       write(fh, mail_text, strlen(mail_text));
       close(fh);
    }
+   */
 
    if (status < 0) {
       sprintf(str, loc("Error sending Email via <i>\"%s\"</i>"), smtp_host);
