@@ -8162,7 +8162,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 {
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
        format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr,
-       attr_index[MAX_N_ATTR], enc_selected, show_smileys;
+       attr_index[MAX_N_ATTR], enc_selected, show_smileys, show_text;
    char str[2 * NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80], comment[10000], reply_string[256],
        list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80], script[256],
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
@@ -8259,6 +8259,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       else if (encoding[0] == 'H')
          enc_selected = 2;
    }
+
+   show_text = !getcfg(lbs->name, "Show text", str, sizeof(str)) || atoi(str) == 1;
 
    /* check for preset attributes without any condition */
    set_condition("");
@@ -9256,7 +9258,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("</td></tr>\n");
    }
 
-   if (enc_selected == 0) {
+   if (enc_selected == 0 && show_text) {
       rsprintf("<tr><td colspan=2 class=\"toolframe\">\n");
 
       ricon("bold", loc("bold text"), "elcode(document.form1.Text, 'B','')");
@@ -9450,8 +9452,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          preset_text = TRUE;
    }
 
-   if (!getcfg(lbs->name, "Show text", str, sizeof(str))
-       || atoi(str) == 1) {
+   if (show_text) {
 
       if (getcfg(lbs->name, "Fix text", str, sizeof(str)) && atoi(str) == 1)
          strcpy(str, " readonly");
