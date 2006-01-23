@@ -2013,7 +2013,6 @@ void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to,
 
          strlcat(mail_text, "This is a multi-part message in MIME format.\r\n", size);
       } else {
-         strlcat(mail_text, "\r\n", size);
          if (multipart_boundary)
             multipart_boundary[0] = 0;
       }
@@ -17940,7 +17939,8 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH],
       sprintf(mail_text + strlen(mail_text), "Content-Type: text/plain; charset=%s; format=flowed\r\n",
               charset);
       sprintf(mail_text + strlen(mail_text), "Content-Transfer-Encoding: 7bit\r\n\r\n");
-   }
+   } else
+      strlcat(mail_text, "\r\n", size);
 
    flags = 63;
    if (getcfg(lbs->name, "Email format", str, sizeof(str)))
