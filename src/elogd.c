@@ -8162,13 +8162,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 {
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
        format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr,
-       attr_index[MAX_N_ATTR], enc_selected, show_smileys, show_text;
+       attr_index[MAX_N_ATTR], enc_selected, show_smileys, show_text, n_moptions;
    char str[2 * NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80], comment[10000], reply_string[256],
        list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80], script[256],
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
        att[MAX_ATTACHMENTS][256], encoding[80], slist[MAX_N_ATTR + 10][NAME_LENGTH],
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
-       ua[NAME_LENGTH], mid[80], title[256], login_name[256], cookie[256], orig_author[256];
+       ua[NAME_LENGTH], mid[80], title[256], login_name[256], cookie[256], orig_author[256], 
+       attr_moptions[MAX_N_LIST][NAME_LENGTH];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -9074,11 +9075,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   /* display multiple check boxes */
                   rsprintf("<td%s class=\"attribvalue\">\n", title);
 
+                  n_moptions = strbreak(attrib[index], attr_moptions, MAX_N_LIST, "|");
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      sprintf(str, "%s_%d", ua, i);
 
                      rsprintf("<span style=\"white-space:nowrap;\">\n");
-                     if (strstr(attrib[index], attr_options[index][i]))
+
+                     for (j=0 ; j<n_moptions ; j++)
+                        if (strcmp(attr_moptions[j], attr_options[index][i]) == 0)
+                           break;
+
+                     if (j < n_moptions)
                         rsprintf
                             ("<input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
                              str, str, attr_options[index][i]);
@@ -18884,8 +18891,7 @@ void submit_elog(LOGBOOK * lbs)
                      strlcat(attrib[i], getparam(str), NAME_LENGTH);
                   else
                      break;
-               } else
-                  break;
+               }
             }
          }
       } else if (attr_flags[i] & AF_DATE) {
