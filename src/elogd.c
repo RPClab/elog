@@ -425,6 +425,10 @@ char *loc(char *orig);
 void strencode(char *text);
 int scan_attributes(char *logbook);
 int is_inline_attachment(int message_id, char *text, int i);
+int setgroup(char *str);
+int setuser(char *str);
+int setegroup(char *str);
+int seteuser(char *str);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -1029,7 +1033,7 @@ int subst_shell(char *cmd, char *result, int size)
 #ifndef NO_PTY
    pid_t pid;
    int i, pipe;
-   char line[32], buffer[256], shell[1024];
+   char line[32], buffer[256], shell[1024], str[256];
    fd_set readfds;
    struct timeval timeout;
 
@@ -1065,6 +1069,39 @@ int subst_shell(char *cmd, char *result, int size)
 
    } else {
       /* child process */
+
+      /* restore original UID/GID */
+      if (setegid(orig_gid) < 0 || seteuid(orig_uid) < 0)
+         eprintf("Cannot restore original GID/UID.\n");
+
+      /* give up root privilege permanently */
+      if (geteuid() == 0) {
+         if (!getcfg("global", "Grp", str, sizeof(str)) || setgroup(str) < 0) {
+            eprintf("Falling back to default group \"elog\"\n");
+            if (setgroup("elog") < 0) {
+               eprintf("Falling back to default group \"%s\"\n", DEFAULT_GROUP);
+               if (setgroup(DEFAULT_GROUP) < 0) {
+                  eprintf("Refuse to run as setgid root.\n");
+                  eprintf("Please consider to define a Grp statement in configuration file\n");
+                  exit(EXIT_FAILURE);
+               }
+            }
+         } else if (verbose)
+            eprintf("Falling back to group \"%s\"\n", str);
+
+         if (!getcfg("global", "Usr", str, sizeof(str)) || setuser(str) < 0) {
+            eprintf("Falling back to default user \"elog\"\n");
+            if (setuser("elog") < 0) {
+               eprintf("Falling back to default user \"%s\"\n", DEFAULT_USER);
+               if (setuser(DEFAULT_USER) < 0) {
+                  eprintf("Refuse to run as setuid root.\n");
+                  eprintf("Please consider to define a Usr statement in configuration file\n");
+                  exit(EXIT_FAILURE);
+               }
+            }
+         } else if (verbose)
+            eprintf("Falling back to user \"%s\"\n", str);
+      }
 
       if (getenv("SHELL"))
          strlcpy(shell, getenv("SHELL"), sizeof(shell));
@@ -1126,7 +1163,12 @@ void strsubst_list(char *string, int size, char name[][NAME_LENGTH], char value[
             if (strrchr(str, ')'))
                *strrchr(str, ')') = 0;
          }
-         subst_shell(str, result, sizeof(result));
+
+         if (!enable_execute) {
+            strlcpy(result, loc("Shell execution not enabled via -x flag"), sizeof(result));
+            eprintf("Shell execution not enabled via -x flag.\n");
+         } else
+            subst_shell(str, result, sizeof(result));
 
          strlcpy(pt, result, sizeof(tmp) - (pt - tmp));
          pt += strlen(pt);
@@ -1734,7 +1776,7 @@ double date2serialdate(int day, int month, int year)
 /*------------------------------------------------------------------*/
 
 /* Wrapper for setegid. */
-int setgroup(char *str)
+int setegroup(char *str)
 {
 #ifdef OS_UNIX
    struct group *gr;
@@ -1756,8 +1798,8 @@ int setgroup(char *str)
 #endif
 }
 
-                                                   /* Wrapper for seteuid. */
-int setuser(char *str)
+/* Wrapper for seteuid. */
+int seteuser(char *str)
 {
 #ifdef OS_UNIX
    struct passwd *pw;
@@ -1766,6 +1808,52 @@ int setuser(char *str)
 
    if (pw != NULL)
       if (seteuid(pw->pw_uid) >= 0)
+         return 0;
+      else {
+         eprintf("Cannot set effective UID to user \"%s\"\n", str);
+         eprintf("setuser: %s\n", strerror(errno));
+   } else
+      eprintf("User \"%s\" not found\n", str);
+
+   return -1;
+#else
+   return 0;
+#endif
+}
+
+/* Wrapper for setgid. */
+int setgroup(char *str)
+{
+#ifdef OS_UNIX
+   struct group *gr;
+
+   gr = getgrnam(str);
+
+   if (gr != NULL)
+      if (setgid(gr->gr_gid) >= 0 && initgroups(gr->gr_name, gr->gr_gid) >= 0)
+         return 0;
+      else {
+         eprintf("Cannot set effective GID to group \"%s\"\n", gr->gr_name);
+         eprintf("setgroup: %s\n", strerror(errno));
+   } else
+      eprintf("Group \"%s\" not found\n", str);
+
+   return -1;
+#else
+   return 0;
+#endif
+}
+
+/* Wrapper for setuid. */
+int setuser(char *str)
+{
+#ifdef OS_UNIX
+   struct passwd *pw;
+
+   pw = getpwnam(str);
+
+   if (pw != NULL)
+      if (setuid(pw->pw_uid) >= 0)
          return 0;
       else {
          eprintf("Cannot set effective UID to user \"%s\"\n", str);
@@ -23210,11 +23298,11 @@ void server_loop(void)
    signal(SIGHUP, hup_handler);
    /* give up root privilege */
    if (geteuid() == 0) {
-      if (!getcfg("global", "Grp", str, sizeof(str)) || setgroup(str) < 0) {
+      if (!getcfg("global", "Grp", str, sizeof(str)) || setegroup(str) < 0) {
          eprintf("Falling back to default group \"elog\"\n");
-         if (setgroup("elog") < 0) {
+         if (setegroup("elog") < 0) {
             eprintf("Falling back to default group \"%s\"\n", DEFAULT_GROUP);
-            if (setgroup(DEFAULT_GROUP) < 0) {
+            if (setegroup(DEFAULT_GROUP) < 0) {
                eprintf("Refuse to run as setgid root.\n");
                eprintf("Please consider to define a Grp statement in configuration file\n");
                exit(EXIT_FAILURE);
@@ -23223,11 +23311,11 @@ void server_loop(void)
       } else if (verbose)
          eprintf("Falling back to group \"%s\"\n", str);
 
-      if (!getcfg("global", "Usr", str, sizeof(str)) || setuser(str) < 0) {
+      if (!getcfg("global", "Usr", str, sizeof(str)) || seteuser(str) < 0) {
          eprintf("Falling back to default user \"elog\"\n");
-         if (setuser("elog") < 0) {
+         if (seteuser("elog") < 0) {
             eprintf("Falling back to default user \"%s\"\n", DEFAULT_USER);
-            if (setuser(DEFAULT_USER) < 0) {
+            if (seteuser(DEFAULT_USER) < 0) {
                eprintf("Refuse to run as setuid root.\n");
                eprintf("Please consider to define a Usr statement in configuration file\n");
                exit(EXIT_FAILURE);
