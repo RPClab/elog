@@ -8060,8 +8060,7 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
                   strlcat(attrib[i], getparam(str), NAME_LENGTH);
                else
                   break;
-            } else
-               break;
+            }
          }
       } else if (attr_flags[i] & AF_DATE) {
 
