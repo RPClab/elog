@@ -1925,6 +1925,7 @@ void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to,
 
          strlcat(mail_text, "This is a multi-part message in MIME format.\r\n", size);
       } else {
+         strlcat(mail_text, "\r\n", size);
          if (multipart_boundary)
             multipart_boundary[0] = 0;
       }
