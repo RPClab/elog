@@ -206,6 +206,7 @@ int _attachment_size;
 int _max_content_length = MAX_CONTENT_LENGTH;
 struct in_addr rem_addr;
 char rem_host[256];
+char rem_host_ip[256]; 
 int _sock;
 BOOL verbose, use_keepalive, enable_execute = FALSE;
 int _current_message_id;
@@ -5059,9 +5060,17 @@ void write_logfile(LOGBOOK * lbs, const char *text)
 
    if (isparam("unm") && rem_host[0]) {
       strlcpy(unm, getparam("unm"), sizeof(unm));
-      sprintf(buf + strlen(buf), "[%s@%s] ", unm, rem_host);
-   } else if (rem_host[0])
-      sprintf(buf + strlen(buf), "[%s] ", rem_host);
+      if (rem_host_ip[0])
+         sprintf(buf + strlen(buf), "[%s@%s(%s)] ", unm, rem_host, rem_host_ip);
+      else
+         sprintf(buf + strlen(buf), "[%s@%s] ", unm, rem_host);
+   } else if (rem_host[0]) {
+      if (rem_host_ip[0])
+         sprintf(buf + strlen(buf), "[%s(%s)] ", rem_host, rem_host_ip);
+      else
+         sprintf(buf + strlen(buf), "[%s] ", rem_host);
+   } else
+      sprintf(buf + strlen(buf), "[%s] ", rem_host_ip);
 
    if (lbs)
       sprintf(buf + strlen(buf), "{%s} ", lbs->name);
@@ -23188,7 +23197,7 @@ void server_loop(void)
    struct sockaddr_in serv_addr, acc_addr;
    char pwd[256], str[1000], url[256], cl_pwd[256], *p, *pd;
    char cookie[256], boundary[256], list[1000], theme[256],
-       host_list[MAX_N_LIST][NAME_LENGTH], rem_host_ip[256], logbook[256], logbook_enc[256], global_cmd[256];
+       host_list[MAX_N_LIST][NAME_LENGTH], logbook[256], logbook_enc[256], global_cmd[256];
    int lsock, len, flag, content_length, header_length;
    struct hostent *phe;
    fd_set readfds;
