@@ -1409,13 +1409,15 @@ void base64_decode(char *s, char *d)
    *d = 0;
 }
 
-void base64_encode(unsigned char *s, unsigned char *d)
+void base64_encode(unsigned char *s, unsigned char *d, int size)
 {
    unsigned int t, pad;
+   unsigned char *p;
 
    pad = 3 - strlen((char *) s) % 3;
    if (pad == 3)
       pad = 0;
+   p = d;
    while (*s) {
       t = (*s++) << 16;
       if (*s)
@@ -1432,6 +1434,8 @@ void base64_encode(unsigned char *s, unsigned char *d)
       *(d + 0) = map[t & 63];
 
       d += 4;
+      if (d-p >= size-3)
+         return;
    }
    *d = 0;
    while (pad--)
@@ -1468,12 +1472,12 @@ void base64_bufenc(unsigned char *s, int len, char *d)
       *(--d) = '=';
 }
 
-void do_crypt(char *s, char *d)
+void do_crypt(char *s, char *d, int size)
 {
 #ifdef HAVE_CRYPT
-   strcpy(d, crypt(s, "el"));
+   strlcpy(d, crypt(s, "el"), size);
 #else
-   base64_encode((unsigned char *) s, (unsigned char *) d);
+   base64_encode((unsigned char *) s, (unsigned char *) d, size);
 #endif
 }
 
@@ -1981,7 +1985,8 @@ void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to,
          strlcat(subject_enc, "=?", sizeof(subject_enc));
          strlcat(subject_enc, charset, sizeof(subject_enc));
          strlcat(subject_enc, "?B?", sizeof(subject_enc));
-         base64_encode((unsigned char *) buffer, (unsigned char *) (subject_enc + strlen(subject_enc)));
+         base64_encode((unsigned char *) buffer, (unsigned char *) (subject_enc + strlen(subject_enc)), 
+            sizeof(subject_enc)-strlen(subject_enc));
          strlcat(subject_enc, "?=", sizeof(subject_enc));
          if (strlen(subject + i) < 40)
             break;
@@ -2144,7 +2149,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
          goto smtp_error;
 
       getcfg(lbs->name, "SMTP username", decoded, sizeof(decoded));
-      base64_encode((unsigned char *) decoded, (unsigned char *) str);
+      base64_encode((unsigned char *) decoded, (unsigned char *) str, sizeof(str));
       strcat(str, "\r\n");
       send(s, str, strlen(str), 0);
       if (verbose)
@@ -2336,7 +2341,7 @@ int retrieve_url(char *url, char **buffer, char *rpwd)
 {
    struct sockaddr_in bind_addr;
    struct hostent *phe;
-   char str[256], host[256], subdir[256], param[256], auth[256], pwd_enc[256];
+   char str[1000], unm[256], upwd[256], host[256], subdir[256], param[256], auth[256], pwd_enc[256];
    int port, bufsize;
    int i, n;
    fd_set readfds;
@@ -2388,12 +2393,15 @@ int retrieve_url(char *url, char **buffer, char *rpwd)
    sprintf(str, "GET %s%s HTTP/1.0\r\nConnection: Close\r\n", subdir, param);
 
    /* add local username/password */
-   if (isparam("unm") && isparam("upwd"))
+   if (isparam("unm") && isparam("upwd")) {
+      strlcpy(unm, getparam("unm"), sizeof(unm));
+      strlcpy(upwd, getparam("upwd"), sizeof(upwd));
       sprintf(str + strlen(str), "Cookie: unm=%s; upwd=%s\r\n", getparam("unm"), getparam("upwd"));
+   }
 
    if (rpwd && rpwd[0]) {
       sprintf(auth, "anybody:%s", rpwd);
-      base64_encode((unsigned char *) auth, (unsigned char *) pwd_enc);
+      base64_encode((unsigned char *) auth, (unsigned char *) pwd_enc, sizeof(pwd_enc));
       sprintf(str + strlen(str), "Authorization: Basic %s\r\n", pwd_enc);
    }
 
@@ -3284,7 +3292,10 @@ void retrieve_email_from(LOGBOOK * lbs, char *ret, char *ret_name, char attrib[M
 
    if (!getcfg(lbs->name, "Use Email from", str, sizeof(str))) {
       if (isparam("full_name") && isparam("user_email")) {
-         sprintf(email_from_name, "%s <%s>", getparam("full_name"), getparam("user_email"));
+         strlcpy(email_from_name, getparam("full_name"), sizeof(email_from_name));
+         strlcat(email_from_name, " <", sizeof(email_from_name));
+         strlcat(email_from_name, getparam("user_email"), sizeof(email_from_name));
+         strlcat(email_from_name, ">", sizeof(email_from_name));
          strlcpy(email_from, getparam("user_email"), sizeof(email_from));
       } else {
          sprintf(email_from_name, "ELog <ELog@%s>", host_name);
@@ -5020,7 +5031,7 @@ int el_lock_message(LOGBOOK * lbs, int message_id, char *user)
 void write_logfile(LOGBOOK * lbs, const char *text)
 {
    char file_name[2000];
-   char str[10000];
+   char str[10000], unm[256];
    int fh;
    time_t now;
    char buf[10000];
@@ -5046,9 +5057,10 @@ void write_logfile(LOGBOOK * lbs, const char *text)
    strftime(buf, sizeof(buf), "%d-%b-%Y %H:%M:%S", localtime(&now));
    strcat(buf, " ");
 
-   if (isparam("unm") && rem_host[0])
-      sprintf(buf + strlen(buf), "[%s@%s] ", getparam("unm"), rem_host);
-   else if (rem_host[0])
+   if (isparam("unm") && rem_host[0]) {
+      strlcpy(unm, getparam("unm"), sizeof(unm));
+      sprintf(buf + strlen(buf), "[%s@%s] ", unm, rem_host);
+   } else if (rem_host[0])
       sprintf(buf + strlen(buf), "[%s] ", rem_host);
 
    if (lbs)
@@ -6278,7 +6290,7 @@ void set_redir(LOGBOOK * lbs, char *redir)
 
    /* prepare relative path */
    if (redir[0])
-      strcpy(str, redir);
+      strlcpy(str, redir, sizeof(str));
    else {
       if (lbs)
          sprintf(str, "../%s/", lbs->name_enc);
@@ -7543,7 +7555,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
             } else
                strcpy(value[i], attrib[i]);
          } else
-            strcpy(value[i], isparam(attr_list[i]) ? getparam(attr_list[i]) : "");
+            strlcpy(value[i], isparam(attr_list[i]) ? getparam(attr_list[i]) : "", NAME_LENGTH);
       }
 
    /* add remote host */
@@ -7680,21 +7692,21 @@ BOOL change_pwd(LOGBOOK * lbs, char *user, char *pwd)
 
 void show_change_pwd_page(LOGBOOK * lbs)
 {
-   char str[256], old_pwd[32], new_pwd[32], new_pwd2[32], act_pwd[32], user[80];
+   char str[256], config[80], old_pwd[32], new_pwd[32], new_pwd2[32], act_pwd[32], user[80];
    int wrong_pwd;
 
    old_pwd[0] = new_pwd[0] = new_pwd2[0] = 0;
 
    if (isparam("oldpwd"))
-      do_crypt(getparam("oldpwd"), old_pwd);
+      do_crypt(getparam("oldpwd"), old_pwd, sizeof(old_pwd));
    if (isparam("newpwd"))
-      do_crypt(getparam("newpwd"), new_pwd);
+      do_crypt(getparam("newpwd"), new_pwd, sizeof(new_pwd));
    if (isparam("newpwd2"))
-      do_crypt(getparam("newpwd2"), new_pwd2);
+      do_crypt(getparam("newpwd2"), new_pwd2, sizeof(new_pwd2));
 
-   strcpy(user, isparam("unm") ? getparam("unm") : "");
+   strlcpy(user, isparam("unm") ? getparam("unm") : "", sizeof(user));
    if (isparam("config"))
-      strcpy(user, getparam("config"));
+      strlcpy(user, getparam("config"), sizeof(user));
 
    wrong_pwd = FALSE;
 
@@ -7727,9 +7739,10 @@ void show_change_pwd_page(LOGBOOK * lbs)
 
          if (!wrong_pwd) {
             /* redirect back to configuration page */
-            if (isparam("config"))
-               sprintf(str, "?cmd=%s&cfg_user=%s", loc("Config"), getparam("config"));
-            else
+            if (isparam("config")) {
+               strlcpy(config, getparam("config"), sizeof(config));
+               sprintf(str, "?cmd=%s&cfg_user=%s", loc("Config"), config);
+            } else
                sprintf(str, "?cmd=%s", loc("Config"));
             redirect(lbs, str);
             return;
@@ -8189,7 +8202,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (breedit || bupload) {
       /* get date from parameter */
       if (isparam("entry_date"))
-         strcpy(date, getparam("entry_date"));
+         strlcpy(date, getparam("entry_date"), sizeof(date));
 
       /* get attributes from parameters */
       attrib_from_param(lbs->n_attr, attrib);
@@ -8213,7 +8226,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
 
       /* get encoding */
-      strcpy(encoding, isparam("encoding") ? getparam("encoding") : "");
+      strlcpy(encoding, isparam("encoding") ? getparam("encoding") : "", sizeof(encoding));
    } else {
       if (message_id) {
          /* get message for reply/edit */
@@ -8425,9 +8438,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (message_id && bedit && !breedit && !bupload) {
       if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1) {
          if (isparam("full_name"))
-            strcpy(str, getparam("full_name"));
+            strlcpy(str, getparam("full_name"), sizeof(str));
          else
-            strcpy(str, loc("user"));
+            strlcpy(str, loc("user"), sizeof(str));
 
          strcat(str, " ");
          strcat(str, loc("on"));
@@ -10828,12 +10841,12 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
    if (!activate) {
       /* check for hidden password */
       if (isparam("hpwd")) {
-         strcpy(new_pwd, getparam("hpwd"));
+         strlcpy(new_pwd, getparam("hpwd"), sizeof(new_pwd));
       } else {
          /* check if passwords match */
          if (isparam("newpwd") && isparam("newpwd2")) {
-            do_crypt(getparam("newpwd"), new_pwd);
-            do_crypt(getparam("newpwd2"), new_pwd2);
+            do_crypt(getparam("newpwd"), new_pwd, sizeof(new_pwd));
+            do_crypt(getparam("newpwd2"), new_pwd2, sizeof(new_pwd2));
          }
 
          if (strcmp(new_pwd, new_pwd2) != 0) {
@@ -11047,7 +11060,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
                      strcpy(str, isparam("new_full_name") ? getparam("new_full_name") : "");
                      url_encode(str, sizeof(str));
                      if (isparam("newpwd"))
-                        do_crypt(getparam("newpwd"), enc_pwd);
+                        do_crypt(getparam("newpwd"), enc_pwd, sizeof(enc_pwd));
                      else
                         enc_pwd[0] = 0;
                      url_encode(enc_pwd, sizeof(enc_pwd));
@@ -11377,8 +11390,8 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             for (i = 0; i < 8; i++)
                str[i] = 'A' + (rand() % 25);
             str[i] = 0;
-            base64_encode((unsigned char *) str, (unsigned char *) pwd);
-            do_crypt(pwd, pwd_encrypted);
+            base64_encode((unsigned char *) str, (unsigned char *) pwd, sizeof(pwd));
+            do_crypt(pwd, pwd_encrypted, sizeof(pwd_encrypted));
 
             /* send email with new password */
             if (!getcfg("global", "SMTP host", smtp_host, sizeof(smtp_host))) {
@@ -13417,7 +13430,7 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
          eprintf("\n");
          while (str[strlen(str) - 1] == '\r' || str[strlen(str) - 1] == '\n')
             str[strlen(str) - 1] = 0;
-         do_crypt(str, pwd);
+         do_crypt(str, pwd, sizeof(pwd));
          setparam("upwd", pwd);
          status = 0;
       }
@@ -13661,7 +13674,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                eprintf("\n");
                while (str[strlen(str) - 1] == '\r' || str[strlen(str) - 1] == '\n')
                   str[strlen(str) - 1] = 0;
-               do_crypt(str, pwd);
+               do_crypt(str, pwd, sizeof(pwd));
                setparam("upwd", pwd);
 
             } else {
@@ -16330,29 +16343,29 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    page_mid_head = 0;
 
    /* default mode */
-   strcpy(mode, "Summary");
+   strlcpy(mode, "Summary", sizeof(mode));
    show_attachments = FALSE;
 
    if (past_n || last_n || page_n || page_mid || default_page) {
       /* for page display, get mode from config file */
       if (getcfg(lbs->name, "Display Mode", str, sizeof(str)))
-         strcpy(mode, str);
+         strlcpy(mode, str, sizeof(mode));
 
       /* supersede mode from cookie */
       if (isparam("elmode"))
-         strcpy(mode, getparam("elmode"));
+         strlcpy(mode, getparam("elmode"), sizeof(mode));
 
       /* supersede mode from direct parameter */
       if (isparam("mode"))
-         strcpy(mode, getparam("mode"));
+         strlcpy(mode, getparam("mode"), sizeof(mode));
 
 
    } else {
       /* for find result, get mode from find form */
       if (isparam("mode"))
-         strcpy(mode, getparam("mode"));
+         strlcpy(mode, getparam("mode"), sizeof(mode));
       else
-         strcpy(mode, "Full");
+         strlcpy(mode, "Full", sizeof(mode));
    }
 
    /* set cookie if mode changed */
@@ -16598,7 +16611,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
    /* compile regex for subtext */
    if (isparam("subtext")) {
-      strcpy(str, getparam("subtext"));
+      strlcpy(str, getparam("subtext"), sizeof(str));
       flags = REG_EXTENDED;
       if (!isparam("casesensitive"))
          flags |= REG_ICASE;
@@ -16616,7 +16629,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    /* compile regex for attributes */
    for (i = 0; i < lbs->n_attr; i++) {
       if (isparam(attr_list[i])) {
-         strcpy(str, getparam(attr_list[i]));
+         strlcpy(str, getparam(attr_list[i]), sizeof(str));
 
          /* if value starts with '$', substitute it */
          if (str[0] == '$') {
@@ -16729,7 +16742,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
             } else {
 
-               strcpy(str, isparam(attr_list[i]) ? getparam(attr_list[i]) : "");
+               strlcpy(str, isparam(attr_list[i]) ? getparam(attr_list[i]) : "", sizeof(str));
 
                /* if value starts with '$', substitute it */
                if (str[0] == '$') {
@@ -16817,7 +16830,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          if (j < index) {
             /* set date from current message, if later */
             if (strcmp(msg_list[j].string, msg_list[index].string) < 0)
-               strcpy(msg_list[j].string, msg_list[index].string);
+               strlcpy(msg_list[j].string, msg_list[index].string, 256);
 
             msg_list[index].lbs = NULL; // delete current message
             continue;
@@ -16999,7 +17012,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
       /*---- title ----*/
 
-      strcpy(str, ", ");
+      strlcpy(str, ", ", sizeof(str));
       if (past_n == 1)
          strcat(str, loc("Last day"));
       else if (past_n > 1)
@@ -17024,7 +17037,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
 
          /* current command line for select command */
-         strcpy(str, isparam("cmdline") ? getparam("cmdline") : "");
+         strlcpy(str, isparam("cmdline") ? getparam("cmdline") : "", sizeof(str));
 
          /* remove select switch */
          if (strstr(str, "select=1")) {
@@ -17052,18 +17065,18 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
          /* default menu commands */
          if (menu_str[0] == 0) {
-            strcpy(menu_str, "New, Find, Select, CSV Import, ");
+            strlcpy(menu_str, "New, Find, Select, CSV Import, ", sizeof(menu_str));
 
             if (getcfg(lbs->name, "Password file", str, sizeof(str)))
-               strcat(menu_str, "Config, Logout, ");
+               strlcat(menu_str, "Config, Logout, ", sizeof(menu_str));
             else
-               strcat(menu_str, "Config, ");
+               strlcat(menu_str, "Config, ", sizeof(menu_str));
 
             if (getcfg(lbs->name, "Mirror server", str, sizeof(str)))
-               strcat(menu_str, "Synchronize, ");
+               strlcat(menu_str, "Synchronize, ", sizeof(menu_str));
 
-            strcpy(str, loc("Last x"));
-            strcat(menu_str, "Last x, Help, ");
+            strlcpy(str, loc("Last x"), sizeof(str));
+            strlcat(menu_str, "Last x, Help, ", sizeof(menu_str));
          }
 
          n = strbreak(menu_str, menu_item, MAX_N_LIST, ",");
@@ -17081,7 +17094,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                      rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n * 2, mode, str);
                   }
                } else if (strieq(menu_item[i], "Select")) {
-                  strcpy(str, isparam("cmdline") ? getparam("cmdline") : "");
+                  strlcpy(str, isparam("cmdline") ? getparam("cmdline") : "", sizeof(str));
                   if (isparam("select") && atoi(getparam("select")) == 1) {
                      /* remove select switch */
                      if (strstr(str, "select=1")) {
@@ -17100,7 +17113,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   rsputs3(str);
                   rsprintf("\">%s</a>&nbsp;|\n", loc("Select"));
                } else {
-                  strcpy(str, loc(menu_item[i]));
+                  strlcpy(str, loc(menu_item[i]), sizeof(str));
                   url_encode(str, sizeof(str));
 
                   if (i < n - 1)
@@ -17126,7 +17139,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
          /* check if file starts with an absolute directory */
          if (str[0] == DIR_SEPARATOR || str[1] == ':')
-            strcpy(file_name, str);
+            strlcpy(file_name, str, sizeof(file_name));
          else {
             strlcpy(file_name, resource_dir, sizeof(file_name));
             strlcat(file_name, str, sizeof(file_name));
@@ -21843,9 +21856,10 @@ void interprete(char *lbook, char *path)
 \********************************************************************/
 {
    int status, i, j, n, index, lb_index, message_id;
-   char exp[80], list[1000], section[256], str[NAME_LENGTH], str2[NAME_LENGTH],
-       enc_pwd[80], file_name[256], command[80], ref[256], enc_path[256], dec_path[256],
-       logbook[256], logbook_enc[256], *experiment, group[256], css[256], *pfile, attachment[MAX_PATH_LENGTH];
+   char exp[80], list[1000], section[256], str[NAME_LENGTH], str2[NAME_LENGTH], edit_id[80],
+       enc_pwd[80], file_name[256], command[256], ref[256], enc_path[256], dec_path[256], uname[80],
+       logbook[256], logbook_enc[256], *experiment, group[256], css[256], *pfile, attachment[MAX_PATH_LENGTH],
+       full_name[256];
    BOOL global;
    LOGBOOK *lbs;
    FILE *f;
@@ -21855,8 +21869,8 @@ void interprete(char *lbook, char *path)
    url_decode(dec_path);
    strcpy(enc_path, dec_path);
    url_encode(enc_path, sizeof(enc_path));
-   strcpy(command, isparam("cmd") ? getparam("cmd") : "");
-   strcpy(group, isparam("group") ? getparam("group") : "");
+   strlcpy(command, isparam("cmd") ? getparam("cmd") : "", sizeof(command));
+   strlcpy(group, isparam("group") ? getparam("group") : "", sizeof(group));
    index = isparam("index") ? atoi(getparam("index")) : 0;
    experiment = getparam("exp");
    if (getcfg(lbook, "Logging Level", str, sizeof(str)))
@@ -21867,7 +21881,7 @@ void interprete(char *lbook, char *path)
 
    /* evaluate "jcmd" */
    if (isparam("jcmd") && *getparam("jcmd"))
-      strcpy(command, getparam("jcmd"));
+      strlcpy(command, getparam("jcmd"), sizeof(command));
 
    /* if experiment given, use it as logbook (for elog!) */
    if (experiment && experiment[0]) {
@@ -21965,20 +21979,21 @@ void interprete(char *lbook, char *path)
       /* if data from login screen, evaluate it and set cookies */
       if (isparam("uname") && isparam("upassword")) {
          /* check if password correct */
-         do_crypt(getparam("upassword"), enc_pwd);
+         do_crypt(getparam("upassword"), enc_pwd, sizeof(enc_pwd));
          /* log logins */
-         sprintf(str, "LOGIN user \"%s\" (attempt) for logbook selection page", getparam("uname"));
+         strlcpy(uname, getparam("uname"), sizeof(uname));
+         sprintf(str, "LOGIN user \"%s\" (attempt) for logbook selection page", uname);
          write_logfile(NULL, str);
          if (isparam("redir"))
-            strcpy(str, getparam("redir"));
+            strlcpy(str, getparam("redir"), sizeof(str));
          else
-            strcpy(str, isparam("cmdline") ? getparam("cmdline") : "");
+            strlcpy(str, isparam("cmdline") ? getparam("cmdline") : "", sizeof(str));
          if (!check_user_password(NULL, getparam("uname"), enc_pwd, str))
             return;
-         sprintf(str, "LOGIN user \"%s\" (success)", getparam("uname"));
+         sprintf(str, "LOGIN user \"%s\" (success)", uname);
          write_logfile(NULL, str);
          /* set cookies */
-         set_login_cookies(NULL, getparam("uname"), enc_pwd);
+         set_login_cookies(NULL, uname, enc_pwd);
          return;
       }
 
@@ -22045,7 +22060,7 @@ void interprete(char *lbook, char *path)
 
    if (isparam("wpassword")) {
       /* check if password correct */
-      do_crypt(getparam("wpassword"), enc_pwd);
+      do_crypt(getparam("wpassword"), enc_pwd, sizeof(enc_pwd));
       if (!check_password(lbs, "Write password", enc_pwd, isparam("redir") ? getparam("redir") : ""))
          return;
       rsprintf("HTTP/1.1 302 Found\r\n");
@@ -22069,7 +22084,7 @@ void interprete(char *lbook, char *path)
 
    if (isparam("apassword")) {
       /* check if password correct */
-      do_crypt(getparam("apassword"), enc_pwd);
+      do_crypt(getparam("apassword"), enc_pwd, sizeof(enc_pwd));
       if (!check_password(lbs, "Admin password", enc_pwd, isparam("redir") ? getparam("redir") : ""))
          return;
       rsprintf("HTTP/1.1 302 Found\r\n");
@@ -22093,20 +22108,21 @@ void interprete(char *lbook, char *path)
 
    if (isparam("uname") && isparam("upassword")) {
       /* check if password correct */
-      do_crypt(getparam("upassword"), enc_pwd);
+      do_crypt(getparam("upassword"), enc_pwd, sizeof(enc_pwd));
       /* log logins */
-      sprintf(str, "LOGIN user \"%s\" (attempt)", getparam("uname"));
+      strlcpy(uname, getparam("uname"), sizeof(uname));
+      sprintf(str, "LOGIN user \"%s\" (attempt)", uname);
       write_logfile(lbs, str);
       if (isparam("redir"))
-         strcpy(str, getparam("redir"));
+         strlcpy(str, getparam("redir"), sizeof(str));
       else
-         strcpy(str, isparam("cmdline") ? getparam("cmdline") : "");
-      if (!check_user_password(lbs, getparam("uname"), enc_pwd, str))
+         strlcpy(str, isparam("cmdline") ? getparam("cmdline") : "", sizeof(str));
+      if (!check_user_password(lbs, uname, enc_pwd, str))
          return;
-      sprintf(str, "LOGIN user \"%s\" (success)", getparam("uname"));
+      sprintf(str, "LOGIN user \"%s\" (success)", uname);
       write_logfile(lbs, str);
       /* set cookies */
-      set_login_cookies(lbs, getparam("uname"), enc_pwd);
+      set_login_cookies(lbs, uname, enc_pwd);
       return;
    }
 
@@ -22191,7 +22207,8 @@ void interprete(char *lbook, char *path)
             el_lock_message(lbs, atoi(getparam("edit_id")), NULL);
 
          /* redirect to message */
-         sprintf(str, "../%s/%s", logbook_enc, getparam("edit_id"));
+         strlcpy(edit_id, getparam("edit_id"), sizeof(edit_id));
+         sprintf(str, "../%s/%s", logbook_enc, edit_id);
       } else
          sprintf(str, "../%s/", logbook_enc);
 
@@ -22217,17 +22234,19 @@ void interprete(char *lbook, char *path)
    }
 
    /* check for "Last n*2 Entries" */
-   strcpy(str, isparam("last") ? getparam("last") : "");
+   strlcpy(str, isparam("last") ? getparam("last") : "", sizeof(str));
    if (strchr(str, ' ')) {
       i = atoi(strchr(str, ' '));
       sprintf(str, "last%d", i);
-      if (isparam("mode"))
-         sprintf(str + strlen(str), "?mode=%s", getparam("mode"));
+      if (isparam("mode")) {
+         sprintf(str + strlen(str), "?mode=");
+         strlcat(str, getparam("mode"), sizeof(str));
+      }
       redirect(lbs, str);
       return;
    }
 
-   strcpy(str, isparam("past") ? getparam("past") : "");
+   strlcpy(str, isparam("past") ? getparam("past") : "", sizeof(str));
    if (strchr(str, ' ')) {
       i = atoi(strchr(str, ' '));
       sprintf(str, "past%d", i);
@@ -22359,8 +22378,12 @@ void interprete(char *lbook, char *path)
       strcpy(command, loc("Last"));
    /* check if command allowed for current user */
    if (command[0] && !is_user_allowed(lbs, command)) {
+      if (isparam("full_name"))
+         strlcpy(full_name, getparam("full_name"), sizeof(full_name));
+      else
+         full_name[0] = 0;
       sprintf(str, loc("Error: Command \"<b>%s</b>\" is not allowed for user \"<b>%s</b>\""),
-              command, isparam("full_name") ? getparam("full_name") : "");
+              command, full_name);
       show_error(str);
       return;
    }
@@ -22632,8 +22655,10 @@ void interprete(char *lbook, char *path)
          if (isparam("global")) {
             if (strieq(getparam("global"), "global"))
                strcpy(section, "global");
-            else
-               sprintf(section, "global %s", getparam("global"));
+            else {
+               sprintf(section, "global ");
+               strlcat(section, getparam("global"), sizeof(section));
+            }
          } else
             strlcpy(section, lbs->name, sizeof(section));
 
@@ -22646,11 +22671,13 @@ void interprete(char *lbook, char *path)
          sprintf(str, "../%s/", lbs->name_enc);
       else
          sprintf(str, ".");
-      if (isparam("new_user_name"))
-         sprintf(str + strlen(str), "?cmd=%s&cfg_user=%s", loc("Config"), getparam("new_user_name"));
-      else if (isparam("cfg_user"))
-         sprintf(str + strlen(str), "?cmd=%s&cfg_user=%s", loc("Config"), getparam("cfg_user"));
-      else if (getcfg(lbs->name, "password file", str2, sizeof(str2)))
+      if (isparam("new_user_name")) {
+         sprintf(str + strlen(str), "?cmd=%s&cfg_user=", loc("Config"));
+         strlcat(str, getparam("new_user_name"), sizeof(str));
+      } else if (isparam("cfg_user")) {
+         sprintf(str + strlen(str), "?cmd=%s&cfg_user=", loc("Config"));
+         strlcat(str, getparam("cfg_user"), sizeof(str));
+      } else if (getcfg(lbs->name, "password file", str2, sizeof(str2)))
          sprintf(str + strlen(str), "?cmd=%s", loc("Config"));
 
       redirect(lbs, str);
@@ -24025,7 +24052,7 @@ void server_loop(void)
                   base64_decode(str, cl_pwd);
                   if (strchr(cl_pwd, ':')) {
                      p = strchr(cl_pwd, ':') + 1;
-                     do_crypt(p, str);
+                     do_crypt(p, str, sizeof(str));
                      strcpy(cl_pwd, str);
                      /* check authorization */
                      if (strcmp(str, pwd) == 0)
@@ -25108,25 +25135,25 @@ int main(int argc, char *argv[])
    }
 
    if (read_pwd[0]) {
-      do_crypt(read_pwd, str);
+      do_crypt(read_pwd, str, sizeof(str));
       create_password(logbook, "Read Password", str);
       exit(EXIT_SUCCESS);
    }
 
    if (write_pwd[0]) {
-      do_crypt(write_pwd, str);
+      do_crypt(write_pwd, str, sizeof(str));
       create_password(logbook, "Write Password", str);
       exit(EXIT_SUCCESS);
    }
 
    if (admin_pwd[0]) {
-      do_crypt(admin_pwd, str);
+      do_crypt(admin_pwd, str, sizeof(str));
       create_password(logbook, "Admin Password", str);
       exit(EXIT_SUCCESS);
    }
 
    if (smtp_pwd[0]) {
-      do_crypt(smtp_pwd, str);
+      do_crypt(smtp_pwd, str, sizeof(str));
       create_password("global", "SMTP Password", str);
       exit(EXIT_SUCCESS);
    }
