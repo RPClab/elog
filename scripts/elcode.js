@@ -90,3 +90,11 @@ function queryURL(text)
    linkURL = prompt(linkURL_prompt, 'http://');
    elcode1(text, 'URL',	linkURL, linkText);
 }
+
+function queryHeading(text)
+{
+   selection =	getSelection(text);
+   heading = prompt(linkHeading_prompt, '');
+   tag = 'H' + heading;
+   elcode1(text, tag, '', selection);
+}

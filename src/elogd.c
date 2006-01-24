@@ -5532,6 +5532,14 @@ PATTERN_LIST pattern_list[] = {
    {"[/list]", "</ul>"},
    {"[list=", "<ol type=\"%s\">"},
 
+   /* headings */
+   {"[h1]", "<h1>"},
+   {"[/h1]", "</h1>"},
+   {"[h2]", "<h2>"},
+   {"[/h2]", "</h2>"},
+   {"[h3]", "<h3>"},
+   {"[/h3]", "</h3>"},
+
    /* URLs */
    {"[url=", "<a href=\"%#\">%s</a>"},
    {"[url]", "<a href=\"%#\">%s</a>"},
@@ -8740,6 +8748,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* strings for elcode.js */
    rsprintf("linkText_prompt = '%s';\n", loc("Enter name of hyperlink"));
    rsprintf("linkURL_prompt  = '%s';\n", loc("Enter URL of hyperlink"));
+   rsprintf("linkHeading_prompt  = '%s';\n", loc("Enter heading level (1, 2 or 3)"));
    if (stristr(browser, "MSIE") && !stristr(browser, "opera"))
       rsprintf("browser = 'MSIE';\n");
    else if (stristr(browser, "Mozilla") && !stristr(browser, "opera") && !stristr(browser, "konqueror"))
@@ -9308,6 +9317,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf(" ");
       ricon("quote", loc("insert quote"), "elcode(document.form1.Text, 'QUOTE','')");
       ricon("list", loc("insert list"), "elcode(document.form1.Text, 'LIST','')");
+      ricon("heading", loc("insert heading"), "queryHeading(document.form1.Text)");
 
       rsprintf(" ");
       ricon("code", loc("insert code"), "elcode(document.form1.Text, 'CODE','')");
