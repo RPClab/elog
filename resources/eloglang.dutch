@@ -408,3 +408,6 @@ Enable email notifications =
 text = 
 From = 
 Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = 
+Shell execution not enabled via -x flag = 
+Enter heading level (1, 2 or 3) = 
+insert heading = 

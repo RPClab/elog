@@ -407,3 +407,6 @@ Entry size too large for email notification =
 Please specify a valid email address = 
 Cannot send email notification to "%s" = 
 Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = 
+Shell execution not enabled via -x flag = 
+Enter heading level (1, 2 or 3) = 
+insert heading = 

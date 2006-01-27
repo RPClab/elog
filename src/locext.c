@@ -35,6 +35,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <ctype.h>
 
 #ifdef _MSC_VER
 #include <windows.h>
@@ -76,7 +77,7 @@ int scan_file(char *infile, char *outfile)
    read_buf(infile, &buf);
 
    p = buf;
-   first = TRUE;
+   first = 1;
 
    do {
       p = strstr(p, "loc(\"");
@@ -98,14 +99,14 @@ int scan_file(char *infile, char *outfile)
       }
 
       size = (int) p2 - (int) p;
-      if (size >= sizeof(str)) {
+      if (size >= (int)sizeof(str)) {
          printf("Error: string too long\n");
          free(buf);
          return 1;
       }
 
       memset(str, 0, sizeof(str));
-      memcpy(str, p, min(size, sizeof(str)));
+      memcpy(str, p, size < (int)sizeof(str) ? size : (int)sizeof(str));
 
       /* convert \" to " */
       for (p2 = str; *p2; p2++)
@@ -130,7 +131,7 @@ int scan_file(char *infile, char *outfile)
                     "\r\n#\r\n#---- please translate following items and then remove this comment ----#\r\n#\r\n");
             write(fho, line, strlen(line));
 
-            first = FALSE;
+            first = 0;
          }
 
          sprintf(line, "%s = \r\n", str);

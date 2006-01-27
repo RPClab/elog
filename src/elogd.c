@@ -206,7 +206,7 @@ int _attachment_size;
 int _max_content_length = MAX_CONTENT_LENGTH;
 struct in_addr rem_addr;
 char rem_host[256];
-char rem_host_ip[256]; 
+char rem_host_ip[256];
 int _sock;
 BOOL verbose, use_keepalive, enable_execute = FALSE;
 int _current_message_id;
@@ -1435,7 +1435,7 @@ void base64_encode(unsigned char *s, unsigned char *d, int size)
       *(d + 0) = map[t & 63];
 
       d += 4;
-      if (d-p >= size-3)
+      if (d - p >= size - 3)
          return;
    }
    *d = 0;
@@ -1986,8 +1986,8 @@ void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to,
          strlcat(subject_enc, "=?", sizeof(subject_enc));
          strlcat(subject_enc, charset, sizeof(subject_enc));
          strlcat(subject_enc, "?B?", sizeof(subject_enc));
-         base64_encode((unsigned char *) buffer, (unsigned char *) (subject_enc + strlen(subject_enc)), 
-            sizeof(subject_enc)-strlen(subject_enc));
+         base64_encode((unsigned char *) buffer, (unsigned char *) (subject_enc + strlen(subject_enc)),
+                       sizeof(subject_enc) - strlen(subject_enc));
          strlcat(subject_enc, "?=", sizeof(subject_enc));
          if (strlen(subject + i) < 40)
             break;
@@ -8197,7 +8197,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
        att[MAX_ATTACHMENTS][256], encoding[80], slist[MAX_N_ATTR + 10][NAME_LENGTH],
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
-       ua[NAME_LENGTH], mid[80], title[256], login_name[256], cookie[256], orig_author[256], 
+       ua[NAME_LENGTH], mid[80], title[256], login_name[256], cookie[256], orig_author[256],
        attr_moptions[MAX_N_LIST][NAME_LENGTH];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
@@ -9111,7 +9111,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                      rsprintf("<span style=\"white-space:nowrap;\">\n");
 
-                     for (j=0 ; j<n_moptions ; j++)
+                     for (j = 0; j < n_moptions; j++)
                         if (strcmp(attr_moptions[j], attr_options[index][i]) == 0)
                            break;
 
@@ -18447,13 +18447,13 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
    status = sendmail(lbs, smtp_host, mail_from, mail_to, mail_text, error, sizeof(error));
 
    /*
-   {
+      {
       int fh;
       fh = open("mail.html", O_WRONLY | O_BINARY | O_CREAT | O_TRUNC, 0644);
       write(fh, mail_text, strlen(mail_text));
       close(fh);
-   }
-   */
+      }
+    */
 
    if (status < 0) {
       sprintf(str, loc("Error sending Email via <i>\"%s\"</i>"), smtp_host);

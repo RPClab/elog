@@ -401,3 +401,10 @@ Entry size too large for email notification = La taille de l'entrée est trop gra
 Please specify a valid email address = Merci de spécifier une adresse mél valide
 Cannot send email notification to "%s" = Impossible d'adresser la notification par mél à l'adresse "%s"
 Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = Erreur : la commande "<b>%s</b>" n'est pas autorisée pour l'utilisateur "<b>%s</b>"
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Shell execution not enabled via -x flag = 
+Enter heading level (1, 2 or 3) = 
+insert heading = 

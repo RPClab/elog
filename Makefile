@@ -89,23 +89,15 @@ debug: src/elogd.c regex.o mxml.o strlcpy.o
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 indent:
-	indent $(IFLAGS) src/elogd.c
-	indent $(IFLAGS) src/elog.c
-	indent $(IFLAGS) src/elconv.c
-	indent $(IFLAGS) src/locext.c
+	for src in src/*.c; do \
+		indent $(IFLAGS) $$src; \
+	done
 
-loc:
-	locext src\elogd.c resources\eloglang.brazilian
-	locext src\elogd.c resources\eloglang.bulgarian 
-	locext src\elogd.c resources\eloglang.dutch
-	locext src\elogd.c resources\eloglang.french
-	locext src\elogd.c resources\eloglang.german
-	locext src\elogd.c resources\eloglang.spanish
-	locext src\elogd.c resources\eloglang.italian
-	locext src\elogd.c resources\eloglang.japanese
-	locext src\elogd.c resources\eloglang.danish
-	locext src\elogd.c resources\eloglang.zh_CN-GB2312
-	locext src\elogd.c resources\eloglang.zh_CN-UTF8
+locext: src/locext.c
+loc: locext
+	@for lang in resources/eloglang*; do \
+	  ./locext src/elogd.c $$lang; echo locext src/elogd.c $$lang;\
+	done
 
 update: $(EXECS)
 	@$(INSTALL) -v -m 0755 -o ${BINOWNER} -g ${BINGROUP} elogd $(SDESTDIR)
@@ -146,5 +138,5 @@ install: $(EXECS)
 restart:
 	$(RCDIR)/elogd restart
 clean:
-	-$(RM) *~ $(EXECS) regex.o mxml.o strlcpy.o
+	-$(RM) *~ $(EXECS) regex.o mxml.o strlcpy.o locext
 
