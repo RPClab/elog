@@ -1292,7 +1292,7 @@ Encode the given string in-place by adding %XX escapes
       }
    }
    *pd = '\0';
-   strlcpy(ps, (char *)str, size);
+   strlcpy(ps, (char *) str, size);
 }
 
 void url_slash_encode(char *ps, int size)
@@ -1318,7 +1318,7 @@ Do the same including '/' characters
       }
    }
    *pd = '\0';
-   strlcpy(ps, (char *)str, size);
+   strlcpy(ps, (char *) str, size);
 }
 
 /*-------------------------------------------------------------------*/
@@ -1342,7 +1342,7 @@ Encode the given string in-place by adding \\ escapes for `$"\
       }
    }
    *pd = '\0';
-   strlcpy(ps, (char *)str, size);
+   strlcpy(ps, (char *) str, size);
 }
 
 void btou(char *str)
@@ -23205,7 +23205,7 @@ void server_loop(void)
 {
    int status, i, n, n_error, authorized, min, i_min, i_conn, length;
    struct sockaddr_in serv_addr, acc_addr;
-   char pwd[256], str[1000], url[256], cl_pwd[256], *p, *pd;
+   char pwd[256], str[1000], url[256], cl_pwd[256], *p;
    char cookie[256], boundary[256], list[1000], theme[256],
        host_list[MAX_N_LIST][NAME_LENGTH], logbook[256], logbook_enc[256], global_cmd[256];
    int lsock, len, flag, content_length, header_length;
@@ -23756,7 +23756,7 @@ void server_loop(void)
             p = strchr(net_buffer, '/') + 1;
 
             /* check for ../.. to avoid serving of files on top of the elog directory */
-            for (i = 0; p[i] && p[i] != ' ' && p[i] != '?'; i++)
+            for (i = 0; p[i] && p[i] != ' ' && p[i] != '?' && i < (int) sizeof(url); i++)
                url[i] = p[i];
             url[i] = 0;
 
@@ -23774,7 +23774,7 @@ void server_loop(void)
             }
 
             /* check if file is in scripts directory or in its subdirs */
-            for (i = 0; p[i] && p[i] != ' ' && p[i] != '?'; i++)
+            for (i = 0; p[i] && p[i] != ' ' && p[i] != '?' && i < (int) sizeof(url); i++)
                url[i] = (p[i] == '/') ? DIR_SEPARATOR : p[i];
             url[i] = 0;
             if (strchr(url, '.')) {
@@ -23810,7 +23810,7 @@ void server_loop(void)
             }
 
             logbook[0] = 0;
-            for (i = 0; *p && *p != '/' && *p != '?' && *p != ' '; i++)
+            for (i = 0; *p && *p != '/' && *p != '?' && *p != ' ' && i < (int) sizeof(logbook); i++)
                logbook[i] = *p++;
             logbook[i] = 0;
             strcpy(logbook_enc, logbook);
@@ -23831,10 +23831,9 @@ void server_loop(void)
             /* check for trailing '/' after logbook/ID */
             if (logbook[0] && *p == '/' && *(p + 1) != ' ') {
                sprintf(url, "%s", logbook_enc);
-               pd = url + strlen(url);
-               while (*p && *p != ' ')
-                  *pd++ = *p++;
-               *pd = 0;
+               for (i = strlen(url); *p && *p != ' ' && i < (int) sizeof(url); i++)
+                  url[i] = *p++;
+               url[i] = 0;
                if (*(p - 1) == '/') {
                   sprintf(str, "Invalid URL: %s", url);
                   show_error(str);
@@ -24109,7 +24108,8 @@ void server_loop(void)
                   goto redir;
                } else if (strncmp(net_buffer, "GET", 3) == 0) {
                   /* extract path and commands */
-                  *strchr(net_buffer, '\r') = 0;
+                  if (strchr(net_buffer, '\r'))
+                     *strchr(net_buffer, '\r') = 0;
                   if (!strstr(net_buffer, "HTTP/1"))
                      goto finished;
                   *(strstr(net_buffer, "HTTP/1") - 1) = 0;

@@ -99,14 +99,14 @@ int scan_file(char *infile, char *outfile)
       }
 
       size = (int) p2 - (int) p;
-      if (size >= (int)sizeof(str)) {
+      if (size >= (int) sizeof(str)) {
          printf("Error: string too long\n");
          free(buf);
          return 1;
       }
 
       memset(str, 0, sizeof(str));
-      memcpy(str, p, size < (int)sizeof(str) ? size : (int)sizeof(str));
+      memcpy(str, p, size < (int) sizeof(str) ? size : (int) sizeof(str));
 
       /* convert \" to " */
       for (p2 = str; *p2; p2++)
