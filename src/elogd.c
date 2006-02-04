@@ -3618,7 +3618,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
       strlcpy(file_name, dir, sizeof(file_name));
       strlcat(file_name, file_list + index * MAX_PATH_LENGTH, sizeof(file_name));
 
-      fh = open(file_name, O_RDWR | O_BINARY, 0644);
+      fh = open(file_name, O_RDONLY | O_BINARY, 0644);
 
       if (fh < 0) {
          sprintf(str, "Cannot open file \"%s\"", file_name);
@@ -4052,7 +4052,7 @@ int el_retrieve(LOGBOOK * lbs,
       return EL_NO_MSG;
 
    sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
-   fh = open(file_name, O_RDWR | O_BINARY, 0644);
+   fh = open(file_name, O_RDONLY | O_BINARY, 0644);
    if (fh < 0) {
       /* file might have been deleted, rebuild index */
       el_build_index(lbs, TRUE);
@@ -4274,7 +4274,7 @@ int el_retrieve_attachment(LOGBOOK * lbs, int message_id, int n, char name[MAX_P
       return EL_NO_MSG;
 
    sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
-   fh = open(file_name, O_RDWR | O_BINARY, 0644);
+   fh = open(file_name, O_RDONLY | O_BINARY, 0644);
    if (fh < 0) {
       /* file might have been deleted, rebuild index */
       el_build_index(lbs, TRUE);
@@ -5076,8 +5076,16 @@ void write_logfile(LOGBOOK * lbs, const char *text)
       sprintf(buf + strlen(buf), "{%s} ", lbs->name);
 
    strlcat(buf, text, sizeof(buf) - 1);
-   if (buf[strlen(buf) - 1] != '\n')
+#ifdef OS_WINNT
+   if (strlen(buf) > 0 && buf[strlen(buf) - 1] != '\n')
+      strlcat(buf, "\r\n", sizeof(buf));
+   else if (strlen(buf) > 1 && buf[strlen(buf) - 2] != '\r')
+      strlcpy(buf+strlen(buf)-2, "\r\n", sizeof(buf)-(strlen(buf)-2));
+
+#else
+   if (strlen(buf) > 1 && buf[strlen(buf) - 1] != '\n')
       strlcat(buf, "\n", sizeof(buf));
+#endif
 
    write(fh, buf, strlen(buf));
 
@@ -6181,7 +6189,7 @@ void compose_base_url(LOGBOOK * lbs, char *base_url, int size)
 
 void set_location(LOGBOOK * lbs, char *rel_path)
 {
-   char str[NAME_LENGTH];
+   char str[NAME_LENGTH], *p;
 
    /* if path contains http(s), go directly there */
    if (strncmp(rel_path, "http://", 7) == 0) {
@@ -6192,105 +6200,121 @@ void set_location(LOGBOOK * lbs, char *rel_path)
       rsputs(rel_path);
    } else {
 
-      if (getcfg(lbs->name, "redirection", str, sizeof(str)) && atoi(str) == 1) {
+      /* check for URL options */
+      str[0] = 0;
+      if (lbs)
+         getcfg(lbs->name, "URL", str, sizeof(str));
+      else
+         getcfg("global", "URL", str, sizeof(str));
 
-         /* use relative redirection */
-         if (lbs)
-            getcfg(lbs->name, "URL", str, sizeof(str));
-         else
-            getcfg("global", "URL", str, sizeof(str));
+      if (str[0] == 0) {
 
-         if (!str[0]) {
+         /* get redirection from referer and host */
+
+         if (referer[0]) {
+            strlcpy(str, referer, sizeof(str));
+
+            /* strip any parameter */
+            if (strchr(str, '?'))
+               *strchr(str, '?') = 0;
+
+            /* strip rightmost '/' */
+            if (strrchr(str, '/'))
+               *strrchr(str, '/') = 0;
+
+            /* extract last subdir */
+            p = str+strlen(str);
+            while (p > str && *p != '/')
+               p--;
+            if (*p == '/')
+               p++;
+
+            /* if last subdir equals logbook name, strip it */
+            if (lbs && stricmp(p, lbs->name_enc) == 0)
+               *p = 0;
+
+            /* if last subdir equals top group, strip it */
+            if (!lbs && getcfg_topgroup() && stricmp(p, getcfg_topgroup()) == 0)
+               *p = 0;
+
+         } else {
             /* assemble absolute path from host name and port */
             sprintf(str, "http://%s", host_name);
             if (elog_tcp_port != 80)
                sprintf(str + strlen(str), ":%d", elog_tcp_port);
-            strcat(str, "/");
+            strlcat(str, "/", sizeof(str));
          }
 
          /* add trailing '/' if not present */
          if (str[strlen(str) - 1] != '/')
-            strcat(str, "/");
+            strlcat(str, "/", sizeof(str));
+
+         /* add top group if existing and not logbook */
+         if (!lbs && getcfg_topgroup()) {
+            strlcat(str, getcfg_topgroup(), sizeof(str));
+            strlcat(str, "/", sizeof(str));
+         }
+
+         if (strncmp(rel_path, "../", 3) == 0)
+            strlcat(str, rel_path + 3, sizeof(str));
+         else if (strcmp(rel_path, ".") == 0) {
+            if (lbs)
+               strlcat(str, lbs->name_enc, sizeof(str));
+         } else if (rel_path[0] == '/')
+            strlcat(str, rel_path + 1, sizeof(str));
+         else {
+            if (lbs) {
+               strlcat(str, lbs->name_enc, sizeof(str));
+               strlcat(str, "/", sizeof(str));
+               strlcat(str, rel_path, sizeof(str));
+            } else
+               strlcat(str, rel_path, sizeof(str));
+         }
 
          rsputs("Location: ");
          rsputs(str);
 
-         /* add top group if existing and not logbook */
-         if (!lbs && getcfg_topgroup()) {
-            rsputs(getcfg_topgroup());
-            rsputs("/");
-         }
-
-         if (strncmp(rel_path, "../", 3) == 0)
-            rsputs(rel_path + 3);
-         else if (strcmp(rel_path, ".") == 0) {
-            if (lbs)
-               rsputs(lbs->name_enc);
-         } else if (rel_path[0] == '/')
-            rsputs(rel_path + 1);
-         else {
-            if (lbs) {
-               rsputs(lbs->name_enc);
-               rsputs("/");
-               rsputs(rel_path);
-            } else
-               rsputs(rel_path);
-         }
-
       } else {
 
-         /* use absolute redirection */
-
-         if (lbs)
-            getcfg(lbs->name, "URL", str, sizeof(str));
-         else
-            getcfg("global", "URL", str, sizeof(str));
+         /* use redirection via URL */
 
          /* if HTTP request comes from localhost, use localhost as
             absolute link (needed if running on DSL at home) */
          if (!str[0] && strstr(http_host, "localhost")) {
-            strcpy(str, "http://localhost");
+            strlcpy(str, "http://localhost", sizeof(str));
             if (elog_tcp_port != 80)
                sprintf(str + strlen(str), ":%d", elog_tcp_port);
-            strcat(str, "/");
-         }
-
-         if (!str[0]) {
-            /* assemble absolute path from host name and port */
-            sprintf(str, "http://%s", host_name);
-            if (elog_tcp_port != 80)
-               sprintf(str + strlen(str), ":%d", elog_tcp_port);
-            strcat(str, "/");
+            strlcat(str, "/", sizeof(str));
          }
 
          /* add trailing '/' if not present */
          if (str[strlen(str) - 1] != '/')
-            strcat(str, "/");
-
-         rsputs("Location: ");
-         rsputs(str);
+            strlcat(str, "/", sizeof(str));
 
          /* add top group if existing and not logbook */
          if (!lbs && getcfg_topgroup()) {
-            rsputs(getcfg_topgroup());
-            rsputs("/");
+            strlcat(str, getcfg_topgroup(), sizeof(str));
+            strlcat(str, "/", sizeof(str));
          }
 
          if (strncmp(rel_path, "../", 3) == 0)
-            rsputs(rel_path + 3);
+            strlcat(str, rel_path + 3, sizeof(str));
          else if (strcmp(rel_path, ".") == 0) {
             if (lbs)
-               rsputs(lbs->name_enc);
+               strlcat(str, lbs->name_enc, sizeof(str));
          } else if (rel_path[0] == '/')
-            rsputs(rel_path + 1);
+            strlcat(str, rel_path + 1, sizeof(str));
          else {
             if (lbs) {
-               rsputs(lbs->name_enc);
-               rsputs("/");
-               rsputs(rel_path);
+               strlcat(str, lbs->name_enc, sizeof(str));
+               strlcat(str, "/", sizeof(str));
+               strlcat(str, rel_path, sizeof(str));
             } else
-               rsputs(rel_path);
+               strlcat(str, rel_path, sizeof(str));
          }
+
+         rsputs("Location: ");
+         rsputs(str);
       }
    }
 
@@ -11358,7 +11382,12 @@ void show_config_page(LOGBOOK * lbs)
    rsprintf("</table></td></tr>\n");
 
    rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
-   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change password"));
+
+   if (is_admin_user(logbook, getparam("unm")) || 
+      !getcfg(logbook, "allow password change", str, sizeof(str)) || 
+      atoi(str) == 1)
+      rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change password"));
+
    rsprintf("<input type=submit name=cmd value=\"%s\" onClick=\"return chkrem();\">\n", loc("Remove user"));
 
    if (is_admin_user(logbook, getparam("unm"))) {
@@ -21075,7 +21104,8 @@ BOOL is_admin_user_global(char *user)
 BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
 {
    char str[1000], str2[256], upwd[256], full_name[256], email[256];
-   int status;
+   int status, show_forgot_link, show_self_register;
+;
 
    if (user == NULL)
       return FALSE;
@@ -21094,6 +21124,9 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
 
    /* check for "forgot password" */
    if (isparam("cmd") && strcmp(getparam("cmd"), loc("Forgot")) == 0) {
+      if (getcfg(lbs->name, "forgot password link", str, sizeof(str)) && atoi(str) == 0)
+         return FALSE;
+
       show_forgot_pwd_page(lbs);
       return FALSE;
    }
@@ -21173,16 +21206,25 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
          rsprintf("%s</td></tr>\n", loc("Remember me on this computer"));
       }
 
-      rsprintf
-          ("<tr><td align=center colspan=2 class=\"dlgform\"><a href=\"?cmd=%s\">%s</a>",
-           loc("Forgot"), loc("Forgot password?"));
+      show_forgot_link = (!getcfg(lbs->name, "allow password change", str, sizeof(str)) || atoi(str) == 1);
+      show_self_register = (getcfg(lbs->name, "Self register", str, sizeof(str)) && atoi(str) > 0);
 
-      if (getcfg(lbs->name, "Self register", str, sizeof(str)) && atoi(str) > 0) {
+      if (show_forgot_link || show_self_register)
+         rsprintf("<tr><td align=center colspan=2 class=\"dlgform\">\n");
+
+      if (show_forgot_link)
+         rsprintf("<a href=\"?cmd=%s\">%s</a>", loc("Forgot"), loc("Forgot password?"));
+
+      if (show_self_register) {
          strcpy(str, loc("New user"));
          url_encode(str, sizeof(str));
-         rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"?cmd=%s\">%s</a></td></tr>",
-                  str, loc("Register as new user"));
+         if (show_forgot_link)
+            rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
+         rsprintf("<a href=\"?cmd=%s\">%s</a></td></tr>", str, loc("Register as new user"));
       }
+
+      if (show_forgot_link || show_self_register)
+         rsprintf("</td></tr>\n");
 
       rsprintf
           ("<tr><td align=center colspan=2 class=\"dlgform\"><input type=submit value=\"%s\"></td></tr>",
@@ -23221,6 +23263,12 @@ void server_loop(void)
    return_buffer_size = 100000;
    return_buffer = xmalloc(return_buffer_size);
 
+   /* determine logging level */
+   if (getcfg(NULL, "Logging Level", str, sizeof(str)))
+      _logging_level = atoi(str);
+   else
+      _logging_level = 2;
+
    /* create a new socket */
    lsock = socket(AF_INET, SOCK_STREAM, 0);
    if (lsock == -1) {
@@ -23396,7 +23444,11 @@ void server_loop(void)
       exit(EXIT_FAILURE);
    }
 
-   eprintf("Server listening on port %d ...\n", elog_tcp_port);
+   sprintf(str, "Server listening on port %d ...\n", elog_tcp_port);
+   eprintf(str);
+   if (_logging_level > 0)
+      write_logfile(NULL, str);
+
    do {
       FD_ZERO(&readfds);
       FD_SET(lsock, &readfds);
