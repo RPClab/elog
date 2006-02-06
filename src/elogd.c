@@ -10890,6 +10890,21 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
       return 0;
    }
 
+   /* check for blank password */
+   str[0];
+   if (isparam("newpwd"))
+      strlcpy(str, getparam("newpwd"), sizeof(str));
+   if (isparam("hpwd"))
+      strlcpy(str, getparam("hpwd"), sizeof(str));
+   if (str[0] == 0) {
+      show_error(loc("Empty password not allowed"));
+      return 0;
+   }
+   if (strchr(str, ' ')) {
+      show_error(loc("Password may not contain blanks"));
+      return 0;
+   }
+
    /* check self register flag */
    self_register = 0;
    if (getcfg(lbs->name, "Self register", str, sizeof(str)))
