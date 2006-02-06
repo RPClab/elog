@@ -21713,7 +21713,7 @@ void show_calendar(LOGBOOK * lbs)
       strcpy(index, "1");
 
    show_html_header(lbs, FALSE, loc("Calendar"), TRUE, FALSE, NULL, FALSE);
-   rsprintf("<body class=\"calwindow\"><form name=form1 method=\"GET\" action=\".\">\n");
+   rsprintf("<body class=\"calwindow\"><form name=form1 method=\"GET\" action=\"cal.html\">\n");
    rsprintf("<input type=hidden name=\"i\" value=\"%s\">\n", index);
    rsprintf("<input type=hidden name=\"y\" value=\"%d\">\n", cur_year);
 
