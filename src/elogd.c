@@ -17548,36 +17548,16 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
          for (i = 0; i < n_attr_disp; i++) {
             /* assemble current command line, replace sort statements */
-            strcpy(ref, isparam("cmdline") ? getparam("cmdline") : "");
-            if (strstr(ref, "&sort=")) {
-               p = strstr(ref, "&sort=") + 1;
-               while (*p && *p != '&')
-                  p++;
-               strcpy(strstr(ref, "&sort="), p);
-            }
-            if (strstr(ref, "&rsort=")) {
-               p = strstr(ref, "&rsort=") + 1;
-               while (*p && *p != '&')
-                  p++;
-               strcpy(strstr(ref, "&rsort="), p);
-            }
-            if (strstr(ref, "?sort="))
-               *strstr(ref, "?sort=") = 0;
-            if (strstr(ref, "?rsort="))
-               *strstr(ref, "?rsort=") = 0;
-
+            strcpy(ref, getparam("cmdline"));
+            
             strcpy(str, disp_attr[i]);
             url_encode(str, sizeof(str));
             if (isparam("sort") && strcmp(getparam("sort"), disp_attr[i]) == 0) {
-               if (strchr(ref, '?'))
-                  sprintf(ref + strlen(ref), "&rsort=%s", str);
-               else
-                  sprintf(ref + strlen(ref), "?rsort=%s", str);
+               subst_param(ref, sizeof(ref), "sort", "");
+               subst_param(ref, sizeof(ref), "rsort", str);
             } else {
-               if (strchr(ref, '?'))
-                  sprintf(ref + strlen(ref), "&sort=%s", str);
-               else
-                  sprintf(ref + strlen(ref), "?sort=%s", str);
+               subst_param(ref, sizeof(ref), "rsort", "");
+               subst_param(ref, sizeof(ref), "sort", str);
             }
 
             img[0] = 0;
