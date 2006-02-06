@@ -6239,8 +6239,8 @@ void set_location(LOGBOOK * lbs, char *rel_path)
 
          } else {
             /* assemble absolute path from host name and port */
-            sprintf(str, "http://%s", host_name);
-            if (elog_tcp_port != 80)
+            sprintf(str, "http://%s", http_host);
+            if (elog_tcp_port != 80 && strchr(str, ':') == NULL)
                sprintf(str + strlen(str), ":%d", elog_tcp_port);
             strlcat(str, "/", sizeof(str));
          }
@@ -11017,9 +11017,9 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
             strcpy(url, referer);
          else {
             if (elog_tcp_port == 80)
-               sprintf(url, "http://%s/", host_name);
+               sprintf(url, "http://%s/", http_host);
             else
-               sprintf(url, "http://%s:%d/", host_name, elog_tcp_port);
+               sprintf(url, "http://%s:%d/", http_host, elog_tcp_port);
             if (lbs) {
                strlcat(url, lbs->name_enc, sizeof(url));
                strlcat(url, "/", sizeof(url));
@@ -11044,7 +11044,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 
             strlcat(mail_text, "\r\n", sizeof(mail_text));
             strlcat(mail_text, loc("Your ELOG account has been activated on host"), sizeof(mail_text));
-            sprintf(mail_text + strlen(mail_text), " %s", host_name);
+            sprintf(mail_text + strlen(mail_text), " %s", http_host);
             sprintf(mail_text + strlen(mail_text), ".\r\n\r\n");
             sprintf(url + strlen(url), "?cmd=Login&unm=%s", getparam("new_user_name"));
             sprintf(mail_text + strlen(mail_text), "%s %s\r\n", loc("You can access it at"), url);
@@ -11467,9 +11467,9 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
                   strcpy(url, referer);
                else {
                   if (elog_tcp_port == 80)
-                     sprintf(url, "http://%s/", host_name);
+                     sprintf(url, "http://%s/", http_host);
                   else
-                     sprintf(url, "http://%s:%d/", host_name, elog_tcp_port);
+                     sprintf(url, "http://%s:%d/", http_host, elog_tcp_port);
                }
             } else {
                if (url[strlen(url) - 1] != '/')
@@ -11491,7 +11491,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             if (lbs)
                sprintf(subject, loc("Password recovery for ELOG %s"), lbs->name);
             else
-               sprintf(subject, loc("Password recovery for ELOG %s"), host_name);
+               sprintf(subject, loc("Password recovery for ELOG %s"), http_host);
 
             mail_text[0] = 0;
             compose_email_header(lbs, subject, mail_from_name, user_email, NULL,
@@ -11499,7 +11499,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
 
             strlcat(mail_text, "\r\n", sizeof(mail_text));
             sprintf(mail_text + strlen(mail_text), loc("A new password has been created for you on host %s"),
-                    host_name);
+                    http_host);
             strlcat(mail_text, ".\r\n", sizeof(mail_text));
             strlcat(mail_text,
                     loc
