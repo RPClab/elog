@@ -10891,7 +10891,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
    }
 
    /* check for blank password */
-   str[0];
+   str[0] = 0;
    if (isparam("newpwd"))
       strlcpy(str, getparam("newpwd"), sizeof(str));
    if (isparam("hpwd"))
