@@ -10869,10 +10869,24 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
    int i, self_register;
    PMXML_NODE node, subnode;
 
+   /* check for user name */
+   if (!isparam("new_user_name") || *getparam("new_user_name") == 0) {
+      sprintf(str, loc("Please enter \"%s\""), loc("Login name"));
+      show_error(str);
+      return 0;
+   }
+
    /* check for full name */
-   if (!isparam("new_full_name") || isparam("new_full_name") == 0) {
+   if (!isparam("new_full_name") || *getparam("new_full_name") == 0) {
       sprintf(str, loc("Please enter \"%s\""), loc("Full name"));
       show_error(str);
+      return 0;
+   }
+
+   /* check for blank character in user name */
+   strlcpy(str, getparam("new_user_name"), sizeof(str));
+   if (strchr(str, ' ')) {
+      show_error(loc("User name may not contain blanks"));
       return 0;
    }
 
