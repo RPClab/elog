@@ -6190,6 +6190,7 @@ void compose_base_url(LOGBOOK * lbs, char *base_url, int size)
 void set_location(LOGBOOK * lbs, char *rel_path)
 {
    char str[NAME_LENGTH], *p;
+   int  i;
 
    /* if path contains http(s), go directly there */
    if (strncmp(rel_path, "http://", 7) == 0) {
@@ -6229,9 +6230,12 @@ void set_location(LOGBOOK * lbs, char *rel_path)
             if (*p == '/')
                p++;
 
-            /* if last subdir equals logbook name, strip it */
-            if (lbs && stricmp(p, lbs->name_enc) == 0)
-               *p = 0;
+            /* if last subdir equals any logbook name, strip it */
+            for (i = 0; lb_list[i].name[0]; i++)
+               if (stricmp(p, lb_list[i].name) == 0) {
+                  *p = 0;
+                  break;
+               }
 
             /* if last subdir equals top group, strip it */
             if (!lbs && getcfg_topgroup() && stricmp(p, getcfg_topgroup()) == 0)
