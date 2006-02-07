@@ -5536,8 +5536,8 @@ PATTERN_LIST pattern_list[] = {
    {"[list]\r", "<ul>"},
    {"[list]", "<ul>"},
    {"[*]", "<li>"},
-   {"[/list]\r", "</ul>"},
-   {"[/list]", "</ul>"},
+   {"[/list]\r", "</#>"}, // either </ul> or </ol>
+   {"[/list]", "</#>"},
    {"[list=", "<ol type=\"%s\">"},
 
    /* headings */
@@ -5573,7 +5573,7 @@ char *email_quote_table =
 
 void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 {
-   int i, j, k, l, m, interprete_elcode, escape_char;
+   int i, j, k, l, m, interprete_elcode, escape_char, ordered_list;
    char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[1000], hattrib[1000],
        value[1000], subst[1000], base_url[256], param[256];
 
@@ -5584,6 +5584,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
    }
 
    interprete_elcode = TRUE;
+   ordered_list = FALSE;
    escape_char = FALSE;
    j = strlen_retbuf;
    m = 0;
@@ -5713,6 +5714,9 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 
             if (interprete_elcode) {
 
+               if (stristr(pattern_list[l].pattern, "[list="))
+                  ordered_list = TRUE;
+
                if (stristr(pattern_list[l].pattern, "[quote")) {
                   if (pattern_list[l].pattern[strlen(pattern_list[l].pattern) - 1] == '=') {
                      i += strlen(pattern_list[l].pattern);
@@ -5836,6 +5840,17 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                   sprintf(return_buffer + j, pattern_list[l].subst, attrib);
                   j += strlen(return_buffer + j);
 
+               } else if (strncmp(pattern_list[l].pattern, "[/list]", 7) == 0) {
+
+                  if (ordered_list)
+                     strcpy(subst, "</ol>");
+                  else
+                     strcpy(subst, "</ul>");
+                  ordered_list = FALSE;
+
+                  strcpy(return_buffer + j, subst);
+                  j += strlen(subst);
+                  i += strlen(pattern_list[l].pattern) - 1;     // 1 gets added in for loop...
                } else {
 
                   /* simple substitution */
