@@ -6220,8 +6220,8 @@ void set_location(LOGBOOK * lbs, char *rel_path)
                *strchr(str, '?') = 0;
 
             /* strip rightmost '/' */
-            if (strrchr(str, '/'))
-               *strrchr(str, '/') = 0;
+            if (str[strlen(str)-1] == '/')
+               str[strlen(str)-1] = 0;
 
             /* extract last subdir */
             p = str+strlen(str);
@@ -6232,7 +6232,7 @@ void set_location(LOGBOOK * lbs, char *rel_path)
 
             /* if last subdir equals any logbook name, strip it */
             for (i = 0; lb_list[i].name[0]; i++)
-               if (stricmp(p, lb_list[i].name) == 0) {
+               if (stricmp(p, lb_list[i].name_enc) == 0) {
                   *p = 0;
                   break;
                }
