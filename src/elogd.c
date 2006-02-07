@@ -6189,7 +6189,7 @@ void compose_base_url(LOGBOOK * lbs, char *base_url, int size)
 
 void set_location(LOGBOOK * lbs, char *rel_path)
 {
-   char str[NAME_LENGTH], *p;
+   char str[NAME_LENGTH], group[NAME_LENGTH], list[NAME_LENGTH], *p;
    int  i;
 
    /* if path contains http(s), go directly there */
@@ -6237,8 +6237,14 @@ void set_location(LOGBOOK * lbs, char *rel_path)
                   break;
                }
 
-            /* if last subdir equals top group, strip it */
-            if (!lbs && getcfg_topgroup() && stricmp(p, getcfg_topgroup()) == 0)
+            /* if last subdir equals any group, strip it */
+            sprintf(group, "Group %s", p);
+            if (getcfg("global", group, list, sizeof(list)))
+               *p = 0;
+
+            /* if last subdir equals any top group, strip it */
+            sprintf(group, "Top group %s", p);
+            if (getcfg("global", group, list, sizeof(list)))
                *p = 0;
 
          } else {
