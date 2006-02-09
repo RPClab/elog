@@ -2181,7 +2181,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
          goto smtp_error;
    }
 
-   snprintf(str, strsize - 1, "MAIL FROM: %s SIZE=%d\r\n", from, strlen(text));
+   snprintf(str, strsize - 1, "MAIL FROM: %s\r\n", from);
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
