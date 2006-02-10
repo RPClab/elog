@@ -899,6 +899,85 @@ void redirect_to_stderr(void)
 
 /*------------------------------------------------------------------*/
 
+#ifdef OS_SOLARIS               /* Solaris does not have forkpty(), so emaulate it */
+
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/ioctl.h>
+#include <sys/stream.h>
+#include <sys/stropts.h>
+
+/* fork_pty() remplacement for Solaris.
+* This ignore the last two arguments
+* for the moment
+*/
+int forkpty(int *amaster, char *name, void *unused1, void *unused2)
+{
+   int master, slave;
+   char *slave_name;
+   pid_t pid;
+
+   master = open("/dev/ptmx", O_RDWR);
+   if (master & lt; 0)
+      return -1;
+
+   if (grantpt(master) & lt; 0) {
+      close(master);
+      return -1;
+   }
+
+   if (unlockpt(master) & lt; 0) {
+      close(master);
+      return -1;
+   }
+
+   slave_name = ptsname(master);
+   if (slave_name == NULL) {
+      close(master);
+      return -1;
+   }
+
+   slave = open(slave_name, O_RDWR);
+   if (slave & lt; 0) {
+      close(master);
+      return -1;
+   }
+
+   if (ioctl(slave, I_PUSH, "ptem") & lt; 0 || ioctl(slave, I_PUSH, "ldterm") & lt; 0) {
+      close(slave);
+      close(master);
+      return -1;
+   }
+
+   if (amaster)
+      *amaster = master;
+
+   if (name)
+      strcpy(name, slave_name);
+
+   pid = fork();
+   switch (pid) {
+   case -1:                    /* Error */
+      return -1;
+   case 0:                     /* Child */
+      close(master);
+      dup2(slave, STDIN_FILENO);
+      dup2(slave, STDOUT_FILENO);
+      dup2(slave, STDERR_FILENO);
+      return 0;
+   default:                    /* Parent */
+      close(slave);
+      return pid;
+   }
+
+   return -1;
+}
+
+#endif  /* OS_SOLARIS */
+
+/*------------------------------------------------------------------*/
+
 int subst_shell(char *cmd, char *result, int size)
 {
 #ifdef OS_WINNT
@@ -5080,7 +5159,7 @@ void write_logfile(LOGBOOK * lbs, const char *text)
    if (strlen(buf) > 0 && buf[strlen(buf) - 1] != '\n')
       strlcat(buf, "\r\n", sizeof(buf));
    else if (strlen(buf) > 1 && buf[strlen(buf) - 2] != '\r')
-      strlcpy(buf+strlen(buf)-2, "\r\n", sizeof(buf)-(strlen(buf)-2));
+      strlcpy(buf + strlen(buf) - 2, "\r\n", sizeof(buf) - (strlen(buf) - 2));
 
 #else
    if (strlen(buf) > 1 && buf[strlen(buf) - 1] != '\n')
@@ -5536,7 +5615,7 @@ PATTERN_LIST pattern_list[] = {
    {"[list]\r", "<ul>"},
    {"[list]", "<ul>"},
    {"[*]", "<li>"},
-   {"[/list]\r", "</#>"}, // either </ul> or </ol>
+   {"[/list]\r", "</#>"},       // either </ul> or </ol>
    {"[/list]", "</#>"},
    {"[list=", "<ol type=\"%s\">"},
 
@@ -6205,7 +6284,7 @@ void compose_base_url(LOGBOOK * lbs, char *base_url, int size)
 void set_location(LOGBOOK * lbs, char *rel_path)
 {
    char str[NAME_LENGTH], group[NAME_LENGTH], list[NAME_LENGTH], *p;
-   int  i;
+   int i;
 
    /* if path contains http(s), go directly there */
    if (strncmp(rel_path, "http://", 7) == 0) {
@@ -6235,11 +6314,11 @@ void set_location(LOGBOOK * lbs, char *rel_path)
                *strchr(str, '?') = 0;
 
             /* strip rightmost '/' */
-            if (str[strlen(str)-1] == '/')
-               str[strlen(str)-1] = 0;
+            if (str[strlen(str) - 1] == '/')
+               str[strlen(str) - 1] = 0;
 
             /* extract last subdir */
-            p = str+strlen(str);
+            p = str + strlen(str);
             while (p > str && *p != '/')
                p--;
             if (*p == '/')
@@ -11437,9 +11516,8 @@ void show_config_page(LOGBOOK * lbs)
 
    rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
 
-   if (is_admin_user(logbook, getparam("unm")) || 
-      !getcfg(logbook, "allow password change", str, sizeof(str)) || 
-      atoi(str) == 1)
+   if (is_admin_user(logbook, getparam("unm")) ||
+       !getcfg(logbook, "allow password change", str, sizeof(str)) || atoi(str) == 1)
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change password"));
 
    rsprintf("<input type=submit name=cmd value=\"%s\" onClick=\"return chkrem();\">\n", loc("Remove user"));
@@ -17578,7 +17656,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          for (i = 0; i < n_attr_disp; i++) {
             /* assemble current command line, replace sort statements */
             strcpy(ref, getparam("cmdline"));
-            
+
             strcpy(str, disp_attr[i]);
             url_encode(str, sizeof(str));
             if (isparam("sort") && strcmp(getparam("sort"), disp_attr[i]) == 0) {
@@ -21143,7 +21221,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
 {
    char str[1000], str2[256], upwd[256], full_name[256], email[256];
    int status, show_forgot_link, show_self_register;
-;
+   ;
 
    if (user == NULL)
       return FALSE;

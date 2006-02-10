@@ -39,10 +39,11 @@ RM = /bin/rm -f
 
 OSTYPE = $(shell uname)
 
-# -lutil needed for forkpty()
-LIBS += -lutil
-
 ifeq ($(OSTYPE),solaris)
+OSTYPE=SOLARIS
+endif
+
+ifeq ($(OSTYPE),SOLARIS)
 CC = gcc
 LIBS += -lsocket -lnsl
 CFLAGS =
@@ -55,15 +56,22 @@ OSTYPE=darwin
 endif
 
 ifeq ($(OSTYPE),darwin)
+LIBS += -lutil
 CC = cc
 BINOWNER = root
 BINGROUP = admin
 endif
 
 ifeq ($(OSTYPE),FreeBSD)
+LIBS += -lutil
 CC = gcc
 BINOWNER = root
 BINGROUP = wheel
+endif
+
+ifeq ($(OSTYPE),Linux)
+LIBS += -lutil
+CC = gcc
 endif
 
 CFLAGS += -DOS_$(OSTYPE)
