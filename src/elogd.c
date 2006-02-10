@@ -15448,8 +15448,12 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          strlcat(menu_str, "Config, ", sizeof(menu_str));
    }
 
-   strcpy(other_str, "Update, Upload, Submit, Preview, Back, Search, Save, Download, CSV Import, ");
-   strcat(other_str, "Cancel, First, Last, Previous, Next, Requested, Forgot, ");
+   strcpy(other_str, "Preview, Back, Search, Download, CSV Import, ");
+   strlcat(other_str, "Cancel, First, Last, Previous, Next, Requested, Forgot, ", sizeof(other_str));
+
+   /* only allow Submit & Co if "New" is allowed */
+   if (strstr(menu_str, "New"))
+      strlcat(other_str, "Update, Upload, Submit, Save, ", sizeof(other_str));
 
    /* admin commands */
    if (is_admin_user(lbs->name, getparam("unm"))) {
@@ -15467,7 +15471,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
       return TRUE;
    }
    /* exclude non-localized submit for elog */
-   else if (command[0] && strieq(command, "Submit")) {
+   else if (command[0] && strieq(command, "Submit") && strstr(menu_str, "New")) {
       return TRUE;
    }
    /* exclude other non-localized commands */
