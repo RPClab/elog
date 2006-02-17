@@ -39,11 +39,7 @@ RM = /bin/rm -f
 
 OSTYPE = $(shell uname)
 
-ifeq ($(OSTYPE),solaris)
-OSTYPE=SOLARIS
-endif
-
-ifeq ($(OSTYPE),SOLARIS)
+ifeq ($(OSTYPE),SunOS)
 CC = gcc
 LIBS += -lsocket -lnsl
 CFLAGS =
