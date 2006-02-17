@@ -93,6 +93,7 @@ typedef int BOOL;
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <signal.h>
 #include <time.h>
@@ -899,85 +900,6 @@ void redirect_to_stderr(void)
 
 /*------------------------------------------------------------------*/
 
-#ifdef OS_SOLARIS               /* Solaris does not have forkpty(), so emaulate it */
-
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/ioctl.h>
-#include <sys/stream.h>
-#include <sys/stropts.h>
-
-/* fork_pty() remplacement for Solaris.
-* This ignore the last two arguments
-* for the moment
-*/
-int forkpty(int *amaster, char *name, void *unused1, void *unused2)
-{
-   int master, slave;
-   char *slave_name;
-   pid_t pid;
-
-   master = open("/dev/ptmx", O_RDWR);
-   if (master & lt; 0)
-      return -1;
-
-   if (grantpt(master) & lt; 0) {
-      close(master);
-      return -1;
-   }
-
-   if (unlockpt(master) & lt; 0) {
-      close(master);
-      return -1;
-   }
-
-   slave_name = ptsname(master);
-   if (slave_name == NULL) {
-      close(master);
-      return -1;
-   }
-
-   slave = open(slave_name, O_RDWR);
-   if (slave & lt; 0) {
-      close(master);
-      return -1;
-   }
-
-   if (ioctl(slave, I_PUSH, "ptem") & lt; 0 || ioctl(slave, I_PUSH, "ldterm") & lt; 0) {
-      close(slave);
-      close(master);
-      return -1;
-   }
-
-   if (amaster)
-      *amaster = master;
-
-   if (name)
-      strcpy(name, slave_name);
-
-   pid = fork();
-   switch (pid) {
-   case -1:                    /* Error */
-      return -1;
-   case 0:                     /* Child */
-      close(master);
-      dup2(slave, STDIN_FILENO);
-      dup2(slave, STDOUT_FILENO);
-      dup2(slave, STDERR_FILENO);
-      return 0;
-   default:                    /* Parent */
-      close(slave);
-      return pid;
-   }
-
-   return -1;
-}
-
-#endif  /* OS_SOLARIS */
-
-/*------------------------------------------------------------------*/
-
 int subst_shell(char *cmd, char *result, int size)
 {
 #ifdef OS_WINNT
@@ -1110,38 +1032,25 @@ int subst_shell(char *cmd, char *result, int size)
 #endif                          /* OS_WINNT */
 
 #ifdef OS_UNIX
-#ifndef NO_PTY
    pid_t pid;
-   int i, pipe;
-   char line[32], buffer[256], shell[1024], str[256];
-   fd_set readfds;
-   struct timeval timeout;
+   int   fh;
+   char  str[256];
 
-   if ((pid = forkpty(&pipe, line, NULL, NULL)) < 0)
+   if ((pid = fork()) < 0)
       return 0;
    else if (pid > 0) {
-      /* parent process */
-      result[0] = 0;
+      /* parent process waits for child */
+      wait(NULL);
 
-      do {
-         FD_ZERO(&readfds);
-         FD_SET(pipe, &readfds);
-         timeout.tv_sec = 3;
-         timeout.tv_usec = 0;
+      /* read back result */
+      fh = open("/tmp/elog-shell", O_RDONLY);
+      if (fh > 0) {
+         read(fh, result, size);
+         close(fh);
+      }
 
-         select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
-
-         if (FD_ISSET(pipe, &readfds)) {
-            memset(buffer, 0, sizeof(buffer));
-            i = read(pipe, buffer, sizeof(buffer));
-            if (i <= 0)
-               break;
-            buffer[i] = 0;
-            strlcat(result, buffer, size);
-         } else
-            break;
-
-      } while (1);
+      /* remove temporary file */
+      remove("/tmp/elog-shell");
 
       /* strip trailing CR/LF */
       while (strlen(result) > 0 && (result[strlen(result) - 1] == '\r' || result[strlen(result) - 1] == '\n'))
@@ -1183,16 +1092,11 @@ int subst_shell(char *cmd, char *result, int size)
             eprintf("Falling back to user \"%s\"\n", str);
       }
 
-      if (getenv("SHELL"))
-         strlcpy(shell, getenv("SHELL"), sizeof(shell));
-      else
-         strcpy(shell, "/bin/sh");
-
-      execl(shell, shell, "-c", cmd, NULL);
+      /* execute shell with redirection to /tmp/elog-shell */
+      sprintf(str, "/bin/sh -c \"%s\" > /tmp/elog-shell 2>&1", cmd);
+      system(str);
+      exit(0);
    }
-#else
-   assert(FALSE);
-#endif                          /* NO_PTY */
 
    return 1;
 
