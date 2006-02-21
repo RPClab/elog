@@ -300,11 +300,11 @@ Encode the given string in-place by adding %XX escapes
 \********************************************************************/
 {
    unsigned char *pd, *p;
-   char str[NAME_LENGTH];
+   unsigned char str[NAME_LENGTH];
 
    pd = (unsigned char *) str;
    p = (unsigned char *) ps;
-   while (*p && (int) pd < (int) str + 250) {
+   while (*p && pd < str + 250) {
       if (strchr("%&=#?+", *p) || *p > 127) {
          sprintf((char *) pd, "%%%02X", *p);
          pd += 3;
@@ -359,7 +359,7 @@ void add_crlf(char *buffer, int bufsize)
 
       strlcpy(tmpbuf, p, bufsize);
       *(p++) = '\r';
-      strlcpy(p, tmpbuf, bufsize - ((int) p - (int) buffer));
+      strlcpy(p, tmpbuf, bufsize - ( p - buffer));
       p++;
    }
 
@@ -1023,7 +1023,7 @@ int main(int argc, char *argv[])
    char host_name[256], logbook[32], textfile[256], password[80], subdir[256];
    char *buffer[MAX_ATTACHMENTS], attachment[MAX_ATTACHMENTS][256];
    INT att_size[MAX_ATTACHMENTS];
-   INT i, n, fh, n_att, n_attr, size, port, reply, edit, encoding, suppress;
+   INT i, n, fh, n_att, n_attr, port, reply, edit, encoding, suppress, size;
    char attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 
    text[0] = textfile[0] = uname[0] = upwd[0] = suppress = 0;
@@ -1132,11 +1132,11 @@ int main(int argc, char *argv[])
          return 1;
       }
 
-      size = lseek(fh, 0, SEEK_END);
+      size = (INT) lseek(fh, 0, SEEK_END);
       lseek(fh, 0, SEEK_SET);
 
-      if (size > (int) sizeof(text) - 1) {
-         printf("Message file \"%s\" is too long (%d bytes max).\n", textfile, sizeof(text));
+      if (size > (INT)(sizeof(text) - 1)) {
+         printf("Message file \"%s\" is too long (%zd bytes max).\n", textfile, sizeof(text));
          return 1;
       }
 
