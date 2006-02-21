@@ -6,25 +6,7 @@
   Contents:     Extract all localization strings from elogd and put
                 them into eloglang.xxxx
 
-  $Log$
-  Revision 1.6  2004/02/17 11:14:04  midas
-  Version 2.5.1
-
-  Revision 1.5  2004/01/26 14:52:17  midas
-  Changed indentation
-
-  Revision 1.4  2004/01/23 07:08:44  midas
-  Adjusted comments
-
-  Revision 1.3  2004/01/21 16:24:34  midas
-  Added removel of obsolete lines
-
-  Revision 1.2  2004/01/18 21:46:20  midas
-  Applied indent
-
-  Revision 1.1  2004/01/15 14:22:38  midas
-  Initial revision
-
+  $Id:$
 
 \********************************************************************/
 

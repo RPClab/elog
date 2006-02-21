@@ -1,47 +1,11 @@
 /********************************************************************\
 
-  Name:         elogd.c
+  Name:         elconv.c
   Created by:   Stefan Ritt
 
   Contents:     Conversion program for ELOG messages
 
-  $Log$
-  Revision 1.8  2004/11/21 16:51:42  midas
-  Added debug print of dir
-
-  Revision 1.7  2004/09/18 04:42:46  midas
-  Fixed bug with not displaying inline images
-
-  Revision 1.6  2004/07/28 18:51:57  midas
-  Fixed error with gcc 3.4, thanks to Recai Oktas
-
-  Revision 1.5  2004/04/15 06:48:43  midas
-  Fixed bug with unterminated string
-
-  Revision 1.4  2004/02/17 11:19:49  midas
-  Fixed compiler warnings
-
-  Revision 1.3  2004/01/07 11:14:53  midas
-  Changed line length
-
-  Revision 1.2  2004/01/06 13:21:34  midas
-  Changed indent style
-
-  Revision 1.1  2003/01/30 14:45:07  midas
-  Moved files to src/ subdirectory
-
-  Revision 1.4  2002/06/07 10:00:26  midas
-  Added some non-verbose messages
-
-  Revision 1.3  2002/06/07 09:30:37  midas
-  Fixed thread_list re-allocation
-
-  Revision 1.2  2002/06/03 12:37:54  midas
-  Added thread evaluation
-
-  Revision 1.1  2002/05/29 10:22:46  midas
-  Initial revision
-
+  $Id:$
 
 \********************************************************************/
 
