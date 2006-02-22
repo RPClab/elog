@@ -10899,6 +10899,8 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
       strlcpy(str, getparam("newpwd"), sizeof(str));
    if (isparam("hpwd"))
       strlcpy(str, getparam("hpwd"), sizeof(str));
+   if (isparam("encpwd"))
+      strlcpy(str, getparam("encpwd"), sizeof(str));
    if (str[0] == 0) {
       show_error(loc("Empty password not allowed"));
       return 0;
@@ -11150,7 +11152,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
                      for (i = 0; lb_list[i].name[0]; i++) {
                         sprintf(str, "sub_lb%d", i);
                         if (isparam(str) && atoi(getparam(str)) == 1)
-                           sprintf(mail_text + strlen(mail_text), "&amp;%s=1", str);
+                           sprintf(mail_text + strlen(mail_text), "&%s=1", str);
                      }
 
                      sprintf(mail_text + strlen(mail_text), "&encpwd=%s&unm=%s\r\n", enc_pwd, pl);
@@ -15431,6 +15433,10 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
    /* only allow Submit & Co if "New" is allowed */
    if (strstr(menu_str, "New"))
       strlcat(other_str, "Update, Upload, Submit, Save, ", sizeof(other_str));
+   
+   /* add save for new user registration */
+   if (isparam("new_user_name"))
+      strlcat(other_str, "Save, ", sizeof(other_str));
 
    /* admin commands */
    if (is_admin_user(lbs->name, getparam("unm"))) {
