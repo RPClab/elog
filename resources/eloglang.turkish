@@ -406,3 +406,10 @@ HelpELCode = ElCodeYardýmý
 Cannot retrieve file from URL "%s" = Dosya "%s" að adresinden alýnamýyor
 File not found at URL "%s" = Dosya "%s" að adresinde bulunamýyor
 name may not contain blanks = isim boþluk içermemeli
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+User name may not contain blanks = 
+Empty password not allowed = 
+Password may not contain blanks = 

@@ -411,3 +411,6 @@ Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" =
 Shell execution not enabled via -x flag = 
 Enter heading level (1, 2 or 3) = 
 insert heading = 
+User name may not contain blanks = 
+Empty password not allowed = 
+Password may not contain blanks = 
