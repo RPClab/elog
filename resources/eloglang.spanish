@@ -394,20 +394,18 @@ Image uploaded successfully = Imagen recibida exitosamente
 Image "%s" uploaded successfully = Imagen "%s" recibida exitosamente
 HelpELCode = HelpELCode
 Cannot retrieve file from URL "%s" = No puedo obtener el archivo desde la URL "%s"
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-astonished = 
-Error in regular expression "%s" = 
-File not found at URL "%s" = 
-Entry size too large for email notification = 
-Please specify a valid email address = 
-Cannot send email notification to "%s" = 
-Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = 
-Shell execution not enabled via -x flag = 
-Enter heading level (1, 2 or 3) = 
-insert heading = 
-User name may not contain blanks = 
-Empty password not allowed = 
-Password may not contain blanks = 
+astonished = Asombrado
+Error in regular expression "%s" = Error en la expresion regular "%s"
+File not found at URL "%s" = Archivo no encontrado en la URL "%s"
+Entry size too large for email notification = Entrada demasiado grande 
+para notificacion por email
+Please specify a valid email address = Por favor especifique una direccion de email valida
+Cannot send email notification to "%s" = No se puede enviar una notificacion por email a "%s"
+Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = Error: El comando "<b>%s</b>" no esta permitido para el usuario "<b>%s</b>"
+Shell execution not enabled via -x flag = La ejecución del shell no está habilitada via flag -x
+Enter heading level (1, 2 or 3) = Ingrese nivel de encabezado (1, 2 o 3)
+insert heading = inserte encabezado
+User name may not contain blanks =  El nombre de usuario no puede
+contener espacios en blancos
+Empty password not allowed = No se permite clave vacía
+Password may not contain blanks = La clave no puede contener espacios en blancos
