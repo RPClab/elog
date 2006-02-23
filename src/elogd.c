@@ -21138,44 +21138,45 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
 {
    char str[1000], str2[256], upwd[256], full_name[256], email[256];
    int status, show_forgot_link, show_self_register;
-   ;
 
    if (user == NULL)
-      return FALSE;
+      status = 1;
+   else {
 
-   status = get_user_line(lbs, user, upwd, full_name, email, NULL, NULL);
+      status = get_user_line(lbs, user, upwd, full_name, email, NULL, NULL);
 
-   if (status == 1 && user[0])
-      set_user_login_time(lbs, user);
+      if (status == 1 && user[0])
+         set_user_login_time(lbs, user);
 
-   /* check for logout */
-   if (isparam("LO")) {
-      /* remove cookies */
-      set_login_cookies(lbs, "", "");
-      return FALSE;
-   }
-
-   /* check for "forgot password" */
-   if (isparam("cmd") && strcmp(getparam("cmd"), loc("Forgot")) == 0) {
-      if (getcfg(lbs->name, "forgot password link", str, sizeof(str)) && atoi(str) == 0)
-         return FALSE;
-
-      show_forgot_pwd_page(lbs);
-      return FALSE;
-   }
-
-   if (!check_login_user(lbs, user)) {
-      if (isparam("fail")) {
-         /* remove remaining cookies */
-         remove_all_login_cookies(lbs);
+      /* check for logout */
+      if (isparam("LO")) {
+         /* remove cookies */
+         set_login_cookies(lbs, "", "");
          return FALSE;
       }
-      redirect(lbs, "?fail=1");
-      return FALSE;
+
+      /* check for "forgot password" */
+      if (isparam("cmd") && strcmp(getparam("cmd"), loc("Forgot")) == 0) {
+         if (getcfg(lbs->name, "forgot password link", str, sizeof(str)) && atoi(str) == 0)
+            return FALSE;
+
+         show_forgot_pwd_page(lbs);
+         return FALSE;
+      }
+
+      if (!check_login_user(lbs, user)) {
+         if (isparam("fail")) {
+            /* remove remaining cookies */
+            remove_all_login_cookies(lbs);
+            return FALSE;
+         }
+         redirect(lbs, "?fail=1");
+         return FALSE;
+      }
    }
 
    if (status == 1) {
-      if (user[0] && password && strcmp(password, upwd) == 0) {
+      if (user != NULL && user[0] && password && strcmp(password, upwd) == 0) {
          setparam("full_name", full_name);
          setparam("user_email", email);
          return TRUE;
