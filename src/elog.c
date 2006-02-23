@@ -5,7 +5,7 @@
 
   Contents:     Electronic logbook utility
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
@@ -248,7 +248,7 @@ void add_crlf(char *buffer, int bufsize)
 
       strlcpy(tmpbuf, p, bufsize);
       *(p++) = '\r';
-      strlcpy(p, tmpbuf, bufsize - ( p - buffer));
+      strlcpy(p, tmpbuf, bufsize - (p - buffer));
       p++;
    }
 
@@ -1024,7 +1024,7 @@ int main(int argc, char *argv[])
       size = (INT) lseek(fh, 0, SEEK_END);
       lseek(fh, 0, SEEK_SET);
 
-      if (size > (INT)(sizeof(text) - 1)) {
+      if (size > (INT) (sizeof(text) - 1)) {
          printf("Message file \"%s\" is too long (%zd bytes max).\n", textfile, sizeof(text));
          return 1;
       }

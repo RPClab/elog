@@ -5,7 +5,7 @@
 
   Contents:     Conversion program for ELOG messages
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 

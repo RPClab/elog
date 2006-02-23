@@ -1028,8 +1028,8 @@ int subst_shell(char *cmd, char *result, int size)
 
 #ifdef OS_UNIX
    pid_t pid;
-   int   fh;
-   char  str[256];
+   int fh;
+   char str[256];
 
    if ((pid = fork()) < 0)
       return 0;
@@ -15433,7 +15433,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
    /* only allow Submit & Co if "New" is allowed */
    if (strstr(menu_str, "New"))
       strlcat(other_str, "Update, Upload, Submit, Save, ", sizeof(other_str));
-   
+
    /* add save for new user registration */
    if (isparam("new_user_name"))
       strlcat(other_str, "Save, ", sizeof(other_str));

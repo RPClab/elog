@@ -6,7 +6,7 @@
   Contents:     Extract all localization strings from elogd and put
                 them into eloglang.xxxx
 
-  $Id:$
+  $Id$
 
 \********************************************************************/
 
