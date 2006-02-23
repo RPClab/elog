@@ -17579,10 +17579,16 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                sprintf(img, "<img align=top src=\"down.png\" alt=\"%s\" title=\"%s\">", loc("down"),
                        loc("down"));
 
+            sprintf(str, "Tooltip %s", disp_attr[i]);
+            if (getcfg(lbs->name, str, comment, sizeof(comment)))
+               sprintf(str, "title=\"%s\"", comment);
+            else
+               str[0] = 0;
+
             if (strieq(disp_attr[i], "Edit") || strieq(disp_attr[i], "Delete"))
-               rsprintf("<th class=\"listtitle\">%s</th>\n", disp_attr[i]);
+               rsprintf("<th %s class=\"listtitle\">%s</th>\n", str, disp_attr[i]);
             else {
-               rsprintf("<th class=\"listtitle\"><a href=\"");
+               rsprintf("<th %s class=\"listtitle\"><a href=\"", str);
                rsputs3(ref);
                rsprintf("\">%s</a>%s</th>\n", disp_attr[i], img);
             }
@@ -20167,7 +20173,13 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             rsprintf("<tr>");
 
          sprintf(lattr, "l%s", attr_list[i]);
-         rsprintf("<td nowrap class=\"%s\">", class_name);
+
+         /* display cell with optional tooltip */
+         sprintf(str, "Tooltip %s", attr_list[i]);
+         if (getcfg(lbs->name, str, comment, sizeof(comment)))
+            rsprintf("<td nowrap title=\"%s\" class=\"%s\">", comment, class_name);
+         else
+            rsprintf("<td nowrap class=\"%s\">", class_name);
 
          if (getcfg(lbs->name, "Filtered browsing", str, sizeof(str)) && atoi(str) == 1) {
             if (isparam(lattr) == '1')
