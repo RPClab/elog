@@ -2,7 +2,6 @@
 
   .title { padding: 5px 10px;
     background-color: rgb(72, 96, 144);
-    font-family: Verdana,Arial,Helvetica,Sans-Serif;
     font-size: x-large;
     color: white;
     text-align: center;
@@ -10,19 +9,17 @@
 
   .version { padding: 5px 10px;
     color: rgb(72, 96, 144);
-    font-family: Verdana,Arial,Helvetica,Sans-Serif;
     text-align: center;
     font-weight: bold;
     }
 
-  .Sub { font-family: Verdana,Arial,Helvetica,Sans-Serif;
+  .Sub {
     font-size: medium;
     text-align: center;
     }
 
   .menu { padding: 5px 10px;
     background-color: rgb(72, 96, 144);
-    font-family: Verdana,Arial,Helvetica,Sans-Serif;
     font-size: medium;
     color: white;
     text-align: center;
@@ -34,7 +31,6 @@
 
   .section { padding: 5px 10px;
     background-color: rgb(72, 96, 144);
-    font-family: Verdana,Arial,Helvetica,Sans-Serif;
     font-size: large;
     color: white;
     text-align: left;
@@ -42,13 +38,17 @@
 
   .footer { padding: 5px 10px;
     background-color: rgb(72, 96, 144);
-    font-family: Verdana,Arial,Helvetica,Sans-Serif;
     font-size: small;
     color: white;
     text-align: left;
     }
 
-  p { margin-left: 10px;
+  body {
+    font-family: Verdana,Arial,Helvetica,Sans-Serif;
+    }
+  
+  p {
+    margin-left: 10px;
     margin-right: 10px;
     }
 

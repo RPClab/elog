@@ -251,6 +251,7 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 #define AF_TIME              (1<<10)
 #define AF_NUMERIC           (1<<11)
 #define AF_USERLIST          (1<<12)
+#define AF_HIDDEN            (1<<13)
 
 /* attribute format flags */
 #define AFF_SAME_LINE              1
@@ -550,6 +551,32 @@ static BOOL chkext(const char *str, const char *ext)
 size_t my_strftime(char *s, size_t max, const char *fmt, const struct tm * tm)
 {
    return strftime(s, max, fmt, tm);
+}
+
+/* signal save read function */
+int my_read(int fh, void *buffer, unsigned int bytes)
+{
+#ifdef OS_UNIX
+   int i, n = 0;
+
+   do {
+      i = read(fh, buffer+n, bytes-n);
+
+      /* don't return if an alarm signal was cought */
+      if (i == -1 && errno == EINTR)
+         continue;
+
+      if (i == -1)
+         return -1;
+
+      n += i;
+
+   } while (n < bytes);
+#else
+   return read(fh, buffer, bytes);
+#endif
+
+   return 0;
 }
 
 /*---- Compose RFC2822 compliant date ---*/
@@ -4041,7 +4068,7 @@ int el_retrieve(LOGBOOK * lbs,
    message = malloc(TEXT_SIZE + 1000);
 
    lseek(fh, lbs->el_index[index].offset, SEEK_SET);
-   i = read(fh, message, TEXT_SIZE + 1000 - 1);
+   i = my_read(fh, message, TEXT_SIZE + 1000 - 1);
    if (i <= 0) {
       free(message);
       close(fh);
@@ -4260,7 +4287,7 @@ int el_retrieve_attachment(LOGBOOK * lbs, int message_id, int n, char name[MAX_P
    }
 
    lseek(fh, lbs->el_index[index].offset, SEEK_SET);
-   i = read(fh, message, sizeof(message) - 1);
+   i = my_read(fh, message, sizeof(message) - 1);
    if (i <= 0) {
       close(fh);
       return EL_FILE_ERROR;
@@ -4381,7 +4408,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       }
 
       lseek(fh, lbs->el_index[index].offset, SEEK_SET);
-      i = read(fh, message, TEXT_SIZE + 100);
+      i = my_read(fh, message, TEXT_SIZE + 100);
       message[i] = 0;
 
       /* check for valid message */
@@ -4430,7 +4457,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
          buffer = xmalloc(tail_size);
 
          lseek(fh, lbs->el_index[index].offset + size, SEEK_SET);
-         n = read(fh, buffer, tail_size);
+         n = my_read(fh, buffer, tail_size);
       }
       lseek(fh, lbs->el_index[index].offset, SEEK_SET);
    } else {
@@ -4679,7 +4706,7 @@ int el_delete_message(LOGBOOK * lbs, int message_id,
    message = xmalloc(TEXT_SIZE + 1000);
 
    lseek(fh, lbs->el_index[index].offset, SEEK_SET);
-   i = read(fh, message, TEXT_SIZE + 1000 - 1);
+   i = my_read(fh, message, TEXT_SIZE + 1000 - 1);
    if (i <= 0) {
       xfree(message);
       close(fh);
@@ -4756,7 +4783,7 @@ int el_delete_message(LOGBOOK * lbs, int message_id,
       buffer = xmalloc(tail_size);
 
       lseek(fh, lbs->el_index[index].offset + size, SEEK_SET);
-      n = read(fh, buffer, tail_size);
+      n = my_read(fh, buffer, tail_size);
    }
    lseek(fh, lbs->el_index[index].offset, SEEK_SET);
 
@@ -6185,139 +6212,154 @@ void set_location(LOGBOOK * lbs, char *rel_path)
    char str[NAME_LENGTH], group[NAME_LENGTH], list[NAME_LENGTH], *p;
    int i;
 
-   /* if path contains http(s), go directly there */
-   if (strncmp(rel_path, "http://", 7) == 0) {
-      rsputs("Location: ");
-      rsputs(rel_path);
-   } else if (strncmp(rel_path, "https://", 8) == 0) {
-      rsputs("Location: ");
-      rsputs(rel_path);
-   } else {
+   if (getcfg(lbs->name, "Relative redirect", str, sizeof(str)) &&
+      atoi(str) == 1) {
 
-      /* check for URL options */
-      str[0] = 0;
-      if (lbs)
-         getcfg(lbs->name, "URL", str, sizeof(str));
+      if (rel_path[0])
+         strlcpy(str, rel_path, sizeof(str));
       else
-         getcfg("global", "URL", str, sizeof(str));
+         strlcpy(str, ".", sizeof(str));
 
-      if (str[0] == 0) {
+      rsputs("Location: ");
+      rsputs(str);
 
-         /* get redirection from referer and host */
+   } else {
+      /* Absolute redirect */
 
-         if (referer[0]) {
-            strlcpy(str, referer, sizeof(str));
-
-            /* strip any parameter */
-            if (strchr(str, '?'))
-               *strchr(str, '?') = 0;
-
-            /* strip rightmost '/' */
-            if (str[strlen(str) - 1] == '/')
-               str[strlen(str) - 1] = 0;
-
-            /* extract last subdir */
-            p = str + strlen(str);
-            while (p > str && *p != '/')
-               p--;
-            if (*p == '/')
-               p++;
-
-            /* if last subdir equals any logbook name, strip it */
-            for (i = 0; lb_list[i].name[0]; i++)
-               if (stricmp(p, lb_list[i].name_enc) == 0) {
-                  *p = 0;
-                  break;
-               }
-
-            /* if last subdir equals any group, strip it */
-            sprintf(group, "Group %s", p);
-            if (getcfg("global", group, list, sizeof(list)))
-               *p = 0;
-
-            /* if last subdir equals any top group, strip it */
-            sprintf(group, "Top group %s", p);
-            if (getcfg("global", group, list, sizeof(list)))
-               *p = 0;
-
-         } else {
-            /* assemble absolute path from host name and port */
-            sprintf(str, "http://%s", http_host);
-            if (elog_tcp_port != 80 && strchr(str, ':') == NULL)
-               sprintf(str + strlen(str), ":%d", elog_tcp_port);
-            strlcat(str, "/", sizeof(str));
-         }
-
-         /* add trailing '/' if not present */
-         if (str[strlen(str) - 1] != '/')
-            strlcat(str, "/", sizeof(str));
-
-         /* add top group if existing and not logbook */
-         if (!lbs && getcfg_topgroup()) {
-            strlcat(str, getcfg_topgroup(), sizeof(str));
-            strlcat(str, "/", sizeof(str));
-         }
-
-         if (strncmp(rel_path, "../", 3) == 0)
-            strlcat(str, rel_path + 3, sizeof(str));
-         else if (strcmp(rel_path, ".") == 0) {
-            if (lbs)
-               strlcat(str, lbs->name_enc, sizeof(str));
-         } else if (rel_path[0] == '/')
-            strlcat(str, rel_path + 1, sizeof(str));
-         else {
-            if (lbs) {
-               strlcat(str, lbs->name_enc, sizeof(str));
-               strlcat(str, "/", sizeof(str));
-               strlcat(str, rel_path, sizeof(str));
-            } else
-               strlcat(str, rel_path, sizeof(str));
-         }
-
+      /* if path contains http(s), go directly there */
+      if (strncmp(rel_path, "http://", 7) == 0) {
          rsputs("Location: ");
-         rsputs(str);
-
+         rsputs(rel_path);
+      } else if (strncmp(rel_path, "https://", 8) == 0) {
+         rsputs("Location: ");
+         rsputs(rel_path);
       } else {
 
-         /* use redirection via URL */
+         /* check for URL options */
+         str[0] = 0;
+         if (lbs)
+            getcfg(lbs->name, "URL", str, sizeof(str));
+         else
+            getcfg("global", "URL", str, sizeof(str));
 
-         /* if HTTP request comes from localhost, use localhost as
-            absolute link (needed if running on DSL at home) */
-         if (!str[0] && strstr(http_host, "localhost")) {
-            strlcpy(str, "http://localhost", sizeof(str));
-            if (elog_tcp_port != 80)
-               sprintf(str + strlen(str), ":%d", elog_tcp_port);
-            strlcat(str, "/", sizeof(str));
-         }
+         if (str[0] == 0) {
 
-         /* add trailing '/' if not present */
-         if (str[strlen(str) - 1] != '/')
-            strlcat(str, "/", sizeof(str));
+            /* get redirection from referer and host */
 
-         /* add top group if existing and not logbook */
-         if (!lbs && getcfg_topgroup()) {
-            strlcat(str, getcfg_topgroup(), sizeof(str));
-            strlcat(str, "/", sizeof(str));
-         }
+            if (referer[0]) {
+               strlcpy(str, referer, sizeof(str));
 
-         if (strncmp(rel_path, "../", 3) == 0)
-            strlcat(str, rel_path + 3, sizeof(str));
-         else if (strcmp(rel_path, ".") == 0) {
-            if (lbs)
-               strlcat(str, lbs->name_enc, sizeof(str));
-         } else if (rel_path[0] == '/')
-            strlcat(str, rel_path + 1, sizeof(str));
-         else {
-            if (lbs) {
-               strlcat(str, lbs->name_enc, sizeof(str));
+               /* strip any parameter */
+               if (strchr(str, '?'))
+                  *strchr(str, '?') = 0;
+
+               /* strip rightmost '/' */
+               if (str[strlen(str) - 1] == '/')
+                  str[strlen(str) - 1] = 0;
+
+               /* extract last subdir */
+               p = str + strlen(str);
+               while (p > str && *p != '/')
+                  p--;
+               if (*p == '/')
+                  p++;
+
+               /* if last subdir equals any logbook name, strip it */
+               for (i = 0; lb_list[i].name[0]; i++)
+                  if (stricmp(p, lb_list[i].name_enc) == 0) {
+                     *p = 0;
+                     break;
+                  }
+
+               /* if last subdir equals any group, strip it */
+               sprintf(group, "Group %s", p);
+               if (getcfg("global", group, list, sizeof(list)))
+                  *p = 0;
+
+               /* if last subdir equals any top group, strip it */
+               sprintf(group, "Top group %s", p);
+               if (getcfg("global", group, list, sizeof(list)))
+                  *p = 0;
+
+            } else {
+               /* assemble absolute path from host name and port */
+               sprintf(str, "http://%s", http_host);
+               if (elog_tcp_port != 80 && strchr(str, ':') == NULL)
+                  sprintf(str + strlen(str), ":%d", elog_tcp_port);
                strlcat(str, "/", sizeof(str));
-               strlcat(str, rel_path, sizeof(str));
-            } else
-               strlcat(str, rel_path, sizeof(str));
-         }
+            }
 
-         rsputs("Location: ");
-         rsputs(str);
+            /* add trailing '/' if not present */
+            if (str[strlen(str) - 1] != '/')
+               strlcat(str, "/", sizeof(str));
+
+            /* add top group if existing and not logbook */
+            if (!lbs && getcfg_topgroup()) {
+               strlcat(str, getcfg_topgroup(), sizeof(str));
+               strlcat(str, "/", sizeof(str));
+            }
+
+            if (strncmp(rel_path, "../", 3) == 0)
+               strlcat(str, rel_path + 3, sizeof(str));
+            else if (strcmp(rel_path, ".") == 0) {
+               if (lbs)
+                  strlcat(str, lbs->name_enc, sizeof(str));
+            } else if (rel_path[0] == '/')
+               strlcat(str, rel_path + 1, sizeof(str));
+            else {
+               if (lbs) {
+                  strlcat(str, lbs->name_enc, sizeof(str));
+                  strlcat(str, "/", sizeof(str));
+                  strlcat(str, rel_path, sizeof(str));
+               } else
+                  strlcat(str, rel_path, sizeof(str));
+            }
+
+            rsputs("Location: ");
+            rsputs(str);
+
+         } else {
+
+            /* use redirection via URL */
+
+            /* if HTTP request comes from localhost, use localhost as
+               absolute link (needed if running on DSL at home) */
+            if (!str[0] && strstr(http_host, "localhost")) {
+               strlcpy(str, "http://localhost", sizeof(str));
+               if (elog_tcp_port != 80)
+                  sprintf(str + strlen(str), ":%d", elog_tcp_port);
+               strlcat(str, "/", sizeof(str));
+            }
+
+            /* add trailing '/' if not present */
+            if (str[strlen(str) - 1] != '/')
+               strlcat(str, "/", sizeof(str));
+
+            /* add top group if existing and not logbook */
+            if (!lbs && getcfg_topgroup()) {
+               strlcat(str, getcfg_topgroup(), sizeof(str));
+               strlcat(str, "/", sizeof(str));
+            }
+
+            if (strncmp(rel_path, "../", 3) == 0)
+               strlcat(str, rel_path + 3, sizeof(str));
+            else if (strcmp(rel_path, ".") == 0) {
+               if (lbs)
+                  strlcat(str, lbs->name_enc, sizeof(str));
+            } else if (rel_path[0] == '/')
+               strlcat(str, rel_path + 1, sizeof(str));
+            else {
+               if (lbs) {
+                  strlcat(str, lbs->name_enc, sizeof(str));
+                  strlcat(str, "/", sizeof(str));
+                  strlcat(str, rel_path, sizeof(str));
+               } else
+                  strlcat(str, rel_path, sizeof(str));
+            }
+
+            rsputs("Location: ");
+            rsputs(str);
+         }
       }
    }
 
@@ -6573,6 +6615,15 @@ and attr_flags arrays */
          for (j = 0; j < n; j++)
             if (strieq(attr_list[j], tmp_list[i]))
                attr_flags[j] |= AF_FIXED_REPLY;
+      }
+
+      /* check if hidden attribute */
+      getcfg(logbook, "Hidden Attributes", list, sizeof(list));
+      m = strbreak(list, tmp_list, MAX_N_ATTR, ",");
+      for (i = 0; i < m; i++) {
+         for (j = 0; j < n; j++)
+            if (strieq(attr_list[j], tmp_list[i]))
+               attr_flags[j] |= AF_HIDDEN;
       }
 
       /* check for extendable options */
@@ -7224,8 +7275,8 @@ void show_top_text(LOGBOOK * lbs)
 
 void show_bottom_text(LOGBOOK * lbs)
 {
-   char str[NAME_LENGTH];
-   int size;
+   char str[NAME_LENGTH], slist[20][NAME_LENGTH], svalue[20][NAME_LENGTH];
+   int  i, size;
 
    if (getcfg(lbs->name, "bottom text", str, sizeof(str))) {
       FILE *f;
@@ -7246,14 +7297,22 @@ void show_bottom_text(LOGBOOK * lbs)
             size = TELL(fileno(f));
             fseek(f, 0, SEEK_SET);
 
-            buf = xmalloc(size + 1);
+            buf = xmalloc(size + 100);
             fread(buf, 1, size, f);
             buf[size] = 0;
             fclose(f);
 
+            i = build_subst_list(lbs, slist, svalue, NULL, TRUE);
+            strsubst_list(buf, size+100, slist, svalue, i);
+
             rsputs(buf);
-         } else
+            xfree(buf);
+         } else {
+            i = build_subst_list(lbs, slist, svalue, NULL, TRUE);
+            strsubst_list(str, sizeof(str), slist, svalue, i);
+
             rsputs(str);
+         }
       }
    } else
       /* add little logo */
@@ -7660,6 +7719,13 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
    } else
       sprintf(str, "%d", (int) t);
    strcpy(value[i++], str);
+
+   /* add ELOG version and revision */
+   strcpy(list[i], "version");
+   strcpy(value[i++], VERSION);
+
+   strcpy(list[i], "revision");
+   sprintf(value[i++], "%d", atoi(svn_revision + 13));
 
    return i;
 }
@@ -8919,6 +8985,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       index = attr_index[aindex];
 
+      /* if attribute is hidden, skip it */
+      if (attr_flags[index] & AF_HIDDEN)
+         continue;
+
       strcpy(class_name, "attribname");
       strcpy(class_value, "attribvalue");
       input_size = 80;
@@ -9973,7 +10043,7 @@ void show_find_form(LOGBOOK * lbs)
 
    if (i > 2) {
       if (!getcfg(lbs->name, "Search all logbooks", str, sizeof(str)) || atoi(str) == 1) {
-         rsprintf("<input type=checkbox id=all name=all value=1>\n");
+         rsprintf("<input type=checkbox id=all name=all value=1>");
          rsprintf("<label for=\"all\">%s</label><br>\n", loc("Search all logbooks"));
       }
    }
@@ -12081,7 +12151,7 @@ int show_download_page(LOGBOOK * lbs, char *path)
             return EL_FILE_ERROR;
 
          lseek(fh, lbs->el_index[index].offset, SEEK_SET);
-         i = read(fh, message, sizeof(message) - 1);
+         i = my_read(fh, message, sizeof(message) - 1);
          if (i <= 0) {
             close(fh);
             return EL_FILE_ERROR;
@@ -14488,7 +14558,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    ref[0] = 0;
    if (absolute_link)
       compose_base_url(lbs, ref, sizeof(ref));
-   sprintf(ref + strlen(ref), "%d", message_id);
+   sprintf(ref + strlen(ref), "../%s/%d", lbs->name_enc, message_id);
 
    if (strieq(mode, "Summary")) {
       if (highlight_mid == message_id) {
@@ -17997,7 +18067,7 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
       fh = open(file_name, O_RDONLY | O_BINARY);
       if (fh > 0) {
          do {
-            n = read(fh, buffer, 45);
+            n = my_read(fh, buffer, 45);
             if (n <= 0)
                break;
 
@@ -20638,7 +20708,7 @@ BOOL convert_password_file(char *file_name)
    lseek(fh, 0, SEEK_SET);
    buf = malloc(len + 1);
    assert(buf);
-   i = read(fh, buf, len);
+   i = my_read(fh, buf, len);
    buf[i] = 0;
    close(fh);
 
@@ -21142,7 +21212,6 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
    if (user == NULL)
       status = 1;
    else {
-
       status = get_user_line(lbs, user, upwd, full_name, email, NULL, NULL);
 
       if (status == 1 && user[0])
@@ -24378,7 +24447,7 @@ int ss_getchar(BOOL reset)
    }
 
    memset(c, 0, 3);
-   i = read(fd, c, 1);
+   i = my_read(fd, c, 1);
 
    if (i == 0)
       return 0;
@@ -24524,7 +24593,7 @@ void create_password(char *logbook, char *name, char *pwd)
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
    cfgbuffer = xmalloc(length + 1);
-   length = read(fh, cfgbuffer, length);
+   length = my_read(fh, cfgbuffer, length);
    cfgbuffer[length] = 0;
    close(fh);
    fh = open(config_file, O_TRUNC | O_WRONLY, 0640);
