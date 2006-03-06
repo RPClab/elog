@@ -571,7 +571,7 @@ int my_read(int fh, void *buffer, unsigned int bytes)
 
       n += i;
 
-   } while (n < bytes);
+   } while (n < (int)bytes);
 #else
    return read(fh, buffer, bytes);
 #endif
