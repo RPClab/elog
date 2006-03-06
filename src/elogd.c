@@ -569,9 +569,14 @@ int my_read(int fh, void *buffer, unsigned int bytes)
       if (i == -1)
          return -1;
 
+      if (i == 0)
+         return n;
+
       n += i;
 
    } while (n < (int)bytes);
+
+   return n;
 #else
    return read(fh, buffer, bytes);
 #endif
