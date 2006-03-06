@@ -52,21 +52,18 @@ OSTYPE=darwin
 endif
 
 ifeq ($(OSTYPE),darwin)
-LIBS += -lutil
 CC = cc
 BINOWNER = root
 BINGROUP = admin
 endif
 
 ifeq ($(OSTYPE),FreeBSD)
-LIBS += -lutil
 CC = gcc
 BINOWNER = root
 BINGROUP = wheel
 endif
 
 ifeq ($(OSTYPE),Linux)
-LIBS += -lutil
 CC = gcc
 endif
 
