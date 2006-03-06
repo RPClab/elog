@@ -34,7 +34,7 @@ MXMLDIR = ../mxml
 BINOWNER = bin
 BINGROUP = bin
 
-INSTALL = /usr/bin/install
+INSTALL = `which install`
 RM = /bin/rm -f
 
 OSTYPE = $(shell uname)
@@ -121,19 +121,19 @@ install: $(EXECS)
 	@$(INSTALL) -m 0644 themes/default/icons/* $(ELOGDIR)/themes/default/icons/
 	@for file in `find themes/default -type f | grep -v .svn` ; \
           do \
-          install -D -m 0644 $$file $(ELOGDIR)/themes/default/`basename $$file` ;\
+          $(INSTALL) -D -m 0644 $$file $(ELOGDIR)/themes/default/`basename $$file` ;\
           done
 
 	@echo "Installing example logbook to $(ELOGDIR)/logbooks/demo"	
 	@if [ ! -f $(ELOGDIR)/logbooks/demo ]; then  \
-	  install -v -m 0644 logbooks/demo/* $(ELOGDIR)/logbooks/demo ; \
+	  $(INSTALL) -v -m 0644 logbooks/demo/* $(ELOGDIR)/logbooks/demo ; \
 	fi
 
 	@sed "s#\@PREFIX\@#$(PREFIX)#g" elogd.init_template > elogd.init
 	@$(INSTALL) -v -D -m 0755 elogd.init $(RCDIR)/elogd
 
 	@if [ ! -f $(ELOGDIR)/elogd.cfg ]; then  \
-	  install -v -m 644 elogd.cfg $(ELOGDIR)/elogd.cfg ; \
+	  $(INSTALL) -v -m 644 elogd.cfg $(ELOGDIR)/elogd.cfg ; \
 	fi
 
 restart:
