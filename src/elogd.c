@@ -1059,15 +1059,15 @@ int subst_shell(char *cmd, char *result, int size)
 #endif                          /* OS_WINNT */
 
 #ifdef OS_UNIX
-   pid_t pid;
-   int fh;
+   pid_t child_pid;
+   int fh, status;
    char str[256];
 
-   if ((pid = fork()) < 0)
+   if ((child_pid = fork()) < 0)
       return 0;
-   else if (pid > 0) {
+   else if (child_pid > 0) {
       /* parent process waits for child */
-      wait(NULL);
+      waitpid(child_pid, &status, WNOHANG);
 
       /* read back result */
       fh = open("/tmp/elog-shell", O_RDONLY);
