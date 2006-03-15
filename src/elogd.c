@@ -1067,7 +1067,7 @@ int subst_shell(char *cmd, char *result, int size)
       return 0;
    else if (child_pid > 0) {
       /* parent process waits for child */
-      waitpid(child_pid, &status, WNOHANG);
+      waitpid(child_pid, &status, 0);
 
       /* read back result */
       fh = open("/tmp/elog-shell", O_RDONLY);
