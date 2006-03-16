@@ -5514,10 +5514,9 @@ PATTERN_LIST pattern_list[] = {
    {":-]", "<img src=\"%sicons/pleased.png\">"},
    {":O", "<img src=\"%sicons/yawn.png\">"},
    {":-O", "<img src=\"%sicons/yawn.png\">"},
-   {"8)", "<img src=\"%sicons/cool.png\">"},
    {"8-)", "<img src=\"%sicons/cool.png\">"},
    {"8o", "<img src=\"%sicons/eek.png\">"},
-   {"X(", "<img src=\"%sicons/mad.png\">"},
+   {"X-(", "<img src=\"%sicons/mad.png\">"},
    {":P", "<img src=\"%sicons/tongue.png\">"},
    {":-P", "<img src=\"%sicons/tongue.png\">"},
 
@@ -9498,7 +9497,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<br />\n");
       rsicon("crying", loc("crying"), ";(");
       rsprintf("<br />\n");
-      rsicon("cool", loc("cool"), "8)");
+      rsicon("cool", loc("cool"), "8-)");
       rsprintf("<br />\n");
       rsicon("frown", loc("frowning"), ":(");
       rsprintf("<br />\n");
@@ -9506,7 +9505,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<br />\n");
       rsicon("astonished", loc("astonished"), "8o");
       rsprintf("<br />\n");
-      rsicon("mad", loc("mad"), "X(");
+      rsicon("mad", loc("mad"), "X-(");
       rsprintf("<br />\n");
       rsicon("pleased", loc("pleased"), ":]");
       rsprintf("<br />\n");
