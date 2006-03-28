@@ -2261,6 +2261,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    send(s, str, strlen(str), 0);
    if (verbose)
       efputs(str);
+   write_logfile(lbs, str);
    recv_string(s, str, strsize, 10000);
    if (verbose)
       efputs(str);
