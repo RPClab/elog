@@ -15661,6 +15661,8 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
             ref[0] = 0;
 
          cur_exp = 0;
+         if (strieq(mode, "full"))
+            cur_exp = 1;
          if (isparam("elattach"))
             cur_exp = atoi(getparam("elattach"));
          if (isparam("attach"))
@@ -16547,6 +16549,10 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       page_n = -1;              /* display all pages */
       show_attachments = FALSE; /* hide attachments */
    }
+
+   /* show attachments in full mode by default */
+   if (strieq(mode, "Full"))
+      show_attachments = TRUE;
 
    /* supersede attachment mode if in cookie */
    if (isparam("elattach"))
