@@ -937,7 +937,7 @@ int subst_shell(char *cmd, char *result, int size)
    SECURITY_ATTRIBUTES saAttr;
    PROCESS_INFORMATION piProcInfo;
    STARTUPINFO siStartInfo;
-   char buffer[256];
+   char buffer[10000];
    DWORD dwRead, dwAvail, i;
 
    /* Set the bInheritHandle flag so pipe handles are inherited. */
@@ -2056,13 +2056,17 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    struct hostent *phe;
    int i, n, s, strsize;
    char *str, *p;
-   char list[1024][NAME_LENGTH], buffer[256], decoded[256];
+   char list[1024][NAME_LENGTH], buffer[10000], decoded[256];
 
    memset(error, 0, error_size);
 
    if (verbose)
       eprintf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
-   sprintf(buffer, "Email from %s to %s, SMTP host %s:\n", from, to, smtp_host);
+   sprintf(buffer, "Email from %s to ", from);
+   strlcat(buffer, to, sizeof(buffer));
+   strlcat(buffer, ", SMTP host ", sizeof(buffer));
+   strlcat(buffer, smtp_host, sizeof(buffer));
+   strlcat(buffer, ":\n", sizeof(buffer));
    write_logfile(lbs, buffer);
 
    /* create a new socket for connecting to remote server */
@@ -18492,7 +18496,7 @@ void format_email_html2(LOGBOOK * lbs, int message_id, char att_file[MAX_ATTACHM
 
 /*------------------------------------------------------------------*/
 
-int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
+int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
                   char attrib[MAX_N_ATTR][NAME_LENGTH], char *mail_param, int old_mail,
                   char att_file[MAX_ATTACHMENTS][256], char *encoding)
 {
@@ -18581,7 +18585,7 @@ int compose_email(LOGBOOK * lbs, char *mail_to, int message_id,
       strlcat(mail_text, "--\r\n\r\n", mail_text_size);
    }
 
-   status = sendmail(lbs, smtp_host, mail_from, mail_to, mail_text, error, sizeof(error));
+   status = sendmail(lbs, smtp_host, mail_from, rcpt_to, mail_text, error, sizeof(error));
 
 /*
       {
@@ -18864,10 +18868,10 @@ void submit_elog(LOGBOOK * lbs)
        mail_list[MAX_N_LIST][NAME_LENGTH], list[10000], *p,
        attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[MAX_PATH_LENGTH],
        in_reply_to[80], reply_to[MAX_REPLY_TO * 10], user[256], user_email[256],
-       mail_param[1000], *mail_to, att_file[MAX_ATTACHMENTS][256],
+       mail_param[1000], *mail_to, *rcpt_to, full_name[256], att_file[MAX_ATTACHMENTS][256],
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], ua[NAME_LENGTH];
    int i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_orig,
-       mail_to_size, ltime, year, month, day, hour, min, sec, n_attr, email_notify[1000];
+       mail_to_size, rcpt_to_size, ltime, year, month, day, hour, min, sec, n_attr, email_notify[1000];
    BOOL bedit;
    struct tm tms;
 
@@ -19272,6 +19276,9 @@ void submit_elog(LOGBOOK * lbs)
    mail_to = xmalloc(256);
    mail_to[0] = 0;
    mail_to_size = 256;
+   rcpt_to = xmalloc(256);
+   rcpt_to[0] = 0;
+   rcpt_to_size = 256;
 
    if (suppress) {
       if (suppress != 3)
@@ -19338,6 +19345,13 @@ void submit_elog(LOGBOOK * lbs)
                   }
                   strcat(mail_to, mail_list[i]);
                   strcat(mail_to, ",");
+
+                  if ((int) strlen(rcpt_to) + (int) strlen(mail_list[i]) >= rcpt_to_size) {
+                     rcpt_to_size += 256;
+                     rcpt_to = xrealloc(rcpt_to, rcpt_to_size);
+                  }
+                  strcat(rcpt_to, mail_list[i]);
+                  strcat(rcpt_to, ",");
                }
             }
          }
@@ -19349,7 +19363,7 @@ void submit_elog(LOGBOOK * lbs)
                if (!enum_user_line(lbs, index, user, sizeof(user)))
                   break;
 
-               get_user_line(lbs, user, NULL, NULL, user_email, email_notify, NULL);
+               get_user_line(lbs, user, NULL, full_name, user_email, email_notify, NULL);
 
                for (i = 0; lb_list[i].name[0] && i < 1000; i++)
                   if (strieq(lb_list[i].name, lbs->name))
@@ -19360,12 +19374,19 @@ void submit_elog(LOGBOOK * lbs)
                   if (!check_login_user(lbs, user))
                      continue;
 
-                  if ((int) strlen(mail_to) + (int) strlen(user_email) >= mail_to_size) {
+                  sprintf(str, "\"%s\" <%s>,\r\n\t", full_name, user_email);
+                  if ((int) strlen(mail_to) + (int) strlen(str) >= mail_to_size) {
                      mail_to_size += 256;
                      mail_to = xrealloc(mail_to, mail_to_size);
                   }
-                  strcat(mail_to, user_email);
-                  strcat(mail_to, ",");
+                  strcat(mail_to, str);
+
+                  sprintf(str, "%s,", user_email);
+                  if ((int) strlen(rcpt_to) + (int) strlen(str) >= rcpt_to_size) {
+                     rcpt_to_size += 256;
+                     rcpt_to = xrealloc(rcpt_to, rcpt_to_size);
+                  }
+                  strcat(rcpt_to, str);
                }
             }
          }
@@ -19373,14 +19394,18 @@ void submit_elog(LOGBOOK * lbs)
    }
 
    if (strlen(mail_to) > 0) {
-      mail_to[strlen(mail_to) - 1] = 0; /* strip last ',' */
+      mail_to[strlen(mail_to) - 4] = 0; /* strip last ',\r\n\t' */
+      rcpt_to[strlen(rcpt_to) - 1] = 0; /* strip last ',' */
+      puts(mail_to);
+      puts(rcpt_to);
       if (compose_email
-          (lbs, mail_to, message_id, attrib, mail_param, isparam("edit_id"), att_file,
+          (lbs, rcpt_to, mail_to, message_id, attrib, mail_param, isparam("edit_id"), att_file,
            isparam("encoding") ? getparam("encoding") : "plain") == 0)
          return;
    }
 
    xfree(mail_to);
+   xfree(rcpt_to);
 
    /*---- shell execution ----*/
 
