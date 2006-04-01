@@ -7679,14 +7679,17 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
    strlcpy(value[i++], host_name, NAME_LENGTH);
 
    /* add user names */
-   if (isparam("unm")) {
-      strcpy(list[i], "short_name");
+   strcpy(list[i], "short_name");
+   if (isparam("unm"))
       strlcpy(value[i++], getparam("unm"), NAME_LENGTH);
-   }
-   if (isparam("full_name")) {
-      strcpy(list[i], "long_name");
+   else
+      strlcpy(value[i++], loc("Anonymous"), NAME_LENGTH);
+
+   strcpy(list[i], "long_name");
+   if (isparam("full_name"))
       strlcpy(value[i++], getparam("full_name"), NAME_LENGTH);
-   }
+   else
+      strlcpy(value[i++], loc("Anonymous"), NAME_LENGTH);
 
    /* add email */
    if (isparam("user_email")) {
