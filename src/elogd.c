@@ -9765,7 +9765,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" checked>");
       else
          rsprintf
-             ("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" onclick=\"document.form1.submit()\">");
+             ("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" onclick=\"cond_submit()\">");
       rsprintf
           ("<label for=\"ELCode\"><a target=\"_blank\" href=\"?cmd=HelpELCode\">ELCode</a>&nbsp;&nbsp;</label>\n");
 
@@ -9773,14 +9773,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" checked>");
       else
          rsprintf
-             ("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" onclick=\"document.form1.submit()\">");
+             ("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" onclick=\"cond_submit()\">");
       rsprintf("<label for=\"plain\">plain&nbsp;&nbsp;</label>\n");
 
       if (enc_selected == 2)
          rsprintf("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" checked>");
       else
          rsprintf
-             ("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" onclick=\"document.form1.submit()\">");
+             ("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" onclick=\"cond_submit()\">");
       rsprintf("<label for=\"HTML\">HTML&nbsp;&nbsp;</label>\n");
 
       rsprintf("<br>\n");
