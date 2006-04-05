@@ -1141,6 +1141,60 @@ void strsubst_list(char *string, int size, char name[][NAME_LENGTH], char value[
    pt = tmp;
    ps = string;
    for (p = strchr(ps, '$'); p != NULL; p = strchr(ps, '$')) {
+
+      /* copy leading characters */
+      j = (int) (p - ps);
+      if (j >= (int) sizeof(tmp))
+         return;
+      memcpy(pt, ps, j);
+      pt += j;
+      p++;
+
+      /* extract name */
+      strlcpy(str, p, sizeof(str));
+      for (j = 0; j < (int) strlen(str); j++)
+         str[j] = toupper(str[j]);
+
+      /* do shell substituion at the end, so that shell parameter can
+         contain substituted attributes */
+      if (strncmp(str, "SHELL(", 6) == 0) {
+         strlcpy(pt, "$shell(", sizeof(tmp) - (pt - tmp));
+         ps += 7;
+         pt += 7;
+         continue;
+      }
+
+      /* search name */
+      for (i = 0; i < n; i++) {
+         strlcpy(uattr, name[i], sizeof(uattr));
+         for (j = 0; j < (int) strlen(uattr); j++)
+            uattr[j] = toupper(uattr[j]);
+
+         if (strncmp(str, uattr, strlen(uattr)) == 0)
+            break;
+      }
+
+      /* copy value */
+      if (i < n) {
+         strlcpy(pt, value[i], sizeof(tmp) - (pt - tmp));
+         pt += strlen(pt);
+         ps = p + strlen(uattr);
+      } else {
+         *pt++ = '$';
+         ps = p;
+      }
+   }
+
+   /* copy remainder */
+   strlcpy(pt, ps, sizeof(tmp) - (pt - tmp));
+   strlcpy(string, tmp, size);
+
+   /* check for $shell() subsitution */
+   pt = tmp;
+   ps = string;
+   p = strchr(ps, '$');
+   if  (p != NULL) {
+
       /* copy leading characters */
       j = (int) (p - ps);
       if (j >= (int) sizeof(tmp))
@@ -1183,27 +1237,6 @@ void strsubst_list(char *string, int size, char name[][NAME_LENGTH], char value[
 
          strlcpy(pt, result, sizeof(tmp) - (pt - tmp));
          pt += strlen(pt);
-
-      } else {
-         /* search name */
-         for (i = 0; i < n; i++) {
-            strlcpy(uattr, name[i], sizeof(uattr));
-            for (j = 0; j < (int) strlen(uattr); j++)
-               uattr[j] = toupper(uattr[j]);
-
-            if (strncmp(str, uattr, strlen(uattr)) == 0)
-               break;
-         }
-
-         /* copy value */
-         if (i < n) {
-            strlcpy(pt, value[i], sizeof(tmp) - (pt - tmp));
-            pt += strlen(pt);
-            ps = p + strlen(uattr);
-         } else {
-            *pt++ = '$';
-            ps = p;
-         }
       }
    }
 
