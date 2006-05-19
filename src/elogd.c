@@ -9927,8 +9927,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
 
       /* optional attachment comment */
-      if (getcfg(lbs->name, "Attachment comment", comment, sizeof(comment))
-          && !message_id) {
+      if (getcfg(lbs->name, "Attachment comment", comment, sizeof(comment))) {
          rsprintf("<tr><td colspan=2 class=\"attribvalue\">\n");
          rsputs(comment);
          rsputs("</td></tr>\n");
@@ -13109,8 +13108,8 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
    if (atoi(p + 8) != message_id) {
       if (isparam("debug"))
          rsputs(message);
-      xfree(message);
       sprintf(error_str, loc("Received wrong entry id \"%d\""), atoi(p + 8));
+      xfree(message);
       return -1;
    }
 
@@ -22967,8 +22966,6 @@ void interprete(char *lbook, char *path)
 
    if (strieq(command, loc("Download"))
        || strieq(command, "Download")) {
-      if (!check_password(lbs, "Write password", isparam("wpwd") ? getparam("wpwd") : "", str))
-         return;
       show_download_page(lbs, dec_path);
       return;
    }
