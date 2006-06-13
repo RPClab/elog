@@ -30,12 +30,10 @@ Checklist for new ELOG intermediate release
 On PC4534:
 
 - Put all new options in doc/config.html
-- Increse release in elogd.c "x.x.x-y"
 - c:\elog> svn ci -m "Version x.x.x-y" 
 - build xxx-y
 
 On PC5082:
 
 - svn update
-- (Increse release in elog.spec) should be done in script...
 - build x.x.x y
