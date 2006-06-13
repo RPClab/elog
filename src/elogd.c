@@ -7694,7 +7694,7 @@ void xmlencode(char *text)
 
 /*------------------------------------------------------------------*/
 
-void strencode2(char *b, char *text)
+void strencode2(char *b, char *text, int size)
 {
    int i;
 
@@ -7702,21 +7702,33 @@ void strencode2(char *b, char *text)
    for (i = 0; i < (int) strlen(text); i++) {
       switch (text[i]) {
       case '\n':
+         if (strlen(b)+5 >= (unsigned int)size)
+            return;
          strcat(b, "<br>\n");
          break;
       case '<':
+         if (strlen(b)+4 >= (unsigned int)size)
+            return;
          strcat(b, "&lt;");
          break;
       case '>':
+         if (strlen(b)+4 >= (unsigned int)size)
+            return;
          strcat(b, "&gt;");
          break;
       case '&':
+         if (strlen(b)+5 >= (unsigned int)size)
+            return;
          strcat(b, "&amp;");
          break;
       case '\"':
+         if (strlen(b)+6 >= (unsigned int)size)
+            return;
          strcat(b, "&quot;");
          break;
       default:
+         if (strlen(b)+1 >= (unsigned int)size)
+            return;
          sprintf(b + strlen(b), "%c", text[i]);
       }
    }
@@ -8960,7 +8972,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("</head>\n");
 
    script[0] = 0;
-   if (isparam("inlineatt"))
+   if (isparam("inlineatt") && *getparam("inlineatt"))
       strcpy(script, " OnLoad=\"document.form1.Text.focus();\"");
 
    if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1)
@@ -9175,7 +9187,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\">\n", str, attr_options[index][i]);
             }
          } else {
-            strencode2(str, attrib[index]);
+            strencode2(str, attrib[index], sizeof(str));
             rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\"></td>\n", ua, str);
          }
       } else {
@@ -9251,7 +9263,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                /* show normal edit field */
                rsprintf("<td%s class=\"attribvalue\">", title);
 
-               strencode2(str, attrib[index]);
+               strencode2(str, attrib[index], sizeof(str));
                rsprintf
                    ("<input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
                     input_size, input_maxlen, ua, str);
@@ -15691,7 +15703,7 @@ void build_ref(char *ref, int size, char *mode, char *expand, char *attach, char
 
    /* replace any '&' by '&amp;' */
    strlcpy(str, ref, sizeof(str));
-   strencode2(ref, str);
+   strencode2(ref, str, sizeof(ref));
 }
 
 /*------------------------------------------------------------------*/
@@ -18703,11 +18715,23 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
          else
             strcat(mail_param, "&");
 
+         /* convert '"',CR,LF,TAB to ' ' */
+         while (strchr(mail_to, '"'))
+            *strchr(mail_to, '"') = ' ';
+         while (strchr(mail_to, '\r'))
+            *strchr(mail_to, '\r') = ' ';
+         while (strchr(mail_to, '\n'))
+            *strchr(mail_to, '\n') = ' ';
+         while (strchr(mail_to, '\t'))
+            *strchr(mail_to, '\t') = ' ';
+
          n = strbreak(mail_to, list, MAX_PARAM, ",");
 
          if (n < 10) {
             for (i = 0; i < n && i < MAX_PARAM; i++) {
-               sprintf(mail_param + strlen(mail_param), "mail%d=%s", i, list[i]);
+               strencode2(str, list[i], sizeof(str));
+               url_encode(str, sizeof(str));
+               sprintf(mail_param + strlen(mail_param), "mail%d=%s", i, str);
                if (i < n - 1)
                   strcat(mail_param, "&");
             }
@@ -20212,7 +20236,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       rsprintf("<tr><td class=\"attribhead\">\n");
 
       for (i = 0; i < lbs->n_attr; i++) {
-         strencode2(str, attrib[i]);
+         strencode2(str, attrib[i], sizeof(str));
          rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", attr_list[i], str);
       }
 
