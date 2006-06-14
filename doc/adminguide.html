@@ -293,7 +293,9 @@ Logbook dir</b></CODE> in the <b><a href="config.html">elogd.cfg description</a>
 <p>
 Although the <code><b>elogd</b></code> program does not support secure
 connections over SSL directly, it is still possible to access <code><b>elogd</b></code>
-securely using one of the following methods:
+securely using one of the following methods. <b>It is recommented to run elog 
+through an HTTPS proxy to avoid exposing elog passwords to clear text sniffing 
+attacks</b>.
 
 <h3><i>Using Apache</i>:</h3>
 
@@ -306,7 +308,33 @@ before on this page on how to run elogd under Apache. Once configured
 correctly, elogd can be accessed via <i>http://your.host</i> and via
 <i>https://your.host</i> simultaneously.<br><br>
 
-For detailed step-by-step instructions please read the
+The redirection statement has to be changed to
+
+<ul><pre>
+Redirect permanent /elog https://your.host.domain/elog/
+ProxyPass /elog/ http://your.host.domain:8080/
+</pre></ul>
+
+and following has to be added to the section <i>"VirtualHOst ...:443</i> in 
+/etc/httpd/conf.d/ssl.conf:
+
+<pre>
+# Proxy setup for Elog
+&lt;Proxy *&gt;
+Order deny,allow
+Allow from all
+&lt;/Proxy&gt;
+ProxyPass /elog/ http://host.where.elogd.is.running:8080/
+ProxyPassReverse /elog/ http://host.where.elogd.is.running:8080/
+</pre>
+
+Then, following URL statement has to be written to elogd.cfg:
+
+<pre>
+URL = https://your.host.domain/elog
+</pre>
+
+There is a more detailed step-by-step instructions at the 
 <a href="http://midas.psi.ch/elogs/contributions/11">contributions section<a>.
 
 <h3><i>Using ssh</i>:</h3>
@@ -351,9 +379,10 @@ details.
     <pre>URL = https://your.host.name/</pre>
 
     Note the <b><code>https</code></b> at the beginning of the URL, which is
-    mandatory. Once you use the <b><code>https</code></b> URL, elog won't work correctly when
-    accessed not through stunnel via <b><code>http://..</code></b>, since any
-    redirection would always bring you back to https://...).<p></p>
+    mandatory. Once you use the <b><code>https</code></b> URL, elog won't work 
+    correctly when accessed not through stunnel via 
+    <b><code>http://..</code></b>, since any redirection would always bring you 
+    back to https://...).<p></p>
 
 <LI>Connect to your logbook with a browser which supports SSL via:
 <P>
@@ -371,10 +400,16 @@ This reveals any potential error.<p></p></LI>
 <p>
 For the technically curious :
 <p>
-The concept of <b>ELOG</b> is very simple. The logbook functionality is implemented by a single daemon program, <code><b>elogd</b></code>, which is written in C. It contains an integrated
+The concept of <b>ELOG</b> is very simple. The logbook functionality is 
+implemented by a single daemon program, <code><b>elogd</b></code>, which 
+is written in C. It contains an integrated
 Web server, which does not serve files like standard Web servers, but
 reads logbook entries from its database and formats them into HTML. Since
-only forms and tables are used, no Java or Javascript is necessary, which makes the logbook display very fast. The system does not use any images on purpose to reduce the amount of data to be transferred. Since the <b>ELOG</b> daemon contains its own <i>http</i> server, no additional server like Apache is required.
+only forms and tables are used, no Java or Javascript is necessary, which 
+makes the logbook display very fast. The system does not use any images on 
+purpose to reduce the amount of data to be transferred. Since the <b>ELOG</b> 
+daemon contains its own <i>http</i> server, no additional server like 
+Apache is required.
 <p>
 The "<I>database</I>" in which <b>ELOG</b> saves its entries is in plain ASCII format.
 One file is created for each day in the form <b><code>YYMMDDa.log</b></CODE>
