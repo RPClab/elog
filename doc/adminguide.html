@@ -318,7 +318,7 @@ ProxyPass /elog/ http://your.host.domain:8080/
 and following has to be added to the section <i>"VirtualHOst ...:443</i> in 
 /etc/httpd/conf.d/ssl.conf:
 
-<pre>
+<ul><pre>
 # Proxy setup for Elog
 &lt;Proxy *&gt;
 Order deny,allow
@@ -326,13 +326,13 @@ Allow from all
 &lt;/Proxy&gt;
 ProxyPass /elog/ http://host.where.elogd.is.running:8080/
 ProxyPassReverse /elog/ http://host.where.elogd.is.running:8080/
-</pre>
+</pre></ul>
 
 Then, following URL statement has to be written to elogd.cfg:
 
-<pre>
+<ul><pre>
 URL = https://your.host.domain/elog
-</pre>
+</pre></ul>
 
 There is a more detailed step-by-step instructions at the 
 <a href="http://midas.psi.ch/elogs/contributions/11">contributions section<a>.
