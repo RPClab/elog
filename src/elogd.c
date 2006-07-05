@@ -15703,7 +15703,7 @@ void build_ref(char *ref, int size, char *mode, char *expand, char *attach, char
 
    /* replace any '&' by '&amp;' */
    strlcpy(str, ref, sizeof(str));
-   strencode2(ref, str, sizeof(ref));
+   strencode2(ref, str, size);
 }
 
 /*------------------------------------------------------------------*/
