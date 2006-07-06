@@ -2660,6 +2660,7 @@ void evaluate_conditions(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH])
 
                set_condition(condition);
                scan_attributes(lbs->name);
+               return;
             }
          }
       }
@@ -14730,7 +14731,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    nowrap = printable ? "" : "nowrap";
    skip_comma = FALSE;
 
-   evaluate_conditions(lbs, attrib);
+   if (getcfg(lbs->name, "List conditions", str, sizeof(str)) &&
+       atoi(str) == 1)
+      evaluate_conditions(lbs, attrib);
 
    if (strieq(mode, "Threaded")
        && getcfg(lbs->name, "Thread display", display, sizeof(display))) {

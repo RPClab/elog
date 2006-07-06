@@ -1661,6 +1661,25 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
 </pre>
       </li>
     </ul>specifies for example the condition "Linux AND Main Building".
+
+    <h2>
+      Conditions in the list display
+    </h2>Conditional attributes are usually only used for change items
+    in the entry form. It might however be desirable to have conditional
+    attibutes also working in the list display (the page where several
+    entries are shown on a single page). The value of one attribute can then
+    for example change which other attributes gets displayed via the <B><code>
+    list display</code></b> option. To enable the evaluation of conditional
+    attributes for the list display, on uses the option
+
+    <ul>
+      <li>
+        <code><b>List conditions = 1</b></code><br>
+      </li>
+    </ul>It should be noted that this option can cause a significant performance
+    degradation if many conditional attributes are defines, so it should only
+    be turned on when it is really needed.
+
     <p>
       <a name="access" id="access"></a>
     </p>
