@@ -204,18 +204,12 @@ All = Todos
 Select = Selecionar
 New entry cannot be written to directory "%s" = Nova entrada não pode ser gravada no diretório "%s" 
 Entry %s cannot be read from logbook "%s" = A entrada %s não pode ser lida do logbook "%s"
-No entry selected = Nenhuma entrada selecionada
-One entry = Uma entrada
-moved successfully from "%s" to "%s" = Movidos com sucesso de "%s" para "%s" 
-copied successfully from "%s" to "%s" = Copiados com sucesso de "%s" para "%s"
 This entry has been deleted = Essa entrada foi removida
 Login = Login
 by = por
 Cannot connect to remote server "%s" = Não é possível conectar no server remoto "%s" 
 Remote server is not an ELOG server = Servidor remoto não é um servidor de ELOG
 Incorrect remote ELOG server version %s = Versão incorreta do servidor remoto de ELOG
-User "%s" has no access to remote logbook = Usuário "%s" não tem acesso ao logbook remoto
-Passwords for user "%s" do not match locally and remotely = Senhas para o usuário "%s" não são compatíveis localmente e remotamente
 Error accessing remote logbook = Erro ao acessar o logbook remoto
 Invalid HTTP header = Cabeçalho de HTTP inválido
 No user name supplied to access remote logbook = Nome de usuário não fornecido para acessar o logbook remoto
@@ -337,7 +331,6 @@ Subscribe to logbooks = Inscrever-se nos logbooks
 enable automatic email notifications = permite notificações automáticas por email
 Set all = Selecionar todos
 Set none = Não selecionar nenhum 
-Set current time = Ajustar hora corrente
 Please enter hour for attribute '%s' = Por favor, entre com a hora para o atributo '%s' 
 Please enter minute for attribute '%s' = Por favor, entre com o minuto para o atributo '%s' 
 Please enter second for attribute '%s' = Por favor, entre com o segundo par ao atributo '%s'
@@ -403,9 +396,7 @@ Enter URL of hyperlink = Entre com a URL do hyperlink
 astonished = surpreso 
 Error in regular expression "%s" = Erro na expressão regular "%s" 
 File not found at URL "%s" = Arquivo não encontrado na URL "%s"  
-Copy To = Copiar para
 Copy to = Copiar para
-Move To = Mover para
 Move to = Mover para
 Select = Selecionar
 Entry size too large for email notification =  O tamanho da entrada é muito grande para notificação via email  
@@ -418,3 +409,8 @@ insert heading = inserir título
 User name may not contain blanks = O nome do usuário não pode conter brancos 
 Empty password not allowed = Não é permitida senha vazia 
 Password may not contain blanks = A senha não pode conter brancos 
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Anonymous = 

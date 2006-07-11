@@ -560,7 +560,7 @@ int my_read(int fh, void *buffer, unsigned int bytes)
    int i, n = 0;
 
    do {
-      i = read(fh, buffer+n, bytes-n);
+      i = read(fh, buffer + n, bytes - n);
 
       /* don't return if an alarm signal was cought */
       if (i == -1 && errno == EINTR)
@@ -574,7 +574,7 @@ int my_read(int fh, void *buffer, unsigned int bytes)
 
       n += i;
 
-   } while (n < (int)bytes);
+   } while (n < (int) bytes);
 
    return n;
 #else
@@ -1193,7 +1193,7 @@ void strsubst_list(char *string, int size, char name[][NAME_LENGTH], char value[
    pt = tmp;
    ps = string;
    p = strchr(ps, '$');
-   if  (p != NULL) {
+   if (p != NULL) {
 
       /* copy leading characters */
       j = (int) (p - ps);
@@ -6255,8 +6255,7 @@ void set_location(LOGBOOK * lbs, char *rel_path)
    char str[NAME_LENGTH], group[NAME_LENGTH], list[NAME_LENGTH], *p;
    int i;
 
-   if (getcfg(lbs->name, "Relative redirect", str, sizeof(str)) &&
-      atoi(str) == 1) {
+   if (getcfg(lbs->name, "Relative redirect", str, sizeof(str)) && atoi(str) == 1) {
 
       if (rel_path[0])
          strlcpy(str, rel_path, sizeof(str));
@@ -7319,7 +7318,7 @@ void show_top_text(LOGBOOK * lbs)
 void show_bottom_text(LOGBOOK * lbs)
 {
    char str[NAME_LENGTH], slist[20][NAME_LENGTH], svalue[20][NAME_LENGTH];
-   int  i, size;
+   int i, size;
 
    if (getcfg(lbs->name, "bottom text", str, sizeof(str))) {
       FILE *f;
@@ -7346,7 +7345,7 @@ void show_bottom_text(LOGBOOK * lbs)
             fclose(f);
 
             i = build_subst_list(lbs, slist, svalue, NULL, TRUE);
-            strsubst_list(buf, size+100, slist, svalue, i);
+            strsubst_list(buf, size + 100, slist, svalue, i);
 
             rsputs(buf);
             xfree(buf);
@@ -7369,7 +7368,7 @@ void show_bottom_text(LOGBOOK * lbs)
 void show_bottom_text_login(LOGBOOK * lbs)
 {
    char str[NAME_LENGTH], slist[20][NAME_LENGTH], svalue[20][NAME_LENGTH];
-   int  i, size;
+   int i, size;
 
    if (getcfg(lbs->name, "bottom text login", str, sizeof(str))) {
       FILE *f;
@@ -7396,7 +7395,7 @@ void show_bottom_text_login(LOGBOOK * lbs)
             fclose(f);
 
             i = build_subst_list(lbs, slist, svalue, NULL, TRUE);
-            strsubst_list(buf, size+100, slist, svalue, i);
+            strsubst_list(buf, size + 100, slist, svalue, i);
 
             rsputs(buf);
             xfree(buf);
@@ -7703,32 +7702,32 @@ void strencode2(char *b, char *text, int size)
    for (i = 0; i < (int) strlen(text); i++) {
       switch (text[i]) {
       case '\n':
-         if (strlen(b)+5 >= (unsigned int)size)
+         if (strlen(b) + 5 >= (unsigned int) size)
             return;
          strcat(b, "<br>\n");
          break;
       case '<':
-         if (strlen(b)+4 >= (unsigned int)size)
+         if (strlen(b) + 4 >= (unsigned int) size)
             return;
          strcat(b, "&lt;");
          break;
       case '>':
-         if (strlen(b)+4 >= (unsigned int)size)
+         if (strlen(b) + 4 >= (unsigned int) size)
             return;
          strcat(b, "&gt;");
          break;
       case '&':
-         if (strlen(b)+5 >= (unsigned int)size)
+         if (strlen(b) + 5 >= (unsigned int) size)
             return;
          strcat(b, "&amp;");
          break;
       case '\"':
-         if (strlen(b)+6 >= (unsigned int)size)
+         if (strlen(b) + 6 >= (unsigned int) size)
             return;
          strcat(b, "&quot;");
          break;
       default:
-         if (strlen(b)+1 >= (unsigned int)size)
+         if (strlen(b) + 1 >= (unsigned int) size)
             return;
          sprintf(b + strlen(b), "%c", text[i]);
       }
@@ -14731,8 +14730,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    nowrap = printable ? "" : "nowrap";
    skip_comma = FALSE;
 
-   if (getcfg(lbs->name, "List conditions", str, sizeof(str)) &&
-       atoi(str) == 1)
+   if (getcfg(lbs->name, "List conditions", str, sizeof(str)) && atoi(str) == 1)
       evaluate_conditions(lbs, attrib);
 
    if (strieq(mode, "Threaded")

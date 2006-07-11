@@ -400,13 +400,10 @@ Entry size too large for email notification = Eintrag zu groß für Email-Benachri
 Please specify a valid email address = Bitte eine gültige Email-Adresse eingeben
 Cannot send email notification to "%s" = Kann Email-Benachrichtigung nicht an "%s" senden
 Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = Fehler: Kommando "<b>%s</b>" ist nicht erlaubt für Benutzer "<b>%s</b>"
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Shell execution not enabled via -x flag = 
-Enter heading level (1, 2 or 3) = 
-insert heading = 
-User name may not contain blanks = 
-Empty password not allowed = 
-Password may not contain blanks = 
+Shell execution not enabled via -x flag = Kommando-Ausführung ist nicht mit -x Kommandozeilenoption eingeschalten   
+Enter heading level (1, 2 or 3) = Bitte Überschrift-Stufe eingeben (1, 2 oder 3) 
+insert heading = Überschrift eingeben
+User name may not contain blanks = Benutzername darf keine Leerzeichen enthalten
+Empty password not allowed = Leeres Passwort ist nicht erlaubt
+Password may not contain blanks = Passwort darf keine Leerzeichen enthalten
+Anonymous = Anonym

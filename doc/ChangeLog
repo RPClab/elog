@@ -1,3 +1,41 @@
+Version 2.6.2, released July 11th, 2006
+=======================================
+
+- Fixed crash on email notification for edits
+- Implemented 'list conditions'
+- Fixed problem with broken navigation links (strencode2 got wrong 'size' parameter)
+- Fixed wrong focus switching to text box for conditional attributes
+- Implemented "bottom text login"
+- Fixed crash on mirroring with write password
+- Do $shell() substitution after attribute substitution
+- Fixed problem with using locks and changing encoding
+- Implemented "Anonymous" substitution if no user is logged int
+- Write email text to logfile
+- Show attachments by default in full list mode
+- Changed "cool" icon from 8) to 8-) in order to avoid misinterpretations
+- Implemented $version and $revision in bottom text
+- Implemented "Hidden attributes = ..."
+- Fixed invalid link if searched in all logbooks
+- Fixed broken 'protect selection page'
+- Added tooltip display in normal list mode and entry view
+- Replaced forkpty() with shell redirection to temporary file
+- Fixed illegal submit from curl()
+- Fixed problem with closing </ol> / </ul>
+- Strip ANY logbook in new redirection method
+- Do not allow empty passwords or passwords with blanks
+- Added user name check for blanks
+- Fixed calender month selection bug
+- Implemented 'allow password change'
+- Added new redirection code without using 'URL =' statement
+- Added heading to ELCode tags
+- Added IP address to log file
+- Fixed potential buffer overflows
+- Fixed problem with MOptions and reedit
+- Fixed problem with MOptions inside submit_elog()
+- Don't show ELCode buttons if "show text = 0"
+- Applied patch from Mike Pittelkow <mikep@isd.net> to compile under FreeBSD
+- Fixed broken inline images
+
 Version 2.6.1, released Jan 19th, 2006
 ======================================
 
