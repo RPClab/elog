@@ -11,11 +11,11 @@ function getSelection(text)
       return "";
 }
 
-function replaceSelection(text, newSelection, cursorPos)
+function replaceSelection(doc, text, newSelection, cursorPos)
 {
    if (browser == 'MSIE') {
       text.focus();
-      sel = document.selection;
+      sel = doc.selection;
       rng = sel.createRange();
       rng.colapse;
       is_sel = rng.text.length > 0;
@@ -40,7 +40,7 @@ function replaceSelection(text, newSelection, cursorPos)
          text.selectionEnd   = text.selectionStart;
       }
    } else
-      text += newSelection;
+      text.value += newSelection;
 }
 
 function elcode(text, tag, value)
@@ -70,16 +70,16 @@ function elcode1(text, tag, value, selection)
       pos = tag.length + 2;
    else
       pos = tag.length + value.length + 3;
-   replaceSelection(text, str, pos);
+   replaceSelection(document, text, str, pos);
    text.focus();
 }
 
-function elcode2(text, tag, value)
+function elcode2(doc, text, tag, value)
 {
    str = '['+tag+']' + value + '[/'+tag+']';
 
    pos = str.length;
-   replaceSelection(text, str, pos);
+   replaceSelection(doc, text, str, pos);
    text.focus();
 }
 

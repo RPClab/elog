@@ -22116,7 +22116,7 @@ void show_uploader_finished(LOGBOOK * lbs)
    rsprintf("  function update()\n");
    rsprintf("  {\n");
    rsprintf("    i = opener.document.form1.next_attachment.value;\n");
-   rsprintf("    elcode2(opener.document.form1.Text, 'IMG', 'elog:/'+i);\n");
+   rsprintf("    elcode2(opener.document, opener.document.form1.Text, 'IMG', 'elog:/'+i);\n");
    rsprintf("    opener.document.form1.inlineatt.value = '%s';\n", att);
    rsprintf("    opener.document.form1.jcmd.value = 'Upload';\n");
    rsprintf("    opener.document.form1.submit();\n");
