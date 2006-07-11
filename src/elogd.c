@@ -10,7 +10,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.6.1"
+#define VERSION "2.6.2"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -19441,12 +19441,6 @@ void submit_elog(LOGBOOK * lbs)
                   eprintf("\n%s to %s\n\n", str, list);
 
                for (i = 0; i < n; i++) {
-                  j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-                  sprintf(str, "%d", message_id);
-                  add_subst_list(slist, svalue, "message id", str, &j);
-                  add_subst_time(lbs, slist, svalue, "entry time", date, &j);
-                  strsubst_list(mail_list[i], NAME_LENGTH, slist, svalue, j);
-
                   /* remove possible 'mailto:' */
                   if ((p = strstr(mail_list[i], "mailto:")) != NULL)
                      strcpy(p, p + 7);
