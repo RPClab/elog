@@ -94,11 +94,18 @@ indent:
 		indent $(IFLAGS) $$src; \
 	done
 
+ifeq ($(OSTYPE),CYGWIN_NT-5.1)
+loc: locext.exe
+	for lang in resources/eloglang*; do \
+	  ./locext.exe src/elogd.c $$lang; echo locext src/elogd.c $$lang;\
+	done
+else
 locext: src/locext.c
 loc: locext
 	@for lang in resources/eloglang*; do \
 	  ./locext src/elogd.c $$lang; echo locext src/elogd.c $$lang;\
 	done
+endif
 
 update: $(EXECS)
 	@$(INSTALL) -v -m 0755 -o ${BINOWNER} -g ${BINGROUP} elogd $(SDESTDIR)
