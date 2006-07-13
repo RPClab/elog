@@ -2660,7 +2660,6 @@ void evaluate_conditions(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH])
 
                set_condition(condition);
                scan_attributes(lbs->name);
-               return;
             }
          }
       }
