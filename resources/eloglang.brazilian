@@ -409,8 +409,4 @@ insert heading = inserir título
 User name may not contain blanks = O nome do usuário não pode conter brancos 
 Empty password not allowed = Não é permitida senha vazia 
 Password may not contain blanks = A senha não pode conter brancos 
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Anonymous = 
+Anonymous = Anônimo
