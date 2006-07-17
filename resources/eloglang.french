@@ -1,6 +1,6 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.6.1+)
+# (for 2.6.2+)
 # A more recent version may be available at :
 # http://savannah.psi.ch/viewcvs/trunk/resources/eloglang.french?root=elog
 #
@@ -401,14 +401,10 @@ Entry size too large for email notification = La taille de l'entrée est trop gra
 Please specify a valid email address = Merci de spécifier une adresse mél valide
 Cannot send email notification to "%s" = Impossible d'adresser la notification par mél à l'adresse "%s"
 Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = Erreur : la commande "<b>%s</b>" n'est pas autorisée pour l'utilisateur "<b>%s</b>"
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Shell execution not enabled via -x flag = 
-Enter heading level (1, 2 or 3) = 
-insert heading = 
-User name may not contain blanks = 
-Empty password not allowed = 
-Password may not contain blanks = 
-Anonymous = 
+Shell execution not enabled via -x flag = L'exécution par le shell n'a pas été activée avec l'option -x
+Enter heading level (1, 2 or 3) = Indiquez le niveau d'en-tête (1, 2 ou 3)
+insert heading = insérer en-tête
+User name may not contain blanks = Le nom d'utilisateur ne doit pas contenir d'espace
+Empty password not allowed = Le mot de passe ne doit pas être vide
+Password may not contain blanks = Le mot de passe ne doit pas contenir d'espace
+Anonymous = Anonyme
