@@ -3905,7 +3905,7 @@ int el_index_logbooks()
       lb_list[n].el_index = NULL;
 
       if (verbose)
-         eprintf("Indexing logbook \"%s\" ... ", logbook);
+         eprintf("Indexing logbook \"%s\" in \"%s\" ... ", logbook, lb_list[n].data_dir);
       eflush();
       status = el_build_index(&lb_list[n], FALSE);
       if (verbose)
@@ -5194,6 +5194,48 @@ int is_html(char *s)
 
    for (i = 0; html_tags[i][0]; i++) {
       p = strstr(str, html_tags[i]);
+      if (p && strchr(p, '>') && (p == str || (p > str && *(p - 1) != '\\'))) {
+         xfree(str);
+         return TRUE;
+      }
+   }
+
+   xfree(str);
+   return FALSE;
+}
+
+/*------------------------------------------------------------------*/
+
+char *full_html_tags[] = { "<HTML>", "<BODY>", "<HEAD>", "" };
+
+int is_full_html(char *file_name)
+{
+   char *str, *p;
+   int i, fh, length;
+   unsigned char *buf;
+
+   fh = open(file_name, O_RDONLY | O_BINARY);
+   if (fh < 0)
+      return FALSE;
+   lseek(fh, 0, SEEK_END);
+   length = TELL(fh);
+   lseek(fh, 0, SEEK_SET);
+   if (length > 1000)
+      length = 1000;
+   buf = xmalloc(length);
+   read(fh, buf, length);
+   close(fh);
+
+   str = xstrdup(buf);
+
+   for (i = 0; i < (int) strlen(buf); i++)
+      str[i] = toupper(buf[i]);
+   str[i] = 0;
+
+   xfree(buf);
+
+   for (i = 0; full_html_tags[i][0]; i++) {
+      p = strstr(str, full_html_tags[i]);
       if (p && strchr(p, '>') && (p == str || (p > str && *(p - 1) != '\\'))) {
          xfree(str);
          return TRUE;
@@ -7126,7 +7168,7 @@ void add_logbook_to_group(LOGBOOK * lbs, char *new_name)
 
 void show_standard_title(char *logbook, char *text, int printable)
 {
-   char str[256], ref[256], sclass[32], comment[256];
+   char str[256], ref[256], sclass[32], comment[256], url[256];
    int i, j, level;
    LBLIST phier, pnode, pnext, flb;
 
@@ -7150,12 +7192,20 @@ void show_standard_title(char *logbook, char *text, int printable)
          rsprintf("<tr><td class=\"tabs\">\n");
 
          if (level == 0 && getcfg("global", "main tab", str, sizeof(str))
-             && !getcfg_topgroup())
-            rsprintf("<span class=\"ltab\"><a href=\"../\">%s</a></span>\n", str);
+            && !getcfg_topgroup()) {
+            if (getcfg("global", "main tab url", url, sizeof(url)))
+               rsprintf("<span class=\"ltab\"><a href=\"%s\">%s</a></span>\n", url, str);
+            else
+               rsprintf("<span class=\"ltab\"><a href=\"../\">%s</a></span>\n", str);
+         }
 
          if (level == 1 && getcfg("global", "main tab", str, sizeof(str))
-             && getcfg_topgroup())
-            rsprintf("<span class=\"ltab\"><a href=\"../%s/\">%s</a></span>\n", getcfg_topgroup(), str);
+            && getcfg_topgroup()) {
+            if (getcfg("global", "main tab url", url, sizeof(url)))
+               rsprintf("<span class=\"ltab\"><a href=\"%s/\">%s</a></span>\n", url, str);
+            else
+               rsprintf("<span class=\"ltab\"><a href=\"../%s/\">%s</a></span>\n", getcfg_topgroup(), str);
+         }
 
          /* iterate through members of this group */
          for (i = 0; i < pnode->n_members; i++) {
@@ -8393,18 +8443,19 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                     BOOL bduplicate, BOOL bpreview)
 {
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
-       format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr,
-       attr_index[MAX_N_ATTR], enc_selected, show_smileys, show_text, n_moptions;
+       format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr, n_lines,
+       attr_index[MAX_N_ATTR], enc_selected, show_smileys, show_text, n_moptions, display_inline;
    char str[2 * NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80], comment[10000], reply_string[256],
        list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80], script[256],
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
        att[MAX_ATTACHMENTS][256], encoding[80], slist[MAX_N_ATTR + 10][NAME_LENGTH],
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
        ua[NAME_LENGTH], mid[80], title[256], login_name[256], cookie[256], orig_author[256],
-       attr_moptions[MAX_N_LIST][NAME_LENGTH];
+       attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
+   FILE *f;
    BOOL preset_text, subtable;
 
    for (i = 0; i < MAX_ATTACHMENTS; i++)
@@ -8418,6 +8469,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    orig_author[0] = 0;
    encoding[0] = 0;
    date[0] = 0;
+
+   /* check for file attachment (mhttpd) */
+   if (isparam("fa")) {
+      strlcpy(att[0], getparam("fa"), 256);
+
+      /* remove any leading directory, to accept only files in the logbook directory ! */
+      if (strchr(att[0], DIR_SEPARATOR)) {
+         strlcpy(str, att[0], sizeof(str));
+         strlcpy(att[0], strrchr(str, DIR_SEPARATOR)+1, 256);
+      }
+   }
 
    if (breedit || bupload) {
       /* get date from parameter */
@@ -9976,19 +10038,81 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    if (!getcfg(lbs->name, "Enable attachments", str, sizeof(str))
        || atoi(str) > 0) {
-      i = 0;
-      if (bedit || bduplicate) {
+      if (bedit || bduplicate || isparam("fa")) {
          /* show existing attachments */
-         for (i = 0; i < MAX_ATTACHMENTS; i++)
-            if (att[i][0]) {
-               rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), i + 1);
-               sprintf(str, "attachment%d", i);
+         for (index = 0; index < MAX_ATTACHMENTS; index++)
+            if (att[index][0]) {
+               rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), index + 1);
+               sprintf(str, "attachment%d", index);
                rsprintf("<td class=\"attribvalue\">\n");
-               rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", str, att[i]);
-               rsprintf("%s\n", att[i] + 14);
-               rsprintf
-                   ("&nbsp;&nbsp;<input type=\"submit\" name=\"delatt%d\" value=\"%s\" onClick=\"return mark_submit();\"></td></tr>\n",
-                    i, loc("Delete"));
+
+               if (strlen(att[index]) < 14 || att[index][6] != '_' || att[index][13] != '_') {
+                  rsprintf("<b>Error: Invalid attachment \"%s\"</b><br>", att);
+               } else {
+
+                  rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", str, att[index]);
+                  rsprintf("%s\n", att[index] + 14);
+                  rsprintf("&nbsp;&nbsp;<input type=\"submit\" name=\"delatt%d\" value=\"%s\" ", index, loc("Delete"));
+                  rsprintf("onClick=\"return mark_submit();\">");
+
+                  strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+                  strlcat(file_name, att[index], sizeof(file_name));
+
+                  display_inline = is_image(file_name) || is_ascii(file_name);
+                  if (chkext(file_name, ".PS") || chkext(file_name, ".PDF") || chkext(file_name, ".EPS"))
+                     display_inline = 0;
+                  if ((chkext(file_name, ".HTM") || chkext(file_name, ".HTML")) && is_full_html(file_name))
+                     display_inline = 0;
+                  if (getcfg(lbs->name, "Preview attachments", str, sizeof(str)) && atoi(str) == 0)
+                     display_inline = 0;
+
+                  if (display_inline) {
+
+                     rsprintf("<br>\n");
+
+                     strcpy(str, att[index]);
+                     str[13] = 0;
+                     strcpy(file_enc, att[index] + 14);
+                     url_encode(file_enc, sizeof(file_enc));  /* for file names with special characters like "+" */
+                     sprintf(ref, "%s/%s", str, file_enc);
+
+                     if (is_image(att[index])) {
+                        rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\">\n", ref, att[index] + 14,
+                                 att[index] + 14);
+                     } else {
+                        if (is_ascii(file_name)) {
+                           if (!chkext(att[index], ".HTML"))
+                              rsprintf("<pre class=\"messagepre\">");
+
+                           f = fopen(file_name, "rt");
+                           n_lines = 0;
+                           if (f != NULL) {
+                              while (!feof(f)) {
+                                 str[0] = 0;
+                                 fgets(str, sizeof(str), f);
+
+                                 if (n_lines < 1000) {
+                                    if (!chkext(att[index], ".HTML"))
+                                       rsputs2(lbs, FALSE, str);
+                                    else
+                                       rsputs(str);
+                                 }
+                                 n_lines++;
+                              }
+                              fclose(f);
+                           }
+
+                           if (!chkext(att[index], ".HTML"))
+                              rsprintf("</pre>");
+                           rsprintf("\n");
+                           if (n_lines > 1000)
+                              rsprintf("<i><b>... %d more lines ...</b></i>\n", n_lines - 1000);
+                        }
+                     }
+                  }
+               }
+
+               rsprintf("</td></tr>\n");
             } else
                break;
       }
@@ -20650,8 +20774,9 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
                /* determine if displayed inline */
                display_inline = is_image(file_name) || is_ascii(file_name);
-               if (chkext(att, ".PS") || chkext(att, ".PDF") || chkext(att, ".EPS") ||
-                   chkext(att, ".HTM") || chkext(att, ".HTML"))
+               if (chkext(att, ".PS") || chkext(att, ".PDF") || chkext(att, ".EPS"))
+                  display_inline = 0;
+               if ((chkext(att, ".HTM") || chkext(att, ".HTML")) && is_full_html(file_name))
                   display_inline = 0;
                if (file_exist(thumb_name))
                   display_inline = 1;
