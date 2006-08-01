@@ -1016,6 +1016,7 @@ int subst_shell(char *cmd, char *result, int size)
    memset(result, 0, size);
 
    do {
+      /* query stdout */
       do {
          if (!PeekNamedPipe(hChildStdoutRd, buffer, 256, &dwRead, &dwAvail, NULL))
             break;
@@ -1042,6 +1043,9 @@ int subst_shell(char *cmd, char *result, int size)
          break;
       if (i != STILL_ACTIVE)
          break;
+
+      /* give some CPU to subprocess */
+      Sleep(10);
 
    } while (TRUE);
 
@@ -5094,7 +5098,7 @@ void write_logfile(LOGBOOK * lbs, const char *text)
    if (str[0] == DIR_SEPARATOR || str[1] == ':')
       strlcpy(file_name, str, sizeof(file_name));
    else {
-      strlcpy(file_name, resource_dir, sizeof(file_name));
+      strlcpy(file_name, logbook_dir, sizeof(file_name));
       strlcat(file_name, str, sizeof(file_name));
    }
 
@@ -7291,7 +7295,7 @@ void show_top_text(LOGBOOK * lbs)
       if (str[0] == DIR_SEPARATOR || str[1] == ':')
          strcpy(file_name, str);
       else {
-         strlcpy(file_name, resource_dir, sizeof(file_name));
+         strlcpy(file_name, logbook_dir, sizeof(file_name));
          strlcat(file_name, str, sizeof(file_name));
       }
 
@@ -7328,7 +7332,7 @@ void show_bottom_text(LOGBOOK * lbs)
          if (str[0] == DIR_SEPARATOR || str[1] == ':')
             strcpy(file_name, str);
          else {
-            strlcpy(file_name, resource_dir, sizeof(file_name));
+            strlcpy(file_name, logbook_dir, sizeof(file_name));
             strlcat(file_name, str, sizeof(file_name));
          }
 
@@ -7378,7 +7382,7 @@ void show_bottom_text_login(LOGBOOK * lbs)
          if (str[0] == DIR_SEPARATOR || str[1] == ':')
             strcpy(file_name, str);
          else {
-            strlcpy(file_name, resource_dir, sizeof(file_name));
+            strlcpy(file_name, logbook_dir, sizeof(file_name));
             strlcat(file_name, str, sizeof(file_name));
          }
 
@@ -7874,7 +7878,7 @@ BOOL get_password_file(LOGBOOK * lbs, char *file_name, int size)
    if (str[0] == DIR_SEPARATOR || str[1] == ':')
       strlcpy(file_name, str, size);
    else {
-      strlcpy(file_name, resource_dir, size);
+      strlcpy(file_name, logbook_dir, size);
       strlcat(file_name, str, size);
    }
 
@@ -8555,58 +8559,60 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       n_attr = scan_attributes(lbs->name);
       if (breedit)
          attrib_from_param(n_attr, attrib);
-   } else
+
+      /* now check again for conditional preset */
+      for (index = 0; index < lbs->n_attr; index++) {
+
+         /* check for preset string */
+         sprintf(str, "Preset %s", attr_list[index]);
+         if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0) {
+
+            if ((!bedit && !breply && !bduplicate) ||      /* don't subst on edit or reply */
+               (breedit && i == 2)) {     /* subst on reedit only if preset is under condition */
+
+               /* do not format date for date attributes */
+               i = build_subst_list(lbs, slist, svalue, attrib,
+                                    (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
+               strsubst_list(preset, sizeof(preset), slist, svalue, i);
+
+               /* check for index substitution */
+               if (!bedit && (strchr(preset, '%') || strchr(preset, '#'))) {
+                  /* get index */
+                  get_auto_index(lbs, index, preset, str, sizeof(str));
+                  strcpy(preset, str);
+               }
+
+               if (!strchr(preset, '%'))
+                  strcpy(attrib[index], preset);
+            }
+         }
+
+         sprintf(str, "Preset on reply %s", attr_list[index]);
+         if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0 && breply) {
+
+            if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
+
+               /* do not format date for date attributes */
+               i = build_subst_list(lbs, slist, svalue, attrib,
+                                    (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
+               strsubst_list(preset, sizeof(preset), slist, svalue, i);
+
+               /* check for index substitution */
+               if (!bedit && (strchr(preset, '%') || strchr(preset, '#'))) {
+                  /* get index */
+                  get_auto_index(lbs, index, preset, str, sizeof(str));
+                  strcpy(preset, str);
+               }
+
+               if (!strchr(preset, '%'))
+                  strcpy(attrib[index], preset);
+            }
+         }
+      }
+
+   } else // if (_condition[0])
       n_attr = lbs->n_attr;
 
-   /* now check again for conditional preset */
-   for (index = 0; index < lbs->n_attr; index++) {
-
-      /* check for preset string */
-      sprintf(str, "Preset %s", attr_list[index]);
-      if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0) {
-
-         if ((!bedit && !breply && !bduplicate) ||      /* don't subst on edit or reply */
-             (breedit && i == 2)) {     /* subst on reedit only if preset is under condition */
-
-            /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib,
-                                 (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
-            strsubst_list(preset, sizeof(preset), slist, svalue, i);
-
-            /* check for index substitution */
-            if (!bedit && (strchr(preset, '%') || strchr(preset, '#'))) {
-               /* get index */
-               get_auto_index(lbs, index, preset, str, sizeof(str));
-               strcpy(preset, str);
-            }
-
-            if (!strchr(preset, '%'))
-               strcpy(attrib[index], preset);
-         }
-      }
-
-      sprintf(str, "Preset on reply %s", attr_list[index]);
-      if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0 && breply) {
-
-         if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
-
-            /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib,
-                                 (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
-            strsubst_list(preset, sizeof(preset), slist, svalue, i);
-
-            /* check for index substitution */
-            if (!bedit && (strchr(preset, '%') || strchr(preset, '#'))) {
-               /* get index */
-               get_auto_index(lbs, index, preset, str, sizeof(str));
-               strcpy(preset, str);
-            }
-
-            if (!strchr(preset, '%'))
-               strcpy(attrib[index], preset);
-         }
-      }
-   }
 
    /* check for maximum number of replies */
    if (breply) {
@@ -9825,7 +9831,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          if (str[0] == DIR_SEPARATOR || str[1] == ':')
             strcpy(file_name, str);
          else {
-            strlcpy(file_name, resource_dir, sizeof(file_name));
+            strlcpy(file_name, logbook_dir, sizeof(file_name));
             strlcat(file_name, str, sizeof(file_name));
          }
 
@@ -13750,7 +13756,7 @@ int save_md5(LOGBOOK * lbs, char *server, MD5_INDEX * md5_index, int n)
    while (str[strlen(str) - 1] == '_')
       str[strlen(str) - 1] = 0;
 
-   strlcpy(file_name, resource_dir, sizeof(file_name));
+   strlcpy(file_name, logbook_dir, sizeof(file_name));
    strlcat(file_name, str, sizeof(file_name));
    strlcat(file_name, ".md5", sizeof(file_name));
 
@@ -15825,7 +15831,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
       if (str[0] == DIR_SEPARATOR || str[1] == ':')
          strcpy(file_name, str);
       else {
-         strlcpy(file_name, resource_dir, sizeof(file_name));
+         strlcpy(file_name, logbook_dir, sizeof(file_name));
          strlcat(file_name, str, sizeof(file_name));
       }
 
@@ -17412,7 +17418,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          if (str[0] == DIR_SEPARATOR || str[1] == ':')
             strlcpy(file_name, str, sizeof(file_name));
          else {
-            strlcpy(file_name, resource_dir, sizeof(file_name));
+            strlcpy(file_name, logbook_dir, sizeof(file_name));
             strlcat(file_name, str, sizeof(file_name));
          }
 
@@ -19529,7 +19535,7 @@ void submit_elog(LOGBOOK * lbs)
       if (str[0] == DIR_SEPARATOR || str[1] == ':')
          strcpy(file_name, str);
       else {
-         strlcpy(file_name, resource_dir, sizeof(file_name));
+         strlcpy(file_name, logbook_dir, sizeof(file_name));
          strlcat(file_name, str, sizeof(file_name));
       }
       send_file_direct(file_name);
@@ -20128,7 +20134,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          if (str[0] == DIR_SEPARATOR || str[1] == ':')
             strcpy(file_name, str);
          else {
-            strlcpy(file_name, resource_dir, sizeof(file_name));
+            strlcpy(file_name, logbook_dir, sizeof(file_name));
             strlcat(file_name, str, sizeof(file_name));
          }
 
@@ -20969,7 +20975,7 @@ PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size)
       close(fh);
 
       /* put empty XML tree into password file */
-      printf("Create empty password file \"%s\" ...\n", file_name);
+      printf("\nCreate empty password file \"%s\"\n", file_name);
       root = mxml_create_root_node();
       list = mxml_add_node(root, "list", NULL);
       mxml_write_tree(file_name, root);
@@ -21739,7 +21745,7 @@ void show_selection_page()
       if (str[0] == DIR_SEPARATOR || str[1] == ':')
          strlcpy(file_name, str, sizeof(file_name));
       else {
-         strlcpy(file_name, resource_dir, sizeof(file_name));
+         strlcpy(file_name, logbook_dir, sizeof(file_name));
          strlcat(file_name, str, sizeof(file_name));
       }
       send_file_direct(file_name);
@@ -22310,7 +22316,7 @@ void interprete(char *lbook, char *path)
          if (str[0] == DIR_SEPARATOR || str[1] == ':')
             strlcpy(file_name, str, sizeof(file_name));
          else {
-            strlcpy(file_name, resource_dir, sizeof(file_name));
+            strlcpy(file_name, logbook_dir, sizeof(file_name));
             strlcat(file_name, str, sizeof(file_name));
          }
          send_file_direct(file_name);
