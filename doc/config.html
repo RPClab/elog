@@ -163,6 +163,13 @@ Use Mail Subject = Location
         <b><code>string</code></b> is used for the contents of the tab.
       </li>
       <li>
+        <b><code>Main Tab URL = &lt;string&gt;</code></b><br>
+        Normally the main tab brings one back to the logbook selection page.
+        In case one wants to specify a different destination, such as a
+        special web page outside of elog, one can use this statement
+        to specify a full URL.
+      </li>
+      <li>
         <b><code>Welcome Title = &lt;html code&gt;</code></b><br>
         This optional HTML code gets displayed in the title of the logbook
         selection page. It can contain images via <b><code>&lt;img
@@ -2088,6 +2095,13 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
         logbook pages. For logbooks with large images, this flag can be turned
         off, so that attachments are only displayed when they are clicked on.
         Default is <b>1</b>.
+      </li>
+      <li>
+        <b><code>Preview attachments = 0|1</code></b><br>
+        This flag controls the display of attachments in the edit form. If one
+        one uploads an attachment, but has not yet submitted the entry, 
+        the uploaded attachments are shown at the bottom if this flag is <b>1</b>.
+        Only ASCII files and images are shown of course. Default is <b>1</b>.
       </li>
       <li>
         <b><code>Summary lines = x</code></b><br>
