@@ -10489,7 +10489,7 @@ void load_config_section(char *section, char **buffer, char *error)
    *buffer = NULL;
    fh = open(config_file, O_RDONLY | O_BINARY);
    if (fh < 0) {
-      sprintf(error, "Cannot read configuration file <b>\"%s\"</b>", config_file);
+      sprintf(error, "Cannot read configuration file \"%s\": %s", config_file, strerror(errno));
       return;
    }
    length = lseek(fh, 0, SEEK_END);
@@ -10612,6 +10612,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
    load_config_section(section, &buffer, error_str);
 
    if (error_str[0]) {
+      rsprintf("<h2>%s</h2>\n", error_str);
       rsprintf("</table></td></tr></table>\n");
       rsprintf("</body></html>\r\n");
       return;
@@ -12344,7 +12345,7 @@ int show_download_page(LOGBOOK * lbs, char *path)
       /* return complete config file */
       load_config_section(NULL, &buffer, error_str);
       if (error_str[0]) {
-         rsprintf("Error loading configuration file: %s", error_str);
+         rsprintf("<h2>%s</h2>", error_str);
          return EL_FILE_ERROR;
       }
 
@@ -12361,7 +12362,7 @@ int show_download_page(LOGBOOK * lbs, char *path)
          /* return config */
          load_config_section(lbs->name, &buffer, error_str);
          if (error_str[0]) {
-            rsprintf("Error loading configuration file: %s", error_str);
+            rsprintf("<h2>%s</h2>", error_str);
             return EL_FILE_ERROR;
          }
 
@@ -12809,7 +12810,7 @@ int show_md5_page(LOGBOOK * lbs)
    /* calculate MD5 for logbook section in config file */
    load_config_section(lbs->name, &buffer, error_str);
    if (error_str[0])
-      rsprintf("Error loading configuration file: %s", error_str);
+      rsprintf("<h2>%s</h2>", error_str);
    else {
       rsprintf("ID: %6d MD5:", 0);
 
