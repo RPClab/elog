@@ -8607,6 +8607,28 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          }
       }
 
+      sprintf(str, "Preset on duplicate %s", attr_list[index]);
+      if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0 && bduplicate) {
+
+         if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
+
+            /* do not format date for date attributes */
+            i = build_subst_list(lbs, slist, svalue, attrib,
+                                 (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
+            strsubst_list(preset, sizeof(preset), slist, svalue, i);
+
+            /* check for index substitution */
+            if (!bedit && (strchr(preset, '%') || strchr(preset, '#'))) {
+               /* get index */
+               get_auto_index(lbs, index, preset, str, sizeof(str));
+               strcpy(preset, str);
+            }
+
+            if (!strchr(preset, '%'))
+               strcpy(attrib[index], preset);
+         }
+      }
+
       /* check for p<attribute> */
       sprintf(str, "p%s", attr_list[index]);
       if (isparam(str))
@@ -8651,6 +8673,28 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
          sprintf(str, "Preset on reply %s", attr_list[index]);
          if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0 && breply) {
+
+            if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
+
+               /* do not format date for date attributes */
+               i = build_subst_list(lbs, slist, svalue, attrib,
+                                    (attr_flags[index] & (AF_DATE | AF_DATETIME)) == 0);
+               strsubst_list(preset, sizeof(preset), slist, svalue, i);
+
+               /* check for index substitution */
+               if (!bedit && (strchr(preset, '%') || strchr(preset, '#'))) {
+                  /* get index */
+                  get_auto_index(lbs, index, preset, str, sizeof(str));
+                  strcpy(preset, str);
+               }
+
+               if (!strchr(preset, '%'))
+                  strcpy(attrib[index], preset);
+            }
+         }
+
+         sprintf(str, "Preset on duplicate %s", attr_list[index]);
+         if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0 && bduplicate) {
 
             if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
 
