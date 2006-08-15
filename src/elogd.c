@@ -19563,6 +19563,9 @@ void submit_elog(LOGBOOK * lbs)
                sprintf(str, "Email ALL");
 
             if (getcfg(lbs->name, str, list, sizeof(list))) {
+               i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+               strsubst_list(list, sizeof(list), slist, svalue, i);
+
                n = strbreak(list, mail_list, MAX_N_LIST, ",");
 
                if (verbose)
@@ -23717,9 +23720,16 @@ void server_loop(void)
       *strchr(str, ' ') = 0;
    eprintf("revision %s\n", str);
    if (verbose) {
-      eprintf("Config file  : %s\n", config_file);
-      eprintf("Resource dir : %s\n", resource_dir[0] ? resource_dir : "current dir");
-      eprintf("Logbook dir  : %s\n", logbook_dir[0] ? logbook_dir : "current dir");
+      getcwd(str, sizeof(str));
+      if (strchr(config_file, DIR_SEPARATOR) == NULL)
+         eprintf("Config file  : %s%c%s\n", str, DIR_SEPARATOR, config_file);
+      else
+         eprintf("Config file  : %s\n", config_file);
+      eprintf("Resource dir : %s\n", resource_dir[0] ? resource_dir : str);
+      if (logbook_dir[0] && logbook_dir[0] != DIR_SEPARATOR && logbook_dir[1] != ':')
+         eprintf("Logbook dir  : %s%c%s\n", str, DIR_SEPARATOR, logbook_dir);
+      else
+         eprintf("Logbook dir  : %s\n", logbook_dir[0] ? logbook_dir : str);
    }
 #ifdef OS_UNIX
    /* create PID file if given as command line parameter or if running under root */
