@@ -19675,10 +19675,11 @@ void submit_elog(LOGBOOK * lbs)
    }
 
    if (strlen(mail_to) > 0) {
-      mail_to[strlen(mail_to) - 4] = 0; /* strip last ',\r\n\t' */
-      rcpt_to[strlen(rcpt_to) - 1] = 0; /* strip last ',' */
-      puts(mail_to);
-      puts(rcpt_to);
+      if (strlen(mail_to) > 4 && mail_to[strlen(mail_to) - 4] == ',')
+         mail_to[strlen(mail_to) - 4] = 0; /* strip last ',\r\n\t' */
+
+      if (strlen(rcpt_to) > 1 && mail_to[strlen(rcpt_to) - 1] == ',')
+         rcpt_to[strlen(rcpt_to) - 1] = 0; /* strip last ',' */
       if (compose_email
           (lbs, rcpt_to, mail_to, message_id, attrib, mail_param, isparam("edit_id"), att_file,
            isparam("encoding") ? getparam("encoding") : "plain") == 0)
