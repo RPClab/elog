@@ -8444,7 +8444,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 {
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
        format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr, n_lines,
-       attr_index[MAX_N_ATTR], enc_selected, show_smileys, show_text, n_moptions, display_inline;
+       attr_index[MAX_N_ATTR], enc_selected, show_smileys, show_text, n_moptions, display_inline,
+       allowed_encoding;
    char str[2 * NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80], comment[10000], reply_string[256],
        list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80], script[256],
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
@@ -9965,29 +9966,56 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       /* Encoding radio buttons */
 
-      rsprintf("<b>%s</b>: ", loc("Encoding"));
-
-      if (enc_selected == 0)
-         rsprintf("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" checked>");
+      if (getcfg(lbs->name, "Allowed encoding", str, sizeof(str)))
+         allowed_encoding = atoi(str);
       else
-         rsprintf
-             ("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" onclick=\"cond_submit()\">");
-      rsprintf
-          ("<label for=\"ELCode\"><a target=\"_blank\" href=\"?cmd=HelpELCode\">ELCode</a>&nbsp;&nbsp;</label>\n");
+         allowed_encoding = 3;
 
-      if (enc_selected == 1)
-         rsprintf("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" checked>");
-      else
-         rsprintf
-             ("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" onclick=\"cond_submit()\">");
-      rsprintf("<label for=\"plain\">plain&nbsp;&nbsp;</label>\n");
+      if (allowed_encoding < 1 || allowed_encoding > 7) {
+         rsprintf("<h1>Invalid \"Allowed encoding\" in configuration file, value must be between 1 and 7</h1>\n");
+         rsprintf("</table><!-- show_standard_title -->\n");
+         show_bottom_text(lbs);
+         rsprintf("</form></body></html>\r\n");
+         return;
+      }
 
-      if (enc_selected == 2)
-         rsprintf("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" checked>");
-      else
-         rsprintf
-             ("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" onclick=\"cond_submit()\">");
-      rsprintf("<label for=\"HTML\">HTML&nbsp;&nbsp;</label>\n");
+      if (allowed_encoding == 1)
+         rsprintf("<input type=\"hidden\" name=\"encoding\" value=\"plain\">\n");
+      else if (allowed_encoding == 2)
+         rsprintf("<input type=\"hidden\" name=\"encoding\" value=\"ELCode\">\n");
+      else if (allowed_encoding == 4)
+         rsprintf("<input type=\"hidden\" name=\"encoding\" value=\"HTML\">\n");
+      else {
+         rsprintf("<b>%s</b>: ", loc("Encoding"));
+
+         if (allowed_encoding & 2) {
+            if (enc_selected == 0)
+               rsprintf("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" checked>");
+            else
+               rsprintf
+                  ("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" onclick=\"cond_submit()\">");
+            rsprintf
+               ("<label for=\"ELCode\"><a target=\"_blank\" href=\"?cmd=HelpELCode\">ELCode</a>&nbsp;&nbsp;</label>\n");
+         }
+
+         if (allowed_encoding & 1) {
+            if (enc_selected == 1)
+               rsprintf("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" checked>");
+            else
+               rsprintf
+                  ("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" onclick=\"cond_submit()\">");
+            rsprintf("<label for=\"plain\">plain&nbsp;&nbsp;</label>\n");
+         }
+
+         if (allowed_encoding & 4) {
+            if (enc_selected == 2)
+               rsprintf("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" checked>");
+            else
+               rsprintf
+                  ("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" onclick=\"cond_submit()\">");
+            rsprintf("<label for=\"HTML\">HTML&nbsp;&nbsp;</label>\n");
+         }
+      }
 
       rsprintf("<br>\n");
    }
@@ -19155,7 +19183,8 @@ void submit_elog(LOGBOOK * lbs)
        mail_param[1000], *mail_to, *rcpt_to, full_name[256], att_file[MAX_ATTACHMENTS][256],
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], ua[NAME_LENGTH];
    int i, j, n, missing, first, index, mindex, suppress, message_id, resubmit_orig,
-       mail_to_size, rcpt_to_size, ltime, year, month, day, hour, min, sec, n_attr, email_notify[1000];
+       mail_to_size, rcpt_to_size, ltime, year, month, day, hour, min, sec, n_attr, email_notify[1000],
+       allowed_encoding;
    BOOL bedit;
    struct tm tms;
 
@@ -19314,6 +19343,27 @@ void submit_elog(LOGBOOK * lbs)
             }
          }
       }
+   }
+
+   /* check if allowed encoding */
+   if (getcfg(lbs->name, "Allowed encoding", str, sizeof(str)))
+      allowed_encoding = atoi(str);
+   else
+      allowed_encoding = 3;
+
+   strcpy(str, isparam("encoding") ? getparam("encoding") : "plain");
+
+   if (strieq(str, "plain") && (allowed_encoding & 1) == 0) {
+      show_error("Plain encoding not allowed");
+      return;
+   }
+   if (strieq(str, "ELCode") && (allowed_encoding & 2) == 0) {
+      show_error("ELCode encoding not allowed");
+      return;
+   }
+   if (strieq(str, "HTML") && (allowed_encoding & 4) == 0) {
+      show_error("HTML encoding not allowed");
+      return;
    }
 
    /* get attachments */

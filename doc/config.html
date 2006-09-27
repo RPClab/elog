@@ -2153,6 +2153,25 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
         <b>2</b> for HTML encoding. The default is <b>0</b>.
       </li>
       <li>
+        <b><code>Allowed encoding = &lt;n&gt;</code></b><br>
+        Allowed encoding options. <b><code>&lt;n&gt;</b></code> can be the sum of 
+        following flags:
+        <ul>
+          <li>1 : Plain
+          </li>
+          <li>2 : ELCode encoding
+          </li>
+          <li>4 : HTML encoding
+          </li>
+        </ul>
+        To allow plain and HTML encoding for example, set 
+        <b><code>&lt;n&gt;</b></code> to 5. Default is <b>3</b>. Note that
+        allowing HTML encoding may cause some security risk, since an elog
+        entry may contain malicious scripting code. It should therefor only
+        be allowed for installations where it is really needed and with not
+        public write access.
+      </li>
+      <li>
         <b><code>Suppress default = 0|1|2|3</code></b><br>
         This specifies the default state of the "<i>Suppress Email
         notification</i>" button on the new message entry form. For
