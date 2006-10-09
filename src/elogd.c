@@ -10021,21 +10021,21 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* Suppress email check box */
-   if (!(bedit && !breedit && !bupload && getcfg(lbs->name, "Suppress Email on edit", str, sizeof(str))
-         && atoi(str) == 1)) {
-      if (getcfg(lbs->name, "Suppress default", str, sizeof(str))) {
-         if (atoi(str) == 0) {
-            rsprintf("<input type=\"checkbox\" name=\"suppress\" id=\"suppress\" value=\"1\">");
-            rsprintf("<label for=\"suppress\">%s</label>\n", loc("Suppress Email notification"));
-         } else if (atoi(str) == 1) {
-            rsprintf("<input type=\"checkbox\" checked name=\"suppress\" id=\"suppress\" value=\"1\">");
-            rsprintf("<label for=\"suppress\">%s</label>\n", loc("Suppress Email notification"));
-         }
+   if (bedit)
+      getcfg(lbs->name, "Suppress Email on edit", str, sizeof(str));
+   else
+      getcfg(lbs->name, "Suppress default", str, sizeof(str));
 
-      } else {
-         rsprintf("<input type=\"checkbox\" name=\"suppress\" id=\"suppress\" value=\"1\">");
-         rsprintf("<label for=\"suppress\">%s</label>\n", loc("Suppress Email notification"));
-      }
+   if (atoi(str) == 0) {
+      rsprintf("<input type=\"checkbox\" name=\"suppress\" id=\"suppress\" value=\"1\">");
+      rsprintf("<label for=\"suppress\">%s</label>\n", loc("Suppress Email notification"));
+   } else if (atoi(str) == 1) {
+      rsprintf("<input type=\"checkbox\" checked name=\"suppress\" id=\"suppress\" value=\"1\">");
+      rsprintf("<label for=\"suppress\">%s</label>\n", loc("Suppress Email notification"));
+   } else if (atoi(str) == 2) {
+      rsprintf("<input type=\"hidden\" name=\"suppress\" id=\"suppress\" value=\"2\">");
+   } else if (atoi(str) == 3) {
+      rsprintf("<input type=\"hidden\" name=\"suppress\" id=\"suppress\" value=\"3\">");
    }
 
    /* Suppress execute shell check box */
@@ -19602,8 +19602,6 @@ void submit_elog(LOGBOOK * lbs)
    /*---- email notifications ----*/
 
    suppress = isparam("suppress") ? atoi(getparam("suppress")) : 0;
-   if (getcfg(lbs->name, "Suppress default", str, sizeof(str)) && atoi(str) == 3)
-      suppress = 3;
 
    /* check for mail submissions */
    mail_param[0] = 0;
@@ -19614,111 +19612,107 @@ void submit_elog(LOGBOOK * lbs)
    rcpt_to[0] = 0;
    rcpt_to_size = 256;
 
-   if (suppress) {
-      if (suppress != 3)
+   if (suppress == 1 || suppress == 3) {
+      if (suppress == 1)
          strcpy(mail_param, "?suppress=1");
    } else {
-      if (!(isparam("edit_id")
-            && getcfg(lbs->name, "Suppress Email on edit", str, sizeof(str))
-            && atoi(str) == 1)) {
-         /* go throuch "Email xxx" in configuration file */
-         for (index = mindex = 0; index <= n_attr; index++) {
+      /* go throuch "Email xxx" in configuration file */
+      for (index = mindex = 0; index <= n_attr; index++) {
 
-            strcpy(ua, attr_list[index]);
-            btou(ua);
-            dtou(ua);
+         strcpy(ua, attr_list[index]);
+         btou(ua);
+         dtou(ua);
 
-            if (index < n_attr) {
-               strcpy(str, "Email ");
-               if (strchr(attr_list[index], ' '))
-                  sprintf(str + strlen(str), "\"%s\"", attr_list[index]);
+         if (index < n_attr) {
+            strcpy(str, "Email ");
+            if (strchr(attr_list[index], ' '))
+               sprintf(str + strlen(str), "\"%s\"", attr_list[index]);
+            else
+               strlcat(str, attr_list[index], sizeof(str));
+            strcat(str, " ");
+
+            if (attr_flags[index] & AF_MULTI) {
+               sprintf(str2, "%s_%d", ua, mindex);
+
+               mindex++;
+               if (mindex == MAX_N_LIST)
+                  mindex = 0;
                else
-                  strlcat(str, attr_list[index], sizeof(str));
-               strcat(str, " ");
-
-               if (attr_flags[index] & AF_MULTI) {
-                  sprintf(str2, "%s_%d", ua, mindex);
-
-                  mindex++;
-                  if (mindex == MAX_N_LIST)
-                     mindex = 0;
-                  else
-                     index--;   /* repeat this loop */
-               } else
-                  strcpy(str2, ua);
-
-               if (isparam(str2)) {
-                  if (strchr(getparam(str2), ' '))
-                     sprintf(str + strlen(str), "\"%s\"", getparam(str2));
-                  else
-                     strlcat(str, getparam(str2), sizeof(str));
-               }
+                  index--;   /* repeat this loop */
             } else
-               sprintf(str, "Email ALL");
+               strcpy(str2, ua);
 
-            if (getcfg(lbs->name, str, list, sizeof(list))) {
-               i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-               strsubst_list(list, sizeof(list), slist, svalue, i);
+            if (isparam(str2)) {
+               if (strchr(getparam(str2), ' '))
+                  sprintf(str + strlen(str), "\"%s\"", getparam(str2));
+               else
+                  strlcat(str, getparam(str2), sizeof(str));
+            }
+         } else
+            sprintf(str, "Email ALL");
 
-               n = strbreak(list, mail_list, MAX_N_LIST, ",");
+         if (getcfg(lbs->name, str, list, sizeof(list))) {
+            i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+            strsubst_list(list, sizeof(list), slist, svalue, i);
 
-               if (verbose)
-                  eprintf("\n%s to %s\n\n", str, list);
+            n = strbreak(list, mail_list, MAX_N_LIST, ",");
 
-               for (i = 0; i < n; i++) {
-                  /* remove possible 'mailto:' */
-                  if ((p = strstr(mail_list[i], "mailto:")) != NULL)
-                     strcpy(p, p + 7);
+            if (verbose)
+               eprintf("\n%s to %s\n\n", str, list);
 
-                  if ((int) strlen(mail_to) + (int) strlen(mail_list[i]) >= mail_to_size) {
-                     mail_to_size += 256;
-                     mail_to = xrealloc(mail_to, mail_to_size);
-                  }
-                  strcat(mail_to, mail_list[i]);
-                  strcat(mail_to, ",");
+            for (i = 0; i < n; i++) {
+               /* remove possible 'mailto:' */
+               if ((p = strstr(mail_list[i], "mailto:")) != NULL)
+                  strcpy(p, p + 7);
 
-                  if ((int) strlen(rcpt_to) + (int) strlen(mail_list[i]) >= rcpt_to_size) {
-                     rcpt_to_size += 256;
-                     rcpt_to = xrealloc(rcpt_to, rcpt_to_size);
-                  }
-                  strcat(rcpt_to, mail_list[i]);
-                  strcat(rcpt_to, ",");
+               if ((int) strlen(mail_to) + (int) strlen(mail_list[i]) >= mail_to_size) {
+                  mail_to_size += 256;
+                  mail_to = xrealloc(mail_to, mail_to_size);
                }
+               strcat(mail_to, mail_list[i]);
+               strcat(mail_to, ",");
+
+               if ((int) strlen(rcpt_to) + (int) strlen(mail_list[i]) >= rcpt_to_size) {
+                  rcpt_to_size += 256;
+                  rcpt_to = xrealloc(rcpt_to, rcpt_to_size);
+               }
+               strcat(rcpt_to, mail_list[i]);
+               strcat(rcpt_to, ",");
             }
          }
+      }
 
-         if (!getcfg(lbs->name, "Suppress Email to users", str, sizeof(str))
-             || atoi(str) == 0) {
-            /* go through password file */
-            for (index = 0;; index++) {
-               if (!enum_user_line(lbs, index, user, sizeof(user)))
+      if (!getcfg(lbs->name, "Suppress Email to users", str, sizeof(str))
+            || atoi(str) == 0) {
+         /* go through password file */
+         for (index = 0;; index++) {
+            if (!enum_user_line(lbs, index, user, sizeof(user)))
+               break;
+
+            get_user_line(lbs, user, NULL, full_name, user_email, email_notify, NULL);
+
+            for (i = 0; lb_list[i].name[0] && i < 1000; i++)
+               if (strieq(lb_list[i].name, lbs->name))
                   break;
 
-               get_user_line(lbs, user, NULL, full_name, user_email, email_notify, NULL);
+            if (email_notify[i]) {
+               /* check if user has access to this logbook */
+               if (!check_login_user(lbs, user))
+                  continue;
 
-               for (i = 0; lb_list[i].name[0] && i < 1000; i++)
-                  if (strieq(lb_list[i].name, lbs->name))
-                     break;
-
-               if (email_notify[i]) {
-                  /* check if user has access to this logbook */
-                  if (!check_login_user(lbs, user))
-                     continue;
-
-                  sprintf(str, "\"%s\" <%s>,\r\n\t", full_name, user_email);
-                  if ((int) strlen(mail_to) + (int) strlen(str) >= mail_to_size) {
-                     mail_to_size += 256;
-                     mail_to = xrealloc(mail_to, mail_to_size);
-                  }
-                  strcat(mail_to, str);
-
-                  sprintf(str, "%s,", user_email);
-                  if ((int) strlen(rcpt_to) + (int) strlen(str) >= rcpt_to_size) {
-                     rcpt_to_size += 256;
-                     rcpt_to = xrealloc(rcpt_to, rcpt_to_size);
-                  }
-                  strcat(rcpt_to, str);
+               sprintf(str, "\"%s\" <%s>,\r\n\t", full_name, user_email);
+               if ((int) strlen(mail_to) + (int) strlen(str) >= mail_to_size) {
+                  mail_to_size += 256;
+                  mail_to = xrealloc(mail_to, mail_to_size);
                }
+               strcat(mail_to, str);
+
+               sprintf(str, "%s,", user_email);
+               if ((int) strlen(rcpt_to) + (int) strlen(str) >= rcpt_to_size) {
+                  rcpt_to_size += 256;
+                  rcpt_to = xrealloc(rcpt_to, rcpt_to_size);
+               }
+               strcat(rcpt_to, str);
             }
          }
       }
