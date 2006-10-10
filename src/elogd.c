@@ -5591,7 +5591,7 @@ PATTERN_LIST pattern_list[] = {
    {";)",   "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"},
    {";-)",  "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"},
    {":D",   "<img alt=\"Big grin\" title=\"Big grin\" src=\"%sicons/biggrin.png\">"},
-   {"?)",   "<img alt=\"Big grin\" title=\"Big grin\" src=\"%sicons/confused.png\">"},
+   {"?-)",  "<img alt=\"Big grin\" title=\"Big grin\" src=\"%sicons/confused.png\">"},
    {";(",   "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"},
    {";-(",  "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"},
    {":]",   "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"},
@@ -9716,7 +9716,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<br />\n");
       rsicon("frown", loc("frowning"), ":(");
       rsprintf("<br />\n");
-      rsicon("confused", loc("confused"), "?)");
+      rsicon("confused", loc("confused"), "?-)");
       rsprintf("<br />\n");
       rsicon("astonished", loc("astonished"), "8o");
       rsprintf("<br />\n");
