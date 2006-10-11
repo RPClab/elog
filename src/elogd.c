@@ -11665,6 +11665,14 @@ void show_config_page(LOGBOOK * lbs)
 
    show_standard_title(logbook, "", 0);
 
+   /*---- activation notice ----*/
+   if (isparam("cmd") && strieq(getparam("cmd"), "Activate")) {
+      rsprintf("<tr><td class=\"notifymsg\" colspan=2>\n");
+      sprintf(str, " <b>%s &lt;%s&gt;</b>", getparam("new_user_name"), getparam("new_user_email"));
+      rsprintf(loc("Activation notice has been sent to %s"), str);
+      rsprintf("</tr>\n");
+  }
+
    /*---- menu buttons ----*/
 
    rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
