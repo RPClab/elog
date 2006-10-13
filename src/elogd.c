@@ -601,6 +601,7 @@ void get_rfc2822_date(char *date, int size, time_t ltime)
    else
       now = ltime;
    ts = localtime(&now);
+   assert(ts);
    strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S", ts);
    offset = (-(int) timezone);
    if (ts->tm_isdst)
@@ -1988,6 +1989,7 @@ void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to,
 
    time(&now);
    ts = localtime(&now);
+   assert(ts);
    strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S", ts);
    offset = (-(int) timezone);
    if (ts->tm_isdst)
@@ -3294,9 +3296,12 @@ time_t date_to_ltime(char *date)
 
       /* correct for difference between local time zone (used by mktime) and time zone of date */
       date_zone = atoi(date + 26);
+
+      /* correct for incorrect date_zone */
+      if (date_zone > 2400 || date_zone < -2400)
+         date_zone = 0;
       date_zone = (abs(date_zone) % 100) * 60 + (date_zone) / 100 * 3600;
 
-      tzset();
       local_zone = timezone;
       if (tms.tm_isdst)
          local_zone -= 3600;
@@ -7807,6 +7812,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
 
                t = (time_t) atoi(attrib[i]);
                ts = localtime(&t);
+               assert(ts);
                if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
                   strcpy(format, DEFAULT_DATE_FORMAT);
 
@@ -7859,6 +7865,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
    time(&t);
    if (format_date) {
       ts = localtime(&t);
+      assert(ts);
       if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
          strcpy(format, DEFAULT_TIME_FORMAT);
 
@@ -7909,6 +7916,7 @@ void add_subst_time(LOGBOOK * lbs,
       strcpy(format, DEFAULT_TIME_FORMAT);
    ltime = date_to_ltime(date);
    pts = localtime(&ltime);
+   assert(pts);
    my_strftime(str, sizeof(str), format, pts);
 
    add_subst_list(list, value, item, str, i);
@@ -9151,6 +9159,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       ltime = date_to_ltime(date);
       pts = localtime(&ltime);
+      assert(pts);
       my_strftime(str, sizeof(str), format, pts);
    } else {
       if (getcfg(lbs->name, "Time format", format, sizeof(format)))
@@ -9272,6 +9281,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
             ltime = atoi(attrib[index]);
             pts = localtime(&ltime);
+            assert(pts);
             if (ltime == 0)
                strcpy(str, "-");
             else
@@ -9311,6 +9321,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                if (attrib[index][0]) {
                   ltime = atoi(attrib[index]);
                   pts = localtime(&ltime);
+                  assert(pts);
                   year = pts->tm_year + 1900;
                   month = pts->tm_mon + 1;
                   day = pts->tm_mday;
@@ -9328,6 +9339,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                if (attrib[index][0]) {
                   ltime = atoi(attrib[index]);
                   pts = localtime(&ltime);
+                  assert(pts);
                   year = pts->tm_year + 1900;
                   month = pts->tm_mon + 1;
                   day = pts->tm_mday;
@@ -15095,6 +15107,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
             ltime = date_to_ltime(date);
             pts = localtime(&ltime);
+            assert(pts);
             my_strftime(str, sizeof(str), format, pts);
 
             if (strieq(mode, "Threaded")) {
@@ -15165,6 +15178,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
                      ltime = atoi(attrib[i]);
                      pts = localtime(&ltime);
+                     assert(pts);
                      if (ltime == 0)
                         strcpy(str, "-");
                      else
@@ -15183,6 +15197,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
                      ltime = atoi(attrib[i]);
                      pts = localtime(&ltime);
+                     assert(pts);
                      if (ltime == 0)
                         strcpy(str, "-");
                      else
@@ -16571,6 +16586,7 @@ void show_rss_feed(LOGBOOK * lbs)
       setlocale(LC_ALL, "C");
       ltime = date_to_ltime(date);
       ts = localtime(&ltime);
+      assert(ts);
       strftime(str, sizeof(str), "%a, %d %b %Y %H:%M:%S", ts);
       offset = (-(int) timezone);
       snprintf(date, sizeof(date) - 1, "%s %+03d%02d", str, (int) (offset / 3600),
@@ -16885,6 +16901,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
    time(&now);
    ptms = localtime(&now);
+   assert(ptms);
    current_year = ptms->tm_year + 1900;
    current_month = ptms->tm_mon + 1;
    current_day = ptms->tm_mday;
@@ -18030,6 +18047,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
                   ltime = atoi(attrib[i]);
                   ptms = localtime(&ltime);
+                  assert(ptms);
                   if (ltime == 0)
                      strcpy(str, "-");
                   else
@@ -18042,6 +18060,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
                   ltime = atoi(attrib[i]);
                   ptms = localtime(&ltime);
+                  assert(ptms);
                   if (ltime == 0)
                      strcpy(str, "-");
                   else
@@ -18089,6 +18108,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
                ltime = atoi(attrib[i]);
                ptms = localtime(&ltime);
+               assert(ptms);
                if (ltime == 0)
                   strcpy(str, "-");
                else
@@ -18101,6 +18121,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
                ltime = atoi(attrib[i]);
                ptms = localtime(&ltime);
+               assert(ptms);
                if (ltime == 0)
                   strcpy(str, "-");
                else
@@ -18500,6 +18521,7 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH],
 
             ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
+            assert(pts);
             if (ltime == 0)
                strcpy(comment, "-");
             else
@@ -18511,6 +18533,7 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH],
 
             ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
+            assert(pts);
             if (ltime == 0)
                strcpy(comment, "-");
             else
@@ -18672,6 +18695,7 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
 
             ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
+            assert(pts);
             if (ltime == 0)
                strcpy(comment, "-");
             else
@@ -18683,6 +18707,7 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
 
             ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
+            assert(pts);
             if (ltime == 0)
                strcpy(comment, "-");
             else
@@ -20497,6 +20522,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
       ltime = date_to_ltime(date);
       pts = localtime(&ltime);
+      assert(pts);
       my_strftime(str, sizeof(str), format, pts);
 
       rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;%s:&nbsp;<b>%s</b>\n", loc("Entry time"), str);
@@ -20679,6 +20705,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
             ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
+            assert(pts);
             if (ltime == 0)
                strcpy(str, "-");
             else
@@ -20693,6 +20720,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
             ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
+            assert(pts);
             if (ltime == 0)
                strcpy(str, "-");
             else
@@ -22162,6 +22190,7 @@ void show_calendar(LOGBOOK * lbs)
 
    time(&now);
    ts = localtime(&now);
+   assert(ts);
    today_mon = ts->tm_mon + 1;
    today_day = ts->tm_mday;
    today_year = ts->tm_year + 1900;
@@ -22234,6 +22263,7 @@ void show_calendar(LOGBOOK * lbs)
    rsprintf("<tr>\n");
    for (i = 0; i < 7; i++) {
       ts = localtime(&stime);
+      assert(ts);
       strftime(str, sizeof(str), "%a", ts);
       rsprintf("<td class=\"calhead\">%s</td>\n", str);
       stime += 3600 * 24;
@@ -22241,6 +22271,7 @@ void show_calendar(LOGBOOK * lbs)
    rsprintf("</tr>\n");
    stime -= 3600 * 24 * 7;
    ts = localtime(&stime);
+   assert(ts);
 
    for (i = 0; i < 6; i++) {
       rsprintf("<tr>\n");
@@ -22263,6 +22294,7 @@ void show_calendar(LOGBOOK * lbs)
          }
          stime += 3600 * 24;
          ts = localtime(&stime);
+         assert(ts);
       }
 
       rsprintf("</tr>\n");
@@ -23639,6 +23671,7 @@ void check_cron()
 
    time(&now);
    ts = localtime(&now);
+   assert(ts);
 
    /* check once every minute */
    if (last_time.tm_year && last_time.tm_min != ts->tm_min) {
@@ -25365,6 +25398,7 @@ int main(int argc, char *argv[])
       else if (argv[i][1] == 'T') {
          time(&now);
          tms = localtime(&now);
+         assert(tms);
          printf("Actual date/time: %02d%02d%02d_%02d%02d%02d\n",
                 tms->tm_year % 100, tms->tm_mon + 1, tms->tm_mday, tms->tm_hour, tms->tm_min, tms->tm_sec);
          exit(EXIT_SUCCESS);
