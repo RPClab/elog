@@ -10033,7 +10033,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* Suppress email check box */
-   if (bedit)
+   if (message_id && bedit)
       getcfg(lbs->name, "Suppress Email on edit", str, sizeof(str));
    else
       getcfg(lbs->name, "Suppress default", str, sizeof(str));
