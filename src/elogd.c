@@ -21223,6 +21223,7 @@ PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size)
          strcat(str, ": ");
          strlcat(str, strerror(errno), sizeof(str));
          show_error(str);
+         eprintf(str);
          strlcpy(error, str, error_size);
          return NULL;
       }
