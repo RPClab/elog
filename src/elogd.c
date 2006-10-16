@@ -11533,8 +11533,8 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
                      url_encode(enc_pwd, sizeof(enc_pwd));
                      if (isparam("new_user_name"))
                         sprintf(mail_text + strlen(mail_text),
-                                "?cmd=Activate&new_user_name=%s&new_full_name=%s", getparam("new_user_name"),
-                                str);
+                                "?cmd=%s&new_user_name=%s&new_full_name=%s", loc("Activate"),
+                                getparam("new_user_name"), str);
                      if (isparam("new_user_email"))
                         sprintf(mail_text + strlen(mail_text), "&new_user_email=%s",
                                 getparam("new_user_email"));
@@ -11678,7 +11678,7 @@ void show_config_page(LOGBOOK * lbs)
    show_standard_title(logbook, "", 0);
 
    /*---- activation notice ----*/
-   if (isparam("cmd") && strieq(getparam("cmd"), "Activate")) {
+   if (isparam("cmd") && strieq(getparam("cmd"), loc("Activate"))) {
       rsprintf("<tr><td class=\"notifymsg\" colspan=2>\n");
       sprintf(str, " <b>%s &lt;%s&gt;</b>", getparam("new_user_name"), getparam("new_user_email"));
       rsprintf(loc("Activation notice has been sent to %s"), str);
@@ -22154,8 +22154,8 @@ int do_self_register(LOGBOOK * lbs, char *command)
       show_standard_header(lbs, FALSE, loc("ELOG registration"), "", FALSE, NULL);
       rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
       rsprintf("<tr><td colspan=2 class=\"dlgtitle\">\n");
-      rsprintf(loc
-               ("Your request has been forwarded to the administrator. You will be notified by email upon activation of your new account."));
+      rsprintf("%s.", loc("Your request has been forwarded to the administrator"));
+      rsprintf("%s.", loc("You will be notified by email upon activation of your new account"));
       rsprintf("</td></tr></table>\n");
       show_bottom_text(lbs);
       rsprintf("</body></html>\n");
@@ -22513,7 +22513,7 @@ void interprete(char *lbook, char *path)
 
       /* check for activate */
       strcpy(str, loc("Activate"));
-      if (isparam("cmd") && strieq(getparam("cmd"), "Activate")) {
+      if (isparam("cmd") && strieq(getparam("cmd"), loc("Activate"))) {
          if (!save_user_config(NULL, getparam("new_user_name"), TRUE, TRUE))
             return;
          if (isparam("new_user_name"))
@@ -22738,7 +22738,7 @@ void interprete(char *lbook, char *path)
             if (!check_user_password(lbs,
                                      isparam("unm") ? getparam("unm") : "",
                                      isparam("upwd") ? getparam("upwd") : "",
-                                     isparam("cmdline") ? getparam("cmdline") : ""))
+                                     _cmdline))
                return;
          }
       }
@@ -23250,7 +23250,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (strieq(command, "Activate") && isparam("new_user_name")) {
+   if (strieq(command, loc("Activate")) && isparam("new_user_name")) {
       if (!save_user_config(lbs, getparam("new_user_name"), TRUE, TRUE))
          return;
       setparam("cfg_user", getparam("new_user_name"));
