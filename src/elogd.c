@@ -2194,6 +2194,9 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
       recv_string(s, str, strsize, 3000);
       if (strchr(str, '\r'))
          *strchr(str, '\r') = 0;
+      if (verbose)
+         efputs(decoded);
+      write_logfile(lbs, str);
       base64_decode(str + 4, decoded);
       strcat(decoded, "\n");
       if (verbose)
@@ -5673,7 +5676,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 {
    int i, j, k, l, m, interprete_elcode, escape_char, ordered_list;
    char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[1000], hattrib[1000],
-       value[1000], subst[1000], base_url[256], param[256];
+       value[1000], subst[1000], base_url[256], param[256], *lstr;
 
    if (strlen_retbuf + (int) (2 * strlen(str) + 1000) >= return_buffer_size) {
       return_buffer = xrealloc(return_buffer, return_buffer_size + 100000);
@@ -5686,9 +5689,16 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
    escape_char = FALSE;
    j = strlen_retbuf;
    m = 0;
+
+   /* make lower case copy of str */
+   lstr = xmalloc(strlen(str)+1);
+   for (pd=lstr, p=(char *)str ; *p ; p++,pd++)
+      *pd = tolower(*p);
+   *pd = 0;
+
    for (i = 0; i < (int) strlen(str); i++) {
       for (l = 0; key_list[l][0]; l++) {
-         if (strncmp(str + i, key_list[l], strlen(key_list[l])) == 0) {
+         if (strncmp(lstr + i, key_list[l], strlen(key_list[l])) == 0) {
 
             /* check for escape character */
             if (i > 0 && *(str + i - 1) == '\\') {
@@ -5794,7 +5804,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
          continue;
 
       for (l = 0; pattern_list[l].pattern[0]; l++) {
-         if (strnieq(str + i, pattern_list[l].pattern, strlen(pattern_list[l].pattern))) {
+         if (strncmp(lstr + i, pattern_list[l].pattern, strlen(pattern_list[l].pattern)) == 0) {
 
             if (stristr(pattern_list[l].pattern, "[/code]"))
                interprete_elcode = TRUE;
@@ -6030,6 +6040,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
          }
    }
 
+   xfree(lstr);
    return_buffer[j] = 0;
    strlen_retbuf = j;
 }
