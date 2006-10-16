@@ -407,3 +407,6 @@ User name may not contain blanks = Benutzername darf keine Leerzeichen enthalten
 Empty password not allowed = Leeres Passwort ist nicht erlaubt
 Password may not contain blanks = Passwort darf keine Leerzeichen enthalten
 Anonymous = Anonym
+Activation notice has been sent to %s = Aktivierungsbenachrichtigung wurde an %s geschickt
+Your request has been forwarded to the administrator = Der Antrag wurde an den Administrator geschickt
+You will be notified by email upon activation of your new account = Sie werden benachrichtigt, wenn Ihr Benutzerkonto aktiviert wurde
