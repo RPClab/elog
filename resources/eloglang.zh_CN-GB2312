@@ -412,3 +412,6 @@ User name may not contain blanks =
 Empty password not allowed = 
 Password may not contain blanks = 
 Anonymous = 
+Activation notice has been sent to %s = 
+Your request has been forwarded to the administrator = 
+You will be notified by email upon activation of your new account = 

@@ -407,3 +407,10 @@ User name may not contain blanks = Uživatelské jméno nesmí obsahovat mezery
 Empty password not allowed = Prázdné heslo není povoleno
 Password may not contain blanks = Heslo nesmí obsahovat mezery
 Anonymous = Anonym
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Activation notice has been sent to %s = 
+Your request has been forwarded to the administrator = 
+You will be notified by email upon activation of your new account = 

@@ -410,3 +410,10 @@ User name may not contain blanks = O nome do usuário não pode conter brancos
 Empty password not allowed = Não é permitida senha vazia 
 Password may not contain blanks = A senha não pode conter brancos 
 Anonymous = Anônimo
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Activation notice has been sent to %s = 
+Your request has been forwarded to the administrator = 
+You will be notified by email upon activation of your new account = 

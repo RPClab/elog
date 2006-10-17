@@ -411,3 +411,6 @@ Password may not contain blanks = La clave no puede contener espacios en blancos
 #---- please translate following items and then remove this comment ----#
 #
 Anonymous = 
+Activation notice has been sent to %s = 
+Your request has been forwarded to the administrator = 
+You will be notified by email upon activation of your new account = 
