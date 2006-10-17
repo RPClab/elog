@@ -15155,6 +15155,48 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      }
                   }
 
+                  else if (attr_flags[i] & AF_DATE) {
+                     if (skip_comma) {
+                        rsprintf(" ");
+                        skip_comma = FALSE;
+                     } else
+                        rsprintf(", ");
+
+                     if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
+                        strcpy(format, DEFAULT_DATE_FORMAT);
+
+                     ltime = atoi(attrib[i]);
+                     pts = localtime(&ltime);
+                     assert(pts);
+                     if (ltime == 0)
+                        strcpy(str, "-");
+                     else
+                        my_strftime(str, sizeof(str), format, pts);
+
+                     rsputs(str);
+                  }
+
+                  else if (attr_flags[i] & AF_DATETIME) {
+                     if (skip_comma) {
+                        rsprintf(" ");
+                        skip_comma = FALSE;
+                     } else
+                        rsprintf(", ");
+
+                     if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+                        strcpy(format, DEFAULT_TIME_FORMAT);
+
+                     ltime = atoi(attrib[i]);
+                     pts = localtime(&ltime);
+                     assert(pts);
+                     if (ltime == 0)
+                        strcpy(str, "-");
+                     else
+                        my_strftime(str, sizeof(str), format, pts);
+
+                     rsputs(str);
+                  }
+
                   else if (attr_flags[i] & AF_ICON) {
                      if (attrib[i][0])
                         rsprintf("&nbsp;\n<img border=0 src=\"icons/%s\" alt=\"%s\" title=\"%s\">&nbsp;",
