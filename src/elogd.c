@@ -57,6 +57,10 @@ static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
 
 #define OS_UNIX
 
+#ifdef __APPLE__
+#define OS_MACOSX
+#endif
+
 #define TRUE 1
 #define FALSE 0
 
@@ -547,7 +551,7 @@ static BOOL chkext(const char *str, const char *ext)
    return TRUE;
 }
 
-/* workaroud for some gcc versions bug for "%c" format (see strftime(3) */
+/* workaround for some gcc versions bug for "%c" format (see strftime(3) */
 size_t my_strftime(char *s, size_t max, const char *fmt, const struct tm * tm)
 {
    return strftime(s, max, fmt, tm);
@@ -584,6 +588,21 @@ int my_read(int fh, void *buffer, unsigned int bytes)
    return 0;
 }
 
+/* workaround for wong timezone under MAX OSX */
+long my_timezone()
+{
+#ifdef OS_MACOSX
+   time_t tp;
+   time(&tp);
+   if (localtime(&tp)->tm_isdst > 0)
+      return -localtime(&tp)->tm_gmtoff + 3600;
+   else
+      return -localtime(&tp)->tm_gmtoff;
+#else
+   return timezone;
+#endif
+}
+
 /*---- Compose RFC2822 compliant date ---*/
 
 void get_rfc2822_date(char *date, int size, time_t ltime)
@@ -603,7 +622,7 @@ void get_rfc2822_date(char *date, int size, time_t ltime)
    ts = localtime(&now);
    assert(ts);
    strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S", ts);
-   offset = (-(int) timezone);
+   offset = (-(int) my_timezone());
    if (ts->tm_isdst)
       offset += 3600;
    snprintf(date, size - 1, "%s %+03d%02d", buf, (int) (offset / 3600),
@@ -1991,11 +2010,11 @@ void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to,
    ts = localtime(&now);
    assert(ts);
    strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S", ts);
-   offset = (-(int) timezone);
+   offset = (-(int) my_timezone());
    if (ts->tm_isdst)
       offset += 3600;
    if (verbose) {
-      sprintf(str, "timezone: %d, offset: %d\n", (int) timezone, (int) offset);
+      sprintf(str, "timezone: %d, offset: %d\n", (int) my_timezone(), (int) offset);
       efputs(str);
    }
    snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1, "Date: %s %+03d%02d\r\n", buf,
@@ -3305,7 +3324,7 @@ time_t date_to_ltime(char *date)
          date_zone = 0;
       date_zone = (abs(date_zone) % 100) * 60 + (date_zone) / 100 * 3600;
 
-      local_zone = timezone;
+      local_zone = my_timezone();
       if (tms.tm_isdst)
          local_zone -= 3600;
 
@@ -16641,7 +16660,7 @@ void show_rss_feed(LOGBOOK * lbs)
       ts = localtime(&ltime);
       assert(ts);
       strftime(str, sizeof(str), "%a, %d %b %Y %H:%M:%S", ts);
-      offset = (-(int) timezone);
+      offset = (-(int) my_timezone());
       snprintf(date, sizeof(date) - 1, "%s %+03d%02d", str, (int) (offset / 3600),
                (int) ((abs((int) offset) / 60) % 60));
       getcfg("global", "Language", str, sizeof(str));
