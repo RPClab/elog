@@ -17497,21 +17497,23 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    n_attr_disp = n_line = 0;
    i_start = 0;
    i_stop = n_msg - 1;
-   if (page_n || default_page) {
-      if (default_page)
-         page_n = reverse ? 1 : (n_msg - 1) / n_page + 1;
+   if (!csv && !xml && !raw) {
+      if (page_n || default_page) {
+         if (default_page)
+            page_n = reverse ? 1 : (n_msg - 1) / n_page + 1;
 
-      if (page_n != -1) {
-         i_start = (page_n - 1) * n_page;
-         i_stop = i_start + n_page - 1;
+         if (page_n != -1) {
+            i_start = (page_n - 1) * n_page;
+            i_stop = i_start + n_page - 1;
 
-         if (i_start >= n_msg && n_msg > 0) {
-            page_n = 1;
-            i_start = 0;
+            if (i_start >= n_msg && n_msg > 0) {
+               page_n = 1;
+               i_start = 0;
+            }
+
+            if (i_stop >= n_msg)
+               i_stop = n_msg - 1;
          }
-
-         if (i_stop >= n_msg)
-            i_stop = n_msg - 1;
       }
    }
 
