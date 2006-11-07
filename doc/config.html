@@ -104,7 +104,7 @@ Use Mail Subject = Location
       <li>
         <b><code>Resource dir = &lt;directory&gt;</code></b><br>
         Specifies the root directory for ELOG resources like help files,
-        themes, icons and user HTML files. Can be overwritten with the
+        themes and icons. Can be overwritten with the
         <b><code>-s</code></b> flag when starting elogd. If not specified, use
         the directory where the configuration file
         <b><code>elogd.cfg</code></b> resides. <i>Changing this option requires
@@ -118,7 +118,8 @@ Use Mail Subject = Location
         <b><code>elogd.cfg</code></b> resides. Each logbook data is stored in a
         separate directory under this root directory specified by the
         <b><code>Subdir</code></b> option. <i>Changing this option requires a
-        restart of the elogd server</i>.
+        restart of the elogd server</i>. This directory also contains any
+        password file and user HTML file.
       </li>
       <li>
         <b><code>Language = &lt;name&gt;</code></b><br>
@@ -621,7 +622,7 @@ Start page = ?cmd=Find
 &lt;h1&gt;You successfully submitted a message&lt;/h1&gt;
 &lt;a href="?cmd=Back"&gt;Back&lt;/a&gt; to the logbook&lt;p&gt;
 &lt;a href="?cmd=New"&gt;Enter&lt;/a&gt; another message
-</pre>The file must be present in the resource directory. Alternatively, an
+</pre>The file must be present in the logbook directory. Alternatively, an
 absolute path can be used if the file name starts with a
 <b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or
 <b><code>"x:"</code></b> (Windows).
@@ -1054,7 +1055,7 @@ XYZ-2005-Nov-002
       <li>
         <b><code>Preset text = &lt;string&gt; or &lt;file&gt;</code></b><br>
         This preset value is used for the main body text. It can be a string or
-        a file, which must be present in the resource directory. Alternatively,
+        a file, which must be present in the logbook directory. Alternatively,
         an absolute path can be used if the file name starts with a
         <b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or
         <b><code>"x:"</code></b> (Windows).
@@ -1770,15 +1771,38 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
     <p>
       An alternative to the read/write/admin passwords is the user level access
       with a password file. This file contains user names and passwords in
-      following format:
+      XML format, such as
     </p>
     <ul>
-      <li>
-        <pre>
-&lt;login name1&gt;:&lt;password1&gt;:&lt;full name1&gt;:&lt;email1&gt;:&lt;notify1&gt;
-&lt;login name2&gt;:&lt;password2&gt;:&lt;full name2&gt;:&lt;email2&gt;:&lt;notify2&gt;
-&lt;login name3&gt;:&lt;password3&gt;:&lt;full name3&gt;:&lt;email3&gt;:&lt;notify3&gt;
-...
+<pre>
+
+&lt;?xml version="1.0" encoding="ISO-8859-1"?&gt;
+&lt;!-- created by MXML on Tue Nov 07 08:15:51 2006 --&gt;
+&lt;list&gt;
+  &lt;user&gt;
+    &lt;name&gt;stefan&lt;/name&gt;
+    &lt;password&gt;A1kk838Kjl==&lt;/password&gt;
+    &lt;full_name&gt;Stefan Ritt&lt;/full_name&gt;
+    &lt;last_logout&gt;Tue Oct 17 12:59:47 2006&lt;/last_logout&gt;
+    &lt;last_activity&gt;Tue Nov 07 08:15:51 2006&lt;/last_activity&gt;
+    &lt;email&gt;stefan.ritt@psi.ch&lt;/email&gt;
+    &lt;email_notify&gt;
+      &lt;logbook&gt;demo&lt;/logbook&gt;
+    &lt;/email_notify&gt;
+  &lt;/user&gt;
+  &lt;user&gt;
+    &lt;name&gt;midas&lt;/name&gt;
+    &lt;password&gt;P387sdkK98ko98==&lt;/password&gt;
+    &lt;full_name&gt;Midas User&lt;/full_name&gt;
+    &lt;last_logout&gt;0&lt;/last_logout&gt;
+    &lt;last_activity&gt;0&lt;/last_activity&gt;
+    &lt;email&gt;midas@psi.ch&lt;/email&gt;
+    &lt;email_notify&gt;
+      &lt;logbook&gt;demo&lt;/logbook&gt;
+    &lt;/email_notify&gt;
+  &lt;/user&gt;
+&lt;/list&gt;
+
 </pre>
       </li>
     </ul>
@@ -1786,7 +1810,8 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
       The passwords are encoded. New users can either be created by hitting
       <b>Register as new user</b> on the login page if <b><code>Self register =
       1</code></b> in the configuration file, or by the admin user in the
-      <b>Config</b> page by pressing <b>New user</b>. When a user is logged it,
+      <b>Config</b> page by pressing <b>New user</b>. The password file resides
+      in the same directory as the logbooks. When a user is logged it,
       the entry for this user can be modified via the <b>Config</b> command.
     </p>
     <p>
