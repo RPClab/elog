@@ -2806,7 +2806,11 @@ int parse_config_file(char *file_name)
    p = buffer;
    index = 0;
    do {
-      if (*p == '[') {
+      if (*p == '#' || *p == ';') {
+         /* skip comment */
+         while (*p && *p != '\n' && *p != '\r')
+            p++;
+      } else if (*p == '[') {
          p++;
          pstr = str;
          while (*p && *p != ']' && *p != '\n' && *p != '\r' && pstr - str < 10000)
