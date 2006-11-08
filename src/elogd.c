@@ -24504,7 +24504,7 @@ void server_loop(void)
             for (i = 0;; i++) {
                if (!enumgrp(i, str))
                   break;
-               if (strieq(logbook, str))
+               if (strieq(logbook, str) && !strieq(logbook, "global"))
                   break;
             }
 
@@ -25676,6 +25676,10 @@ int main(int argc, char *argv[])
    /* set default logbook dir if not given */
    if (!logbook_dir[0])
       strcpy(logbook_dir, "logbooks");
+
+   /* strip trailing dir separator */
+   if (logbook_dir[strlen(logbook_dir)-1] == DIR_SEPARATOR)
+      logbook_dir[strlen(logbook_dir)-1] = 0;
 
    /* check for directories */
    if (logbook_dir[0] && stat(logbook_dir, &finfo) < 0) {
