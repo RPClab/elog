@@ -431,6 +431,7 @@ int setgroup(char *str);
 int setuser(char *str);
 int setegroup(char *str);
 int seteuser(char *str);
+void strencode2(char *b, char *text, int size);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -4619,7 +4620,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
    sprintf(message + strlen(message), "Attachment: ");
 
    if (afilename) {
-      sprintf(message + strlen(message), afilename[0]);
+      sprintf(message + strlen(message), "%s", afilename[0]);
       for (i = 1; i < MAX_ATTACHMENTS; i++)
          if (afilename[i][0])
             sprintf(message + strlen(message), ",%s", afilename[i]);
@@ -7361,7 +7362,7 @@ void show_standard_title(char *logbook, char *text, int printable)
       rsprintf("<a href=\"%s\">\n", str);
 
    if (getcfg(logbook, "Title image", str, sizeof(str)))
-      rsprintf(str);
+      rsprintf("%s", str);
    else
       rsprintf("<img border=0 src=\"elog.png\" alt=\"ELOG logo\" title=\"ELOG logo\">");
 
@@ -7703,10 +7704,14 @@ void send_file_direct(char *file_name)
 
       close(fh);
    } else {
+      char encodedname[256];
       show_html_header(NULL, FALSE, "404 Not Found", TRUE, FALSE, NULL, FALSE);
 
       rsprintf("<body><h1>Not Found</h1>\r\n");
-      rsprintf("The requested file <b>%s</b> was not found on this server<p>\r\n", file_name);
+      rsprintf("The requested file <b>");
+      strencode2(encodedname, file_name, sizeof(encodedname));
+      rsprintf("%s", encodedname);
+      rsprintf("</b> was not found on this server<p>\r\n");
       rsprintf("<hr><address>ELOG version %s</address></body></html>\r\n\r\n", VERSION);
       return_length = strlen_retbuf;
       keep_alive = 0;
@@ -13755,10 +13760,10 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
 
    if (lbs == NULL) {
       if (!save_config(p, str))
-         rsprintf(str);
+         rsprintf("%s", str);
    } else {
       if (!save_admin_config(lbs->name, p, str))
-         rsprintf(str);
+         rsprintf("%s", str);
    }
 
    xfree(buffer);
@@ -16690,7 +16695,7 @@ void show_rss_feed(LOGBOOK * lbs)
       rsprintf("</description>\n");
 
       rsprintf("<pubDate>\n");
-      rsprintf(date);
+      rsprintf("%s", date);
       rsprintf("</pubDate>\n");
 
       rsprintf("</item>\n");
@@ -18237,7 +18242,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          rsprintf("Attachment: ");
 
          if (attachment[0][0]) {
-            rsprintf(attachment[0]);
+            rsprintf("%s", attachment[0]);
             for (i = 1; i < MAX_ATTACHMENTS; i++)
                if (attachment[i][0])
                   rsprintf(",%s", attachment[i]);
@@ -19451,7 +19456,9 @@ void submit_elog(LOGBOOK * lbs)
                   if (!add_attribute_option(lbs, attr_list[i], getparam(ua), getparam("condition")))
                      return;
                } else {
-                  sprintf(error, loc("Error: Attribute option <b>%s</b> not existing"), getparam(ua));
+                  char encoded[100];
+                  strencode2(encoded, getparam(ua), sizeof(encoded));
+                  sprintf(error, loc("Error: Attribute option <b>%s</b> not existing"), encoded);
                   show_error(error);
                   return;
                }
@@ -21895,7 +21902,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
          if (expand) {
 
             if (expand_all)
-               rsprintf(plb->name);
+               rsprintf("%s", plb->name);
             else {
                if (pparent != NULL) {
                   if (getcfg_topgroup())
@@ -21912,7 +21919,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
             }
          } else {
             if (expand_all)
-               rsprintf(plb->name);
+               rsprintf("%s", plb->name);
             else {
                if (getcfg_topgroup())
                   rsprintf("<a href=\"%s/?gexp=%s\">+ %s</a> ", getcfg_topgroup(), plb->name, plb->name);
@@ -24038,7 +24045,7 @@ void server_loop(void)
    }
 
    sprintf(str, "Server listening on port %d ...\n", elog_tcp_port);
-   eprintf(str);
+   eprintf("%s", str);
    if (_logging_level > 0)
       write_logfile(NULL, str);
 
@@ -24508,7 +24515,7 @@ void server_loop(void)
             for (i = 0;; i++) {
                if (!enumgrp(i, str))
                   break;
-               if (strieq(logbook, str) && !strieq(logbook, "global"))
+               if (strieq(logbook, str) && is_logbook(logbook))
                   break;
             }
 
@@ -24559,7 +24566,7 @@ void server_loop(void)
 
                goto finished;
             } else {
-               if (logbook[0] && (!strieq(logbook, str) || strieq(logbook, "global"))) {
+               if (logbook[0] && (!strieq(logbook, str) || !is_logbook(logbook))) {
 
                   /* check for top group */
                   sprintf(str, "Top group %s", logbook);
