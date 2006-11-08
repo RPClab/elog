@@ -24555,7 +24555,7 @@ void server_loop(void)
 
                goto finished;
             } else {
-               if (!strieq(logbook, str) && logbook[0]) {
+               if (logbook[0] && (!strieq(logbook, str) || strieq(logbook, "global"))) {
 
                   /* check for top group */
                   sprintf(str, "Top group %s", logbook);
