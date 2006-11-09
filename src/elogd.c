@@ -16293,10 +16293,10 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
 
 /*------------------------------------------------------------------*/
 
-void show_page_navigation(int n_msg, int page_n, int n_page)
+void show_page_navigation(LOGBOOK *lbs, int n_msg, int page_n, int n_page)
 {
-   int i, num_pages, skip;
-   char ref[256];
+   int i, num_pages, skip, max_n_msg;
+   char ref[256], str[256];
 
    if (!page_n || n_msg <= n_page)
       return;
@@ -16360,7 +16360,12 @@ void show_page_navigation(int n_msg, int page_n, int n_page)
       rsprintf("<a href=\"%s\">%s</a>&nbsp;&nbsp;", ref, loc("Next"));
    }
 
-   if (page_n != -1 && n_page < n_msg) {
+   if (getcfg(lbs->name, "All display limit", str, sizeof(str)))
+      max_n_msg = atoi(str);
+   else
+      max_n_msg = 500;
+
+   if (page_n != -1 && n_page < n_msg && n_msg < max_n_msg) {
       sprintf(ref, "page");
       build_ref(ref, sizeof(ref), "", "", "", "");
 
@@ -17961,7 +17966,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
       if (!printable) {
          show_page_filters(lbs, n_msg, page_n, mode_commands, mode);
-         show_page_navigation(n_msg, page_n, n_page);
+         show_page_navigation(lbs, n_msg, page_n, n_page);
       }
 
       /*---- select navigation ----*/
@@ -18316,7 +18321,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       /*---- page navigation ----*/
 
       if (!printable)
-         show_page_navigation(n_msg, page_n, n_page);
+         show_page_navigation(lbs, n_msg, page_n, n_page);
 
       rsprintf("</table>\n");
       show_bottom_text(lbs);

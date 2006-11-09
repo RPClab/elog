@@ -916,6 +916,18 @@ if the file name starts with a <b><code>"/"</code></b> (Unix) or <b><code>
         case they can be replaced by others like <b>Serif</b>,
         <b>Sans-serif</b>, <b>Helvetica</b>.
       </li>
+      <li>
+        <b><code>All display limit = &lt;n&gt;</code></b><br>
+        If a logbook contains many entries, the list gets divided into pages,
+        with some page navigation for the next, previous, a specific page and
+        all pages. If the logbook contains a large number of entries (>500),
+        the display of all thes entries can take very long and might slow down
+        the elogd server, especially if the entries are not displayed in 
+        "summary" mode but in "full" mode. Therefore the "All" link should not
+        be used in the page navigation for large logbooks. The number of
+        entries from when on the "All" link gets hidden can be specified with
+        this number, the default value is <b><code>500</code></b>.
+      </li>
     </ul><a name="attrib" id="attrib"></a>
     <hr>
     <div class="section">
