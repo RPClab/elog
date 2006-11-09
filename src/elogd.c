@@ -12067,10 +12067,6 @@ void show_new_user_page(LOGBOOK * lbs)
    rsprintf("<tr><td nowrap>Email:</td>\n");
    rsprintf("<td colspan=2><input type=text size=40 name=new_user_email></tr>\n");
 
-   //rsprintf("<tr><td colspan=3>%s:&nbsp;\n", loc("Enable email notifications"));
-   //rsprintf("<input type=checkbox checked name=email_notify value=all></tr>\n");
-
-
    rsprintf("<tr><td nowrap>%s:\n", loc("Subscribe to logbooks"));
 
    rsprintf("<br><span class=\"selcomment\"><b>(%s)</b></span>\n",
