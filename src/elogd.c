@@ -592,13 +592,10 @@ int my_read(int fh, void *buffer, unsigned int bytes)
 /* workaround for wong timezone under MAX OSX */
 long my_timezone()
 {
-#ifdef OS_MACOSX
+#if defined(OS_MACOSX) || defined(__FreeBSD__)
    time_t tp;
    time(&tp);
-   if (localtime(&tp)->tm_isdst > 0)
-      return -localtime(&tp)->tm_gmtoff + 3600;
-   else
-      return -localtime(&tp)->tm_gmtoff;
+   return -localtime(&tp)->tm_gmtoff;
 #else
    return timezone;
 #endif
@@ -16679,6 +16676,8 @@ void show_rss_feed(LOGBOOK * lbs)
       assert(ts);
       strftime(str, sizeof(str), "%a, %d %b %Y %H:%M:%S", ts);
       offset = (-(int) my_timezone());
+      if (ts->tm_isdst)
+         offset += 3600;
       snprintf(date, sizeof(date) - 1, "%s %+03d%02d", str, (int) (offset / 3600),
                (int) ((abs((int) offset) / 60) % 60));
       getcfg("global", "Language", str, sizeof(str));
