@@ -255,7 +255,8 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 #define AF_TIME              (1<<10)
 #define AF_NUMERIC           (1<<11)
 #define AF_USERLIST          (1<<12)
-#define AF_HIDDEN            (1<<13)
+#define AF_USEREMAIL         (1<<13)
+#define AF_HIDDEN            (1<<14)
 
 /* attribute format flags */
 #define AFF_SAME_LINE              1
@@ -6776,6 +6777,9 @@ and attr_flags arrays */
                attr_flags[i] |= AF_NUMERIC;
             if (strieq(type, "userlist"))
                attr_flags[i] |= AF_USERLIST;
+            if (strieq(type, "useremail"))
+               attr_flags[i] |= AF_USEREMAIL;
+
          }
       }
 
@@ -9411,6 +9415,32 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   if (!enum_user_line(lbs, i, login_name, sizeof(login_name)))
                      break;
                   get_user_line(lbs, login_name, NULL, str, NULL, NULL, NULL);
+
+                  if (strieq(str, attrib[index]))
+                     rsprintf("<option selected value=\"%s\">%s\n", str, str);
+                  else
+                     rsprintf("<option value=\"%s\">%s\n", str, str);
+               }
+
+               rsprintf("</select>\n");
+
+               rsprintf("</td>\n");
+
+            } else if (attr_flags[index] & AF_USEREMAIL) {
+
+               rsprintf("<td%s class=\"attribvalue\">\n", title);
+
+               /* display drop-down box with list of users */
+               rsprintf("<select name=\"%s\"", ua);
+               rsprintf(" onChange=\"mod();\">\n");
+
+               /* display emtpy option */
+               rsprintf("<option value=\"\">- %s -\n", loc("please select"));
+
+               for (i = 0;; i++) {
+                  if (!enum_user_line(lbs, i, login_name, sizeof(login_name)))
+                     break;
+                  get_user_line(lbs, login_name, NULL, NULL, str, NULL, NULL);
 
                   if (strieq(str, attrib[index]))
                      rsprintf("<option selected value=\"%s\">%s\n", str, str);
