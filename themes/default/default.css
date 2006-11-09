@@ -238,6 +238,15 @@ td {
   vertical-align:middle;
 }
 
+.menucenter {
+  border:1px solid #486090;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  background-color:#E0E0E0;
+  text-align:center;
+  font-size:10pt;
+}
+
 .toolframe {
   border:1px solid #486090;
   border-top:1px solid white;

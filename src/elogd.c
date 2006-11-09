@@ -12050,14 +12050,6 @@ void show_new_user_page(LOGBOOK * lbs)
    else
       show_standard_title("ELOG", "", 1);
 
-   /*---- menu buttons ----*/
-
-   rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
-
-   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
-   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
-   rsprintf("</span></td></tr>\n\n");
-
    /* table for two-column items */
    rsprintf("<tr><td class=\"form2\">");
    rsprintf("<table width=\"100%%\" cellspacing=0>\n");
@@ -12131,8 +12123,14 @@ void show_new_user_page(LOGBOOK * lbs)
 
    rsprintf("</td></tr></table>\n");
 
+   /*---- menu buttons ----*/
+
+   rsprintf("<tr><td class=\"menucenter\">\n");
+   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
+   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
+   rsprintf("</td></tr>\n\n");
+
    rsprintf("</td></tr></table>\n\n");
-   show_bottom_text(lbs);
    rsprintf("</form></center></body></html>\r\n");
 }
 
