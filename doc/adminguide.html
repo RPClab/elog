@@ -154,6 +154,40 @@ The contents of the all-important configuration file <b><code>elogd.cfg</code></
 described <a href="#config">below</a>.
 <p>
 
+
+<div class=section>&nbsp; Notes for various platforms &nbsp;</div>
+<p>
+<h3><i>Solaris</i>:</h3>
+
+<p><a href="mailto:huber@secaron.de">Martin Huber</a> reports that
+under Solaris 7 the following command line is needed to compile elog:
+<P>
+<ul><code>gcc -L/usr/lib/ -ldl -lresolv -lm -ldl -lnsl -lsocket  elogd.c -o elogd</code></ul>
+<p>
+With some combinations of Solaris servers and client-side browsers there have also
+been problems with <b>ELOG</b>'s <I>keep-alive</I> feature. In such a case you need to add
+the "<B>-k</B>" flag to the <code><b>elogd</b></code> command line to turn keep-alives off.
+<p>
+
+<h3><hr><i>Mac OS X</i>:</h3>
+
+<p><a href="mailto:sak@essc.psu.edu">Sridhar Anandakrishnan</a> and
+<a href="mailto:roktas@emu.edu.tr">Recai Oktas</a> report that under Mac OS X there is a problem with
+the default stack size. The command <i><b>limit stacksize unlimited</b></i> (for tcsh) or
+<i><b>ulimit -s unlimited</b></i> (for bash) increases the stacksize and fixes this problem.
+Read the according <a href="http://midas.psi.ch/elogs/Forum/379">thread</a> in the forum.
+<p>
+
+<h3><hr><i>FreeBSD</i>:</h3>
+
+<p><a href="mailto:ottodavid@gmx.net">Otto David</a> maintains the 
+<a href="http://www.freshports.org/www/elog">ELOG port for FreeBSD</a>. To
+install ELOG on a FreeBSD system, one can simply type
+
+<ul><code>cd /usr/ports/www/elog<br>
+make install clean</code></ul>
+<p>
+
 <div class=section>&nbsp; Running elogd under Apache &nbsp;</div>
 <p>
 For cases where <code><b>elogd</b></code> should run under port 80 in parallel to an Apache server,
@@ -187,29 +221,6 @@ into elogd.cfg.<p>
 
 Note that the variable $remote_host cannot be used inside elogd since the remote host is always
 the proxy host (anybody knows how to fix that???).<p>
-
-
-
-<h3><hr><i>Notes for the Solaris platform</i>:</h3>
-
-<p><a href="mailto:huber@secaron.de">Martin Huber</a> reports that
-under Solaris 7 the following command line is needed to compile elog:
-<P>
-<ul><code>gcc -L/usr/lib/ -ldl -lresolv -lm -ldl -lnsl -lsocket  elogd.c -o elogd</code></ul>
-<p>
-With some combinations of Solaris servers and client-side browsers there have also
-been problems with <b>ELOG</b>'s <I>keep-alive</I> feature. In such a case you need to add
-the "<B>-k</B>" flag to the <code><b>elogd</b></code> command line to turn keep-alives off.
-<p>
-
-<h3><hr><i>Note for Mac OS X</i>:</h3>
-
-<p><a href="mailto:sak@essc.psu.edu">Sridhar Anandakrishnan</a> and
-<a href="mailto:roktas@emu.edu.tr">Recai Oktas</a> report that under Mac OS X there is a problem with
-the default stack size. The command <i><b>limit stacksize unlimited</b></i> (for tcsh) or
-<i><b>ulimit -s unlimited</b></i> (for bash) increases the stacksize and fixes this problem.
-Read the according <a href="http://midas.psi.ch/elogs/Forum/379">thread</a> in the forum.
-<p>
 
 <hr><a name="windows"> <div class=section>&nbsp; Installing and running in Windows &nbsp;</div> <p> <b>
 ELOG</b> is distributed in binary (executable) form for Windows platforms. It will run happily in <I>
