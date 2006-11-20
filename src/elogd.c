@@ -255,8 +255,10 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 #define AF_TIME              (1<<10)
 #define AF_NUMERIC           (1<<11)
 #define AF_USERLIST          (1<<12)
-#define AF_USEREMAIL         (1<<13)
-#define AF_HIDDEN            (1<<14)
+#define AF_MUSERLIST         (1<<13)
+#define AF_USEREMAIL         (1<<14)
+#define AF_MUSEREMAIL        (1<<15)
+#define AF_HIDDEN            (1<<16)
 
 /* attribute format flags */
 #define AFF_SAME_LINE              1
@@ -6777,9 +6779,12 @@ and attr_flags arrays */
                attr_flags[i] |= AF_NUMERIC;
             if (strieq(type, "userlist"))
                attr_flags[i] |= AF_USERLIST;
+            if (strieq(type, "muserlist"))
+               attr_flags[i] |= AF_MUSERLIST;
             if (strieq(type, "useremail"))
                attr_flags[i] |= AF_USEREMAIL;
-
+            if (strieq(type, "museremail"))
+               attr_flags[i] |= AF_MUSEREMAIL;
          }
       }
 
@@ -8381,7 +8386,7 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
    for (i = 0; i < n_attr; i++) {
       strcpy(ua, attr_list[i]);
       btou(ua);
-      if (attr_flags[i] & AF_MULTI) {
+      if ((attr_flags[i] & (AF_MULTI) | AF_MUSERLIST)) {
          attrib[i][0] = 0;
          first = 1;
          for (j = 0; j < MAX_N_LIST; j++) {
@@ -8503,7 +8508,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
        att[MAX_ATTACHMENTS][256], encoding[80], slist[MAX_N_ATTR + 10][NAME_LENGTH],
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
-       ua[NAME_LENGTH], mid[80], title[256], login_name[256], cookie[256], orig_author[256],
+       ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256], cookie[256], orig_author[256],
        attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
@@ -8932,7 +8937,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          /* convert dots to underscores */
          dtou(ua);
 
-         if (attr_flags[i] & AF_MULTI) {
+         if (attr_flags[i] & (AF_MULTI | AF_MUSERLIST)) {
             rsprintf("  if (\n");
             for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
                sprintf(str, "%s_%d", ua, j);
@@ -9345,6 +9350,18 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                if (strstr(attrib[index], attr_options[index][i]))
                   rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\">\n", str, attr_options[index][i]);
             }
+         } else if (attr_flags[index] & AF_MUSERLIST) {
+
+            for (i = 0;; i++) {
+               if (!enum_user_line(lbs, i, login_name, sizeof(login_name)))
+                  break;
+               get_user_line(lbs, login_name, NULL, full_name, NULL, NULL, NULL);
+
+               sprintf(str, "%s_%d", ua, i);
+
+               if (strstr(attrib[index], full_name))
+                  rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\">\n", str, full_name);
+            }
          } else if (attr_flags[index] & AF_ICON) {
             for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                sprintf(str, "%s_%d", ua, i);
@@ -9426,6 +9443,43 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                rsprintf("</td>\n");
 
+            } else if (attr_flags[index] & AF_MUSERLIST) {
+
+               /* display multiple check boxes with user names */
+               rsprintf("<td%s class=\"attribvalue\">\n", title);
+
+               n_moptions = strbreak(attrib[index], attr_moptions, MAX_N_LIST, "|");
+               for (i = 0;; i++) {
+                  if (!enum_user_line(lbs, i, login_name, sizeof(login_name)))
+                     break;
+                  get_user_line(lbs, login_name, NULL, full_name, NULL, NULL, NULL);
+
+                  sprintf(str, "%s_%d", ua, i);
+
+                  rsprintf("<span style=\"white-space:nowrap;\">\n");
+
+                  for (j = 0; j < n_moptions; j++)
+                     if (strcmp(attr_moptions[j], full_name) == 0)
+                        break;
+
+                  if (j < n_moptions)
+                     rsprintf
+                           ("<input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
+                           str, str, full_name);
+                  else
+                     rsprintf
+                           ("<input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
+                           str, str, full_name);
+
+                  rsprintf("<label for=\"%s\">%s</label>\n", str, full_name);
+                  rsprintf("</span>\n");
+
+                  if (format_flags[index] & AFF_MULTI_LINE)
+                     rsprintf("<br>");
+               }
+
+               rsprintf("</td>\n");
+
             } else if (attr_flags[index] & AF_USEREMAIL) {
 
                rsprintf("<td%s class=\"attribvalue\">\n", title);
@@ -9486,7 +9540,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   rsprintf(loc("Add new option here"), attr_list[index]);
                   rsprintf("&nbsp;:&nbsp;</i>\n");
 
-                  if (attr_flags[index] & AF_MULTI)
+                  if (attr_flags[index] & (AF_MULTI | AF_MUSERLIST))
                      rsprintf
                          ("<input type=\"text\" size=20 maxlength=%d name=\"%s_0\" value=\"%s\" onChange=\"mod();\">\n",
                           input_maxlen, ua, attrib[index]);
@@ -10323,7 +10377,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 void show_find_form(LOGBOOK * lbs)
 {
    int i, j;
-   char str[NAME_LENGTH], mode[NAME_LENGTH], comment[NAME_LENGTH], option[NAME_LENGTH];
+   char str[NAME_LENGTH], mode[NAME_LENGTH], comment[NAME_LENGTH], option[NAME_LENGTH],
+      login_name[256], full_name[256];
 
    /*---- header ----*/
 
@@ -10508,6 +10563,21 @@ void show_find_form(LOGBOOK * lbs)
             }
 
             rsprintf("</td></tr></table>\n");
+
+         } else if (attr_flags[i] & AF_MUSERLIST) {
+
+            for (j = 0;; j++) {
+               if (!enum_user_line(lbs, j, login_name, sizeof(login_name)))
+                  break;
+               get_user_line(lbs, login_name, NULL, full_name, NULL, NULL, NULL);
+
+               sprintf(str, "%s_%d", attr_list[i], j);
+
+               rsprintf("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\"\">\n",
+                        str, str, full_name);
+
+               rsprintf("<label for=\"%s\">%s</label></nobr>\n", str, full_name);
+            }
 
          } else {
 
@@ -17199,6 +17269,16 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          }
       }
 
+      if (attr_flags[i] & AF_MUSERLIST) {
+         for (j = 0; j < MAX_N_LIST ; j++) {
+            sprintf(str, "%s_%d", attr_list[i], j);
+            if (isparam(str)) {
+               filtering = TRUE;
+               break;
+            }
+         }
+      }
+
       /* check if sort by attribute */
       if ((isparam("sort") && strieq(getparam("sort"), attr_list[i])) ||
           (isparam("rsort") && strieq(getparam("rsort"), attr_list[i])))
@@ -17297,6 +17377,33 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                /* OR of any of the values */
                searched = found = FALSE;
                for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
+                  sprintf(str, "%s_%d", attr_list[i], j);
+                  if (isparam(str)) {
+                     searched = TRUE;
+                     if (strstr(attrib[i], getparam(str))) {
+                        found = TRUE;
+                        break;
+                     }
+                  }
+               }
+
+               /* search for parameter without '_' coming from quick filter */
+               if (isparam(attr_list[i])) {
+                  searched = TRUE;
+                  if (strstr(attrib[i], getparam(attr_list[i])))
+                     found = TRUE;
+               }
+
+               if (searched && !found)
+                  break;
+            }
+
+            /* check for multi user list */
+            else if (attr_flags[i] & AF_MUSERLIST) {
+
+               /* OR of any of the values */
+               searched = found = FALSE;
+               for (j = 0; j < MAX_N_LIST ; j++) {
                   sprintf(str, "%s_%d", attr_list[i], j);
                   if (isparam(str)) {
                      searched = TRUE;
@@ -17799,8 +17906,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             if (ltime > 0)
                disp_filter = TRUE;
          }
-         if (attr_flags[i] & AF_MULTI) {
-            for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
+         if (attr_flags[i] & (AF_MULTI | AF_MUSERLIST)) {
+            for (j = 0; j < MAX_N_LIST ; j++) {
                sprintf(str, "%s_%d", attr_list[i], j);
                if (isparam(str))
                   disp_filter = TRUE;
@@ -17936,6 +18043,31 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                      strlcat(line, getparam(attr_list[i]), sizeof(line));
                   else
                      strlcat(line, comment, sizeof(line));
+               }
+
+               if (line[0]) {
+                  rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", attr_list[i]);
+                  rsprintf("<td class=\"attribvalue\"><span style=\"color:black;background-color:#ffff66\">");
+                  rsprintf("%s</span></td></tr>", line);
+               }
+
+            } else if (attr_flags[i] & AF_MUSERLIST) {
+
+               line[0] = 0;
+
+               for (j = 0; j < MAX_N_LIST ; j++) {
+                  sprintf(iattr, "%s_%d", attr_list[i], j);
+                  if (isparam(iattr)) {
+                     if (line[0])
+                        strlcat(line, " | ", sizeof(line));
+                     strlcat(line, getparam(iattr), sizeof(line));
+                  }
+               }
+
+               if (isparam(attr_list[i])) {
+                  if (line[0])
+                     strlcat(line, " | ", sizeof(line));
+                  strlcat(line, getparam(attr_list[i]), sizeof(line));
                }
 
                if (line[0]) {
@@ -19374,7 +19506,7 @@ void submit_elog(LOGBOOK * lbs)
                missing = 1;
             if (missing)
                break;
-         } else if ((attr_flags[i] & AF_MULTI)) {
+         } else if ((attr_flags[i] & (AF_MULTI | AF_MUSERLIST))) {
             for (j = 0; j < MAX_N_LIST; j++) {
                sprintf(str, "%s_%d", ua, j);
                if (isparam(str))
@@ -19439,7 +19571,7 @@ void submit_elog(LOGBOOK * lbs)
       strcpy(ua, attr_list[i]);
       btou(ua);
       dtou(ua);
-      if (attr_flags[i] & AF_MULTI)
+      if (attr_flags[i] & (AF_MULTI | AF_MUSERLIST))
          strcat(ua, "_0");
 
       if (isparam(ua) && *getparam(ua) && attr_options[i][0][0]) {
@@ -19529,7 +19661,7 @@ void submit_elog(LOGBOOK * lbs)
       btou(ua);
       dtou(ua);
 
-      if (attr_flags[i] & AF_MULTI) {
+      if (attr_flags[i] & (AF_MULTI | AF_MUSERLIST)) {
 
          if (isparam(ua)) {
             strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
@@ -19781,7 +19913,7 @@ void submit_elog(LOGBOOK * lbs)
                strlcat(str, attr_list[index], sizeof(str));
             strcat(str, " ");
 
-            if (attr_flags[index] & AF_MULTI) {
+            if (attr_flags[index] & (AF_MULTI | AF_MUSERLIST)) {
                sprintf(str2, "%s_%d", ua, mindex);
 
                mindex++;
@@ -20795,7 +20927,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                   rsprintf("<img src=\"icons/%s\" alt=\"%s\" title=\"%s\">", attrib[i], attrib[i], attrib[i]);
             }
             rsprintf("&nbsp;</td>\n");
-         } else if ((attr_flags[i] & AF_MULTI)
+         } else if ((attr_flags[i] & (AF_MULTI | AF_MUSERLIST))
                     && (format_flags[i] & AFF_MULTI_LINE)) {
             rsprintf("%s:</td><td class=\"%s\">\n", attr_list[i], class_value);
 

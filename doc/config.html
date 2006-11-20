@@ -1402,7 +1402,7 @@ Subst on edit author = $full_name
       </li>
       <li>
         <code><b>Type &lt;attribute&gt; = date | datetime | numeric |
-        userlist | useremail</b></code><br>
+        userlist | useremail | muserlist</b></code><br>
         A normal attribute can contain strings of any type. With this option,
         attributes can be forced to be numeric or to be a date/time, or to
         consist of a list of all users from the password file. When new logbook
@@ -1431,7 +1431,11 @@ Subst on edit author = $full_name
         <b><code>useremail</code></b> is similar, just a list of email addresses
         of all registered users. This can be used to send email notification
         to assigned people by using this attribute in an 
-        <b><code>Email all = &lt;attribute&gt;</code></b> statement. 
+        <b><code>Email all = &lt;attribute&gt;</code></b> statement. The type
+        <b><code>muserlist</code></b> and <b><code>museremail</code></b> are the
+        same that <b><code>userlist</code></b> and <b><code>useremail</code></b>,
+        except that several user names or user emails can be selected at once
+        using check boxes. 
       </li>
       <li>
         <code><b>Change &lt;attribute&gt; = &lt;string&gt;</b></code><br>
