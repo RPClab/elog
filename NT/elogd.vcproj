@@ -193,7 +193,7 @@
 				RelativePath="..\themes\default\default.css">
 			</File>
 			<File
-				RelativePath="..\elcode.js">
+				RelativePath="..\scripts\elcode.js">
 			</File>
 			<File
 				RelativePath="..\..\elogdemo\elogd.cfg">

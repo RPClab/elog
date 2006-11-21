@@ -8386,7 +8386,7 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
    for (i = 0; i < n_attr; i++) {
       strcpy(ua, attr_list[i]);
       btou(ua);
-      if ((attr_flags[i] & (AF_MULTI) | AF_MUSERLIST)) {
+      if (attr_flags[i] & (AF_MULTI | AF_MUSERLIST)) {
          attrib[i][0] = 0;
          first = 1;
          for (j = 0; j < MAX_N_LIST; j++) {
