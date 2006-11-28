@@ -1,3 +1,44 @@
+Version 2.6.3, released Nov. 28th, 2006
+=======================================
+
+- Fixed wrong directory for synchronization MD5 files
+- Implemented "Tooltip <attribute option>"
+- Implemented "muserlist"
+- Fixed wrong display of smileys with uppercase characters
+- Implemented "useremail" attribute type
+- Moved menu bar to bottom on "new user page"
+- Fixed wrong DST calculation in my_timezone
+- Implemented "all display limit"
+- Applied patch from Ulf Harnhammer to fix incorrect handling of *printf() calls
+- Prevent crash if logbook "global<xxx>" is accessed and a logbook "global<xxx>" is defined in config file
+- Skip comment lines in config file starting with '#' or ';' correctly
+- Mention that password file must reside in logbook directory
+- Skip "entries per page" in CSV, XML and RAW export
+- Fixed wrong timezone under MacOSX
+- Fixed wrong date display in threaded mode
+- Improved performance of rsputs_elcode somehow
+- Fixed problem with activating user accounts under non-english languages
+- Improved error output if password file cannot be opened
+- Fixed wrong "Suppress email notification" with conditional attributes
+- Added czech translation
+- Display activation message
+- Changed ?) smiley to ?-)
+- Implemented "suppress email on edit"
+- Implemented 'allowed encoding' option
+- Changed location of bottom/top text files
+- Fixed wrong truncation of email recipient
+- Added 'preset on duplicate'
+- Do attribute substitution in email recipients
+- Display proper error message if config file cannot be read
+- Added 'preview attachments' and 'main tab url'
+- Added "Main tab URL"
+- Preview attachments in edit form if not turned off via "Preview attachments = 0"
+- moved password file, log file etc. to logbook directory
+- improved shell substitution speed
+- Changed eek.png to astonished.png
+- Fixed bug with multiple conditions which was introduced in SVN 1696
+- Fixed inline image insertion in Internet Explorer
+
 Version 2.6.2, released July 11th, 2006
 =======================================
 

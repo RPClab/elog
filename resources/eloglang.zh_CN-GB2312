@@ -132,7 +132,6 @@ Display = 显示
 entries per page = 记录每页
 Toggle all = 反向选择全部
 Selected entries = 已选记录
-Enable email notifications = 打开电子邮件通报
 A old entry has been updated on %s = %s 里的一条旧记录已经被更新
 Collapse = 折叠
 Expand = 展开

@@ -130,7 +130,6 @@ Requested = Requerido
 ELOG user config = Configuração do usuário do ELOG
 Select user = Selecione o usuário
 User [%s] has been deleted = Usuário [%s] foi removido
-Enable email notifications = Permite notificações por email
 Remove user = Remover usuário
 New user = Novo usuário
 No Email address registered with user name <i>"%s"</i> = Não há endereço de email registrado com esse nome de usuário <i>"%s"</i> 

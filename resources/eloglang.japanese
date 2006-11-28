@@ -92,7 +92,6 @@ Requested = 要求
 ELOG user config = ELOGユーザー設定
 Select user = ユーザーを選択
 User [%s] has been deleted = ユーザー[%s]が削除されました
-Enable email notifications = 電子メール通知を行なう
 Change password = パスワードを変更
 Remove user = ユーザーを削除
 New user = 新規ユーザー

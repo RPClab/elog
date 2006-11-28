@@ -10,7 +10,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.6.2"
+#define VERSION "2.6.3"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -5618,27 +5618,27 @@ typedef struct {
 PATTERN_LIST pattern_list[] = {
 
    /* smileys */
-   {":))",  "<img alt=\"Happy\" title=\"Happy\" src=\"%sicons/happy.png\">"},
+   {":))", "<img alt=\"Happy\" title=\"Happy\" src=\"%sicons/happy.png\">"},
    {":-))", "<img alt=\"Happy\" title=\"Happy\" src=\"%sicons/happy.png\">"},
-   {":)",   "<img alt=\"Smile\" title=\"Smile\" src=\"%sicons/smile.png\">"},
-   {":-)",  "<img alt=\"Smile\" title=\"Smile\" src=\"%sicons/smile.png\">"},
-   {":(",   "<img alt=\"Frown\" title=\"Frown\" src=\"%sicons/frown.png\">"},
-   {":-(",  "<img alt=\"Frown\" title=\"Frown\" src=\"%sicons/frown.png\">"},
-   {";)",   "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"},
-   {";-)",  "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"},
-   {":d",   "<img alt=\"Big grin\" title=\"Big grin\" src=\"%sicons/biggrin.png\">"},
-   {"?-)",  "<img alt=\"Confused\" title=\"Confused\" src=\"%sicons/confused.png\">"},
-   {";(",   "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"},
-   {";-(",  "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"},
-   {":]",   "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"},
-   {":-]",  "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"},
-   {":o",   "<img alt=\"Yawn\" title=\"Yawn\" src=\"%sicons/yawn.png\">"},
-   {":-o",  "<img alt=\"Yawn\" title=\"Yawn\" src=\"%sicons/yawn.png\">"},
-   {"8-)",  "<img alt=\"Cool\" title=\"Cool\" src=\"%sicons/cool.png\">"},
-   {"8o",   "<img alt=\"Astonished\" title=\"Astonished\" src=\"%sicons/astonished.png\">"},
-   {"x-(",  "<img alt=\"Mad\" title=\"Mad\" src=\"%sicons/mad.png\">"},
-   {":p",   "<img alt=\"Tongue\" title=\"Tongue\" src=\"%sicons/tongue.png\">"},
-   {":-p",  "<img alt=\"Tongue\" title=\"Tongue\" src=\"%sicons/tongue.png\">"},
+   {":)", "<img alt=\"Smile\" title=\"Smile\" src=\"%sicons/smile.png\">"},
+   {":-)", "<img alt=\"Smile\" title=\"Smile\" src=\"%sicons/smile.png\">"},
+   {":(", "<img alt=\"Frown\" title=\"Frown\" src=\"%sicons/frown.png\">"},
+   {":-(", "<img alt=\"Frown\" title=\"Frown\" src=\"%sicons/frown.png\">"},
+   {";)", "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"},
+   {";-)", "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"},
+   {":d", "<img alt=\"Big grin\" title=\"Big grin\" src=\"%sicons/biggrin.png\">"},
+   {"?-)", "<img alt=\"Confused\" title=\"Confused\" src=\"%sicons/confused.png\">"},
+   {";(", "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"},
+   {";-(", "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"},
+   {":]", "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"},
+   {":-]", "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"},
+   {":o", "<img alt=\"Yawn\" title=\"Yawn\" src=\"%sicons/yawn.png\">"},
+   {":-o", "<img alt=\"Yawn\" title=\"Yawn\" src=\"%sicons/yawn.png\">"},
+   {"8-)", "<img alt=\"Cool\" title=\"Cool\" src=\"%sicons/cool.png\">"},
+   {"8o", "<img alt=\"Astonished\" title=\"Astonished\" src=\"%sicons/astonished.png\">"},
+   {"x-(", "<img alt=\"Mad\" title=\"Mad\" src=\"%sicons/mad.png\">"},
+   {":p", "<img alt=\"Tongue\" title=\"Tongue\" src=\"%sicons/tongue.png\">"},
+   {":-p", "<img alt=\"Tongue\" title=\"Tongue\" src=\"%sicons/tongue.png\">"},
 
    /* formatting */
    {"[b]", "<b>"},
@@ -5719,8 +5719,8 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
    m = 0;
 
    /* make lower case copy of str */
-   lstr = xmalloc(strlen(str)+1);
-   for (pd=lstr, p=(char *)str ; *p ; p++,pd++)
+   lstr = xmalloc(strlen(str) + 1);
+   for (pd = lstr, p = (char *) str; *p; p++, pd++)
       *pd = tolower(*p);
    *pd = 0;
 
@@ -7242,7 +7242,7 @@ void show_standard_title(char *logbook, char *text, int printable)
          rsprintf("<tr><td class=\"tabs\">\n");
 
          if (level == 0 && getcfg("global", "main tab", str, sizeof(str))
-            && !getcfg_topgroup()) {
+             && !getcfg_topgroup()) {
             if (getcfg("global", "main tab url", url, sizeof(url)))
                rsprintf("<span class=\"ltab\"><a href=\"%s\">%s</a></span>\n", url, str);
             else
@@ -7250,7 +7250,7 @@ void show_standard_title(char *logbook, char *text, int printable)
          }
 
          if (level == 1 && getcfg("global", "main tab", str, sizeof(str))
-            && getcfg_topgroup()) {
+             && getcfg_topgroup()) {
             if (getcfg("global", "main tab url", url, sizeof(url)))
                rsprintf("<span class=\"ltab\"><a href=\"%s/\">%s</a></span>\n", url, str);
             else
@@ -8535,7 +8535,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       /* remove any leading directory, to accept only files in the logbook directory ! */
       if (strchr(att[0], DIR_SEPARATOR)) {
          strlcpy(str, att[0], sizeof(str));
-         strlcpy(att[0], strrchr(str, DIR_SEPARATOR)+1, 256);
+         strlcpy(att[0], strrchr(str, DIR_SEPARATOR) + 1, 256);
       }
    }
 
@@ -8709,8 +8709,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          sprintf(str, "Preset %s", attr_list[index]);
          if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0) {
 
-            if ((!bedit && !breply && !bduplicate) ||      /* don't subst on edit or reply */
-               (breedit && i == 2)) {     /* subst on reedit only if preset is under condition */
+            if ((!bedit && !breply && !bduplicate) ||   /* don't subst on edit or reply */
+                (breedit && i == 2)) {  /* subst on reedit only if preset is under condition */
 
                /* do not format date for date attributes */
                i = build_subst_list(lbs, slist, svalue, attrib,
@@ -8732,7 +8732,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          sprintf(str, "Preset on reply %s", attr_list[index]);
          if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0 && breply) {
 
-            if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
+            if (!breedit || (breedit && i == 2)) {      /* subst on reedit only if preset is under condition */
 
                /* do not format date for date attributes */
                i = build_subst_list(lbs, slist, svalue, attrib,
@@ -8754,7 +8754,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          sprintf(str, "Preset on duplicate %s", attr_list[index]);
          if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0 && bduplicate) {
 
-            if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
+            if (!breedit || (breedit && i == 2)) {      /* subst on reedit only if preset is under condition */
 
                /* do not format date for date attributes */
                i = build_subst_list(lbs, slist, svalue, attrib,
@@ -8774,7 +8774,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          }
       }
 
-   } else // if (_condition[0])
+   } else                       // if (_condition[0])
       n_attr = lbs->n_attr;
 
 
@@ -9464,12 +9464,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                   if (j < n_moptions)
                      rsprintf
-                           ("<input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
-                           str, str, full_name);
+                         ("<input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
+                          str, str, full_name);
                   else
                      rsprintf
-                           ("<input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
-                           str, str, full_name);
+                         ("<input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
+                          str, str, full_name);
 
                   rsprintf("<label for=\"%s\">%s</label>\n", str, full_name);
                   rsprintf("</span>\n");
@@ -10114,7 +10114,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          allowed_encoding = 3;
 
       if (allowed_encoding < 1 || allowed_encoding > 7) {
-         rsprintf("<h1>Invalid \"Allowed encoding\" in configuration file, value must be between 1 and 7</h1>\n");
+         rsprintf
+             ("<h1>Invalid \"Allowed encoding\" in configuration file, value must be between 1 and 7</h1>\n");
          rsprintf("</table><!-- show_standard_title -->\n");
          show_bottom_text(lbs);
          rsprintf("</form></body></html>\r\n");
@@ -10135,9 +10136,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" checked>");
             else
                rsprintf
-                  ("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" onclick=\"cond_submit()\">");
+                   ("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" onclick=\"cond_submit()\">");
             rsprintf
-               ("<label for=\"ELCode\"><a target=\"_blank\" href=\"?cmd=HelpELCode\">ELCode</a>&nbsp;&nbsp;</label>\n");
+                ("<label for=\"ELCode\"><a target=\"_blank\" href=\"?cmd=HelpELCode\">ELCode</a>&nbsp;&nbsp;</label>\n");
          }
 
          if (allowed_encoding & 1) {
@@ -10145,7 +10146,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" checked>");
             else
                rsprintf
-                  ("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" onclick=\"cond_submit()\">");
+                   ("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" onclick=\"cond_submit()\">");
             rsprintf("<label for=\"plain\">plain&nbsp;&nbsp;</label>\n");
          }
 
@@ -10154,7 +10155,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" checked>");
             else
                rsprintf
-                  ("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" onclick=\"cond_submit()\">");
+                   ("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" onclick=\"cond_submit()\">");
             rsprintf("<label for=\"HTML\">HTML&nbsp;&nbsp;</label>\n");
          }
       }
@@ -10266,7 +10267,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                   rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", str, att[index]);
                   rsprintf("%s\n", att[index] + 14);
-                  rsprintf("&nbsp;&nbsp;<input type=\"submit\" name=\"delatt%d\" value=\"%s\" ", index, loc("Delete"));
+                  rsprintf("&nbsp;&nbsp;<input type=\"submit\" name=\"delatt%d\" value=\"%s\" ", index,
+                           loc("Delete"));
                   rsprintf("onClick=\"return mark_submit();\">");
 
                   strlcpy(file_name, lbs->data_dir, sizeof(file_name));
@@ -10287,7 +10289,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      strcpy(str, att[index]);
                      str[13] = 0;
                      strcpy(file_enc, att[index] + 14);
-                     url_encode(file_enc, sizeof(file_enc));  /* for file names with special characters like "+" */
+                     url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
                      sprintf(ref, "%s/%s", str, file_enc);
 
                      if (is_image(att[index])) {
@@ -10384,7 +10386,7 @@ void show_find_form(LOGBOOK * lbs)
 {
    int i, j;
    char str[NAME_LENGTH], mode[NAME_LENGTH], comment[NAME_LENGTH], option[NAME_LENGTH],
-      login_name[256], full_name[256];
+       login_name[256], full_name[256];
 
    /*---- header ----*/
 
@@ -11829,7 +11831,7 @@ void show_config_page(LOGBOOK * lbs)
       sprintf(str, " <b>%s &lt;%s&gt;</b>", getparam("new_user_name"), getparam("new_user_email"));
       rsprintf(loc("Activation notice has been sent to %s"), str);
       rsprintf("</tr>\n");
-  }
+   }
 
    /*---- menu buttons ----*/
 
@@ -16389,7 +16391,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
 
 /*------------------------------------------------------------------*/
 
-void show_page_navigation(LOGBOOK *lbs, int n_msg, int page_n, int n_page)
+void show_page_navigation(LOGBOOK * lbs, int n_msg, int page_n, int n_page)
 {
    int i, num_pages, skip, max_n_msg;
    char ref[256], str[256];
@@ -17275,7 +17277,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       }
 
       if (attr_flags[i] & AF_MUSERLIST) {
-         for (j = 0; j < MAX_N_LIST ; j++) {
+         for (j = 0; j < MAX_N_LIST; j++) {
             sprintf(str, "%s_%d", attr_list[i], j);
             if (isparam(str)) {
                filtering = TRUE;
@@ -17408,7 +17410,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
                /* OR of any of the values */
                searched = found = FALSE;
-               for (j = 0; j < MAX_N_LIST ; j++) {
+               for (j = 0; j < MAX_N_LIST; j++) {
                   sprintf(str, "%s_%d", attr_list[i], j);
                   if (isparam(str)) {
                      searched = TRUE;
@@ -17912,7 +17914,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                disp_filter = TRUE;
          }
          if (attr_flags[i] & (AF_MULTI | AF_MUSERLIST)) {
-            for (j = 0; j < MAX_N_LIST ; j++) {
+            for (j = 0; j < MAX_N_LIST; j++) {
                sprintf(str, "%s_%d", attr_list[i], j);
                if (isparam(str))
                   disp_filter = TRUE;
@@ -18060,7 +18062,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
                line[0] = 0;
 
-               for (j = 0; j < MAX_N_LIST ; j++) {
+               for (j = 0; j < MAX_N_LIST; j++) {
                   sprintf(iattr, "%s_%d", attr_list[i], j);
                   if (isparam(iattr)) {
                      if (line[0])
@@ -19925,7 +19927,7 @@ void submit_elog(LOGBOOK * lbs)
                if (mindex == MAX_N_LIST)
                   mindex = 0;
                else
-                  index--;   /* repeat this loop */
+                  index--;      /* repeat this loop */
             } else
                strcpy(str2, ua);
 
@@ -19970,7 +19972,7 @@ void submit_elog(LOGBOOK * lbs)
       }
 
       if (!getcfg(lbs->name, "Suppress Email to users", str, sizeof(str))
-            || atoi(str) == 0) {
+          || atoi(str) == 0) {
          /* go through password file */
          for (index = 0;; index++) {
             if (!enum_user_line(lbs, index, user, sizeof(user)))
@@ -20007,10 +20009,10 @@ void submit_elog(LOGBOOK * lbs)
 
    if (strlen(mail_to) > 0) {
       if (strlen(mail_to) > 4 && mail_to[strlen(mail_to) - 4] == ',')
-         mail_to[strlen(mail_to) - 4] = 0; /* strip last ',\r\n\t' */
+         mail_to[strlen(mail_to) - 4] = 0;      /* strip last ',\r\n\t' */
 
       if (strlen(rcpt_to) > 1 && mail_to[strlen(rcpt_to) - 1] == ',')
-         rcpt_to[strlen(rcpt_to) - 1] = 0; /* strip last ',' */
+         rcpt_to[strlen(rcpt_to) - 1] = 0;      /* strip last ',' */
       if (compose_email
           (lbs, rcpt_to, mail_to, message_id, attrib, mail_param, isparam("edit_id"), att_file,
            isparam("encoding") ? getparam("encoding") : "plain") == 0)
@@ -22991,8 +22993,7 @@ void interprete(char *lbook, char *path)
 
             if (!check_user_password(lbs,
                                      isparam("unm") ? getparam("unm") : "",
-                                     isparam("upwd") ? getparam("upwd") : "",
-                                     _cmdline))
+                                     isparam("upwd") ? getparam("upwd") : "", _cmdline))
                return;
          }
       }
@@ -25854,8 +25855,8 @@ int main(int argc, char *argv[])
       strcpy(logbook_dir, "logbooks");
 
    /* strip trailing dir separator */
-   if (logbook_dir[strlen(logbook_dir)-1] == DIR_SEPARATOR)
-      logbook_dir[strlen(logbook_dir)-1] = 0;
+   if (logbook_dir[strlen(logbook_dir) - 1] == DIR_SEPARATOR)
+      logbook_dir[strlen(logbook_dir) - 1] = 0;
 
    /* check for directories */
    if (logbook_dir[0] && stat(logbook_dir, &finfo) < 0) {

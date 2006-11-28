@@ -92,7 +92,6 @@ ELOG user config = Потребителски настройки на ELOG
 Select user = Избиране на потребител
 Login name = Име за влизане
 Full name = Пълно име
-Enable email notifications = Активиране на уведомяването чрез ел.поща
 All entries = Всички записи
 Entries = Записи
 ELOG password recovery = Възстановяване на парола на ELOG
