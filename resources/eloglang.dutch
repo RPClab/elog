@@ -1,6 +1,6 @@
 #
 # Dutch translation by djek@xs4all.nl
-# 15-12-2005
+# 28-11-2006
 # A more recent version may be available at :
 # http://savannah.psi.ch/websvn/listing.php?repname=elog&path=%2Ftrunk%2Fresources%2F
 #
@@ -132,6 +132,7 @@ Display = Toon
 entries per page = berichten per pagina
 Toggle all = Toon alles
 Selected entries = Geselecteerde berichten
+Enable email notifications=Automatisch e-mail aankondiging
 A old entry has been updated on %s = Een ouder bericht is op %s gewijzigd
 Collapse = Samenvatten
 Expand = Uitbreiden
@@ -170,7 +171,7 @@ Maximum number of attachments reached = Maximaal aantal bijlagen bereikt
 on = op
 Entry is currently edited by = Bericht wordt momenteel gewijzigd door
 recipients = Ontvanger
-Suppress shell execution = Onderdruk commmando uitvoer
+Suppress shell execution = Onderdruk commando uitvoer
 Update = Ververs
 by = van
 Change %s = %s wijzigen
@@ -191,11 +192,11 @@ Display full entries = Toon volledige berichten
 No entry selected for deletion = Geen bericht geselecteerd om te wissen
 Cannot read entry from local logbook = Kan niet van het lokale logboek lezen
 Cannot create socket = Kan geen socket maken
-Cannot resolve host name "%s" = Kan hostnaam "%s" niet resolven
+Cannot resolve host name "%s" = Kan hostnaam "%s" niet opzoeken
 Cannot connect to host %s, port %d = Kan geen verbinding maken met %s, poort %d
 Cannot receive "%s" = Kan "%s" niet ontvangen
 Received wrong entry id "%d" = Verkeerd bericht met id "%d" ontvangen
-Entry #%d is locked on remote server = Bericht is #%d is gelocked op de andere server
+Entry #%d is locked on remote server = Bericht is #%d is geblokkeerd op de andere server
 Cannot save remote entry locally = Kan op andere server gemaakte bericht niet lokaal opslaan
 local = lokaal
 remote = op afstand
@@ -213,7 +214,7 @@ Incorrect remote ELOG server version %s = Incorrecte versie van ELOG server op a
 Error accessing remote logbook =Fout bij het benaderen van het logboek op afstand
 Invalid HTTP header = Ongeldige HTTP header
 No user name supplied to access remote logbook = Geen gebruikersnaam opgegeven om het logboek op andere server te benaderen.
-Synchronizing logbook %s with server "%s" = Nu Synchronizeert logboek %s met server "%s"
+Synchronizing logbook %s with server "%s" = Nu Synchroniseert logboek %s met server "%s"
 Configuration has been changed locally and remotely =Configuratie is lokaal en op andere server gewijzigd
 Please merge manually to resolve conflict =Voeg handmatig samen om conflicten op te lossen
 Logbook "%s" does not exist on remote server =Logboek "%s" bestaat niet op de andere server
@@ -371,7 +372,7 @@ pleased = tevreden
 tongue = tong
 yawn = gaap
 Encoding = kodering
-User "%s" not found in password file = Gebruiker "%s" niet gevonden in password bestand
+User "%s" not found in password file = Gebruiker "%s" niet gevonden in wachtwoord bestand
 Cannot write to file <b>%s</b> = Kan niet schrijven naar bestand <b>%s</b>
 Really remove user %s? = Gebruiker %s echt verwijderen?
 Invalid user name "%s" or password for remote logbook = Ongeldige gebruikersnaam "%s" of wachtwoord voor logboek op afstand
@@ -396,23 +397,19 @@ Enter URL of hyperlink = Geef URL van de hyperlink
 astonished = verbaast
 Error in regular expression "%s" = Fout in reguliere expressie "%s"
 File not found at URL "%s" = Kan bestand niet gevonden bij URL "%s"
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Entry size too large for email notification = 
-Please specify a valid email address = 
-Cannot send email notification to "%s" = 
-text = 
-From = 
-Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = 
-Shell execution not enabled via -x flag = 
-Enter heading level (1, 2 or 3) = 
-insert heading = 
-User name may not contain blanks = 
-Empty password not allowed = 
-Password may not contain blanks = 
-Anonymous = 
-Activation notice has been sent to %s = 
-Your request has been forwarded to the administrator = 
-You will be notified by email upon activation of your new account = 
+Entry size too large for email notification = bericht te groot voor email melding
+Please specify a valid email address = Geef een geldig emailadres op
+Cannot send email notification to "%s" = Kan geen email melding sturen naar "%s"
+text = tekst
+From = Van
+Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = Fout: Commando "<b>%s</b>" is niet toegestaan voor gebruiker "<b>%s</b>" 
+Shell execution not enabled via -x flag = Shell uitvoering niet aangezet met -x flag
+Enter heading level (1, 2 or 3) = Start bij kopniveau (1, 2 of 3)
+insert heading = koppen toevoegen
+User name may not contain blanks = Gebruikersnaam mag geen spaties bevatten
+Empty password not allowed = Leeg wachtwoord is niet toegestaan
+Password may not contain blanks = Wachtwoord mag geen spaties bevatten
+Anonymous = Anoniem
+Activation notice has been sent to %s = Activeringsbericht is gestuurd naar %s
+Your request has been forwarded to the administrator = Uw verzoek is doorgestuurd naar de beheerder
+You will be notified by email upon activation of your new account = U krijgt via email een bericht als uw account is geactiveerd.

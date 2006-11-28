@@ -199,7 +199,7 @@
 				RelativePath="..\..\elogdemo\elogd.cfg">
 			</File>
 			<File
-				RelativePath="..\eloglang.german">
+				RelativePath="..\resources\eloglang.german">
 			</File>
 		</Filter>
 		<Filter

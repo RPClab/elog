@@ -12,7 +12,7 @@ On PC4534:
 - Do a "make loc"
 - Translate new strings in eloglang.german
 - c:\elog> svn ci -m "Release x.x.x-y"
-- Create Tag from c:\elog to file:///y:/svn/elog/tags/version_x.x.x, name it "Version x.x.x"
+- Create Tag from c:\elog to file:///y:/svn/elog/tags/version_x.x.x
 - build xxx-1
 
 On PC5082:
