@@ -8509,7 +8509,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        att[MAX_ATTACHMENTS][256], encoding[80], slist[MAX_N_ATTR + 10][NAME_LENGTH],
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
        ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256], cookie[256], orig_author[256],
-       attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256];
+       attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256], tooltip[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -9559,9 +9559,15 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                   n_moptions = strbreak(attrib[index], attr_moptions, MAX_N_LIST, "|");
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
-                     sprintf(str, "%s_%d", ua, i);
 
-                     rsprintf("<span style=\"white-space:nowrap;\">\n");
+                     /* display check box with optional tooltip */
+                     sprintf(str, "Tooltip %s", attr_options[index][i]);
+                     tooltip[0] = 0;
+                     if (getcfg(lbs->name, str, comment, sizeof(comment)))
+                        sprintf(tooltip, " title=\"%s\"", comment);
+
+                     sprintf(str, "%s_%d", ua, i);
+                     rsprintf("<span%s style=\"white-space:nowrap;\">\n", tooltip);
 
                      for (j = 0; j < n_moptions; j++)
                         if (strcmp(attr_moptions[j], attr_options[index][i]) == 0)
