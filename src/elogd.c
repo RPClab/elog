@@ -13891,7 +13891,7 @@ int adjust_config(char *url)
    buf[length] = 0;
 
    /* add mirror server */
-   p1 = strstr(buf, "Mirror server =");
+   p1 = stristr(buf, "Mirror server =");
    if (p1 != NULL) {
       p2 = strchr(p1, '\n');
       if (p2 && *(p2 - 1) == '\r')
@@ -14056,8 +14056,7 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
 
    } while (status != 200);
 
-
-   getcfg(lbs->name, "Password file", str, sizeof(str));
+   get_password_file(lbs, str, sizeof(str));
    fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
    if (fh < 0) {
       sprintf(error_str, loc("Cannot open file <b>%s</b>"), str);
@@ -14158,7 +14157,7 @@ int load_md5(LOGBOOK * lbs, char *server, MD5_INDEX ** md5_index)
    while (str[strlen(str) - 1] == '_')
       str[strlen(str) - 1] = 0;
 
-   strlcpy(file_name, resource_dir, sizeof(file_name));
+   strlcpy(file_name, logbook_dir, sizeof(file_name));
    strlcat(file_name, str, sizeof(file_name));
    strlcat(file_name, ".md5", sizeof(file_name));
 
@@ -25914,12 +25913,6 @@ int main(int argc, char *argv[])
       check_config_file(TRUE);
       el_index_logbooks();
 
-      eprintf("\nRetrieve remote logbook entries? [y]/n:  ");
-      fgets(str, sizeof(str), stdin);
-      if (str[0] != 'n' && str[0] != 'N')
-         /* synchronize all logbooks */
-         synchronize(NULL, SYNC_CLONE);
-
       /* check for retrieving password files */
       for (i = n = 0; lb_list[i].name[0]; i++)
          if (getcfg(lb_list[i].name, "Password file", str, sizeof(str)))
@@ -25966,6 +25959,12 @@ int main(int argc, char *argv[])
                }
             }
       }
+
+      eprintf("\nRetrieve remote logbook entries? [y]/n:  ");
+      fgets(str, sizeof(str), stdin);
+      if (str[0] != 'n' && str[0] != 'N')
+         /* synchronize all logbooks */
+         synchronize(NULL, SYNC_CLONE);
 
       puts("\nCloning finished. Check " CFGFILE " and start the server normally.");
       exit(EXIT_SUCCESS);
