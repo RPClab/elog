@@ -1,6 +1,6 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.6.2+)
+# (for 2.6.3+)
 # A more recent version may be available at :
 # http://savannah.psi.ch/viewcvs/trunk/resources/eloglang.french?root=elog
 #
@@ -407,10 +407,6 @@ User name may not contain blanks = Le nom d'utilisateur ne doit pas contenir d'e
 Empty password not allowed = Le mot de passe ne doit pas être vide
 Password may not contain blanks = Le mot de passe ne doit pas contenir d'espace
 Anonymous = Anonyme
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Activation notice has been sent to %s = 
-Your request has been forwarded to the administrator = 
-You will be notified by email upon activation of your new account = 
+Activation notice has been sent to %s = L'avis d'activation a été envoyé à %s
+Your request has been forwarded to the administrator = Votre demande a été transmise à l'administrateur
+You will be notified by email upon activation of your new account = Vous serez averti(e) par courriel de l'activation de votre nouveau compte
