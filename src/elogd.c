@@ -9685,7 +9685,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   rsprintf("<option value=\"\">- %s -\n", loc("please select"));
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
-                     strlcpy(str, attr_options[index][i], sizeof(str));
+                     strencode2(str, attr_options[index][i], sizeof(str));
                      if (strchr(str, '{'))
                         *strchr(str, '{') = 0;
 
