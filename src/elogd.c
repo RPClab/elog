@@ -16891,7 +16891,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH], mode[80], mid[80],
        menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH], format[80],
-       sort_attr[MAX_N_ATTR + 4][NAME_LENGTH], mode_cookie[80];
+       sort_attr[MAX_N_ATTR + 4][NAME_LENGTH], mode_cookie[80], charset[25];
    char *p, *pt, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
    BOOL show_attachments, threaded, csv, xml, raw, mode_commands, expand, filtering, disp_filter,
        show_text, text_in_attr, searched, found, disp_attr_link[MAX_N_ATTR + 4];
@@ -17732,7 +17732,9 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
       /* no menus and tables */
       show_plain_header(0, "export.xml");
-      rsprintf("<?xml version=\"1.0\" encoding=\"%s\"?>\n", DEFAULT_HTTP_CHARSET);
+      if (!getcfg("global", "charset", charset, sizeof(charset)))
+         strcpy(charset, DEFAULT_HTTP_CHARSET);
+      rsprintf("<?xml version=\"1.0\" encoding=\"%s\"?>\n", charset);
       rsprintf("<!-- ELOGD Version %s export.xml -->\n", VERSION);
       rsprintf("<ELOG_LIST>\n");
 
