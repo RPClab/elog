@@ -1146,6 +1146,13 @@ int subst_shell(char *cmd, char *result, int size)
 
       /* execute shell with redirection to /tmp/elog-shell */
       sprintf(str, "/bin/sh -c \"%s\" > /tmp/elog-shell 2>&1", cmd);
+
+      if (verbose) {
+         efputs("Going to execute: ");
+         efputs(str);
+         efputs("\n");
+      }
+
       system(str);
       exit(0);
    }
