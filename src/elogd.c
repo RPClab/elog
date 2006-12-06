@@ -18360,7 +18360,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          for (i = 0; i < lbs->n_attr; i++) {
             strcpy(iattr, attr_list[i]);
             for (j = 0; j < (int) strlen(iattr); j++)
-               if (!isalnum(iattr[j]))
+               /* replace special characters with "_", exclude any UTF-8 */
+               if (!isalnum(iattr[j]) && (iattr[j] < 128))
                   iattr[j] = '_';
             rsprintf("\t\t<%s>", iattr);
 
