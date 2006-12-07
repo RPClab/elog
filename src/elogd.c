@@ -16286,22 +16286,19 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
          if (strieq(list[index], loc("Date"))) {
             i = isparam("last") ? atoi(getparam("last")) : 0;
 
-            rsprintf("<input type=submit value=\"%s\">&nbsp;\n", loc("Show last"));
+            rsprintf("<select title=\"%s\" name=last onChange=\"document.form1.submit()\">\n", loc("Select period"));
 
-            rsprintf("<select name=last onChange=\"document.form1.submit()\">\n");
+            rsprintf("<option value=\"_all_\">-- %s --\n", loc("All entries"));
 
-            rsprintf("<option value=\"_all_\">%s\n", loc("All entries"));
-
-            rsprintf("<option %s value=1>%s\n", i == 1 ? "selected" : "", loc("Day"));
-            rsprintf("<option %s value=7>%s\n", i == 7 ? "selected" : "", loc("Week"));
-            rsprintf("<option %s value=31>%s\n", i == 31 ? "selected" : "", loc("Month"));
-            rsprintf("<option %s value=92>%s\n", i == 92 ? "selected" : "", loc("3 Months"));
-            rsprintf("<option %s value=182>%s\n", i == 182 ? "selected" : "", loc("6 Months"));
-            rsprintf("<option %s value=364>%s\n", i == 364 ? "selected" : "", loc("Year"));
+            rsprintf("<option %s value=1>%s\n", i == 1 ? "selected" : "", loc("Last day"));
+            rsprintf("<option %s value=7>%s\n", i == 7 ? "selected" : "", loc("Last week"));
+            rsprintf("<option %s value=31>%s\n", i == 31 ? "selected" : "", loc("Last month"));
+            rsprintf("<option %s value=92>%s\n", i == 92 ? "selected" : "", loc("Last 3 Months"));
+            rsprintf("<option %s value=182>%s\n", i == 182 ? "selected" : "", loc("Last 6 Months"));
+            rsprintf("<option %s value=364>%s\n", i == 364 ? "selected" : "", loc("Last Year"));
 
             rsprintf("</select>\n");
          } else {
-            rsprintf("<input type=submit value=\"%s:\">&nbsp;\n", list[index]);
 
             /* check if attribute has options */
             for (i = 0; i < MAX_N_ATTR; i++)
@@ -16346,14 +16343,18 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
                }
 
                else {
-                  rsprintf("<input type=text onChange=\"document.form1.submit()\"");
+                  sprintf(str, loc("Enter %s"), list[index]);
+                  rsprintf("<input onClick=\"this.value='';\" title=\"%s\" type=text onChange=\"document.form1.submit()\"", str);
+                  sprintf(str, "-- %s --", list[index]);
                   rsprintf(" name=\"%s\" value=\"%s\">\n", list[index],
-                           isparam(list[index]) ? getparam(list[index]) : "");
+                           isparam(list[index]) && *getparam(list[index]) ? getparam(list[index]) : str);
                }
             } else {
-               rsprintf("<select name=\"%s\" onChange=\"document.form1.submit()\">\n", list[index]);
 
-               rsprintf("<option value=\"_all_\">%s\n", loc("All entries"));
+               sprintf(str, loc("Select %s"), list[index]);
+               rsprintf("<select title=\"%s\" name=\"%s\" onChange=\"document.form1.submit()\">\n", str, list[index]);
+
+               rsprintf("<option value=\"_all_\">-- %s --\n", list[index]);
 
                if (i < MAX_N_ATTR) {
                   for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
@@ -16389,6 +16390,11 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
             }
          }
       }
+
+      /* show button if JavaScript is switched off */
+      rsprintf("<noscript>\n");
+      rsprintf("<input type=submit value=\"%s\">\n", loc("Search"));
+      rsprintf("</noscript>\n");
    }
 
    rsprintf("&nbsp;<b>%d %s</b>&nbsp;", n_msg, loc("Entries"));
@@ -16892,7 +16898,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
        str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH], mode[80], mid[80],
        menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH], format[80],
        sort_attr[MAX_N_ATTR + 4][NAME_LENGTH], mode_cookie[80], charset[25];
-   char *p, *pt, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
+   char *p, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
    BOOL show_attachments, threaded, csv, xml, raw, mode_commands, expand, filtering, disp_filter,
        show_text, text_in_attr, searched, found, disp_attr_link[MAX_N_ATTR + 4];
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2;
@@ -16993,18 +16999,31 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       redirect(lbs, str);
       return;
    }
-   if (strstr(_cmdline, "_all_")) {
-      strlcpy(str, _cmdline, sizeof(str));
-      while (strstr(str, "_all_")) {
-         p = strstr(str, "_all_");
-         pt = p + 5;
-         while (p > str && *p != '&')
-            p--;
-         strcpy(p, pt);
+
+   /* remove remaining "_all_" or empty or "--+<attrib>+--" parameters */
+   strlcpy(str, _cmdline, sizeof(str));
+   found = 0; 
+   for (i = 0; i < MAX_N_ATTR; i++) {
+      if (isparam(attr_list[i])) {
+         if (strieq(getparam(attr_list[i]), "_all_")) {
+            subst_param(str, sizeof(str), attr_list[i], "");
+            found = 1;
+         }
+         if (*getparam(attr_list[i]) == 0) {
+            subst_param(str, sizeof(str), attr_list[i], "");
+            found = 1;
+         }
+         sprintf(ref, "-- %s --", attr_list[i]);
+         if (strieq(getparam(attr_list[i]), ref)) {
+            subst_param(str, sizeof(str), attr_list[i], "");
+            found = 1;
+         }
       }
-      if (strchr(str, '&') && !strchr(str, '?'))
-         *strchr(str, '&') = '?';
+   }
+
+   if (found) {
       redirect(lbs, str);
+      return;
    }
 
    slist = xmalloc((MAX_N_ATTR + 10) * NAME_LENGTH);
@@ -17908,8 +17927,11 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
           || isparam("subtext");
 
       for (i = 0; i < lbs->n_attr; i++)
-         if (isparam(attr_list[i]) && (attr_flags[i] & (AF_DATE | AF_DATETIME)) == 0)
-            disp_filter = TRUE;
+         if (isparam(attr_list[i]) && (attr_flags[i] & (AF_DATE | AF_DATETIME)) == 0) {
+            strlcpy(str, getparam(attr_list[i]), sizeof(str));
+            if (str[0] && !strieq(str, "_all_") && strncmp(str, "--", 2) != 0)
+               disp_filter = TRUE;
+         }
 
       for (i = 0; i < lbs->n_attr; i++) {
          if (attr_flags[i] & (AF_DATE | AF_DATETIME)) {
@@ -18093,18 +18115,22 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                }
 
             } else if (isparam(attr_list[i])) {
-               comment[0] = 0;
-               if (attr_flags[i] & AF_ICON) {
-                  sprintf(str, "Icon comment %s", getparam(attr_list[i]));
-                  getcfg(lbs->name, str, comment, sizeof(comment));
+
+               strlcpy(str, getparam(attr_list[i]), sizeof(str));
+               if (str[0] && !strieq(str, "_all_") && strncmp(str, "--", 2) != 0) {
+                  comment[0] = 0;
+                  if (attr_flags[i] & AF_ICON) {
+                     sprintf(str, "Icon comment %s", getparam(attr_list[i]));
+                     getcfg(lbs->name, str, comment, sizeof(comment));
+                  }
+
+                  if (comment[0] == 0)
+                     strcpy(comment, getparam(attr_list[i]));
+
+                  rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", attr_list[i]);
+                  rsprintf("<td class=\"attribvalue\"><span style=\"color:black;background-color:#ffff66\">");
+                  rsprintf("%s</span></td></tr>", comment);
                }
-
-               if (comment[0] == 0)
-                  strcpy(comment, getparam(attr_list[i]));
-
-               rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", attr_list[i]);
-               rsprintf("<td class=\"attribvalue\"><span style=\"color:black;background-color:#ffff66\">");
-               rsprintf("%s</span></td></tr>", comment);
             }
          }
 
