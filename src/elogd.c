@@ -17021,6 +17021,18 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       }
    }
 
+   if (isparam("subtext")) {
+      if (*getparam("subtext") == 0) {
+         subst_param(str, sizeof(str), "subtext", "");
+         found = 1;
+      }
+      sprintf(ref, "-- %s --", "subtext");
+      if (strieq(getparam("subtext"), ref)) {
+         subst_param(str, sizeof(str), "subtext", "");
+         found = 1;
+      }
+   }
+
    if (found) {
       redirect(lbs, str);
       return;
