@@ -1,0 +1,180 @@
+#!/bin/sh
+
+# chkconfig: 3 90 10
+# description: ELOG is a weblog with integrated database
+# processname: elogd
+# config: /usr/local/gt-compile/elog/elogd.cfg
+# pidfile: /var/run/elogd.pid
+#
+# Changelog:
+# 2006-11-22: some modification for Solaris OS (Thier)
+
+###############################################################################
+# check OS
+case `uname -s` in
+   'SunOS')
+      # shell-built-in echo isn't nice
+      # use echo binary and don't do a nl
+      MY_ECHO ()
+      {
+         /usr/bin/echo "${*} \c"
+      }
+
+      # we have a great OS, but no function library ;-)
+      echo_failure ()
+      {
+         echo "... failed."
+      }
+
+      echo_success ()
+      {
+         echo "... OK."
+      }
+
+      touch_subsys ()
+      {
+         echo >/dev/null
+      }
+
+      rm_subsys()
+      {
+         echo >/dev/null
+      }
+      
+      ;;
+   *)
+      # default behaviour (e.g. Linux)
+
+      MY_ECHO="`which echo`"
+      # Source function library.
+      . /etc/rc.d/init.d/functions
+
+      touch_subsys ()
+      {
+         touch ${SUBSYSFILE}
+      }
+
+      rm_subsys ()
+      {
+         rm ${SUBSYSFILE}
+      }
+
+      ;;
+esac
+
+###############################################################################
+# special configuration
+
+# where the PIDFILE should go
+PIDFILE="/var/run/elogd.pid"
+
+# where the status file should go
+SUBSYSFILE="/var/lock/subsys/elogd"
+
+# PREFIX-directory
+# (e.g. elogd.cfg is supposed to be in
+#  ${PREFIX}/elog )
+PREFIX="/usr/local/gt-compile"
+
+# elogd configuration
+ELOGDCFG="${PREFIX}/elog/elogd.cfg"
+
+# elogd binary
+ELOGD="${PREFIX}/sbin/elogd"
+
+# elogd start cmd
+ELOGDSTART="${ELOGD} -D -c ${ELOGDCFG}"
+
+
+###############################################################################
+# MAIN
+
+# Check for the config file and the elogd
+if [ ! -f "${ELOGDCFG}" -o ! -f "${ELOGD}" ]; then
+    exit 0
+fi
+
+# SUB: check if elogd is running
+elogd_status ()
+# 0: not running
+# 1: running and PID-file OK
+{
+   if [ -f ${PIDFILE} ] ; then
+      pid=`cat ${PIDFILE}`
+      if [ -d /proc/${pid} ] ; then
+        return 1
+      else
+        return 0
+      fi
+   else
+      return 0
+   fi
+}
+
+
+# See how we were called.
+case "$1" in
+  start)
+     elogd_status
+     if [ ${?} -eq 1 ] ; then
+        MY_ECHO "elogd already running"
+        echo_failure
+        exit 1
+     else
+        # delete pid-file
+        rm -f ${PIDFILE} >/dev/null 2>&1
+     fi
+     MY_ECHO "Starting elogd: "
+
+     # let elog make the changeuser
+     ${ELOGDSTART} >/dev/null 2>&1
+
+     # successfull start?
+     elogd_status
+     if [ ${?} -eq 1 ] ; then
+        touch_subsys
+        echo_success
+     else
+        echo_failure
+     fi
+     echo
+     ;;
+  stop)
+     elogd_status
+     if [ ${?} -eq 1 ] ; then
+        MY_ECHO "Stoping elogd: "
+        /bin/kill `cat ${PIDFILE}` >/dev/null 2>&1
+        rm_subsys
+        rm -f ${PIDFILE} >/dev/null 2>&1
+        echo_success
+        echo
+        exit 0
+     else
+        MY_ECHO "No elogd running? \c"
+        echo_failure
+        echo
+        exit 1
+     fi
+   ;;
+  restart|reload)
+   $0 stop
+   sleep 1
+   $0 start
+   ;;
+  status)
+   elogd_status
+   if [ ${?} -eq 1 ] ; then
+      MY_ECHO "elogd running"
+      echo
+   else
+      MY_ECHO "elogd not running"
+      echo
+   fi
+   ;;
+  *)
+   echo "Usage: $0 {start|stop|restart|status}"
+   exit 1
+esac
+
+exit 0
+
