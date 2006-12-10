@@ -11929,11 +11929,15 @@ void show_config_page(LOGBOOK * lbs)
          /* check if user has access */
          if (!isparam("unm") || check_login_user(&lb_list[i], getparam("unm"))) {
 
-            if (email_notify[i])
-               rsprintf("<input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
-            else
-               rsprintf("<input type=checkbox id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
-            rsprintf("<label for=\"lb%d\">%s</label><br>\n", i, lb_list[i].name);
+            /* check if emails are enabled for this logbook */
+            if (!getcfg(lb_list[i].name, "Suppress email to users", str, sizeof(str)) ||
+               atoi(str) == 0) {
+               if (email_notify[i])
+                  rsprintf("<input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
+               else
+                  rsprintf("<input type=checkbox id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
+               rsprintf("<label for=\"lb%d\">%s</label><br>\n", i, lb_list[i].name);
+            }
          }
       }
    }
@@ -16325,7 +16329,8 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
                            loc("Last"), loc("Week"));
                   rsprintf("<option %s value=-1>%s %s\n", i == -1 ? "selected" : "", loc("Last"), loc("Day"));
 
-                  rsprintf("<option %s value=\"_all_\">%s\n", i == 0 ? "selected" : "", loc("All entries"));
+                  sprintf(str, "-- %s  --", list[index]);
+                  rsprintf("<option %s value=\"_all_\">%s\n", i == 0 ? "selected" : "", str);
 
                   rsprintf("<option %s value=1>%s %s\n", i == 1 ? "selected" : "", loc("Next"), loc("Day"));
                   rsprintf("<option %s value=7>%s %s\n", i == 7 ? "selected" : "", loc("Next"), loc("Week"));
@@ -17939,11 +17944,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
           || isparam("subtext");
 
       for (i = 0; i < lbs->n_attr; i++)
-         if (isparam(attr_list[i]) && (attr_flags[i] & (AF_DATE | AF_DATETIME)) == 0) {
-            strlcpy(str, getparam(attr_list[i]), sizeof(str));
-            if (str[0] && !strieq(str, "_all_") && strncmp(str, "--", 2) != 0)
-               disp_filter = TRUE;
-         }
+         if (isparam(attr_list[i]) && (attr_flags[i] & (AF_DATE | AF_DATETIME)) == 0)
+            disp_filter = TRUE;
 
       for (i = 0; i < lbs->n_attr; i++) {
          if (attr_flags[i] & (AF_DATE | AF_DATETIME)) {
