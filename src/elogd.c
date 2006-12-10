@@ -15791,11 +15791,15 @@ char *param_in_str(char *str, char *param)
 void subst_param(char *str, int size, char *param, char *value)
 {
    int len;
-   char *p1, *p2, *s;
+   char *p1, *p2, *s, param_enc[256];
+
+   strlcpy(param_enc, param, sizeof(param_enc));
+   url_encode(param_enc, sizeof(param_enc));
 
    if (!value[0]) {
+
       /* remove parameter */
-      s = param_in_str(str, param);
+      s = param_in_str(str, param_enc);
 
       if (s == NULL)
          return;
@@ -15803,7 +15807,7 @@ void subst_param(char *str, int size, char *param, char *value)
       /* remove parameter */
       p1 = s - 1;
 
-      for (p2 = p1 + strlen(param) + 1; *p2 && *p2 != '&'; p2++);
+      for (p2 = p1 + strlen(param_enc) + 1; *p2 && *p2 != '&'; p2++);
       strlcpy(p1, p2, size - (p1 - str));
 
       if (!strchr(str, '?') && strchr(str, '&'))
@@ -15812,19 +15816,19 @@ void subst_param(char *str, int size, char *param, char *value)
       return;
    }
 
-   if ((p1 = param_in_str(str, param)) == NULL) {
+   if ((p1 = param_in_str(str, param_enc)) == NULL) {
       if (strchr(str, '?'))
          strlcat(str, "&", size);
       else
          strlcat(str, "?", size);
 
-      strlcat(str, param, size);
+      strlcat(str, param_enc, size);
       strlcat(str, "=", size);
       strlcat(str, value, size);
       return;
    }
 
-   p1 += strlen(param) + 1;
+   p1 += strlen(param_enc) + 1;
    for (p2 = p1; *p2 && *p2 != '&'; p2++);
    len = p2 - p1;
    if (len > (int) strlen(value)) {
