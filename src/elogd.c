@@ -9388,11 +9388,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                year = month = day = 0;
                if (attrib[index][0]) {
                   ltime = atoi(attrib[index]);
-                  pts = localtime(&ltime);
-                  assert(pts);
-                  year = pts->tm_year + 1900;
-                  month = pts->tm_mon + 1;
-                  day = pts->tm_mday;
+                  if (ltime > 0) {
+                     pts = localtime(&ltime);
+                     assert(pts);
+                     year = pts->tm_year + 1900;
+                     month = pts->tm_mon + 1;
+                     day = pts->tm_mday;
+                  }
                }
 
                rsprintf("<td%s class=\"attribvalue\">", title);
