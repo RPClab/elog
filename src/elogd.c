@@ -15763,6 +15763,16 @@ int msg_compare_reverse(const void *m1, const void *m2)
    return strcoll(((MSG_LIST *) m2)->string, ((MSG_LIST *) m1)->string);
 }
 
+int msg_compare_numeric(const void *m1, const void *m2)
+{
+   return atoi(((MSG_LIST *) m1)->string) - atoi(((MSG_LIST *) m2)->string);
+}
+
+int msg_compare_reverse_numeric(const void *m1, const void *m2)
+{
+   return atoi(((MSG_LIST *) m2)->string) - atoi(((MSG_LIST *) m1)->string);
+}
+
 /*------------------------------------------------------------------*/
 
 char *param_in_str(char *str, char *param)
@@ -16901,8 +16911,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 {
    int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line, flags,
        current_year, current_month, current_day, printable, n_logbook,
-       n_display, reverse, n_attr_disp, total_n_msg, n_msg, search_all, message_id,
-       n_page, i_start, i_stop, in_reply_to_id, page_mid, page_mid_head;
+       n_display, reverse, numeric, n_attr_disp, total_n_msg, n_msg, search_all, 
+       message_id, n_page, i_start, i_stop, in_reply_to_id, page_mid, page_mid_head;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH],
        *list, *text, *text1, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
@@ -17407,6 +17417,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       }
    }
 
+   numeric = FALSE;
+
    /* do filtering */
    for (index = 0; index < n_msg; index++) {
       if (!msg_list[index].lbs)
@@ -17633,6 +17645,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          if ((isparam("sort") && strieq(getparam("sort"), attr_list[i]))
              || (isparam("rsort") && strieq(getparam("rsort"), attr_list[i]))) {
             strlcpy(msg_list[index].string, attrib[i], 256);
+            if (attr_flags[i] | AF_NUMERIC)
+               numeric = TRUE;
          }
 
          if ((isparam("sort") && strieq(getparam("sort"), loc("ID")))
@@ -17673,7 +17687,10 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
    /*---- sort messasges ----*/
 
-   qsort(msg_list, n_msg, sizeof(MSG_LIST), reverse ? msg_compare_reverse : msg_compare);
+   if (numeric)
+      qsort(msg_list, n_msg, sizeof(MSG_LIST), reverse ? msg_compare_reverse_numeric : msg_compare_numeric);
+   else
+      qsort(msg_list, n_msg, sizeof(MSG_LIST), reverse ? msg_compare_reverse : msg_compare);
 
    /*---- search page for specific message ----*/
 
