@@ -406,10 +406,8 @@ insert heading = inserte encabezado
 User name may not contain blanks =  El nombre de usuario no puede
 Empty password not allowed = No se permite clave vacía
 Password may not contain blanks = La clave no puede contener espacios en blancos
-#
-#---- please translate following items and then remove this comment ----#
-#
-Anonymous = 
-Activation notice has been sent to %s = 
-Your request has been forwarded to the administrator = 
-You will be notified by email upon activation of your new account = 
+Anonymous = Anonimo
+Activation notice has been sent to %s = Notificacion de activacion enviada a %s
+Your request has been forwarded to the administrator = Su solicitud fue enviada al administrador
+You will be notified by email upon activation of your new account = Sera notificado por email cuando su cuenta sea activada
+
