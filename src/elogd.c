@@ -16043,7 +16043,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
    strlcat(other_str, "Cancel, First, Last, Previous, Next, Requested, Forgot, ", sizeof(other_str));
 
    /* only allow Submit & Co if "New" is allowed */
-   if (strstr(menu_str, "New"))
+   if (stristr(menu_str, "New"))
       strlcat(other_str, "Update, Upload, Submit, Save, ", sizeof(other_str));
 
    /* add save for new user registration */
@@ -16058,15 +16058,15 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
    }
 
    /* allow import if CSV import is present */
-   if (strstr(menu_str, loc("CSV Import")))
+   if (stristr(menu_str, loc("CSV Import")))
       strcat(other_str, "Import, ");
 
    /* allow change password if "config" possible */
-   if (strieq(command, loc("Change password")) && strstr(menu_str, "Config")) {
+   if (strieq(command, loc("Change password")) && stristr(menu_str, "Config")) {
       return TRUE;
    }
    /* exclude non-localized submit for elog */
-   else if (command[0] && strieq(command, "Submit") && strstr(menu_str, "New")) {
+   else if (command[0] && strieq(command, "Submit") && stristr(menu_str, "New")) {
       return TRUE;
    }
    /* exclude other non-localized commands */
