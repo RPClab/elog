@@ -19550,7 +19550,7 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
 void submit_elog(LOGBOOK * lbs)
 {
    char str[NAME_LENGTH], str2[NAME_LENGTH], file_name[256], error[1000], date[80],
-       mail_list[MAX_N_LIST][NAME_LENGTH], list[10000], *p,
+       mail_list[200][NAME_LENGTH], list[10000], *p,
        attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[MAX_PATH_LENGTH],
        in_reply_to[80], reply_to[MAX_REPLY_TO * 10], user[256], user_email[256],
        mail_param[1000], *mail_to, *rcpt_to, full_name[256], att_file[MAX_ATTACHMENTS][256],
@@ -20030,7 +20030,7 @@ void submit_elog(LOGBOOK * lbs)
             i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
             strsubst_list(list, sizeof(list), slist, svalue, i);
 
-            n = strbreak(list, mail_list, MAX_N_LIST, ",");
+            n = strbreak(list, mail_list, 200, ",");
 
             if (verbose)
                eprintf("\n%s to %s\n\n", str, list);
