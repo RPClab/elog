@@ -540,7 +540,21 @@ Admin user = bill
         A given theme can contain several Cascading Style Sheets (CSS). This
         can be usefule if several logbooks use the same images and icons, but
         differnt colors. By default, the CSS <i>default.css</i> is used. This
-        can be overwritten by this statement.
+        can be overwritten by this statement. If different CSS'es should be used
+        for different output media, this can be accomplished with a comma-
+        separated list in the form 
+        <code><b>CSS = &lt;file1&gt;&amp;&lt;media1&gt;,&lt;file2&gt;&amp;&lt;media2&gt;</b></code>. This will then be translated into separate style sheet
+        statements for the different media. For example a statement
+        
+        <code><b>CSS = default.css&amp;screen,print.css&amp;print</b></code>
+        
+        will result in the HTML statements:
+        
+        <pre>
+  &lt;link rel="stylesheet" type="text/css" href="default.css" media="screen"&gt;
+  &lt;link rel="stylesheet" type="text/css" href="print.css" media="print"&gt;
+        </pre>
+         
       </li>
       <li>
         <b><code>Title image = &lt;string&gt;</code></b><br>

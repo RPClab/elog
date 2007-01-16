@@ -6872,7 +6872,9 @@ void show_plain_header(int size, char *file_name)
 void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head, BOOL rss_feed, char *cookie,
                       int absolute_link)
 {
-   char css[256], str[256];
+   int  i, n;
+   char css[1000], str[1000], media[1000];
+   char css_list[MAX_N_LIST][NAME_LENGTH];
 
    show_http_header(lbs, expires, cookie);
 
@@ -6897,7 +6899,18 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
    else
       strlcat(css, "default.css", sizeof(css));
 
-   rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">\n", css);
+   if (strchr(css, ',')) {
+         n = strbreak(css, css_list, MAX_N_LIST, ",");
+         for (i=0 ; i<n ; i++) {
+            strlcpy(str, css_list[i], sizeof(str));
+            if (strchr(str, '&')) {
+               strlcpy(media, strchr(str, '&')+1, sizeof(media));
+               *strchr(str, '&') = 0;
+               rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\" media=\"%s\">\n", str, media);
+            }
+         }
+   } else
+      rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">\n", css);
    rsprintf("<link rel=\"shortcut icon\" href=\"favicon.ico\">\n");
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\">\n");
 
