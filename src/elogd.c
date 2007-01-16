@@ -20040,14 +20040,14 @@ void submit_elog(LOGBOOK * lbs)
                if ((p = strstr(mail_list[i], "mailto:")) != NULL)
                   strcpy(p, p + 7);
 
-               if ((int) strlen(mail_to) + (int) strlen(mail_list[i]) >= mail_to_size) {
+               if ((int) strlen(mail_to) + (int) strlen(mail_list[i]) + 10 >= mail_to_size) {
                   mail_to_size += 256;
                   mail_to = xrealloc(mail_to, mail_to_size);
                }
                strcat(mail_to, mail_list[i]);
                strcat(mail_to, ",");
 
-               if ((int) strlen(rcpt_to) + (int) strlen(mail_list[i]) >= rcpt_to_size) {
+               if ((int) strlen(rcpt_to) + (int) strlen(mail_list[i]) + 10 >= rcpt_to_size) {
                   rcpt_to_size += 256;
                   rcpt_to = xrealloc(rcpt_to, rcpt_to_size);
                }
