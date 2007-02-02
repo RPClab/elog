@@ -5667,6 +5667,10 @@ PATTERN_LIST pattern_list[] = {
    {"[code]", "<pre>"},
    {"[/code]\r\n", "</pre>"},
    {"[/code]", "</pre>"},
+   {"\r\n[code1]", "<pre>"},
+   {"[code1]", "<pre>"},
+   {"[/code1]\r\n", "</pre>"},
+   {"[/code1]", "</pre>"},
 
    /* lists */
    {"[list]\r", "<ul>"},
@@ -5709,7 +5713,8 @@ char *email_quote_table =
 
 void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 {
-   int i, j, k, l, m, interprete_elcode, escape_char, ordered_list;
+   int i, j, k, l, m, elcode_disabled, elcode_disabled1, escape_char, ordered_list,
+       substituted;
    char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[1000], hattrib[1000],
        value[1000], subst[1000], base_url[256], param[256], *lstr;
 
@@ -5719,7 +5724,8 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
       return_buffer_size += 100000;
    }
 
-   interprete_elcode = TRUE;
+   elcode_disabled = FALSE;
+   elcode_disabled1 = FALSE;
    ordered_list = FALSE;
    escape_char = FALSE;
    j = strlen_retbuf;
@@ -5732,6 +5738,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
    *pd = 0;
 
    for (i = 0; i < (int) strlen(str); i++) {
+
       for (l = 0; key_list[l][0]; l++) {
          if (strncmp(lstr + i, key_list[l], strlen(key_list[l])) == 0) {
 
@@ -5838,11 +5845,15 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
       if (key_list[l][0])
          continue;
 
+      substituted = FALSE;
+
       for (l = 0; pattern_list[l].pattern[0]; l++) {
          if (strncmp(lstr + i, pattern_list[l].pattern, strlen(pattern_list[l].pattern)) == 0) {
 
             if (stristr(pattern_list[l].pattern, "[/code]"))
-               interprete_elcode = TRUE;
+               elcode_disabled = FALSE;
+            if (stristr(pattern_list[l].pattern, "[/code1]"))
+               elcode_disabled1 = FALSE;
 
             /* check for escape character */
             if (i > 0 && str[i - 1] == '\\') {
@@ -5851,11 +5862,14 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                strcpy(return_buffer + j, pattern_list[l].pattern);
                j += strlen(pattern_list[l].pattern);
                i += strlen(pattern_list[l].pattern) - 1;        // 1 gets added in for loop...
+               substituted = TRUE;
 
                break;
             }
 
-            if (interprete_elcode) {
+            if (!elcode_disabled && !elcode_disabled1) {
+
+               substituted = TRUE;
 
                if (stristr(pattern_list[l].pattern, "[list="))
                   ordered_list = TRUE;
@@ -6011,15 +6025,39 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                   j += strlen(link);
                   i += strlen(pattern_list[l].pattern) - 1;     // 1 gets added in for loop...
                }
-            }                   // interprete_elcode
+            } // !elcode_disabled && !elcode_disabled1
+
+            else if (!elcode_disabled) {
+               
+               substituted = TRUE;
+               
+               /* simple substitution */
+               strcpy(link, pattern_list[l].subst);
+               if (strstr(link, "%s")) {
+                  strcpy(tmp, link);
+                  if (email_notify)
+                     compose_base_url(lbs, base_url, sizeof(base_url));
+                  else
+                     base_url[0] = 0;
+                  sprintf(link, tmp, base_url);
+               }
+
+               strcpy(return_buffer + j, link);
+               j += strlen(link);
+               i += strlen(pattern_list[l].pattern) - 1;     // 1 gets added in for loop...
+            }
 
             if (stristr(pattern_list[l].pattern, "[code]"))
-               interprete_elcode = FALSE;
+               elcode_disabled = TRUE;
+            if (stristr(pattern_list[l].pattern, "[code1]"))
+               elcode_disabled1 = TRUE;
 
             break;
          }
       }
-      if ((interprete_elcode && pattern_list[l].pattern[0]) || stristr(pattern_list[l].pattern, "[code]"))
+
+      /* don't output tags if already subsituted by HTML code */
+      if (substituted)
          continue;
 
       if (strnieq(str + i, "<br>", 4)) {
@@ -6029,7 +6067,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
       } else
          switch (str[i]) {
          case '\r':
-            if (interprete_elcode) {
+            if (!elcode_disabled && !elcode_disabled1) {
                strcat(return_buffer, "<br />\r\n");
                j += 8;
             } else {
