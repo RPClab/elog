@@ -22803,7 +22803,7 @@ void interprete(char *lbook, char *path)
 {
    int status, i, j, n, index, lb_index, message_id;
    char exp[80], list[1000], section[256], str[NAME_LENGTH], str2[NAME_LENGTH], edit_id[80],
-       enc_pwd[80], file_name[256], command[256], ref[256], enc_path[256], dec_path[256], uname[80],
+       enc_pwd[80], file_name[256], command[256], enc_path[256], dec_path[256], uname[80],
        logbook[256], logbook_enc[256], *experiment, group[256], css[256], *pfile, attachment[MAX_PATH_LENGTH],
        full_name[256];
    BOOL global;
@@ -23344,12 +23344,26 @@ void interprete(char *lbook, char *path)
 
    if (strieq(command, loc("Help"))) {
       if (getcfg(lbs->name, "Help URL", str, sizeof(str))) {
-         /* if file is given, add '/' to make absolute path */
-         if (strchr(str, '/') == NULL)
-            sprintf(ref, "/%s", str);
-         else
-            strcpy(ref, str);
-         redirect(lbs, ref);
+         
+         /* if URL is given, redirect */
+         if (strstr(str, "http://")) {
+            redirect(lbs, str);
+            return;
+         }
+
+         /* send file from resource directory */
+         strlcpy(file_name, resource_dir, sizeof(file_name));
+         strlcat(file_name, "resources", sizeof(file_name));
+         strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+         strlcat(file_name, str, sizeof(file_name));
+         f = fopen(file_name, "r");
+         if (f == NULL) {
+            sprintf(str, "Cannot find file \"%s\"", file_name);
+            show_error(str);
+         } else {
+            fclose(f);
+            send_file_direct(file_name);
+         }
          return;
       }
 
