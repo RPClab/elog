@@ -9667,7 +9667,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      if (strchr(str, '{'))
                         *strchr(str, '{') = 0;
 
-                     rsprintf("<span style=\"white-space:nowrap;\">\n");
+                     /* display check box with optional tooltip */
+                     sprintf(str, "Tooltip %s", attr_options[index][i]);
+                     tooltip[0] = 0;
+                     if (getcfg(lbs->name, str, comment, sizeof(comment)))
+                        sprintf(tooltip, " title=\"%s\"", comment);
+
+                     rsprintf("<span%s style=\"white-space:nowrap;\">\n", tooltip);
 
                      if (strstr(attrib[index], attr_options[index][i])
                          || strieq(str, attrib[index]))
