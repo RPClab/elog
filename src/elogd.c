@@ -11471,11 +11471,14 @@ int save_config(char *buffer, char *error)
 
 int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 {
-   char file_name[256], str[256], *pl, new_pwd[80], new_pwd2[80], smtp_host[256],
+   char file_name[256], str[256], *pl, user_enc[256], new_pwd[80], new_pwd2[80], smtp_host[256],
        email_addr[256], mail_from[256], mail_from_name[256], subject[256], mail_text[2000];
    char admin_user[80], enc_pwd[80], url[256], error[2000];
    int i, self_register;
    PMXML_NODE node, subnode;
+
+   /* do not allow HTML in user name */
+   strencode2(user_enc, user, sizeof(user_enc));
 
    /* check for user name */
    if (!isparam("new_user_name") || *getparam("new_user_name") == 0) {
@@ -11539,8 +11542,8 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 
       /* check if user exists */
       if (new_user && self_register == 3) {
-         if (get_user_line(lbs, user, NULL, NULL, NULL, NULL, NULL) == 1) {
-            sprintf(str, "%s \"%s\" %s", loc("Login name"), user, loc("exists already"));
+         if (get_user_line(lbs, user_enc, NULL, NULL, NULL, NULL, NULL) == 1) {
+            sprintf(str, "%s \"%s\" %s", loc("Login name"), user_enc, loc("exists already"));
             show_error(str);
             return 0;
          }
@@ -11574,11 +11577,11 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
       if (lbs->pwd_xml_tree == NULL)
          return 0;
 
-      sprintf(str, "/list/user[name=%s]", user);
+      sprintf(str, "/list/user[name=%s]", user_enc);
       node = mxml_find_node(lbs->pwd_xml_tree, str);
 
       if (node && new_user) {
-         sprintf(str, "%s \"%s\" %s", loc("Login name"), user, loc("exists already"));
+         sprintf(str, "%s \"%s\" %s", loc("Login name"), user_enc, loc("exists already"));
          show_error(str);
          return 0;
       }
@@ -11587,16 +11590,20 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
          node = mxml_find_node(lbs->pwd_xml_tree, "/list");
          node = mxml_add_node(node, "user", NULL);
 
-         if (isparam("new_user_name"))
-            mxml_add_node(node, "name", getparam("new_user_name"));
+         if (isparam("new_user_name")) {
+            strencode2(str, getparam("new_user_name"), sizeof(str));
+            mxml_add_node(node, "name", str);
+         }
          if (activate) {
             if (isparam("encpwd"))
                mxml_add_node(node, "password", getparam("encpwd"));
          } else
             mxml_add_node(node, "password", new_pwd);
 
-         if (isparam("new_full_name"))
-            mxml_add_node(node, "full_name", getparam("new_full_name"));
+         if (isparam("new_full_name")) {
+            strencode2(str, getparam("new_full_name"), sizeof(str));
+            mxml_add_node(node, "full_name", str);
+         }
          mxml_add_node(node, "last_logout", "0");
          mxml_add_node(node, "last_activity", "0");
          if (isparam("new_user_email"))
@@ -11604,11 +11611,15 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 
       } else {
          /* replace record */
-         if (isparam("new_user_name"))
-            mxml_replace_subvalue(node, "name", getparam("new_user_name"));
+         if (isparam("new_user_name")) {
+            strencode2(str, getparam("new_user_name"), sizeof(str));
+            mxml_replace_subvalue(node, "name", str);
+         }
          mxml_replace_subvalue(node, "password", new_pwd);
-         if (isparam("new_full_name"))
-            mxml_replace_subvalue(node, "full_name", getparam("new_full_name"));
+         if (isparam("new_full_name")) {
+            strencode2(str, getparam("new_full_name"), sizeof(str));
+            mxml_replace_subvalue(node, "full_name", str);
+         }
          if (isparam("new_user_email"))
             mxml_replace_subvalue(node, "email", getparam("new_user_email"));
       }
@@ -11795,7 +11806,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 
    /* if user name changed, set cookie */
    if (isparam("new_user_name") && isparam("unm")) {
-      if (strcmp(user, getparam("new_user_name")) != 0 && strcmp(user, getparam("unm")) == 0) {
+      if (strcmp(user_enc, getparam("new_user_name")) != 0 && strcmp(user_enc, getparam("unm")) == 0) {
          set_login_cookies(lbs, getparam("new_user_name"), new_pwd);
          return 0;
       }
@@ -18220,7 +18231,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   }
 
                   if (comment[0] == 0)
-                     strcpy(comment, getparam(attr_list[i]));
+                     strencode2(comment, getparam(attr_list[i]), sizeof(comment));
 
                   rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", attr_list[i]);
                   rsprintf("<td class=\"attribvalue\"><span style=\"color:black;background-color:#ffff66\">");
@@ -18232,7 +18243,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          if (isparam("subtext")) {
             rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Text"));
             rsprintf("<td class=\"attribvalue\"><span style=\"color:black;background-color:#ffff66\">");
-            rsprintf("%s</span></td></tr>", getparam("subtext"));
+            strencode2(str, getparam("subtext"), sizeof(str));
+            rsprintf("%s</span></td></tr>", str);
          }
 
          rsprintf("</table></td></tr>\n\n");
