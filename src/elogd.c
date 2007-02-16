@@ -9664,10 +9664,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   rsprintf("<td%s class=\"attribvalue\">\n", title);
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
-                     strlcpy(str, attr_options[index][i], sizeof(str));
-                     if (strchr(str, '{'))
-                        *strchr(str, '{') = 0;
-
                      /* display check box with optional tooltip */
                      sprintf(str, "Tooltip %s", attr_options[index][i]);
                      tooltip[0] = 0;
@@ -9675,6 +9671,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         sprintf(tooltip, " title=\"%s\"", comment);
 
                      rsprintf("<span%s style=\"white-space:nowrap;\">\n", tooltip);
+
+                     strencode2(str, attr_options[index][i], sizeof(str));
+                     if (strchr(str, '{'))
+                        *strchr(str, '{') = 0;
 
                      if (strstr(attrib[index], attr_options[index][i])
                          || strieq(str, attrib[index]))
@@ -19421,7 +19421,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
 int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue, char *condition)
 {
    int fh, i, length;
-   char str[NAME_LENGTH], *buf, *buf2, *p1, *p2, *p3;
+   char str[NAME_LENGTH], av_encoded[NAME_LENGTH], *buf, *buf2, *p1, *p2, *p3;
 
    fh = open(config_file, O_RDWR | O_BINARY, 0644);
    if (fh < 0) {
@@ -19432,10 +19432,13 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue, char *c
       return 0;
    }
 
+   /* do not allow HTML code in value */
+   strencode2(av_encoded, attrvalue, sizeof(av_encoded));
+   
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   buf = xmalloc(length + strlen(attrvalue) + 3);
+   buf = xmalloc(length + strlen(av_encoded) + 3);
    read(fh, buf, length);
    buf[length] = 0;
 
@@ -19474,9 +19477,9 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue, char *c
    while (*(p3 - 1) == '\n' || *(p3 - 1) == '\r' || *(p3 - 1) == ' ' || *(p3 - 1) == '\t')
       p3--;
 
-   sprintf(p3, ", %s", attrvalue);
+   sprintf(p3, ", %s", av_encoded);
    if (p2) {
-      strlcat(buf, buf2, length + strlen(attrvalue) + 3);
+      strlcat(buf, buf2, length + strlen(av_encoded) + 3);
       xfree(buf2);
    }
 
