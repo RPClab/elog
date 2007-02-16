@@ -2057,6 +2057,9 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
         <b><code>Use Email From = &lt;string&gt;</code></b>
       </li>
       <li>
+        <b><code>Default Email From = &lt;string&gt;</code></b>
+      </li>
+      <li>
         <b><code>Use Email Heading = &lt;string&gt;</code></b>
       </li>
       <li>
@@ -2115,11 +2118,12 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
       for the "<i>From:</i>" field in the email. Since more and more email
       servers do not accept invalid <i>"From:"</i> addresses in order to reduce
       spam mail, it might be important that a "real" email address is used in
-      the <i>"From:"</i> field. By default, the email address of the currently
+      the <i>"From:"</i> field. If  <b><code>Use Email From</code></b> is
+      present, it is always used. If not, the email address of the currently
       logged in user is used for the <i>"From:"</i> field. If no user is logged
       in, or the current user has not specified a email address in the password
-      database, the setting of the option <b><code>Use Email From</code></b> is
-      used for the "<i>From:</i>" field. Only if this option is not specified,
+      database, the setting of the option <b><code>Default Email From</code></b> 
+      is used for the "<i>From:</i>" field. Only if this option is not specified,
       a generic address <i>ELOG@&lt;hostname&gt;</i> is used, which might be
       rejected by the SMTP server however.
     </p>
