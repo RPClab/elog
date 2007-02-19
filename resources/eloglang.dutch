@@ -1,6 +1,6 @@
 #
 # Dutch translation by djek@xs4all.nl
-# 28-11-2006
+# 19-02-2007
 # A more recent version may be available at :
 # http://savannah.psi.ch/websvn/listing.php?repname=elog&path=%2Ftrunk%2Fresources%2F
 #
@@ -401,7 +401,7 @@ Please specify a valid email address = Geef een geldig emailadres op
 Cannot send email notification to "%s" = Kan geen email melding sturen naar "%s"
 text = tekst
 From = Van
-Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = Fout: Commando "<b>%s</b>" is niet toegestaan voor gebruiker "<b>%s</b>" 
+Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = Fout: Commando "<b>%s</b>" is niet toegestaan voor gebruiker "<b>%s</b>"
 Shell execution not enabled via -x flag = Shell uitvoering niet aangezet met -x flag
 Enter heading level (1, 2 or 3) = Start bij kopniveau (1, 2 of 3)
 insert heading = koppen toevoegen
@@ -412,15 +412,11 @@ Anonymous = Anoniem
 Activation notice has been sent to %s = Activeringsbericht is gestuurd naar %s
 Your request has been forwarded to the administrator = Uw verzoek is doorgestuurd naar de beheerder
 You will be notified by email upon activation of your new account = U krijgt via email een bericht als uw account is geactiveerd.
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Select period = 
-Last week = 
-Last month = 
-Last 3 Months = 
-Last 6 Months = 
-Last Year = 
-Enter %s = 
-Select %s = 
+Select period = Selecteer periode
+Last week = Afgelopen week
+Last month = Afgelopen maand
+Last 3 Months = Afgelopen 3 maanden
+Last 6 Months = Afgelopen 6 maanden
+Last Year = Afgelopen jaar
+Enter %s = %s invoeren
+Select %s = Selecteer %s
