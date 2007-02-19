@@ -19,6 +19,7 @@ On PC5082:
 
 - svn update
 - Increase version in elog.spec
+- klog ritt
 - ./build x.x.x 1
 
 Declare new version at freshmeat.
