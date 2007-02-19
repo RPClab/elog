@@ -99,7 +99,8 @@
 				ProgramDataBaseFileName=".\Release/"
 				BrowseInformation="1"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"/>
+				SuppressStartupBanner="TRUE"
+				DebugInformationFormat="3"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
@@ -108,9 +109,10 @@
 				OutputFile=".\Release/elogd.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
+				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\Release/elogd.pdb"
 				SubSystem="1"
-				StackReserveSize="1048576"
+				StackReserveSize="4000000"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"

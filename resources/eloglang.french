@@ -410,3 +410,15 @@ Anonymous = Anonyme
 Activation notice has been sent to %s = L'avis d'activation a été envoyé à %s
 Your request has been forwarded to the administrator = Votre demande a été transmise à l'administrateur
 You will be notified by email upon activation of your new account = Vous serez averti(e) par courriel de l'activation de votre nouveau compte
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Select period = 
+Last week = 
+Last month = 
+Last 3 Months = 
+Last 6 Months = 
+Last Year = 
+Enter %s = 
+Select %s = 

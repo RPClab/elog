@@ -411,3 +411,15 @@ Activation notice has been sent to %s = Notificacion de activacion enviada a %s
 Your request has been forwarded to the administrator = Su solicitud fue enviada al administrador
 You will be notified by email upon activation of your new account = Sera notificado por email cuando su cuenta sea activada
 
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Select period = 
+Last week = 
+Last month = 
+Last 3 Months = 
+Last 6 Months = 
+Last Year = 
+Enter %s = 
+Select %s = 

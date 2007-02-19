@@ -131,7 +131,6 @@ Display = Zobraz
 entries per page = položek na stránku
 Toggle all = Odeber vše
 Selected entries = Označené položky
-Enable email notifications = Povol oznámení příchodu Emailu
 A old entry has been updated on %s = Položka %s byla obnovena
 Collapse = Sbalit
 Expand = Rozbalit
@@ -411,3 +410,15 @@ Activation notice has been sent to %s = Oznámení o aktivaci bylo zasláno na %
 Your request has been forwarded to the administrator = Váš požadavek byl odeslán na administrátora
 You will be notified by email upon activation of your new account = O aktivaci vašeho nového účtu budete informován emailem
  
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Select period = 
+Last week = 
+Last month = 
+Last 3 Months = 
+Last 6 Months = 
+Last Year = 
+Enter %s = 
+Select %s = 

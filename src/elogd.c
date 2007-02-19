@@ -10,7 +10,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.6.3"
+#define VERSION "2.6.4"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -5714,8 +5714,7 @@ char *email_quote_table =
 
 void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 {
-   int i, j, k, l, m, elcode_disabled, elcode_disabled1, escape_char, ordered_list,
-       substituted;
+   int i, j, k, l, m, elcode_disabled, elcode_disabled1, escape_char, ordered_list, substituted;
    char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[1000], hattrib[1000],
        value[1000], subst[1000], base_url[256], param[256], *lstr;
 
@@ -6026,12 +6025,12 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                   j += strlen(link);
                   i += strlen(pattern_list[l].pattern) - 1;     // 1 gets added in for loop...
                }
-            } // !elcode_disabled && !elcode_disabled1
+            }                   // !elcode_disabled && !elcode_disabled1
 
             else if (!elcode_disabled) {
-               
+
                substituted = TRUE;
-               
+
                /* simple substitution */
                strcpy(link, pattern_list[l].subst);
                if (strstr(link, "%s")) {
@@ -6045,7 +6044,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 
                strcpy(return_buffer + j, link);
                j += strlen(link);
-               i += strlen(pattern_list[l].pattern) - 1;     // 1 gets added in for loop...
+               i += strlen(pattern_list[l].pattern) - 1;        // 1 gets added in for loop...
             }
 
             if (stristr(pattern_list[l].pattern, "[code]"))
@@ -6911,7 +6910,7 @@ void show_plain_header(int size, char *file_name)
 void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head, BOOL rss_feed, char *cookie,
                       int absolute_link)
 {
-   int  i, n;
+   int i, n;
    char css[1000], str[1000], media[1000];
    char css_list[MAX_N_LIST][NAME_LENGTH];
 
@@ -6939,15 +6938,15 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
       strlcat(css, "default.css", sizeof(css));
 
    if (strchr(css, ',')) {
-         n = strbreak(css, css_list, MAX_N_LIST, ",");
-         for (i=0 ; i<n ; i++) {
-            strlcpy(str, css_list[i], sizeof(str));
-            if (strchr(str, '&')) {
-               strlcpy(media, strchr(str, '&')+1, sizeof(media));
-               *strchr(str, '&') = 0;
-               rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\" media=\"%s\">\n", str, media);
-            }
+      n = strbreak(css, css_list, MAX_N_LIST, ",");
+      for (i = 0; i < n; i++) {
+         strlcpy(str, css_list[i], sizeof(str));
+         if (strchr(str, '&')) {
+            strlcpy(media, strchr(str, '&') + 1, sizeof(media));
+            *strchr(str, '&') = 0;
+            rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\" media=\"%s\">\n", str, media);
          }
+      }
    } else
       rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">\n", css);
    rsprintf("<link rel=\"shortcut icon\" href=\"favicon.ico\">\n");
@@ -12000,8 +11999,7 @@ void show_config_page(LOGBOOK * lbs)
          if (!isparam("unm") || check_login_user(&lb_list[i], getparam("unm"))) {
 
             /* check if emails are enabled for this logbook */
-            if (!getcfg(lb_list[i].name, "Suppress email to users", str, sizeof(str)) ||
-               atoi(str) == 0) {
+            if (!getcfg(lb_list[i].name, "Suppress email to users", str, sizeof(str)) || atoi(str) == 0) {
                if (email_notify[i])
                   rsprintf("<input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
                else
@@ -16374,7 +16372,8 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
          if (strieq(list[index], loc("Date"))) {
             i = isparam("last") ? atoi(getparam("last")) : 0;
 
-            rsprintf("<select title=\"%s\" name=last onChange=\"document.form1.submit()\">\n", loc("Select period"));
+            rsprintf("<select title=\"%s\" name=last onChange=\"document.form1.submit()\">\n",
+                     loc("Select period"));
 
             rsprintf("<option value=\"_all_\">-- %s --\n", loc("All entries"));
 
@@ -16433,7 +16432,9 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
 
                else {
                   sprintf(str, loc("Enter %s"), list[index]);
-                  rsprintf("<input onClick=\"this.value='';\" title=\"%s\" type=text onChange=\"document.form1.submit()\"", str);
+                  rsprintf
+                      ("<input onClick=\"this.value='';\" title=\"%s\" type=text onChange=\"document.form1.submit()\"",
+                       str);
                   sprintf(str, "-- %s --", list[index]);
                   rsprintf(" name=\"%s\" value=\"%s\">\n", list[index],
                            isparam(list[index]) && *getparam(list[index]) ? getparam(list[index]) : str);
@@ -16441,7 +16442,8 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
             } else {
 
                sprintf(str, loc("Select %s"), list[index]);
-               rsprintf("<select title=\"%s\" name=\"%s\" onChange=\"document.form1.submit()\">\n", str, list[index]);
+               rsprintf("<select title=\"%s\" name=\"%s\" onChange=\"document.form1.submit()\">\n", str,
+                        list[index]);
 
                rsprintf("<option value=\"_all_\">-- %s --\n", list[index]);
 
@@ -16979,7 +16981,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 {
    int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line, flags,
        current_year, current_month, current_day, printable, n_logbook,
-       n_display, reverse, numeric, n_attr_disp, total_n_msg, n_msg, search_all, 
+       n_display, reverse, numeric, n_attr_disp, total_n_msg, n_msg, search_all,
        message_id, n_page, i_start, i_stop, in_reply_to_id, page_mid, page_mid_head;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH],
        *list, *text, *text1, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
@@ -17091,7 +17093,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
    /* remove remaining "_all_" or empty or "--+<attrib>+--" parameters */
    strlcpy(str, _cmdline, sizeof(str));
-   found = 0; 
+   found = 0;
    for (i = 0; i < MAX_N_ATTR; i++) {
       if (isparam(attr_list[i])) {
          if (strieq(getparam(attr_list[i]), "_all_")) {
@@ -18493,7 +18495,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             strcpy(iattr, attr_list[i]);
             for (j = 0; j < (int) strlen(iattr); j++)
                /* replace special characters with "_", exclude any UTF-8 */
-               if (!isalnum(iattr[j]) && ((unsigned char)iattr[j] < 128))
+               if (!isalnum(iattr[j]) && ((unsigned char) iattr[j] < 128))
                   iattr[j] = '_';
             rsprintf("\t\t<%s>", iattr);
 
@@ -19445,7 +19447,7 @@ int add_attribute_option(LOGBOOK * lbs, char *attrname, char *attrvalue, char *c
 
    /* do not allow HTML code in value */
    strencode2(av_encoded, attrvalue, sizeof(av_encoded));
-   
+
    /* read previous contents */
    length = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
@@ -23365,7 +23367,7 @@ void interprete(char *lbook, char *path)
 
    if (strieq(command, loc("Help"))) {
       if (getcfg(lbs->name, "Help URL", str, sizeof(str))) {
-         
+
          /* if URL is given, redirect */
          if (strstr(str, "http://")) {
             redirect(lbs, str);

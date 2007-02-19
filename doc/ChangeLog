@@ -1,3 +1,30 @@
+Version 2.6.4, released Feb. 17th, 2007
+=======================================
+
+- Fixed problem with preset string containing '%'
+- Fixed bug with tooltips in radio buttons
+- Implemented 'Default email from'
+- Use 'use email from' only if no user email is available (as written in the documentation)
+- Implemented tooltips for ROptions
+- Fixed bug in help file redirection
+- Implemented [code1] ELCode tag
+- Increased 'email all' to 200 entries
+- Fixed crash in allocation of mail_to
+- Implemented separate Cascading Style Sheets for different output media
+- Fixed problem with "Update" command when "new" (not "New") is in "Menu Commands"
+- Implemented proper sorting of numeric attributes
+- Fixed "Preset <date-attr> = 0"
+- Fixed bug with quick filters and attributes with blanks
+- Show only subscribe options for logbooks which email notification turned on
+- Made quick filter improvements work with subtext
+- Improved quick filters without all the buttons
+- Fixed signed/unsiged bug
+- Exclude UTF-8 characters > 128 from substitution in XML export
+- Use charset from config file for XML export
+- Added debug output for shell execution
+- Applied additional patch from Ulf Harnhammar
+- Increased tooltip size to 10kChar
+ 
 Version 2.6.3, released Nov. 28th, 2006
 =======================================
 

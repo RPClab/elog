@@ -411,3 +411,15 @@ Activation notice has been sent to %s = 激活通知已经送达 %s
 Your request has been forwarded to the administrator = 您的请求已经发送给管理员
 You will be notified by email upon activation of your new account = 您在新帐号激活后将会得到电子邮件通知
 
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Select period = 
+Last week = 
+Last month = 
+Last 3 Months = 
+Last 6 Months = 
+Last Year = 
+Enter %s = 
+Select %s = 

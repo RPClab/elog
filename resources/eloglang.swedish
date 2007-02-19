@@ -409,3 +409,15 @@ Entry %s cannot be read from logbook "%s" = Posten %s kan inte läsas i loggboken
 Your request has been forwarded to the administrator = Din registrering har vidarebefordrats till ELOG administratören
 You will be notified by email upon activation of your new account = Du kommer att få en bekräftelse per email när ditt nya användarkonto är aktiverat
 Error: Command "<b>%s</b>" not allowed = Kommandot "<b>%s</b>" är inte tillåtet
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Select period = 
+Last week = 
+Last month = 
+Last 3 Months = 
+Last 6 Months = 
+Last Year = 
+Enter %s = 
+Select %s = 
