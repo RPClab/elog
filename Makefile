@@ -37,7 +37,7 @@ BINGROUP = bin
 INSTALL = `which install`
 RM = /bin/rm -f
 
-OSTYPE = $(shell /bin/uname)
+OSTYPE = $(shell uname)
 
 ifeq ($(OSTYPE),SunOS)
 CC = gcc
