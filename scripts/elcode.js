@@ -57,6 +57,8 @@ function elcode1(text, tag, value, selection)
       str = selection + value;
    else if (tag == 'LIST')
       str = '[LIST]\r\n[*] ' + selection + '\r\n[/LIST]';
+   else if (tag == 'TABLE')
+      str = '[TABLE border="1"]\r\nA|B\r\n|-\r\nC|D\r\n[/TABLE]';
    else if (value == '')
       str = '['+tag+']' + selection + '[/'+tag+']';
    else

@@ -252,6 +252,46 @@ to produce<p>
 Other possibilities are <b>[list=A]</b> for capital letters and <b>[list=I]</b> for Roman numbering.<p>
 
 
+<tr><td bgcolor=#486090><h2>Tables</h2></td></tr>
+
+<tr><td bgcolor=#FFFFFF><br>Tables can be created with the tags <b>[table][/table]</b> like<p>
+
+<b>[table border="1"]</b><br>
+One<b>|</b>Two<br>
+<b>|-</b><br>
+Three<b>|</b>Four<br>
+<b>[/table]</b>
+<p>
+
+to produce<p>
+
+<table border="1">
+<tr><td>One</td><td>Two</td></tr>
+<tr><td>Three</td><td>Four</td></tr>
+</table>
+<p>
+
+The parameters after <b>[table ...]</b> are directly used in the HTML &lt;table&gt;
+tag. To increase the cell padding, on can add for example<p>
+
+<b>[table border="1" cellpadding="20"]</b><br>
+One<b>|</b>Two<br>
+<b>|-</b><br>
+Three<b>|</b>Four<br>
+<b>[/table]</b>
+<p>
+
+to produce<p>
+
+<table border="1" cellpadding="20">
+<tr><td>One</td><td>Two</td></tr>
+<tr><td>Three</td><td>Four</td></tr>
+</table>
+<p>
+
+Table headings are not supported, but can be simulated by embedding the cell
+contents with a <b>[B]...[/B]</b> tag.<p>
+
 <tr><td bgcolor=#486090><h2>Creating links</h2></td></tr>
 
 <tr><td bgcolor=#FFFFFF><br>Hyperlinks or Uniform Resouce Locators (URLs) can be created in various ways:<p>

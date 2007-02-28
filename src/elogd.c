@@ -5706,6 +5706,13 @@ PATTERN_LIST pattern_list[] = {
    {"[/quote]\r", "</td></tr></table><br />\r\n"},
    {"[/quote]", "</td></tr></table>\r\n"},
 
+   /* table */
+   {"[table]", "<table><tr><td>"},
+   {"[table ", "<table %s><tr><td>"},
+   {"|-", "</td></tr><tr><td>"},
+   {"|", "</td><td>"},
+   {"[/table]", "</td></tr></table>"},
+
    {"", ""}
 };
 
@@ -5714,7 +5721,8 @@ char *email_quote_table =
 
 void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 {
-   int i, j, k, l, m, elcode_disabled, elcode_disabled1, escape_char, ordered_list, substituted;
+   int i, j, k, l, m, elcode_disabled, elcode_disabled1, escape_char, ordered_list, substituted,
+      inside_table;
    char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[1000], hattrib[1000],
        value[1000], subst[1000], base_url[256], param[256], *lstr;
 
@@ -5728,6 +5736,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
    elcode_disabled1 = FALSE;
    ordered_list = FALSE;
    escape_char = FALSE;
+   inside_table = 0;
    j = strlen_retbuf;
    m = 0;
 
@@ -5874,6 +5883,11 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                if (stristr(pattern_list[l].pattern, "[list="))
                   ordered_list = TRUE;
 
+               if (stristr(pattern_list[l].pattern, "[table"))
+                  inside_table++;
+               if (stristr(pattern_list[l].pattern, "[/table]"))
+                  inside_table--;
+
                if (stristr(pattern_list[l].pattern, "[quote")) {
                   if (pattern_list[l].pattern[strlen(pattern_list[l].pattern) - 1] == '=') {
                      i += strlen(pattern_list[l].pattern);
@@ -5997,6 +6011,15 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                   sprintf(return_buffer + j, pattern_list[l].subst, attrib);
                   j += strlen(return_buffer + j);
 
+               } else if (pattern_list[l].pattern[strlen(pattern_list[l].pattern) - 1] == ' ') {
+
+                  /* extract sting after ' ' and put it into '%s' of subst */
+                  i += strlen(pattern_list[l].pattern);
+                  strextract(str + i, ']', attrib, sizeof(attrib));
+                  i += strlen(attrib);
+                  sprintf(return_buffer + j, pattern_list[l].subst, attrib);
+                  j += strlen(return_buffer + j);
+
                } else if (strncmp(pattern_list[l].pattern, "[/list]", 7) == 0) {
 
                   if (ordered_list)
@@ -6067,7 +6090,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
       } else
          switch (str[i]) {
          case '\r':
-            if (!elcode_disabled && !elcode_disabled1) {
+            if (!elcode_disabled && !elcode_disabled1 && !inside_table) {
                strcat(return_buffer, "<br />\r\n");
                j += 8;
             } else {
@@ -9840,6 +9863,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf(" ");
       ricon("quote", loc("insert quote"), "elcode(document.form1.Text, 'QUOTE','')");
       ricon("list", loc("insert list"), "elcode(document.form1.Text, 'LIST','')");
+      ricon("table", loc("insert table"), "elcode(document.form1.Text, 'TABLE','')");
       ricon("heading", loc("insert heading"), "queryHeading(document.form1.Text)");
 
       rsprintf(" ");
