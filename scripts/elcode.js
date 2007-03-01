@@ -6,7 +6,10 @@ function getSelection(text)
       rng.colapse;
       return rng.text; 
    } else if (browser == 'Mozilla')
-      return text.value.substring(text.selectionStart, text.selectionEnd);
+      if (text.selectionEnd > 0 && text.value.charAt(text.selectionEnd-1) == ' ')
+         return text.value.substring(text.selectionStart, text.selectionEnd-1);
+      else
+         return text.value.substring(text.selectionStart, text.selectionEnd);
    else 
       return "";
 }
@@ -28,6 +31,8 @@ function replaceSelection(doc, text, newSelection, cursorPos)
    } else if (browser == 'Mozilla') {
       start = text.selectionStart;
       stop  = text.selectionEnd;
+      if (text.selectionEnd > 0 && text.value.charAt(text.selectionEnd-1) == ' ')
+        stop--;
       end   = text.textLength;
       endtext = text.value.substring(stop, end);
       starttext = text.value.substring(0,	start);
@@ -68,6 +73,8 @@ function elcode1(text, tag, value, selection)
       pos = value.length;
    else if (tag == 'LIST')
       pos = 11;
+   else if (tag == 'TABLE')
+      pos = 19;
    else if (value == '')
       pos = tag.length + 2;
    else
