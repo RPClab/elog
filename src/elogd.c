@@ -2893,8 +2893,9 @@ int parse_config_file(char *file_name)
          }
 
          /* sort parameter */
-         qsort(lb_config[n_lb_config].config_param, lb_config[n_lb_config].n_params, sizeof(CONFIG_PARAM),
-               param_compare);
+         // outcommented: not needed, might screw up group ordering
+         //qsort(lb_config[n_lb_config].config_param, lb_config[n_lb_config].n_params, sizeof(CONFIG_PARAM),
+         //      param_compare);
 
          n_lb_config++;
          index++;
