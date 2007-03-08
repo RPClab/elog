@@ -2194,12 +2194,13 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
         first page. Default is <b>0</b>.
       </li>
       <li>
-        <b><code>Search all logbooks = 0|1</code></b><br>
-        If this flag is <b>1</b>, the search form displays the button
-        <i>"Search all logbooks"</i>. The default is <b>1</b>. It might be
-        necessary to turn this option off for public logbooks if there are also
-        protected logbooks. Otherwise the search result would also display
-        entries from the protected logbooks.
+        <b><code>Search all logbooks = 0|1|2</code></b><br>
+        If this flag is <b>1</b> or <b>2</b>, the search form displays the button
+        <i>"Search all logbooks"</i>. If the flag is <b>2</b>, the button
+        is checked by default. Setting this flag to <b>0</b> hides this button.
+        It might be necessary to do this for public logbooks if 
+        there are also protected logbooks. Otherwise the search result would 
+        also display entries from the protected logbooks. The default is <b>1</b>. 
       </li>
       <li>
         <b><code>Enable browsing = 0|1</code></b><br>
