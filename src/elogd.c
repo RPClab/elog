@@ -10586,8 +10586,12 @@ void show_find_form(LOGBOOK * lbs)
    }
 
    if (i > 2) {
-      if (!getcfg(lbs->name, "Search all logbooks", str, sizeof(str)) || atoi(str) == 1) {
-         rsprintf("<input type=checkbox id=all name=all value=1>");
+      if (!getcfg(lbs->name, "Search all logbooks", str, sizeof(str)) || atoi(str) == 1 || atoi(str) == 2) {
+
+         if (atoi(str) == 2)
+            rsprintf("<input type=checkbox checked id=all name=all value=1>");
+         else
+            rsprintf("<input type=checkbox id=all name=all value=1>");
          rsprintf("<label for=\"all\">%s</label><br>\n", loc("Search all logbooks"));
       }
    }
