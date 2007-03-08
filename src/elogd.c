@@ -8591,7 +8591,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        att[MAX_ATTACHMENTS][256], encoding[80], slist[MAX_N_ATTR + 10][NAME_LENGTH],
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
        ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256], cookie[256], orig_author[256],
-       attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256], tooltip[10000];
+       attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256], tooltip[10000], enc_attr[NAME_LENGTH];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -9697,9 +9697,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      strencode2(str, attr_options[index][i], sizeof(str));
                      if (strchr(str, '{'))
                         *strchr(str, '{') = 0;
+                     strencode2(enc_attr, attrib[index], sizeof(enc_attr));
 
                      if (strstr(attrib[index], attr_options[index][i])
-                         || strieq(str, attrib[index]))
+                         || strieq(str, enc_attr))
                         rsprintf
                             ("<input type=radio id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
                              str, ua, str);
@@ -9777,9 +9778,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      strencode2(str, attr_options[index][i], sizeof(str));
                      if (strchr(str, '{'))
                         *strchr(str, '{') = 0;
+                     strencode2(enc_attr, attrib[index], sizeof(enc_attr));
 
                      if (strieq(attr_options[index][i], attrib[index])
-                         || strieq(str, attrib[index]))
+                         || strieq(str, enc_attr))
                         rsprintf("<option selected value=\"%s\">%s\n", str, str);
                      else
                         rsprintf("<option value=\"%s\">%s\n", str, str);
