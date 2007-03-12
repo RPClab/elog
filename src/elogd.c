@@ -258,7 +258,6 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 #define AF_MUSERLIST         (1<<13)
 #define AF_USEREMAIL         (1<<14)
 #define AF_MUSEREMAIL        (1<<15)
-#define AF_HIDDEN            (1<<16)
 
 /* attribute format flags */
 #define AFF_SAME_LINE              1
@@ -6817,15 +6816,6 @@ and attr_flags arrays */
                attr_flags[j] |= AF_FIXED_REPLY;
       }
 
-      /* check if hidden attribute */
-      getcfg(logbook, "Hidden Attributes", list, sizeof(list));
-      m = strbreak(list, tmp_list, MAX_N_ATTR, ",");
-      for (i = 0; i < m; i++) {
-         for (j = 0; j < n; j++)
-            if (strieq(attr_list[j], tmp_list[i]))
-               attr_flags[j] |= AF_HIDDEN;
-      }
-
       /* check for extendable options */
       getcfg(logbook, "Extendable Options", list, sizeof(list));
       m = strbreak(list, tmp_list, MAX_N_ATTR, ",");
@@ -9321,7 +9311,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    subtable = 0;
 
    /* generate list of attributes to show */
-   if (getcfg(lbs->name, "Show attributes", str, sizeof(str))) {
+   if (getcfg(lbs->name, "Show attributes edit", str, sizeof(str))) {
       n_disp_attr = strbreak(str, list, MAX_N_ATTR, ",");
       for (i = 0; i < n_disp_attr; i++) {
          for (j = 0; j < n_attr; j++)
@@ -9342,10 +9332,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    for (aindex = 0; aindex < n_disp_attr; aindex++) {
 
       index = attr_index[aindex];
-
-      /* if attribute is hidden, skip it */
-      if (attr_flags[index] & AF_HIDDEN)
-         continue;
 
       strcpy(class_name, "attribname");
       strcpy(class_value, "attribvalue");

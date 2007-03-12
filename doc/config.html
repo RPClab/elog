@@ -1132,11 +1132,15 @@ XYZ-2005-Nov-002
         "red">*</font> on the entry form.
       </li>
       <li>
-        <b><code>Hidden Attributes = &lt;list&gt;</code></b><br>
-        If an attribute is present in this list, it is hidden on the entry form.
-        This can make sense for attributes which are automatically derived from
-        other attributes via the <b><code>Change &lt;attribute&gt;</code></b>
-        command.
+        <b><code>Show Attributes = &lt;list&gt;</code></b><br>
+        Attributes present in this list are shown in the single entry page.
+        Omitting attributes can make sense for attributes which are 
+        automatically derived from other attributes via the 
+        <b><code>Change &lt;attribute&gt;</code></b> command.
+      </li>
+      <li>
+        <b><code>Show Attributes Edit = &lt;list&gt;</code></b><br>
+        The same as <b><code>Show Attributes</code></b>, but for the entry form.
       </li>
       <li>
         <b><code>Page title = &lt;string&gt;</code></b><br>
@@ -1657,12 +1661,12 @@ Comment: ...
       exactly in the message body for that attribute value.
     </p>
     <p>
-      <b><code>Show Attributes = &lt;list&gt;</code></b><br>
+      <b><code>Show Attributes Edit = &lt;list&gt;</code></b><br>
       When using conditional attributes, it might be necessary to omit certain
       attributes under certain conditions, to make the input mask shorter and
       maybe change the order of the attributes. With this option, a subset of
-      all attributes can be specified which get displayed on the new entry
-      input page in the same order as they are specified here. This option only
+      all attributes can be specified which get displayed on the single entry
+      page in the same order as they are specified here. This option mainly
       makes sense when used with conditions, such as:
     </p>
     <ul>
@@ -1670,13 +1674,13 @@ Comment: ...
         <pre>
 Attributes = PC Name, Operating System, Version, Distribution
 Options Operating System = Linux{1}, Windows{2}
-{1} Show Attributes = Operating System, Distribution, PC Name
-{2} Show Attributes = Operating System, PC Name, Version
+{1} Show Attributes Edit = Operating System, Distribution, PC Name
+{2} Show Attributes Edit = Operating System, PC Name, Version
 </pre>
       </li>
     </ul>
     <p>
-      The above statements caus the atrribute <b><code>Version</code></b> to be
+      The above statements cause the atrribute <b><code>Version</code></b> to be
       only visible when "Windows" is selected, and
       <b><code>Distribution</code></b> to be only visible when "Linux" is
       selected. If "Windows" is selected, the PC name is shown before the
