@@ -349,9 +349,11 @@ INT retrieve_elog(char *host, int port, char *subdir, char *experiment,
 
    /* compose request */
    strcpy(request, "GET /");
-   if (subdir[0])
+   if (subdir[0] && experiment[0])
+      sprintf(request + strlen(request), "%s/%s/%d?cmd=download", subdir, experiment, message_id);
+   else if (subdir[0])
       sprintf(request + strlen(request), "%s/%d?cmd=download", subdir, message_id);
-   if (experiment[0])
+   else if (experiment[0])
       sprintf(request + strlen(request), "%s/%d?cmd=download", experiment, message_id);
    strcat(request, " HTTP/1.0\r\n");
 
