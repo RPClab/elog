@@ -9215,6 +9215,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (isparam("inlineatt") && *getparam("inlineatt"))
       strcpy(script, " OnLoad=\"document.form1.Text.focus();\"");
 
+   strcat(script, " OnLoad=\"elKeyInit();\""); 
+
    if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1)
       rsprintf("<body onUnload=\"unload();\"%s>\n", script);
    else
@@ -9833,39 +9835,39 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (enc_selected == 0 && show_text) {
       rsprintf("<tr><td colspan=2 class=\"toolframe\">\n");
 
-      ricon("bold", loc("bold text"), "elcode(document.form1.Text, 'B','')");
-      ricon("italic", loc("italics text"), "elcode(document.form1.Text, 'I','')");
-      ricon("underline", loc("underlined text"), "elcode(document.form1.Text, 'U','')");
+      ricon("bold", loc("Bold text CTRL+B"), "elcode(document.form1.Text, 'B','')");
+      ricon("italic", loc("Italics text CTRL+I"), "elcode(document.form1.Text, 'I','')");
+      ricon("underline", loc("Underlined text CTRL+U"), "elcode(document.form1.Text, 'U','')");
 
       rsprintf(" ");
-      ricon("center", loc("centered text"), "elcode(document.form1.Text, 'CENTER','')");
+      ricon("center", loc("Centered text"), "elcode(document.form1.Text, 'CENTER','')");
 
       rsprintf(" ");
-      ricon("url", loc("insert hyperlink"), "queryURL(document.form1.Text)");
-      ricon("email", loc("insert email"), "elcode(document.form1.Text, 'EMAIL','')");
+      ricon("url", loc("Insert hyperlink"), "queryURL(document.form1.Text)");
+      ricon("email", loc("Insert email"), "elcode(document.form1.Text, 'EMAIL','')");
 
       sprintf(str, "window.open('upload.html', '',");
       strlcat(str, "'top=280,left=350,width=500,height=120,dependent=yes,", sizeof(str));
       strlcat(str, "menubar=no,status=no,scrollbars=no,location=no,resizable=yes')", sizeof(str));
-      ricon("image", loc("insert image"), str);
+      ricon("image", loc("Insert image CTRL+P"), str);
 
       rsprintf(" ");
-      ricon("quote", loc("insert quote"), "elcode(document.form1.Text, 'QUOTE','')");
-      ricon("list", loc("insert list"), "elcode(document.form1.Text, 'LIST','')");
-      ricon("table", loc("insert table"), "elcode(document.form1.Text, 'TABLE','')");
-      ricon("heading", loc("insert heading"), "queryHeading(document.form1.Text)");
+      ricon("quote", loc("Insert quote"), "elcode(document.form1.Text, 'QUOTE','')");
+      ricon("list", loc("Insert list CTRL+L"), "elcode(document.form1.Text, 'LIST','')");
+      ricon("table", loc("Insert table CTRL+T"), "elcode(document.form1.Text, 'TABLE','')");
+      ricon("heading", loc("Insert heading CTRL+H"), "queryHeading(document.form1.Text)");
 
       rsprintf(" ");
-      ricon("code", loc("insert code"), "elcode(document.form1.Text, 'CODE','')");
+      ricon("code", loc("Insert code CTRL+C"), "elcode(document.form1.Text, 'CODE','')");
 
       if (show_smileys)
          rsprintf
              (" <img align=\"middle\" name=\"smileys\" src=\"icons/eld_smile.png\" alt=\"%s\" title=\"%s\" border=\"0\"",
-              loc("hide the smiley bar"), loc("hide the smiley bar"));
+              loc("Hide the smiley bar"), loc("Hide the smiley bar"));
       else
          rsprintf
              (" <img align=\"middle\" name=\"smileys\" src=\"icons/elc_smile.png\" alt=\"%s\" title=\"%s\" border=\"0\"",
-              loc("show the smiley bar"), loc("show the smiley bar"));
+              loc("Show the smiley bar"), loc("Show the smiley bar"));
       rsprintf(" onclick=\"switch_smileys()\"");
       rsprintf(" onmouseover=\"this.style.cursor='hand';\" />\n");
 
@@ -10035,10 +10037,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       if (enc_selected == 1)
          /* use hard wrapping only for plain text */
-         rsprintf("<textarea rows=%d cols=%d wrap=hard %s name=\"Text\" onChange=\"mod();\">",
+         rsprintf("<textarea rows=%d cols=%d wrap=hard %s name=\"Text\" onChange=\"mod();\">\n",
                   height, width, str);
       else
-         rsprintf("<textarea rows=%d cols=%d %s name=\"Text\" onChange=\"mod();\">", height, width, str);
+         rsprintf("<textarea rows=%d cols=%d %s name=\"Text\" onChange=\"mod();\">\n", 
+                  height, width, str);
 
       if (bedit) {
          if (!preset_text) {

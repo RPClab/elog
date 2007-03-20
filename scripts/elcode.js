@@ -107,3 +107,50 @@ function queryHeading(text)
    tag = 'H' + heading;
    elcode1(text, tag, '', selection);
 }
+
+function elKeyInit()
+{
+   document.onkeypress = elKeyPress;
+}
+
+function elKeyPress(evt)
+{
+   evt = (evt) ? evt : window.event;
+
+   if (evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
+      if (String.fromCharCode(evt.charCode) == "b") {
+         elcode(document.form1.Text, 'B','');
+         return false;
+      }
+      if (String.fromCharCode(evt.charCode) == "i") {
+         elcode(document.form1.Text, 'I','');
+         return false;
+      }
+      if (String.fromCharCode(evt.charCode) == "u") {
+         elcode(document.form1.Text, 'U','');
+         return false;
+      }
+      if (String.fromCharCode(evt.charCode) == "c") {
+         elcode(document.form1.Text, 'CODE','');
+         return false;
+      }
+      if (String.fromCharCode(evt.charCode) == "t") {
+         elcode(document.form1.Text, 'TABLE','');
+         return false;
+      }
+      if (String.fromCharCode(evt.charCode) == "l") {
+         elcode(document.form1.Text, 'LIST','');
+         return false;
+      }
+      if (String.fromCharCode(evt.charCode) == "h") {
+         queryHeading(document.form1.Text);
+         return false;
+      }
+      if (String.fromCharCode(evt.charCode) == "p") {
+         window.open('upload.html','','top=280,left=350,width=500,height=120,dependent=yes,menubar=no,status=no,scrollbars=no,location=no,resizable=yes');
+         return false;
+      }
+   }
+   
+   return true;
+}
