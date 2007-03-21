@@ -160,7 +160,6 @@ function elKeyPress(evt)
          document.form1.jcmd.value = "Submit";
          chkform();
          cond_submit();
-         document.form1.Text.focus();
          return false;
       }
    }
