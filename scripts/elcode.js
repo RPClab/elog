@@ -146,8 +146,21 @@ function elKeyPress(evt)
          queryHeading(document.form1.Text);
          return false;
       }
-      if (String.fromCharCode(evt.charCode) == "p") {
+      if (String.fromCharCode(evt.charCode) == "m") {
          window.open('upload.html','','top=280,left=350,width=500,height=120,dependent=yes,menubar=no,status=no,scrollbars=no,location=no,resizable=yes');
+         return false;
+      }
+      if (String.fromCharCode(evt.charCode) == "p") {
+         document.form1.jcmd.value = "Preview";
+         chkform();
+         cond_submit();
+         return false;
+      }
+      if (String.fromCharCode(evt.charCode) == "s") {
+         document.form1.jcmd.value = "Submit";
+         chkform();
+         cond_submit();
+         document.form1.Text.focus();
          return false;
       }
    }

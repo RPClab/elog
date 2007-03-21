@@ -9215,7 +9215,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (isparam("inlineatt") && *getparam("inlineatt"))
       strcpy(script, " OnLoad=\"document.form1.Text.focus();\"");
 
-   strcat(script, " OnLoad=\"elKeyInit();\""); 
+   strcat(script, " OnLoad=\"elKeyInit();\" OnFocus=\"elKeyInit();\""); 
 
    if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1)
       rsprintf("<body onUnload=\"unload();\"%s>\n", script);
@@ -9849,7 +9849,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       sprintf(str, "window.open('upload.html', '',");
       strlcat(str, "'top=280,left=350,width=500,height=120,dependent=yes,", sizeof(str));
       strlcat(str, "menubar=no,status=no,scrollbars=no,location=no,resizable=yes')", sizeof(str));
-      ricon("image", loc("Insert image CTRL+P"), str);
+      ricon("image", loc("Insert image CTRL+M"), str);
 
       rsprintf(" ");
       ricon("quote", loc("Insert quote"), "elcode(document.form1.Text, 'QUOTE','')");
