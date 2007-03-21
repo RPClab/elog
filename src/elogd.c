@@ -9212,7 +9212,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("</head>\n");
 
    script[0] = 0;
-   if (isparam("inlineatt") && *getparam("inlineatt") || bpreview)
+   if ((isparam("inlineatt") && *getparam("inlineatt")) || bpreview)
       strcpy(script, " OnLoad=\"document.form1.Text.focus();\"");
 
    strcat(script, " OnLoad=\"elKeyInit();\" OnFocus=\"elKeyInit();\""); 
