@@ -14333,7 +14333,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
    int index, i, j, i_msg, i_remote, i_cache, n_remote, n_cache, nserver,
        remote_id, exist_remote, exist_cache, message_id, max_id;
    int all_identical, n_delete;
-   char str[2000], url[256], loc_ref[256], rem_ref[256], pwd[256];
+   char str[2000], url[256], loc_ref[256], rem_ref[256], pwd[256], locked_by[256];
    MD5_INDEX *md5_remote, *md5_cache;
    char list[MAX_N_LIST][NAME_LENGTH], error_str[256], *buffer;
    unsigned char digest[16];
@@ -14531,6 +14531,15 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
          message_id = lbs->el_index[i_msg].message_id;
 
+         /* check if message is locked */
+         el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, locked_by);
+         if (locked_by[0]) {
+            sprintf(str, "ID%d:\t%s", message_id, loc("Entry is locked on local server and therefore skipped"));
+            mprint(lbs, mode, str);
+            all_identical = FALSE;
+            continue;
+         }
+
          /* look for message id in MD5s */
          for (i_remote = 0; i_remote < n_remote; i_remote++)
             if (md5_remote[i_remote].message_id == message_id)
@@ -14617,7 +14626,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                      mprint(lbs, mode, str);
                   }
 
-                  md5_cache[i_cache].message_id = -1;
+                  if (!error_str[0])
+                     md5_cache[i_cache].message_id = -1;
 
                } else {
                   sprintf(str, "ID%d:\t%s", message_id, loc("Remote entry should be received"));
