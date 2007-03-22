@@ -1,6 +1,6 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.6.3+)
+# (for 2.6.4+)
 # A more recent version may be available at :
 # http://savannah.psi.ch/viewcvs/trunk/resources/eloglang.french?root=elog
 #
@@ -410,15 +410,11 @@ Anonymous = Anonyme
 Activation notice has been sent to %s = L'avis d'activation a été envoyé à %s
 Your request has been forwarded to the administrator = Votre demande a été transmise à l'administrateur
 You will be notified by email upon activation of your new account = Vous serez averti(e) par courriel de l'activation de votre nouveau compte
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Select period = 
-Last week = 
-Last month = 
-Last 3 Months = 
-Last 6 Months = 
-Last Year = 
-Enter %s = 
-Select %s = 
+Select period = Sélectionner la période
+Last week = Semaine écoulée
+Last month = Mois écoulé
+Last 3 Months = 3 derniers mois
+Last 6 Months = 6 derniers mois
+Last Year = Année écoulée
+Enter %s = Entrer %s
+Select %s = Sélectionner %s
