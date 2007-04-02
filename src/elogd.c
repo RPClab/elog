@@ -19892,7 +19892,7 @@ void submit_elog(LOGBOOK * lbs)
                tms.tm_mday = day;
                tms.tm_hour = 12;
 
-               ltime = mktime(&tms);
+               ltime = (int) mktime(&tms);
 
                if (ltime == -1) {
                   show_error(loc("Date must be between 1970 and 2037"));
@@ -19940,7 +19940,7 @@ void submit_elog(LOGBOOK * lbs)
                tms.tm_sec = sec;
                tms.tm_isdst = -1;
 
-               ltime = mktime(&tms);
+               ltime = (int) mktime(&tms);
 
                if (ltime == -1) {
                   show_error(loc("Date must be between 1970 and 2037"));
