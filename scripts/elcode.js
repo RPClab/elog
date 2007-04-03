@@ -118,7 +118,6 @@ function elKeyPress(evt)
    evt = (evt) ? evt : window.event;
    var unicode = evt.charCode ? evt.charCode : evt.keyCode;
    var actualkey = String.fromCharCode(unicode);
-   alert('unicode: '+ unicode);
 
    if (evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
 
