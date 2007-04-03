@@ -145,10 +145,6 @@ function elKeyPress(evt)
          elcode(document.form1.Text, 'CODE','');
          return false;
       }
-      if (actualkey == "t") {
-         elcode(document.form1.Text, 'TABLE','');
-         return false;
-      }
       if (actualkey == "l") {
          elcode(document.form1.Text, 'LIST','');
          return false;
