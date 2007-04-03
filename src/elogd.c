@@ -5270,9 +5270,9 @@ int is_full_html(char *file_name)
    read(fh, buf, length);
    close(fh);
 
-   str = xstrdup(buf);
+   str = xstrdup((char *)buf);
 
-   for (i = 0; i < (int) strlen(buf); i++)
+   for (i = 0; i < (int) strlen((char *)buf); i++)
       str[i] = toupper(buf[i]);
    str[i] = 0;
 
