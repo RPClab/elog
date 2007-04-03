@@ -17178,6 +17178,18 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       return;
    }
 
+   /* check for invalid attributes in config file */
+   for (i = 0; i < MAX_N_ATTR; i++) {
+      if (strieq(attr_list[i], "Date")) {
+         show_error("Attribute name \"Date\" is not allowed in config file");
+         return;
+      }
+      if (strieq(attr_list[i], "ID")) {
+         show_error("Attribute name \"Date\" is not allowed in config file");
+         return;
+      }
+   }
+
    slist = xmalloc((MAX_N_ATTR + 10) * NAME_LENGTH);
    svalue = xmalloc((MAX_N_ATTR + 10) * NAME_LENGTH);
    gattr = xmalloc(MAX_N_ATTR * NAME_LENGTH);
