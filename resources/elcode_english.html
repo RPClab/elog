@@ -46,15 +46,30 @@ referred as <i>vB code</i>.<br><br>
 
 <table border=0 width=100%% bgcolor=#808080 cellpadding=5 cellspacing=1 align=center>
 
-<tr><td bgcolor=#D0D0FF width=200><b>[b]</b>Hello<b>[/b]</b><td bgcolor=#FFFFFF>will become bold text like <b>Hello</b></tr>
-<tr><td bgcolor=#D0D0FF width=200><b>[u]</b>Hello<b>[/u]</b><td bgcolor=#FFFFFF>will become underlined text like <u>Hello</u></tr>
-<tr><td bgcolor=#D0D0FF width=200><b>[i]</b>Hello<b>[/i]</b><td bgcolor=#FFFFFF>will become italics text like <i>Hello</i></tr>
+<tr><th bgcolor=#D0D0FF width=200>Tag</th><th bgcolor="#ffccff">Keyboard shortcut</th><th bgcolor=#FFFFFF>Meaning</th></tr>
+
+<tr><td bgcolor=#D0D0FF width=200><b>[b]</b>Hello<b>[/b]</b>
+<td bgcolor="#ffccff">CTRL+B</td>
+<td bgcolor=#FFFFFF>will become bold text like <b>Hello</b></tr>
+
+<tr><td bgcolor=#D0D0FF width=200><b>[u]</b>Hello<b>[/u]</b>
+<td bgcolor="#ffccff">CTRL+U</td>
+<td bgcolor=#FFFFFF>will become underlined text like <u>Hello</u></tr>
+
+<tr><td bgcolor=#D0D0FF width=200><b>[i]</b>Hello<b>[/i]</b>
+<td bgcolor="#ffccff">CTRL+I</td>
+<td bgcolor=#FFFFFF>will become italics text like <i>Hello</i></tr>
+
 <tr><td bgcolor=#D0D0FF width=200><b>[color=red]</b>Hello<b>[/color]</b> or <br>
-<b>[color=#FF0000]</b>Hello<b>[/color]</b><td bgcolor=#FFFFFF>will both become <font color="red">Hello</font>. One can
+<b>[color=#FF0000]</b>Hello<b>[/color]</b>
+<td bgcolor="#ffccff"></td>
+<td bgcolor=#FFFFFF>will both become <font color="red">Hello</font>. One can
 either speciy a well know color name like white, red, green, lightgreen, or a hexadecimal RGB value, where the first two
 digits (00 - FF) are for the red component, the second for the green and the third for the blue part.</tr>
 
-<tr><td bgcolor=#D0D0FF width=200><b>[size=5]</b>Hello<b>[/size]</b><td bgcolor=#FFFFFF>will become text like <font size=5>Hello</font>.
+<tr><td bgcolor=#D0D0FF width=200><b>[size=5]</b>Hello<b>[/size]</b>
+<td bgcolor="#ffccff"></td>
+<td bgcolor=#FFFFFF>will become text like <font size=5>Hello</font>.
 The size of the text in pixels ranges from 1 to 29. Here are some examples:
 <font size=1>size=1</font>,
 <font size=2>size=2</font>,
@@ -64,7 +79,9 @@ The size of the text in pixels ranges from 1 to 29. Here are some examples:
 <font size=6>size=6</font>.
 </tr>
 
-<tr><td bgcolor=#D0D0FF width=200><b>[font=comic]</b>Hello<b>[/font]</b><td bgcolor=#FFFFFF>will change the text font. Here are some examples:
+<tr><td bgcolor=#D0D0FF width=200><b>[font=comic]</b>Hello<b>[/font]</b>
+<td bgcolor="#ffccff"></td>
+<td bgcolor=#FFFFFF>will change the text font. Here are some examples:
 <font face="comic sans ms">comic</font>,
 <font face="courier">courier</font>,
 <font face="arial">arial</font>,
@@ -73,12 +90,15 @@ The size of the text in pixels ranges from 1 to 29. Here are some examples:
 <font face="verdana">verdana</font>
 </tr>
 
-<tr><td bgcolor=#D0D0FF width=200><b>[center]</b>Hello<b>[/center]</b><td bgcolor=#FFFFFF><center>will put the text in the center</center></tr>
+<tr><td bgcolor=#D0D0FF width=200><b>[center]</b>Hello<b>[/center]</b>
+<td bgcolor="#ffccff"></td>
+<td bgcolor=#FFFFFF><center>will put the text in the center</center></tr>
 
 <tr><td bgcolor=#D0D0FF width=200>
 <b>[h1]</b>Hello<b>[/h1]</b><br>
 <b>[h2]</b>Hello<b>[/h2]</b><br>
 <b>[h3]</b>Hello<b>[/h3]</b>
+<td bgcolor="#ffccff">CTRL+H</td>
 <td bgcolor=#FFFFFF>will become a heading of <font size=6><b>level 1</b></font>, <font size=5><b>level 2</b></font> or <font size=4><b>level 3</b></font></tr>
 
 </table><p>
@@ -158,7 +178,7 @@ Note that it is mandatory to enclose the reference "Mr. Bean" in quotation marks
 </ul>
 
 
-<tr><td bgcolor=#486090><h2>Fixed width text</h2></td></tr>
+<tr><td bgcolor=#486090><h2>Fixed width text [CTRL+O]</h2></td></tr>
 
 <tr><td bgcolor=#FFFFFF><br>To output text with fixed width using a Courier-type font, enclose it in<p>
 
@@ -192,7 +212,7 @@ wanted, like if some program code should be annotated with bold face etc. the
 tags <b>[code1]</b>...<b>[/code1]</b> can be used which allows other ELCode
 tags inside.<p>
 
-<tr><td bgcolor=#486090><h2>Lists</h2></td></tr>
+<tr><td bgcolor=#486090><h2>Lists [CTRL+L]</h2></td></tr>
 
 <tr><td bgcolor=#FFFFFF><br>An unordered list can be created with the tags <b>[list][/list]</b> like<p>
 
@@ -252,7 +272,7 @@ to produce<p>
 Other possibilities are <b>[list=A]</b> for capital letters and <b>[list=I]</b> for Roman numbering.<p>
 
 
-<tr><td bgcolor=#486090><h2>Tables</h2></td></tr>
+<tr><td bgcolor=#486090><h2>Tables [CTRL+T]</h2></td></tr>
 
 <tr><td bgcolor=#FFFFFF><br>Tables can be created with the tags <b>[table][/table]</b> like<p>
 
@@ -316,7 +336,7 @@ Go to <a href="http://www.cern.ch">CERN</a><p>
 <li>The same works for email addresses. They can be used like in <b>[email]</b>john.doe@domain.org<b>[/email]</b> or simply as
 <b>john.dow@domain.org</b> which will be converted automatically into <a href="mailto:john.doe@domain.org">john.doe@domain.org</a>.<p>
 
-<tr><td bgcolor=#486090><h2>Embedding images</h2></td></tr>
+<tr><td bgcolor=#486090><h2>Embedding images [CTRL+M]</h2></td></tr>
 
 <tr><td bgcolor=#FFFFFF><br>There are two ways to embed images in the text:<p>
 
@@ -340,6 +360,16 @@ your attached images in this way, they are not shown again at the end of the ent
 
 </ul>
 
+<tr><td bgcolor=#486090><h2>Other keyboard shortcuts</h2></td></tr>
+
+<tr><td bgcolor=#FFFFFF>
+<ul>
+<li><b>CTRL+P</b>: Preview</li>
+<li><b>CTRL+ENTER</b>: Submit</li>
+</ul>
+It should be noted that keyboard shortcuts do not work properly in all browsers. They have been successfully
+tested in Firefox.
+</td></tr>
 
 </td></tr></table></td></tr></table>
 
