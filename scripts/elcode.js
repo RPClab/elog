@@ -116,47 +116,60 @@ function elKeyInit()
 function elKeyPress(evt)
 {
    evt = (evt) ? evt : window.event;
+   var unicode = evt.charCode ? evt.charCode : evt.keyCode;
+   var actualkey = String.fromCharCode(unicode);
+   alert('unicode: '+ unicode);
 
    if (evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
-      if (String.fromCharCode(evt.charCode) == "b") {
+
+      if (browser == 'MSIE') {
+         if (unicode == 10)
+            unicode = 13;
+         else   
+            unicode += 96;
+         actualkey = String.fromCharCode(unicode);
+      }
+
+      if (actualkey == "b") {
          elcode(document.form1.Text, 'B','');
          return false;
       }
-      if (String.fromCharCode(evt.charCode) == "i") {
+      if (actualkey == "i") {
          elcode(document.form1.Text, 'I','');
          return false;
       }
-      if (String.fromCharCode(evt.charCode) == "u") {
+      if (actualkey == "u") {
          elcode(document.form1.Text, 'U','');
          return false;
       }
-      if (String.fromCharCode(evt.charCode) == "c") {
+      if (actualkey == "o") {
          elcode(document.form1.Text, 'CODE','');
          return false;
       }
-      if (String.fromCharCode(evt.charCode) == "t") {
+      if (actualkey == "t") {
          elcode(document.form1.Text, 'TABLE','');
          return false;
       }
-      if (String.fromCharCode(evt.charCode) == "l") {
+      if (actualkey == "l") {
          elcode(document.form1.Text, 'LIST','');
          return false;
       }
-      if (String.fromCharCode(evt.charCode) == "h") {
+      if (actualkey == "h") {
          queryHeading(document.form1.Text);
          return false;
       }
-      if (String.fromCharCode(evt.charCode) == "m") {
+      if (actualkey == "m") {
          window.open('upload.html','','top=280,left=350,width=500,height=120,dependent=yes,menubar=no,status=no,scrollbars=no,location=no,resizable=yes');
          return false;
       }
-      if (String.fromCharCode(evt.charCode) == "p") {
+      if (actualkey == "p") {
          document.form1.jcmd.value = "Preview";
          chkform();
          cond_submit();
          return false;
       }
-      if (String.fromCharCode(evt.charCode) == "s") {
+      
+      if (unicode == 13) { // return
          document.form1.jcmd.value = "Submit";
          chkform();
          cond_submit();

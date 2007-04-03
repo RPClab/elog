@@ -9858,7 +9858,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       ricon("heading", loc("Insert heading CTRL+H"), "queryHeading(document.form1.Text)");
 
       rsprintf(" ");
-      ricon("code", loc("Insert code CTRL+C"), "elcode(document.form1.Text, 'CODE','')");
+      ricon("code", loc("Insert code CTRL+O"), "elcode(document.form1.Text, 'CODE','')");
 
       if (show_smileys)
          rsprintf
