@@ -18291,6 +18291,14 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       if (getcfg(lbs->name, "Mode commands", str, sizeof(str)) && atoi(str) == 0)
          mode_commands = FALSE;
 
+      /*---- evaluate conditions for quick filters */
+      for (i = 0; i < lbs->n_attr; i++) {
+         attrib[i][0] = 0;
+         if (isparam(attr_list[i]))
+            strlcpy(attrib[i], getparam(attr_list[i]), NAME_LENGTH);
+      }
+      evaluate_conditions(lbs, attrib);
+
       /*---- notification message ----*/
 
       if (info && info[0]) {
