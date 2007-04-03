@@ -9854,7 +9854,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf(" ");
       ricon("quote", loc("Insert quote"), "elcode(document.form1.Text, 'QUOTE','')");
       ricon("list", loc("Insert list CTRL+L"), "elcode(document.form1.Text, 'LIST','')");
-      ricon("table", loc("Insert table CTRL+T"), "elcode(document.form1.Text, 'TABLE','')");
+      ricon("table", loc("Insert table"), "elcode(document.form1.Text, 'TABLE','')");
       ricon("heading", loc("Insert heading CTRL+H"), "queryHeading(document.form1.Text)");
 
       rsprintf(" ");
