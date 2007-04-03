@@ -8551,7 +8551,7 @@ void ricon(char *name, char *comment, char *onclick)
    rsprintf(" onclick=\"%s\"", onclick);
    rsprintf(" onmousedown=\"document.images.%s.src='icons/eld_%s.png'\"", name, name);
    rsprintf(" onmouseup=\"document.images.%s.src='icons/elc_%s.png'\"", name, name);
-   rsprintf(" onmouseover=\"this.style.cursor='hand';\" />");
+   rsprintf(" onmouseover=\"this.style.cursor='pointer';\" />");
 }
 
 /*------------------------------------------------------------------*/
@@ -8563,7 +8563,7 @@ void rsicon(char *name, char *comment, char *elcode)
    rsprintf(" onclick=\"elcode(document.form1.Text, '','%s')\"", elcode);
    rsprintf(" onmousedown=\"document.images.%s.src='icons/eld_%s.png'\"", name, name);
    rsprintf(" onmouseup=\"document.images.%s.src='icons/elc_%s.png'\"", name, name);
-   rsprintf(" onmouseover=\"this.style.cursor='hand';\" />");
+   rsprintf(" onmouseover=\"this.style.cursor='pointer';\" />");
 }
 
 /*------------------------------------------------------------------*/
@@ -9008,12 +9008,31 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          /* convert dots to underscores */
          dtou(ua);
 
-         if (attr_flags[i] & (AF_MULTI | AF_MUSERLIST)) {
+         if (attr_flags[i] & AF_MULTI) {
             rsprintf("  if (\n");
             for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
                sprintf(str, "%s_%d", ua, j);
                rsprintf("    !document.form1.%s.checked", str);
                if (attr_options[i][j + 1][0])
+                  rsprintf(" &&\n");
+            }
+            rsprintf(") {\n");
+            sprintf(str, loc("Please select at least one '%s'"), attr_list[i]);
+            rsprintf("    alert(\"%s\");\n", str);
+            rsprintf("    document.form1.%s_0.focus();\n", ua);
+            rsprintf("    return false;\n");
+            rsprintf("  }\n");
+
+         } else if (attr_flags[i] & AF_MUSERLIST) {
+            rsprintf("  if (\n");
+            for (j = 0;; j++) {
+               if (!enum_user_line(lbs, j, login_name, sizeof(login_name)))
+                  break;
+               get_user_line(lbs, login_name, NULL, full_name, NULL, NULL, NULL);
+
+               sprintf(str, "%s_%d", ua, j);
+               rsprintf("    !document.form1.%s.checked", str);
+               if (enum_user_line(lbs, j+1, login_name, sizeof(login_name)))
                   rsprintf(" &&\n");
             }
             rsprintf(") {\n");
@@ -9869,7 +9888,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
              (" <img align=\"middle\" name=\"smileys\" src=\"icons/elc_smile.png\" alt=\"%s\" title=\"%s\" border=\"0\"",
               loc("Show the smiley bar"), loc("Show the smiley bar"));
       rsprintf(" onclick=\"switch_smileys()\"");
-      rsprintf(" onmouseover=\"this.style.cursor='hand';\" />\n");
+      rsprintf(" onmouseover=\"this.style.cursor='pointer';\" />\n");
 
       rsprintf(" <select name=\"font\" ");
       rsprintf("onchange=\"elcode(document.form1.Text,'FONT',this.options[this.selectedIndex].value);");
