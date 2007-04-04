@@ -19826,7 +19826,7 @@ void submit_elog(LOGBOOK * lbs)
                missing = 1;
                break;
             }
-         } else if (isparam(ua) == 0) {
+         } else if (isparam(ua) == 0 || *getparam(ua) == 0) {
             missing = 1;
             break;
          }
