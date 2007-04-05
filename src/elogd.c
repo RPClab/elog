@@ -22281,7 +22281,19 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
             rsprintf("<input type=checkbox name=remember value=1>\n");
          else
             rsprintf("<input type=checkbox checked name=remember value=1>\n");
-         rsprintf("%s</td></tr>\n", loc("Remember me on this computer"));
+         rsprintf("%s<br>\n", loc("Keep me logged in on this computer"));
+         
+         if (atof(str) < 1)
+            rsprintf(loc("for the next %d minutes"), (int)(atof(str)*60));
+         else if (atof(str) == 1)
+            rsprintf(loc("for the next hour"));
+         else if (atof(str) <= 48)
+            rsprintf(loc("for the next %d hours"), (int)atof(str));
+         else
+            rsprintf(loc("for the next %d days"), (int)(atof(str)/24));
+         
+         rsprintf(" or until I log out");
+         rsprintf("</td></tr>\n");
       }
 
       show_forgot_link = (!getcfg(lbs->name, "allow password change", str, sizeof(str)) || atoi(str) == 1);
