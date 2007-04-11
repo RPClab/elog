@@ -110,6 +110,12 @@ function queryHeading(text)
    elcode1(text, tag, '', selection);
 }
 
+function insertTime(text)
+{
+   selection =	getSelection(text);
+   elcode1(text, '', datetime, selection);
+}
+
 function elKeyInit()
 {
    document.onkeypress = elKeyPress;

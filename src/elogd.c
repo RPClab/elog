@@ -9233,6 +9233,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    else
       rsprintf("browser = 'Other';\n");
 
+   if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+      strcpy(format, DEFAULT_TIME_FORMAT);
+   time(&ltime);
+   pts = localtime(&ltime);
+   my_strftime(str, sizeof(str), format, pts);
+   rsprintf("datetime = '%s';", str);
+
    rsprintf("//-->\n");
    rsprintf("</script>\n");
 
@@ -9998,6 +10005,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<option value=\"purple\" style=\"color:purple\">purple</option>\n");
       rsprintf("<option value=\"chocolate\" style=\"color:chocolate\">chocolate</option>\n");
       rsprintf("</select>");
+
+      rsprintf(" ");
+      ricon("clock", loc("Insert current time/date"), "insertTime(document.form1.Text)");
 
       rsprintf("</td></tr>\n");
    }
