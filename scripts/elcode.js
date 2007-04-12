@@ -112,8 +112,37 @@ function queryHeading(text)
 
 function insertTime(text)
 {
-   selection =	getSelection(text);
-   elcode1(text, '', datetime, selection);
+   var xmlHttp;
+   
+   try {
+      xmlHttp = new XMLHttpRequest(); // Firefox, Opera 8.0+, Safari
+   }
+   catch (e) {
+      try {
+         xmlHttp=new ActiveXObject("Msxml2.XMLHTTP"); // Internet Explorer
+      }
+   catch (e) {
+      try {
+        xmlHttp=new ActiveXObject("Microsoft.XMLHTTP");
+      }
+      catch (e) {
+        alert("Your browser does not support AJAX!");
+        return false;
+      }
+    }
+  }
+  
+  xmlHttp.onreadystatechange = function()
+  {
+     if(xmlHttp.readyState == 4)
+       {
+       selection =	getSelection(text);
+       elcode1(text, '', xmlHttp.responseText, selection);
+       }
+  }
+  
+  xmlHttp.open("GET","?cmd=gettimedate",true);
+  xmlHttp.send(null);
 }
 
 function elKeyInit()
