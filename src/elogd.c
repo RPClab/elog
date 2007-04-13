@@ -20336,8 +20336,19 @@ void submit_elog(LOGBOOK * lbs)
       rcpt_to[0] = 0;
       mail_to[0] = 0;
       for (i=0 ; i<200 && rcpt_list[i*NAME_LENGTH]; i++) {
+         
+         if ((int) strlen(rcpt_to) + (int) strlen(&rcpt_list[i*NAME_LENGTH]) >= rcpt_to_size) {
+            rcpt_to_size += 256;
+            rcpt_to = xrealloc(rcpt_to, rcpt_to_size);
+         }
          strcat(rcpt_to, &rcpt_list[i*NAME_LENGTH]);
+
+         if ((int) strlen(mail_to) + (int) strlen(&mail_list[i*NAME_LENGTH]) >= mail_to_size) {
+            mail_to_size += 256;
+            mail_to = xrealloc(mail_to, mail_to_size);
+         }
          strcat(mail_to, &mail_list[i*NAME_LENGTH]);
+
          if (i<199 && rcpt_list[(i+1)*NAME_LENGTH]) {
             strcat(rcpt_to, ",");
             strcat(mail_to, ",\r\n\t");
