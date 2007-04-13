@@ -9273,13 +9273,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    else
       rsprintf("browser = 'Other';\n");
 
-   if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
-      strcpy(format, DEFAULT_TIME_FORMAT);
-   time(&ltime);
-   pts = localtime(&ltime);
-   my_strftime(str, sizeof(str), format, pts);
-   rsprintf("datetime = '%s';", str);
-
    rsprintf("//-->\n");
    rsprintf("</script>\n");
 
@@ -24421,7 +24414,7 @@ void server_loop(void)
 {
    int status, i, n, n_error, authorized, min, i_min, i_conn, length;
    struct sockaddr_in serv_addr, acc_addr;
-   char pwd[256], str[1000], url[256], cl_pwd[256], *p;
+   char pwd[256], str[1000], url[256], cl_pwd[256], format[256], *p;
    char cookie[256], boundary[256], list[1000], theme[256],
        host_list[MAX_N_LIST][NAME_LENGTH], logbook[256], logbook_enc[256], global_cmd[256];
    int lsock, len, flag, content_length, header_length;
@@ -24430,6 +24423,8 @@ void server_loop(void)
    struct timeval timeout;
    char *net_buffer = NULL;
    int net_buffer_size;
+   time_t now;
+   struct tm *ts;
 
    i_conn = content_length = 0;
    net_buffer_size = 100000;
@@ -25338,6 +25333,16 @@ void server_loop(void)
 
                if (!logbook[0] && global_cmd[0] && stricmp(global_cmd, "GetConfig") == 0) {
                   download_config();
+                  goto redir;
+               } else if (stricmp(global_cmd, "gettimedate") == 0) {
+                  if (!getcfg(logbook, "Time format", format, sizeof(format)))
+                     strcpy(format, DEFAULT_TIME_FORMAT);
+                  time(&now);
+                  ts = localtime(&now);
+                  my_strftime(str, sizeof(str), format, ts);
+                  show_http_header(NULL, FALSE, NULL);
+                  rsputs(str);
+                  rsputs(" ");
                   goto redir;
                } else if (strncmp(net_buffer, "GET", 3) == 0) {
                   /* extract path and commands */
