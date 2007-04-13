@@ -9233,6 +9233,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    else
       rsprintf("browser = 'Other';\n");
 
+   if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+      strcpy(format, DEFAULT_TIME_FORMAT);
+   time(&ltime);
+   pts = localtime(&ltime);
+   my_strftime(str, sizeof(str), format, pts);
+   rsprintf("datetime = '%s';", str);
+
    rsprintf("//-->\n");
    rsprintf("</script>\n");
 
@@ -19765,7 +19772,7 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
 void submit_elog(LOGBOOK * lbs)
 {
    char str[NAME_LENGTH], str2[NAME_LENGTH], file_name[256], error[1000], date[80],
-       mail_list[200][NAME_LENGTH], rcpt_list[200][NAME_LENGTH], list[10000], *p,
+       *mail_list, *rcpt_list, list[10000], *p,
        attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[MAX_PATH_LENGTH],
        in_reply_to[80], reply_to[MAX_REPLY_TO * 10], user[256], user_email[256],
        mail_param[1000], *mail_to, *rcpt_to, full_name[256], att_file[MAX_ATTACHMENTS][256],
@@ -20201,6 +20208,8 @@ void submit_elog(LOGBOOK * lbs)
    rcpt_to = xmalloc(256);
    rcpt_to[0] = 0;
    rcpt_to_size = 256;
+   mail_list = xmalloc(200*NAME_LENGTH);
+   rcpt_list = xmalloc(200*NAME_LENGTH);
 
    if (suppress == 1 || suppress == 3) {
       if (suppress == 1)
@@ -20245,28 +20254,28 @@ void submit_elog(LOGBOOK * lbs)
             i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
             strsubst_list(list, sizeof(list), slist, svalue, i);
 
-            n = strbreak(list, mail_list, 200, ",", FALSE);
+            n = strbreak(list, (char (*)[1500])mail_list, 200, ",", FALSE);
 
             if (verbose)
                eprintf("\n%s to %s\n\n", str, list);
 
             for (i = 0; i < n; i++) {
                /* remove possible 'mailto:' */
-               if ((p = strstr(mail_list[i], "mailto:")) != NULL)
+               if ((p = strstr(&mail_list[i*NAME_LENGTH], "mailto:")) != NULL)
                   strcpy(p, p + 7);
 
-               if ((int) strlen(mail_to) + (int) strlen(mail_list[i]) + 10 >= mail_to_size) {
+               if ((int) strlen(mail_to) + (int) strlen(&mail_list[i*NAME_LENGTH]) + 10 >= mail_to_size) {
                   mail_to_size += 256;
                   mail_to = xrealloc(mail_to, mail_to_size);
                }
-               strcat(mail_to, mail_list[i]);
+               strcat(mail_to, &mail_list[i*NAME_LENGTH]);
                strcat(mail_to, ",");
 
-               if ((int) strlen(rcpt_to) + (int) strlen(mail_list[i]) + 10 >= rcpt_to_size) {
+               if ((int) strlen(rcpt_to) + (int) strlen(&mail_list[i*NAME_LENGTH]) + 10 >= rcpt_to_size) {
                   rcpt_to_size += 256;
                   rcpt_to = xrealloc(rcpt_to, rcpt_to_size);
                }
-               strcat(rcpt_to, mail_list[i]);
+               strcat(rcpt_to, &mail_list[i*NAME_LENGTH]);
                strcat(rcpt_to, ",");
             }
          }
@@ -20310,14 +20319,14 @@ void submit_elog(LOGBOOK * lbs)
 
    if (strlen(mail_to) > 0) {
       /* convert any '|' to ',', remove duplicate email to's */
-      strbreak(rcpt_to, rcpt_list, 200, ",|", TRUE);
-      strbreak(mail_to, mail_list, 200, ",|", TRUE);
-      for (i=0 ; i<200 && rcpt_list[i][0]; i++) {
-         for (j=i+1 ; j<200 && rcpt_list[j][0] ; j++) {
-            if (strstr(rcpt_list[j], rcpt_list[i])) {
-               for (k=i ; k<199 && rcpt_list[k][0] ; k++) {
-                  memcpy(rcpt_list[k], rcpt_list[k+1], NAME_LENGTH);
-                  memcpy(mail_list[k], mail_list[k+1], NAME_LENGTH);
+      strbreak(rcpt_to, (void *)rcpt_list, 200, ",|", TRUE);
+      strbreak(mail_to, (void *)mail_list, 200, ",|", TRUE);
+      for (i=0 ; i<200 && rcpt_list[i*NAME_LENGTH]; i++) {
+         for (j=i+1 ; j<200 && rcpt_list[j*NAME_LENGTH] ; j++) {
+            if (strstr(&rcpt_list[j*NAME_LENGTH], &rcpt_list[i*NAME_LENGTH])) {
+               for (k=i ; k<199 && rcpt_list[k*NAME_LENGTH] ; k++) {
+                  memcpy(&rcpt_list[k*NAME_LENGTH], &rcpt_list[(k+1)*NAME_LENGTH], NAME_LENGTH);
+                  memcpy(&mail_list[k*NAME_LENGTH], &mail_list[(k+1)*NAME_LENGTH], NAME_LENGTH);
                }
                i = i-1;
                break;
@@ -20326,10 +20335,10 @@ void submit_elog(LOGBOOK * lbs)
       }
       rcpt_to[0] = 0;
       mail_to[0] = 0;
-      for (i=0 ; i<200 && rcpt_list[i][0]; i++) {
-         strcat(rcpt_to, rcpt_list[i]);
-         strcat(mail_to, mail_list[i]);
-         if (i<199 && rcpt_list[i+1][0]) {
+      for (i=0 ; i<200 && rcpt_list[i*NAME_LENGTH]; i++) {
+         strcat(rcpt_to, &rcpt_list[i*NAME_LENGTH]);
+         strcat(mail_to, &mail_list[i*NAME_LENGTH]);
+         if (i<199 && rcpt_list[(i+1)*NAME_LENGTH]) {
             strcat(rcpt_to, ",");
             strcat(mail_to, ",\r\n\t");
          }
@@ -20337,12 +20346,19 @@ void submit_elog(LOGBOOK * lbs)
 
       if (compose_email
           (lbs, rcpt_to, mail_to, message_id, attrib, mail_param, isparam("edit_id"), att_file,
-           isparam("encoding") ? getparam("encoding") : "plain", atoi(in_reply_to)) == 0)
+          isparam("encoding") ? getparam("encoding") : "plain", atoi(in_reply_to)) == 0) {
+         xfree(mail_to);
+         xfree(rcpt_to);
+         xfree(mail_list);
+         xfree(rcpt_list);
          return;
+      }
    }
 
    xfree(mail_to);
    xfree(rcpt_to);
+   xfree(mail_list);
+   xfree(rcpt_list);
 
    /*---- shell execution ----*/
 
@@ -24354,7 +24370,7 @@ void server_loop(void)
 {
    int status, i, n, n_error, authorized, min, i_min, i_conn, length;
    struct sockaddr_in serv_addr, acc_addr;
-   char pwd[256], str[1000], url[256], cl_pwd[256], format[256], *p;
+   char pwd[256], str[1000], url[256], cl_pwd[256], *p;
    char cookie[256], boundary[256], list[1000], theme[256],
        host_list[MAX_N_LIST][NAME_LENGTH], logbook[256], logbook_enc[256], global_cmd[256];
    int lsock, len, flag, content_length, header_length;
@@ -24363,8 +24379,6 @@ void server_loop(void)
    struct timeval timeout;
    char *net_buffer = NULL;
    int net_buffer_size;
-   time_t now;
-   struct tm *ts;
 
    i_conn = content_length = 0;
    net_buffer_size = 100000;
@@ -25273,16 +25287,6 @@ void server_loop(void)
 
                if (!logbook[0] && global_cmd[0] && stricmp(global_cmd, "GetConfig") == 0) {
                   download_config();
-                  goto redir;
-               } else if (stricmp(global_cmd, "gettimedate") == 0) {
-                  if (!getcfg(logbook, "Time format", format, sizeof(format)))
-                     strcpy(format, DEFAULT_TIME_FORMAT);
-                  time(&now);
-                  ts = localtime(&now);
-                  my_strftime(str, sizeof(str), format, ts);
-                  show_http_header(NULL, FALSE, NULL);
-                  rsputs(str);
-                  rsputs(" ");
                   goto redir;
                } else if (strncmp(net_buffer, "GET", 3) == 0) {
                   /* extract path and commands */
