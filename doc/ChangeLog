@@ -1,3 +1,21 @@
+Version 2.6.5, released Apr. 13th, 2007
+=======================================
+
+- Added array bounds checking
+- Added date/time button with AJAX updating
+- Changed 'remember me...' text
+- Implemente museremail, remove '|' in email list and remove duplicate email addresses
+- Check for forbidden attributes "Date" and "ID"
+- Documented keyboard shortcuts
+- Made conditional attributes work for quick filters
+- Skip locked entries during synchronization
+- Added CTRL+P and CTRL+S shortcuts
+- Added CTRL key shortcuts for ELCode
+- Replaced 'hidden attributes' by 'show attributes edit'
+- Implemented 'search all logbooks = 2'
+- Removed parameter sorting (did screw up group ordering, not really needed)
+- Implemented simple tables
+
 Version 2.6.4, released Feb. 17th, 2007
 =======================================
 

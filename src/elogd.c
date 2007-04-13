@@ -10,7 +10,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.6.4"
+#define VERSION "2.6.5"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -651,28 +651,28 @@ void *xmalloc(size_t bytes)
       memory_error_and_abort("xmalloc");
 
    /* put magic number around array and put array size */
-   *(unsigned int *)(temp + 0) = bytes;
-   *(unsigned int *)(temp + 4) = 0xdeadc0de;
-   *(unsigned int *)(temp + bytes + 8) = 0xdeadc0de;
+   *(unsigned int *) (temp + 0) = bytes;
+   *(unsigned int *) (temp + 4) = 0xdeadc0de;
+   *(unsigned int *) (temp + bytes + 8) = 0xdeadc0de;
 
-   return (temp+8);
+   return (temp + 8);
 }
 
 void *xcalloc(size_t count, size_t bytes)
 {
    char *temp;
 
-   temp = (char *) malloc(count*bytes + 12);
+   temp = (char *) malloc(count * bytes + 12);
    if (temp == 0)
       memory_error_and_abort("xcalloc");
-   memset(temp, 0, count*bytes + 12);
+   memset(temp, 0, count * bytes + 12);
 
    /* put magic number around array */
-   *(unsigned int *)(temp + 0) = count*bytes;
-   *(unsigned int *)(temp + 4) = 0xdeadc0de;
-   *(unsigned int *)(temp + count*bytes + 8) = 0xdeadc0de;
+   *(unsigned int *) (temp + 0) = count * bytes;
+   *(unsigned int *) (temp + 4) = 0xdeadc0de;
+   *(unsigned int *) (temp + count * bytes + 8) = 0xdeadc0de;
 
-   return (temp+8);
+   return (temp + 8);
 }
 
 void *xrealloc(void *pointer, size_t bytes)
@@ -685,21 +685,21 @@ void *xrealloc(void *pointer, size_t bytes)
 
    /* check old magic number */
    temp = pointer;
-   assert(*((unsigned int *)(temp-4)) == 0xdeadc0de);
-   old_size = *((unsigned int *)(temp-8));
-   assert(*((unsigned int *)(temp+old_size)) == 0xdeadc0de);
+   assert(*((unsigned int *) (temp - 4)) == 0xdeadc0de);
+   old_size = *((unsigned int *) (temp - 8));
+   assert(*((unsigned int *) (temp + old_size)) == 0xdeadc0de);
 
-   temp = (char *) realloc(temp-8, bytes+12);
+   temp = (char *) realloc(temp - 8, bytes + 12);
 
    if (temp == 0)
       memory_error_and_abort("xrealloc");
 
    /* put magic number around array */
-   *(unsigned int *)(temp + 0) = bytes;
-   *(unsigned int *)(temp + 4) = 0xdeadc0de;
-   *(unsigned int *)(temp + bytes + 8) = 0xdeadc0de;
+   *(unsigned int *) (temp + 0) = bytes;
+   *(unsigned int *) (temp + 4) = 0xdeadc0de;
+   *(unsigned int *) (temp + bytes + 8) = 0xdeadc0de;
 
-   return (temp+8);
+   return (temp + 8);
 }
 
 void xfree(void *pointer)
@@ -712,11 +712,11 @@ void xfree(void *pointer)
 
    /* check for magic byte */
    temp = pointer;
-   assert(*((unsigned int *)(temp-4)) == 0xdeadc0de);
-   old_size = *((unsigned int *)(temp-8));
-   assert(*((unsigned int *)(temp+old_size)) == 0xdeadc0de);
+   assert(*((unsigned int *) (temp - 4)) == 0xdeadc0de);
+   old_size = *((unsigned int *) (temp - 8));
+   assert(*((unsigned int *) (temp + old_size)) == 0xdeadc0de);
 
-   free(temp-8);
+   free(temp - 8);
 }
 
 char *xstrdup(const char *string)
@@ -2030,8 +2030,7 @@ int recv_string(int sock, char *buffer, int buffer_size, int millisec)
 
 void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to,
                           char *url, char *mail_text, int size, int mail_encoding,
-                          int n_attachments, char *multipart_boundary, int message_id,
-                          int reply_id)
+                          int n_attachments, char *multipart_boundary, int message_id, int reply_id)
 {
    char buffer[256], charset[256], subject_enc[5000];
    char buf[80], str[256];
@@ -2116,17 +2115,17 @@ void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to,
    snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1, "Subject: %s\r\n", subject_enc);
 
    if (strchr(from, '@')) {
-      strlcpy(str, strchr(from, '@')+1, sizeof(str));
+      strlcpy(str, strchr(from, '@') + 1, sizeof(str));
       if (strchr(str, '>'))
          *strchr(str, '>') = 0;
    } else
       strlcpy(str, "elog.org", sizeof(str));
 
    if (message_id)
-      snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1, "Message-ID: <%s-%d@%s>\r\n", 
+      snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1, "Message-ID: <%s-%d@%s>\r\n",
                lbs->name_enc, message_id, str);
    if (reply_id)
-      snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1, "In-Reply-To: <%s-%d@%s>\r\n", 
+      snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1, "In-Reply-To: <%s-%d@%s>\r\n",
                lbs->name_enc, reply_id, str);
 
    if (url)
@@ -5325,9 +5324,9 @@ int is_full_html(char *file_name)
    read(fh, buf, length);
    close(fh);
 
-   str = xstrdup((char *)buf);
+   str = xstrdup((char *) buf);
 
-   for (i = 0; i < (int) strlen((char *)buf); i++)
+   for (i = 0; i < (int) strlen((char *) buf); i++)
       str[i] = toupper(buf[i]);
    str[i] = 0;
 
@@ -5776,8 +5775,7 @@ char *email_quote_table =
 
 void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 {
-   int i, j, k, l, m, elcode_disabled, elcode_disabled1, escape_char, ordered_list, substituted,
-      inside_table;
+   int i, j, k, l, m, elcode_disabled, elcode_disabled1, escape_char, ordered_list, substituted, inside_table;
    char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[1000], hattrib[1000],
        value[1000], subst[1000], base_url[256], param[256], *lstr;
 
@@ -9090,7 +9088,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                sprintf(str, "%s_%d", ua, j);
                rsprintf("    !document.form1.%s.checked", str);
-               if (enum_user_line(lbs, j+1, login_name, sizeof(login_name)))
+               if (enum_user_line(lbs, j + 1, login_name, sizeof(login_name)))
                   rsprintf(" &&\n");
             }
             rsprintf(") {\n");
@@ -9292,7 +9290,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if ((isparam("inlineatt") && *getparam("inlineatt")) || bpreview)
       strcpy(script, " OnLoad=\"document.form1.Text.focus();\"");
 
-   strcat(script, " OnLoad=\"elKeyInit();\" OnFocus=\"elKeyInit();\""); 
+   strcat(script, " OnLoad=\"elKeyInit();\" OnFocus=\"elKeyInit();\"");
 
    if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1)
       rsprintf("<body onUnload=\"unload();\"%s>\n", script);
@@ -10169,8 +10167,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("<textarea rows=%d cols=%d wrap=hard %s name=\"Text\" onChange=\"mod();\">\n",
                   height, width, str);
       else
-         rsprintf("<textarea rows=%d cols=%d %s name=\"Text\" onChange=\"mod();\">\n", 
-                  height, width, str);
+         rsprintf("<textarea rows=%d cols=%d %s name=\"Text\" onChange=\"mod();\">\n", height, width, str);
 
       if (bedit) {
          if (!preset_text) {
@@ -11838,7 +11835,8 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
          mail_text[0] = 0;
          if (isparam("new_user_email") && isparam("new_user_name")) {
             compose_email_header(lbs, loc("Your ELOG account has been activated"), mail_from_name,
-                                 getparam("new_user_email"), NULL, mail_text, sizeof(mail_text), 1, 0, NULL, 0, 0);
+                                 getparam("new_user_email"), NULL, mail_text, sizeof(mail_text), 1, 0, NULL,
+                                 0, 0);
 
             strlcat(mail_text, "\r\n", sizeof(mail_text));
             strlcat(mail_text, loc("Your ELOG account has been activated on host"), sizeof(mail_text));
@@ -14678,7 +14676,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
          /* check if message is locked */
          el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, locked_by);
          if (locked_by[0]) {
-            sprintf(str, "ID%d:\t%s", message_id, loc("Entry is locked on local server and therefore skipped"));
+            sprintf(str, "ID%d:\t%s", message_id,
+                    loc("Entry is locked on local server and therefore skipped"));
             mprint(lbs, mode, str);
             all_identical = FALSE;
             continue;
@@ -20241,8 +20240,8 @@ void submit_elog(LOGBOOK * lbs)
    rcpt_to = xmalloc(256);
    rcpt_to[0] = 0;
    rcpt_to_size = 256;
-   mail_list = xmalloc(200*NAME_LENGTH);
-   rcpt_list = xmalloc(200*NAME_LENGTH);
+   mail_list = xmalloc(200 * NAME_LENGTH);
+   rcpt_list = xmalloc(200 * NAME_LENGTH);
 
    if (suppress == 1 || suppress == 3) {
       if (suppress == 1)
@@ -20287,28 +20286,28 @@ void submit_elog(LOGBOOK * lbs)
             i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
             strsubst_list(list, sizeof(list), slist, svalue, i);
 
-            n = strbreak(list, (char (*)[1500])mail_list, 200, ",", FALSE);
+            n = strbreak(list, (char (*)[1500]) mail_list, 200, ",", FALSE);
 
             if (verbose)
                eprintf("\n%s to %s\n\n", str, list);
 
             for (i = 0; i < n; i++) {
                /* remove possible 'mailto:' */
-               if ((p = strstr(&mail_list[i*NAME_LENGTH], "mailto:")) != NULL)
+               if ((p = strstr(&mail_list[i * NAME_LENGTH], "mailto:")) != NULL)
                   strcpy(p, p + 7);
 
-               if ((int) strlen(mail_to) + (int) strlen(&mail_list[i*NAME_LENGTH]) + 10 >= mail_to_size) {
+               if ((int) strlen(mail_to) + (int) strlen(&mail_list[i * NAME_LENGTH]) + 10 >= mail_to_size) {
                   mail_to_size += 256;
                   mail_to = xrealloc(mail_to, mail_to_size);
                }
-               strcat(mail_to, &mail_list[i*NAME_LENGTH]);
+               strcat(mail_to, &mail_list[i * NAME_LENGTH]);
                strcat(mail_to, ",");
 
-               if ((int) strlen(rcpt_to) + (int) strlen(&mail_list[i*NAME_LENGTH]) + 10 >= rcpt_to_size) {
+               if ((int) strlen(rcpt_to) + (int) strlen(&mail_list[i * NAME_LENGTH]) + 10 >= rcpt_to_size) {
                   rcpt_to_size += 256;
                   rcpt_to = xrealloc(rcpt_to, rcpt_to_size);
                }
-               strcat(rcpt_to, &mail_list[i*NAME_LENGTH]);
+               strcat(rcpt_to, &mail_list[i * NAME_LENGTH]);
                strcat(rcpt_to, ",");
             }
          }
@@ -20352,37 +20351,37 @@ void submit_elog(LOGBOOK * lbs)
 
    if (strlen(mail_to) > 0) {
       /* convert any '|' to ',', remove duplicate email to's */
-      strbreak(rcpt_to, (void *)rcpt_list, 200, ",|", TRUE);
-      strbreak(mail_to, (void *)mail_list, 200, ",|", TRUE);
-      for (i=0 ; i<200 && rcpt_list[i*NAME_LENGTH]; i++) {
-         for (j=i+1 ; j<200 && rcpt_list[j*NAME_LENGTH] ; j++) {
-            if (strstr(&rcpt_list[j*NAME_LENGTH], &rcpt_list[i*NAME_LENGTH])) {
-               for (k=i ; k<199 && rcpt_list[k*NAME_LENGTH] ; k++) {
-                  memcpy(&rcpt_list[k*NAME_LENGTH], &rcpt_list[(k+1)*NAME_LENGTH], NAME_LENGTH);
-                  memcpy(&mail_list[k*NAME_LENGTH], &mail_list[(k+1)*NAME_LENGTH], NAME_LENGTH);
+      strbreak(rcpt_to, (void *) rcpt_list, 200, ",|", TRUE);
+      strbreak(mail_to, (void *) mail_list, 200, ",|", TRUE);
+      for (i = 0; i < 200 && rcpt_list[i * NAME_LENGTH]; i++) {
+         for (j = i + 1; j < 200 && rcpt_list[j * NAME_LENGTH]; j++) {
+            if (strstr(&rcpt_list[j * NAME_LENGTH], &rcpt_list[i * NAME_LENGTH])) {
+               for (k = i; k < 199 && rcpt_list[k * NAME_LENGTH]; k++) {
+                  memcpy(&rcpt_list[k * NAME_LENGTH], &rcpt_list[(k + 1) * NAME_LENGTH], NAME_LENGTH);
+                  memcpy(&mail_list[k * NAME_LENGTH], &mail_list[(k + 1) * NAME_LENGTH], NAME_LENGTH);
                }
-               i = i-1;
+               i = i - 1;
                break;
             }
          }
       }
       rcpt_to[0] = 0;
       mail_to[0] = 0;
-      for (i=0 ; i<200 && rcpt_list[i*NAME_LENGTH]; i++) {
-         
-         if ((int) strlen(rcpt_to) + (int) strlen(&rcpt_list[i*NAME_LENGTH]) + 5 >= rcpt_to_size) {
+      for (i = 0; i < 200 && rcpt_list[i * NAME_LENGTH]; i++) {
+
+         if ((int) strlen(rcpt_to) + (int) strlen(&rcpt_list[i * NAME_LENGTH]) + 5 >= rcpt_to_size) {
             rcpt_to_size += 256;
             rcpt_to = xrealloc(rcpt_to, rcpt_to_size);
          }
-         strcat(rcpt_to, &rcpt_list[i*NAME_LENGTH]);
+         strcat(rcpt_to, &rcpt_list[i * NAME_LENGTH]);
 
-         if ((int) strlen(mail_to) + (int) strlen(&mail_list[i*NAME_LENGTH]) + 5 >= mail_to_size) {
+         if ((int) strlen(mail_to) + (int) strlen(&mail_list[i * NAME_LENGTH]) + 5 >= mail_to_size) {
             mail_to_size += 256;
             mail_to = xrealloc(mail_to, mail_to_size);
          }
-         strcat(mail_to, &mail_list[i*NAME_LENGTH]);
+         strcat(mail_to, &mail_list[i * NAME_LENGTH]);
 
-         if (i<199 && rcpt_list[(i+1)*NAME_LENGTH]) {
+         if (i < 199 && rcpt_list[(i + 1) * NAME_LENGTH]) {
             strcat(rcpt_to, ",");
             strcat(mail_to, ",\r\n\t");
          }
@@ -20390,7 +20389,7 @@ void submit_elog(LOGBOOK * lbs)
 
       if (compose_email
           (lbs, rcpt_to, mail_to, message_id, attrib, mail_param, isparam("edit_id"), att_file,
-          isparam("encoding") ? getparam("encoding") : "plain", atoi(in_reply_to)) == 0) {
+           isparam("encoding") ? getparam("encoding") : "plain", atoi(in_reply_to)) == 0) {
          xfree(mail_to);
          xfree(rcpt_to);
          xfree(mail_list);
@@ -22345,16 +22344,16 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
          else
             rsprintf("<input type=checkbox checked name=remember value=1>\n");
          rsprintf("%s<br>\n", loc("Keep me logged in on this computer"));
-         
+
          if (atof(str) < 1)
-            rsprintf(loc("for the next %d minutes"), (int)(atof(str)*60));
+            rsprintf(loc("for the next %d minutes"), (int) (atof(str) * 60));
          else if (atof(str) == 1)
             rsprintf(loc("for the next hour"));
          else if (atof(str) <= 48)
-            rsprintf(loc("for the next %d hours"), (int)atof(str));
+            rsprintf(loc("for the next %d hours"), (int) atof(str));
          else
-            rsprintf(loc("for the next %d days"), (int)(atof(str)/24));
-         
+            rsprintf(loc("for the next %d days"), (int) (atof(str) / 24));
+
          rsprintf(" or until I log out");
          rsprintf("</td></tr>\n");
       }
