@@ -644,39 +644,79 @@ static void memory_error_and_abort(char *func)
    print an error message and abort. */
 void *xmalloc(size_t bytes)
 {
-   void *temp;
+   char *temp;
 
-   temp = malloc(bytes);
+   temp = (char *) malloc(bytes + 12);
    if (temp == 0)
       memory_error_and_abort("xmalloc");
-   return (temp);
+
+   /* put magic number around array and put array size */
+   *(unsigned int *)(temp + 0) = bytes;
+   *(unsigned int *)(temp + 4) = 0xdeadc0de;
+   *(unsigned int *)(temp + bytes + 8) = 0xdeadc0de;
+
+   return (temp+8);
 }
 
 void *xcalloc(size_t count, size_t bytes)
 {
-   void *temp;
+   char *temp;
 
-   temp = calloc(count, bytes);
+   temp = (char *) malloc(count*bytes + 12);
    if (temp == 0)
       memory_error_and_abort("xcalloc");
-   return (temp);
+   memset(temp, 0, count*bytes + 12);
+
+   /* put magic number around array */
+   *(unsigned int *)(temp + 0) = count*bytes;
+   *(unsigned int *)(temp + 4) = 0xdeadc0de;
+   *(unsigned int *)(temp + count*bytes + 8) = 0xdeadc0de;
+
+   return (temp+8);
 }
 
 void *xrealloc(void *pointer, size_t bytes)
 {
-   void *temp;
+   char *temp;
+   int old_size;
 
-   temp = pointer ? realloc(pointer, bytes) : malloc(bytes);
+   if (pointer == NULL)
+      return xmalloc(bytes);
+
+   /* check old magic number */
+   temp = pointer;
+   assert(*((unsigned int *)(temp-4)) == 0xdeadc0de);
+   old_size = *((unsigned int *)(temp-8));
+   assert(*((unsigned int *)(temp+old_size)) == 0xdeadc0de);
+
+   temp = (char *) realloc(temp-8, bytes+12);
 
    if (temp == 0)
       memory_error_and_abort("xrealloc");
-   return (temp);
+
+   /* put magic number around array */
+   *(unsigned int *)(temp + 0) = bytes;
+   *(unsigned int *)(temp + 4) = 0xdeadc0de;
+   *(unsigned int *)(temp + bytes + 8) = 0xdeadc0de;
+
+   return (temp+8);
 }
 
 void xfree(void *pointer)
 {
-   if (pointer)
-      free(pointer);
+   char *temp;
+   int old_size;
+
+   if (!pointer)
+      return;
+
+   /* check for magic byte */
+   temp = pointer;
+   assert(*((unsigned int *)(temp-4)) == 0xdeadc0de);
+   old_size = *((unsigned int *)(temp-8));
+   assert(*((unsigned int *)(temp+old_size)) == 0xdeadc0de);
+
+   free(temp-8);
 }
 
 char *xstrdup(const char *string)
@@ -4171,12 +4211,12 @@ int el_retrieve(LOGBOOK * lbs,
                          text, textsize, in_reply_to, reply_to, attachment, encoding, locked_by);
    }
 
-   message = malloc(TEXT_SIZE + 1000);
+   message = xmalloc(TEXT_SIZE + 1000);
 
    lseek(fh, lbs->el_index[index].offset, SEEK_SET);
    i = my_read(fh, message, TEXT_SIZE + 1000 - 1);
    if (i <= 0) {
-      free(message);
+      xfree(message);
       close(fh);
       return EL_FILE_ERROR;
    }
@@ -4185,7 +4225,7 @@ int el_retrieve(LOGBOOK * lbs,
    close(fh);
 
    if (strncmp(message, "$@MID@$:", 8) != 0) {
-      free(message);
+      xfree(message);
       /* file might have been edited, rebuild index */
       el_build_index(lbs, TRUE);
       return el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr,
@@ -4194,7 +4234,7 @@ int el_retrieve(LOGBOOK * lbs,
 
    /* check for correct ID */
    if (atoi(message + 8) != message_id) {
-      free(message);
+      xfree(message);
       return EL_FILE_ERROR;
    }
 
@@ -4272,7 +4312,7 @@ int el_retrieve(LOGBOOK * lbs,
          if ((int) strlen(p) >= *textsize) {
             strlcpy(text, p, *textsize);
             show_error("Entry too long to display. Please increase TEXT_SIZE and recompile elogd.");
-            free(message);
+            xfree(message);
             return EL_FILE_ERROR;
          } else {
             strlcpy(text, p, *textsize);
@@ -4292,7 +4332,7 @@ int el_retrieve(LOGBOOK * lbs,
       }
    }
 
-   free(message);
+   xfree(message);
    return EL_SUCCESS;
 }
 
@@ -11124,7 +11164,7 @@ void adjust_crlf(char *buffer, int bufsize)
       }
 
       if ((int) strlen(buffer) + 2 >= bufsize) {
-         free(tmpbuf);
+         xfree(tmpbuf);
          return;
       }
 
@@ -21710,7 +21750,7 @@ BOOL convert_password_file(char *file_name)
       return FALSE;
    len = lseek(fh, 0, SEEK_END);
    lseek(fh, 0, SEEK_SET);
-   buf = malloc(len + 1);
+   buf = xmalloc(len + 1);
    assert(buf);
    i = my_read(fh, buf, len);
    buf[i] = 0;
@@ -21742,7 +21782,7 @@ BOOL convert_password_file(char *file_name)
             name[i] = *p++;
          name[i] = 0;
          if (*p++ != ':') {
-            free(buf);
+            xfree(buf);
             return FALSE;
          }
 
@@ -21750,7 +21790,7 @@ BOOL convert_password_file(char *file_name)
             password[i] = *p++;
          password[i] = 0;
          if (*p++ != ':') {
-            free(buf);
+            xfree(buf);
             return FALSE;
          }
 
@@ -21758,7 +21798,7 @@ BOOL convert_password_file(char *file_name)
             full_name[i] = *p++;
          full_name[i] = 0;
          if (*p++ != ':') {
-            free(buf);
+            xfree(buf);
             return FALSE;
          }
 
@@ -21766,7 +21806,7 @@ BOOL convert_password_file(char *file_name)
             email[i] = *p++;
          email[i] = 0;
          if (*p++ != ':') {
-            free(buf);
+            xfree(buf);
             return FALSE;
          }
 
@@ -21774,7 +21814,7 @@ BOOL convert_password_file(char *file_name)
             email_notify[i] = *p++;
          email_notify[i] = 0;
          if (*p && *p != '\n' && *p != '\r') {
-            free(buf);
+            xfree(buf);
             return FALSE;
          }
 
@@ -21800,7 +21840,7 @@ BOOL convert_password_file(char *file_name)
 
    printf("Ok\n");
 
-   free(buf);
+   xfree(buf);
    return TRUE;
 }
 
