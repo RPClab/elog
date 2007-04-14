@@ -13,7 +13,7 @@ On PC4534:
 - Translate new strings in eloglang.german
 - c:\elog> svn ci -m "Release x.x.x-y"
 - Create Tag from c:\elog to file:///y:/svn/elog/tags/version_x.x.x
-- build xxx-1
+- open VS 2005 command window, build xxx-1
 
 On PC5082:
 
@@ -32,7 +32,7 @@ On PC4534:
 
 - Put all new options in doc/config.html
 - c:\elog> svn ci -m "Version x.x.x-y" 
-- build xxx-y
+- open VS 2005 command window, build xxx-y
 
 On PC5082:
 
