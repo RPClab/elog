@@ -5433,7 +5433,7 @@ void insert_breaks(char *str, int n, int size)
 
 void rsputs(const char *str)
 {
-   if (strlen_retbuf + (int) strlen(str) > return_buffer_size) {
+   if (strlen_retbuf + (int) strlen(str) + 1 >= return_buffer_size) {
       return_buffer = xrealloc(return_buffer, return_buffer_size + 100000);
       memset(return_buffer + return_buffer_size, 0, 100000);
       return_buffer_size += 100000;
@@ -12885,7 +12885,7 @@ int show_download_page(LOGBOOK * lbs, char *path)
    show_plain_header(size, "export.txt");
 
    /* increase return buffer size if file too big */
-   if (size > return_buffer_size - (int) strlen(return_buffer)) {
+   if (size + 1 >= return_buffer_size - (int) strlen(return_buffer)) {
       delta = size - (return_buffer_size - strlen(return_buffer)) + 1000;
 
       return_buffer = xrealloc(return_buffer, return_buffer_size + delta);
@@ -12921,7 +12921,7 @@ int download_config()
    show_plain_header(size, "export.txt");
 
    /* increase return buffer size if file too big */
-   if (size > return_buffer_size - (int) strlen(return_buffer)) {
+   if (size + 1 >= return_buffer_size - (int) strlen(return_buffer)) {
       delta = size - (return_buffer_size - strlen(return_buffer)) + 1000;
 
       return_buffer = xrealloc(return_buffer, return_buffer_size + delta);
@@ -20332,14 +20332,14 @@ void submit_elog(LOGBOOK * lbs)
                   continue;
 
                sprintf(str, "\"%s\" <%s>,", full_name, user_email);
-               if ((int) strlen(mail_to) + (int) strlen(str) >= mail_to_size) {
+               if ((int) strlen(mail_to) + (int) strlen(str) + 1 >= mail_to_size) {
                   mail_to_size += 256;
                   mail_to = xrealloc(mail_to, mail_to_size);
                }
                strcat(mail_to, str);
 
                sprintf(str, "%s,", user_email);
-               if ((int) strlen(rcpt_to) + (int) strlen(str) >= rcpt_to_size) {
+               if ((int) strlen(rcpt_to) + (int) strlen(str) + 1 >= rcpt_to_size) {
                   rcpt_to_size += 256;
                   rcpt_to = xrealloc(rcpt_to, rcpt_to_size);
                }
