@@ -6205,7 +6205,7 @@ void rsprintf(const char *format, ...)
    vsprintf(str, (char *) format, argptr);
    va_end(argptr);
 
-   if (strlen_retbuf + (int) strlen(str) > return_buffer_size) {
+   if (strlen_retbuf + (int) strlen(str) + 1 >= return_buffer_size) {
       return_buffer = xrealloc(return_buffer, return_buffer_size + 100000);
       memset(return_buffer + return_buffer_size, 0, 100000);
       return_buffer_size += 100000;
