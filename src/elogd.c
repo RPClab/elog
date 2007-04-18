@@ -25233,7 +25233,7 @@ void server_loop(void)
             /*---- check "hosts allow" ----*/
 
             if (getcfg(logbook, "Hosts allow", list, sizeof(list))) {
-               strcpy(rem_host_ip, (char *) inet_ntoa(acc_addr.sin_addr));
+               strcpy(rem_host_ip, (char *) inet_ntoa(rem_addr));
                n = strbreak(list, host_list, MAX_N_LIST, ",", FALSE);
                /* check if current connection matches anyone on the list */
                for (i = 0; i < n; i++) {
