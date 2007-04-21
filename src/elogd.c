@@ -7676,6 +7676,31 @@ void show_error(char *error)
 
 /*------------------------------------------------------------------*/
 
+void show_query(LOGBOOK *lbs, char *title, char *query_string, char *button1, char *button1_url, char *button2, char *button2_url)
+{
+   show_standard_header(lbs, TRUE, "ELog query", title, FALSE, NULL);
+
+   rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
+
+   rsprintf("<tr><td class=\"dlgtitle\">\n");
+   rsprintf("%s</td></tr>\n", title);
+
+   rsprintf("<tr><td align=center class=\"dlgform\">");
+   rsprintf("%s", query_string);
+   rsprintf("</td></tr>\n\n");
+
+   rsprintf("<tr><td align=center class=\"dlgform\">");
+   rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href='%s';\">\n", button1, button1_url);
+   rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href='%s';\">\n", button2, button2_url);
+   rsprintf("</td></tr>\n\n");
+
+   rsprintf("</table>\n");
+   show_bottom_text(lbs);
+   rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
 void set_login_cookies(LOGBOOK * lbs, char *user, char *enc_pwd)
 {
    char str[256], lb_name[256], exp[80];
@@ -8655,6 +8680,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    orig_author[0] = 0;
    encoding[0] = 0;
    date[0] = 0;
+   locked_by[0] = 0;
 
    /* check for file attachment (mhttpd) */
    if (isparam("fa")) {
@@ -8711,13 +8737,21 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
    }
 
+   if (message_id && getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1 && 
+       locked_by[0] && !isparam("steal")) {
+      sprintf(str, "%d", message_id);
+      sprintf(text, "%s %s", loc("Entry is currently edited by"), locked_by);
+      show_query(lbs, loc("Entry is locked"), text, loc("Edit anyhow"), "?cmd=Edit&steal=1", loc("Cancel"), str);
+      return;
+   }
+
    /* Determine encoding */
    enc_selected = 0;            /* Default is ELCode */
    /* Overwrite from config file */
    if (getcfg(lbs->name, "Default Encoding", str, sizeof(str)))
       enc_selected = atoi(str);
 
-   /* detrmine if smiley bar should be displayed */
+   /* determine if smiley bar should be displayed */
    show_smileys = 0;
    cookie[0] = 0;
    if (isparam("hsm") && atoi(getparam("hsm")) == 1)    /* cookie */
@@ -10493,7 +10527,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                      rsprintf("<br>\n");
 
-                     strcpy(str, att[index]);
+                     strlcpy(str, att[index], sizeof(str));
                      str[13] = 0;
                      strcpy(file_enc, att[index] + 14);
                      url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
@@ -11910,7 +11944,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 
                      sprintf(mail_text + strlen(mail_text), "\r\nURL                 : %s", url);
 
-                     strcpy(str, isparam("new_full_name") ? getparam("new_full_name") : "");
+                     strlcpy(str, isparam("new_full_name") ? getparam("new_full_name") : "", sizeof(str));
                      url_encode(str, sizeof(str));
                      if (isparam("newpwd"))
                         do_crypt(getparam("newpwd"), enc_pwd, sizeof(enc_pwd));
@@ -12136,7 +12170,7 @@ void show_config_page(LOGBOOK * lbs)
    if (get_user_line(lbs, user, password, full_name, user_email, email_notify, NULL) != 1)
       sprintf(str, loc("User [%s] has been deleted"), user);
    else
-      strcpy(str, user);
+      strlcpy(str, user, sizeof(str));
 
    rsprintf("<td><input type=text size=40 name=new_user_name value=\"%s\"></td></tr>\n", str);
 
@@ -12510,7 +12544,7 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
                show_error(str);
                return;
             } else {
-               strcpy(str, isparam("nextmsg") ? getparam("nextmsg") : "");
+               strlcpy(str, isparam("nextmsg") ? getparam("nextmsg") : "", sizeof(str));
                if (atoi(str) == 0)
                   sprintf(str, "%d", el_search_message(lbs, EL_LAST, 0, TRUE));
                if (atoi(str) == 0)
@@ -12582,7 +12616,7 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
             rsprintf("<input type=hidden name=nsel value=%s>\n", getparam("nsel"));
 
          if (isparam("lastcmd")) {
-            strcpy(str, getparam("lastcmd"));
+            strlcpy(str, getparam("lastcmd"), sizeof(str));
             rsprintf("<input type=hidden name=lastcmd value=\"%s\">\n", str);
          }
 
@@ -12971,7 +13005,7 @@ void show_import_page(LOGBOOK * lbs)
 
    str[0] = 0;
    if (isparam("sep"))
-      strcpy(str, getparam("sep"));
+      strlcpy(str, getparam("sep"), sizeof(str));
 
    if (str[0] == 0)
       rsprintf("<input type=\"radio\" checked id=\"comma\" name=\"sep\" value=\"auto\">");
@@ -14212,7 +14246,7 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
    do {
 
       combine_url(lbs, server, "", url, sizeof(url));
-      strcpy(str, url);
+      strlcpy(str, url, sizeof(str));
       strcat(str, "?cmd=GetPwdFile");   // request password file
 
       if (retrieve_url(str, &buffer, pwd) < 0) {
@@ -14342,11 +14376,11 @@ int save_md5(LOGBOOK * lbs, char *server, MD5_INDEX * md5_index, int n)
    combine_url(lbs, server, "", url, sizeof(url));
    url_decode(url);
    if (strstr(url, "http://"))
-      strcpy(str, url + 7);
+      strlcpy(str, url + 7, sizeof(str));
    else if (strstr(url, "https://"))
-      strcpy(str, url + 8);
+      strlcpy(str, url + 8, sizeof(str));
    else
-      strcpy(str, url);
+      strlcpy(str, url, sizeof(str));
 
    for (i = 0; i < (int) strlen(str); i++)
       if (strchr(":/\\ ", str[i]))
@@ -14387,11 +14421,11 @@ int load_md5(LOGBOOK * lbs, char *server, MD5_INDEX ** md5_index)
    combine_url(lbs, server, "", url, sizeof(url));
    url_decode(url);
    if (strstr(url, "http://"))
-      strcpy(str, url + 7);
+      strlcpy(str, url + 7, sizeof(str));
    else if (strstr(url, "https://"))
-      strcpy(str, url + 8);
+      strlcpy(str, url + 8, sizeof(str));
    else
-      strcpy(str, url);
+      strlcpy(str, url, sizeof(str));
 
    for (i = 0; i < (int) strlen(str); i++)
       if (strchr(":/\\ ", str[i]))
@@ -15840,7 +15874,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             if (strieq(encoding, "ELCode") && stristr(text, str))
                continue;
 
-            strcpy(str, attachment[index]);
+            strlcpy(str, attachment[index], sizeof(str));
             str[13] = 0;
             sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[index] + 14);
             url_encode(ref, sizeof(ref));       /* for file names with special characters like "+" */
@@ -16344,14 +16378,14 @@ void build_ref(char *ref, int size, char *mode, char *expand, char *attach, char
 
    /* eliminate old search */
    if (strstr(ref, "cmd=Search&"))
-      strcpy(strstr(ref, "cmd=Search&"), strstr(ref, "cmd=Search&") + 11);
+      strlcpy(strstr(ref, "cmd=Search&"), strstr(ref, "cmd=Search&") + 11, sizeof(str));
 
    /* eliminate id=xxx */
    if (strstr(ref, "id=")) {
       p = strstr(ref, "id=") + 3;
       while (*p && isdigit(*p))
          p++;
-      strcpy(strstr(ref, "id="), p);
+      strlcpy(strstr(ref, "id="), p, sizeof(str));
       if (strlen(ref) > 0 && ref[strlen(ref) - 1] == '?')
          ref[strlen(ref) - 1] = 0;
    }
@@ -17067,7 +17101,7 @@ void show_rss_feed(LOGBOOK * lbs)
       rsprintf("</title>\n");
 
       rsprintf("<link>");
-      strcpy(str, url);
+      strlcpy(str, url, sizeof(str));
       sprintf(str + strlen(str), "/%d", message_id);
       xmlencode(str);
       rsprintf("</link>\n");
@@ -18562,7 +18596,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             /* assemble current command line, replace sort statements */
             strcpy(ref, getparam("cmdline"));
 
-            strcpy(str, disp_attr[i]);
+            strlcpy(str, disp_attr[i], sizeof(str));
             url_encode(str, sizeof(str));
             if (isparam("sort") && strcmp(getparam("sort"), disp_attr[i]) == 0) {
                subst_param(ref, sizeof(ref), "sort", "");
@@ -18692,7 +18726,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   iattr[j] = '_';
             rsprintf("\t\t<%s>", iattr);
 
-            strcpy(str, attrib[i]);
+            strlcpy(str, attrib[i], sizeof(str));
             if (attr_flags[i] & AF_DATE) {
                if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
                   strcpy(format, DEFAULT_DATE_FORMAT);
@@ -19605,7 +19639,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
              strlen(shell_cmd) + strlen(lbs->data_dir) + strlen(att_file[i]) < sizeof(shell_cmd) + 1) {
             strcpy(p, "\"");
             strcat(p, lbs->data_dir);
-            strcpy(str, att_file[i]);
+            strlcpy(str, att_file[i], sizeof(str));
             str_escape(str, sizeof(str));
             strcat(p, str);
             strcat(p, "\" ");
@@ -19940,7 +19974,7 @@ void submit_elog(LOGBOOK * lbs)
             /* check if option without {n} exists */
             if (!attr_options[i][j][0]) {
                for (j = 0; attr_options[i][j][0]; j++) {
-                  strcpy(str, attr_options[i][j]);
+                  strlcpy(str, attr_options[i][j], sizeof(str));
                   if (strchr(str, '{'))
                      *strchr(str, '{') = 0;
                   if (strieq(str, getparam(ua)))
@@ -20271,7 +20305,7 @@ void submit_elog(LOGBOOK * lbs)
                else
                   index--;      /* repeat this loop */
             } else
-               strcpy(str2, ua);
+               strlcpy(str2, ua, sizeof(str));
 
             if (isparam(str2)) {
                if (strchr(getparam(str2), ' '))
@@ -20955,7 +20989,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             if (i < n - 1)
                rsprintf("&nbsp|\n");
          } else {
-            strcpy(str, loc(menu_item[i]));
+            strlcpy(str, loc(menu_item[i]), sizeof(str));
             url_encode(str, sizeof(str));
 
             if (strieq(menu_item[i], "list"))
@@ -21501,7 +21535,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                   close(fh);
                }
 
-               strcpy(str, attachment[index]);
+               strlcpy(str, attachment[index], sizeof(str));
                str[13] = 0;
                strcpy(file_enc, attachment[index] + 14);
                url_encode(file_enc, sizeof(file_enc));  /* for file names with special characters like "+" */
@@ -22082,7 +22116,7 @@ void set_user_login_time(LOGBOOK * lbs, char *user)
          return;
 
       if ((node = mxml_find_node(user_node, "last_activity")) != NULL) {
-         strcpy(str, mxml_get_value(node));
+         strlcpy(str, mxml_get_value(node), sizeof(str));
          last = date_to_ltime(str);
       } else
          last = 0;
@@ -22096,7 +22130,7 @@ void set_user_login_time(LOGBOOK * lbs, char *user)
          if (now > last + 3600) {
             strcpy(str, "0");
             if ((node = mxml_find_node(user_node, "last_activity")) != NULL)
-               strcpy(str, mxml_get_value(node));
+               strlcpy(str, mxml_get_value(node), sizeof(str));
 
             if ((node = mxml_find_node(user_node, "last_logout")) != NULL)
                mxml_replace_node_value(node, str);
@@ -22298,7 +22332,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
 
       if (getcfg(lbs->name, "URL", str, sizeof(str))) {
          extract_host(str);
-         strcpy(str2, http_host);
+         strlcpy(str2, http_host, sizeof(str));
          if (strchr(str2, ':'))
             *strchr(str2, ':') = 0;
          if (!strieq(str, str2)) {
@@ -22368,7 +22402,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
          rsprintf("<a href=\"?cmd=%s\">%s</a>", loc("Forgot"), loc("Forgot password?"));
 
       if (show_self_register) {
-         strcpy(str, loc("New user"));
+         strlcpy(str, loc("New user"), sizeof(str));
          url_encode(str, sizeof(str));
          if (show_forgot_link)
             rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");

@@ -257,6 +257,14 @@
 						WarningLevel="0"
 					/>
 				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						WarningLevel="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\mxml\strlcpy.c"
