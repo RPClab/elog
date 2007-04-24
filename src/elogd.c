@@ -19849,7 +19849,7 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
 void submit_elog(LOGBOOK * lbs)
 {
    char str[NAME_LENGTH], str2[NAME_LENGTH], file_name[256], error[1000], date[80],
-       *mail_list, *rcpt_list, list[10000], *p,
+       *mail_list, *rcpt_list, list[10000], *p, locked_by[256], 
        attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[MAX_PATH_LENGTH],
        in_reply_to[80], reply_to[MAX_REPLY_TO * 10], user[256], user_email[256],
        mail_param[1000], *mail_to, *rcpt_to, full_name[256], att_file[MAX_ATTACHMENTS][256],
@@ -20195,6 +20195,7 @@ void submit_elog(LOGBOOK * lbs)
    in_reply_to[0] = 0;
    date[0] = 0;
    resubmit_orig = 0;
+   locked_by[0] = 0;
    bedit = FALSE;
 
    if (isparam("edit_id") && isparam("resubmit")
@@ -20240,6 +20241,34 @@ void submit_elog(LOGBOOK * lbs)
          sprintf(str, "NEW entry #%d", message_id);
 
       write_logfile(lbs, str);
+   }
+
+   /* check if lock has been stolen */
+   if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1 && message_id) {
+      el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, locked_by);
+
+      if (isparam("full_name"))
+         strlcpy(str, getparam("full_name"), sizeof(str));
+      else
+         strlcpy(str, loc("user"), sizeof(str));
+
+      strcat(str, " ");
+      strcat(str, loc("on"));
+      strcat(str, " ");
+      strcat(str, rem_host);
+
+      if (locked_by[0] == 0 || strcmp(locked_by, str) != 0) {
+         if (locked_by[0])
+            sprintf(str, loc("This entry has in meantime been locked by %s"), locked_by);
+         else
+            sprintf(str, loc("This entry has in meantime been modified by someone else"));
+         strlcat(str, ".<p>\n", sizeof(str));
+         strlcat(str, loc("Submitting it now would overwrite the other modification and is therefore prohibited"), sizeof(str));
+         strlcat(str, ".", sizeof(str));
+
+         show_error(str);
+         return;
+      }
    }
 
    message_id =
@@ -22390,7 +22419,9 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
             rsprintf("<input type=checkbox checked name=remember value=1>\n");
          rsprintf("%s<br>\n", loc("Keep me logged in on this computer"));
 
-         if (atof(str) < 1)
+         if (str[0] == 0)
+            rsprintf(loc("for the next %d days"), 31);
+         else if (atof(str) < 1)
             rsprintf(loc("for the next %d minutes"), (int) (atof(str) * 60));
          else if (atof(str) == 1)
             rsprintf(loc("for the next hour"));
