@@ -14528,8 +14528,10 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
          if (getcfg_topgroup())
             sprintf(loc_ref, "<a href=\"../%s/\">%s</a>", lbs->name_enc, lbs->name);
-         else
+         else if (sync_all)
             sprintf(loc_ref, "<a href=\"%s/\">%s</a>", lbs->name_enc, lbs->name);
+         else
+            sprintf(loc_ref, "<a href=\".\">%s</a>", lbs->name);
 
          sprintf(str, loc("Synchronizing logbook %s with server \"%s\""), loc_ref, list[index]);
          rsprintf("<tr><td class=\"title1\">%s</td></tr>\n", str);
@@ -14774,8 +14776,10 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                } else if (mode == SYNC_HTML) {
                   if (getcfg_topgroup())
                      rsprintf("<a href=\"../%s/%d\">ID%d:</a>\t", lbs->name_enc, message_id, message_id);
-                  else
+                  else if (sync_all)
                      rsprintf("<a href=\"%s/%d\">ID%d:</a>\t", lbs->name_enc, message_id, message_id);
+                  else
+                     rsprintf("<a href=\"%d\">ID%d:</a>\t", message_id, message_id);
 
                   flush_return_buffer();
                }
@@ -14836,6 +14840,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                   if (getcfg_topgroup())
                      sprintf(loc_ref, "<a href=\"../%s/%d\">%s</a>", lbs->name_enc, message_id, loc("local"));
+                  else if (sync_all)
+                     sprintf(loc_ref, "<a href=\"%s/%d\">%s</a>", lbs->name_enc, message_id, loc("local"));
                   else
                      sprintf(loc_ref, "<a href=\"%d\">%s</a>", message_id, loc("local"));
 
@@ -14898,6 +14904,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                   if (getcfg_topgroup())
                      sprintf(loc_ref, "<a href=\"../%s/%d\">%s</a>", lbs->name_enc, message_id, loc("local"));
+                  else if (sync_all)
+                     sprintf(loc_ref, "<a href=\"%s/%d\">%s</a>", lbs->name_enc, message_id, loc("Local entry"));
                   else
                      sprintf(loc_ref, "<a href=\"%d\">%s</a>", message_id, loc("Local entry"));
 
@@ -15051,8 +15059,11 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                   if (mode == SYNC_HTML) {
                      if (getcfg_topgroup())
                         rsprintf("<a href=\"../%s/%d\">ID%d:</a>\t", lbs->name_enc, message_id, message_id);
-                     else
+                     else if (sync_all)
                         rsprintf("<a href=\"%s/%d\">ID%d:</a>\t", lbs->name_enc, message_id, message_id);
+                     else
+                        rsprintf("<a href=\"%d\">ID%d:</a>\t", message_id, message_id);
+
                      flush_return_buffer();
                   } else if (mode == SYNC_CLONE) {
                      eprintf("ID%d:\t", message_id);
@@ -15098,9 +15109,11 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                            if (getcfg_topgroup())
                               rsprintf("<a href=\"../%s/%d\">ID%d:</a>\t", lbs->name_enc,
                                        message_id, message_id);
-                           else
+                           else if (sync_all)
                               rsprintf("<a href=\"%s/%d\">ID%d:</a>\t", lbs->name_enc,
                                        message_id, message_id);
+                           else
+                              rsprintf("<a href=\"%d\">ID%d:</a>\t", message_id, message_id);
 
                            rsprintf("%s\n", loc("Remote entry received"));
                         }
@@ -15205,12 +15218,10 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
          if (getcfg_topgroup())
             rsprintf("<br><b><a href=\"../%s/?cmd=Synchronize&confirm=1\">", lbs->name_enc);
-         else {
-            if (sync_all)
-               rsprintf("<br><b><a href=\"%s/?cmd=Synchronize&confirm=1\">", lbs->name_enc);
-            else
-               rsprintf("<br><b><a href=\"../%s/?cmd=Synchronize&confirm=1\">", lbs->name_enc);
-         }
+         else if (sync_all)
+            rsprintf("<br><b><a href=\"%s/?cmd=Synchronize&confirm=1\">", lbs->name_enc);
+         else
+            rsprintf("<br><b><a href=\"../%s/?cmd=Synchronize&confirm=1\">", lbs->name_enc);
 
          if (n_delete > 1)
             rsprintf(loc("Click here to delete %d entries"), n_delete);
