@@ -5767,6 +5767,9 @@ PATTERN_LIST pattern_list[] = {
    {"|", "</td><td>"},
    {"[/table]", "</td></tr></table>"},
 
+   /* horizontal line */
+   {"[line]", "<hr />"},
+
    {"", ""}
 };
 
@@ -10014,6 +10017,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       ricon("list", loc("Insert list CTRL+L"), "elcode(document.form1.Text, 'LIST','')");
       ricon("table", loc("Insert table"), "elcode(document.form1.Text, 'TABLE','')");
       ricon("heading", loc("Insert heading CTRL+H"), "queryHeading(document.form1.Text)");
+      ricon("line", loc("Insert horizontal line"), "elcode(document.form1.Text, 'LINE','')");
 
       rsprintf(" ");
       ricon("code", loc("Insert code CTRL+O"), "elcode(document.form1.Text, 'CODE','')");
