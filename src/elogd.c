@@ -5770,6 +5770,9 @@ PATTERN_LIST pattern_list[] = {
    /* horizontal line */
    {"[line]", "<hr />"},
 
+   /* anchor */
+   {"[anchor]", "<a name=\"%#\">"},
+   {"[/anchor]", "</a>"},
    {"", ""}
 };
 
@@ -5861,7 +5864,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                   if (!isdigit(tmp[m]))
                      break;
 
-               if (m < (int) strlen(tmp)) {
+               if (m < (int) strlen(tmp) && tmp[m] != '#') {
                   /* if link contains reference to other logbook, put logbook explicitly */
                   if (email_notify)
                      compose_base_url(NULL, base_url, sizeof(base_url));
@@ -6050,7 +6053,8 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                      /* add http:// if missing */
                      else if (!strnieq(attrib, "http://", 7) &&
                               strstr(pattern_list[l].subst, "mailto") == NULL &&
-                              strstr(pattern_list[l].subst, "img") == NULL)
+                              strstr(pattern_list[l].subst, "img") == NULL &&
+                              strncmp(pattern_list[l].subst, "<a", 2) != 0)
                         sprintf(hattrib, "http://%s", attrib);
                      strlcpy(subst, pattern_list[l].subst, sizeof(subst));
                      *strchr(subst, '#') = 's';
@@ -10018,6 +10022,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       ricon("table", loc("Insert table"), "elcode(document.form1.Text, 'TABLE','')");
       ricon("heading", loc("Insert heading CTRL+H"), "queryHeading(document.form1.Text)");
       ricon("line", loc("Insert horizontal line"), "elcode(document.form1.Text, 'LINE','')");
+      ricon("anchor", loc("Insert anchor point"), "elcode(document.form1.Text, 'ANCHOR','')");
 
       rsprintf(" ");
       ricon("code", loc("Insert code CTRL+O"), "elcode(document.form1.Text, 'CODE','')");
