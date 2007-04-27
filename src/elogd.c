@@ -17949,7 +17949,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          if ((isparam("sort") && strieq(getparam("sort"), attr_list[i]))
              || (isparam("rsort") && strieq(getparam("rsort"), attr_list[i]))) {
             strlcpy(msg_list[index].string, attrib[i], 256);
-            if (attr_flags[i] | AF_NUMERIC)
+            if (attr_flags[i] & AF_NUMERIC)
                numeric = TRUE;
          }
 
