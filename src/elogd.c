@@ -12980,7 +12980,7 @@ int download_config()
 
 /*------------------------------------------------------------------*/
 
-void show_import_page(LOGBOOK * lbs)
+void show_import_page_csv(LOGBOOK * lbs)
 {
    char str[256], str2[256];
 
@@ -13074,6 +13074,66 @@ void show_import_page(LOGBOOK * lbs)
    rsprintf("<input type=\"file\" size=\"60\" maxlength=\"200\" name=\"csvfile\" ");
    if (isparam("csvfile"))
       rsprintf(" value=\"%s\" ", getparam("csvfile"));
+   rsprintf("accept=\"filetype/*\"></td></tr>\n");
+
+   rsprintf("</table></td></tr></table>\n\n");
+   show_bottom_text(lbs);
+   rsprintf("</form></body></html>\r\n");
+
+}
+
+/*------------------------------------------------------------------*/
+
+void show_import_page_xml(LOGBOOK * lbs)
+{
+   /*---- header ----*/
+
+   show_html_header(lbs, FALSE, loc("ELOG XML import"), TRUE, FALSE, NULL, FALSE);
+
+   rsprintf("<body><form method=\"POST\" action=\"./\" enctype=\"multipart/form-data\">\n");
+
+   /*---- title ----*/
+
+   show_standard_title(lbs->name, "", 0);
+
+   /*---- menu buttons ----*/
+
+   rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
+
+   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
+   rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Import"));
+
+   rsprintf("</span></td></tr>\n\n");
+
+   /* table for two-column items */
+   rsprintf("<tr><td class=\"form2\">");
+   rsprintf("<table width=\"100%%\" cellspacing=0>\n");
+
+   /*---- entry form ----*/
+
+   rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n", loc("Options"));
+   rsprintf("<td class=\"attribvalue\">");
+
+   if (isparam("head"))
+      rsprintf("<input type=checkbox checked id=\"head\" name=\"head\" value=\"1\">\n");
+   else
+      rsprintf("<input type=checkbox id=\"head\" name=\"head\" value=\"1\">\n");
+   rsprintf("<label for=\"head\">%s</label><br>\n", loc("Derive attributes from CSV file"));
+
+   rsprintf("<input type=checkbox id=\"preview\" name=\"preview\" value=\"1\">\n");
+   rsprintf("<label for=\"preview\">%s</label><br>\n", loc("Preview import"));
+
+   rsprintf("</td></tr>\n");
+
+   rsprintf("<tr><td class=\"attribname\" nowrap width=\"10%%\">%s:</td>\n", loc("XML filename"));
+   rsprintf("<td class=\"attribvalue\">");
+
+   if (isparam("xmlfile"))
+      rsprintf("<b>%s</b>:<br>\n", loc("Please re-enter filename"));
+
+   rsprintf("<input type=\"file\" size=\"60\" maxlength=\"200\" name=\"xmlfile\" ");
+   if (isparam("xmlfile"))
+      rsprintf(" value=\"%s\" ", getparam("xmlfile"));
    rsprintf("accept=\"filetype/*\"></td></tr>\n");
 
    rsprintf("</table></td></tr></table>\n\n");
@@ -13294,6 +13354,164 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
    } while (*p);
 
    xfree(line);
+   xfree(list);
+
+   if (isparam("preview")) {
+      rsprintf("</table></td></tr></table>\n");
+      show_bottom_text(lbs);
+      rsprintf("</form></body></html>\r\n");
+
+      return;
+   }
+
+   sprintf(str, loc("%d entries successfully imported"), n_imported);
+   show_elog_list(lbs, 0, 0, 0, TRUE, str);
+}
+
+/*------------------------------------------------------------------*/
+
+void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
+{
+   char str[256], date[80], error[256], *list, *p;
+   int i, j, index, n_attr, iline, n_imported, textcol;
+   PMXML_NODE root, entry;
+
+   iline = n_imported = 0;
+   textcol = -1;
+
+   n_attr = lbs->n_attr;
+
+   root = mxml_parse_buffer(xml, error, sizeof(error));
+   if (root == NULL) {
+      strencode2(str, error, sizeof(str));
+      show_error(str);
+      return;
+   }
+
+   root = mxml_find_node(root, "ELOG_LIST");
+   if (root == NULL) {
+      sprintf(str, loc("XML file does not contain %s element"), "&lt;ELOG_LIST&gt;");
+      show_error(str);
+      return;
+   }
+
+   entry = mxml_subnode(root, 0);
+
+   if (mxml_find_node(entry, "MID") == NULL) {
+      sprintf(str, loc("XML file does not contain %s element"), "&lt;MID&gt;");
+      show_error(str);
+      return;
+   }
+
+   if (mxml_find_node(entry, "DATE") == NULL) {
+      sprintf(str, loc("XML file does not contain %s element"), "&lt;DATE&gt;");
+      show_error(str);
+      return;
+   }
+
+   if (isparam("preview")) {
+
+      /* title row */
+      sprintf(str, loc("XML import preview of %s"), xmlfile);
+      show_standard_header(lbs, TRUE, str, "./", FALSE, NULL);
+      rsprintf("<table class=\"frame\" cellpadding=0 cellspacing=0>\n");
+      rsprintf("<tr><td class=\"title1\">%s</td></tr>\n", str, str);
+
+      /* menu buttons */
+      rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
+      rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
+      rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("XML Import"));
+
+      rsprintf("</span></td></tr>\n\n");
+      rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>");
+   }
+
+   list = xmalloc(MAX_N_ATTR * NAME_LENGTH);
+
+   /* derive attributes from XML file */
+   if (isparam("head")) {
+      if (isparam("preview")) {
+         rsprintf("<tr>\n");
+         for (i = 0; i < mxml_get_number_of_children(entry) ; i++)
+            rsprintf("<th class=\"listtitle\">%s</th>\n", mxml_get_name(mxml_subnode(entry, i)));
+
+         rsprintf("</tr>\n");
+         n_attr = i;
+      } else {
+         for (i = j = 0; i < mxml_get_number_of_children(entry) ; i++) {
+            strlcpy(str, mxml_get_name(mxml_subnode(entry, i)), NAME_LENGTH);
+            if (stricmp(str, "ID") != 0 && stricmp(str, "Date") != 0 && stricmp(str, "Text") != 0)
+               strlcpy(attr_list[j++], mxml_get_name(mxml_subnode(entry, i)), NAME_LENGTH);
+         }
+
+         if (!set_attributes(lbs, attr_list, j - 3))
+            return;
+         lbs->n_attr = j - 3;
+      }
+   }
+
+   for (index=0 ; index<mxml_get_number_of_children(root) ; index++) {
+
+      entry = mxml_subnode(root, index);
+
+      if (isparam("preview")) {
+         rsprintf("<tr>\n");
+         for (i = 0; i < mxml_get_number_of_children(entry); i++) {
+            
+            strlcpy(str, mxml_get_name(mxml_subnode(entry, i)), NAME_LENGTH);
+            if (strieq(str, "TEXT"))
+               break;
+
+            if (iline % 2 == 0)
+               rsputs("<td class=\"list1\">");
+            else
+               rsputs("<td class=\"list2\">");
+
+            strlcpy(str, mxml_get_value(mxml_subnode(entry, i)), NAME_LENGTH);
+
+            if (!str[0])
+               rsputs("&nbsp;");
+            else
+               rsputs(str);
+
+            rsputs("</td>\n");
+         }
+
+         rsputs("<td class=\"summary\">");
+         if (mxml_find_node(entry, "TEXT")) {
+            rsputs(mxml_get_value(mxml_find_node(entry, "TEXT")));
+         }
+         rsputs("</td>\n");
+         rsputs("</tr>\n");
+         iline++;
+
+      } else {
+
+         for (i = 0; i < n_attr; i++) {
+
+            for (j = 0; j < (int) attr_list[i]; j++)
+               str[j] = toupper(attr_list[i][j]);
+
+            if (mxml_find_node(entry, str) == NULL)
+               *(list + (i*NAME_LENGTH)) = 0;
+            else
+               strlcpy(list + i*NAME_LENGTH, mxml_get_value(mxml_find_node(entry, str)), NAME_LENGTH);
+         }
+
+         str[0] = 0;
+         if (mxml_find_node(entry, "TEXT"))
+            p = mxml_get_value(mxml_find_node(entry, "TEXT"));
+         else
+            p = str;
+
+         /* submit entry */
+         date[0] = 0;
+         if (el_submit(lbs, 0, FALSE, date, attr_list, (char (*)[NAME_LENGTH]) list,
+                       n_attr, p, "", "", "plain", NULL, TRUE, NULL))
+            n_imported++;
+      }
+   }
+
    xfree(list);
 
    if (isparam("preview")) {
@@ -16332,7 +16550,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          strlcat(menu_str, "Config, ", sizeof(menu_str));
    }
 
-   strcpy(other_str, "Preview, Back, Search, Download, CSV Import, ");
+   strcpy(other_str, "Preview, Back, Search, Download, Import, CSV Import, XML Import, ");
    strlcat(other_str, "Cancel, First, Last, Previous, Next, Requested, Forgot, ", sizeof(other_str));
 
    /* only allow Submit & Co if "New" is allowed */
@@ -16349,10 +16567,6 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
    } else if (getcfg(lbs->name, "Self register", str, sizeof(str)) && atoi(str) > 0) {
       strcat(other_str, "Remove user, New user, ");
    }
-
-   /* allow import if CSV import is present */
-   if (stristr(menu_str, loc("CSV Import")))
-      strcat(other_str, "Import, ");
 
    /* allow change password if "config" possible */
    if (strieq(command, loc("Change password")) && stristr(menu_str, "Config")) {
@@ -18170,7 +18384,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
          /* default menu commands */
          if (menu_str[0] == 0) {
-            strlcpy(menu_str, "New, Find, Select, CSV Import, ", sizeof(menu_str));
+            strlcpy(menu_str, "New, Find, Select, Import, ", sizeof(menu_str));
 
             if (getcfg(lbs->name, "Password file", str, sizeof(str)))
                strlcat(menu_str, "Config, Logout, ", sizeof(menu_str));
@@ -24048,8 +24262,18 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (strieq(command, loc("CSV Import"))) {
-      show_import_page(lbs);
+   if (strieq(command, loc("Import"))) {
+      show_query(lbs, loc("ELOG import"), loc("Plese choose format to import:"), "CSV", "?cmd=CSV+Import", "XML", "?cmd=XML+Import");
+      return;
+   }
+
+   if (strieq(command, "CSV Import")) {
+      show_import_page_csv(lbs);
+      return;
+   }
+
+   if (strieq(command, "XML Import")) {
+      show_import_page_xml(lbs);
       return;
    }
 
@@ -24178,8 +24402,8 @@ void decode_post(char *logbook, LOGBOOK * lbs, char *string, char *boundary, int
             n_att = atoi(item + 10) + 1;
          }
 
-         if (strncmp(item, "csvfile", 7) == 0) {
-            /* evaluate CSV import file */
+         if (strncmp(item, "csvfile", 7) == 0 || strncmp(item, "xmlfile", 7) == 0) {
+            /* evaluate CSV/XML import file */
             if (strstr(string, "filename=")) {
                p = strstr(string, "filename=") + 9;
                if (*p == '\"')
@@ -24194,7 +24418,7 @@ void decode_post(char *logbook, LOGBOOK * lbs, char *string, char *boundary, int
                strlcpy(file_name, p, sizeof(file_name));
                if (file_name[0]) {
                   if (verbose)
-                     eprintf("decode_post: Found CSV import file\n");
+                     eprintf("decode_post: Found CSV/XML import file\n");
                }
 
                /* find next boundary */
@@ -24217,11 +24441,17 @@ void decode_post(char *logbook, LOGBOOK * lbs, char *string, char *boundary, int
                      ptmp += strlen(ptmp);
                } while (TRUE);
 
-               /* import CSVfile */
+               /* import CSV/XML file */
                if (file_name[0]) {
-                  setparam("csvfile", file_name);
-                  csv_import(lbs, string, file_name);
-                  return;
+                  if (strncmp(item, "csvfile", 7) == 0) {
+                     setparam("csvfile", file_name);
+                     csv_import(lbs, string, file_name);
+                     return;
+                  } else if (strncmp(item, "xmlfile", 7) == 0) {
+                     setparam("xmlfile", file_name);
+                     xml_import(lbs, string, file_name);
+                     return;
+                  } 
                }
 
                string = strstr(p, boundary) + strlen(boundary);
