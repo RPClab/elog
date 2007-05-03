@@ -13118,7 +13118,7 @@ void show_import_page_xml(LOGBOOK * lbs)
       rsprintf("<input type=checkbox checked id=\"head\" name=\"head\" value=\"1\">\n");
    else
       rsprintf("<input type=checkbox id=\"head\" name=\"head\" value=\"1\">\n");
-   rsprintf("<label for=\"head\">%s</label><br>\n", loc("Derive attributes from CSV file"));
+   rsprintf("<label for=\"head\">%s</label><br>\n", loc("Derive attributes from XML file"));
 
    rsprintf("<input type=checkbox id=\"preview\" name=\"preview\" value=\"1\">\n");
    rsprintf("<label for=\"preview\">%s</label><br>\n", loc("Preview import"));
@@ -13372,7 +13372,7 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
 
 void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
 {
-   char str[256], date[80], error[256], *list, *p;
+   char str[256], date[80], error[256], encoding[256], *list, *p;
    int i, j, index, n_attr, iline, n_imported, textcol;
    PMXML_NODE root, entry;
 
@@ -13409,6 +13409,12 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
       return;
    }
 
+   if (mxml_find_node(entry, "ENCODING") == NULL) {
+      sprintf(str, loc("XML file does not contain %s element"), "&lt;ENCODING&gt;");
+      show_error(str);
+      return;
+   }
+
    if (isparam("preview")) {
 
       /* title row */
@@ -13432,21 +13438,37 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
    if (isparam("head")) {
       if (isparam("preview")) {
          rsprintf("<tr>\n");
-         for (i = 0; i < mxml_get_number_of_children(entry) ; i++)
-            rsprintf("<th class=\"listtitle\">%s</th>\n", mxml_get_name(mxml_subnode(entry, i)));
+         for (i = 0; i < mxml_get_number_of_children(entry) ; i++) {
+            strlcpy(str, mxml_get_name(mxml_subnode(entry, i)), sizeof(str));
+            if (strieq(str, "MID"))
+               strcpy(str, "ID");
+            if (!strieq(str, "ENCODING"))
+               rsprintf("<th class=\"listtitle\">%s</th>\n", str);
+         }
 
          rsprintf("</tr>\n");
          n_attr = i;
       } else {
          for (i = j = 0; i < mxml_get_number_of_children(entry) ; i++) {
             strlcpy(str, mxml_get_name(mxml_subnode(entry, i)), NAME_LENGTH);
-            if (stricmp(str, "ID") != 0 && stricmp(str, "Date") != 0 && stricmp(str, "Text") != 0)
+            if (stricmp(str, "ID") != 0 && stricmp(str, "DATE") != 0 && 
+               stricmp(str, "ENCODING") != 0 && stricmp(str, "TEXT") != 0)
                strlcpy(attr_list[j++], mxml_get_name(mxml_subnode(entry, i)), NAME_LENGTH);
          }
 
-         if (!set_attributes(lbs, attr_list, j - 3))
+         if (!set_attributes(lbs, attr_list, j))
             return;
-         lbs->n_attr = j - 3;
+         lbs->n_attr = j;
+      }
+   } else {
+      if (isparam("preview")) {
+         rsprintf("<tr>\n");
+         rsprintf("<th class=\"listtitle\">%s</th>\n", "ID");
+         rsprintf("<th class=\"listtitle\">%s</th>\n", loc("Date"));
+         for (i = 0; i < n_attr ; i++)
+            rsprintf("<th class=\"listtitle\">%s</th>\n", attr_list[i]);
+         rsprintf("<th class=\"listtitle\">%s</th>\n", loc("Text"));
+         rsprintf("</tr>\n");
       }
    }
 
@@ -13459,6 +13481,8 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
          for (i = 0; i < mxml_get_number_of_children(entry); i++) {
             
             strlcpy(str, mxml_get_name(mxml_subnode(entry, i)), NAME_LENGTH);
+            if (strieq(str, "ENCODING"))
+               continue;
             if (strieq(str, "TEXT"))
                break;
 
@@ -13504,10 +13528,16 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
          else
             p = str;
 
+         encoding[0] = 0;
+         if (mxml_find_node(entry, "ENCODING"))
+            strlcpy(encoding, mxml_get_value(mxml_find_node(entry, "ENCODING")), sizeof(encoding));
+         else
+            strcpy(encoding, "plain");
+
          /* submit entry */
          date[0] = 0;
          if (el_submit(lbs, 0, FALSE, date, attr_list, (char (*)[NAME_LENGTH]) list,
-                       n_attr, p, "", "", "plain", NULL, TRUE, NULL))
+                       n_attr, p, "", "", encoding, NULL, TRUE, NULL))
             n_imported++;
       }
    }
@@ -18951,6 +18981,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          rsputs("\t<ENTRY>\n");
          rsprintf("\t\t<MID>%d</MID>\n", message_id);
          rsprintf("\t\t<DATE>%s</DATE>\n", date);
+         rsprintf("\t\t<ENCODING>%s</ENCODING>\n", encoding);
 
          for (i = 0; i < lbs->n_attr; i++) {
             strcpy(iattr, attr_list[i]);
@@ -24442,7 +24473,7 @@ void decode_post(char *logbook, LOGBOOK * lbs, char *string, char *boundary, int
                } while (TRUE);
 
                /* import CSV/XML file */
-               if (file_name[0]) {
+               if (file_name[0] && !(isparam("cmd") && strieq(getparam("cmd"), loc("Cancel")))) {
                   if (strncmp(item, "csvfile", 7) == 0) {
                      setparam("csvfile", file_name);
                      csv_import(lbs, string, file_name);
