@@ -3644,7 +3644,7 @@ int ss_file_find(char *path, char *pattern, char **plist)
      Function value:
      int                     Number of files matching request
 
-      \********************************************************************/
+\********************************************************************/
 {
 #ifdef OS_UNIX
    DIR *dir_pointer;
@@ -3661,7 +3661,6 @@ int ss_file_find(char *path, char *pattern, char **plist)
          strncpy(*plist + (i * MAX_PATH_LENGTH), dp->d_name, strlen(dp->d_name));
          *(*plist + (i * MAX_PATH_LENGTH) + strlen(dp->d_name)) = '\0';
          i++;
-         seekdir(dir_pointer, telldir(dir_pointer));
       }
    }
    closedir(dir_pointer);
