@@ -13119,6 +13119,12 @@ void show_import_page_xml(LOGBOOK * lbs)
       rsprintf("<input type=checkbox id=\"head\" name=\"head\" value=\"1\">\n");
    rsprintf("<label for=\"head\">%s</label><br>\n", loc("Derive attributes from XML file"));
 
+   if (isparam("keep"))
+      rsprintf("<input type=checkbox checked id=\"keep\" name=\"keep\" value=\"1\">\n");
+   else
+      rsprintf("<input type=checkbox id=\"keep\" name=\"keep\" value=\"1\">\n");
+   rsprintf("<label for=\"keep\">%s</label><br>\n", loc("Keep original entry IDs (may overwrite existing entries, but is required if imported entries contain replies)"));
+
    rsprintf("<input type=checkbox id=\"preview\" name=\"preview\" value=\"1\">\n");
    rsprintf("<label for=\"preview\">%s</label><br>\n", loc("Preview import"));
 
@@ -13375,7 +13381,8 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
       in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
       attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
       attachment_all[64 * MAX_ATTACHMENTS];
-   int i, j, index, n_attr, iline, n_imported, textcol, i_line, line_len;
+   int i, j, index, n_attr, iline, n_imported, textcol, i_line, line_len, 
+      message_id, bedit;
    PMXML_NODE root, entry;
 
    iline = n_imported = 0;
@@ -13433,6 +13440,8 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
       /* hidden fields */
       if (isparam("head"))
          rsprintf("<input type=hidden name=head value=\"%s\">\n", getparam("head"));
+      if (isparam("keep"))
+         rsprintf("<input type=hidden name=keep value=\"%s\">\n", getparam("keep"));
       rsprintf("<input type=hidden name=xmlfile value=\"%s\">\n", xmlfile);
 
       rsprintf("</span></td></tr>\n\n");
@@ -13553,6 +13562,10 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
 
       } else {
 
+         message_id = 0;
+         if (isparam("keep"))
+            message_id = atoi(mxml_get_value(mxml_find_node(entry, "MID")));
+
          for (i = 0; i < n_attr; i++) {
             strlcpy(str, attr_list[i], sizeof(str));
             if (mxml_find_node(entry, str) == NULL)
@@ -13601,8 +13614,17 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
          else
             p = str;
 
+         bedit = FALSE;
+         if (isparam("keep")) {
+            for (i = 0; i < *lbs->n_el_index; i++)
+               if (lbs->el_index[i].message_id == message_id)
+                  break;
+            if (lbs->el_index[i].message_id == message_id)
+               bedit = TRUE;
+         }
+
          /* submit entry */
-         if (el_submit(lbs, 0, FALSE, date, attr_list, (char (*)[NAME_LENGTH]) list,
+         if (el_submit(lbs, message_id, bedit, date, attr_list, (char (*)[NAME_LENGTH]) list,
                        n_attr, p, in_reply_to, reply_to, encoding, attachment, FALSE, NULL))
             n_imported++;
       }
