@@ -13079,7 +13079,6 @@ void show_import_page_csv(LOGBOOK * lbs)
    rsprintf("</table></td></tr></table>\n\n");
    show_bottom_text(lbs);
    rsprintf("</form></body></html>\r\n");
-
 }
 
 /*------------------------------------------------------------------*/
@@ -13372,8 +13371,11 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
 
 void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
 {
-   char str[256], date[80], error[256], encoding[256], *list, *p;
-   int i, j, index, n_attr, iline, n_imported, textcol;
+   char str[256], date[80], error[256], encoding[256], *list, *p,
+      in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
+      attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
+      attachment_all[64 * MAX_ATTACHMENTS];
+   int i, j, index, n_attr, iline, n_imported, textcol, i_line, line_len;
    PMXML_NODE root, entry;
 
    iline = n_imported = 0;
@@ -13428,6 +13430,11 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("XML Import"));
 
+      /* hidden fields */
+      if (isparam("head"))
+         rsprintf("<input type=hidden name=head value=\"%s\">\n", getparam("head"));
+      rsprintf("<input type=hidden name=xmlfile value=\"%s\">\n", xmlfile);
+
       rsprintf("</span></td></tr>\n\n");
       rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>");
    }
@@ -13442,7 +13449,12 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
             strlcpy(str, mxml_get_name(mxml_subnode(entry, i)), sizeof(str));
             if (strieq(str, "MID"))
                strcpy(str, "ID");
-            if (!strieq(str, "ENCODING"))
+            if (strieq(str, "DATE"))
+               strcpy(str, loc("Date"));
+            if (strieq(str, "TEXT"))
+               strcpy(str, loc("Text"));
+            if (!strieq(str, "ENCODING") && !strieq(str, "IN_REPLY_TO") && 
+                !strieq(str, "REPLY_TO") && !strieq(str, "ATTACHMENT"))
                rsprintf("<th class=\"listtitle\">%s</th>\n", str);
          }
 
@@ -13451,14 +13463,16 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
       } else {
          for (i = j = 0; i < mxml_get_number_of_children(entry) ; i++) {
             strlcpy(str, mxml_get_name(mxml_subnode(entry, i)), NAME_LENGTH);
-            if (stricmp(str, "ID") != 0 && stricmp(str, "DATE") != 0 && 
-               stricmp(str, "ENCODING") != 0 && stricmp(str, "TEXT") != 0)
+            if (stricmp(str, "MID") != 0 && stricmp(str, "DATE") != 0 && 
+               stricmp(str, "ENCODING") != 0 && stricmp(str, "TEXT") != 0 &&
+               stricmp(str, "IN_REPLY_TO") != 0 && stricmp(str, "REPLY_TO") != 0 &&
+               stricmp(str, "ATTACHMENT") != 0)
                strlcpy(attr_list[j++], mxml_get_name(mxml_subnode(entry, i)), NAME_LENGTH);
          }
 
          if (!set_attributes(lbs, attr_list, j))
             return;
-         lbs->n_attr = j;
+         lbs->n_attr = n_attr = j;
       }
    } else {
       if (isparam("preview")) {
@@ -13481,7 +13495,8 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
          for (i = 0; i < mxml_get_number_of_children(entry); i++) {
             
             strlcpy(str, mxml_get_name(mxml_subnode(entry, i)), NAME_LENGTH);
-            if (strieq(str, "ENCODING"))
+            if (strieq(str, "ENCODING") || strieq(str, "IN_REPLY_TO") || 
+                strieq(str, "REPLY_TO") || strieq(str, "ATTACHMENT"))
                continue;
             if (strieq(str, "TEXT"))
                break;
@@ -13503,7 +13518,34 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
 
          rsputs("<td class=\"summary\">");
          if (mxml_find_node(entry, "TEXT")) {
-            rsputs(mxml_get_value(mxml_find_node(entry, "TEXT")));
+            strlcpy(str, mxml_get_value(mxml_find_node(entry, "TEXT")), sizeof(str));
+            if (str[0]) {
+
+               /* limit output to 3 lines */
+               for (i = i_line = line_len = 0; i < (int) sizeof(str) - 1; i++, line_len++) {
+                  if (str[i] == '\n') {
+                     i_line++;
+                     line_len = 0;
+                  } else
+                     /* limit line length to 150 characters */
+                     if (line_len > 150 && str[i] == ' ') {
+                        str[i] = '\n';
+                        i_line++;
+                        line_len = 0;
+                     }
+
+                  if (i_line == 3)
+                     break;
+               }
+               str[i] = 0;
+
+               strip_html(str);
+               if (str[0])
+                  strencode(str);
+               else
+                  rsputs("&nbsp;");
+            } else
+               rsputs("&nbsp;");
          }
          rsputs("</td>\n");
          rsputs("</tr>\n");
@@ -13512,14 +13554,45 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
       } else {
 
          for (i = 0; i < n_attr; i++) {
-
-            for (j = 0; j < (int) attr_list[i]; j++)
-               str[j] = toupper(attr_list[i][j]);
-
+            strlcpy(str, attr_list[i], sizeof(str));
             if (mxml_find_node(entry, str) == NULL)
                *(list + (i*NAME_LENGTH)) = 0;
             else
                strlcpy(list + i*NAME_LENGTH, mxml_get_value(mxml_find_node(entry, str)), NAME_LENGTH);
+         }
+
+         encoding[0] = 0;
+         if (mxml_find_node(entry, "ENCODING"))
+            strlcpy(encoding, mxml_get_value(mxml_find_node(entry, "ENCODING")), sizeof(encoding));
+         else
+            strcpy(encoding, "plain");
+
+         reply_to[0] = 0;
+         if (mxml_find_node(entry, "REPLY_TO"))
+            strlcpy(reply_to, mxml_get_value(mxml_find_node(entry, "REPLY_TO")), sizeof(reply_to));
+
+         in_reply_to[0] = 0;
+         if (mxml_find_node(entry, "IN_REPLY_TO"))
+            strlcpy(in_reply_to, mxml_get_value(mxml_find_node(entry, "IN_REPLY_TO")), sizeof(in_reply_to));
+
+         date[0] = 0;
+         if (mxml_find_node(entry, "DATE"))
+            strlcpy(date, mxml_get_value(mxml_find_node(entry, "DATE")), sizeof(date));
+
+         attachment_all[0] = 0;
+         if (mxml_find_node(entry, "ATTACHMENT"))
+            strlcpy(attachment_all, mxml_get_value(mxml_find_node(entry, "ATTACHMENT")), sizeof(attachment_all));
+         memset(attachment, 0, sizeof(attachment));
+         for (i = 0; i < MAX_ATTACHMENTS; i++) {
+            if (i == 0)
+               p = strtok(attachment_all, ",");
+            else
+               p = strtok(NULL, ",");
+
+            if (p != NULL)
+               strlcpy(attachment[i], p, MAX_PATH_LENGTH);
+            else
+               break;
          }
 
          str[0] = 0;
@@ -13528,16 +13601,9 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
          else
             p = str;
 
-         encoding[0] = 0;
-         if (mxml_find_node(entry, "ENCODING"))
-            strlcpy(encoding, mxml_get_value(mxml_find_node(entry, "ENCODING")), sizeof(encoding));
-         else
-            strcpy(encoding, "plain");
-
          /* submit entry */
-         date[0] = 0;
          if (el_submit(lbs, 0, FALSE, date, attr_list, (char (*)[NAME_LENGTH]) list,
-                       n_attr, p, "", "", encoding, NULL, TRUE, NULL))
+                       n_attr, p, in_reply_to, reply_to, encoding, attachment, FALSE, NULL))
             n_imported++;
       }
    }
@@ -18981,6 +19047,18 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          rsputs("\t<ENTRY>\n");
          rsprintf("\t\t<MID>%d</MID>\n", message_id);
          rsprintf("\t\t<DATE>%s</DATE>\n", date);
+         if (in_reply_to[0])
+            rsprintf("\t\t<IN_REPLY_TO>%s</IN_REPLY_TO>\n", in_reply_to);
+         if (reply_to[0])
+            rsprintf("\t\t<REPLY_TO>%s</REPLY_TO>\n", reply_to);
+         if (attachment[0][0]) {
+            rsprintf("\t\t<ATTACHMENT>");
+            rsprintf(attachment[0]);
+            for (i=1 ; i<MAX_ATTACHMENTS ; i++)
+               if (attachment[i][0])
+                  rsprintf(",%s", attachment[i]);
+            rsprintf("</ATTACHMENT>\n", attachment);
+         }
          rsprintf("\t\t<ENCODING>%s</ENCODING>\n", encoding);
 
          for (i = 0; i < lbs->n_attr; i++) {
