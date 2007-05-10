@@ -18360,7 +18360,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    i_stop = n_msg - 1;
    if (!csv && !xml && !raw) {
       if (page_n || default_page) {
-         if (default_page)
+         if (default_page && page_n != -1)
             page_n = reverse ? 1 : (n_msg - 1) / n_page + 1;
 
          if (page_n != -1) {
