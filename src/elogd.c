@@ -5776,7 +5776,7 @@ PATTERN_LIST pattern_list[] = {
 };
 
 char *email_quote_table =
-    "<table width=100%% border=1 align=\"left\" cellpadding=3><tr><td bgcolor=#486090><font color=white>%s:</font></td></tr><tr><td bgcolor=#FFFFB0>";
+    "<table width=100%% border=1 align=\"left\" cellpadding=\"3\"><tr><td bgcolor=#486090><font color=white>%s:</font></td></tr><tr><td bgcolor=#FFFFB0>";
 
 void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 {
@@ -6994,9 +6994,14 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
    /* DOCTYPE */
    rsprintf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n");
 
+   /* this code would be for XML files...
+   rsprintf("<?xml-stylesheet type=\"text/xsl\" href=\"http://www.w3.org/Math/XSL/mathml.xsl\"?>\n");
+   rsprintf("<html xmlns=\"http://www.w3.org/1999/xhtml\"><head>\n");
+   */
+
    /* page title */
    rsprintf("<html><head>\n");
-   rsprintf("<META NAME=\"ROBOTS\" CONTENT=\"NOINDEX, NOFOLLOW\">\n");
+   rsprintf("<META NAME=\"ROBOTS\" CONTENT=\"NOINDEX, NOFOLLOW\" />\n");
    rsprintf("<title>%s</title>\n", title);
 
    /* Cascading Style Sheet */
@@ -7024,13 +7029,13 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
       }
    } else
       rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">\n", css);
-   rsprintf("<link rel=\"shortcut icon\" href=\"favicon.ico\">\n");
-   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\">\n");
+   rsprintf("<link rel=\"shortcut icon\" href=\"favicon.ico\" />\n");
+   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
 
    if (rss_feed) {
       rsprintf("<link rel=\"alternate\" type=\"application/rss+xml\" ");
       rsprintf("title=\"ELOG %s\" ", lbs->name);
-      rsprintf("href=\"elog.rdf\">\n");
+      rsprintf("href=\"elog.rdf\" />\n");
    }
 
    if (close_head)
@@ -7046,9 +7051,9 @@ void show_standard_header(LOGBOOK * lbs, BOOL expires, char *title, char *path, 
    show_top_text(lbs);
 
    if (path && path[0])
-      rsprintf("<form name=form1 method=\"GET\" action=\"%s\">\n\n", path);
+      rsprintf("<form name=\"form1\" method=\"GET\" action=\"%s\">\n\n", path);
    else
-      rsprintf("<form name=form1 method=\"GET\" action=\".\">\n\n");
+      rsprintf("<form name=\"form1\" method=\"GET\" action=\".\">\n\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -7061,7 +7066,7 @@ void show_upgrade_page(LOGBOOK * lbs)
 
    rsprintf("<body>\n");
 
-   rsprintf("<table class=\"frame\" cellpadding=0 cellspacing=0>\n\n");
+   rsprintf("<table class=\"frame\" cellpadding=\"0\" cellspacing=\"0\">\n\n");
 
    rsprintf("<tr><td class=\"title2\">ELog Electronic Logbook Upgrade Information</font></td></tr>\n");
 
@@ -7356,9 +7361,9 @@ void show_standard_title(char *logbook, char *text, int printable)
    LBLIST phier, pnode, pnext, flb;
 
    if (printable)
-      rsprintf("<table class=\"pframe\" cellpadding=0 cellspacing=0><!-- show_standard_title -->\n\n");
+      rsprintf("<table class=\"pframe\" cellpadding=\"0\" cellspacing=\"0\"><!-- show_standard_title -->\n\n");
    else
-      rsprintf("<table class=\"frame\" cellpadding=0 cellspacing=0><!-- show_standard_title -->\n\n");
+      rsprintf("<table class=\"frame\" cellpadding=\"0\" cellspacing=\"0\"><!-- show_standard_title -->\n\n");
 
    /* scan logbook hierarchy */
    phier = get_logbook_hierarchy();
@@ -7469,7 +7474,7 @@ void show_standard_title(char *logbook, char *text, int printable)
 
    /*---- title row ----*/
 
-   rsprintf("<tr><td><table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
+   rsprintf("<tr><td><table width=\"100%%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
 
    /* left cell */
    rsprintf("<tr><td class=\"title1\">");
@@ -7657,7 +7662,7 @@ void show_error(char *error)
    show_html_header(NULL, FALSE, "ELOG error", TRUE, FALSE, NULL, FALSE);
 
    rsprintf("<body><center>\n");
-   rsprintf("<table class=\"dlgframe\" width=\"50%%\" cellpadding=1 cellspacing=0");
+   rsprintf("<table class=\"dlgframe\" width=\"50%%\" cellpadding=\"1\" cellspacing=\"0\"");
    rsprintf("<tr><td class=\"errormsg\">%s</td></tr>\n", error);
 
    rsprintf("<tr><td class=\"errormsg\">");
@@ -9377,7 +9382,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /*---- entry form ----*/
 
    /* table for two-column items */
-   rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0 cellpadding=0>");
+   rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=\"0\" cellpadding=\"0\">");
 
    /* print required message if one of the attributes has it set */
    for (i = 0; i < n_attr; i++) {
@@ -9476,7 +9481,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("");
       else if (aindex < n_disp_attr - 1 && (format_flags[attr_index[aindex + 1]] & AFF_SAME_LINE)) {
          /* if next attribute on same line, start a new subtable */
-         rsprintf("<tr><td colspan=2><table width=\"100%%\" cellpadding=0 cellspacing=0><tr>");
+         rsprintf("<tr><td colspan=2><table width=\"100%%\" cellpadding=\"0\" cellspacing=\"0\"><tr>");
          subtable = 1;
       } else
          /* for normal attribute, start new row */
@@ -9881,7 +9886,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                } else if (attr_flags[index] & AF_ICON) {
                   /* display icons */
                   rsprintf("<td%s class=\"attribvalue\">\n", title);
-                  rsprintf("<table cellpadding=0 cellspacing=0><tr>\n");
+                  rsprintf("<table cellpadding=\"0\" cellspacing=\"0\"><tr>\n");
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      if (strstr(attrib[index], attr_options[index][i]))
@@ -13195,7 +13200,7 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
       /* title row */
       sprintf(str, loc("CSV import preview of %s"), csvfile);
       show_standard_header(lbs, TRUE, str, "./", FALSE, NULL);
-      rsprintf("<table class=\"frame\" cellpadding=0 cellspacing=0>\n");
+      rsprintf("<table class=\"frame\" cellpadding=\"0\" cellspacing=\"0\">\n");
       rsprintf("<tr><td class=\"title1\">%s</td></tr>\n", str, str);
 
       /* menu buttons */
@@ -13428,7 +13433,7 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
       /* title row */
       sprintf(str, loc("XML import preview of %s"), xmlfile);
       show_standard_header(lbs, TRUE, str, "./", FALSE, NULL);
-      rsprintf("<table class=\"frame\" cellpadding=0 cellspacing=0>\n");
+      rsprintf("<table class=\"frame\" cellpadding=\"0\" cellspacing=\"0\">\n");
       rsprintf("<tr><td class=\"title1\">%s</td></tr>\n", str, str);
 
       /* menu buttons */
@@ -14868,7 +14873,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
    for (index = 0; index < nserver; index++) {
 
       if (mode == SYNC_HTML) {
-         rsprintf("<table width=\"100%%\" cellpadding=1 cellspacing=0");
+         rsprintf("<table width=\"100%%\" cellpadding=\"1\" cellspacing=\"0\"");
 
          if (getcfg_topgroup())
             sprintf(loc_ref, "<a href=\"../%s/\">%s</a>", lbs->name_enc, lbs->name);
@@ -15628,7 +15633,7 @@ void synchronize(LOGBOOK * lbs, int mode)
       synchronize_logbook(lbs, mode, FALSE);
 
    if (mode == SYNC_HTML) {
-      rsprintf("<table width=\"100%%\" cellpadding=1 cellspacing=0");
+      rsprintf("<table width=\"100%%\" cellpadding=\"1\" cellspacing=\"0\"");
       rsprintf("<tr><td class=\"seltitle\"><a href=\".\">%s</a></td></tr>\n", loc("Back"));
       rsprintf("</table><p>\n");
 
@@ -16774,7 +16779,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
    char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH], list[MAX_N_LIST][NAME_LENGTH], option[NAME_LENGTH];
 
    rsprintf("<tr><td class=\"menuframe\">\n");
-   rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
+   rsprintf("<table width=\"100%%\" border=0 cellpadding=\"0\" cellspacing=\"0\">\n");
 
    rsprintf("<tr>\n");
 
@@ -18634,7 +18639,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
       if (isparam("new_entries") && atoi(getparam("new_entries")) == 1) {
          rsprintf("<tr><td class=\"listframe\">\n");
-         rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
+         rsprintf("<table width=\"100%%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
          rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("New entries since"));
          memcpy(&tms, localtime(&ltime_start), sizeof(struct tm));
          my_strftime(str, sizeof(str), "%c", &tms);
@@ -18644,7 +18649,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
       if (disp_filter) {
          rsprintf("<tr><td class=\"listframe\">\n");
-         rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
+         rsprintf("<table width=\"100%%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
 
          if (isparam("ma") || isparam("ya") || isparam("da")) {
             memset(&tms, 0, sizeof(struct tm));
@@ -19293,7 +19298,7 @@ void show_elog_thread(LOGBOOK * lbs, int message_id, int absolute_links, int hig
        el_retrieve(lbs, head_id, date, attr_list, attrib,
                    lbs->n_attr, text, &size, in_reply_to, reply_to, attachment, encoding, locked_by);
 
-   rsprintf("<tr><td><table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
+   rsprintf("<tr><td><table width=\"100%%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
 
    display_line(lbs, head_id,
                 0, "Threaded", 1, 0, FALSE, 0,
@@ -21330,7 +21335,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    /*---- title ----*/
 
    if (email)
-      rsprintf("<table class=\"frame\" cellpadding=0 cellspacing=0>\n");
+      rsprintf("<table class=\"frame\" cellpadding=\"0\" cellspacing=\"0\">\n");
    else
       show_standard_title(lbs->name, "", 0);
 
@@ -21338,7 +21343,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
    if (!email) {
       rsprintf("<tr><td class=\"menuframe\">\n");
-      rsprintf("<table width=\"100%%\" border=0 cellpadding=0 cellspacing=0>\n");
+      rsprintf("<table width=\"100%%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
       rsprintf("<tr><td class=\"menu1\">\n");
 
       n = strbreak(menu_str, menu_item, MAX_N_LIST, ",", FALSE);
@@ -21484,7 +21489,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       rsprintf("<tr><td class=\"errormsg\" colspan=2>%s</td></tr>\n", loc("This entry has been deleted"));
    else {
       /* overall message table */
-      rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0 cellpadding=0>\n");
+      rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=\"0\" cellpadding=\"0\">\n");
 
       /* check for locked attributes */
       for (i = 0; i < lbs->n_attr; i++) {
@@ -21643,7 +21648,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       }
 
       /* 2 column table for all attributes */
-      rsprintf("<tr><td><table width=\"100%%\" cellpadding=0 cellspacing=0>");
+      rsprintf("<tr><td><table width=\"100%%\" cellpadding=\"0\" cellspacing=\"0\">");
       subtable = 0;
 
       /* generate list of attributes to show */
@@ -21696,7 +21701,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             rsprintf("");
          else if (i < lbs->n_attr - 1 && (format_flags[i + 1] & AFF_SAME_LINE)) {
             /* if next attribute on same line, start a new subtable */
-            rsprintf("<tr><td colspan=2><table width=\"100%%\" cellpadding=0 cellspacing=0><tr>");
+            rsprintf("<tr><td colspan=2><table width=\"100%%\" cellpadding=\"0\" cellspacing=\"0\"><tr>");
             subtable = 1;
          } else
             /* for normal attribute, start new row */
