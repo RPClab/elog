@@ -8871,7 +8871,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* rescan attributes if condition set */
    if (_condition[0]) {
       n_attr = scan_attributes(lbs->name);
-      if (breedit)
+      if (breedit || bupload)
          attrib_from_param(n_attr, attrib);
 
       /* now check again for conditional preset */
