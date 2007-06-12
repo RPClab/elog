@@ -1471,13 +1471,13 @@ void btou(char *str)
 
 /*-------------------------------------------------------------------*/
 
-void dtou(char *str)
-/* convert all dots to underscores in a string */
+void stou(char *str)
+/* convert all special characters to underscores in a string */
 {
    int i;
 
    for (i = 0; i < (int) strlen(str); i++)
-      if (str[i] == '.')
+      if (str[i] == ' ' || str[i] == '.' || str[i] == '/' || str[i] == '\\')
          str[i] = '_';
 }
 
@@ -8548,7 +8548,7 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
 
    for (i = 0; i < n_attr; i++) {
       strcpy(ua, attr_list[i]);
-      btou(ua);
+      stou(ua);
       if (attr_flags[i] & (AF_MULTI | AF_MUSERLIST | AF_MUSEREMAIL)) {
          attrib[i][0] = 0;
          first = 1;
@@ -9102,12 +9102,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    for (i = 0; i < n_attr; i++) {
       if ((attr_flags[i] & AF_REQUIRED)) {
 
-         /* convert blanks to underscores */
+         /* convert blanks etc. to underscores */
          strcpy(ua, attr_list[i]);
-         btou(ua);
-
-         /* convert dots to underscores */
-         dtou(ua);
+         stou(ua);
 
          if (attr_flags[i] & AF_MULTI) {
             rsprintf("  if (\n");
@@ -9205,11 +9202,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
 
       if (attr_flags[i] & AF_NUMERIC) {
-         /* convert blanks to underscores */
+         /* convert blanks etc. to underscores */
          strcpy(ua, attr_list[i]);
-         btou(ua);
-         /* convert dots to underscores */
-         dtou(ua);
+         stou(ua);
 
          rsprintf("  for (var i=0 ; i<document.form1.%s.value.length ; i++)\n", ua);
          rsprintf("    if (document.form1.%s.value.charAt(i) != \",\" &&\n", ua);
@@ -9460,8 +9455,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       input_size = 80;
       input_maxlen = NAME_LENGTH;
       strcpy(ua, attr_list[index]);
-      btou(ua);
-      dtou(ua);
+      stou(ua);
 
       sprintf(str, "Format %s", attr_list[index]);
       if (getcfg(lbs->name, str, format, sizeof(format))) {
@@ -20222,8 +20216,7 @@ void submit_elog(LOGBOOK * lbs)
    missing = 0;
    for (i = 0; i < lbs->n_attr; i++) {
       strcpy(ua, attr_list[i]);
-      btou(ua);
-      dtou(ua);
+      stou(ua);
 
       if (attr_flags[i] & AF_REQUIRED) {
          if (attr_flags[i] & AF_DATE) {
@@ -20293,8 +20286,7 @@ void submit_elog(LOGBOOK * lbs)
    for (index = 0; index < lbs->n_attr; index++)
       if (attr_flags[index] & AF_NUMERIC) {
          strcpy(ua, attr_list[index]);
-         btou(ua);
-         dtou(ua);
+         stou(ua);
          strlcpy(str, isparam(ua) ? getparam(ua) : "", sizeof(str));
 
          for (j = 0; i < (int) strlen(str); i++)
@@ -20319,8 +20311,7 @@ void submit_elog(LOGBOOK * lbs)
 
    for (i = 0; i < n_attr; i++) {
       strcpy(ua, attr_list[i]);
-      btou(ua);
-      dtou(ua);
+      stou(ua);
       if (attr_flags[i] & (AF_MULTI | AF_MUSERLIST | AF_MUSEREMAIL))
          strcat(ua, "_0");
 
@@ -20408,8 +20399,7 @@ void submit_elog(LOGBOOK * lbs)
    for (i = 0; i < n_attr; i++) {
 
       strcpy(ua, attr_list[i]);
-      btou(ua);
-      dtou(ua);
+      stou(ua);
 
       if (attr_flags[i] & (AF_MULTI | AF_MUSERLIST | AF_MUSEREMAIL)) {
 
@@ -20683,8 +20673,7 @@ void submit_elog(LOGBOOK * lbs)
       for (index = mindex = 0; index <= n_attr; index++) {
 
          strcpy(ua, attr_list[index]);
-         btou(ua);
-         dtou(ua);
+         stou(ua);
 
          if (index < n_attr) {
             strcpy(str, "Email ");
