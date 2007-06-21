@@ -9,8 +9,6 @@
 
 \********************************************************************/
 
-#define DEBUG_CONN
-
 /* Version of ELOG */
 #define VERSION "2.6.5"
 char svn_revision[] = "$Id$";
