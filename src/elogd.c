@@ -7003,7 +7003,7 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
 
    /* page title */
    rsprintf("<html><head>\n");
-   rsprintf("<META NAME=\"ROBOTS\" CONTENT=\"NOINDEX, NOFOLLOW\" />\n");
+   rsprintf("<META NAME=\"ROBOTS\" CONTENT=\"NOINDEX, NOFOLLOW\">\n");
    rsprintf("<title>%s</title>\n", title);
 
    /* Cascading Style Sheet */
