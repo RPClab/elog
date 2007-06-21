@@ -9,6 +9,8 @@
 
 \********************************************************************/
 
+#define DEBUG_CONN
+
 /* Version of ELOG */
 #define VERSION "2.6.5"
 char svn_revision[] = "$Id$";
@@ -25077,7 +25079,18 @@ void server_loop(void)
       if (_abort)
          break;
 
-      if (status != -1) {       // if no HUP signal is received
+      /* close old connections */
+      for (i = 0 ; i < N_MAX_CONNECTION; i++)
+         if (ka_sock[i] && (int) time(NULL) - ka_time[i] > 60) {
+            closesocket(ka_sock[i]);
+            ka_sock[i] = 0;
+            ka_time[i] = 0;
+#ifdef DEBUG_CONN
+            eprintf("## close connection %d (60 sec. idle)\n", i);
+#endif
+         }
+
+     if (status != -1) {       // if no HUP signal is received
          if (FD_ISSET(lsock, &readfds)) {
             len = sizeof(acc_addr);
             _sock = accept(lsock, (struct sockaddr *) &acc_addr, (void *) &len);
@@ -25095,9 +25108,10 @@ void server_loop(void)
 
                closesocket(ka_sock[i_min]);
                ka_sock[i_min] = 0;
+               ka_time[i_min] = 0;
                i = i_min;
 #ifdef DEBUG_CONN
-               eprintf("## close connection %d\n", i_min);
+               eprintf("## recycle connection %d\n", i_min);
 #endif
             }
 
@@ -25864,7 +25878,11 @@ void server_loop(void)
                   closesocket(_sock);
                   ka_sock[i_conn] = 0;
 #ifdef DEBUG_CONN
-                  eprintf("## close connection %d\n", i_conn);
+                  eprintf("## close connection %d (no keep alive)\n", i_conn);
+#endif
+               } else {
+#ifdef DEBUG_CONN
+                  eprintf("## keep connection %d open (keep alive)\n", i_conn);
 #endif
                }
             }
