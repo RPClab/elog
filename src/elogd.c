@@ -9489,7 +9489,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       if (getcfg(lbs->name, str, comment, sizeof(comment)))
          sprintf(title, " title=\"%s\"", comment);
 
-      rsprintf("<td%s nowrap class=\"attribname\">", title);
+      rsprintf("<td%s nowrap class=\"%s\">", title, class_name);
 
       /* display attribute name */
       rsprintf("%s%s:", attr_list[index], star);
@@ -9522,7 +9522,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          } else
             strlcpy(str, attrib[index], sizeof(str));
 
-         rsprintf("<td%s class=\"attribvalue\">\n", title);
+         rsprintf("<td%s class=\"%s\">\n", class_value, title);
          rsputs2(lbs, FALSE, str);
          rsprintf("&nbsp;");
 
@@ -9606,7 +9606,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   sec = pts->tm_sec;
                }
 
-               rsprintf("<td%s class=\"attribvalue\">", title);
+               rsprintf("<td%s class=\"%s\">", title, class_value);
                sprintf(str, "%d", index);
                show_date_selector(day, month, year, str);
                rsprintf("&nbsp;&nbsp;");
@@ -9616,7 +9616,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
             } else if (attr_flags[index] & AF_USERLIST) {
 
-               rsprintf("<td%s class=\"attribvalue\">\n", title);
+               rsprintf("<td%s class=\"%s\">\n", title, class_value);
 
                /* display drop-down box with list of users */
                rsprintf("<select name=\"%s\"", ua);
@@ -9643,7 +9643,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             } else if (attr_flags[index] & AF_MUSERLIST) {
 
                /* display multiple check boxes with user names */
-               rsprintf("<td%s class=\"attribvalue\">\n", title);
+               rsprintf("<td%s class=\"%s\">\n", title, class_value);
 
                n_moptions = strbreak(attrib[index], attr_moptions, MAX_N_LIST, "|", FALSE);
                for (i = 0;; i++) {
@@ -9680,7 +9680,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             } else if (attr_flags[index] & AF_MUSEREMAIL) {
 
                /* display multiple check boxes with user emails */
-               rsprintf("<td%s class=\"attribvalue\">\n", title);
+               rsprintf("<td%s class=\"%s\">\n", title, class_value);
 
                n_moptions = strbreak(attrib[index], attr_moptions, MAX_N_LIST, "|", FALSE);
                for (i = 0;; i++) {
@@ -9716,7 +9716,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
             } else if (attr_flags[index] & AF_USEREMAIL) {
 
-               rsprintf("<td%s class=\"attribvalue\">\n", title);
+               rsprintf("<td%s class=\"%s\">\n", title, class_value);
 
                /* display drop-down box with list of users */
                rsprintf("<select name=\"%s\"", ua);
@@ -9743,7 +9743,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             } else {
 
                /* show normal edit field */
-               rsprintf("<td%s class=\"attribvalue\">", title);
+               rsprintf("<td%s class=\"%s\">", title, class_value);
 
                strencode2(str, attrib[index], sizeof(str));
                rsprintf
@@ -9758,18 +9758,18 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                /* display checkbox */
                if (atoi(attrib[index]) == 1)
                   rsprintf
-                      ("<td%s class=\"attribvalue\"><input type=checkbox checked name=\"%s\" value=1 onChange=\"mod();\">\n",
-                       title, ua);
+                      ("<td%s class=\"%s\"><input type=checkbox checked name=\"%s\" value=1 onChange=\"mod();\">\n",
+                       title, class_value, ua);
                else
                   rsprintf
-                      ("<td%s class=\"attribvalue\"><input type=checkbox name=\"%s\" value=1 onChange=\"mod();\">\n",
-                       title, ua);
+                      ("<td%s class=\"%s\"><input type=checkbox name=\"%s\" value=1 onChange=\"mod();\">\n",
+                       title, class_value, ua);
             } else {
 
                sprintf(str, "extend_%d", index);
                if (isparam(str)) {
 
-                  rsprintf("<td%s class=\"attribvalue\">\n", title);
+                  rsprintf("<td%s class=\"%s\">\n", title, class_value);
                   rsprintf("<i>");
                   rsprintf(loc("Add new option here"), attr_list[index]);
                   rsprintf("&nbsp;:&nbsp;</i>\n");
@@ -9789,7 +9789,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                } else if (attr_flags[index] & AF_MULTI) {
 
                   /* display multiple check boxes */
-                  rsprintf("<td%s class=\"attribvalue\">\n", title);
+                  rsprintf("<td%s class=\"%s\">\n", title, class_value);
 
                   n_moptions = strbreak(attrib[index], attr_moptions, MAX_N_LIST, "|", FALSE);
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
@@ -9834,7 +9834,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                } else if (attr_flags[index] & AF_RADIO) {
                   /* display radio buttons */
-                  rsprintf("<td%s class=\"attribvalue\">\n", title);
+                  rsprintf("<td%s class=\"%s\">\n", title, class_value);
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      /* display check box with optional tooltip */
@@ -9879,7 +9879,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                } else if (attr_flags[index] & AF_ICON) {
                   /* display icons */
-                  rsprintf("<td%s class=\"attribvalue\">\n", title);
+                  rsprintf("<td%s class=\"%s\">\n", title, class_value);
                   rsprintf("<table cellpadding=\"0\" cellspacing=\"0\"><tr>\n");
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
@@ -9912,7 +9912,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                } else {
 
-                  rsprintf("<td%s class=\"attribvalue\">\n", title);
+                  rsprintf("<td%s class=\"%s\">\n", title, class_value);
 
                   /* display drop-down box */
                   rsprintf("<select name=\"%s\"", ua);
@@ -12187,14 +12187,7 @@ void show_config_page(LOGBOOK * lbs)
    rsprintf("<tr><td nowrap width=\"15%%\">Email:</td>\n");
    rsprintf("<td><input type=text size=40 name=new_user_email value=\"%s\"></td></tr>\n", user_email);
 
-   rsprintf("<tr><td width=\"15%%\">%s:\n", loc("Subscribe to logbooks"));
-
-   rsprintf("<br><span class=\"selcomment\"><b>(%s)</b></span>\n",
-            loc("enable automatic email notifications"));
-
-   rsprintf("<td>\n");
-
-   for (i = 0; lb_list[i].name[0]; i++) {
+   for (i = n = 0; lb_list[i].name[0]; i++) {
 
       if (!getcfg_topgroup() || strieq(getcfg_topgroup(), lb_list[i].top_group)) {
 
@@ -12202,18 +12195,42 @@ void show_config_page(LOGBOOK * lbs)
          if (!isparam("unm") || check_login_user(&lb_list[i], getparam("unm"))) {
 
             /* check if emails are enabled for this logbook */
-            if (!getcfg(lb_list[i].name, "Suppress email to users", str, sizeof(str)) || atoi(str) == 0) {
-               if (email_notify[i])
-                  rsprintf("<input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
-               else
-                  rsprintf("<input type=checkbox id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
-               rsprintf("<label for=\"lb%d\">%s</label><br>\n", i, lb_list[i].name);
+            if (!getcfg(lb_list[i].name, "Suppress email to users", str, sizeof(str)) || atoi(str) == 0)
+               n++;
+         }
+      }
+   }
+
+   if (n > 0) {
+
+      rsprintf("<tr><td width=\"15%%\">%s:\n", loc("Subscribe to logbooks"));
+
+      rsprintf("<br><span class=\"selcomment\"><b>(%s)</b></span>\n",
+               loc("enable automatic email notifications"));
+
+      rsprintf("<td>\n");
+
+      for (i = 0; lb_list[i].name[0]; i++) {
+
+         if (!getcfg_topgroup() || strieq(getcfg_topgroup(), lb_list[i].top_group)) {
+
+            /* check if user has access */
+            if (!isparam("unm") || check_login_user(&lb_list[i], getparam("unm"))) {
+
+               /* check if emails are enabled for this logbook */
+               if (!getcfg(lb_list[i].name, "Suppress email to users", str, sizeof(str)) || atoi(str) == 0) {
+                  if (email_notify[i])
+                     rsprintf("<input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
+                  else
+                     rsprintf("<input type=checkbox id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
+                  rsprintf("<label for=\"lb%d\">%s</label><br>\n", i, lb_list[i].name);
+               }
             }
          }
       }
    }
 
-   if (i > 2) {
+   if (n > 2) {
       rsprintf("<script language=\"JavaScript\" type=\"text/javascript\">\n");
       rsprintf("<!--\n");
       rsprintf("function SetNone()\n");
