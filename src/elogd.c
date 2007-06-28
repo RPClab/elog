@@ -9301,15 +9301,15 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("}\n\n");
 
    /* strings for elcode.js */
-   rsprintf("linkText_prompt = '%s';\n", loc("Enter name of hyperlink"));
-   rsprintf("linkURL_prompt  = '%s';\n", loc("Enter URL of hyperlink"));
-   rsprintf("linkHeading_prompt  = '%s';\n", loc("Enter heading level (1, 2 or 3)"));
+   rsprintf("linkText_prompt = \"%s\";\n", loc("Enter name of hyperlink"));
+   rsprintf("linkURL_prompt  = \"%s\";\n", loc("Enter URL of hyperlink"));
+   rsprintf("linkHeading_prompt  = \"%s\";\n", loc("Enter heading level (1, 2 or 3)"));
    if (stristr(browser, "MSIE") && !stristr(browser, "opera"))
-      rsprintf("browser = 'MSIE';\n");
+      rsprintf("browser = \"MSIE\";\n");
    else if (stristr(browser, "Mozilla") && !stristr(browser, "opera") && !stristr(browser, "konqueror"))
-      rsprintf("browser = 'Mozilla';\n");
+      rsprintf("browser = \"Mozilla\";\n");
    else
-      rsprintf("browser = 'Other';\n");
+      rsprintf("browser = \"Other\";\n");
 
    rsprintf("//-->\n");
    rsprintf("</script>\n");
