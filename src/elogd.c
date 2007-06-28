@@ -2245,7 +2245,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
          write_logfile(lbs, str);
          if (!check_smtp_error(str, 250, error, error_size))
             goto smtp_error;
-      } while (stristr(str, " OK") == NULL);
+      } while (stristr(str, "250 ") == NULL);
 
    } else {
 
