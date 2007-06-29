@@ -9522,7 +9522,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          } else
             strlcpy(str, attrib[index], sizeof(str));
 
-         rsprintf("<td%s class=\"%s\">\n", class_value, title);
+         rsprintf("<td%s class=\"%s\">\n", title, class_value);
          rsputs2(lbs, FALSE, str);
          rsprintf("&nbsp;");
 
