@@ -4520,16 +4520,24 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 \********************************************************************/
 {
    int n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id;
-   char file_name[256], dir[256], str[NAME_LENGTH], date_str[256];
-   time_t ltime;
-   char *message, *p, *buffer;
+   char file_name[256], dir[256], str[NAME_LENGTH], date1[256],
+     attrib[MAX_N_ATTR][NAME_LENGTH], reply_to1[MAX_REPLY_TO * 10], 
+     in_reply_to1[MAX_REPLY_TO * 10], encoding1[80], 
+     *message, *p, *old_text, *buffer;
    char attachment_all[64 * MAX_ATTACHMENTS];
+   time_t ltime;
 
    tail_size = orig_size = 0;
 
    buffer = NULL;
    message = xmalloc(TEXT_SIZE + 100);
-
+   old_text = NULL;
+   memcpy(attrib, attr_value, sizeof(attrib));
+   strlcpy(reply_to1, reply_to, sizeof(reply_to1));
+   strlcpy(in_reply_to1, in_reply_to, sizeof(in_reply_to1));
+   strlcpy(encoding1, encoding, sizeof(encoding1));
+   strlcpy(date1, date, sizeof(date1));
+ 
    /* generate new file name YYMMDD.log in data directory */
    strcpy(dir, lbs->data_dir);
 
@@ -4562,7 +4570,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 
          /* file might have been edited, rebuild index */
          el_build_index(lbs, TRUE);
-         return el_submit(lbs, message_id, bedit, date, attr_name, attr_value,
+         return el_submit(lbs, message_id, bedit, date, attr_name, attrib,
                           n_attr, text, in_reply_to, reply_to, encoding, afilename, mark_original, locked_by);
       }
 
@@ -4582,15 +4590,36 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
 
       message[size] = 0;
 
-      if (strieq(date, "<keep>"))
-         el_decode(message, "Date: ", date_str);
+      if (strcmp(text, "<keep>") == 0) {
+
+         p = strstr(message, "========================================\n");
+         /* check for \n -> \r conversion (e.g. zipping/unzipping) */
+         if (p == NULL)
+            p = strstr(message, "========================================\r");
+         if (p) {
+            p += 41;
+            old_text = xmalloc(size+1);
+            strlcpy(old_text, p, size);
+         }
+      }
+
+      if (strieq(date1, "<keep>"))
+         el_decode(message, "Date: ", date1);
       else
-         strlcpy(date_str, date, sizeof(date_str));
-      if (strieq(reply_to, "<keep>"))
-         el_decode(message, "Reply to: ", reply_to);
-      if (strieq(in_reply_to, "<keep>"))
-         el_decode(message, "In reply to: ", in_reply_to);
+         strlcpy(date1, date, sizeof(date1));
+      if (strieq(reply_to1, "<keep>"))
+         el_decode(message, "Reply to: ", reply_to1);
+      if (strieq(in_reply_to1, "<keep>"))
+         el_decode(message, "In reply to: ", in_reply_to1);
+      if (strieq(encoding1, "<keep>"))
+         el_decode(message, "Encoding: ", encoding1);
       el_decode(message, "Attachment: ", attachment_all);
+
+      for (i = 0; i < n_attr; i++) {
+         sprintf(str, "%s: ", attr_name[i]);
+         if (strieq(attrib[i], "<keep>"))
+            el_decode(message, str, attrib[i]);
+      }
 
       /* buffer tail of logfile */
       lseek(fh, 0, SEEK_END);
@@ -4607,22 +4636,24 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
    } else {
       /* create new message */
       if (!date[0])
-         get_rfc2822_date(date_str, sizeof(date_str), 0);
+         get_rfc2822_date(date1, sizeof(date1), 0);
       else
-         strlcpy(date_str, date, sizeof(date_str));
+         strlcpy(date1, date, sizeof(date1));
 
       for (i = 0; i < 12; i++)
-         if (strncmp(date_str + 8, mname[i], 3) == 0)
+         if (strncmp(date1 + 8, mname[i], 3) == 0)
             break;
 
-      ltime = date_to_ltime(date_str);
+      ltime = date_to_ltime(date1);
 
-      sprintf(file_name, "%c%c%02d%c%ca.log", date_str[14], date_str[15], i + 1, date_str[5], date_str[6]);
+      sprintf(file_name, "%c%c%02d%c%ca.log", date1[14], date1[15], i + 1, date1[5], date1[6]);
 
       sprintf(str, "%s%s", dir, file_name);
       fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
       if (fh < 0) {
          xfree(message);
+         if (old_text)
+            xfree(old_text);
          return -1;
       }
 
@@ -4645,7 +4676,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
       strcpy(lbs->el_index[index].file_name, file_name);
       lbs->el_index[index].file_time = ltime;
       lbs->el_index[index].offset = TELL(fh);
-      lbs->el_index[index].in_reply_to = atoi(in_reply_to);
+      lbs->el_index[index].in_reply_to = atoi(in_reply_to1);
 
       /* if index not ordered, sort it */
       i = *lbs->n_el_index;
@@ -4667,16 +4698,16 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
    /* compose message */
 
    sprintf(message, "$@MID@$: %d\n", message_id);
-   sprintf(message + strlen(message), "Date: %s\n", date_str);
+   sprintf(message + strlen(message), "Date: %s\n", date1);
 
-   if (reply_to[0])
-      sprintf(message + strlen(message), "Reply to: %s\n", reply_to);
+   if (reply_to1[0])
+      sprintf(message + strlen(message), "Reply to: %s\n", reply_to1);
 
-   if (in_reply_to[0])
-      sprintf(message + strlen(message), "In reply to: %s\n", in_reply_to);
+   if (in_reply_to1[0])
+      sprintf(message + strlen(message), "In reply to: %s\n", in_reply_to1);
 
    for (i = 0; i < n_attr; i++)
-      sprintf(message + strlen(message), "%s: %s\n", attr_name[i], attr_value[i]);
+      sprintf(message + strlen(message), "%s: %s\n", attr_name[i], attrib[i]);
 
    sprintf(message + strlen(message), "Attachment: ");
 
@@ -4688,13 +4719,20 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit,
    }
    sprintf(message + strlen(message), "\n");
 
-   sprintf(message + strlen(message), "Encoding: %s\n", encoding);
+   sprintf(message + strlen(message), "Encoding: %s\n", encoding1);
    if (locked_by && locked_by[0])
       sprintf(message + strlen(message), "Locked by: %s\n", locked_by);
 
    sprintf(message + strlen(message), "========================================\n");
-   strlcat(message, text, TEXT_SIZE + 100);
+   
+   if (strieq(text, "<keep>") && old_text)
+      strlcat(message, old_text, TEXT_SIZE + 100);
+   else
+      strlcat(message, text, TEXT_SIZE + 100);
    strlcat(message, "\n", TEXT_SIZE + 100);
+
+   if (old_text)
+      xfree(old_text);
 
    n = write(fh, message, strlen(message));
    if (n != (int) strlen(message)) {
@@ -8745,6 +8783,26 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          /* strip attachments on duplicate */
          if (bduplicate)
             memset(att, 0, sizeof(att));
+      } else if (isparam("nsel")) {
+
+         /* multi edit: get all entries and check if attributes are the same */
+         for (i = n = 0; i < atoi(getparam("nsel")); i++) {
+            sprintf(str, "s%d", i);
+            if (isparam(str)) {
+               size = TEXT_SIZE;
+               el_retrieve(lbs, atoi(getparam(str)), date, attr_list, list, lbs->n_attr,
+                           text, &size, orig_tag, reply_tag, att, encoding, locked_by);
+               if (n == 0)
+                  memcpy(attrib, list, sizeof(list));
+               else {
+                  for (j=0 ; j<lbs->n_attr ; j++)
+                     if (!strieq(attrib[j], list[j]))
+                        sprintf(attrib[j], "- %s -", loc("keep original values"));
+               }
+               n++;
+            }
+         }
+
       }
    }
 
@@ -9330,7 +9388,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if ((isparam("inlineatt") && *getparam("inlineatt")) || bpreview)
       strcpy(script, " OnLoad=\"document.form1.Text.focus();\"");
 
-   strcat(script, " OnLoad=\"elKeyInit();\" OnFocus=\"elKeyInit();\"");
+   if (enc_selected == 0)
+      strcat(script, " OnLoad=\"elKeyInit();\" OnFocus=\"elKeyInit();\"");
 
    if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1)
       rsprintf("<body onUnload=\"unload();\"%s>\n", script);
@@ -9623,7 +9682,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf(" onChange=\"mod();\">\n");
 
                /* display emtpy option */
-               rsprintf("<option value=\"\">- %s -\n", loc("please select"));
+               sprintf(str, "- %s -", loc("keep original values"));
+               if (strcmp(str, attrib[index]) == 0 && isparam("nsel"))
+                  rsprintf("<option value=\"<keep>\">%s\n", str);
+               else
+                  rsprintf("<option value=\"\">- %s -\n", loc("please select"));
 
                for (i = 0;; i++) {
                   if (!enum_user_line(lbs, i, login_name, sizeof(login_name)))
@@ -9723,7 +9786,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf(" onChange=\"mod();\">\n");
 
                /* display emtpy option */
-               rsprintf("<option value=\"\">- %s -\n", loc("please select"));
+               sprintf(str, "- %s -", loc("keep original values"));
+               if (strcmp(str, attrib[index]) == 0 && isparam("nsel"))
+                  rsprintf("<option value=\"<keep>\">%s\n", str);
+               else
+                  rsprintf("<option value=\"\">- %s -\n", loc("please select"));
 
                for (i = 0;; i++) {
                   if (!enum_user_line(lbs, i, login_name, sizeof(login_name)))
@@ -9755,8 +9822,31 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
          } else {
             if (strieq(attr_options[index][0], "boolean")) {
+               /* display three radio buttons instead of three-state check box for multi-edit */
+               sprintf(str, "- %s -", loc("keep original values"));
+               if (isparam("nsel") && strieq(attrib[index], str)) {
+                  rsprintf("<td%s class=\"%s\">", title, class_value);
+                  sprintf(str, "%s_0", ua);
+                  rsprintf("<span style=\"white-space:nowrap;\">\n");
+                  rsprintf("<input type=radio id=\"%s\" name=\"%s\" value=\"0\" onChange=\"mod();\">\n", str, ua);
+                  rsprintf("<label for=\"%s\">%s</label>\n", str, loc("off"));
+                  rsprintf("</span>\n");
+
+                  sprintf(str, "%s_1", ua);
+                  rsprintf("<span style=\"white-space:nowrap;\">\n");
+                  rsprintf("<input type=radio id=\"%s\" name=\"%s\" value=\"1\" onChange=\"mod();\">\n", str, ua);
+                  rsprintf("<label for=\"%s\">%s</label>\n", str, loc("on"));
+                  rsprintf("</span>\n");
+
+                  sprintf(str, "%s_2", ua);
+                  rsprintf("<span style=\"white-space:nowrap;\">\n");
+                  rsprintf("<input type=radio id=\"%s\" name=\"%s\" value=\"<keep>\" checked onChange=\"mod();\">\n", str, ua);
+                  rsprintf("<label for=\"%s\">%s</label>\n", str, loc("keep original values"));
+                  rsprintf("</span>\n");
+               } 
+
                /* display checkbox */
-               if (atoi(attrib[index]) == 1)
+               else if (atoi(attrib[index]) == 1)
                   rsprintf
                       ("<td%s class=\"%s\"><input type=checkbox checked name=\"%s\" value=1 onChange=\"mod();\">\n",
                        title, class_value, ua);
@@ -9923,7 +10013,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      rsprintf(" onChange=\"mod();\">\n");
 
                   /* display emtpy option */
-                  rsprintf("<option value=\"\">- %s -\n", loc("please select"));
+                  sprintf(str, "- %s -", loc("keep original values"));
+                  if (strcmp(str, attrib[index]) == 0 && isparam("nsel"))
+                     rsprintf("<option value=\"<keep>\">%s\n", str);
+                  else
+                     rsprintf("<option value=\"\">- %s -\n", loc("please select"));
 
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
                      strencode2(str, attr_options[index][i], sizeof(str));
@@ -10172,6 +10266,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (bedit && message_id)
       rsprintf("<input type=hidden name=edit_id value=\"%d\">\n", message_id);
 
+
+   if (isparam("nsel")) {
+      rsprintf("<input type=hidden name=nsel value=\"%s\">\n", getparam("nsel"));
+      for (i = 0; i < atoi(getparam("nsel")); i++) {
+         sprintf(str, "s%d", i);
+         if (isparam(str)) {
+            rsprintf("<input type=hidden name=\"s%d\" value=\"%s\">\n", i, getparam(str));
+         }
+      }
+   }
+
    if (getcfg(lbs->name, "Message comment", comment, sizeof(comment))
        && !message_id) {
       rsputs(comment);
@@ -10210,7 +10315,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       else
          rsprintf("<textarea rows=%d cols=%d %s name=\"Text\" onChange=\"mod();\">\n", height, width, str);
 
-      if (bedit) {
+      if (isparam("nsel")) {
+         rsprintf("- %s -\n", loc("keep original text"));
+      } else if (bedit) {
          if (!preset_text) {
 
             j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
@@ -10321,7 +10428,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
 
 
-      if (preset_text) {
+      if (preset_text && !isparam("nsel")) {
          getcfg(lbs->name, "Preset text", str, sizeof(str));
 
          /* check if file starts with an absolute directory */
@@ -17167,7 +17274,7 @@ void show_select_navigation(LOGBOOK * lbs)
    rsprintf("  {\n");
    rsprintf("  for (var i = 0; i < document.form1.elements.length; i++)\n");
    rsprintf("    {\n");
-   rsprintf("    if( document.form1.elements[i].type == 'checkbox' )\n");
+   rsprintf("    if (document.form1.elements[i].type == 'checkbox' && document.form1.elements[i].disabled == false)\n");
    rsprintf("      document.form1.elements[i].checked = !(document.form1.elements[i].checked);\n");
    rsprintf("    }\n");
    rsprintf("  }\n");
@@ -17180,6 +17287,10 @@ void show_select_navigation(LOGBOOK * lbs)
 
    if (!getcfg(lbs->name, "Menu commands", str, sizeof(str)) || stristr(str, "Delete")) {
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Delete"));
+   }
+
+   if (!getcfg(lbs->name, "Menu commands", str, sizeof(str)) || stristr(str, "Edit")) {
+      rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Edit"));
    }
 
    if (getcfg(lbs->name, "Menu commands", str, sizeof(str)) && stristr(str, "Copy to")) {
@@ -20218,7 +20329,7 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
 void submit_elog(LOGBOOK * lbs)
 {
    char str[NAME_LENGTH], str2[NAME_LENGTH], file_name[256], error[1000], date[80],
-       *mail_list, *rcpt_list, list[10000], *p, locked_by[256], 
+       *mail_list, *rcpt_list, list[10000], *p, locked_by[256], encoding[80],
        attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[MAX_PATH_LENGTH],
        in_reply_to[80], reply_to[MAX_REPLY_TO * 10], user[256], user_email[256],
        mail_param[1000], *mail_to, *rcpt_to, full_name[256], att_file[MAX_ATTACHMENTS][256],
@@ -20226,8 +20337,10 @@ void submit_elog(LOGBOOK * lbs)
    int i, j, k, n, missing, first, index, mindex, suppress, message_id, resubmit_orig,
        mail_to_size, rcpt_to_size, ltime, year, month, day, hour, min, sec, n_attr, email_notify[1000],
        allowed_encoding;
-   BOOL bedit;
+   BOOL bedit, bmultiedit;
    struct tm tms;
+
+   bmultiedit = isparam("nsel");
 
    /* check for required attributs */
    missing = 0;
@@ -20310,7 +20423,7 @@ void submit_elog(LOGBOOK * lbs)
             if (!isdigit(str[i]))
                break;
 
-         if (i < (int) strlen(str)) {
+         if (i < (int) strlen(str) && strcmp(str, "<keep>") != 0) {
             sprintf(error, loc("Error: Attribute <b>%s</b> must be numeric"), attr_list[index]);
             show_error(error);
             return;
@@ -20335,7 +20448,7 @@ void submit_elog(LOGBOOK * lbs)
       if (isparam(ua) && *getparam(ua) && attr_options[i][0][0]) {
 
          if (strieq(attr_options[i][0], "boolean")) {
-            if (atoi(getparam(ua)) != 0 && atoi(getparam(ua)) != 1) {
+            if (atoi(getparam(ua)) != 0 && atoi(getparam(ua)) != 1 && strcmp(getparam(ua), "<keep>") != 0) {
                sprintf(error, loc("Error: Value <b>%s</b> not allowed for boolean attributes"), getparam(ua));
                show_error(error);
                return;
@@ -20359,7 +20472,7 @@ void submit_elog(LOGBOOK * lbs)
                }
             }
 
-            if (!attr_options[i][j][0] && isparam(ua)) {
+            if (!attr_options[i][j][0] && isparam(ua) && strcmp(getparam(ua), "<keep>") != 0) {
                if (attr_flags[i] & AF_EXTENDABLE) {
 
                   /* check if maximal number of options exceeded */
@@ -20391,17 +20504,17 @@ void submit_elog(LOGBOOK * lbs)
    else
       allowed_encoding = 3;
 
-   strcpy(str, isparam("encoding") ? getparam("encoding") : "plain");
+   strcpy(encoding, isparam("encoding") ? getparam("encoding") : "plain");
 
-   if (strieq(str, "plain") && (allowed_encoding & 1) == 0) {
+   if (strieq(encoding, "plain") && (allowed_encoding & 1) == 0) {
       show_error("Plain encoding not allowed");
       return;
    }
-   if (strieq(str, "ELCode") && (allowed_encoding & 2) == 0) {
+   if (strieq(encoding, "ELCode") && (allowed_encoding & 2) == 0) {
       show_error("ELCode encoding not allowed");
       return;
    }
-   if (strieq(str, "HTML") && (allowed_encoding & 4) == 0) {
+   if (strieq(encoding, "HTML") && (allowed_encoding & 4) == 0) {
       show_error("HTML encoding not allowed");
       return;
    }
@@ -20600,7 +20713,9 @@ void submit_elog(LOGBOOK * lbs)
    }
 
    if (_logging_level > 1) {
-      if (isparam("edit_id"))
+      if (bmultiedit)
+         sprintf(str, "EDIT multiple entries");
+      else if (isparam("edit_id"))
          sprintf(str, "EDIT entry #%d", message_id);
       else
          sprintf(str, "NEW entry #%d", message_id);
@@ -20636,17 +20751,46 @@ void submit_elog(LOGBOOK * lbs)
       }
    }
 
-   message_id =
-       el_submit(lbs, message_id, bedit, date, attr_list, attrib, n_attr,
-                 getparam("text"), in_reply_to, reply_to,
-                 isparam("encoding") ? getparam("encoding") : "plain", att_file, TRUE, NULL);
+   if (bmultiedit) {
+      for (i = n = 0; i < atoi(getparam("nsel")); i++) {
+         sprintf(str, "s%d", i);
+         if (isparam(str)) {
 
-   if (message_id <= 0) {
-      sprintf(str, loc("New entry cannot be written to directory \"%s\""), lbs->data_dir);
-      strcat(str, "\n<p>");
-      strcat(str, loc("Please check that it exists and elogd has write access and disk is not full"));
-      show_error(str);
-      return;
+            message_id = atoi(getparam(str));
+
+            sprintf(str, "- %s -", loc("keep original text"));
+            if (strcmp(getparam("text"), str) == 0)
+               message_id = el_submit(lbs, message_id, TRUE, "<keep>", attr_list, attrib, n_attr,
+                                      "<keep>", "<keep>", "<keep>", "<keep>", att_file, TRUE, NULL);
+            else
+               message_id = el_submit(lbs, message_id, TRUE, "<keep>", attr_list, attrib, n_attr,
+                                      getparam("text"), "<keep>", "<keep>", "<keep>", att_file, TRUE, NULL);
+
+            if (message_id <= 0) {
+               sprintf(str, loc("New entry cannot be written to directory \"%s\""), lbs->data_dir);
+               strcat(str, "\n<p>");
+               strcat(str, loc("Please check that it exists and elogd has write access and disk is not full"));
+               show_error(str);
+               return;
+            }
+         }
+      }
+
+      redirect(lbs, isparam("redir") ? getparam("redir") : "");
+      return; /* no email notifications etc */
+   } else {
+      message_id =
+          el_submit(lbs, message_id, bedit, date, attr_list, attrib, n_attr,
+                    getparam("text"), in_reply_to, reply_to,
+                    encoding, att_file, TRUE, NULL);
+
+      if (message_id <= 0) {
+         sprintf(str, loc("New entry cannot be written to directory \"%s\""), lbs->data_dir);
+         strcat(str, "\n<p>");
+         strcat(str, loc("Please check that it exists and elogd has write access and disk is not full"));
+         show_error(str);
+         return;
+      }
    }
 
    /* resubmit thread if requested */
@@ -24164,6 +24308,9 @@ void interprete(char *lbook, char *path)
       if (message_id) {
          show_edit_form(lbs, message_id, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE);
          return;
+      } else if (isparam("nsel")) {
+         show_edit_form(lbs, 0, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE);
+         return;
       }
    }
 
@@ -24941,10 +25088,8 @@ void server_loop(void)
       gethostname(host_name, sizeof(host_name));
 
       phe = gethostbyname(host_name);
-      if (phe != NULL)
-         phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
       /* if domain name is not in host name, hope to get it from phe */
-      if (strchr(host_name, '.') == NULL && phe != NULL)
+      if (strchr(host_name, '.') == NULL && phe != NULL && strchr(phe->h_name, '.') != NULL)
          strcpy(host_name, phe->h_name);
    }
 
