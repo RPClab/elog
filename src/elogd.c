@@ -9881,6 +9881,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   /* display multiple check boxes */
                   rsprintf("<td%s class=\"%s\">\n", title, class_value);
 
+                  sprintf(str, "- %s -", loc("keep original values"));
+                  if (isparam("nsel") && strieq(attrib[index], str)) {
+                     rsprintf("<span style=\"white-space:nowrap;\">\n");
+                     sprintf(str, "%s_keep", ua);
+                     rsprintf("<input type=checkbox id=\"%s\" name=\"%s\" value=\"<keep>\" checked onChange=\"mod();\">\n",
+                        str, ua); 
+       
+                     rsprintf("<label for=\"%s\">%s</label>\n", str, loc("keep original values"));
+                     rsprintf("</span>\n");
+                  }
+
                   n_moptions = strbreak(attrib[index], attr_moptions, MAX_N_LIST, "|", FALSE);
                   for (i = 0; i < MAX_N_LIST && attr_options[index][i][0]; i++) {
 
