@@ -9385,6 +9385,27 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("   document.form1.submit();\n");
    rsprintf("}\n\n");
 
+   if (!getcfg(lbs->name, "Message height", str, sizeof(str)) &&
+       !getcfg(lbs->name, "Message width", str, sizeof(str))) {
+      /* javascript for resizing edit box */
+      rsprintf("\nfunction init_resize()\n");
+      rsprintf("{\n");
+      rsprintf("   window.onresize = resize_textarea;\n");
+      rsprintf("   resize_textarea();\n");
+      rsprintf("}\n\n");
+      rsprintf("function resize_textarea()\n");
+      rsprintf("{\n");
+      rsprintf("   p = document.form1.Text;\n");
+      rsprintf("   t = p.offsetTop;\n");
+      rsprintf("   while (p = p.offsetParent)\n");
+      rsprintf("      t += p.offsetTop;\n");
+      rsprintf("   height = window.innerHeight - t - 135;\n");
+      rsprintf("   if (height < 300)\n");
+      rsprintf("      height = 300;\n");
+      rsprintf("   document.form1.Text.style.height = height;\n");
+      rsprintf("}\n\n");
+   }
+
    /* strings for elcode.js */
    rsprintf("linkText_prompt = \"%s\";\n", loc("Enter name of hyperlink"));
    rsprintf("linkURL_prompt  = \"%s\";\n", loc("Enter URL of hyperlink"));
@@ -9415,8 +9436,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if ((isparam("inlineatt") && *getparam("inlineatt")) || bpreview)
       strcpy(script, " OnLoad=\"document.form1.Text.focus();\"");
 
-   if (enc_selected == 0)
-      strcat(script, " OnLoad=\"elKeyInit();\" OnFocus=\"elKeyInit();\"");
+   if (enc_selected == 0) {
+      if (!getcfg(lbs->name, "Message height", str, sizeof(str)) &&
+          !getcfg(lbs->name, "Message width", str, sizeof(str)))
+         strcat(script, " OnLoad=\"elKeyInit(); init_resize();\" OnFocus=\"elKeyInit();\"");
+      else
+         strcat(script, " OnLoad=\"elKeyInit();\" OnFocus=\"elKeyInit();\"");
+   } else
+      strcat(script, " OnLoad=\"init_resize();\"");
 
    if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1)
       rsprintf("<body onUnload=\"unload();\"%s>\n", script);
@@ -10217,9 +10244,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* main box for text box and icons */
-   rsprintf("<tr><td colspan=2 class=\"attribvalue\">\n");
+   rsprintf("<tr><td width=\"100%%\" colspan=2 class=\"attribvalue\">\n"); //##
    if (enc_selected == 0)
-      rsprintf("<table border=\"0\"><tr>\n");
+      rsprintf("<table width=\"100%%\" border=\"0\"><tr>\n");
 
    if (enc_selected == 0 && show_smileys) {
 
@@ -10254,7 +10281,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    if (enc_selected == 0)
-      rsprintf("<td class=\"attribvalue\">\n");
+      rsprintf("<td width=\"100%%\" class=\"attribvalue\">\n");
 
    /* set textarea width */
    width = 112;
@@ -10351,7 +10378,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("<textarea rows=%d cols=%d wrap=hard %s name=\"Text\" onChange=\"mod();\">\n",
                   height, width, str);
       else
-         rsprintf("<textarea rows=%d cols=%d %s name=\"Text\" onChange=\"mod();\">\n", height, width, str);
+         rsprintf("<textarea rows=%d cols=%d %s name=\"Text\" onChange=\"mod();\" style=\"width:100%%;\">\n", 
+                  height, width, str);
 
       if (isparam("nsel")) {
          rsprintf("- %s -\n", loc("keep original text"));
