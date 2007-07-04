@@ -8697,6 +8697,36 @@ void rsicon(char *name, char *comment, char *elcode)
 
 /*------------------------------------------------------------------*/
 
+void compare_attributes(LOGBOOK *lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], int *n)
+{
+int  status, i, n_reply;
+char reply_to[MAX_REPLY_TO * 10], attr[MAX_N_ATTR][NAME_LENGTH], list[MAX_N_ATTR][NAME_LENGTH];
+
+   status = el_retrieve(lbs, message_id, NULL, attr_list, attr, lbs->n_attr,
+               NULL, NULL, NULL, reply_to, NULL, NULL, NULL);
+   if (status != EL_SUCCESS)
+      return;
+
+   if (*n == 0)
+      memcpy(attrib, attr, sizeof(attrib));
+   else {
+      for (i=0 ; i<lbs->n_attr ; i++)
+         if (!strieq(attrib[i], attr[i]))
+            sprintf(attrib[i], "- %s -", loc("keep original values"));
+   }
+   *n++;
+   if (isparam("elmode") && strieq(getparam("elmode"), "threaded")) {
+      
+      // go through all replies in threaded mode
+      n_reply = strbreak(reply_to, list, MAX_N_ATTR, ",", FALSE);
+      for (i = 0; i < n_reply; i++) {
+         compare_attributes(lbs, atoi(list[i]), attrib, n);
+      }
+   }
+}
+
+/*------------------------------------------------------------------*/
+
 void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload, BOOL breedit,
                     BOOL bduplicate, BOOL bpreview)
 {
@@ -8786,23 +8816,20 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       } else if (isparam("nsel")) {
 
          /* multi edit: get all entries and check if attributes are the same */
+         memset(attrib, 0, sizeof(attrib));
          for (i = n = 0; i < atoi(getparam("nsel")); i++) {
             sprintf(str, "s%d", i);
             if (isparam(str)) {
-               size = TEXT_SIZE;
-               el_retrieve(lbs, atoi(getparam(str)), date, attr_list, list, lbs->n_attr,
-                           text, &size, orig_tag, reply_tag, att, encoding, locked_by);
-               if (n == 0)
-                  memcpy(attrib, list, sizeof(list));
-               else {
-                  for (j=0 ; j<lbs->n_attr ; j++)
-                     if (!strieq(attrib[j], list[j]))
-                        sprintf(attrib[j], "- %s -", loc("keep original values"));
+               if (n == 0) {
+                  size = TEXT_SIZE;
+                  el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
+                              text, &size, orig_tag, reply_tag, att, encoding, locked_by);
+
                }
-               n++;
+
+               compare_attributes(lbs, atoi(getparam(str)), attrib, &n);
             }
          }
-
       }
    }
 
@@ -12661,7 +12688,7 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
 {
    int i, status, reply = 0, next, nsel;
    char str[256], in_reply_to[80], reply_to[MAX_REPLY_TO * 10], owner[256];
-   char attrib[MAX_N_ATTR][NAME_LENGTH];
+   char attrib[MAX_N_ATTR][NAME_LENGTH], mode[80];
 
    /* redirect if confirm = NO */
    if (isparam("confirm") && strcmp(getparam("confirm"), loc("No")) == 0) {
@@ -12676,11 +12703,17 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
       return;
    }
 
+   if (isparam("elmode"))
+      strlcpy(mode, getparam("elmode"), sizeof(mode));
+
    if (isparam("confirm")) {
       if (strcmp(getparam("confirm"), loc("Yes")) == 0) {
          if (message_id) {
             /* delete message */
-            status = el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
+            if (strieq(mode, "threaded"))
+               status = el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
+            else
+               status = el_delete_message(lbs, message_id, TRUE, NULL, TRUE, FALSE);
             if (status != EL_SUCCESS) {
                sprintf(str, "%s = %d", loc("Error deleting message: status"), status);
                show_error(str);
@@ -12699,8 +12732,12 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
             if (isparam("nsel")) {
                for (i = 0; i < atoi(getparam("nsel")); i++) {
                   sprintf(str, "s%d", i);
-                  if (isparam(str))
-                     status = el_delete_message(lbs, atoi(getparam(str)), TRUE, NULL, TRUE, TRUE);
+                  if (isparam(str)) {
+                     if (strieq(mode, "threaded"))
+                        status = el_delete_message(lbs, atoi(getparam(str)), TRUE, NULL, TRUE, TRUE);
+                     else
+                        status = el_delete_message(lbs, atoi(getparam(str)), TRUE, NULL, TRUE, FALSE);
+                  }
                }
             }
 
@@ -12782,7 +12819,7 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
 
          rsprintf("</td></tr>\n");
 
-         if (reply)
+         if (reply && strieq(mode, "threaded"))
             rsprintf("<tr><td align=center class=\"dlgform\">%s</td></tr>\n", loc("and all their replies"));
 
       } else {
@@ -12845,7 +12882,6 @@ void show_logbook_delete(LOGBOOK * lbs)
       }
 
    } else {
-
 
       strcpy(str, "Delete logbook");
       show_standard_header(lbs, TRUE, str, "", FALSE, NULL);
@@ -15930,12 +15966,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
       /* show select box */
       if (select && !strieq(mode, "Threaded")) {
          rsprintf("<td class=\"%s\">", sclass);
-
-         if (in_reply_to[0] == 0)
-            rsprintf("<input type=checkbox name=\"s%d\" value=%d>\n", (*n_display)++, message_id);
-         else
-            rsprintf("&nbsp;\n");
-
+         rsprintf("<input type=checkbox name=\"s%d\" value=%d>\n", (*n_display)++, message_id);
          rsprintf("</td>\n");
       }
 
@@ -20337,6 +20368,42 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
 
 /*------------------------------------------------------------------*/
 
+int submit_elog_reply(LOGBOOK *lbs, int message_id,  char attrib[MAX_N_ATTR][NAME_LENGTH], char *text)
+{
+int n_reply, i, status;
+char str[80], att_file[MAX_ATTACHMENTS][256], reply_to[MAX_REPLY_TO * 10], 
+  list[MAX_N_ATTR][NAME_LENGTH];
+
+   status = el_retrieve(lbs, message_id, NULL, attr_list, NULL, 0,
+               NULL, NULL, NULL, reply_to, att_file, NULL, NULL);
+   if (status != EL_SUCCESS)
+      return status;
+
+   sprintf(str, "- %s -", loc("keep original text"));
+   if (strcmp(text, str) == 0)
+      message_id = el_submit(lbs, message_id, TRUE, "<keep>", attr_list, attrib, lbs->n_attr,
+                             "<keep>", "<keep>", "<keep>", "<keep>", att_file, TRUE, NULL);
+   else
+      message_id = el_submit(lbs, message_id, TRUE, "<keep>", attr_list, attrib, lbs->n_attr,
+                             text, "<keep>", "<keep>", "<keep>", att_file, TRUE, NULL);
+
+   if (message_id < 0)
+      return 0;
+
+   if (isparam("elmode") && strieq(getparam("elmode"), "threaded")) {
+      
+      // go through all replies in threaded mode
+      n_reply = strbreak(reply_to, list, MAX_N_ATTR, ",", FALSE);
+      for (i = 0; i < n_reply; i++) {
+         submit_elog_reply(lbs, atoi(list[i]), attrib, text);
+      }
+   }
+
+   return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 void submit_elog(LOGBOOK * lbs)
 {
    char str[NAME_LENGTH], str2[NAME_LENGTH], file_name[256], error[1000], date[80],
@@ -20347,7 +20414,7 @@ void submit_elog(LOGBOOK * lbs)
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], ua[NAME_LENGTH];
    int i, j, k, n, missing, first, index, mindex, suppress, message_id, resubmit_orig,
        mail_to_size, rcpt_to_size, ltime, year, month, day, hour, min, sec, n_attr, email_notify[1000],
-       allowed_encoding;
+       allowed_encoding, status;
    BOOL bedit, bmultiedit;
    struct tm tms;
 
@@ -20769,15 +20836,8 @@ void submit_elog(LOGBOOK * lbs)
 
             message_id = atoi(getparam(str));
 
-            sprintf(str, "- %s -", loc("keep original text"));
-            if (strcmp(getparam("text"), str) == 0)
-               message_id = el_submit(lbs, message_id, TRUE, "<keep>", attr_list, attrib, n_attr,
-                                      "<keep>", "<keep>", "<keep>", "<keep>", att_file, TRUE, NULL);
-            else
-               message_id = el_submit(lbs, message_id, TRUE, "<keep>", attr_list, attrib, n_attr,
-                                      getparam("text"), "<keep>", "<keep>", "<keep>", att_file, TRUE, NULL);
-
-            if (message_id <= 0) {
+            status = submit_elog_reply(lbs, message_id,  attrib, getparam("text"));
+            if (status != EL_SUCCESS) {
                sprintf(str, loc("New entry cannot be written to directory \"%s\""), lbs->data_dir);
                strcat(str, "\n<p>");
                strcat(str, loc("Please check that it exists and elogd has write access and disk is not full"));
