@@ -15843,7 +15843,7 @@ void synchronize(LOGBOOK * lbs, int mode)
 
 void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   int expand, int level, BOOL printable, int n_line,
-                  int show_attachments, char *date, char *in_reply_to,
+                  int show_attachments, char *date,
                   char *reply_to, int n_attr_disp,
                   char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH],
                   BOOL disp_attr_link[MAX_N_ATTR + 4],
@@ -16548,7 +16548,7 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable,
    }
 
    display_line(lbs, message_id, 0, "threaded", expand, level, printable,
-                n_line, FALSE, date, in_reply_to, reply_to, n_attr_disp,
+                n_line, FALSE, date, reply_to, n_attr_disp,
                 disp_attr, NULL, (void *) attrib, lbs->n_attr, text, show_text,
                 NULL, encoding, 0, NULL, locked_by, highlight, &re_buf[0], highlight_mid, absolute_link);
 
@@ -19382,7 +19382,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
          display_line(msg_list[index].lbs, message_id,
                       index, mode, expand, 0, printable, n_line,
-                      show_attachments, date, in_reply_to, reply_to,
+                      show_attachments, date, reply_to,
                       n_attr_disp, disp_attr, disp_attr_link, attrib, lbs->n_attr, text, show_text,
                       attachment, encoding, isparam("select") ? atoi(getparam("select")) : 0,
                       &n_display, locked_by, 0, re_buf, page_mid, FALSE);
@@ -19497,7 +19497,7 @@ void show_elog_thread(LOGBOOK * lbs, int message_id, int absolute_links, int hig
 
    display_line(lbs, head_id,
                 0, "Threaded", 1, 0, FALSE, 0,
-                FALSE, date, in_reply_to, reply_to,
+                FALSE, date, reply_to,
                 n_attr_disp, disp_attr, NULL, attrib, lbs->n_attr, text, FALSE,
                 attachment, encoding, 0, &n_display, locked_by, message_id, NULL,
                 highlight_mid, absolute_links);
