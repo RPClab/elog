@@ -9399,7 +9399,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("   t = p.offsetTop;\n");
       rsprintf("   while (p = p.offsetParent)\n");
       rsprintf("      t += p.offsetTop;\n");
-      rsprintf("   height = window.innerHeight - t - 135;\n");
+      rsprintf("   if (window.innerHeight) // netscape\n");
+      rsprintf("      height = window.innerHeight - t - 135;\n");
+      rsprintf("   else // IE\n");
+      rsprintf("      height = document.body.offsetHeight - t - 135;\n");
       rsprintf("   if (height < 300)\n");
       rsprintf("      height = 300;\n");
       rsprintf("   document.form1.Text.style.height = height;\n");
