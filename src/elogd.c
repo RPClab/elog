@@ -9886,13 +9886,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   sprintf(str, "%s_0", ua);
                   rsprintf("<span style=\"white-space:nowrap;\">\n");
                   rsprintf("<input type=radio id=\"%s\" name=\"%s\" value=\"0\" onChange=\"mod();\">\n", str, ua);
-                  rsprintf("<label for=\"%s\">%s</label>\n", str, loc("off"));
+                  rsprintf("<label for=\"%s\">%s</label>\n", str, loc("no"));
                   rsprintf("</span>\n");
 
                   sprintf(str, "%s_1", ua);
                   rsprintf("<span style=\"white-space:nowrap;\">\n");
                   rsprintf("<input type=radio id=\"%s\" name=\"%s\" value=\"1\" onChange=\"mod();\">\n", str, ua);
-                  rsprintf("<label for=\"%s\">%s</label>\n", str, loc("on"));
+                  rsprintf("<label for=\"%s\">%s</label>\n", str, loc("yes"));
                   rsprintf("</span>\n");
 
                   sprintf(str, "%s_2", ua);
@@ -17139,6 +17139,18 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
             rsprintf("<option %s value=364>%s\n", i == 364 ? "selected" : "", loc("Last Year"));
 
             rsprintf("</select>\n");
+         } else if (strieq(attr_options[index][0], "boolean")) {
+
+            sprintf(str, loc("Select %s"), list[index]);
+            rsprintf("<select title=\"%s\" name=\"%s\" onChange=\"document.form1.submit()\">\n", str,
+                     list[index]);
+
+            rsprintf("<option value=\"_all_\">-- %s --\n", list[index]);
+
+            rsprintf("<option value=\"1\">%s\n", loc("yes"));
+            rsprintf("<option value=\"0\">%s\n", loc("no"));
+
+            rsprintf("</select>\n");
          } else {
 
             /* check if attribute has options */
@@ -20640,7 +20652,11 @@ void submit_elog(LOGBOOK * lbs)
       strcpy(ua, attr_list[i]);
       stou(ua);
 
-      if (attr_flags[i] & (AF_MULTI | AF_MUSERLIST | AF_MUSEREMAIL)) {
+      if (strieq(attr_options[i][0], "boolean") && !isparam(ua)) {
+
+         strcpy(attrib[i], "0");
+
+      } else if (attr_flags[i] & (AF_MULTI | AF_MUSERLIST | AF_MUSEREMAIL)) {
 
          if (isparam(ua)) {
             strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
