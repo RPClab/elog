@@ -8822,7 +8822,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             if (isparam(str)) {
                if (n == 0) {
                   size = TEXT_SIZE;
-                  el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr,
+                  el_retrieve(lbs, atoi(getparam(str)), date, attr_list, attrib, lbs->n_attr,
                               text, &size, orig_tag, reply_tag, att, encoding, locked_by);
 
                }
@@ -20774,6 +20774,15 @@ void submit_elog(LOGBOOK * lbs)
             strsubst_list(subst_str, sizeof(subst_str), slist, svalue, n);
             strcpy(attrib[i], subst_str);
          }
+      }
+   }
+
+   /* check for attributes to keep */
+   if (bmultiedit) {
+      sprintf(str, "- %s -", loc("keep original values"));    
+      for (i = 0; i < n_attr; i++) {
+         if (strieq(str, attrib[i]))
+            strlcpy(attrib[i], "<keep>", NAME_LENGTH);
       }
    }
 
