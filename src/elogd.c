@@ -8714,7 +8714,7 @@ char reply_to[MAX_REPLY_TO * 10], attr[MAX_N_ATTR][NAME_LENGTH], list[MAX_N_ATTR
          if (!strieq(attrib[i], attr[i]))
             sprintf(attrib[i], "- %s -", loc("keep original values"));
    }
-   *n++;
+   (*n)++;
    if (isparam("elmode") && strieq(getparam("elmode"), "threaded")) {
       
       // go through all replies in threaded mode
@@ -8819,16 +8819,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          memset(attrib, 0, sizeof(attrib));
          for (i = n = 0; i < atoi(getparam("nsel")); i++) {
             sprintf(str, "s%d", i);
-            if (isparam(str)) {
-               if (n == 0) {
-                  size = TEXT_SIZE;
-                  el_retrieve(lbs, atoi(getparam(str)), date, attr_list, attrib, lbs->n_attr,
-                              text, &size, orig_tag, reply_tag, att, encoding, locked_by);
-
-               }
-
+            if (isparam(str))
                compare_attributes(lbs, atoi(getparam(str)), attrib, &n);
-            }
          }
       }
    }
@@ -9505,27 +9497,29 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
    }
 
-   time(&now);
-   if (bedit) {
-      if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
-         strcpy(format, DEFAULT_TIME_FORMAT);
+   if (!isparam("nsel")) {
+      time(&now);
+      if (bedit) {
+         if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+            strcpy(format, DEFAULT_TIME_FORMAT);
 
-      ltime = date_to_ltime(date);
-      pts = localtime(&ltime);
-      assert(pts);
-      my_strftime(str, sizeof(str), format, pts);
-   } else {
-      if (getcfg(lbs->name, "Time format", format, sizeof(format)))
-         my_strftime(str, sizeof(str), format, localtime(&now));
-      else
-         strcpy(str, ctime(&now));
-      strcpy(date, ctime(&now));
-      date[24] = 0;
+         ltime = date_to_ltime(date);
+         pts = localtime(&ltime);
+         assert(pts);
+         my_strftime(str, sizeof(str), format, pts);
+      } else {
+         if (getcfg(lbs->name, "Time format", format, sizeof(format)))
+            my_strftime(str, sizeof(str), format, localtime(&now));
+         else
+            strcpy(str, ctime(&now));
+         strcpy(date, ctime(&now));
+         date[24] = 0;
+      }
+
+      rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Entry time"));
+      rsprintf("<td class=\"attribvalue\">%s\n", str);
+      rsprintf("<input type=hidden name=entry_date value=\"%s\"></td></tr>\n", date);
    }
-
-   rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Entry time"));
-   rsprintf("<td class=\"attribvalue\">%s\n", str);
-   rsprintf("<input type=hidden name=entry_date value=\"%s\"></td></tr>\n", date);
 
    if (_condition[0])
       rsprintf("<input type=hidden name=condition value=\"%s\"></td></tr>\n", _condition);
@@ -17147,8 +17141,15 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
 
             rsprintf("<option value=\"_all_\">-- %s --\n", list[index]);
 
-            rsprintf("<option value=\"1\">%s\n", loc("yes"));
-            rsprintf("<option value=\"0\">%s\n", loc("no"));
+            if (isparam(attr_list[index]) && strieq("1", getparam(attr_list[index])))
+               rsprintf("<option selected value=\"1\">%s\n", loc("yes"));
+            else
+               rsprintf("<option value=\"1\">%s\n", loc("yes"));
+
+            if (isparam(attr_list[index]) && strieq("0", getparam(attr_list[index])))
+               rsprintf("<option selected value=\"0\">%s\n", loc("no"));
+            else
+               rsprintf("<option value=\"0\">%s\n", loc("no"));
 
             rsprintf("</select>\n");
          } else {
@@ -18742,7 +18743,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                      rsprintf("&nbsp;<a href=\"last%d?mode=%s\">%s</a>&nbsp;|\n", last_n * 2, mode, str);
                   }
                } else if (strieq(menu_item[i], "Select")) {
-                  strlcpy(str, isparam("cmdline") ? getparam("cmdline") : "", sizeof(str));
+                  strlcpy(str, getparam("cmdline"), sizeof(str));
                   if (isparam("select") && atoi(getparam("select")) == 1) {
                      /* remove select switch */
                      if (strstr(str, "select=1")) {
