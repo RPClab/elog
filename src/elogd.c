@@ -8740,7 +8740,7 @@ char reply_to[MAX_REPLY_TO * 10], attr[MAX_N_ATTR][NAME_LENGTH], list[MAX_N_ATTR
       return;
 
    if (*n == 0)
-      memcpy(attrib, attr, sizeof(attrib));
+      memcpy(attrib, attr, sizeof(attr));
    else {
       for (i=0 ; i<lbs->n_attr ; i++)
          if (!strieq(attrib[i], attr[i]))
