@@ -213,3 +213,44 @@ function elKeyPress(evt)
    
    return true;
 }
+
+function browse(evt)
+{
+   evt = (evt) ? evt : window.event;
+   var unicode = evt.charCode ? evt.charCode : evt.keyCode;
+   var actualkey = String.fromCharCode(unicode);
+
+   if (evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
+
+      if (browser == 'MSIE') {
+         if (unicode == 10)
+            unicode = 13;
+         else   
+            unicode += 96;
+         actualkey = String.fromCharCode(unicode);
+      }
+
+      if (actualkey == "$") {
+         // home
+         window.location.href = "?cmd_first.x=1";
+         return false;
+      }
+      if (actualkey == "#") {
+         // end
+         window.location.href = "?cmd_last.x=1";
+         return false;
+      }
+      if (actualkey == "!") {
+         // page up
+         window.location.href = "?cmd_previous.x=1";
+         return false;
+      }
+      if (actualkey == "\"") {
+         // page down
+         window.location.href = "?cmd_next.x=1";
+         return false;
+      }
+   }
+   
+   return true;
+}
