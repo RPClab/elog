@@ -9880,13 +9880,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   sprintf(str, "%s_0", ua);
                   rsprintf("<span style=\"white-space:nowrap;\">\n");
                   rsprintf("<input type=radio id=\"%s\" name=\"%s\" value=\"0\" onChange=\"mod();\">\n", str, ua);
-                  rsprintf("<label for=\"%s\">%s</label>\n", str, loc("no"));
+                  rsprintf("<label for=\"%s\">0</label>\n", str);
                   rsprintf("</span>\n");
 
                   sprintf(str, "%s_1", ua);
                   rsprintf("<span style=\"white-space:nowrap;\">\n");
                   rsprintf("<input type=radio id=\"%s\" name=\"%s\" value=\"1\" onChange=\"mod();\">\n", str, ua);
-                  rsprintf("<label for=\"%s\">%s</label>\n", str, loc("yes"));
+                  rsprintf("<label for=\"%s\">1</label>\n", str);
                   rsprintf("</span>\n");
 
                   sprintf(str, "%s_2", ua);
@@ -11030,8 +11030,26 @@ void show_find_form(LOGBOOK * lbs)
          }
 
       } else {
-         if (strieq(attr_options[i][0], "boolean"))
-            rsprintf("<input type=checkbox name=\"%s\" value=1>\n", attr_list[i]);
+         if (strieq(attr_options[i][0], "boolean")) {
+            
+            sprintf(str, "%s_0", attr_list[i]);
+            rsprintf("<span style=\"white-space:nowrap;\">\n");
+            rsprintf("<input type=radio id=\"%s\" name=\"%s\" value=\"0\">\n", str, attr_list[i]);
+            rsprintf("<label for=\"%s\">0</label>\n", str);
+            rsprintf("</span>\n");
+
+            sprintf(str, "%s_1", attr_list[i]);
+            rsprintf("<span style=\"white-space:nowrap;\">\n");
+            rsprintf("<input type=radio id=\"%s\" name=\"%s\" value=\"1\">\n", str, attr_list[i]);
+            rsprintf("<label for=\"%s\">1</label>\n", str);
+            rsprintf("</span>\n");
+
+            sprintf(str, "%s_2", attr_list[i]);
+            rsprintf("<span style=\"white-space:nowrap;\">\n");
+            rsprintf("<input type=radio checked id=\"%s\" name=\"%s\" value=\"\">\n", str, attr_list[i]);
+            rsprintf("<label for=\"%s\">%s</label>\n", str, loc("unspecified"));
+            rsprintf("</span>\n");
+         }
 
          /* display image for icon */
          else if (attr_flags[i] & AF_ICON) {
@@ -17142,14 +17160,14 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
             rsprintf("<option value=\"_all_\">-- %s --\n", list[index]);
 
             if (isparam(attr_list[index]) && strieq("1", getparam(attr_list[index])))
-               rsprintf("<option selected value=\"1\">%s\n", loc("yes"));
+               rsprintf("<option selected value=\"1\">1\n");
             else
-               rsprintf("<option value=\"1\">%s\n", loc("yes"));
+               rsprintf("<option value=\"1\">1\n");
 
             if (isparam(attr_list[index]) && strieq("0", getparam(attr_list[index])))
-               rsprintf("<option selected value=\"0\">%s\n", loc("no"));
+               rsprintf("<option selected value=\"0\">0\n");
             else
-               rsprintf("<option value=\"0\">%s\n", loc("no"));
+               rsprintf("<option value=\"0\">0\n");
 
             rsprintf("</select>\n");
          } else {
@@ -19746,7 +19764,7 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH],
             strcpy(comment, attrib[i]);
 
          if (strieq(attr_options[i][0], "boolean"))
-            strcpy(comment, atoi(attrib[i]) ? loc("Yes") : loc("No"));
+            strcpy(comment, atoi(attrib[i]) ? "1" : "0");
 
          for (k = strlen(str) - 1; k > 0; k--)
             if (str[k] != ' ')
@@ -19920,7 +19938,7 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
             strcpy(comment, attrib[i]);
 
          if (strieq(attr_options[i][0], "boolean"))
-            strcpy(comment, atoi(attrib[i]) ? loc("Yes") : loc("No"));
+            strcpy(comment, atoi(attrib[i]) ? "1" : "0");
 
          for (k = strlen(str) - 1; k > 0; k--)
             if (str[k] != ' ')
