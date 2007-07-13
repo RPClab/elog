@@ -567,7 +567,7 @@ int my_read(int fh, void *buffer, unsigned int bytes)
    int i, n = 0;
 
    do {
-      i = read(fh, buffer + n, bytes - n);
+      i = read(fh, (char *)buffer + n, bytes - n);
 
       /* don't return if an alarm signal was cought */
       if (i == -1 && errno == EINTR)
@@ -646,6 +646,10 @@ void *xmalloc(size_t bytes)
 {
    char *temp;
 
+   /* Align buffer on 4 byte boundery for HP UX and other 64 bit systems to prevent Bus error (core dump) */
+   if (bytes & 3)
+      bytes += 4 - (bytes & 3);
+
    temp = (char *) malloc(bytes + 12);
    if (temp == 0)
       memory_error_and_abort("xmalloc");
@@ -661,6 +665,10 @@ void *xmalloc(size_t bytes)
 void *xcalloc(size_t count, size_t bytes)
 {
    char *temp;
+
+   /* Align buffer on 4 byte boundery for HP UX and other 64 bit systems to prevent Bus error (core dump) */
+   if (bytes & 3)
+      bytes += 4 - (bytes & 3);
 
    temp = (char *) malloc(count * bytes + 12);
    if (temp == 0)
@@ -679,6 +687,10 @@ void *xrealloc(void *pointer, size_t bytes)
 {
    char *temp;
    int old_size;
+
+   /* Align buffer on 4 byte boundery for HP UX and other 64 bit systems to prevent Bus error (core dump) */
+   if (bytes & 3)
+      bytes += 4 - (bytes & 3);
 
    if (pointer == NULL)
       return xmalloc(bytes);
@@ -23344,7 +23356,7 @@ void show_top_selection_page()
 
 /*------------------------------------------------------------------*/
 
-void show_selection_page()
+void show_selection_page(void)
 {
    int i, j, expand_all, show_title;
    char str[10000], file_name[256];
@@ -23975,7 +23987,7 @@ void interprete(char *lbook, char *path)
    /* if no logbook given, display logbook selection page */
    if (!logbook[0] && !path[0]) {
       if (n > 1) {
-         show_selection_page(NULL);
+         show_selection_page();
          return;
       }
 
@@ -24285,7 +24297,7 @@ void interprete(char *lbook, char *path)
 
    /* from here on, logbook must be valid */
    if (!logbook[0]) {
-      show_selection_page(NULL);
+      show_selection_page();
       return;
    }
 
