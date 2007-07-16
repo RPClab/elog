@@ -1163,7 +1163,7 @@ int subst_shell(char *cmd, char *result, int size)
       /* child process */
 
       /* restore original UID/GID */
-      if (setegid(orig_gid) < 0 || seteuid(orig_uid) < 0)
+      if (setregid(-1, orig_gid) < 0 || setreuid(-1, orig_uid) < 0)
          eprintf("Cannot restore original GID/UID.\n");
 
       /* give up root privilege permanently */
@@ -1915,7 +1915,7 @@ int setegroup(char *str)
    gr = getgrnam(str);
 
    if (gr != NULL)
-      if (setegid(gr->gr_gid) >= 0 && initgroups(gr->gr_name, gr->gr_gid) >= 0)
+      if (setregid(-1, gr->gr_gid) >= 0 && initgroups(gr->gr_name, gr->gr_gid) >= 0)
          return 0;
       else {
          eprintf("Cannot set effective GID to group \"%s\"\n", gr->gr_name);
@@ -1938,9 +1938,9 @@ int seteuser(char *str)
    pw = getpwnam(str);
 
    if (pw != NULL)
-      if (seteuid(pw->pw_uid) >= 0)
+      if (setreuid(-1, pw->pw_uid) >= 0) {
          return 0;
-      else {
+      } else {
          eprintf("Cannot set effective UID to user \"%s\"\n", str);
          eprintf("setuser: %s\n", strerror(errno));
    } else
@@ -25747,6 +25747,7 @@ void server_loop(void)
                   strcpy(remote_host[i_conn], (char *) inet_ntoa(rem_addr));
 
                strcpy(rem_host, remote_host[i_conn]);
+	       printf("X-forwarded-host: %s\n", rem_host);
             }
 
             if (_logging_level > 3) {
@@ -26544,7 +26545,7 @@ void cleanup(void)
    struct stat finfo;
 
    /* regain original uid */
-   if (setegid(orig_gid) < 0 || seteuid(orig_uid) < 0)
+   if (setregid(-1, orig_gid) < 0 || setreuid(-1, orig_uid) < 0)
       eprintf("Cannot restore original GID/UID.\n");
    if (pidfile[0] && stat(pidfile, &finfo) >= 0) {
       if (remove(pidfile) < 0) {

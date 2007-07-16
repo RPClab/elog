@@ -25,7 +25,7 @@ RCDIR      = $(ROOT)/etc/rc.d/init.d
 
 # Default compilation flags unless stated otherwise.
 # Add "-DHAVE_CRYPT" and "-lcrypt" to use crypt() function.
-CFLAGS += -O3 -funroll-loops -fomit-frame-pointer -W -Wall
+CFLAGS += -g -O0 -funroll-loops -fomit-frame-pointer -W -Wall
 
 CC = gcc
 IFLAGS = -kr -nut -i3 -l110
