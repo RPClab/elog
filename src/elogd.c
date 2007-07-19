@@ -434,6 +434,8 @@ int setuser(char *str);
 int setegroup(char *str);
 int seteuser(char *str);
 void strencode2(char *b, char *text, int size);
+void load_config_section(char *section, char **buffer, char *error);
+void remove_crlf(char *buffer);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -3728,10 +3730,11 @@ int eli_compare(const void *e1, const void *e2)
 int el_build_index(LOGBOOK * lbs, BOOL rebuild)
 /* scan all ??????a.log files and build an index table in eli[] */
 {
-   char *file_list, str[256], date[256], dir[256], file_name[MAX_PATH_LENGTH], *buffer,
+   char *file_list, str[256], error_str[256], date[256], dir[256], file_name[MAX_PATH_LENGTH], *buffer,
        *p, *pn, in_reply_to[80];
    int index, n, length;
    int i, fh, len;
+   unsigned char digest[16];
 
    if (rebuild) {
       xfree(lbs->el_index);
@@ -3760,6 +3763,25 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
    /* get data directory */
    strcpy(dir, lbs->data_dir);
 
+   if (verbose) {
+      /* show MD5 from config file */
+
+      load_config_section(lbs->name, &buffer, error_str);
+      if (error_str[0])
+         eprintf(error_str);
+      else {
+         remove_crlf(buffer);
+         MD5_checksum(buffer, strlen(buffer), digest);
+         eprintf("\n\nConfig [%s],                           MD5=", lbs->name);
+
+         for (i = 0; i < 16; i++)
+            eprintf("%02X", digest[i]);
+         eprintf("\n\n");
+      }
+      if (buffer)
+         xfree(buffer);
+   }
+
    file_list = NULL;
    n = ss_file_find(dir, "??????a.log", &file_list);
    if (n == 0) {
@@ -3773,6 +3795,9 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
 
       return EL_EMPTY;
    }
+
+   if (verbose)
+      eprintf("Entries:\n");
 
    /* go through all files */
    for (index = 0; index < n; index++) {
@@ -3832,9 +3857,6 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
 
                if (lbs->el_index[*lbs->n_el_index].message_id > 0) {
                   if (verbose) {
-                     if (*lbs->n_el_index == 0)
-                        eprintf("\n");
-
                      eprintf("  ID %3d, %s, ofs %5d, %s, MD5=",
                              lbs->el_index[*lbs->n_el_index].message_id,
                              str, lbs->el_index[*lbs->n_el_index].offset,
