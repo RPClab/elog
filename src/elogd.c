@@ -15185,6 +15185,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
       /* load local copy of remote MD5s from file */
       n_cache = load_md5(lbs, list[index], &md5_cache);
 
+      all_identical = TRUE;
+
       /*---- check for configuration file ----*/
 
       if (getcfg(lbs->name, "Mirror config", str, sizeof(str)) && atoi(str) == 1
@@ -15199,24 +15201,26 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
          }
 
          /* compare MD5s */
-         /*
-            eprintf("ID0:    ");
+         if (verbose) {         
+            eprintf("CONFIG : ");
             for (j = 0; j < 16; j++)
             eprintf("%02X", digest[j]);
-            eprintf("\nCache : ");
+            eprintf("\nCache  : ");
             for (j = 0; j < 16; j++)
             eprintf("%02X", md5_cache[0].md5_digest[j]);
-            eprintf("\nRemote: ");
+            eprintf("\nRemote : ");
             for (j = 0; j < 16; j++)
             eprintf("%02X", md5_remote[0].md5_digest[j]);
             eprintf("\n\n");
-          */
+         }
 
          if (n_remote > 0) {
             /* if config has been changed on this server, but not remotely, send it */
             if (!equal_md5(md5_cache[0].md5_digest, digest)
                 && equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)) {
 
+               all_identical = FALSE;
+         
                if (_logging_level > 1)
                   write_logfile(lbs, "MIRROR send config");
 
@@ -15238,6 +15242,8 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                /* if config has been changed remotely, but not on this server, receive it */
                if (!equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)
                    && equal_md5(md5_cache[0].md5_digest, digest)) {
+
+               all_identical = FALSE;
 
                if (_logging_level > 1)
                   write_logfile(lbs, "MIRROR receive config");
@@ -15291,7 +15297,6 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
       /*---- loop through logbook entries ----*/
 
-      all_identical = TRUE;
       n_delete = 0;
 
       for (i_msg = 0; i_msg < *lbs->n_el_index; i_msg++) {
@@ -15321,6 +15326,20 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
          /* if message exists in both lists, compare MD5s */
          if (exist_remote && exist_cache) {
+
+            /* compare MD5s */
+            if (verbose) {         
+               eprintf("ID%-5d: ", message_id);
+               for (j = 0; j < 16; j++)
+               eprintf("%02X", lbs->el_index[i_msg].md5_digest[j]);
+               eprintf("\nCache  : ");
+               for (j = 0; j < 16; j++)
+               eprintf("%02X", md5_cache[i_cache].md5_digest[j]);
+               eprintf("\nRemote : ");
+               for (j = 0; j < 16; j++)
+               eprintf("%02X", md5_remote[i_remote].md5_digest[j]);
+               eprintf("\n\n");
+            }
 
             /* if message has been changed on this server, but not remotely, send it */
             if (!equal_md5(md5_cache[i_cache].md5_digest, lbs->el_index[i_msg].md5_digest)
@@ -15455,6 +15474,18 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
             /* if message has been changed locally, send it */
             if (!equal_md5(md5_cache[i_cache].md5_digest, lbs->el_index[i_msg].md5_digest)) {
 
+               /* compare MD5s */
+               if (verbose) {         
+                  eprintf("ID%-5d: ", message_id);
+                  for (j = 0; j < 16; j++)
+                  eprintf("%02X", lbs->el_index[i_msg].md5_digest[j]);
+                  eprintf("\nCache  : ");
+                  for (j = 0; j < 16; j++)
+                  eprintf("%02X", md5_cache[i_cache].md5_digest[j]);
+                  eprintf("\nRemote : none");
+                  eprintf("\n\n");
+               }
+
                all_identical = FALSE;
 
                if (_logging_level > 1) {
@@ -15586,6 +15617,18 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
          if (!exist_cache && exist_remote &&
              !equal_md5(md5_remote[i_remote].md5_digest, lbs->el_index[i_msg].md5_digest)) {
 
+            /* compare MD5s */
+            if (verbose) {         
+               eprintf("ID%-5d: ", message_id);
+               for (j = 0; j < 16; j++)
+               eprintf("%02X", lbs->el_index[i_msg].md5_digest[j]);
+               eprintf("\nCache  : none");
+               eprintf("\nRemote : ");
+               for (j = 0; j < 16; j++)
+               eprintf("%02X", md5_remote[i_remote].md5_digest[j]);
+               eprintf("\n\n");
+            }
+
             all_identical = FALSE;
 
             /* find max id both locally and remotely */
@@ -15682,6 +15725,18 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                } else {
 
                   if (!equal_md5(md5_cache[i_cache].md5_digest, md5_remote[i_remote].md5_digest)) {
+
+                     /* compare MD5s */
+                     if (verbose) {         
+                        eprintf("ID-%5: none", message_id);
+                        eprintf("\nCache  : ");
+                        for (j = 0; j < 16; j++)
+                        eprintf("%02X", md5_cache[i_cache].md5_digest[j]);
+                        eprintf("\nRemote : ");
+                        for (j = 0; j < 16; j++)
+                        eprintf("%02X", md5_remote[i_remote].md5_digest[j]);
+                        eprintf("\n\n");
+                     }
 
                      all_identical = FALSE;
 
@@ -16797,7 +16852,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 
    /* default menu commands */
    if (menu_str[0] == 0) {
-      strcpy(menu_str, "List, New, Edit, Delete, Reply, Duplicate, Find, ");
+      strcpy(menu_str, "List, New, Edit, Delete, Reply, Duplicate, Synchronize, Find, ");
 
       if (getcfg(lbs->name, "Password file", str, sizeof(str))) {
 
@@ -16810,9 +16865,6 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
             strcat(menu_str, "Create new logbook, ");
             strcat(menu_str, "GetPwdFile, ");
 
-
-            if (getcfg(lbs->name, "Mirror server", str, sizeof(str)))
-               strcat(menu_str, "Synchronize, ");
 
             if (is_admin_user("global", getparam("unm"))) {
 
@@ -16831,8 +16883,6 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          }
          strcat(menu_str, "Config, Logout, ");
       } else {
-         if (getcfg(lbs->name, "Mirror server", str, sizeof(str)))
-            strcat(menu_str, "Synchronize, ");
          strcat(menu_str, "Config, ");
          strcat(menu_str, "Change [global], ");
          strcat(menu_str, "Delete this logbook, ");
@@ -16859,8 +16909,6 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 
       if (is_admin_user(lbs->name, getparam("unm"))) {
 
-         if (getcfg(lbs->name, "Mirror server", str, sizeof(str)))
-            strcat(menu_str, "Synchronize, ");
          strcat(menu_str, "Change config file, ");
          strcat(menu_str, "Delete this logbook, ");
          strcat(menu_str, "Rename this logbook, ");
