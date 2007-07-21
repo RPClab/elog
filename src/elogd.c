@@ -23904,7 +23904,7 @@ void interprete(char *lbook, char *path)
 \********************************************************************/
 {
    int status, i, j, n, index, lb_index, message_id;
-   char exp[80], list[1000], section[256], str[NAME_LENGTH], str2[NAME_LENGTH], edit_id[80],
+   char exp[80], list[1000], section[256], str[NAME_LENGTH], str1[NAME_LENGTH], str2[NAME_LENGTH], edit_id[80],
        enc_pwd[80], file_name[256], command[256], enc_path[256], dec_path[256], uname[80],
        logbook[256], logbook_enc[256], *experiment, group[256], css[256], *pfile, attachment[MAX_PATH_LENGTH],
        full_name[256];
@@ -24800,16 +24800,25 @@ void interprete(char *lbook, char *path)
    }
 
    if (strieq(command, loc("Import"))) {
-      show_query(lbs, loc("ELOG import"), loc("Plese choose format to import:"), "CSV", "?cmd=CSV+Import", "XML", "?cmd=XML+Import");
+      strcpy(str, loc("CSV Import"));
+      url_encode(str, sizeof(str));
+      sprintf(str1, "?cmd=%s", str);
+
+      strcpy(str, loc("XML Import"));
+      url_encode(str, sizeof(str));
+      sprintf(str2, "?cmd=%s", str);
+
+      show_query(lbs, loc("ELOG import"), loc("Please choose format to import:"), "CSV", 
+         str1, "XML", str2);
       return;
    }
 
-   if (strieq(command, "CSV Import")) {
+   if (strieq(command, loc("CSV Import"))) {
       show_import_page_csv(lbs);
       return;
    }
 
-   if (strieq(command, "XML Import")) {
+   if (strieq(command, loc("XML Import"))) {
       show_import_page_xml(lbs);
       return;
    }
