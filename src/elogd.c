@@ -19793,7 +19793,7 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH],
 
       } else {
          if (old_mail)
-            sprintf(mail_text + strlen(mail_text), loc("A old ELOG entry has been updated"));
+            sprintf(mail_text + strlen(mail_text), loc("An old ELOG entry has been updated"));
          else
             sprintf(mail_text + strlen(mail_text), loc("A new ELOG entry has been submitted"));
          strcat(mail_text, ":");
@@ -21937,7 +21937,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       if (email) {
          rsprintf("<tr><td class=\"title1\">\n");
          if (strieq(command, "oldemail"))
-            rsprintf("%s:", loc("A old ELOG entry has been updated"));
+            rsprintf("%s:", loc("An old ELOG entry has been updated"));
          else
             rsprintf("%s:", loc("A new ELOG entry has been submitted"));
          rsprintf("</td></tr>\n");
