@@ -9456,9 +9456,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* strings for elcode.js */
-   rsprintf("linkText_prompt = \"%s\";\n", loc("Enter name of hyperlink"));
-   rsprintf("linkURL_prompt  = \"%s\";\n", loc("Enter URL of hyperlink"));
-   rsprintf("linkHeading_prompt  = \"%s\";\n", loc("Enter heading level (1, 2 or 3)"));
+   if (enc_selected == 0) {
+      rsprintf("linkText_prompt = \"%s\";\n", loc("Enter name of hyperlink"));
+      rsprintf("linkURL_prompt  = \"%s\";\n", loc("Enter URL of hyperlink"));
+      rsprintf("linkHeading_prompt  = \"%s\";\n", loc("Enter heading level (1, 2 or 3)"));
+   }
+
    if (stristr(browser, "MSIE") && !stristr(browser, "opera"))
       rsprintf("browser = \"MSIE\";\n");
    else if (stristr(browser, "Mozilla") && !stristr(browser, "opera") && !stristr(browser, "konqueror"))
@@ -9472,6 +9475,19 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* optionally load ELCode JavaScript code */
    if (enc_selected == 0)
       rsprintf("<script type=\"text/javascript\" src=\"../elcode.js\"></script>\n\n");
+
+   /* optionally load FCKedit */
+   if (enc_selected == 2) {
+      rsprintf("<script type=\"text/javascript\" src=\"../fckeditor/fckeditor.js\"></script>\n");
+      rsprintf("<script type=\"text/javascript\">\n");
+      rsprintf("function initFCKedit()\n");
+      rsprintf("{\n");
+      rsprintf("   var oFCKeditor = new FCKeditor('Text');\n");
+      rsprintf("   oFCKeditor.BasePath = '../fckeditor/';\n");
+      rsprintf("   oFCKeditor.ReplaceTextarea();\n");
+      rsprintf("}\n");
+      rsprintf("</script>\n\n");
+   }
 
    /* external script if requested */
    if (isparam("js")) {
@@ -9491,6 +9507,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          strcat(script, " OnLoad=\"elKeyInit(); init_resize();\" OnFocus=\"elKeyInit();\"");
       else
          strcat(script, " OnLoad=\"elKeyInit();\" OnFocus=\"elKeyInit();\"");
+   } else if (enc_selected == 2) {
+      strcat(script, " OnLoad=\"init_resize(); initFCKedit();\"");
    } else
       strcat(script, " OnLoad=\"init_resize();\"");
 
