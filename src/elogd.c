@@ -208,7 +208,7 @@ struct in_addr rem_addr;
 char rem_host[256];
 char rem_host_ip[256];
 int _sock;
-BOOL verbose, use_keepalive, enable_execute = FALSE;
+BOOL verbose, use_keepalive, enable_execute = FALSE, fckedit_exist;
 int _current_message_id;
 int _logging_level;
 
@@ -9476,13 +9476,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (enc_selected == 0)
       rsprintf("<script type=\"text/javascript\" src=\"../elcode.js\"></script>\n\n");
 
-   /* optionally load FCKedit */
-   if (enc_selected == 2) {
+   if (enc_selected == 2 && fckedit_exist) {
       rsprintf("<script type=\"text/javascript\" src=\"../fckeditor/fckeditor.js\"></script>\n");
       rsprintf("<script type=\"text/javascript\">\n");
       rsprintf("function initFCKedit()\n");
       rsprintf("{\n");
-      rsprintf("   var oFCKeditor = new FCKeditor('Text');\n");
+      rsprintf("   var oFCKeditor = new FCKeditor('Text', '100%%', '500');\n");
       rsprintf("   oFCKeditor.BasePath = '../fckeditor/';\n");
       rsprintf("   oFCKeditor.ReplaceTextarea();\n");
       rsprintf("}\n");
@@ -9507,7 +9506,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          strcat(script, " OnLoad=\"elKeyInit(); init_resize();\" OnFocus=\"elKeyInit();\"");
       else
          strcat(script, " OnLoad=\"elKeyInit();\" OnFocus=\"elKeyInit();\"");
-   } else if (enc_selected == 2) {
+   } else if (enc_selected == 2 && fckedit_exist) {
       strcat(script, " OnLoad=\"init_resize(); initFCKedit();\"");
    } else
       strcat(script, " OnLoad=\"init_resize();\"");
@@ -25480,6 +25479,15 @@ void server_loop(void)
 
    /* load initial configuration */
    check_config();
+
+   /* check for FCKedit */
+   strlcpy(str, resource_dir, sizeof(str));
+   strlcat(str, "scripts", sizeof(str));
+   strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
+   strlcat(str, "fckeditor/fckeditor.js", sizeof(str));
+   fckedit_exist = exist_file(str);
+   if (fckedit_exist)
+      eprintf("FCKedit detected\n");
 
    /* build logbook indices */
    if (!verbose && !running_as_daemon)
