@@ -9485,6 +9485,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("   oFCKeditor.BasePath = '../fckeditor/';\n");
       rsprintf("   oFCKeditor.Config['CustomConfigurationsPath'] = '../fckelog.js';\n");
       rsprintf("   oFCKeditor.ReplaceTextarea();\n");
+      rsprintf("   document.getElementById('HTML').checked = true;\n");
       rsprintf("}\n");
       rsprintf("</script>\n\n");
    }
@@ -10642,7 +10643,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
          if (allowed_encoding & 4) {
             if (enc_selected == 2)
-               rsprintf("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" checked>");
+               rsprintf("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" checked=\"checked\">");
             else
                rsprintf
                    ("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" onclick=\"cond_submit()\">");
