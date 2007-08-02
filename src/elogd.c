@@ -9483,6 +9483,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("{\n");
       rsprintf("   var oFCKeditor = new FCKeditor('Text', '100%%', '500');\n");
       rsprintf("   oFCKeditor.BasePath = '../fckeditor/';\n");
+      rsprintf("   oFCKeditor.Config['CustomConfigurationsPath'] = '../fckelog.js';\n");
       rsprintf("   oFCKeditor.ReplaceTextarea();\n");
       rsprintf("}\n");
       rsprintf("</script>\n\n");
@@ -25933,7 +25934,11 @@ void server_loop(void)
                   send(_sock, return_buffer, return_length, 0);
                   if (verbose) {
                      eprintf("==== Return ================================\n");
-                     eputs(return_buffer);
+                     if (chkext(str, ".gif") || chkext(str, ".jpg")
+                         || chkext(str, ".png") || chkext(str, ".ico") || return_length > 10000)
+                         eprintf("\n<%d bytes of %s>\n\n", return_length, str);
+                     else
+                         eputs(return_buffer);
                      eprintf("\n\n");
                   }
                   goto finished;
