@@ -119,7 +119,8 @@ install: $(EXECS)
 	@$(INSTALL) -v -m 0644 man/elog.1 man/elconv.1 $(MANDIR)/man1/
 	@$(INSTALL) -v -m 0644 man/elogd.8 $(MANDIR)/man8/
 	@$(INSTALL) -v -m 0644 man/elogd.8 $(MANDIR)/man8/
-	@$(INSTALL) -v -m 0644 scripts/* $(ELOGDIR)/scripts/
+	@$(INSTALL) -v -m 0644 scripts/fckeditor/fckelog.js $(ELOGDIR)/scripts/fckeditor/
+	@$(INSTALL) -v -m 0644 scripts/*.js $(ELOGDIR)/scripts/
 
 	@echo "Installing resources to $(ELOGDIR)/resources"	
 	@$(INSTALL) -m 0644 resources/* $(ELOGDIR)/resources/
