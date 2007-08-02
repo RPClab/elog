@@ -24454,6 +24454,12 @@ void interprete(char *lbook, char *path)
 
    /* check if command in menu list */
    if (!is_command_allowed(lbs, command)) {
+      /* redirect to login page for new command */
+      if (strieq(command, loc("New")) && !isparam("unm")) {
+         check_user_password(lbs, "", "", _cmdline);
+         return;
+      }
+
       sprintf(str, loc("Error: Command \"<b>%s</b>\" not allowed"), command);
       show_error(str);
       return;
