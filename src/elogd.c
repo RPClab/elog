@@ -6162,6 +6162,29 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                   strcpy(return_buffer + j, subst);
                   j += strlen(subst);
                   i += strlen(pattern_list[l].pattern) - 1;     // 1 gets added in for loop...
+               
+               } else if (strncmp(pattern_list[l].pattern, "|", 1) == 0) {
+
+                  if (inside_table) {
+                     strcpy(link, pattern_list[l].subst);
+                     if (strstr(link, "%s")) {
+                        strcpy(tmp, link);
+                        if (email_notify)
+                           compose_base_url(lbs, base_url, sizeof(base_url));
+                        else
+                           base_url[0] = 0;
+                        sprintf(link, tmp, base_url);
+                     }
+
+                     strcpy(return_buffer + j, link);
+                     j += strlen(link);
+                     i += strlen(pattern_list[l].pattern) - 1;     // 1 gets added in for loop...
+                  } else {
+                     strcpy(return_buffer + j, pattern_list[l].pattern);
+                     j += strlen(pattern_list[l].pattern);
+                     i += strlen(pattern_list[l].pattern) - 1;     // 1 gets added in for loop...
+                  }
+
                } else {
 
                   /* simple substitution */
