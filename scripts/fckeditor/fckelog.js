@@ -3,7 +3,7 @@
  */
 
 FCKConfig.ToolbarSets["Default"] = [
-	['Source','-','Save','Preview'],
+	['Source','FitWindow','-','Save','Preview'],
 	['Cut','Copy','Paste','PasteText','PasteWord','-','Print','SpellCheck'],
 	['Undo','Redo','-','Find','Replace','-','SelectAll','RemoveFormat'],
 	['Bold','Italic','Underline','StrikeThrough','-','Subscript','Superscript'],
@@ -11,10 +11,9 @@ FCKConfig.ToolbarSets["Default"] = [
 	['JustifyLeft','JustifyCenter','JustifyRight','JustifyFull'],
 	['Link','Unlink','Anchor'],
 	['Image','Table','Rule','Smiley','SpecialChar'],
-	'/',
 	['Style','FontFormat','FontName','FontSize'],
 	['TextColor','BGColor'],
-	['FitWindow','-','About']
+	['About']
 ] ;
 
 FCKConfig.Keystrokes = [
