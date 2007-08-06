@@ -2,8 +2,11 @@
  * ELOG specific FCKedit configuration
  */
 
+FCKConfig.PluginsPath = FCKConfig.BasePath.substr(0, FCKConfig.BasePath.length - 7) + 'editor/plugins/';
+FCKConfig.Plugins.Add('elog', null);
+
 FCKConfig.ToolbarSets["Default"] = [
-	['Source','FitWindow','-','Save','Preview'],
+	['Source','FitWindow','-','ELOGSubmit','Preview'],
 	['Cut','Copy','Paste','PasteText','PasteWord','-','Print','SpellCheck'],
 	['Undo','Redo','-','Find','Replace','-','SelectAll','RemoveFormat'],
 	['Bold','Italic','Underline','StrikeThrough','-','Subscript','Superscript'],
@@ -32,7 +35,8 @@ FCKConfig.Keystrokes = [
 	[ CTRL + 85 /*U*/, 'Underline' ],
 	[ CTRL + 83 /*S*/, 'Save' ],
 	[ CTRL + ALT + 13 /*ENTER*/, 'FitWindow' ],
+	[ CTRL + 13 /*ENTER*/, 'ELOGSubmit' ],
 	[ CTRL + 9 /*TAB*/, 'Source' ]
 ] ;
 
-FCKConfig.ContextMenu = ['Generic','Link','Anchor','Image','Flash','Select','Textarea','Checkbox','Radio','TextField','HiddenField','ImageButton','Button','BulletedList','NumberedList','Table','Form'] ;
+FCKConfig.ContextMenu = ['Generic','Link','Anchor','Image','BulletedList','NumberedList','Table'];
