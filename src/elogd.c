@@ -208,8 +208,8 @@ struct in_addr rem_addr;
 char rem_host[256];
 char rem_host_ip[256];
 int _sock;
-BOOL verbose, use_keepalive, enable_execute = FALSE, fckedit_exist;
-int _current_message_id;
+BOOL use_keepalive, enable_execute = FALSE, fckedit_exist;
+int verbose, _current_message_id;
 int _logging_level;
 
 char *mname[] = {
@@ -25663,7 +25663,7 @@ void server_loop(void)
                      show_error(str);
                      send(_sock, return_buffer, strlen_retbuf + 1, 0);
                      keep_alive = 0;
-                     if (verbose) {
+                     if (verbose > 1) {
                         eprintf("==== Return ================================\n");
                         eputs(return_buffer);
                         eprintf("\n\n");
@@ -25774,7 +25774,14 @@ void server_loop(void)
             } while (1);
             if (!strchr(net_buffer, '\r'))
                goto finished;
-            if (verbose) {
+            if (verbose == 1) {
+               strlcpy(str, net_buffer, sizeof(str));
+               if (strchr(str, '\r'))
+                  *strchr(str, '\r') = 0;
+               if (strchr(str, '\n'))
+                  *strchr(str, '\n') = 0;
+               eputs(str);
+            } else if (verbose > 1) {
                eputs("\n");
                eputs(net_buffer);
             }
@@ -25921,7 +25928,7 @@ void server_loop(void)
                show_error(str);
                send(_sock, return_buffer, strlen_retbuf + 1, 0);
                keep_alive = 0;
-               if (verbose) {
+               if (verbose > 1) {
                   eprintf("==== Return ================================\n");
                   eputs(return_buffer);
                   eprintf("\n\n");
@@ -25941,7 +25948,7 @@ void server_loop(void)
                   show_error(str);
                   send(_sock, return_buffer, strlen_retbuf + 1, 0);
                   keep_alive = 0;
-                  if (verbose) {
+                  if (verbose > 1) {
                      eprintf("==== Return ================================\n");
                      eputs(return_buffer);
                      eprintf("\n\n");
@@ -25956,7 +25963,7 @@ void server_loop(void)
                if (exist_file(str)) {
                   send_file_direct(str);
                   send(_sock, return_buffer, return_length, 0);
-                  if (verbose) {
+                  if (verbose > 1) {
                      eprintf("==== Return ================================\n");
                      if (chkext(str, ".gif") || chkext(str, ".jpg")
                          || chkext(str, ".png") || chkext(str, ".ico") || return_length > 10000)
@@ -25999,7 +26006,7 @@ void server_loop(void)
                   show_error(str);
                   send(_sock, return_buffer, strlen_retbuf + 1, 0);
                   keep_alive = 0;
-                  if (verbose) {
+                  if (verbose > 1) {
                      eprintf("==== Return ================================\n");
                      eputs(return_buffer);
                      eprintf("\n\n");
@@ -26038,7 +26045,7 @@ void server_loop(void)
                   show_error(str);
                   send(_sock, return_buffer, strlen_retbuf + 1, 0);
                   keep_alive = 0;
-                  if (verbose) {
+                  if (verbose > 1) {
                      eprintf("==== Return ================================\n");
                      eputs(return_buffer);
                      eprintf("\n\n");
@@ -26066,7 +26073,7 @@ void server_loop(void)
                }
 
                send(_sock, return_buffer, return_length, 0);
-               if (verbose) {
+               if (verbose > 1) {
                   eprintf("==== Return ================================\n");
                   eputs(return_buffer);
                   eprintf("\n\n");
@@ -26083,7 +26090,7 @@ void server_loop(void)
                      sprintf(str, "Error: logbook \"%s\" not defined in %s", logbook, CFGFILE);
                      show_error(str);
                      send(_sock, return_buffer, strlen(return_buffer), 0);
-                     if (verbose) {
+                     if (verbose > 1) {
                         eprintf("==== Return ================================\n");
                         eputs(return_buffer);
                         eprintf("\n\n");
@@ -26110,7 +26117,7 @@ void server_loop(void)
                   /* redirect to logbook, necessary to get optional cookies for that logbook */
                   redirect(NULL, logbook_enc);
                   send(_sock, return_buffer, strlen(return_buffer), 0);
-                  if (verbose) {
+                  if (verbose > 1) {
                      eprintf("==== Return ================================\n");
                      eputs(return_buffer);
                      eprintf("\n\n");
@@ -26334,7 +26341,7 @@ void server_loop(void)
                      sprintf(header_buffer + header_length, "\r\nContent-Length: %d\r\n\r\n", length);
                      send(_sock, header_buffer, strlen(header_buffer), 0);
                      send(_sock, p + 4, length, 0);
-                     if (verbose) {
+                     if (verbose > 1) {
                         eprintf("==== Return ================================\n");
                         eputs(header_buffer);
                         eputs(p + 2);
@@ -26346,7 +26353,7 @@ void server_loop(void)
                   }
                } else {
                   send(_sock, return_buffer, return_length, 0);
-                  if (verbose) {
+                  if (verbose > 1) {
                      eprintf("==== Return ================================\n");
                      eputs(return_buffer);
                      eprintf("\n\n");
@@ -26995,9 +27002,12 @@ int main(int argc, char *argv[])
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-' && argv[i][1] == 'D')
          running_as_daemon = TRUE;
-      else if (argv[i][0] == '-' && argv[i][1] == 'v')
-         verbose = TRUE;
-      else if (argv[i][0] == '-' && argv[i][1] == 'S')
+      else if (argv[i][0] == '-' && argv[i][1] == 'v') {
+         if (atoi(&argv[i][2]) > 0)
+            verbose = atoi(&argv[i][2]);
+         else
+            verbose = 2;
+      } else if (argv[i][0] == '-' && argv[i][1] == 'S')
          silent = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'k')
          use_keepalive = FALSE;
