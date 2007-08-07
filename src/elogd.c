@@ -12758,49 +12758,56 @@ void show_new_user_page(LOGBOOK * lbs)
    rsprintf("<tr><td nowrap>Email:</td>\n");
    rsprintf("<td colspan=2><input type=text size=40 name=new_user_email></tr>\n");
 
-   rsprintf("<tr><td nowrap>%s:\n", loc("Subscribe to logbooks"));
+   /* count logbooks */
+   for (i = 0; lb_list[i].name[0]; i++);
 
-   rsprintf("<br><span class=\"selcomment\"><b>(%s)</b></span>\n",
-            loc("enable automatic email notifications"));
+   /* only show subscriptions if less than 10, otherwise browser URL might become too long */
+   if (i <= 10) {
 
-   rsprintf("<td>\n");
+      rsprintf("<tr><td nowrap>%s:\n", loc("Subscribe to logbooks"));
 
-   for (i = 0; lb_list[i].name[0]; i++) {
+      rsprintf("<br><span class=\"selcomment\"><b>(%s)</b></span>\n",
+               loc("enable automatic email notifications"));
 
-      if (!getcfg_topgroup() || strieq(getcfg_topgroup(), lb_list[i].top_group)) {
+      rsprintf("<td>\n");
 
-         rsprintf("<input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
-         rsprintf("<label for=\"lb%d\">%s</label><br>\n", i, lb_list[i].name);
+      for (i = 0; lb_list[i].name[0]; i++) {
+
+         if (!getcfg_topgroup() || strieq(getcfg_topgroup(), lb_list[i].top_group)) {
+
+            rsprintf("<input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
+            rsprintf("<label for=\"lb%d\">%s</label><br>\n", i, lb_list[i].name);
+         }
       }
+
+      if (i > 2) {
+         rsprintf("<script language=\"JavaScript\" type=\"text/javascript\">\n");
+         rsprintf("<!--\n");
+         rsprintf("function SetNone()\n");
+         rsprintf("  {\n");
+         rsprintf("  for (var i = 0; i < document.form1.elements.length; i++)\n");
+         rsprintf("    {\n");
+         rsprintf("    if( document.form1.elements[i].type == 'checkbox' )\n");
+         rsprintf("      document.form1.elements[i].checked = false;\n");
+         rsprintf("    }\n");
+         rsprintf("  }\n");
+         rsprintf("function SetAll()\n");
+         rsprintf("  {\n");
+         rsprintf("  for (var i = 0; i < document.form1.elements.length; i++)\n");
+         rsprintf("    {\n");
+         rsprintf("    if( document.form1.elements[i].type == 'checkbox' )\n");
+         rsprintf("      document.form1.elements[i].checked = true;\n");
+         rsprintf("    }\n");
+         rsprintf("  }\n");
+         rsprintf("//-->\n");
+         rsprintf("</script>\n");
+
+         rsprintf("<input type=button value=\"%s\" onClick=\"SetAll();\">\n", loc("Set all"));
+         rsprintf("<input type=button value=\"%s\" onClick=\"SetNone();\">\n", loc("Set none"));
+      }
+
+      rsprintf("</td></tr>\n");
    }
-
-   if (i > 2) {
-      rsprintf("<script language=\"JavaScript\" type=\"text/javascript\">\n");
-      rsprintf("<!--\n");
-      rsprintf("function SetNone()\n");
-      rsprintf("  {\n");
-      rsprintf("  for (var i = 0; i < document.form1.elements.length; i++)\n");
-      rsprintf("    {\n");
-      rsprintf("    if( document.form1.elements[i].type == 'checkbox' )\n");
-      rsprintf("      document.form1.elements[i].checked = false;\n");
-      rsprintf("    }\n");
-      rsprintf("  }\n");
-      rsprintf("function SetAll()\n");
-      rsprintf("  {\n");
-      rsprintf("  for (var i = 0; i < document.form1.elements.length; i++)\n");
-      rsprintf("    {\n");
-      rsprintf("    if( document.form1.elements[i].type == 'checkbox' )\n");
-      rsprintf("      document.form1.elements[i].checked = true;\n");
-      rsprintf("    }\n");
-      rsprintf("  }\n");
-      rsprintf("//-->\n");
-      rsprintf("</script>\n");
-
-      rsprintf("<input type=button value=\"%s\" onClick=\"SetAll();\">\n", loc("Set all"));
-      rsprintf("<input type=button value=\"%s\" onClick=\"SetNone();\">\n", loc("Set none"));
-   }
-
-   rsprintf("</td></tr>\n");
 
    rsprintf("<tr><td nowrap>%s:</td>\n", loc("Password"));
    rsprintf("<td colspan=2><input type=password size=40 name=newpwd>\n");
