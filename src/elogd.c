@@ -4412,7 +4412,7 @@ int el_submit_attachment(LOGBOOK * lbs, char *afilename, char *buffer, int buffe
       /* save attachment */
       fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
       if (fh < 0) {
-         strlcpy(file_name, str, sizeof(str) - 40);
+         strencode2(file_name, str, sizeof(file_name));
          sprintf(str, "Cannot write attachment file \"%s\"", file_name);
          show_error(str);
          return -1;
@@ -20740,7 +20740,8 @@ void submit_elog(LOGBOOK * lbs)
 
          if (strieq(attr_options[i][0], "boolean")) {
             if (atoi(getparam(ua)) != 0 && atoi(getparam(ua)) != 1 && strcmp(getparam(ua), "<keep>") != 0) {
-               sprintf(error, loc("Error: Value <b>%s</b> not allowed for boolean attributes"), getparam(ua));
+               strencode2(str, getparam(ua), sizeof(str));
+               sprintf(error, loc("Error: Value <b>%s</b> not allowed for boolean attributes"), str);
                show_error(error);
                return;
             }
@@ -23966,8 +23967,8 @@ void interprete(char *lbook, char *path)
    url_decode(dec_path);
    strcpy(enc_path, dec_path);
    url_encode(enc_path, sizeof(enc_path));
-   strlcpy(command, isparam("cmd") ? getparam("cmd") : "", sizeof(command));
-   strlcpy(group, isparam("group") ? getparam("group") : "", sizeof(group));
+   strencode2(command, isparam("cmd") ? getparam("cmd") : "", sizeof(command));
+   strencode2(group, isparam("group") ? getparam("group") : "", sizeof(group));
    index = isparam("index") ? atoi(getparam("index")) : 0;
    experiment = getparam("exp");
    if (getcfg(lbook, "Logging Level", str, sizeof(str)))
