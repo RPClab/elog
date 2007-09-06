@@ -19120,7 +19120,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                         strlcat(line, " | ", sizeof(line));
 
                      if (comment[0] == 0)
-                        strlcat(line, getparam(iattr), sizeof(line));
+                        strencode2(line+strlen(line), getparam(iattr), sizeof(line)-strlen(line));
                      else
                         strlcat(line, comment, sizeof(line));
                   }
@@ -19137,7 +19137,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                      strlcat(line, " | ", sizeof(line));
 
                   if (comment[0] == 0)
-                     strlcat(line, getparam(attr_list[i]), sizeof(line));
+                     strencode2(line+strlen(line), getparam(attr_list[i]), sizeof(line)-strlen(line));
                   else
                      strlcat(line, comment, sizeof(line));
                }
@@ -19164,7 +19164,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                if (isparam(attr_list[i])) {
                   if (line[0])
                      strlcat(line, " | ", sizeof(line));
-                  strlcat(line, getparam(attr_list[i]), sizeof(line));
+                  strencode2(line+strlen(line), getparam(attr_list[i]), sizeof(line)-strlen(line));
                }
 
                if (line[0]) {
