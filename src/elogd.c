@@ -19327,7 +19327,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
          for (i = 0; i < n_attr_disp; i++) {
             /* assemble current command line, replace sort statements */
-            strcpy(ref, getparam("cmdline"));
+            strlcpy(ref, getparam("cmdline"), sizeof(ref));
 
             strlcpy(str, disp_attr[i], sizeof(str));
             url_encode(str, sizeof(str));
@@ -19614,7 +19614,6 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    regfree(re_buf);
    for (i = 0; i < lbs->n_attr; i++)
       regfree(re_buf + 1 + i);
-
 
    xfree(slist);
    xfree(svalue);
