@@ -17372,8 +17372,10 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
                       ("<input onClick=\"this.value='';\" title=\"%s\" type=text onChange=\"document.form1.submit()\"",
                        str);
                   sprintf(str, "-- %s --", list[index]);
-                  rsprintf(" name=\"%s\" value=\"%s\">\n", list[index],
-                           isparam(list[index]) && *getparam(list[index]) ? getparam(list[index]) : str);
+                  if (isparam(list[index]) && *getparam(list[index]))
+                     strencode2(str, getparam(list[index]), sizeof(str));
+
+                  rsprintf(" name=\"%s\" value=\"%s\">\n", list[index], str);
                }
             } else {
 
