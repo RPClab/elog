@@ -12168,8 +12168,10 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
             sprintf(mail_text + strlen(mail_text), " %s", http_host);
             sprintf(mail_text + strlen(mail_text), ".\r\n\r\n");
             sprintf(url + strlen(url), "?cmd=Login&unm=%s", getparam("new_user_name"));
-            sprintf(mail_text + strlen(mail_text), "%s %s\r\n", loc("You can access it at"), url);
-
+            sprintf(mail_text + strlen(mail_text), "%s %s.\r\n\r\n", loc("You can access it at"), url);
+            sprintf(mail_text + strlen(mail_text), "%s.\r\n", 
+               loc("To subscribe to any logbook, click on 'Config' in that logbook"));
+            
             if (sendmail
                 (lbs, smtp_host, mail_from, getparam("new_user_email"), mail_text, error,
                  sizeof(error)) == -1) {
@@ -12725,8 +12727,6 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
 
 void show_new_user_page(LOGBOOK * lbs)
 {
-   int i;
-
    /*---- header ----*/
 
    show_html_header(lbs, TRUE, loc("ELOG new user"), TRUE, FALSE, NULL, FALSE);
@@ -12757,57 +12757,6 @@ void show_new_user_page(LOGBOOK * lbs)
 
    rsprintf("<tr><td nowrap>Email:</td>\n");
    rsprintf("<td colspan=2><input type=text size=40 name=new_user_email></tr>\n");
-
-   /* count logbooks */
-   for (i = 0; lb_list[i].name[0]; i++);
-
-   /* only show subscriptions if less than 10, otherwise browser URL might become too long */
-   if (i <= 10) {
-
-      rsprintf("<tr><td nowrap>%s:\n", loc("Subscribe to logbooks"));
-
-      rsprintf("<br><span class=\"selcomment\"><b>(%s)</b></span>\n",
-               loc("enable automatic email notifications"));
-
-      rsprintf("<td>\n");
-
-      for (i = 0; lb_list[i].name[0]; i++) {
-
-         if (!getcfg_topgroup() || strieq(getcfg_topgroup(), lb_list[i].top_group)) {
-
-            rsprintf("<input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
-            rsprintf("<label for=\"lb%d\">%s</label><br>\n", i, lb_list[i].name);
-         }
-      }
-
-      if (i > 2) {
-         rsprintf("<script language=\"JavaScript\" type=\"text/javascript\">\n");
-         rsprintf("<!--\n");
-         rsprintf("function SetNone()\n");
-         rsprintf("  {\n");
-         rsprintf("  for (var i = 0; i < document.form1.elements.length; i++)\n");
-         rsprintf("    {\n");
-         rsprintf("    if( document.form1.elements[i].type == 'checkbox' )\n");
-         rsprintf("      document.form1.elements[i].checked = false;\n");
-         rsprintf("    }\n");
-         rsprintf("  }\n");
-         rsprintf("function SetAll()\n");
-         rsprintf("  {\n");
-         rsprintf("  for (var i = 0; i < document.form1.elements.length; i++)\n");
-         rsprintf("    {\n");
-         rsprintf("    if( document.form1.elements[i].type == 'checkbox' )\n");
-         rsprintf("      document.form1.elements[i].checked = true;\n");
-         rsprintf("    }\n");
-         rsprintf("  }\n");
-         rsprintf("//-->\n");
-         rsprintf("</script>\n");
-
-         rsprintf("<input type=button value=\"%s\" onClick=\"SetAll();\">\n", loc("Set all"));
-         rsprintf("<input type=button value=\"%s\" onClick=\"SetNone();\">\n", loc("Set none"));
-      }
-
-      rsprintf("</td></tr>\n");
-   }
 
    rsprintf("<tr><td nowrap>%s:</td>\n", loc("Password"));
    rsprintf("<td colspan=2><input type=password size=40 name=newpwd>\n");
