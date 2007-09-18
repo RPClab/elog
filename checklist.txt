@@ -1,7 +1,7 @@
 Checklist for new ELOG version
 ==============================
 
-On PC4534:
+On PC6562:
 
 - Put all new options in doc/config.html
 - Increse version in elogd.c
@@ -28,7 +28,7 @@ Declare new version at freshmeat.
 Checklist for new ELOG intermediate release
 ===========================================
 
-On PC4534:
+On PC6562:
 
 - Put all new options in doc/config.html
 - c:\elog> svn ci -m "Version x.x.x-y" 
