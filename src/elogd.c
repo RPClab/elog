@@ -10337,7 +10337,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* main box for text box and icons */
-   rsprintf("<tr><td width=\"100%%\" colspan=2 class=\"attribvalue\">\n"); //##
+   rsprintf("<tr><td width=\"100%%\" colspan=2 class=\"attribvalue\">\n");
    if (enc_selected == 0)
       rsprintf("<table width=\"100%%\" border=\"0\"><tr>\n");
 
@@ -16925,7 +16925,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          strcat(menu_str, ", ");
       }
 
-      strcat(menu_str, "HelpELCode, ");
+      strcat(menu_str, "HelpELCode, Synchronize, ");
 
       if (is_admin_user(lbs->name, getparam("unm"))) {
 
