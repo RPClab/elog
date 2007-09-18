@@ -13526,7 +13526,7 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
                show_error(loc("Invalid date format"));
                return;
             }
-            sprintf(list+i*NAME_LENGTH, "%d", ltime);
+            sprintf(list+i*NAME_LENGTH, "%d", (int)ltime);
          }
 
       /* check if text column is present */
@@ -13862,7 +13862,7 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
                   show_error(loc("Invalid date format"));
                   return;
                }
-               sprintf(list+i*NAME_LENGTH, "%d", ltime);
+               sprintf(list+i*NAME_LENGTH, "%d", (int)ltime);
             }
 
          encoding[0] = 0;
