@@ -35,6 +35,10 @@ mkdir $dir/src
 mkdir $dir/man
 mkdir $dir/contrib
 mkdir $dir/scripts
+mkdir $dir/scripts/fckeditor
+mkdir $dir/scripts/fckeditor/editor
+mkdir $dir/scripts/fckeditor/editor/plugins
+mkdir $dir/scripts/fckeditor/editor/plugins/elog
 mkdir $dir/resources
 mkdir $dir/themes
 mkdir $dir/themes/default
@@ -65,6 +69,8 @@ cp -p doc/* $dir/doc
 cp -p man/* $dir/man
 cp -p contrib/* $dir/contrib
 cp -p scripts/* $dir/scripts
+cp -p scripts/fckeditor/* $dir/scripts/fckeditor
+cp -p scripts/fckeditor/editor/plugins/elog/* $dir/scripts/fckeditor/editor/plugins/elog
 cp -p resources/* $dir/resources
 
 cp -p themes/default/* $dir/themes/default
