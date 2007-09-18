@@ -37,4 +37,5 @@ On PC6562:
 On PC5082:
 
 - svn update
+- klog ritt
 - build x.x.x y
