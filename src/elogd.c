@@ -436,6 +436,7 @@ int seteuser(char *str);
 void strencode2(char *b, char *text, int size);
 void load_config_section(char *section, char **buffer, char *error);
 void remove_crlf(char *buffer);
+time_t convert_date(char *date_string);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -13418,6 +13419,7 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
    char *list, *line, *p, str[256], date[80], sep[80];
    int i, j, n, n_attr, iline, n_imported, textcol;
    BOOL first, in_quotes, filltext;
+   time_t ltime;
 
    list = xmalloc(MAX_N_ATTR * NAME_LENGTH);
    line = xmalloc(10000);
@@ -13514,6 +13516,18 @@ void csv_import(LOGBOOK * lbs, char *csv, char *csvfile)
          first = FALSE;
          continue;
       }
+
+      /* interprete date entries correctly */
+      for (i = 0 ; i< n ; i++)
+         if (attr_flags[i] & AF_DATE) {
+            /* convert to seconds in Unix format */
+            ltime = convert_date(list+i*NAME_LENGTH);
+            if (ltime == 0) {
+               show_error(loc("Invalid date format"));
+               return;
+            }
+            sprintf(list+i*NAME_LENGTH, "%d", ltime);
+         }
 
       /* check if text column is present */
       if (first && isparam("filltext") && atoi(getparam("filltext"))) {
@@ -13647,6 +13661,7 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
       attachment_all[64 * MAX_ATTACHMENTS];
    int i, j, index, n_attr, iline, n_imported, textcol, i_line, line_len, 
       message_id, bedit;
+   time_t ltime;
    PMXML_NODE root, entry;
 
    iline = n_imported = 0;
@@ -13837,6 +13852,18 @@ void xml_import(LOGBOOK * lbs, char *xml, char *xmlfile)
             else
                strlcpy(list + i*NAME_LENGTH, mxml_get_value(mxml_find_node(entry, str)), NAME_LENGTH);
          }
+
+         /* interprete date entries correctly */
+         for (i = 0 ; i < n_attr ; i++)
+            if (attr_flags[i] & AF_DATE) {
+               /* convert to seconds in Unix format */
+               ltime = convert_date(list+i*NAME_LENGTH);
+               if (ltime == 0) {
+                  show_error(loc("Invalid date format"));
+                  return;
+               }
+               sprintf(list+i*NAME_LENGTH, "%d", ltime);
+            }
 
          encoding[0] = 0;
          if (mxml_find_node(entry, "ENCODING"))
@@ -17656,6 +17683,68 @@ time_t retrieve_date(char *index, BOOL bstart)
    if (!bstart && isparam(ph) == 0)
       /* end time is first second of next day */
       ltime += 3600 * 24;
+
+   return ltime;
+}
+
+/*------------------------------------------------------------------*/
+
+time_t convert_date(char *date_string)
+{
+   /* convert date string in MM/DD/YY or DD.MM.YY format into Unix time */
+   int year, month, day;
+   char *p, str[256];
+   struct tm tms;
+   time_t ltime;
+
+   strlcpy(str, date_string, sizeof(str));
+   month = day = year = 0;
+
+   if (strchr(str, '/')) {
+      /* MM/DD/YY format */
+      p = strtok(str, "/");
+      if (p) {
+         month = atoi(p);
+         p = strtok(NULL, "/");
+         if (p) {
+            day = atoi(p);
+            p = strtok(NULL, "/");
+            if (p)
+               year = atoi(p);
+         }
+      }
+   } else if (strchr(str, '.')) {
+      /* DD.MM.YY format */
+      p = strtok(str, ".");
+      if (p) {
+         day = atoi(p);
+         p = strtok(NULL, ".");
+         if (p) {
+            month = atoi(p);
+            p = strtok(NULL, ".");
+            if (p)
+               year = atoi(p);
+         }
+      }
+   } else
+      return 0;
+
+   /* calculate years */
+   if (year > 1900) /* 1900-2100 */
+      year += 0; 
+   else if (year < 70) /* 00-69 */
+      year += 2000;
+   else if (year < 100) /* 70-99 */
+      year += 1900;
+
+   /* use last day of month */
+   memset(&tms, 0, sizeof(struct tm));
+   tms.tm_year = year - 1900;
+   tms.tm_mon = month - 1;
+   tms.tm_mday = day;
+   tms.tm_hour = 12;
+
+   ltime = mktime(&tms);
 
    return ltime;
 }
