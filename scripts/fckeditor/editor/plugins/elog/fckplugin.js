@@ -21,16 +21,13 @@
  * This plugin registers ELOG specific Toolbar items
  */
 
+/*---- 'Submit' ----------------------------------------------------*/
+
 // Register 'Submit' toolbar button
 var oELOGSubmitItem = new FCKToolbarButton('ELOGSubmit', 'Submit Entry', null, null, true, null, 3);
 FCKToolbarItems.RegisterItem('ELOGSubmit', oELOGSubmitItem);
 
-// Create 'InsertTime' toolbar button
-var oInsertTimeItem = new FCKToolbarButton('InsertTime', 'Insert Date/Time', null, null, true, null, 4);
-oInsertTimeItem.IconPath = FCKConfig.PluginsPath + 'elog/inserttime.gif' ; 
-FCKToolbarItems.RegisterItem('InsertTime', oInsertTimeItem);
-
-// Register command
+// Register 'Submit' command
 var oELOGSubmitCommand = new Object();
 oELOGSubmitCommand.Name = 'ELOGSubmit';
 
@@ -43,9 +40,65 @@ oELOGSubmitCommand.Execute = function()
 
 oELOGSubmitCommand.GetState = function()
 {
-	// This function is always enabled.
-	return FCK_TRISTATE_OFF ;
+ 	 // This function is always enabled.
+   return FCK_TRISTATE_OFF ;
 }
 
 FCKCommands.RegisterCommand('ELOGSubmit', oELOGSubmitCommand);
 
+/*---- 'InsertTime' ------------------------------------------------*/
+
+// Create 'InsertTime' toolbar button
+var oInsertTimeItem = new FCKToolbarButton('InsertTime', 'Insert Date/Time', null, null, true, null, 4);
+oInsertTimeItem.IconPath = FCKConfig.PluginsPath + 'elog/inserttime.gif' ; 
+FCKToolbarItems.RegisterItem('InsertTime', oInsertTimeItem);
+
+// Register 'InsertTime' command
+var oInsertTimeCommand = new Object();
+oInsertTimeCommand.Name = 'InsertTime';
+
+oInsertTimeCommand.Execute = function()
+{
+   var xmlHttp;
+   
+   try {
+      xmlHttp = new XMLHttpRequest(); // Firefox, Opera 8.0+, Safari
+   }
+   catch (e) {
+      try {
+         xmlHttp=new ActiveXObject("Msxml2.XMLHTTP"); // Internet Explorer
+      }
+   catch (e) {
+      try {
+        xmlHttp=new ActiveXObject("Microsoft.XMLHTTP");
+      }
+      catch (e) {
+        alert("Your browser does not support AJAX!");
+        return false;
+      }
+    }
+  }
+  
+  xmlHttp.onreadystatechange = function()
+  {
+    if(xmlHttp.readyState == 4)
+      {
+	    // Get the editor instance that we want to interact with.
+	    var oEditor = FCKeditorAPI.GetInstance('Text') ;
+
+      // Insert the desired HTML.
+	    oEditor.InsertHtml(xmlHttp.responseText);
+      }
+  }
+  
+  xmlHttp.open("GET","../../../?cmd=gettimedate",true);
+  xmlHttp.send(null);
+}
+
+oInsertTimeCommand.GetState = function()
+{
+   // This function is always enabled.
+   return FCK_TRISTATE_OFF ;
+}
+
+FCKCommands.RegisterCommand('InsertTime', oInsertTimeCommand);
