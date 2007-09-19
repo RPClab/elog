@@ -21,13 +21,18 @@
  * This plugin registers ELOG specific Toolbar items
  */
 
-// Register toolbar button
+// Register 'Submit' toolbar button
 var oELOGSubmitItem = new FCKToolbarButton('ELOGSubmit', 'Submit Entry', null, null, true, null, 3);
 FCKToolbarItems.RegisterItem('ELOGSubmit', oELOGSubmitItem);
 
+// Create 'InsertTime' toolbar button
+var oInsertTimeItem = new FCKToolbarButton('InsertTime', 'Insert Date/Time', null, null, true, null, 4);
+oInsertTimeItem.IconPath = FCKConfig.PluginsPath + 'elog/inserttime.gif' ; 
+FCKToolbarItems.RegisterItem('InsertTime', oInsertTimeItem);
+
 // Register command
-var oELOGSubmitCommand = new Object() ;
-oELOGSubmitCommand.Name = 'ELOGSubmit' ;
+var oELOGSubmitCommand = new Object();
+oELOGSubmitCommand.Name = 'ELOGSubmit';
 
 oELOGSubmitCommand.Execute = function()
 {
