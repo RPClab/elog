@@ -46,6 +46,30 @@ oELOGSubmitCommand.GetState = function()
 
 FCKCommands.RegisterCommand('ELOGSubmit', oELOGSubmitCommand);
 
+/*---- 'ELOGImage' ------------------------------------------------*/
+
+// Register 'ELOGImage' toolbar button
+var oELOGImage = new FCKToolbarButton('ELOGImage', 'Insert Image', null, null, true, null, 37);
+FCKToolbarItems.RegisterItem('ELOGImage', oELOGImage);
+
+// Register 'ELOGImage' command
+var oELOGImageCommand = new Object();
+oELOGImageCommand.Name = 'ELOGImage';
+
+oELOGImageCommand.Execute = function()
+{
+   window.open('../../'+parent.logbook+'/upload.html?next_attachment='+parent.next_attachment, '',
+   'top=280,left=350,width=500,height=120,dependent=yes,menubar=no,status=no,scrollbars=no,location=no,resizable=yes');
+}
+
+oELOGImageCommand.GetState = function()
+{
+ 	 // This function is always enabled.
+   return FCK_TRISTATE_OFF ;
+}
+
+FCKCommands.RegisterCommand('ELOGImage', oELOGImageCommand);
+
 /*---- 'InsertTime' ------------------------------------------------*/
 
 // Create 'InsertTime' toolbar button

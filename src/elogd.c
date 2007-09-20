@@ -7147,11 +7147,12 @@ void show_standard_header(LOGBOOK * lbs, BOOL expires, char *title, char *path, 
       rsprintf("<script type=\"text/javascript\">\n");
       rsprintf("<!--\n");
       if (stristr(browser, "MSIE") && !stristr(browser, "opera"))
-         rsprintf("browser = \"MSIE\";\n");
+         rsprintf("var browser = \"MSIE\";\n");
       else if (stristr(browser, "Mozilla") && !stristr(browser, "opera") && !stristr(browser, "konqueror"))
-         rsprintf("browser = \"Mozilla\";\n");
+         rsprintf("var browser = \"Mozilla\";\n");
       else
-         rsprintf("browser = \"Other\";\n");
+         rsprintf("var browser = \"Other\";\n");
+      rsprintf("logbook = \"%s\";\n", lbs->name_enc);
       rsprintf("//-->\n");
       rsprintf("</script>\n");
       rsprintf("<script type=\"text/javascript\" src=\"../elcode.js\"></script>\n\n");
@@ -9455,28 +9456,30 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("   document.form1.submit();\n");
    rsprintf("}\n\n");
 
-   if (!getcfg(lbs->name, "Message height", str, sizeof(str)) &&
-       !getcfg(lbs->name, "Message width", str, sizeof(str))) {
-      /* javascript for resizing edit box */
-      rsprintf("\nfunction init_resize()\n");
-      rsprintf("{\n");
-      rsprintf("   window.onresize = resize_textarea;\n");
-      rsprintf("   resize_textarea();\n");
-      rsprintf("}\n\n");
-      rsprintf("function resize_textarea()\n");
-      rsprintf("{\n");
-      rsprintf("   p = document.form1.Text;\n");
-      rsprintf("   t = p.offsetTop;\n");
-      rsprintf("   while (p = p.offsetParent)\n");
-      rsprintf("      t += p.offsetTop;\n");
-      rsprintf("   if (window.innerHeight) // netscape\n");
-      rsprintf("      height = window.innerHeight - t - 135;\n");
-      rsprintf("   else // IE\n");
-      rsprintf("      height = document.body.offsetHeight - t - 135;\n");
-      rsprintf("   if (height < 300)\n");
-      rsprintf("      height = 300;\n");
-      rsprintf("   document.form1.Text.style.height = height;\n");
-      rsprintf("}\n\n");
+   if (enc_selected != 2) {
+      if (!getcfg(lbs->name, "Message height", str, sizeof(str)) &&
+          !getcfg(lbs->name, "Message width", str, sizeof(str))) {
+         /* javascript for resizing edit box */
+         rsprintf("\nfunction init_resize()\n");
+         rsprintf("{\n");
+         rsprintf("   window.onresize = resize_textarea;\n");
+         rsprintf("   resize_textarea();\n");
+         rsprintf("}\n\n");
+         rsprintf("function resize_textarea()\n");
+         rsprintf("{\n");
+         rsprintf("   p = document.form1.Text;\n");
+         rsprintf("   t = p.offsetTop;\n");
+         rsprintf("   while (p = p.offsetParent)\n");
+         rsprintf("      t += p.offsetTop;\n");
+         rsprintf("   if (window.innerHeight) // netscape\n");
+         rsprintf("      height = window.innerHeight - t - 135;\n");
+         rsprintf("   else // IE\n");
+         rsprintf("      height = document.body.offsetHeight - t - 135;\n");
+         rsprintf("   if (height < 300)\n");
+         rsprintf("      height = 300;\n");
+         rsprintf("   document.form1.Text.style.height = height;\n");
+         rsprintf("}\n\n");
+      }
    }
 
    /* strings for elcode.js */
@@ -9487,12 +9490,19 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    if (stristr(browser, "MSIE") && !stristr(browser, "opera"))
-      rsprintf("browser = \"MSIE\";\n");
+      rsprintf("var browser = \"MSIE\";\n");
    else if (stristr(browser, "Mozilla") && !stristr(browser, "opera") && !stristr(browser, "konqueror"))
-      rsprintf("browser = \"Mozilla\";\n");
+      rsprintf("var browser = \"Mozilla\";\n");
    else
-      rsprintf("browser = \"Other\";\n");
+      rsprintf("var browser = \"Other\";\n");
 
+   rsprintf("var logbook = \"%s\";\n", lbs->name_enc);
+   for (i = 0; i < MAX_ATTACHMENTS; i++)
+      if (!att[i][0]) {
+         /* put first free attachment for uploader */
+         rsprintf("var next_attachment = %d;\n", i + 1);
+         break;
+      }
    rsprintf("//-->\n");
    rsprintf("</script>\n");
 
@@ -9533,7 +9543,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       else
          strcat(script, " OnLoad=\"elKeyInit();\" OnFocus=\"elKeyInit();\"");
    } else if (enc_selected == 2 && fckedit_exist) {
-      strcat(script, " OnLoad=\"init_resize(); initFCKedit();\"");
+      strcat(script, " OnLoad=\"initFCKedit();\"");
    } else
       strcat(script, " OnLoad=\"init_resize();\"");
 
@@ -10539,6 +10549,31 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      rsprintf("[quote]");
                   rsputs3(text);
                   rsprintf("[/quote]\r\n");
+               
+               } else if (enc_selected == 2) {
+
+                  rsprintf("<p>\n");
+                  rsprintf("<table width=\"98%%\" align=\"center\" cellspacing=\"1\" style=\"border:1px solid #486090;\">\n");
+                  rsprintf("<tbody>\n");
+                  rsprintf("<tr>\n");
+                  rsprintf("<td cellpadding=\"3px\" style=\"background-color:#486090; font-weidht:bold; color:white;\">");
+
+                  /* check for author */
+                  if (orig_author[0]) {
+                     rsprintf(loc("%s wrote"), orig_author);
+                  } else {
+                     rsprintf(loc("Quote"));
+                  }
+                  rsprintf(":</td></tr>\n");
+                  rsprintf("<tr>\n");
+                  rsprintf("<td cellpadding=\"10px\" style=\"background-color:#FFFFB0;\">");
+                  rsputs3(text);
+                  rsprintf("</td>\n");
+                  rsprintf("</tr>\n");
+                  rsprintf("</tbody>\n");
+                  rsprintf("</table>\n");
+                  rsprintf("</p>\n");
+
                } else {
                   do {
                      if (strchr(p, '\n')) {
@@ -23950,21 +23985,29 @@ void show_uploader_finished(LOGBOOK * lbs)
 
    rsprintf("  function update()\n");
    rsprintf("  {\n");
-   rsprintf("    i = opener.document.form1.next_attachment.value;\n");
-   rsprintf("    elcode2(opener.document, opener.document.form1.Text, 'IMG', 'elog:/'+i);\n");
-   rsprintf("    opener.document.form1.inlineatt.value = '%s';\n", att);
-   rsprintf("    opener.document.form1.jcmd.value = 'Upload';\n");
-   rsprintf("    opener.document.form1.submit();\n");
+   rsprintf("    if (opener.document.title == \"FCKeditor\") {\n");
+   rsprintf("       i = opener.parent.next_attachment;\n");
+   rsprintf("       opener.FCKeditorAPI.GetInstance('Text').InsertHtml('<img src=\"../../'+opener.parent.logbook+'/'+i+'\">');\n");
+   rsprintf("       opener.parent.document.form1.inlineatt.value = '%s';\n", att);
+   rsprintf("       opener.parent.document.form1.jcmd.value = 'Upload';\n");
+   rsprintf("       opener.parent.document.form1.submit();\n");
+   rsprintf("    } else {\n");
+   rsprintf("       i = opener.document.form1.next_attachment.value;\n");
+   rsprintf("       elcode2(opener.document, opener.document.form1.Text, 'IMG', 'elog:/'+i);\n");
+   rsprintf("       opener.document.form1.inlineatt.value = '%s';\n", att);
+   rsprintf("       opener.document.form1.jcmd.value = 'Upload';\n");
+   rsprintf("       opener.document.form1.submit();\n");
+   rsprintf("    }\n");
    rsprintf("    window.close();\n");
    rsprintf("  }\n\n");
 
    /* strings for elcode.js */
    if (stristr(browser, "MSIE") && !stristr(browser, "opera"))
-      rsprintf("browser = 'MSIE';\n");
+      rsprintf("var browser = 'MSIE';\n");
    else if (stristr(browser, "Mozilla") && !stristr(browser, "opera") && !stristr(browser, "konqueror"))
-      rsprintf("browser = 'Mozilla';\n");
+      rsprintf("var browser = 'Mozilla';\n");
    else
-      rsprintf("browser = 'Other';\n\n");
+      rsprintf("var browser = 'Other';\n\n");
 
    rsprintf("</script>\n\n");
 

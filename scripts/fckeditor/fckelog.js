@@ -13,7 +13,7 @@ FCKConfig.ToolbarSets["Default"] = [
 	['OrderedList','UnorderedList','-','Outdent','Indent'],
 	['JustifyLeft','JustifyCenter','JustifyRight','JustifyFull'],
 	['Link','Unlink','Anchor'],
-	['Image','Table','Rule','Smiley','SpecialChar','InsertTime'],
+	['ELOGImage','Table','Rule','Smiley','SpecialChar','InsertTime'],
 	['Style','FontFormat','FontName','FontSize'],
 	['TextColor','BGColor'],
 	['About']
