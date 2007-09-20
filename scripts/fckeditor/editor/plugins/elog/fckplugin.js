@@ -81,17 +81,16 @@ oInsertTimeCommand.Execute = function()
   
   xmlHttp.onreadystatechange = function()
   {
-    if(xmlHttp.readyState == 4)
-      {
-	    // Get the editor instance that we want to interact with.
-	    var oEditor = FCKeditorAPI.GetInstance('Text') ;
+    if(xmlHttp.readyState == 4) {
+      // Get the editor instance that we want to interact with.
+      var oEditor = FCKeditorAPI.GetInstance('Text') ;
 
       // Insert the desired HTML.
-	    oEditor.InsertHtml(xmlHttp.responseText);
+      oEditor.InsertHtml(xmlHttp.responseText);
       }
   }
   
-  xmlHttp.open("GET","../../../?cmd=gettimedate",true);
+  xmlHttp.open("GET","../../?cmd=gettimedate",true);
   xmlHttp.send(null);
 }
 
