@@ -428,7 +428,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command);
 char *loc(char *orig);
 void strencode(char *text);
 int scan_attributes(char *logbook);
-int is_inline_attachment(int message_id, char *text, int i);
+int is_inline_attachment(char *encoding, int message_id, char *text, int i, char *att);
 int setgroup(char *str);
 int setuser(char *str);
 int setegroup(char *str);
@@ -8814,8 +8814,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        attr_index[MAX_N_ATTR], enc_selected, show_smileys, show_text, n_moptions, display_inline,
        allowed_encoding;
    char str[2 * NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80], comment[10000], reply_string[256],
-       list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80], script[256],
-       attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
+       list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80], script_onload[256], 
+       script_onfocus[256], attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
        att[MAX_ATTACHMENTS][256], encoding[80], slist[MAX_N_ATTR + 10][NAME_LENGTH],
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
        ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256], cookie[256], orig_author[256],
@@ -9532,25 +9532,34 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    rsprintf("</head>\n");
 
-   script[0] = 0;
+   script_onload[0] = 0;
+   script_onfocus[0] = 0;
    if ((isparam("inlineatt") && *getparam("inlineatt")) || bpreview)
-      strcpy(script, " OnLoad=\"document.form1.Text.focus();\"");
+      strcpy(script_onload, "document.form1.Text.focus();");
 
    if (enc_selected == 0) {
       if (!getcfg(lbs->name, "Message height", str, sizeof(str)) &&
-          !getcfg(lbs->name, "Message width", str, sizeof(str)))
-         strcat(script, " OnLoad=\"elKeyInit(); init_resize();\" OnFocus=\"elKeyInit();\"");
-      else
-         strcat(script, " OnLoad=\"elKeyInit();\" OnFocus=\"elKeyInit();\"");
+         !getcfg(lbs->name, "Message width", str, sizeof(str))) {
+         
+         strcat(script_onload, "elKeyInit();init_resize();");
+         strcat(script_onfocus, "elKeyInit();");
+      } else
+         strcat(script_onload, "elKeyInit();");
+         strcat(script_onfocus, "elKeyInit();");
    } else if (enc_selected == 2 && fckedit_exist) {
-      strcat(script, " OnLoad=\"initFCKedit();\"");
+      strcat(script_onload, "initFCKedit();");
    } else
-      strcat(script, " OnLoad=\"init_resize();\"");
+      strcat(script_onload, "init_resize();");
 
    if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1)
-      rsprintf("<body onUnload=\"unload();\"%s>\n", script);
-   else
-      rsprintf("<body%s>\n", script);
+      strcat(script_onload, "unload();");
+
+   rsprintf("<body");
+   if (script_onload[0])
+      rsprintf(" OnLoad=\"%s\"", script_onload);
+   if (script_onfocus[0])
+      rsprintf(" OnFocus=\"%s\"", script_onfocus);
+   rsprintf(">\n");
 
    show_top_text(lbs);
    rsprintf("<form name=form1 method=\"POST\" action=\"./\" ");
@@ -19804,7 +19813,7 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
       if (att_file[index][0] == 0)
          continue;
 
-      is_inline = is_inline_attachment(message_id, getparam("text"), index);
+      is_inline = is_inline_attachment(getparam("encoding"), message_id, getparam("text"), index, att_file[index]);
       if (attachment_type == 1 && is_inline)
          continue;
       if (attachment_type == 2 && !is_inline)
@@ -20324,7 +20333,7 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
    n_attachments = 0;
    if (att_file)
       for (i = 0; att_file[i][0] && i < MAX_ATTACHMENTS; i++) {
-         if ((mail_encoding & 6) == 0 || !is_inline_attachment(message_id, getparam("text"), i))
+         if ((mail_encoding & 6) == 0 || !is_inline_attachment(encoding, message_id, getparam("text"), i, att_file[i]))
             n_attachments++;
       }
 
@@ -21624,19 +21633,25 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
 /*------------------------------------------------------------------*/
 
-int is_inline_attachment(int message_id, char *text, int i)
+int is_inline_attachment(char *encoding, int message_id, char *text, int i, char *att)
 {
-   char str[256];
+   char str[256], att_enc[256];
 
    if (text == NULL)
       return 0;
-
-   sprintf(str, "[img]elog:/%d[/img]", i + 1);
-   if (stristr(text, str))
-      return 1;
-   sprintf(str, "[img]elog:%d/%d[/img]", message_id, i + 1);
-   if (stristr(text, str))
-      return 1;
+   if (strieq(encoding, "ELCode")) {
+      sprintf(str, "[img]elog:/%d[/img]", i + 1);
+      if (stristr(text, str))
+         return 1;
+      sprintf(str, "[img]elog:%d/%d[/img]", message_id, i + 1);
+      if (stristr(text, str))
+         return 1;
+   } else if (strieq(encoding, "HTML")) { 
+      strlcpy(att_enc, att, sizeof(att_enc));
+      att_enc[13] = '/';
+      if (stristr(text, att_enc))
+         return 1;
+   }
 
    return 0;
 }
@@ -22407,7 +22422,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             att_inline[i] = 0;
             att_hide[i] = 0;
 
-            if (strieq(encoding, "ELCode") && is_inline_attachment(message_id, text, i))
+            if (is_inline_attachment(encoding, message_id, text, i, attachment[i]))
                att_inline[i] = 1;
 
             if (attachment[i][0])
@@ -23962,7 +23977,7 @@ void show_uploader(LOGBOOK * lbs)
 void show_uploader_finished(LOGBOOK * lbs)
 {
    int i;
-   char str[256], att[256];
+   char str[256], att[256], base_url[256], file_enc[256], ref[256];
 
    show_html_header(lbs, FALSE, loc("Image uploaded successfully"), FALSE, FALSE, NULL, FALSE);
 
@@ -23980,6 +23995,13 @@ void show_uploader_finished(LOGBOOK * lbs)
          break;
       }
    }
+   strlcpy(str, att, sizeof(str));
+   str[13] = 0;
+   strcpy(file_enc, att + 14);
+   url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
+   sprintf(ref, "%s/%s", str, file_enc);
+
+   compose_base_url(lbs, base_url, sizeof(base_url));
 
    rsprintf("<script type=\"text/javascript\">\n\n");
 
@@ -23987,7 +24009,7 @@ void show_uploader_finished(LOGBOOK * lbs)
    rsprintf("  {\n");
    rsprintf("    if (opener.document.title == \"FCKeditor\") {\n");
    rsprintf("       i = opener.parent.next_attachment;\n");
-   rsprintf("       opener.FCKeditorAPI.GetInstance('Text').InsertHtml('<img src=\"../../'+opener.parent.logbook+'/'+i+'\">');\n");
+   rsprintf("       opener.FCKeditorAPI.GetInstance('Text').InsertHtml('<img alt=\"%s\" src=\"%s%s\">');\n", att+14, base_url, ref);
    rsprintf("       opener.parent.document.form1.inlineatt.value = '%s';\n", att);
    rsprintf("       opener.parent.document.form1.jcmd.value = 'Upload';\n");
    rsprintf("       opener.parent.document.form1.submit();\n");
