@@ -1,5 +1,7 @@
 function getSelection(text)
 {
+   if (typeof text == 'undefined')
+      return "";
    if (browser == 'MSIE') {
       sel = document.selection;
       rng = sel.createRange();
