@@ -9436,7 +9436,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("    }\n");
    rsprintf("  }\n");
    rsprintf("  if (!submitted && !modified) {\n");
-   rsprintf("alert('unload:back,submitted='+submitted)\n");
    rsprintf("    document.form1.jcmd.value = \"%s\";\n", loc("Back"));
    rsprintf("    document.form1.submit();\n");
    rsprintf("    }\n");
