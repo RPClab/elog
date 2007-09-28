@@ -8815,8 +8815,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        allowed_encoding;
    char str[2 * NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80], comment[10000], reply_string[256],
        list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80], script_onload[256], 
-       script_onfocus[256], attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
-       att[MAX_ATTACHMENTS][256], encoding[80], slist[MAX_N_ATTR + 10][NAME_LENGTH],
+       script_onfocus[256], script_onunload[256], attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], 
+       reply_tag[MAX_REPLY_TO * 10],att[MAX_ATTACHMENTS][256], encoding[80], slist[MAX_N_ATTR + 10][NAME_LENGTH],
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
        ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256], cookie[256], orig_author[256],
        attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256], tooltip[10000], enc_attr[NAME_LENGTH],
@@ -9246,8 +9246,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("var submitted = false;\n");
 
    if (breedit) {
-      rsprintf("var modified = true;\n");
-      rsprintf("window.status = \"%s\";\n", loc("Entry has been modified"));
+      if (isparam("modified") && atoi(getparam("modified")) == 1) {
+         rsprintf("var modified = true;\n");
+         rsprintf("window.status = \"%s\";\n", loc("Entry has been modified"));
+      } else
+         rsprintf("var modified = false;\n");
    } else
       rsprintf("var modified = false;\n");
 
@@ -9433,6 +9436,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("    }\n");
    rsprintf("  }\n");
    rsprintf("  if (!submitted && !modified) {\n");
+   rsprintf("alert('unload:back,submitted='+submitted)\n");
    rsprintf("    document.form1.jcmd.value = \"%s\";\n", loc("Back"));
    rsprintf("    document.form1.submit();\n");
    rsprintf("    }\n");
@@ -9443,6 +9447,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("{\n");
    rsprintf("  modified = true;\n");
    rsprintf("  window.status = \"%s\";\n", loc("Entry has been modified"));
+   rsprintf("  document.form1.modified.value = \"1\";\n");
    rsprintf("}\n\n");
 
    /* switch_smileys turn on/off the smiley bar by setting the smcmd, which in turn
@@ -9453,6 +9458,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("   document.form1.smcmd.value = 'hsm';\n");
    else
       rsprintf("   document.form1.smcmd.value = 'ssm';\n");
+   rsprintf("   submitted = true;\n");
    rsprintf("   document.form1.submit();\n");
    rsprintf("}\n\n");
 
@@ -9551,14 +9557,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    } else
       strcat(script_onload, "init_resize();");
 
+   script_onunload[0] = 0;
    if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1)
-      strcat(script_onload, "unload();");
+      strcat(script_onunload, "unload();");
 
    rsprintf("<body");
    if (script_onload[0])
       rsprintf(" OnLoad=\"%s\"", script_onload);
    if (script_onfocus[0])
       rsprintf(" OnFocus=\"%s\"", script_onfocus);
+   if (script_onunload[0])
+      rsprintf(" OnUnload=\"%s\"", script_onunload);
    rsprintf(">\n");
 
    show_top_text(lbs);
@@ -9578,6 +9587,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("<input type=hidden name=\"jcmd\">\n");
    rsprintf("<input type=hidden name=\"smcmd\">\n");
    rsprintf("<input type=hidden name=\"inlineatt\">\n");
+
+   if (isparam("modified") && atoi(getparam("modified")) == 1)
+      rsprintf("<input type=hidden name=\"modified\" value=\"1\">\n");
+   else
+      rsprintf("<input type=hidden name=\"modified\" value=\"0\">\n");
 
    /*---- title row ----*/
 
@@ -24018,7 +24032,7 @@ void show_uploader_finished(LOGBOOK * lbs)
    rsprintf("       elcode2(opener.document, opener.document.form1.Text, 'IMG', 'elog:/'+i);\n");
    rsprintf("       opener.document.form1.inlineatt.value = '%s';\n", att);
    rsprintf("       opener.document.form1.jcmd.value = 'Upload';\n");
-   rsprintf("       opener.document.form1.submit();\n");
+   rsprintf("       opener.cond_submit();\n");
    rsprintf("    }\n");
    rsprintf("    window.close();\n");
    rsprintf("  }\n\n");
