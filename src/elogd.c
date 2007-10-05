@@ -8230,8 +8230,8 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
 
 void add_subst_list(char list[][NAME_LENGTH], char value[][NAME_LENGTH], char *item, char *str, int *i)
 {
-   strcpy(list[*i], item);
-   strcpy(value[(*i)++], str);
+   strlcpy(list[*i], item, NAME_LENGTH);
+   strlcpy(value[(*i)++], str, NAME_LENGTH);
 }
 
 void add_subst_time(LOGBOOK * lbs,
@@ -20469,6 +20469,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
    i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
    sprintf(str, "%d", message_id);
    add_subst_list(slist, svalue, "message id", str, &i);
+   add_subst_list(slist, svalue, "text", getparam("text"), &i);
    strsubst_list(shell_cmd, sizeof(shell_cmd), slist, svalue, i);
 
    if (att_file && stristr(shell_cmd, "$attachments")) {
