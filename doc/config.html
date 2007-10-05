@@ -1505,7 +1505,7 @@ be changed, while otherways (like with the <b><code>Subst Telephone =
         <b><code>&lt;$attachments&gt;</code></b> Following (Unix) command
         writes a notification into some file:
         <pre>
-Execute new = echo "New message of type $type from $long_name on $remote_host" &gt;&gt; /tmp/elog.log
+Execute new = echo "New message wiht ID $message id of type $type from $long_name on $remote_host" &gt;&gt; /tmp/elog.log
 </pre><br>
         It should be noted that this feature can impose a security problem. If
         someone can edit the elogd.cfg through the <b><code>Config</code></b>
