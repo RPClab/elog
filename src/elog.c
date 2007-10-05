@@ -507,6 +507,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
                 char *passwd,
                 char *uname, char *upwd,
                 int reply,
+                int quote_on_reply,
                 int edit,
                 int suppress,
                 int encoding,
@@ -611,8 +612,14 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
 
       /* copy attributes */
       for (i = 0; i < MAX_N_ATTR && old_attrib_name[i][0]; i++) {
-         strlcpy(attrib_name[i], old_attrib_name[i], NAME_LENGTH);
-         strlcpy(attrib[i], old_attrib[i], NAME_LENGTH);
+         if (equal_ustring(old_attrib_name[i], "Reply to") ||
+             equal_ustring(old_attrib_name[i], "Date")) {
+            attrib_name[i][0] = 0;
+            attrib[i][0] = 0;
+         } else {
+            strlcpy(attrib_name[i], old_attrib_name[i], NAME_LENGTH);
+            strlcpy(attrib[i], old_attrib[i], NAME_LENGTH);
+         }
       }
 
       n_attr = i;
@@ -627,46 +634,48 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
       if (i < n_attr)
          old_encoding = attrib[i];
 
-      strlcpy(new_text, text, sizeof(new_text));
+      if (quote_on_reply) {
+         strlcpy(new_text, text, sizeof(new_text));
 
-      /* precede old text with "> " */
-      text[0] = 0;
-      p = old_text;
+         /* precede old text with "> " */
+         text[0] = 0;
+         p = old_text;
 
-      do {
-         if (strchr(p, '\n')) {
-            *strchr(p, '\n') = 0;
+         do {
+            if (strchr(p, '\n')) {
+               *strchr(p, '\n') = 0;
 
-            if (old_encoding[0] == 'H') {
-               strlcat(text, "> ", TEXT_SIZE);
-               strlcat(text, p, TEXT_SIZE);
-               strlcat(text, "<br>\n", TEXT_SIZE);
+               if (old_encoding[0] == 'H') {
+                  strlcat(text, "> ", TEXT_SIZE);
+                  strlcat(text, p, TEXT_SIZE);
+                  strlcat(text, "<br>\n", TEXT_SIZE);
+               } else {
+                  strlcat(text, "> ", TEXT_SIZE);
+                  strlcat(text, p, TEXT_SIZE);
+                  strlcat(text, "\n", TEXT_SIZE);
+               }
+
+               p += strlen(p) + 1;
+               if (*p == '\n')
+                  p++;
             } else {
-               strlcat(text, "> ", TEXT_SIZE);
-               strlcat(text, p, TEXT_SIZE);
-               strlcat(text, "\n", TEXT_SIZE);
+               if (old_encoding[0] == 'H') {
+                  strlcat(text, "> ", TEXT_SIZE);
+                  strlcat(text, p, TEXT_SIZE);
+                  strlcat(text, "<p>\n", TEXT_SIZE);
+               } else {
+                  strlcat(text, "> ", TEXT_SIZE);
+                  strlcat(text, p, TEXT_SIZE);
+                  strlcat(text, "\n\n", TEXT_SIZE);
+               }
+
+               break;
             }
 
-            p += strlen(p) + 1;
-            if (*p == '\n')
-               p++;
-         } else {
-            if (old_encoding[0] == 'H') {
-               strlcat(text, "> ", TEXT_SIZE);
-               strlcat(text, p, TEXT_SIZE);
-               strlcat(text, "<p>\n", TEXT_SIZE);
-            } else {
-               strlcat(text, "> ", TEXT_SIZE);
-               strlcat(text, p, TEXT_SIZE);
-               strlcat(text, "\n\n", TEXT_SIZE);
-            }
+         } while (1);
 
-            break;
-         }
-
-      } while (1);
-
-      strlcat(text, new_text, TEXT_SIZE);
+         strlcat(text, new_text, TEXT_SIZE);
+      }
    }
 
    /* get local host name */
@@ -770,9 +779,11 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
 
    for (i = 0; i < n_attr; i++) {
       strcpy(str, attrib_name[i]);
-      btou(str);
-      sprintf(content + strlen(content),
-              "%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n", boundary, str, attrib[i]);
+      if (str[0]) {
+         btou(str);
+         sprintf(content + strlen(content),
+                 "%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n", boundary, str, attrib[i]);
+      }
    }
 
    sprintf(content + strlen(content),
@@ -896,10 +907,17 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
    else if (strstr(response, "form name=form1"))
       printf("Error: Missing or invalid user name/password\n");
    else if (strstr(response, "Error: Attribute")) {
-      strncpy(str, strstr(response, "Error: Attribute") + 20, sizeof(str));
-      if (strchr(str, '<'))
-         *strchr(str, '<') = 0;
-      printf("Error: Missing required attribute \"%s\"\n", str);
+      if (strstr(response, "not existing")) {
+         strncpy(str, strstr(response, "Error: Attribute") + 27, sizeof(str));
+         if (strchr(str, '<'))
+            *strchr(str, '<') = 0;
+         printf("Error: Non existing attribute option \"%s\"\n", str);
+      } else {
+         strncpy(str, strstr(response, "Error: Attribute") + 20, sizeof(str));
+         if (strchr(str, '<'))
+            *strchr(str, '<') = 0;
+         printf("Error: Missing required attribute \"%s\"\n", str);
+      }
    } else
       printf("Error transmitting message\n");
 
@@ -914,10 +932,10 @@ int main(int argc, char *argv[])
    char host_name[256], logbook[32], textfile[256], password[80], subdir[256];
    char *buffer[MAX_ATTACHMENTS], attachment[MAX_ATTACHMENTS][256];
    INT att_size[MAX_ATTACHMENTS];
-   INT i, n, fh, n_att, n_attr, port, reply, edit, encoding, suppress, size;
+   INT i, n, fh, n_att, n_attr, port, reply, quote_on_reply, edit, encoding, suppress, size;
    char attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 
-   text[0] = textfile[0] = uname[0] = upwd[0] = suppress = 0;
+   text[0] = textfile[0] = uname[0] = upwd[0] = suppress = quote_on_reply = 0;
    host_name[0] = logbook[0] = password[0] = subdir[0] = 0;
    n_att = n_attr = reply = edit = encoding = 0;
    port = 80;
@@ -932,6 +950,8 @@ int main(int argc, char *argv[])
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-' && argv[i][1] == 'v')
          verbose = 1;
+      else if (argv[i][0] == '-' && argv[i][1] == 'q')
+         quote_on_reply = 1;
       else if (argv[i][0] == '-' && argv[i][1] == 'x')
          suppress = 1;
       else {
@@ -984,6 +1004,7 @@ int main(int argc, char *argv[])
                printf("           [-f <attachment>]        (up to %d times)\n", MAX_ATTACHMENTS);
                printf("           -a <attribute>=<value>   (up to %d times)\n", MAX_N_ATTR);
                printf("           [-r <id>]                Reply to existing message\n");
+               printf("           [-q]                     Quote original text on reply\n");
                printf("           [-e <id>]                Edit existing message\n");
                printf("           [-x]                     Suppress email notification\n");
                printf("           [-n 0|1|2]               Encoding: 0:ELcode,1:plain,2:HTML\n");
@@ -1089,7 +1110,7 @@ int main(int argc, char *argv[])
 
    /* now submit message */
    submit_elog(host_name, port, subdir, logbook, password,
-               uname, upwd, reply, edit, suppress, encoding, attr_name, attrib, n_attr, text,
+               uname, upwd, reply, quote_on_reply, edit, suppress, encoding, attr_name, attrib, n_attr, text,
                attachment, buffer, att_size);
 
    for (i = 0; i < MAX_ATTACHMENTS; i++)
