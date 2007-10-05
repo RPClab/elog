@@ -1502,7 +1502,10 @@ be changed, while otherways (like with the <b><code>Subst Telephone =
         database. The <b><code>&lt;command&gt;</code></b> can contain
         substitutions similar to the <b><code>Subst</code></b> command. In
         addition the list of all attachments can be referred to via
-        <b><code>&lt;$attachments&gt;</code></b> Following (Unix) command
+        <b><code>$&lt;attachment&gt;</code></b>. The text body of the entry
+        can be referred to with <b><code>$text</code></b>. It should
+        be noted that only the first 1500 characters of the text can be used,
+        in order not to exceed the limits of the shell. Following (Unix) command
         writes a notification into some file:
         <pre>
 Execute new = echo "New message wiht ID $message id of type $type from $long_name on $remote_host" &gt;&gt; /tmp/elog.log
