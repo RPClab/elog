@@ -21689,8 +21689,9 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    FILE *f;
    BOOL first, show_text, display_inline, subtable, email;
    struct tm *pts;
+   struct tm ts;
    struct stat st;
-   time_t ltime;
+   time_t ltime, entry_ltime;
 
    message_id = atoi(dec_path);
    message_error = EL_SUCCESS;
@@ -22141,8 +22142,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
          strcpy(format, DEFAULT_TIME_FORMAT);
 
-      ltime = date_to_ltime(date);
-      pts = localtime(&ltime);
+      entry_ltime = date_to_ltime(date);
+      pts = localtime(&entry_ltime);
       assert(pts);
       my_strftime(str, sizeof(str), format, pts);
 
@@ -22520,7 +22521,34 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                   rsprintf("%d kB", length / 1024);
                else
                   rsprintf("%1.3lf MB", length / 1024.0 / 1024.0);
+
                rsprintf("</span>\n");
+
+               /* retrieve submission date */
+               memset(&ts, 0, sizeof(ts));
+               ts.tm_mon  = (attachment[index][2]-'0')*10 + attachment[index][3]-'0'-1;
+               ts.tm_mday = (attachment[index][4]-'0')*10 + attachment[index][5]-'0';
+               ts.tm_year = (attachment[index][0]-'0')*10 + attachment[index][1]-'0';
+
+               ts.tm_hour = (attachment[index][7]-'0')*10 + attachment[index][8]-'0';
+               ts.tm_min  = (attachment[index][9]-'0')*10 + attachment[index][10]-'0';
+               ts.tm_sec  = (attachment[index][11]-'0')*10 + attachment[index][12]-'0';
+
+               if (ts.tm_year < 90)
+                  ts.tm_year += 100;
+               ltime = mktime(&ts);
+
+               /* show upload date/time only if different from entry date/time */
+               if (abs((int)(ltime-entry_ltime)) > 3600) {
+                  if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+                     strcpy(format, DEFAULT_TIME_FORMAT);
+
+                  my_strftime(str, sizeof(str), format, &ts);
+
+                  rsprintf("&nbsp;<span class=\"uploaded\">");
+                  rsprintf("Uploaded %s", str);
+                  rsprintf("</span>\n");
+               }
 
                /* determine if displayed inline */
                display_inline = is_image(file_name) || is_ascii(file_name);
