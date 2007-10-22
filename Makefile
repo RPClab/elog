@@ -119,7 +119,7 @@ install: $(EXECS)
 	@$(INSTALL) -v -m 0644 man/elog.1 man/elconv.1 $(MANDIR)/man1/
 	@$(INSTALL) -v -m 0644 man/elogd.8 $(MANDIR)/man8/
 	@$(INSTALL) -v -m 0644 man/elogd.8 $(MANDIR)/man8/
-	@$(INSTALL) -v -m 0644 scripts/fckeditor/fckelog.js $(ELOGDIR)/scripts/fckeditor/
+	@$(INSTALL) -D -v -m 0644 scripts/fckeditor/fckelog.js $(ELOGDIR)/scripts/fckeditor/fckelog.js
 	@$(INSTALL) -v -m 0644 scripts/*.js $(ELOGDIR)/scripts/
 	@$(INSTALL) -D -v -m 0644 scripts/fckeditor/editor/plugins/elog/fckplugin.js $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/fckplugin.js
 
