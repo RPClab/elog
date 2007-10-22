@@ -9578,7 +9578,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (getcfg(lbs->name, "Write password", str, sizeof(str)))
       rsprintf("<input type=hidden name=\"wpwd\" value=\"%s\">\n", str);
 
-   if (getcfg(lbs->name, "Password file", str, sizeof(str)) && isparam("unm") && isparam("uwpd")) {
+   if (getcfg(lbs->name, "Password file", str, sizeof(str)) && isparam("unm") && isparam("upwd")) {
       rsprintf("<input type=hidden name=\"unm\" value=\"%s\">\n", getparam("unm"));
       rsprintf("<input type=hidden name=\"upwd\" value=\"%s\">\n", getparam("upwd"));
    }
