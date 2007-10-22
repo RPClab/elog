@@ -17162,7 +17162,7 @@ void build_ref(char *ref, int size, char *mode, char *expand, char *attach, char
 
 void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands, char *mode)
 {
-   int cur_exp, n, i, j, i1, i2, index, size;
+   int cur_exp, n, i, j, i1, i2, index, attr_index, size;
    char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH], list[MAX_N_LIST][NAME_LENGTH], option[NAME_LENGTH];
 
    rsprintf("<tr><td class=\"menuframe\">\n");
@@ -17319,6 +17319,15 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
          rsprintf("<input type=hidden name=\"casesensitive\" value=1>\n");
 
       for (index = 0; index < n; index++) {
+         /* find according attribute index */
+         for (attr_index = 0; attr_index < lbs->n_attr; attr_index++)
+            if (strieq(list[index], attr_list[attr_index]))
+               break;
+         if (attr_index == lbs->n_attr) {
+            rsprintf("Error: Attribute \"%s\" for quick filter not found", list[index]);
+            attr_index = 0;
+         }
+
          if (strieq(list[index], loc("Date"))) {
             i = isparam("last") ? atoi(getparam("last")) : 0;
 
@@ -17335,7 +17344,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
             rsprintf("<option %s value=364>%s\n", i == 364 ? "selected" : "", loc("Last Year"));
 
             rsprintf("</select>\n");
-         } else if (strieq(attr_options[index][0], "boolean")) {
+         } else if (strieq(attr_options[attr_index][0], "boolean")) {
 
             sprintf(str, loc("Select %s"), list[index]);
             rsprintf("<select title=\"%s\" name=\"%s\" onChange=\"document.form1.submit()\">\n", str,
@@ -17343,12 +17352,12 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
 
             rsprintf("<option value=\"_all_\">-- %s --\n", list[index]);
 
-            if (isparam(attr_list[index]) && strieq("1", getparam(attr_list[index])))
+            if (isparam(attr_list[attr_index]) && strieq("1", getparam(attr_list[attr_index])))
                rsprintf("<option selected value=\"1\">1\n");
             else
                rsprintf("<option value=\"1\">1\n");
 
-            if (isparam(attr_list[index]) && strieq("0", getparam(attr_list[index])))
+            if (isparam(attr_list[attr_index]) && strieq("0", getparam(attr_list[attr_index])))
                rsprintf("<option selected value=\"0\">0\n");
             else
                rsprintf("<option value=\"0\">0\n");
@@ -17357,13 +17366,9 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
          } else {
 
             /* check if attribute has options */
-            for (i = 0; i < MAX_N_ATTR; i++)
-               if (attr_list[i][0] == 0 || strieq(attr_list[i], list[index]))
-                  break;
+            if (attr_list[attr_index][0] == 0 || attr_options[attr_index][0][0] == 0) {
 
-            if (attr_list[i][0] == 0 || attr_options[i][0][0] == 0) {
-
-               if (attr_flags[i] & (AF_DATE | AF_DATETIME)) {
+               if (attr_flags[attr_index] & (AF_DATE | AF_DATETIME)) {
 
                   rsprintf("<select name=\"%s\" onChange=\"document.form1.submit()\">\n", list[index]);
 
@@ -17418,34 +17423,32 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
 
                rsprintf("<option value=\"_all_\">-- %s --\n", list[index]);
 
-               if (i < MAX_N_ATTR) {
-                  for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
-                     comment[0] = 0;
-                     if (attr_flags[i] & AF_ICON) {
-                        sprintf(str, "Icon comment %s", attr_options[i][j]);
-                        getcfg(lbs->name, str, comment, sizeof(comment));
-                     }
-
-                     if (comment[0] == 0)
-                        strcpy(comment, attr_options[i][j]);
-
-                     for (i1 = i2 = 0; i1 <= (int) strlen(comment); i1++) {
-                        if (comment[i1] == '(') {
-                           option[i2++] = '\\';
-                           option[i2++] = '(';
-                        } else if (comment[i1] == '{') {
-                           option[i2] = 0;
-                           break;
-                        } else
-                           option[i2++] = comment[i1];
-                     }
-
-                     if (isparam(attr_list[i])
-                         && strieq(option, getparam(attr_list[i])))
-                        rsprintf("<option selected value=\"%s\">%s\n", option, option);
-                     else
-                        rsprintf("<option value=\"%s\">%s\n", option, option);
+               for (j = 0; j < MAX_N_LIST && attr_options[attr_index][j][0]; j++) {
+                  comment[0] = 0;
+                  if (attr_flags[attr_index] & AF_ICON) {
+                     sprintf(str, "Icon comment %s", attr_options[attr_index][j]);
+                     getcfg(lbs->name, str, comment, sizeof(comment));
                   }
+
+                  if (comment[0] == 0)
+                     strcpy(comment, attr_options[attr_index][j]);
+
+                  for (i1 = i2 = 0; i1 <= (int) strlen(comment); i1++) {
+                     if (comment[i1] == '(') {
+                        option[i2++] = '\\';
+                        option[i2++] = '(';
+                     } else if (comment[i1] == '{') {
+                        option[i2] = 0;
+                        break;
+                     } else
+                        option[i2++] = comment[i1];
+                  }
+
+                  if (isparam(attr_list[attr_index])
+                      && strieq(option, getparam(attr_list[attr_index])))
+                     rsprintf("<option selected value=\"%s\">%s\n", option, option);
+                  else
+                     rsprintf("<option value=\"%s\">%s\n", option, option);
                }
 
                rsprintf("</select> \n");
