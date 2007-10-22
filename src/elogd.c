@@ -2785,7 +2785,7 @@ BOOL match_param(char *str, char *param, int conditional_only)
       return FALSE;
 
    if (!_condition[0] || str[0] != '{')
-      return (strcmp(str, param) == 0);
+      return (stricmp(str, param) == 0);
 
    p = str;
    if (strchr(p, '}'))
@@ -2806,7 +2806,7 @@ BOOL match_param(char *str, char *param, int conditional_only)
       for (j = 0; j < npl; j++)
          if (stricmp(clist[i], plist[j]) == 0) {
             /* condition matches */
-            return strcmp(p, param) == 0;
+            return stricmp(p, param) == 0;
          }
 
    /* check and'ed conditions */
@@ -2823,7 +2823,7 @@ BOOL match_param(char *str, char *param, int conditional_only)
          }
 
          if (j == nand)
-            return strcmp(p, param) == 0;
+            return stricmp(p, param) == 0;
       }
 
    return 0;
