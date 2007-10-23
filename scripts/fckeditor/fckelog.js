@@ -5,6 +5,8 @@
 FCKConfig.PluginsPath = FCKConfig.BasePath.substr(0, FCKConfig.BasePath.length - 7) + 'editor/plugins/';
 FCKConfig.Plugins.Add('elog', null);
 
+FCKConfig.FirefoxSpellChecker	= true ;
+
 FCKConfig.ProtectedSource.Add( /<script[\s\S]*?<\/script>/gi ) ; // <SCRIPT> tags
 FCKConfig.ProtectedSource.Add( /<(.*?)javascript\:(.*?)/gi ) ; // javascript: tags
 FCKConfig.ProtectedSource.Add( /<(.*?)(?:on(blur|c(hange|lick)|dblclick|focus|keypress|(key|mouse)(down|up)|(un)?load|mouse(move|o(ut|ver))|reset|s(elect|ubmit)))=(.*?)(\s*?)(.*?)>/gi ) ; // events
