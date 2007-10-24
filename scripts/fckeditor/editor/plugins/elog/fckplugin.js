@@ -24,7 +24,7 @@
 /*---- 'Submit' ----------------------------------------------------*/
 
 // Register 'Submit' toolbar button
-var oELOGSubmitItem = new FCKToolbarButton('ELOGSubmit', 'Submit Entry', null, null, true, null, 3);
+var oELOGSubmitItem = new FCKToolbarButton('ELOGSubmit', window.top.ELOGSubmitEntry, null, null, true, null, 3);
 FCKToolbarItems.RegisterItem('ELOGSubmit', oELOGSubmitItem);
 
 // Register 'Submit' command
@@ -49,7 +49,7 @@ FCKCommands.RegisterCommand('ELOGSubmit', oELOGSubmitCommand);
 /*---- 'ELOGImage' ------------------------------------------------*/
 
 // Register 'ELOGImage' toolbar button
-var oELOGImage = new FCKToolbarButton('ELOGImage', 'Insert Image', null, null, true, null, 37);
+var oELOGImage = new FCKToolbarButton('ELOGImage', window.top.ELOGInsertImage, null, null, true, null, 37);
 FCKToolbarItems.RegisterItem('ELOGImage', oELOGImage);
 
 // Register 'ELOGImage' command
@@ -73,7 +73,7 @@ FCKCommands.RegisterCommand('ELOGImage', oELOGImageCommand);
 /*---- 'InsertTime' ------------------------------------------------*/
 
 // Create 'InsertTime' toolbar button
-var oInsertTimeItem = new FCKToolbarButton('InsertTime', 'Insert Date/Time', null, null, true, null, 4);
+var oInsertTimeItem = new FCKToolbarButton('InsertTime', window.top.ELOGInsertDateTime, null, null, true, null, 4);
 oInsertTimeItem.IconPath = FCKConfig.PluginsPath + 'elog/inserttime.gif' ; 
 FCKToolbarItems.RegisterItem('InsertTime', oInsertTimeItem);
 
