@@ -326,6 +326,18 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="FCKedit"
+			>
+			<File
+				RelativePath="..\scripts\fckeditor\fckelog.js"
+				>
+			</File>
+			<File
+				RelativePath="..\scripts\fckeditor\editor\plugins\elog\fckplugin.js"
+				>
+			</File>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>
