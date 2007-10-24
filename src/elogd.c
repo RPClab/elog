@@ -9518,6 +9518,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (enc_selected == 2 && fckedit_exist) {
       rsprintf("<script type=\"text/javascript\" src=\"../fckeditor/fckeditor.js\"></script>\n");
       rsprintf("<script type=\"text/javascript\">\n");
+      /* define strings for current language */
+      rsprintf("var ELOGSubmitEntry = '%s';\n", loc("Submit entry"));
+      rsprintf("var ELOGInsertImage = '%s';\n", loc("Insert image"));
+      rsprintf("var ELOGInsertDateTime = '%s';\n\n", loc("Insert Date/Time"));
       rsprintf("function initFCKedit()\n");
       rsprintf("{\n");
       rsprintf("   var oFCKeditor = new FCKeditor('Text', '100%%', '500');\n");
