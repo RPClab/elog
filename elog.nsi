@@ -78,7 +78,7 @@ Section "ELOG system (required)" SecSystem
 
   ; script directory
   SetOutPath $INSTDIR\scripts
-  File scripts\*.*
+  File /r /x .svn scripts\*.*
 
   ; resources directory
   SetOutPath $INSTDIR\resources
