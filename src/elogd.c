@@ -9523,6 +9523,29 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("   var oFCKeditor = new FCKeditor('Text', '100%%', '500');\n");
       rsprintf("   oFCKeditor.BasePath = '../fckeditor/';\n");
       rsprintf("   oFCKeditor.Config['CustomConfigurationsPath'] = '../fckelog.js';\n");
+      rsprintf("   oFCKeditor.Config['AutoDetectLanguage'] = false;\n");
+      getcfg("global", "Language", str, sizeof(str));
+      if (!str[0])
+         strcpy(str, "en");
+      else if (stricmp(str, "german") == 0)
+         strcpy(str, "de");
+      else if (stricmp(str, "brazilian") == 0)
+         strcpy(str, "pt-br");
+      else if (stricmp(str, "czech") == 0)
+         strcpy(str, "cs");
+      else if (stricmp(str, "dutch") == 0)
+         strcpy(str, "nl");
+      else if (stricmp(str, "spanish") == 0)
+         strcpy(str, "es");
+      else if (stricmp(str, "swedish") == 0)
+         strcpy(str, "sv");
+      else if (stricmp(str, "turkish") == 0)
+         strcpy(str, "tr");
+      else if (stricmp(str, "zh_CN-GB2312") == 0)
+         strcpy(str, "zh-cn");
+      else
+         str[2] = 0;
+      rsprintf("   oFCKeditor.Config['DefaultLanguage'] = \"%s\";\n", str);
       rsprintf("   oFCKeditor.ReplaceTextarea();\n");
       rsprintf("   document.getElementById('HTML').checked = true;\n");
       rsprintf("}\n");
