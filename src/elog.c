@@ -612,8 +612,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
 
       /* copy attributes */
       for (i = 0; i < MAX_N_ATTR && old_attrib_name[i][0]; i++) {
-         if (equal_ustring(old_attrib_name[i], "Reply to") ||
-             equal_ustring(old_attrib_name[i], "Date")) {
+         if (equal_ustring(old_attrib_name[i], "Reply to") || equal_ustring(old_attrib_name[i], "Date")) {
             attrib_name[i][0] = 0;
             attrib[i][0] = 0;
          } else {

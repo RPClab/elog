@@ -1,3 +1,35 @@
+Version 2.7.0, released Oct. 25th, 2007
+=======================================
+
+- Incorporated FCKedit HTML editor into ELOG
+- Fixed bug with nonworking 'date' quick filter
+- Fixed bug with quick filters and boolean attributes
+- Implemented display of upload time/date
+- Added $text to substitutions in execute
+- Allow '-' in attributes together with required attributes (JS problem)
+- Made insertion of smileys/pictures work with 'use lock = 1'.
+- Added importing of dates in CSV and XML files
+- Do not show any subscription on self registration, added note in notification to click on 'config' to subscribe
+- Fixed XSS vulnerability with subtext
+- Added '-v1' verbose option
+- Do not substitute '|' if not inside a table
+- Fixed problem with HTML encoding getting unchecked on reload
+- Replaced seteuid/setegid by setreuid/setregid for HP-UX compatibility
+- Implemented forward/backward navigation with Ctrl-PgUp/PgDn/Home/End
+- Applied patch from Peter Rienstra for HP-UX 64
+- Display three radio buttons in find form for boolean attributes
+- Made quick filter work with boolean attributes
+- Added code for resizing edit box
+- Implemented multi-edit 
+- Fixed bug with MOptions under conditions and upload
+- Fixed bug that only one page got displayed if 'printable output' was selected in find page
+- Added 'keep original entry ID' for XML import
+- Implemented xml import
+- Implemented anchors in ELCode
+- Implemented [line] tag
+- Added check to prohibit submission of an entry which has been 'stolen' by someone else.
+- Fixed wrong links after synchronization of individual logbooks
+
 Version 2.6.5, released Apr. 13th, 2007
 =======================================
 
