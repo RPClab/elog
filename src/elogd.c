@@ -17350,12 +17350,13 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
          for (attr_index = 0; attr_index < lbs->n_attr; attr_index++)
             if (strieq(list[index], attr_list[attr_index]))
                break;
-         if (attr_index == lbs->n_attr) {
+         if (attr_index == lbs->n_attr && 
+            !strieq(list[index], "Date") && !strieq(list[index], "Subtext")) {
             rsprintf("Error: Attribute \"%s\" for quick filter not found", list[index]);
             attr_index = 0;
          }
 
-         if (strieq(list[index], loc("Date"))) {
+         if (strieq(list[index], "Date")) {
             i = isparam("last") ? atoi(getparam("last")) : 0;
 
             rsprintf("<select title=\"%s\" name=last onChange=\"document.form1.submit()\">\n",
@@ -17432,15 +17433,26 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
                }
 
                else {
-                  sprintf(str, loc("Enter %s"), list[index]);
-                  rsprintf
-                      ("<input onClick=\"this.value='';\" title=\"%s\" type=text onChange=\"document.form1.submit()\"",
-                       str);
-                  sprintf(str, "-- %s --", list[index]);
-                  if (isparam(list[index]) && *getparam(list[index]))
-                     strencode2(str, getparam(list[index]), sizeof(str));
+                  if (strieq(list[index], "Subtext")) {
+                     rsprintf
+                         ("<input onClick=\"this.value='';\" title=\"%s\" type=text onChange=\"document.form1.submit()\"",
+                          loc("Enter text"));
+                     sprintf(str, "-- %s --", loc("Text"));
+                     if (isparam(list[index]) && *getparam(list[index]))
+                        strencode2(str, getparam(list[index]), sizeof(str));
 
-                  rsprintf(" name=\"%s\" value=\"%s\">\n", list[index], str);
+                     rsprintf(" name=\"Subtext\" value=\"%s\">\n", str);
+                  } else {
+                     sprintf(str, loc("Enter %s"), list[index]);
+                     rsprintf
+                         ("<input onClick=\"this.value='';\" title=\"%s\" type=text onChange=\"document.form1.submit()\"",
+                          str);
+                     sprintf(str, "-- %s --", list[index]);
+                     if (isparam(list[index]) && *getparam(list[index]))
+                        strencode2(str, getparam(list[index]), sizeof(str));
+
+                     rsprintf(" name=\"%s\" value=\"%s\">\n", list[index], str);
+                  }
                }
             } else {
 
