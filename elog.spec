@@ -2,8 +2,8 @@
 
 Name:       elog
 Summary:    elog is a standalone electronic web logbook
-Version:    2.6.5
-Release:    9
+Version:    2.7.0
+Release:    1
 License:    GPL
 Group:      Applications/Networking
 Source:     http://midas.psi.ch/elog/download/elog-%{version}.tar.gz
@@ -88,7 +88,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,elog,elog)
 %prefix/bin/*
 %prefix/sbin/elogd
-%prefix/elog/resources/*
+%prefix/elog/resources
 %prefix/elog/themes
 %prefix/elog/scripts
 %prefix/elog/logbooks
