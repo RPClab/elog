@@ -5502,6 +5502,33 @@ void insert_breaks(char *str, int n, int size)
 
 /*------------------------------------------------------------------*/
 
+void replace_inline_img(char *str)
+{
+   char *p, *pn;
+   int index;
+
+   p = str;
+   do {
+      p = strstr(p, "<img ");
+      if (p) {
+         pn = strstr(p, "name=");
+         if (pn) {
+            pn += 9;
+            index = atoi(pn);
+            while (*pn && *pn != '>')
+               pn++;
+            if (*pn == '>')
+               pn++;
+            sprintf(p, "<img src=\"cid:att%d@psi.ch\">", index-1);
+            memmove(p+strlen(p), pn, strlen(pn)+1);
+            p++;
+         }
+      }
+   } while (p != NULL);
+}
+
+/*------------------------------------------------------------------*/
+
 void rsputs(const char *str)
 {
    if (strlen_retbuf + (int) strlen(str) + 1 >= return_buffer_size) {
@@ -20289,7 +20316,7 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
       if (isparam("text")) {
          if (encoding[0] == 'H')
             sprintf(mail_text + strlen(mail_text), "\r\n<HR>\r\n%s", getparam("text"));
-         if (encoding[0] == 'E') {
+         else if (encoding[0] == 'E') {
             sprintf(mail_text + strlen(mail_text), "\r\n<HR>\r\n");
             strlen_retbuf = 0;
             rsputs_elcode(lbs, TRUE, getparam("text"));
@@ -20393,7 +20420,7 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
    /* get initial HTML flag from message encoding */
    mail_encoding = 1;           // 1:text, 2:short HTML, 4:full HTML
    if (encoding[0] == 'E' || encoding[0] == 'H')
-      mail_encoding = 2;
+      mail_encoding = 4;
 
    /* overwrite with config setting */
    if (getcfg(lbs->name, "Email encoding", str, sizeof(str)))
@@ -20460,14 +20487,14 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
 
    status = sendmail(lbs, smtp_host, mail_from, rcpt_to, mail_text, error, sizeof(error));
 
-/*
+/**/
       {
       int fh;
       fh = open("mail.html", O_WRONLY | O_BINARY | O_CREAT | O_TRUNC, 0644);
       write(fh, mail_text, strlen(mail_text));
       close(fh);
       }
-*/
+/**/
 
    if (status < 0) {
       sprintf(str, loc("Error sending Email via <i>\"%s\"</i>"), smtp_host);
@@ -20963,7 +20990,7 @@ void submit_elog(LOGBOOK * lbs)
    if (getcfg(lbs->name, "Allowed encoding", str, sizeof(str)))
       allowed_encoding = atoi(str);
    else
-      allowed_encoding = 3;
+      allowed_encoding = 7;
 
    strcpy(encoding, isparam("encoding") ? getparam("encoding") : "plain");
 
@@ -21739,6 +21766,9 @@ int is_inline_attachment(char *encoding, int message_id, char *text, int i, char
       att_enc[13] = '/';
       if (stristr(text, att_enc))
          return 1;
+      sprintf(str, "cid:att%d@psi.ch", i);
+      if (stristr(text, str))
+         return 1;
    }
 
    return 0;
@@ -22501,8 +22531,11 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             rsputs("</pre>");
          } else if (strieq(encoding, "ELCode"))
             rsputs_elcode(lbs, email, text);
-         else
+         else {
+            if (email)
+               replace_inline_img(text);
             rsputs(text);
+         }
 
          rsputs("</td></tr>\n");
 
@@ -24125,7 +24158,7 @@ void show_uploader_finished(LOGBOOK * lbs)
    rsprintf("  {\n");
    rsprintf("    if (opener.document.title == \"FCKeditor\") {\n");
    rsprintf("       i = opener.parent.next_attachment;\n");
-   rsprintf("       opener.FCKeditorAPI.GetInstance('Text').InsertHtml('<img alt=\"%s\" src=\"%s%s\">');\n",
+   rsprintf("       opener.FCKeditorAPI.GetInstance('Text').InsertHtml('<img alt=\"%s\" src=\"%s%s\" name=\"att'+i+'\">');\n",
             att + 14, base_url, ref);
    rsprintf("       opener.parent.document.form1.inlineatt.value = '%s';\n", att);
    rsprintf("       opener.parent.document.form1.jcmd.value = 'Upload';\n");
