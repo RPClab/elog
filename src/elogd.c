@@ -19913,7 +19913,7 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
                               char att_file[MAX_ATTACHMENTS][256], char *mail_text, int size,
                               char *multipart_boundary, int content_id)
 {
-   int i, index, n_att, fh, n, is_inline;
+   int i, index, n_att, fh, n, is_inline, length;
    char str[256], file_name[256], buffer[256], email_from[256], *p;
 
    /* count attachments */
@@ -19975,6 +19975,7 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
       strlcat(file_name, att_file[index], sizeof(file_name));
 
       fh = open(file_name, O_RDONLY | O_BINARY);
+      length = strlen(mail_text);
       if (fh > 0) {
          do {
             n = my_read(fh, buffer, 45);
@@ -19982,8 +19983,13 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
                break;
 
             base64_bufenc((unsigned char *) buffer, n, str);
-            strlcat(mail_text, str, size);
-            strlcat(mail_text, "\r\n", size);
+
+            if (length + (int)strlen(str) + 2 < size) {
+               strcpy(mail_text + length, str);
+               length += strlen(str);
+               strcpy(mail_text + length, "\r\n");
+               length += 2;
+            }
          } while (1);
 
          close(fh);
@@ -20385,7 +20391,7 @@ void format_email_html2(LOGBOOK * lbs, int message_id, char att_file[MAX_ATTACHM
    strlcat(mail_text, "\r\n", size);
 
    if (attachments_present) {
-      format_email_attachments(lbs, message_id, 0, att_file, mail_text, size, multipart_boundary_related,
+      format_email_attachments(lbs, message_id, 2, att_file, mail_text, size, multipart_boundary_related,
                                TRUE);
       strlcat(mail_text, "--", size);
       strlcat(mail_text, multipart_boundary_related, size);
@@ -20487,14 +20493,14 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
 
    status = sendmail(lbs, smtp_host, mail_from, rcpt_to, mail_text, error, sizeof(error));
 
-/**/
+/*
       {
       int fh;
       fh = open("mail.html", O_WRONLY | O_BINARY | O_CREAT | O_TRUNC, 0644);
       write(fh, mail_text, strlen(mail_text));
       close(fh);
       }
-/**/
+*/
 
    if (status < 0) {
       sprintf(str, loc("Error sending Email via <i>\"%s\"</i>"), smtp_host);
