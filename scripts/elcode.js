@@ -70,6 +70,8 @@ function elcode1(text, tag, value, selection)
       str = '[TABLE border="1"]\r\nA|B\r\n|-\r\nC|D\r\n[/TABLE]';
    else if (tag == 'LINE')
       str = selection + '[LINE]';
+   else if (tag == '*')
+      str = '\r\n[*] ';   
    else if (value == '')
       str = '['+tag+']' + selection + '[/'+tag+']';
    else
@@ -81,6 +83,8 @@ function elcode1(text, tag, value, selection)
       pos = 11;
    else if (tag == 'TABLE')
       pos = 19;
+   else if (tag == '*')
+      pos = 5;   
    else if (value == '')
       pos = tag.length + 2;
    else
@@ -188,6 +192,10 @@ function elKeyPress(evt)
       }
       if (actualkey == "l") {
          elcode(document.form1.Text, 'LIST','');
+         return false;
+      }
+      if (actualkey == "n") {
+         elcode(document.form1.Text, '*','');
          return false;
       }
       if (actualkey == "h") {
