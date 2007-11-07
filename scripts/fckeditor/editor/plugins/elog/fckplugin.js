@@ -125,3 +125,27 @@ oInsertTimeCommand.GetState = function()
 }
 
 FCKCommands.RegisterCommand('InsertTime', oInsertTimeCommand);
+
+/*---- 'InsertLink' ------------------------------------------------*/
+
+// Create 'InsertLink' toolbar button
+var oInsertLinkItem = new FCKToolbarButton('InsertLink', window.top.ELOGInsertLink, null, null, true, null, 34);
+FCKToolbarItems.RegisterItem('InsertLink', oInsertLinkItem);
+
+// Register 'InsertLink' command
+var oInsertLinkCommand = new Object();
+oInsertLinkCommand.Name = 'InsertLink';
+
+oInsertLinkCommand.Execute = function()
+{
+  linkText = prompt(window.top.ELOGLinkTextPrompt, '');
+  linkURL = prompt(window.top.ELOGLinkURLPrompt, 'http://');
+
+  // Get the editor instance that we want to interact with.
+  var oEditor = FCKeditorAPI.GetInstance('Text') ;
+
+  // Insert the desired HTML.
+  oEditor.InsertHtml('<a href="'+linkURL+'">'+linkText+'</a>');
+}
+
+FCKCommands.RegisterCommand('InsertLink', oInsertLinkCommand);

@@ -9564,6 +9564,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("var ELOGSubmitEntry = '%s';\n", loc("Submit entry"));
       rsprintf("var ELOGInsertImage = '%s';\n", loc("Insert image"));
       rsprintf("var ELOGInsertDateTime = '%s';\n\n", loc("Insert Date/Time"));
+      rsprintf("var ELOGLinkTextPrompt = '%s';\n\n", loc("Enter name of hyperlink"));
+      rsprintf("var ELOGLinkURLPrompt = '%s';\n\n", loc("Enter URL of hyperlink"));
       rsprintf("function initFCKedit()\n");
       rsprintf("{\n");
       rsprintf("   var oFCKeditor = new FCKeditor('Text', '100%%', '500');\n");
