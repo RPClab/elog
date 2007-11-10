@@ -1,6 +1,6 @@
 #
 # Dutch translation by djek@xs4all.nl
-# 19-02-2007
+# 10-11-2007
 # A more recent version may be available at :
 # http://savannah.psi.ch/websvn/listing.php?repname=elog&path=%2Ftrunk%2Fresources%2F
 #
@@ -257,7 +257,7 @@ Ignore first line = Negeer eerste regel
 Preview import = Import voorbeeld
 ELOG CSV import = ELOG CSV import
 Too many attributes in CSV file = Te veel attributen in CSV bestand
-%d entries successfully imported = %d  berichten succesvol geïmporteerd
+%d entries successfully imported = %d  berichten succesvol geÃ¯mporteerd
 No 'Attributes' option present in %s = Geen 'Attributen' optie aanwezig in %s
 CSV ("," separated) = CSV (";" gescheiden)
 CSV (";" separated) = CSV (";" gescheiden)
@@ -401,57 +401,53 @@ Last 6 Months = Afgelopen 6 maanden
 Last Year = Afgelopen jaar
 Enter %s = %s invoeren
 Select %s = Selecteer %s
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Bold text CTRL+B = 
-Italics text CTRL+I = 
-Underlined text CTRL+U = 
-Centered text = 
-Insert hyperlink = 
-Insert email = 
-Insert image CTRL+M = 
-Insert quote = 
-Insert list CTRL+L = 
-Insert table = 
-Insert heading CTRL+H = 
-Insert code CTRL+O = 
-Hide the smiley bar = 
-Show the smiley bar = 
-Insert current time/date = 
-Entry is locked on local server and therefore skipped = 
-Keep me logged in on this computer = 
-for the next %d minutes = 
-for the next hour = 
-for the next %d hours = 
-for the next %d days = 
-keep original values = 
-Entry is locked = 
-Edit anyhow = 
-Submit entry = 
-Insert image = 
-Insert Date/Time = 
-Insert horizontal line = 
-Insert anchor point = 
-keep original text = 
-unspecified = 
-To subscribe to any logbook, click on 'Config' in that logbook = 
-ELOG XML import = 
-Derive attributes from XML file = 
-XML filename = 
-Invalid date format = 
-XML file does not contain %s element = 
-XML import preview of %s = 
-XML Import = 
-A old entry has been updated on %s = 
-This entry has in meantime been locked by %s = 
-This entry has in meantime been modified by someone else = 
-Submitting it now would overwrite the other modification and is therefore prohibited = 
-First entry, Ctrl-Home = 
-Previous entry, Ctrl-PgUp = 
-Next entry, Ctrl-PgDn = 
-Last entry, Ctrl-End = 
-ELOG import = 
-Please choose format to import: = 
-Enter text = 
+Bold text CTRL+B = Vette tekst CTRL+B
+Italics text CTRL+I = Schuine tekst CTRL+I
+Underlined text CTRL+U = Onderstreepte tekst CTRL+U
+Centered text = Gecentreerde tekst
+Insert hyperlink = hyperlink invoegen
+Insert email = email invoegen
+Insert image CTRL+M = afbeelding invoegen CTRL+M
+Insert quote = citaat invoegen
+Insert list CTRL+L = lijst invoegen CTRL+L
+Insert table = tabel invoegen
+Insert heading CTRL+H = kop invoegen CTRL+H
+Insert code CTRL+O = code invoegen CTRL+O
+Hide the smiley bar = Verberg smiley balk
+Show the smiley bar = Toon smiley balk
+Insert current time/date = Huidige tijd/datum invoegen
+Entry is locked on local server and therefore skipped = Bericht is geblokkeerd op de lokale server en dus overgeslagen
+Keep me logged in on this computer = Hou me ingelogd op deze computer
+for the next %d minutes = voor de komende %d minuten
+for the next hour =voor het komende uur
+for the next %d hours =voor de komende %d uren
+for the next %d days =voor de komende %d dagen
+keep original values =behoud de originele waarden
+Entry is locked = bericht is geblokkeerd
+Edit anyhow = toch wijzigen
+Submit entry = bericht versturen
+Insert image = Afbeelding invoegen
+Insert Date/Time = Huidige tijd/datum invoegen
+Insert horizontal line = Horizontale lijn invoegen
+Insert anchor point = Ankerpunt invoegen
+keep original text = behoud originele tekst
+unspecified = ongespecificeerd
+To subscribe to any logbook, click on 'Config' in that logbook = Om op een logboek te abonneren, klik op 'Configuratie' van dat logboek
+ELOG XML import = ELOG XML import
+Derive attributes from XML file = Leid attributen af van het XML bestand
+XML filename = XML bestand
+Invalid date format = ongeldige datum opmaak
+XML file does not contain %s element = XML bestand bevat niet het %s element
+XML import preview of %s = XML import voorbeeld van %s
+XML Import = XML import
+A old entry has been updated on %s = Een oud bericht is vernieuwd op %s
+This entry has in meantime been locked by %s = Dit bericht is intussen geblokkeerd door %s
+This entry has in meantime been modified by someone else = Dit bericht is intussen geblokkeerd door iemand anders
+Submitting it now would overwrite the other modification and is therefore prohibited = Nu versturen zou een andere wijziging overschrijven en is daarom niet toegestaan
+First entry, Ctrl-Home = Eerste bericht, Ctrl-Home
+Previous entry, Ctrl-PgUp = Vorige bericht, Ctrl-PgUp
+Next entry, Ctrl-PgDn = Volgende bericht, Ctrl-PgDn
+Last entry, Ctrl-End = Laatste bericht, Ctrl-End
+ELOG import = ELOG import
+Please choose format to import: = Kies het formaat om te importeren
+Enter text = Voer tekst in
