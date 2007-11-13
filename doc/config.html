@@ -583,19 +583,17 @@ Admin user = bill
         <b><code>Time format = &lt;string&gt;</code></b><br>
         This option determines how the date and time of a logbook entry is
         displayed. The format of the string is the same as the C function
-        <a href=
-        "http://www.gnu.org/manual/glibc-2.2.3/html_node/libc_427.html#IDX2636">
-        strftime</a>, so a string of <b>%A, %B %d, %Y, %H:%M</b> yields in a
-        display of <b>Thursday, November 15, 2001, 12:35</b> for example.
+        <a href="strftime.txt">strftime</a>, so a string of <b>%A, %B %d, %Y, 
+        %H:%M</b> yields in a display of <b>Thursday, November 15, 2001, 
+        12:35</b> for example.
       </li>
       <li>
         <b><code>Date format = &lt;string&gt;</code></b><br>
         This option determines how the date is displayed from attributes which
         are of type "date". The format of the string is the same as the C
-        function <a href=
-        "http://www.gnu.org/manual/glibc-2.2.3/html_node/libc_427.html#IDX2636">
-        strftime</a>, so a string of <b>%A, %B %d, %Y</b> yields in a display
-        of <b>Thursday, November 15, 2001</b> for example.
+        function <a href="strftime">strftime</a>, so a string of <b>%A, %B %d, 
+        %Y</b> yields in a display of <b>Thursday, November 15, 2001</b> for 
+        example.
       </li>
       <li>
         <b><code>Welcome Page = &lt;file&gt;</code></b><br>
@@ -1067,8 +1065,7 @@ XYZ-00001
 XYZ-00002
 XYZ-00003
 </pre>and so on. In addition to the #'s one may specify format specifiers which
-are passed to the <a href=
-"http://www.gnu.org/manual/glibc-2.2.3/html_node/libc_427.html#IDX2636">
+are passed to the <a href="strftime.txt">
         strftime</a> function. This allows to create tags wich contain the
         current year, month and so on. Once the date part of the attribute
         changes, the index restarts from one. The statement
