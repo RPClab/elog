@@ -18254,7 +18254,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          subst_param(str, sizeof(str), "subtext", "");
          found = 1;
       }
-      sprintf(ref, "-- %s --", "subtext");
+      sprintf(ref, "-- %s --", loc("Text"));
       if (strieq(getparam("subtext"), ref)) {
          subst_param(str, sizeof(str), "subtext", "");
          found = 1;
