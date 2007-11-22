@@ -423,7 +423,7 @@ void highlight_searchtext(regex_t * re_buf, char *src, char *dst, BOOL hidden);
 int parse_config_file(char *config_file);
 PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size);
 int load_password_files();
-void compose_base_url(LOGBOOK * lbs, char *base_url, int size);
+void compose_base_url(LOGBOOK * lbs, char *base_url, int size, BOOL email_notify);
 void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command);
 char *loc(char *orig);
 void strencode(char *text);
@@ -5639,20 +5639,20 @@ void rsputs2(LOGBOOK * lbs, int absolute_link, const char *str)
                if (m < (int) strlen(tmp)) {
                   /* if link contains reference to other logbook, put logbook explicitly */
                   if (absolute_link)
-                     compose_base_url(NULL, base_url, sizeof(base_url));
+                     compose_base_url(NULL, base_url, sizeof(base_url), FALSE);
                   else
                      strcpy(base_url, "../");
                   sprintf(return_buffer + j, "<a href=\"%s%s\">elog:%s</a>", base_url, link, link_text);
                } else if (link[0] == '/') {
                   if (absolute_link)
-                     compose_base_url(NULL, base_url, sizeof(base_url));
+                     compose_base_url(NULL, base_url, sizeof(base_url), FALSE);
                   else
                      base_url[0] = 0;
                   sprintf(return_buffer + j, "<a href=\"%s%s/%d%s\">elog:%s</a>", base_url, lbs->name_enc,
                           _current_message_id, link, link_text);
                } else {
                   if (absolute_link)
-                     compose_base_url(lbs, base_url, sizeof(base_url));
+                     compose_base_url(lbs, base_url, sizeof(base_url), FALSE);
                   else
                      base_url[0] = 0;
                   sprintf(return_buffer + j, "<a href=\"%s%s\">elog:%s</a>", base_url, link, link_text);
@@ -5965,20 +5965,20 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                if (m < (int) strlen(tmp) && tmp[m] != '#') {
                   /* if link contains reference to other logbook, put logbook explicitly */
                   if (email_notify)
-                     compose_base_url(NULL, base_url, sizeof(base_url));
+                     compose_base_url(NULL, base_url, sizeof(base_url), TRUE);
                   else
                      strcpy(base_url, "../");
                   sprintf(return_buffer + j, "<a href=\"%s%s\">elog:%s</a>", base_url, link, link_text);
                } else if (link[0] == '/') {
                   if (email_notify)
-                     compose_base_url(NULL, base_url, sizeof(base_url));
+                     compose_base_url(NULL, base_url, sizeof(base_url), TRUE);
                   else
                      base_url[0] = 0;
                   sprintf(return_buffer + j, "<a href=\"%s%s/%d%s\">elog:%s</a>", base_url, lbs->name_enc,
                           _current_message_id, link, link_text);
                } else {
                   if (email_notify)
-                     compose_base_url(lbs, base_url, sizeof(base_url));
+                     compose_base_url(lbs, base_url, sizeof(base_url), TRUE);
                   else
                      base_url[0] = 0;
                   sprintf(return_buffer + j, "<a href=\"%s%s\">elog:%s</a>", base_url, link, link_text);
@@ -6132,7 +6132,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                            sprintf(hattrib, "cid:att%d@%s", m, p);
                         } else {
                            if (email_notify)
-                              compose_base_url(lbs, hattrib, sizeof(hattrib));
+                              compose_base_url(lbs, hattrib, sizeof(hattrib), TRUE);
                            else
                               hattrib[0] = 0;
                            if (attrib[5] == '/') {
@@ -6197,7 +6197,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                      if (strstr(link, "%s")) {
                         strcpy(tmp, link);
                         if (email_notify)
-                           compose_base_url(lbs, base_url, sizeof(base_url));
+                           compose_base_url(lbs, base_url, sizeof(base_url), TRUE);
                         else
                            base_url[0] = 0;
                         sprintf(link, tmp, base_url);
@@ -6219,7 +6219,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                   if (strstr(link, "%s")) {
                      strcpy(tmp, link);
                      if (email_notify)
-                        compose_base_url(lbs, base_url, sizeof(base_url));
+                        compose_base_url(lbs, base_url, sizeof(base_url), TRUE);
                      else
                         base_url[0] = 0;
                      sprintf(link, tmp, base_url);
@@ -6240,7 +6240,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                if (strstr(link, "%s")) {
                   strcpy(tmp, link);
                   if (email_notify)
-                     compose_base_url(lbs, base_url, sizeof(base_url));
+                     compose_base_url(lbs, base_url, sizeof(base_url), TRUE);
                   else
                      base_url[0] = 0;
                   sprintf(link, tmp, base_url);
@@ -6551,9 +6551,13 @@ void extract_host(char *str)
 
 /*------------------------------------------------------------------*/
 
-void compose_base_url(LOGBOOK * lbs, char *base_url, int size)
+void compose_base_url(LOGBOOK * lbs, char *base_url, int size, BOOL email_notify)
 /* return URL for elogd with optional logbook subdirectory */
 {
+   if (email_notify)
+      if (getcfg(lbs->name, "Use Email URL", base_url, size)) 
+         return;
+
    if (!getcfg("global", "URL", base_url, size)) {
 
       if (referer[0]) {
@@ -7128,7 +7132,7 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
 
    /* Cascading Style Sheet */
    if (absolute_link)
-      compose_base_url(lbs, css, sizeof(css));
+      compose_base_url(lbs, css, sizeof(css), FALSE);
    else
       css[0] = 0;
 
@@ -16156,7 +16160,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    _current_message_id = message_id;
    ref[0] = 0;
    if (absolute_link)
-      compose_base_url(lbs, ref, sizeof(ref));
+      compose_base_url(lbs, ref, sizeof(ref), FALSE);
    sprintf(ref + strlen(ref), "../%s/%d", lbs->name_enc, message_id);
 
    if (strieq(mode, "Summary")) {
@@ -20458,7 +20462,7 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
             n_attachments++;
       }
 
-   compose_base_url(lbs, str, sizeof(str));
+   compose_base_url(lbs, str, sizeof(str), TRUE);
    sprintf(url, "%s%d", str, message_id);
 
    mail_text_size = MAX_CONTENT_LENGTH + 1000;
@@ -22242,7 +22246,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          sprintf(display, "%d", message_id);
 
       if (email) {
-         compose_base_url(lbs, str, sizeof(str));
+         compose_base_url(lbs, str, sizeof(str), TRUE);
          sprintf(str + strlen(str), "%d", message_id);
          rsprintf("%s:&nbsp;<b>%s</b>&nbsp;&nbsp;", loc("Logbook"), lbs->name);
          rsprintf("%s:&nbsp;<a href=\"%s\"><b>%d</b></a>", loc("Message ID"), str, message_id);
@@ -22267,7 +22271,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
          if (orig_tag[0]) {
             if (email)
-               compose_base_url(lbs, ref, sizeof(ref));
+               compose_base_url(lbs, ref, sizeof(ref), TRUE);
             else
                ref[0] = 0;
             sprintf(ref + strlen(ref), "%s", orig_tag);
@@ -22280,7 +22284,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             p = strtok(reply_tag, ",");
             do {
                if (email)
-                  compose_base_url(lbs, ref, sizeof(ref));
+                  compose_base_url(lbs, ref, sizeof(ref), TRUE);
                else
                   ref[0] = 0;
                sprintf(ref + strlen(ref), "%s", p);
@@ -24158,7 +24162,7 @@ void show_uploader_finished(LOGBOOK * lbs)
    url_encode(file_enc, sizeof(file_enc));      /* for file names with special characters like "+" */
    sprintf(ref, "%s/%s", str, file_enc);
 
-   compose_base_url(lbs, base_url, sizeof(base_url));
+   compose_base_url(lbs, base_url, sizeof(base_url), TRUE);
 
    rsprintf("<script type=\"text/javascript\">\n\n");
 
