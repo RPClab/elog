@@ -7168,6 +7168,21 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
       rsprintf("</head>\n");
 }
 
+void show_browser(char *browser) {
+   if (stristr(browser, "opera"))
+      rsprintf("var browser = \"Opera\";\n");
+   else if (stristr(browser, "konqueror"))
+      rsprintf("var browser = \"Konqueror\";\n");
+   else if (stristr(browser, "Safari"))
+      rsprintf("var browser = \"Safari\";\n");
+   else if (stristr(browser, "MSIE"))
+      rsprintf("var browser = \"MSIE\";\n");
+   else if (stristr(browser, "Mozilla"))
+      rsprintf("var browser = \"Mozilla\";\n");
+   else
+      rsprintf("var browser = \"Other\";\n");
+}
+
 void show_standard_header(LOGBOOK * lbs, BOOL expires, char *title, char *path, BOOL rss_feed, char *cookie,
                           char *script)
 {
@@ -7176,12 +7191,8 @@ void show_standard_header(LOGBOOK * lbs, BOOL expires, char *title, char *path, 
 
       rsprintf("<script type=\"text/javascript\">\n");
       rsprintf("<!--\n");
-      if (stristr(browser, "MSIE") && !stristr(browser, "opera"))
-         rsprintf("var browser = \"MSIE\";\n");
-      else if (stristr(browser, "Mozilla") && !stristr(browser, "opera") && !stristr(browser, "konqueror"))
-         rsprintf("var browser = \"Mozilla\";\n");
-      else
-         rsprintf("var browser = \"Other\";\n");
+      show_browser(browser);
+
       rsprintf("logbook = \"%s\";\n", lbs->name_enc);
       rsprintf("//-->\n");
       rsprintf("</script>\n");
@@ -9540,12 +9551,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("linkHeading_prompt  = \"%s\";\n", loc("Enter heading level (1, 2 or 3)"));
    }
 
-   if (stristr(browser, "MSIE") && !stristr(browser, "opera"))
-      rsprintf("var browser = \"MSIE\";\n");
-   else if (stristr(browser, "Mozilla") && !stristr(browser, "opera") && !stristr(browser, "konqueror"))
-      rsprintf("var browser = \"Mozilla\";\n");
-   else
-      rsprintf("var browser = \"Other\";\n");
+   show_browser(browser);
 
    rsprintf("var logbook = \"%s\";\n", lbs->name_enc);
    for (i = 0; i < MAX_ATTACHMENTS; i++)
@@ -24186,12 +24192,7 @@ void show_uploader_finished(LOGBOOK * lbs)
    rsprintf("  }\n\n");
 
    /* strings for elcode.js */
-   if (stristr(browser, "MSIE") && !stristr(browser, "opera"))
-      rsprintf("var browser = 'MSIE';\n");
-   else if (stristr(browser, "Mozilla") && !stristr(browser, "opera") && !stristr(browser, "konqueror"))
-      rsprintf("var browser = 'Mozilla';\n");
-   else
-      rsprintf("var browser = 'Other';\n\n");
+   show_browser(browser);
 
    rsprintf("</script>\n\n");
 
