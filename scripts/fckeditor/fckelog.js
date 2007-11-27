@@ -7,12 +7,16 @@ FCKConfig.Plugins.Add('elog', null);
 
 FCKConfig.FirefoxSpellChecker	= true ;
 
+FCKConfig.Plugins.Add('dragresizetable');
+
 FCKConfig.ProtectedSource.Add( /<script[\s\S]*?<\/script>/gi ) ; // <SCRIPT> tags
 FCKConfig.ProtectedSource.Add( /<(.*?)javascript\:(.*?)/gi ) ; // javascript: tags
 FCKConfig.ProtectedSource.Add( /<(.*?)(?:on(blur|c(hange|lick)|dblclick|focus|keypress|(key|mouse)(down|up)|(un)?load|mouse(move|o(ut|ver))|reset|s(elect|ubmit)))=(.*?)(\s*?)(.*?)>/gi ) ; // events
 
+FCKToolbarItems.RegisterItem('SourceSimple', new FCKToolbarButton( 'Source', window.top.ELOGSource, null, FCK_TOOLBARITEM_ONLYICON, true, true, 1));
+
 FCKConfig.ToolbarSets["Default"] = [
-	['Source','FitWindow','-','ELOGSubmit','Preview'],
+	['SourceSimple','FitWindow','ShowBlocks','-','ELOGSubmit','Preview'],
 	['Cut','Copy','Paste','PasteText','PasteWord','-','Print','SpellCheck'],
 	['Undo','Redo','-','Find','Replace','-','SelectAll','RemoveFormat'],
 	['Bold','Italic','Underline','StrikeThrough','-','Subscript','Superscript'],
