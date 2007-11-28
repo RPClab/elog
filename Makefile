@@ -25,7 +25,8 @@ RCDIR      = $(ROOT)/etc/rc.d/init.d
 
 # Default compilation flags unless stated otherwise.
 # Add "-DHAVE_CRYPT" and "-lcrypt" to use crypt() function.
-CFLAGS += -O3 -funroll-loops -fomit-frame-pointer -W -Wall
+#CFLAGS += -O3 -funroll-loops -fomit-frame-pointer -W -Wall
+CFLAGS += -g -funroll-loops -fomit-frame-pointer -W -Wall
 
 CC = gcc
 IFLAGS = -kr -nut -i3 -l110
@@ -122,7 +123,7 @@ install: $(EXECS)
 	@$(INSTALL) -v -m 0644 scripts/*.js $(ELOGDIR)/scripts/
 
 	@echo "Installing FCKeditor to $(ELOGDIR)/scripts/fckeditor"
-	@unzip -q -o scripts/fckeditor/fckeditor.zip -d $(ELOGDIR)/scripts/
+	@unzip -q -o scripts/fckeditor.zip -d $(ELOGDIR)/scripts/
 	@$(INSTALL) -D -v -m 0644 scripts/fckeditor/fckelog.js $(ELOGDIR)/scripts/fckeditor/fckelog.js
 	@$(INSTALL) -D -v -m 0644 scripts/fckeditor/editor/plugins/elog/fckplugin.js $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/fckplugin.js
 	@$(INSTALL) -D -v -m 0644 scripts/fckeditor/editor/plugins/elog/inserttime.gif $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/inserttime.gif
