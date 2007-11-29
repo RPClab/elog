@@ -17567,6 +17567,10 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
       rsprintf("<noscript>\n");
       rsprintf("<input type=submit value=\"%s\">\n", loc("Search"));
       rsprintf("</noscript>\n");
+
+      /* show submit button for IE (otherwise <Return> will not work) */
+      if (strstr(browser, "MSIE"))
+         rsprintf("<input type=submit value=\"%s\">\n", loc("Search"));
    }
 
    rsprintf("&nbsp;<b>%d %s</b>&nbsp;", n_msg, loc("Entries"));
