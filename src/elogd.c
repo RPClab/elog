@@ -8115,12 +8115,6 @@ void strencode_nouml(char *text)
       case '>':
          rsprintf("&gt;");
          break;
-      case '&':
-         if (strncmp(text+i+2, "uml", 3) == 0)
-            rsprintf("%c", text[i]);
-         else
-            rsprintf("&amp;");
-         break;
       case '\"':
          rsprintf("&quot;");
          break;
@@ -10595,7 +10589,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    if (bedit && message_id)
       rsprintf("<input type=hidden name=edit_id value=\"%d\">\n", message_id);
-
 
    if (isparam("nsel")) {
       rsprintf("<input type=hidden name=nsel value=\"%s\">\n", getparam("nsel"));
