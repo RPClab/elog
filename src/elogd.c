@@ -427,6 +427,7 @@ void compose_base_url(LOGBOOK * lbs, char *base_url, int size, BOOL email_notify
 void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command);
 char *loc(char *orig);
 void strencode(char *text);
+void strencode_nouml(char *text);
 int scan_attributes(char *logbook);
 int is_inline_attachment(char *encoding, int message_id, char *text, int i, char *att);
 int setgroup(char *str);
@@ -8068,6 +8069,57 @@ void strencode(char *text)
          break;
       case '&':
          rsprintf("&amp;");
+         break;
+      case '\"':
+         rsprintf("&quot;");
+         break;
+      case ' ':
+         rsprintf("&nbsp;");
+         break;
+
+         /* the translation for the search highliting */
+
+      case '\001':
+         rsprintf("<");
+         break;
+      case '\002':
+         rsprintf(">");
+         break;
+      case '\003':
+         rsprintf("\"");
+         break;
+      case '\004':
+         rsprintf(" ");
+         break;
+
+      default:
+         rsprintf("%c", text[i]);
+      }
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+void strencode_nouml(char *text)
+{
+   int i;
+
+   for (i = 0; i < (int) strlen(text); i++) {
+      switch (text[i]) {
+      case '\n':
+         rsprintf("<br>\n");
+         break;
+      case '<':
+         rsprintf("&lt;");
+         break;
+      case '>':
+         rsprintf("&gt;");
+         break;
+      case '&':
+         if (strncmp(text+i+2, "uml", 3) == 0)
+            rsprintf("%c", text[i]);
+         else
+            rsprintf("&amp;");
          break;
       case '\"':
          rsprintf("&quot;");
@@ -16624,7 +16676,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             e.g. only the start of a table */
          strip_html(str);
          if (str[0])
-            strencode(str);
+            strencode_nouml(str);
          else
             rsputs("&nbsp;");
       } else {
@@ -16671,7 +16723,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          e.g. only the start of a table */
       strip_html(str);
       if (str[0])
-         strencode(str);
+         strencode_nouml(str);
       else
          rsputs("&nbsp;");
       rsputs("</td>\n");
