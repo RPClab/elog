@@ -257,6 +257,21 @@ void add_crlf(char *buffer, int bufsize)
 
 /*------------------------------------------------------------------*/
 
+void convert_crlf(char *buffer, int bufsize)
+{
+   char *p;
+
+   /* convert '\n' -> \r\n */
+   p = buffer;
+   while ((p = strstr(p, "\\n")) != NULL) {
+
+      *(p++) = '\r';
+      *(p++) = '\n';
+   }
+}
+
+/*------------------------------------------------------------------*/
+
 char request[100000], response[100000], *content;
 
 INT retrieve_elog(char *host, int port, char *subdir, char *experiment,
@@ -1014,8 +1029,10 @@ int main(int argc, char *argv[])
                printf("Multiple attributes and attachments can be supplied\n");
                return 1;
             }
-         } else
+         } else {
             strcpy(text, argv[i]);
+            convert_crlf(text, sizeof(text));
+         }
       }
    }
 
