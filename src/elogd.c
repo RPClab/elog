@@ -16198,7 +16198,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   int highlight_mid, int absolute_link)
 {
    char str[NAME_LENGTH], ref[256], thumb_name[256], *nowrap, sclass[80], format[256],
-       file_name[MAX_PATH_LENGTH], *slist, *svalue;
+       file_name[MAX_PATH_LENGTH], *slist, *svalue, comment[256];
    char display[NAME_LENGTH], attr_icon[80];
    int i, j, i_line, index, colspan, n_attachments, line_len;
    BOOL skip_comma;
@@ -16509,9 +16509,15 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   }
 
                   else if (attr_flags[i] & AF_ICON) {
+
+                     sprintf(str, "Icon comment %s", attrib[i]);
+                     getcfg(lbs->name, str, comment, sizeof(comment));
+                     if (!comment[0])
+                        strcpy(comment, attrib[i]);
+
                      if (attrib[i][0])
                         rsprintf("&nbsp;\n<img border=0 src=\"icons/%s\" alt=\"%s\" title=\"%s\">&nbsp;",
-                                 attrib[i], attrib[i], attrib[i]);
+                                 attrib[i], comment, comment);
                   }
 
                   else {
@@ -16575,9 +16581,16 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
                   else if (attr_flags[i] & AF_ICON) {
                      rsprintf("<td class=\"%s\">", sclass);
+                     
+                     sprintf(str, "Icon comment %s", attrib[i]);
+                     getcfg(lbs->name, str, comment, sizeof(comment));
+                     if (!comment[0])
+                        strcpy(comment, attrib[i]);
+
                      if (attrib[i][0])
-                        rsprintf("\n<img border=0 src=\"icons/%s\" alt=\"%s\" title=\"%s\">", attrib[i],
-                                 attrib[i], attrib[i]);
+                        rsprintf("\n<img border=0 src=\"icons/%s\" alt=\"%s\" title=\"%s\">", attrib[i], 
+                        comment, comment);
+                     
                      rsprintf("&nbsp;</td>");
                   }
 
