@@ -21381,11 +21381,14 @@ void submit_elog(LOGBOOK * lbs)
    /*---- replace relative elog:/x link by elog:n/x link */
    if (stristr(getparam("text"), "elog:/")) {
       p = getparam("text");
-      sprintf(str, "elog:%d/", message_id);
+      if (stricmp(encoding, "HTML") == 0) {
+         sprintf(str, "%d/", message_id);
+      } else
+         sprintf(str, "elog:%d/", message_id);
       strsubst(p, TEXT_SIZE, "elog:/", str);
       el_submit(lbs, message_id, TRUE, date, attr_list, attrib, n_attr,
                 p, in_reply_to, reply_to,
-                isparam("encoding") ? getparam("encoding") : "plain", att_file, TRUE, NULL);
+                encoding, att_file, TRUE, NULL);
    }
 
    /*---- email notifications ----*/
