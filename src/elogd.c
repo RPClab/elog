@@ -5523,7 +5523,8 @@ void replace_inline_img(char *str)
             sprintf(p, "<img src=\"cid:att%d@psi.ch\">", index-1);
             memmove(p+strlen(p), pn, strlen(pn)+1);
             p++;
-         }
+         } else
+            p++;
       }
    } while (p != NULL);
 }
