@@ -265,8 +265,10 @@ void convert_crlf(char *buffer, int bufsize)
    p = buffer;
    while ((p = strstr(p, "\\n")) != NULL) {
 
-      *(p++) = '\r';
-      *(p++) = '\n';
+      if ((int)p - (int)buffer < bufsize-2) {
+         *(p++) = '\r';
+         *(p++) = '\n';
+      }
    }
 }
 
