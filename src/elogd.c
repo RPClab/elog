@@ -23560,7 +23560,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
          else
             rsprintf(loc("for the next %d days"), (int) (atof(str) / 24));
 
-         rsprintf(" or until I log out");
+         rsprintf(" %s", loc("or until I log out"));
          rsprintf("</td></tr>\n");
       }
 

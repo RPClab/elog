@@ -448,3 +448,5 @@ Last entry, Ctrl-End = Letzter Eintrag, Strg-Ende
 ELOG import = ELOG Import
 Please choose format to import: = Bitte Importformat auswählen :
 Enter text = Text eingeben
+Show HTML source code = HTML Quellcode anzeigen
+or until I log out = oder bis zum Ausloggen

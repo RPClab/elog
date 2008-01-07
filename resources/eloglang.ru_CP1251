@@ -452,5 +452,11 @@ Enter heading level (1, 2 or 3) = Укажите размер заголовка (1, 2 или 3)
 Insert anchor point = Вставить якорь
 Derive attributes from XML file = Извлечь атрибуты из XML файла
 XML import preview of %s = Предпросмотр XML импорта %s
-Keep original entry IDs (may overwrite existing entries, but is required if imported entries contain replies) = Сохранять оригинальные ID записей (возможна перезапись существующего, но необходимо в случае если импортированые записи содержат комментарии)
 Submitting it now would overwrite the other modification and is therefore prohibited = Запрещено, потому что сейчас может переписать другую модификацию.
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Show HTML source code = 
+Cannot send email notification to "%s" = 
+or until I log out = 
