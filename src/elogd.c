@@ -20866,15 +20866,16 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
 int submit_elog_reply(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], char *text)
 {
    int n_reply, i, status;
-   char str[80], att_file[MAX_ATTACHMENTS][256], reply_to[MAX_REPLY_TO * 10], list[MAX_N_ATTR][NAME_LENGTH];
+   char str1[80], str2[80], att_file[MAX_ATTACHMENTS][256], reply_to[MAX_REPLY_TO * 10], list[MAX_N_ATTR][NAME_LENGTH];
 
    status = el_retrieve(lbs, message_id, NULL, attr_list, NULL, 0,
                         NULL, NULL, NULL, reply_to, att_file, NULL, NULL);
    if (status != EL_SUCCESS)
       return status;
 
-   sprintf(str, "- %s -", loc("keep original text"));
-   if (strcmp(text, str) == 0)
+   sprintf(str1, "- %s -", loc("keep original text"));
+   sprintf(str2, "<p>- %s -</p>", loc("keep original text"));
+   if (strcmp(text, str1) == 0 || strcmp(text, str2) == 0)
       message_id = el_submit(lbs, message_id, TRUE, "<keep>", attr_list, attrib, lbs->n_attr,
                              "<keep>", "<keep>", "<keep>", "<keep>", att_file, TRUE, NULL);
    else
@@ -25555,7 +25556,7 @@ int process_http_request(const char *request, int i_conn)
    struct tm *ts;
 
    if (!strchr(request, '\r'))
-      return 1;
+      return 0;
 
    if (verbose == 1) {
       strlcpy(str, request, sizeof(str));
@@ -25686,10 +25687,8 @@ int process_http_request(const char *request, int i_conn)
 
    memset(return_buffer, 0, return_buffer_size);
    strlen_retbuf = 0;
-   if (strncmp(request, "GET", 3) != 0 && strncmp(request, "POST", 4) != 0) {
-      return_length = -1;
-      return 1;
-   }
+   if (strncmp(request, "GET", 3) != 0 && strncmp(request, "POST", 4) != 0)
+      return 0;
 
    return_length = 0;
 
@@ -25946,7 +25945,7 @@ int process_http_request(const char *request, int i_conn)
 
    if (!authorized) {
       keep_alive = 0;
-      return 1;
+      return 0;
    }
 
    /* ask for password if configured */
@@ -26018,7 +26017,7 @@ int process_http_request(const char *request, int i_conn)
          if (strchr(request, '\r'))
             *strchr(request, '\r') = 0;
          if (!strstr(request, "HTTP/1"))
-            return 1;
+            return 0;
          *(strstr(request, "HTTP/1") - 1) = 0;
          /* strip logbook from path */
          strlcpy(str, request+5, sizeof(str));
@@ -26259,7 +26258,7 @@ void hup_handler(int sig)
 
 void server_loop(void)
 {
-   int status, i, n_error, min, i_min, i_conn;
+   int status, i, n_error, min, i_min, i_conn, more_requests;
    char str[1000], logbook[256], logbook_enc[256];
    char *pend;
    int lsock, len, flag, content_length, header_length;
@@ -26560,140 +26559,168 @@ void server_loop(void)
          if (_sock > 0) {
             memset(net_buffer, 0, net_buffer_size);
             len = 0;
-            header_length = 0;
-            n_error = 0;
-            return_length = 1;
-            do {
-               FD_ZERO(&readfds);
-               FD_SET(_sock, &readfds);
-               timeout.tv_sec = 6;
-               timeout.tv_usec = 0;
-               status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
-               if (FD_ISSET(_sock, &readfds))
-                  i = recv(_sock, net_buffer + len, net_buffer_size - len, 0);
-               else
-                  break;
-               /* abort if connection got broken */
-               if (i < 0)
-                  break;
-               if (i > 0)
-                  len += i;
-               /* check if net_buffer needs to be increased */
-               if (len == net_buffer_size) {
-                  net_buffer = xrealloc(net_buffer, net_buffer_size + 100000);
-                  if (net_buffer == NULL) {
-                     sprintf(str,
-                             "Error: Cannot increase net_buffer, out of memory, net_buffer_size = %d",
-                             net_buffer_size);
-                     show_error(str);
-                     break;
-                  }
+            more_requests = 0;
 
-                  memset(net_buffer + net_buffer_size, 0, 100000);
-                  net_buffer_size += 100000;
-               }
+            do { /* pipleline loop */
+               header_length = 0;
+               n_error = 0;
+               return_length = -1;
+               do {
 
-               if (i == 0) {
-                  n_error++;
-                  if (n_error == 100)
-                     break;
-               }
-
-               /* finish when empty line received */
-               pend = NULL;
-               if (strncmp(net_buffer, "GET", 3) == 0 && strncmp(net_buffer, "POST", 4) != 0) {
-                  if (len > 4 && strstr(net_buffer, "\r\n\r\n") != NULL) {
-                     pend = strstr(net_buffer, "\r\n\r\n")+4;
-                     break;
-                  }
-                  if (len > 6 && strstr(net_buffer, "\r\r\n\r\r\n") != NULL) {
-                     pend = strstr(net_buffer, "\r\r\n\r\r\n")+6;
-                     break;
-                  }
-               } else if (strncmp(net_buffer, "POST", 4) == 0) {
-                  if (header_length == 0) {
-                     /* extract logbook */
-                     strlcpy(str, net_buffer + 6, sizeof(str));
-                     if (strstr(str, "HTTP"))
-                        *(strstr(str, "HTTP") - 1) = 0;
-                     strlcpy(logbook, str, sizeof(logbook));
-                     strlcpy(logbook_enc, str, sizeof(logbook));
-                     url_decode(logbook);
-                     
-                     /* extract content length */
-                     if (strstr(net_buffer, "Content-Length:"))
-                        content_length = atoi(strstr(net_buffer, "Content-Length:") + 15);
-                     else if (strstr(net_buffer, "Content-length:"))
-                        content_length = atoi(strstr(net_buffer, "Content-length:") + 15);
-
-                     /* extract header length */
-                     if (strstr(net_buffer, "\r\n\r\n"))
-                        header_length = strstr(net_buffer, "\r\n\r\n") - net_buffer + 4;
-                     if (strstr(net_buffer, "\r\r\n\r\r\n"))
-                        header_length = strstr(net_buffer, "\r\r\n\r\r\n") - net_buffer + 6;
-
-                     if (content_length > _max_content_length) {
-
-                        /* drain socket connection */
-                        do {
-                           FD_ZERO(&readfds);
-                           FD_SET(_sock, &readfds);
-                           timeout.tv_sec = 6;
-                           timeout.tv_usec = 0;
-                           status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
-                           if (FD_ISSET(_sock, &readfds))
-                              i = recv(_sock, net_buffer, net_buffer_size, 0);
-                           else
-                              break;
-                        } while (i > 0);
-
-                        /* return error */
-                        memset(return_buffer, 0, return_buffer_size);
-                        strlen_retbuf = 0;
-                        return_length = 0;
-
-                        sprintf(str,
-                                loc
-                                ("Error: Content length (%d) larger than maximum content length (%d)"),
-                                content_length, _max_content_length);
-                        strcat(str, "<br>");
-                        strcat(str,
-                               loc
-                               ("Please increase <b>\"Max content length\"</b> in [global] part of config file and restart elogd"));
-                        keep_alive = FALSE;
-                        show_error(str);
+                  if (!more_requests) {
+                     FD_ZERO(&readfds);
+                     FD_SET(_sock, &readfds);
+                     timeout.tv_sec = 6;
+                     timeout.tv_usec = 0;
+                     status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+                     if (FD_ISSET(_sock, &readfds))
+                        i = recv(_sock, net_buffer + len, net_buffer_size - len, 0);
+                     else
                         break;
+                     
+                     /* abort if connection got broken */
+                     if (i < 0)
+                        break;
+                     if (i > 0)
+                        len += i;
+                     
+                     /* check if net_buffer needs to be increased */
+                     if (len == net_buffer_size) {
+                        net_buffer = xrealloc(net_buffer, net_buffer_size + 100000);
+                        if (net_buffer == NULL) {
+                           sprintf(str,
+                                   "Error: Cannot increase net_buffer, out of memory, net_buffer_size = %d",
+                                   net_buffer_size);
+                           show_error(str);
+                           break;
+                        }
+
+                        memset(net_buffer + net_buffer_size, 0, 100000);
+                        net_buffer_size += 100000;
+                     }
+
+                     /* abort if 100x received zero bytes */
+                     if (i == 0) {
+                        n_error++;
+                        if (n_error == 100)
+                           break;
                      }
                   }
 
-                  if (header_length > 0 && len >= header_length + content_length)
+                  /* if we are in pipelining mode, clear this flag now to force a new
+                     recv if the request is not complete */
+                  more_requests = 0;
+
+                  /* finish when empty line received */
+                  pend = NULL;
+                  if (strncmp(net_buffer, "GET", 3) == 0 && strncmp(net_buffer, "POST", 4) != 0) {
+                     if (len > 4 && strstr(net_buffer, "\r\n\r\n") != NULL) {
+                        pend = strstr(net_buffer, "\r\n\r\n")+4;
+                        break;
+                     }
+                     if (len > 6 && strstr(net_buffer, "\r\r\n\r\r\n") != NULL) {
+                        pend = strstr(net_buffer, "\r\r\n\r\r\n")+6;
+                        break;
+                     }
+                  } else if (strncmp(net_buffer, "POST", 4) == 0) {
+                     if (header_length == 0) {
+                        /* extract logbook */
+                        strlcpy(str, net_buffer + 6, sizeof(str));
+                        if (strstr(str, "HTTP"))
+                           *(strstr(str, "HTTP") - 1) = 0;
+                        strlcpy(logbook, str, sizeof(logbook));
+                        strlcpy(logbook_enc, str, sizeof(logbook));
+                        url_decode(logbook);
+                        
+                        /* extract content length */
+                        if (strstr(net_buffer, "Content-Length:"))
+                           content_length = atoi(strstr(net_buffer, "Content-Length:") + 15);
+                        else if (strstr(net_buffer, "Content-length:"))
+                           content_length = atoi(strstr(net_buffer, "Content-length:") + 15);
+
+                        /* extract header length */
+                        if (strstr(net_buffer, "\r\n\r\n"))
+                           header_length = strstr(net_buffer, "\r\n\r\n") - net_buffer + 4;
+                        if (strstr(net_buffer, "\r\r\n\r\r\n"))
+                           header_length = strstr(net_buffer, "\r\r\n\r\r\n") - net_buffer + 6;
+
+                        if (content_length > _max_content_length) {
+
+                           /* drain socket connection */
+                           do {
+                              FD_ZERO(&readfds);
+                              FD_SET(_sock, &readfds);
+                              timeout.tv_sec = 6;
+                              timeout.tv_usec = 0;
+                              status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+                              if (FD_ISSET(_sock, &readfds))
+                                 i = recv(_sock, net_buffer, net_buffer_size, 0);
+                              else
+                                 break;
+                           } while (i > 0);
+
+                           /* return error */
+                           memset(return_buffer, 0, return_buffer_size);
+                           strlen_retbuf = 0;
+                           return_length = 0;
+
+                           sprintf(str,
+                                   loc
+                                   ("Error: Content length (%d) larger than maximum content length (%d)"),
+                                   content_length, _max_content_length);
+                           strcat(str, "<br>");
+                           strcat(str,
+                                  loc
+                                  ("Please increase <b>\"Max content length\"</b> in [global] part of config file and restart elogd"));
+                           keep_alive = FALSE;
+                           show_error(str);
+                           break;
+                        }
+                     }
+
+                     if (header_length > 0 && len >= header_length + content_length) {
+                        pend = net_buffer + header_length + content_length;
+                        break;
+                     }
+
+                  } else if (strstr(net_buffer, "HEAD") != NULL) {
+                     /* just return header */
+                     rsprintf("HTTP/1.1 200 OK\r\n");
+                     rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
+                     rsprintf("Connection: close\r\n");
+                     rsprintf("Content-Type: text/html\r\n\r\n");
+                     keep_alive = FALSE;
+                     return_length = strlen_retbuf + 1;
                      break;
-               } else if (strstr(net_buffer, "HEAD") != NULL) {
-                  /* just return header */
-                  rsprintf("HTTP/1.1 200 OK\r\n");
-                  rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
-                  rsprintf("Connection: close\r\n");
-                  rsprintf("Content-Type: text/html\r\n\r\n");
-                  keep_alive = FALSE;
-                  return_length = strlen_retbuf + 1;
-                  break;
-               } else if (strstr(net_buffer, "OPTIONS") != NULL) {
-                  return_length = -1;
-                  break;
-               } else {
-                  if (strlen(net_buffer) > 0 && verbose) {
-                     strcpy(str, "Received unknown HTTP command: ");
-                     strlcat(str, net_buffer, sizeof(str));
-                     show_error(net_buffer);
+                  } else if (strstr(net_buffer, "OPTIONS") != NULL) {
+                     return_length = -1;
+                     break;
+                  } else {
+                     if (strlen(net_buffer) > 0 && verbose) {
+                        strcpy(str, "Received unknown HTTP command: ");
+                        strlcat(str, net_buffer, sizeof(str));
+                        show_error(net_buffer);
+                     }
+                     break;
                   }
-                  break;
+
+               } while (1);
+               
+               /* now process HTTP request and put the result into the return_buffer */
+               if (process_http_request(net_buffer, i_conn)) {
+
+                  /* send back the return_buffer to the browser */
+                  send_return(net_buffer, _sock);
+               }
+               
+               /* check if the net_buffer contains more than one request (pipelining) */
+               if (pend && *pend) {
+                  memmove(net_buffer, pend, strlen(pend)+1);
+                  more_requests = 1;
+                  len -= (int)pend - (int)net_buffer;
                }
 
-            } while (1);
-            
-            process_http_request(net_buffer, i_conn);
-
-            send_return(net_buffer, _sock);
+            } while (more_requests);
 
             if (!keep_alive) {
                closesocket(_sock);
