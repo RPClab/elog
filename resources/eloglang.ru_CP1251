@@ -450,5 +450,7 @@ Insert anchor point = Вставить якорь
 Derive attributes from XML file = Извлечь атрибуты из XML файла
 XML import preview of %s = Предпросмотр XML импорта %s
 Submitting it now would overwrite the other modification and is therefore prohibited = Запрещено, потому что сейчас может переписать другую модификацию.
-Please log on by clicking on following link and change your password = Пожалуйста перейдите по следующей ссылке чтобы сменить свой пароль.
 or until I log out = или пока я не выйду
+Show HTML source code = Показать исходный код HTML
+Cannot send email notification to "%s" = Не удается отправить уведомление для "%s"
+
