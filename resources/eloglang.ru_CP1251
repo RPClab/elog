@@ -24,13 +24,10 @@ Login = Войти
 CSV Import = Импорт из CSV
 Logout = Выйти
 Help = Помощь
-
 Date = Дата
 Text = Текст
-
 Back = Назад
 Submit = Отправить
-
 New user = Новый пользователь
 Save = Сохранить
 Requested = Запрошено
@@ -453,10 +450,5 @@ Insert anchor point = Вставить якорь
 Derive attributes from XML file = Извлечь атрибуты из XML файла
 XML import preview of %s = Предпросмотр XML импорта %s
 Submitting it now would overwrite the other modification and is therefore prohibited = Запрещено, потому что сейчас может переписать другую модификацию.
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Show HTML source code = 
-Cannot send email notification to "%s" = 
-or until I log out = 
+Please log on by clicking on following link and change your password = Пожалуйста перейдите по следующей ссылке чтобы сменить свой пароль.
+or until I log out = или пока я не выйду
