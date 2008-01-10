@@ -9351,13 +9351,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("var submitted = false;\n");
 
    if (breedit) {
-      if (isparam("modified") && atoi(getparam("modified")) == 1) {
-         rsprintf("var modified = true;\n");
+      if (isparam("entry_modified") && atoi(getparam("entry_modified")) == 1) {
+         rsprintf("var entry_modified = true;\n");
          rsprintf("window.status = \"%s\";\n", loc("Entry has been modified"));
       } else
-         rsprintf("var modified = false;\n");
+         rsprintf("var entry_modified = false;\n");
    } else
-      rsprintf("var modified = false;\n");
+      rsprintf("var entry_modified = false;\n");
 
    rsprintf("\n");
    rsprintf("function chkform()\n");
@@ -9530,7 +9530,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* abandon() gets called "onUnload" */
    rsprintf("function unload()\n");
    rsprintf("{\n");
-   rsprintf("  if (!submitted && modified) {\n");
+   rsprintf("  if (!submitted && entry_modified) {\n");
    rsprintf("    var subm = confirm(\"%s\");\n", loc("Submit modified ELOG entry?"));
    rsprintf("    if (subm) {\n");
    rsprintf("      document.form1.jcmd.value = \"%s\";\n", loc("Submit"));
@@ -9540,7 +9540,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("      document.form1.submit();\n");
    rsprintf("    }\n");
    rsprintf("  }\n");
-   rsprintf("  if (!submitted && !modified) {\n");
+   rsprintf("  if (!submitted && !entry_modified) {\n");
    rsprintf("    document.form1.jcmd.value = \"%s\";\n", loc("Back"));
    rsprintf("    document.form1.submit();\n");
    rsprintf("    }\n");
@@ -9549,9 +9549,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* mod() gets called via throuch "onchange" event */
    rsprintf("function mod()\n");
    rsprintf("{\n");
-   rsprintf("  modified = true;\n");
+   rsprintf("  entry_modified = true;\n");
    rsprintf("  window.status = \"%s\";\n", loc("Entry has been modified"));
-   rsprintf("  document.form1.modified.value = \"1\";\n");
+   rsprintf("  document.form1.entry_modified.value = \"1\";\n");
    rsprintf("}\n\n");
 
    /* switch_smileys turn on/off the smiley bar by setting the smcmd, which in turn
@@ -9717,10 +9717,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("<input type=hidden name=\"smcmd\">\n");
    rsprintf("<input type=hidden name=\"inlineatt\">\n");
 
-   if (isparam("modified") && atoi(getparam("modified")) == 1)
-      rsprintf("<input type=hidden name=\"modified\" value=\"1\">\n");
+   if (isparam("entry_modified") && atoi(getparam("entry_modified")) == 1)
+      rsprintf("<input type=hidden name=\"entry_modified\" value=\"1\">\n");
    else
-      rsprintf("<input type=hidden name=\"modified\" value=\"0\">\n");
+      rsprintf("<input type=hidden name=\"entry_modified\" value=\"0\">\n");
 
    /*---- title row ----*/
 
@@ -18931,7 +18931,18 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                if (strieq(sort_attr[i], attr_list[j])) {
                   strlcat(msg_list[index].string, " ", sizeof(msg_list[index].string));
                   strlcat(msg_list[index].string, attrib[j], sizeof(msg_list[index].string));
+                  if (attr_flags[i] & AF_NUMERIC)
+                     numeric = TRUE;
+                  break;
                }
+            }
+            if (strieq(sort_attr[i], loc("ID"))) {
+               strlcat(msg_list[index].string, " ", sizeof(msg_list[index].string));
+               sprintf(str, "%08d", message_id);
+               strlcat(msg_list[index].string, str, sizeof(msg_list[index].string));
+            }
+            else if (strieq(sort_attr[i], loc("Logbook"))) {
+               strlcpy(msg_list[index].string, msg_list[index].lbs->name, 256);
             }
          }
       }
