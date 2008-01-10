@@ -25517,19 +25517,39 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
             else if (strstr(p, "\r\r\n\r\r\n"))
                p = strstr(p, "\r\r\n\r\r\n") + 6;
             if (strstr(p, boundary)) {
-               strlcpy(str, p, sizeof(str));
-               if (strstr(str, boundary))
-                 *strstr(str, boundary) = 0;
-               string = strstr(p, boundary) + strlen(boundary);
-               ptmp = str + (strlen(str) - 1);
-               while (*ptmp == '-')
-                  *ptmp-- = 0;
-               while (*ptmp == '\n' || *ptmp == '\r')
-                  *ptmp-- = 0;
-            }
 
-            if (setparam(item, str) == 0)
-               return;
+               string = strstr(p, boundary) + strlen(boundary);
+
+               if (stricmp(item, "text") == 0) {
+                  if ((int)string - (int)p > TEXT_SIZE) {
+                     sprintf(str,
+                             "Error: Entry text too big (%lu bytes). Please increase TEXT_SIZE and recompile elogd\n",
+                             (unsigned long) ((int)string - (int)p));
+                     show_error(str);
+                     return;
+                  }
+                  strlcpy(_mtext, p, sizeof(_mtext));
+                  if (strstr(_mtext, boundary))
+                    *strstr(_mtext, boundary) = 0;
+                  ptmp = _mtext + (strlen(_mtext) - 1);
+                  while (*ptmp == '-')
+                     *ptmp-- = 0;
+                  while (*ptmp == '\n' || *ptmp == '\r')
+                     *ptmp-- = 0;
+               } else {
+                  strlcpy(str, p, sizeof(str));
+                  if (strstr(str, boundary))
+                    *strstr(str, boundary) = 0;
+                  ptmp = str + (strlen(str) - 1);
+                  while (*ptmp == '-')
+                     *ptmp-- = 0;
+                  while (*ptmp == '\n' || *ptmp == '\r')
+                     *ptmp-- = 0;
+
+                  if (setparam(item, str) == 0)
+                     return;
+               }
+            }
          }
 
          while (*string == '-' || *string == '\n' || *string == '\r')
