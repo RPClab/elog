@@ -385,6 +385,7 @@ typedef struct {
    LOGBOOK *lbs;
    int index;
    char string[256];
+   int number;
    int in_reply_to;
 } MSG_LIST;
 
@@ -3766,7 +3767,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
    /* get data directory */
    strcpy(dir, lbs->data_dir);
 
-   if (verbose) {
+   if (verbose > 1) {
       /* show MD5 from config file */
 
       load_config_section(lbs->name, &buffer, error_str);
@@ -3799,7 +3800,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
       return EL_EMPTY;
    }
 
-   if (verbose)
+   if (verbose > 1)
       eprintf("Entries:\n");
 
    /* go through all files */
@@ -3859,7 +3860,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
                MD5_checksum(p, len, lbs->el_index[*lbs->n_el_index].md5_digest);
 
                if (lbs->el_index[*lbs->n_el_index].message_id > 0) {
-                  if (verbose) {
+                  if (verbose > 1) {
                      eprintf("  ID %3d, %s, ofs %5d, %s, MD5=",
                              lbs->el_index[*lbs->n_el_index].message_id,
                              str, lbs->el_index[*lbs->n_el_index].offset,
@@ -3889,7 +3890,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
    /* sort entries according to date */
    qsort(lbs->el_index, *lbs->n_el_index, sizeof(EL_INDEX), eli_compare);
 
-   if (verbose) {
+   if (verbose > 1) {
       eprintf("After sort:\n");
       for (i = 0; i < *lbs->n_el_index; i++)
          eprintf("  ID %3d, %s, ofs %5d\n", lbs->el_index[i].message_id,
@@ -16950,12 +16951,12 @@ int msg_compare_reverse(const void *m1, const void *m2)
 
 int msg_compare_numeric(const void *m1, const void *m2)
 {
-   return atoi(((MSG_LIST *) m1)->string) - atoi(((MSG_LIST *) m2)->string);
+   return ((MSG_LIST *) m1)->number - ((MSG_LIST *) m2)->number;
 }
 
 int msg_compare_reverse_numeric(const void *m1, const void *m2)
 {
-   return atoi(((MSG_LIST *) m2)->string) - atoi(((MSG_LIST *) m1)->string);
+   return ((MSG_LIST *) m2)->number - ((MSG_LIST *) m1)->number;
 }
 
 /*------------------------------------------------------------------*/
@@ -18202,10 +18203,10 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH], mode[80], mid[80],
        menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH], format[80],
-       sort_attr[MAX_N_ATTR + 4][NAME_LENGTH], mode_cookie[80], charset[25];
+       sort_attr[MAX_N_ATTR + 4][NAME_LENGTH], mode_cookie[80], charset[25], sort_item[NAME_LENGTH];
    char *p, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
    BOOL show_attachments, threaded, csv, xml, raw, mode_commands, expand, filtering, disp_filter,
-       show_text, text_in_attr, searched, found, disp_attr_link[MAX_N_ATTR + 4];
+       show_text, text_in_attr, searched, found, disp_attr_link[MAX_N_ATTR + 4], sort_attributes;
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2;
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
@@ -18549,6 +18550,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    msg_list = xmalloc(sizeof(MSG_LIST) * n_msg);
 
    lbs_cur = lbs;
+   numeric = TRUE;
    for (i = n = 0; i < n_logbook; i++) {
       if (search_all)
          lbs_cur = &lb_list[i];
@@ -18562,7 +18564,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       for (j = 0; j < *lbs_cur->n_el_index; j++) {
          msg_list[n].lbs = lbs_cur;
          msg_list[n].index = j;
-         sprintf(msg_list[n].string, "%010d", (int) lbs_cur->el_index[j].file_time);
+         msg_list[n].number = (int) lbs_cur->el_index[j].file_time;
          msg_list[n].in_reply_to = lbs_cur->el_index[j].in_reply_to;
          n++;
       }
@@ -18713,7 +18715,13 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       }
    }
 
-   numeric = FALSE;
+   sort_item[0] = 0;
+   if (isparam("sort"))
+      strlcpy(sort_item, getparam("sort"), sizeof(sort_item));
+   if (isparam("rsort"))
+      strlcpy(sort_item, getparam("rsort"), sizeof(sort_item));
+
+   sort_attributes = getcfg(lbs->name, "Sort Attributes", str, sizeof(str));
 
    /* do filtering */
    for (index = 0; index < n_msg; index++) {
@@ -18923,7 +18931,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       }
 
       /* evaluate "sort attributes" */
-      if (getcfg(lbs->name, "Sort Attributes", list, 10000)) {
+      if (sort_attributes) {
+         getcfg(lbs->name, "Sort Attributes", list, 10000);
          msg_list[index].string[0] = 0;
          n = strbreak(list, sort_attr, MAX_N_ATTR, ",", FALSE);
          for (i = 0; i < n; i++) {
@@ -18931,8 +18940,11 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                if (strieq(sort_attr[i], attr_list[j])) {
                   strlcat(msg_list[index].string, " ", sizeof(msg_list[index].string));
                   strlcat(msg_list[index].string, attrib[j], sizeof(msg_list[index].string));
-                  if (attr_flags[i] & AF_NUMERIC)
+                  if (attr_flags[i] & AF_NUMERIC) {
+                     msg_list[index].number = atoi(attrib[j]);
                      numeric = TRUE;
+                  } else
+                     numeric = FALSE;
                   break;
                }
             }
@@ -18948,40 +18960,45 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       }
 
       /* add attribute for sorting */
-      for (i = 0; i < lbs->n_attr; i++) {
-         if ((isparam("sort") && strieq(getparam("sort"), attr_list[i]))
-             || (isparam("rsort") && strieq(getparam("rsort"), attr_list[i]))) {
-            strlcpy(msg_list[index].string, attrib[i], 256);
-            if (attr_flags[i] & AF_NUMERIC)
+      if (sort_item[0]) {
+         for (i = 0; i < lbs->n_attr; i++) {
+            if (strieq(sort_item, attr_list[i])) {
+               if (attr_flags[i] & AF_NUMERIC) {
+                  numeric = TRUE;
+                  msg_list[index].number = atoi(attrib[i]);
+               } else {
+                  numeric = FALSE;
+                  strlcpy(msg_list[index].string, attrib[i], 256);
+               }
+            }
+
+            if (strieq(sort_item, loc("ID"))) {
                numeric = TRUE;
+               msg_list[index].number = message_id;
+            }
+
+            if (strieq(sort_item, loc("Logbook")))
+               strlcpy(msg_list[index].string, msg_list[index].lbs->name, 256);
          }
 
-         if ((isparam("sort") && strieq(getparam("sort"), loc("ID")))
-             || (isparam("rsort") && strieq(getparam("rsort"), loc("ID")))) {
-            sprintf(msg_list[index].string, "%08d", message_id);
-         }
+         if (isparam("rsort"))
+            reverse = 1;
 
-         if ((isparam("sort") && strieq(getparam("sort"), loc("Logbook")))
-             || (isparam("rsort") && strieq(getparam("rsort"), loc("Logbook")))) {
-            strlcpy(msg_list[index].string, msg_list[index].lbs->name, 256);
-         }
+         if (isparam("sort"))
+            reverse = 0;
       }
-
-      if (isparam("rsort"))
-         reverse = 1;
-
-      if (isparam("sort"))
-         reverse = 0;
    }
 
    /*---- remove duplicate messages ----*/
 
+   /*
    for (i = 0; i < n_msg; i++)
       for (j = i + 1; j < n_msg; j++)
          if (msg_list[i].lbs == msg_list[j].lbs && msg_list[i].index == msg_list[j].index) {
             msg_list[i].lbs = NULL;
             break;
          }
+   */
 
    /*---- compact messasges ----*/
 
