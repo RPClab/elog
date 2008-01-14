@@ -9013,12 +9013,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    else
       allowed_encoding = 7;
 
-   enc_selected = 2;            /* Default is HTML */
+   enc_selected = 2;                /* Default is HTML */
 
-   if (allowed_encoding == 2)   /* select ELCode if the only one allowed */
+   if (allowed_encoding == 2)       /* select ELCode if the only one allowed */
       enc_selected = 0;
-   else if (allowed_encoding == 1)      /* select plain if the only one allowed */
+   else if (allowed_encoding == 1)  /* select plain if the only one allowed */
       enc_selected = 1;
+   else if (allowed_encoding == 3)  /* select ELCode if only plain and ELCode allowed */
+      enc_selected = 0;
 
    /* Overwrite from config file */
    if (getcfg(lbs->name, "Default Encoding", str, sizeof(str)))
