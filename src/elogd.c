@@ -18731,7 +18731,6 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       /* retrieve message */
       size = TEXT_SIZE;
       message_id = msg_list[index].lbs->el_index[msg_list[index].index].message_id;
-      in_reply_to_id = msg_list[index].lbs->el_index[msg_list[index].index].in_reply_to;
 
       if (filtering) {
          status = el_retrieve(msg_list[index].lbs, message_id,
@@ -18883,52 +18882,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                continue;
             }
          }
-      }
-
-      /* if (filtering) */
-      /* in threaded mode, find message head */
-      if (threaded && in_reply_to_id) {
-         do {
-            message_id = in_reply_to_id;
-
-            /* search index of message */
-            for (i = 0; i < *msg_list[index].lbs->n_el_index; i++)
-               if (msg_list[index].lbs->el_index[i].message_id == message_id)
-                  break;
-
-            /* stop if not found */
-            if (i == *msg_list[index].lbs->n_el_index)
-               break;
-
-            in_reply_to_id = msg_list[index].lbs->el_index[i].in_reply_to;
-
-         } while (in_reply_to_id);
-
-         /* if head not found, skip message */
-         if (i == *msg_list[index].lbs->n_el_index) {
-            msg_list[index].lbs = NULL;
-            continue;
-         }
-
-         /* check if message head already in list */
-         for (j = 0; j < index; j++)
-            if (msg_list[j].lbs == msg_list[index].lbs && msg_list[j].index == i)
-               break;
-
-         if (page_mid && msg_list[index].lbs->el_index[msg_list[index].index].message_id == page_mid)
-            page_mid_head = message_id;
-
-         if (j < index) {
-            /* set date from current message, if later */
-            if (strcmp(msg_list[j].string, msg_list[index].string) < 0)
-               strlcpy(msg_list[j].string, msg_list[index].string, 256);
-
-            msg_list[index].lbs = NULL; // delete current message
-            continue;
-         } else {
-            msg_list[index].index = i;  // replace current message with message head
-         }
-      }
+      } // if (filtering)
 
       /* evaluate "sort attributes" */
       if (sort_attributes) {
@@ -18989,16 +18943,59 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       }
    }
 
-   /*---- remove duplicate messages ----*/
+   /*---- in threaded mode, set date of latest entry of thread ----*/
 
-   /*
-   for (i = 0; i < n_msg; i++)
-      for (j = i + 1; j < n_msg; j++)
-         if (msg_list[i].lbs == msg_list[j].lbs && msg_list[i].index == msg_list[j].index) {
-            msg_list[i].lbs = NULL;
-            break;
+   if (threaded) { 
+      for (index = 0; index < n_msg; index++) {
+         if (!msg_list[index].lbs)
+            continue;
+
+         message_id = msg_list[index].lbs->el_index[msg_list[index].index].message_id;
+         in_reply_to_id = msg_list[index].lbs->el_index[msg_list[index].index].in_reply_to;
+         if (!in_reply_to_id)
+            continue;
+
+         do {
+            message_id = in_reply_to_id;
+
+            /* search index of message */
+            for (i = 0; i < *msg_list[index].lbs->n_el_index; i++)
+               if (msg_list[index].lbs->el_index[i].message_id == message_id)
+                  break;
+
+            /* stop if not found */
+            if (i == *msg_list[index].lbs->n_el_index)
+               break;
+
+            in_reply_to_id = msg_list[index].lbs->el_index[i].in_reply_to;
+
+         } while (in_reply_to_id);
+
+         /* if head not found, skip message */
+         if (i == *msg_list[index].lbs->n_el_index) {
+            msg_list[index].lbs = NULL;
+            continue;
          }
-   */
+
+         /* set new page message ID with head message */
+         if (page_mid && msg_list[index].lbs->el_index[msg_list[index].index].message_id == page_mid)
+            page_mid_head = message_id;
+
+         /* search message head in list */
+         for (j = 0 ; j < n_msg ; j++)
+            if (msg_list[j].lbs == msg_list[index].lbs && msg_list[j].index == i)
+               break;
+
+         if (j < index) {
+            /* set date from current message, if later */
+            if (msg_list[j].number < msg_list[index].number)
+               msg_list[j].number = msg_list[index].number;
+         }
+
+         /* now delete current message, to leave only heads in list */
+         msg_list[index].lbs = NULL;
+      }
+   }
 
    /*---- compact messasges ----*/
 
