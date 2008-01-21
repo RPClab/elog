@@ -150,7 +150,7 @@ Section "Start Menu Shortcuts" SecStart
   Delete "$SMPROGRAMS\ELOG\Demo Logbook (requires running server).lnk"
   WriteINIStr "$SMPROGRAMS\ELOG\Demo Logbook (requires running server).url" \
               "InternetShortcut" "URL" "http://localhost:8080/demo/"
-  CreateShortCut "$SMPROGRAMS\ELOG\ELOG Documentation.lnk" "$INSTDIR\doc\index.html"
+  CreateShortCut "$SMPROGRAMS\ELOG\ELOG Documentation.lnk" "$INSTDIR\doc\index_d.html"
   CreateShortCut "$SMPROGRAMS\ELOG\Uninstall ELOG.lnk" "$INSTDIR\uninst_elog.exe" "" "$INSTDIR\uninst_elog.exe" 0
 SectionEnd
 
@@ -166,7 +166,7 @@ Function .onInstSuccess
   MessageBox MB_YESNO|MB_ICONQUESTION \
              "Setup has completed. View readme file now?" \
              IDNO NoReadme
-    ExecShell open '$INSTDIR\doc\index.html'
+    ExecShell open '$INSTDIR\doc\index_d.html'
   NoReadme:
 FunctionEnd
 
