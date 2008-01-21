@@ -1,0 +1,223 @@
+<HTML>
+   <HEAD>
+      <TITLE>The ELOG Home Page</TITLE>
+      <LINK REV="made" HREF="mailto:fredp@mygale.org">
+         <META NAME="generator" CONTENT="NoteTab Light 4.86c">
+         <META NAME="author" CONTENT="Fred Pacquier">
+         <META NAME="description" CONTENT="Home of the Electronic Logbook (ELOG) package">
+         <META NAME="keywords" CONTENT="ELOG MIDAS PSI RITT">
+         <LINK REL="stylesheet" TYPE="text/css" HREF="elog.css">
+   </HEAD>
+   <BODY BGCOLOR="#ffffff" TEXT="#000000" LINK="#0000ff" VLINK="#800080" ALINK="#ff0000">
+      <div class="title">&nbsp; The ELOG Home Page &nbsp;</div>
+      <p>
+         <div class="menu">&nbsp;Site map :&nbsp; &nbsp;[Home]&nbsp; &nbsp;[<a class="nav" href="userguide.html">User's
+               Guide</a>]&nbsp; &nbsp;[<a class="nav" href="adminguide.html">Administrator's
+               Guide</a>]&nbsp; &nbsp;[<a class="nav" href="faq.html">FAQ</a>]&nbsp;
+            &nbsp;[<a class="nav" href="wishlist.html">Wishlist</a>]&nbsp; &nbsp;[<a class="nav" href="contrib.html">Contributions</a>]&nbsp;
+            &nbsp;[<a class="nav" href="http://midas.psi.ch/elogs/Linux%20Demo/">DEMO</a>]&nbsp;
+            &nbsp;[<a class="nav" href="download.html">Download</a>]&nbsp;
+         </div>
+      <p>
+         <div class="menu">&nbsp;* this section :&nbsp; &nbsp;[<a class="nav" href="#whatis">What
+               is ELOG ?</a>]&nbsp; &nbsp;[<a class="nav" href="#screenshots">Screen shots</a>]&nbsp;
+            &nbsp;[<a class="nav" href="#usecases">Use cases</a>]&nbsp; &nbsp;[<a class="nav" href="#license">License</a>]&nbsp;
+            &nbsp;[<a class="nav" href="#links">Links</a>]&nbsp; *&nbsp;</div>
+      <P class="Sub">Home of the <i>Electronic Logbook</i> package by <a href="mailto:Stefan.Ritt&#64;psi.ch">
+            Stefan Ritt</a></P>
+      <div class="version">Current version is : 2.7.0</div>
+      <center>
+      <a href="http://www.softpedia.com/progClean/ELOG-Clean-30897.html"><img border="0" src="http://www.softpedia.com/images/spyward/softpedia_free_award_f.gif" alt="certificate" title="certificate" /></a>
+      
+      <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+      <input type="hidden" name="cmd" value="_xclick">
+      <input type="hidden" name="business" value="stefan.ritt@psi.ch">
+      <input type="hidden" name="item_name" value="ELOG Donation">
+      <input type="hidden" name="no_shipping" value="1">
+      <input type="hidden" name="return" value="http://midas.psi.ch/elog/index.html">
+      <input type="hidden" name="currency_code" value="EUR">
+      <input type="hidden" name="tax" value="0">
+      <input type="image" src="paypalcard.png" border="0" name="submit" alt="Make payments with PayPal - it's fast, free and secure!">
+      <img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif width="1" height="1">
+      </form>      
+      </center>
+
+
+      <hr>
+      <a name="whatis">
+         <div class="section">&nbsp; What is ELOG ? &nbsp;</div>
+         <p>
+            <b>ELOG</b> is part of a family of applications known as <i><i>weblog</i>s</i>
+         . Their general purpose is :
+         <p>
+            <ol>
+               <li>
+                  to make it easy for people to put information online in a chronological
+                  fashion, in the form of short, time-stamped text messages ("entries") with
+                  optional HTML markup for presentation, and optional file attachments (images,
+                  archives, etc.)
+                  <p></p>
+               <li>
+                  to make it easy for other people to access this information through a Web
+                  interface, browse entries, search, download files, and optionally add, update,
+                  delete or comment on entries.</li>
+            </ol>
+         <p>
+            <b>ELOG</b> is a remarkable implementation of a <i>weblog</i>
+         in at least two respects :
+         <p>
+            <ul>
+               <li>
+                  its simplicity of use : you don't need to be a seasoned server operator and/or
+                  an experimented database administrator to run <b>ELOG</b> ; one executable file
+                  (under Unix or Windows), a simple configuration text file, and it works. No Web
+                  server or relational database required. It is also easy to translate the
+                  interface to the appropriate language for your users.
+                  <p></p>
+               <li>
+                  its versatility : through its single configuration file, <b>ELOG</b> can be
+                  made to display an infinity of variants of the <i>weblog</i> concept. There are
+                  options for what to display, how to display it, what commands are available and
+                  to whom, access control, etc. Moreover, a single server can host several <i><i>weblog</i>s</i>,
+                  and each <i>weblog</i> can be totally different from the rest.</li>
+            </ul>
+         <p>
+            <hr>
+            <a name="screenshots">
+               <div class="section">&nbsp; Screen shots &nbsp;</div>
+               <p>
+                  <table border="0" cellpadding="5">
+                     <tr>
+                        <td>
+                           <a href="elog.jpg"><img border="0" align="top" src="elog_thumb.jpg" alt="elog.gif"></a>
+                        </td>
+                        <td valign="top">
+                           On the left upper panel is a typical logbook page displayed by Netscape
+                           Navigator. Each logbook page can contain attachments in a similar way to
+                           emails. This makes it possible to store images or text files and retrieve them
+                           easily. You could for example attach a sample configuration file which can
+                           later be copied to the local machine with the "<I>Save As...</I>" function of
+                           the Web browser.
+                           <p>
+                              Several logbooks can be served though a single <b>ELOG</b> server. Each logbook
+                              can use different attributes for its entries. The logbook can then be searched
+                              using these attributes. The right pane on the left image shows a search for all
+                              entries with attribute "<I>Type</I>" equal to "<I>Configuration</I>
+                           ", and the lower pane shows the search result. It is also possible to use
+                           full-text search in attributes and the entry body.
+                           <p>
+                           While logbook entries are usually displayed one entry per page, they can also
+                           be listed consecutively which makes it easy to produce a paper printout of a
+                           logbook.
+                           <p>
+                           Logbook pages can be edited or deleted. This feature can be turned off in the
+                           configuration file so that a logbook entries cannot be changed after being
+                           submitted.
+                           <p>
+                           An additional feature is the automatic generation of a notification email
+                           messages based on a certain type or category of a logbook entry.
+                           <p>
+                              Also try out the <b><a href="http://midas.psi.ch/elogs/Linux%20Demo/">online demo</a></b>
+                              !</p>
+                        </td>
+                     </tr>
+                  </table>
+               <p>
+                  <hr>
+                  <a name="usecases">
+                     <div class="section">&nbsp; Use cases &nbsp;</div>
+                     <p>
+                        The features of <b>ELOG</b> make it useful for several applications:
+                        <ul>
+                           <li>
+                              <b>Personal Logbooks</b>. Personal notes can be written into <b>ELOG</b> and
+                              can then be retrieved from anywhere with a Web browser. This makes it handy for
+                              PC supporters who have to go around in companies or laboratories and don't want
+                              to carry their paper logbook with them. The same holds true for people
+                              traveling around a lot. The logbook database consists of plain ASCII files
+                              which can copied easily between different computers to have local access, for
+                              example on a notebook with no network connection.
+                              <p></p>
+                           <li>
+                              <b>Shared Logbooks</b>. Logbooks can be shared by several people, for reading
+                              and optionally for writing. This way workgroups can share and exchange
+                              information like in a (simplified) news group. This is supported by the <i>Reply</i>
+                              command in <b>ELOG</b> which creates "<I>threads</I>" of entries. Users can be
+                              notified by email when new entries are added to the logbook. Compared to that
+                              of a news server, the installation of <b>ELOG</b> is much simpler.
+                              <p></p>
+                           <li>
+                              <b>Small Databases</b>. Since arbitrary attributes can be defined for a
+                              logbook, it can be used as a small database with search facilities.
+                              <p></p>
+                           <li>
+                              <b>Problem collections</b>. A system can consist of two logbooks, in one of
+                              which users enter bugs or problems. If someone adds a problem, an email is
+                              automatically sent to the administrator, who can then copy the entry to the
+                              second logbook and add the solution to the problem. Users can then look up all
+                              fixed problems.
+                              <p></p>
+                           <li>
+                              <b>Shift Logbooks</b>. If the <i>Allow delete</i> and <i>Allow edit</i> flags
+                              are off, an entry cannot be modified once it's been entered. This can be useful
+                              for shift logbooks for example in accelerator control rooms where each entry
+                              becomes a "<I>document</I>" with a time and author stamp. <b>ELOG</b> was
+                              originally developed as a shift logbook for the <a href="http://pibeta.psi.ch">PiBeta</a>
+                              and <a href="http://meg.psi.ch">Muegamma</a> particle experiments at <a href="http://www.psi.ch">
+                                 PSI</a>.
+                              <p></p>
+                           <li>
+                              <b>File collections</b>. Since files can be attached to <b>ELOG</b> entries,
+                              the system can be used to store and retrieve files. This can be used to store
+                              configuration files, which need to be accessible by several people over the
+                              web, or to store images. Since <b>ELOG</b> features an elaborate query
+                              facility, entries can be searched for by specifying several categories.</li>
+                        </ul>
+                     <p>
+                        <hr>
+                        <a name="license">
+                           <div class="section">&nbsp; License &nbsp;</div>
+                           <p>
+                              <b>ELOG</b> is released under the <a href="http://www.gnu.org/copyleft/gpl.html">GNU
+                                 Public License</a>
+                           .
+                           <p>
+                              <hr>
+                              <a name="credits">
+                                 <div class="section">&nbsp; Credits &nbsp;</div>
+                                 <p>
+                                    The author would like to give credits to following people:
+                                    <UL>
+                                       <LI><a href="mailto:fredp@dial.oleane.com">Fred Pacquier</a> for
+                                       this Web site and the French translation</LI>
+                                       <LI><a href="mailto:roktas@omu.edu.tr">Recai Oktas</a>
+                                       for the Debian package
+                                       <LI><a href="mailto:djek@xs4all.nl">djek</a>
+                                       for the Dutch translation
+                                       <LI><a href="mailto:Heiko.Scheit@mpi-hd.mpg.de">Heiko Scheit</a>
+                                       for many bug fixes and fruitful discussions
+                                       <LI><a href="mailto:jhcalvo@arnet.com.ar">Julio Calvo</a> for the Spanish
+                                       translation</LI>
+                                       <LI><a href="mailto:AlberT@SuperAlberT.it">Emiliano 'AlberT' Gabrielli</a></LI> for
+                                       his idea of scaling attached images
+                                    </UL>
+                                 <p>
+                                    <hr>
+                                    <a name="links">
+                                       <div class="section">&nbsp; Links &nbsp;</div>
+                                       <p>
+                                          If your are reading this documentation from your local <b>ELOG</b> server,
+                                          check for updates on the <a href="http://midas.psi.ch/elog/">ELOG Home Page</a>
+                                       .
+                                       <p>
+                                          See also the <b>ELOG</b> project pages on <a href="http://sourceforge.net/projects/elog">
+                                             <img align="middle" src="http://sourceforge.net/sflogo.php?group_id=40505&amp;type=1"
+                                                width="88" height="31" border="0" alt="SourceForge"></a> and <a href="http://freshmeat.net/projects/elog">
+                                             <img align="middle" border="0" src="http://images.freshmeat.net/logo.gif" alt="Freshmeat"></a>
+                                       <p>
+                                          <HR>
+                                          <div class="footer">&nbsp; Content by <a class="nav" href="mailto:Stefan.Ritt&#64;psi.ch">
+                                                Stefan Ritt</a>, Web pages by <a class="nav" href="mailto:fredp@mygale.org">Fred
+                                                Pacquier</a> - last modified on 16/01/2002 &nbsp;</div>
+   </BODY>
+</HTML>
