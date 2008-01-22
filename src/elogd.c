@@ -25621,6 +25621,7 @@ int process_http_request(const char *request, int i_conn)
 
    /* initialize parametr array */
    initparam();
+   content_length = 0;
 
    /* extract cookies */
    if ((p = strstr(request, "Cookie:")) != NULL) {
@@ -26322,6 +26323,7 @@ void server_loop(void)
    net_buffer = xmalloc(net_buffer_size);
    return_buffer_size = 100000;
    return_buffer = xmalloc(return_buffer_size);
+   pend = NULL;
 
    /* determine logging level */
    if (getcfg(NULL, "Logging Level", str, sizeof(str)))

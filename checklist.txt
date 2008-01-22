@@ -12,8 +12,7 @@ On PC6562:
 - Do a "make loc"
 - Translate new strings in eloglang.german
 - c:\elog> svn ci -m "Release x.x.x-y"
-- Create Tag from c:\elog to file:///y:/svn/elog/tags/version_x.x.x
-- open VS 2005 command window, build xxx-1
+- open VS 2005 command window, build xxx-1 in c:\elog
 
 On PC5082:
 
