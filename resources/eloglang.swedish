@@ -437,7 +437,6 @@ unspecified = ospecifiserad
 To subscribe to any logbook, click on 'Config' in that logbook = För att prenumerera på en loggbok, klicka på 'Konfigurera' i den loggboken
 ELOG XML import = ELOG XML-import
 Derive attributes from XML file = Hämta attribut från XML-fil 
-Keep original entry IDs (may overwrite existing entries, but is required if imported entries contain replies) = Behåll original post-ID (kan skriva över befintliga poster, men krävs om importerade poster innehåller svar)
 XML filename = XML filnamn
 Invalid date format = Ogiltigt datumformat
 XML file does not contain %s element = XML-filen innehåller inte %s element

@@ -10,7 +10,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.7.0"
+#define VERSION "2.7.1"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -4374,7 +4374,8 @@ int el_retrieve(LOGBOOK * lbs,
 
 /*------------------------------------------------------------------*/
 
-int el_submit_attachment(LOGBOOK * lbs, const char *afilename, const char *buffer, int buffer_size, char *full_name)
+int el_submit_attachment(LOGBOOK * lbs, const char *afilename, const char *buffer, int buffer_size,
+                         char *full_name)
 {
    char file_name[MAX_PATH_LENGTH], ext_file_name[MAX_PATH_LENGTH + 100], str[MAX_PATH_LENGTH], *p;
    int fh;
@@ -5522,8 +5523,8 @@ void replace_inline_img(char *str)
                pn++;
             if (*pn == '>')
                pn++;
-            sprintf(p, "<img src=\"cid:att%d@psi.ch\">", index-1);
-            memmove(p+strlen(p), pn, strlen(pn)+1);
+            sprintf(p, "<img src=\"cid:att%d@psi.ch\">", index - 1);
+            memmove(p + strlen(p), pn, strlen(pn) + 1);
             p++;
          } else
             p++;
@@ -6559,7 +6560,7 @@ void compose_base_url(LOGBOOK * lbs, char *base_url, int size, BOOL email_notify
 /* return URL for elogd with optional logbook subdirectory */
 {
    if (email_notify)
-      if (getcfg(lbs->name, "Use Email URL", base_url, size)) 
+      if (getcfg(lbs->name, "Use Email URL", base_url, size))
          return;
 
    if (!getcfg("global", "URL", base_url, size)) {
@@ -7172,7 +7173,8 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
       rsprintf("</head>\n");
 }
 
-void show_browser(char *browser) {
+void show_browser(char *browser)
+{
    if (stristr(browser, "opera"))
       rsprintf("var browser = \"Opera\";\n");
    else if (stristr(browser, "konqueror"))
@@ -9013,13 +9015,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    else
       allowed_encoding = 7;
 
-   enc_selected = 2;                /* Default is HTML */
+   enc_selected = 2;            /* Default is HTML */
 
-   if (allowed_encoding == 2)       /* select ELCode if the only one allowed */
+   if (allowed_encoding == 2)   /* select ELCode if the only one allowed */
       enc_selected = 0;
-   else if (allowed_encoding == 1)  /* select plain if the only one allowed */
+   else if (allowed_encoding == 1)      /* select plain if the only one allowed */
       enc_selected = 1;
-   else if (allowed_encoding == 3)  /* select ELCode if only plain and ELCode allowed */
+   else if (allowed_encoding == 3)      /* select ELCode if only plain and ELCode allowed */
       enc_selected = 0;
 
    /* Overwrite from config file */
@@ -16588,16 +16590,16 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
 
                   else if (attr_flags[i] & AF_ICON) {
                      rsprintf("<td class=\"%s\">", sclass);
-                     
+
                      sprintf(str, "Icon comment %s", attrib[i]);
                      getcfg(lbs->name, str, comment, sizeof(comment));
                      if (!comment[0])
                         strcpy(comment, attrib[i]);
 
                      if (attrib[i][0])
-                        rsprintf("\n<img border=0 src=\"icons/%s\" alt=\"%s\" title=\"%s\">", attrib[i], 
-                        comment, comment);
-                     
+                        rsprintf("\n<img border=0 src=\"icons/%s\" alt=\"%s\" title=\"%s\">", attrib[i],
+                                 comment, comment);
+
                      rsprintf("&nbsp;</td>");
                   }
 
@@ -18884,7 +18886,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                continue;
             }
          }
-      } // if (filtering)
+      }                         // if (filtering)
 
       /* evaluate "sort attributes" */
       if (sort_attributes) {
@@ -18908,8 +18910,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                strlcat(msg_list[index].string, " ", sizeof(msg_list[index].string));
                sprintf(str, "%08d", message_id);
                strlcat(msg_list[index].string, str, sizeof(msg_list[index].string));
-            }
-            else if (strieq(sort_attr[i], loc("Logbook"))) {
+            } else if (strieq(sort_attr[i], loc("Logbook"))) {
                strlcpy(msg_list[index].string, msg_list[index].lbs->name, 256);
             }
          }
@@ -18947,7 +18948,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
    /*---- in threaded mode, set date of latest entry of thread ----*/
 
-   if (threaded) { 
+   if (threaded) {
       for (index = 0; index < n_msg; index++) {
          if (!msg_list[index].lbs)
             continue;
@@ -18984,7 +18985,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             page_mid_head = message_id;
 
          /* search message head in list */
-         for (j = 0 ; j < n_msg ; j++)
+         for (j = 0; j < n_msg; j++)
             if (msg_list[j].lbs == msg_list[index].lbs && msg_list[j].index == i)
                break;
 
@@ -20090,7 +20091,7 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
 
             base64_bufenc((unsigned char *) buffer, n, str);
 
-            if (length + (int)strlen(str) + 2 < size) {
+            if (length + (int) strlen(str) + 2 < size) {
                strcpy(mail_text + length, str);
                length += strlen(str);
                strcpy(mail_text + length, "\r\n");
@@ -20893,7 +20894,8 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
 int submit_elog_reply(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], char *text)
 {
    int n_reply, i, status;
-   char str1[80], str2[80], att_file[MAX_ATTACHMENTS][256], reply_to[MAX_REPLY_TO * 10], list[MAX_N_ATTR][NAME_LENGTH];
+   char str1[80], str2[80], att_file[MAX_ATTACHMENTS][256], reply_to[MAX_REPLY_TO * 10],
+       list[MAX_N_ATTR][NAME_LENGTH];
 
    status = el_retrieve(lbs, message_id, NULL, attr_list, NULL, 0,
                         NULL, NULL, NULL, reply_to, att_file, NULL, NULL);
@@ -21419,8 +21421,7 @@ void submit_elog(LOGBOOK * lbs)
          sprintf(str, "elog:%d/", message_id);
       strsubst(p, TEXT_SIZE, "elog:/", str);
       el_submit(lbs, message_id, TRUE, date, attr_list, attrib, n_attr,
-                p, in_reply_to, reply_to,
-                encoding, att_file, TRUE, NULL);
+                p, in_reply_to, reply_to, encoding, att_file, TRUE, NULL);
    }
 
    /*---- email notifications ----*/
@@ -24274,8 +24275,9 @@ void show_uploader_finished(LOGBOOK * lbs)
    rsprintf("  {\n");
    rsprintf("    if (opener.document.title == \"FCKeditor\") {\n");
    rsprintf("       i = opener.parent.next_attachment;\n");
-   rsprintf("       opener.FCKeditorAPI.GetInstance('Text').InsertHtml('<img alt=\"%s\" src=\"%s%s\" name=\"att'+i+'\">');\n",
-            att + 14, base_url, ref);
+   rsprintf
+       ("       opener.FCKeditorAPI.GetInstance('Text').InsertHtml('<img alt=\"%s\" src=\"%s%s\" name=\"att'+i+'\">');\n",
+        att + 14, base_url, ref);
    rsprintf("       opener.parent.document.form1.inlineatt.value = '%s';\n", att);
    rsprintf("       opener.parent.document.form1.jcmd.value = 'Upload';\n");
    rsprintf("       opener.parent.document.form1.submit();\n");
@@ -25537,16 +25539,16 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                string = strstr(p, boundary) + strlen(boundary);
 
                if (stricmp(item, "text") == 0) {
-                  if ((int)string - (int)p > TEXT_SIZE) {
+                  if ((int) string - (int) p > TEXT_SIZE) {
                      sprintf(str,
                              "Error: Entry text too big (%lu bytes). Please increase TEXT_SIZE and recompile elogd\n",
-                             (unsigned long) ((int)string - (int)p));
+                             (unsigned long) ((int) string - (int) p));
                      show_error(str);
                      return;
                   }
                   strlcpy(_mtext, p, sizeof(_mtext));
                   if (strstr(_mtext, boundary))
-                    *strstr(_mtext, boundary) = 0;
+                     *strstr(_mtext, boundary) = 0;
                   ptmp = _mtext + (strlen(_mtext) - 1);
                   while (*ptmp == '-')
                      *ptmp-- = 0;
@@ -25555,7 +25557,7 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                } else {
                   strlcpy(str, p, sizeof(str));
                   if (strstr(str, boundary))
-                    *strstr(str, boundary) = 0;
+                     *strstr(str, boundary) = 0;
                   ptmp = str + (strlen(str) - 1);
                   while (*ptmp == '-')
                      *ptmp-- = 0;
@@ -25594,7 +25596,7 @@ char remote_host[N_MAX_CONNECTION][256];
 int process_http_request(const char *request, int i_conn)
 {
    int i, n, authorized, header_length, content_length;
-   char str[1000], url[256], pwd[256], cl_pwd[256], format[256], 
+   char str[1000], url[256], pwd[256], cl_pwd[256], format[256],
        cookie[256], boundary[256], list[1000], theme[256],
        host_list[MAX_N_LIST][NAME_LENGTH], logbook[256], logbook_enc[256], global_cmd[256];
    char *p;
@@ -25706,11 +25708,11 @@ int process_http_request(const char *request, int i_conn)
       strlcpy(str, p, sizeof(str));
       if (strchr(str, '\r'))
          *strchr(str, '\r') = 0;
-   #ifdef OS_WINNT
+#ifdef OS_WINNT
       rem_addr.S_un.S_addr = inet_addr(str);
-   #else
+#else
       rem_addr.s_addr = inet_addr(str);
-   #endif
+#endif
 
       if (getcfg("global", "Resolve host names", str, sizeof(str)) && atoi(str) == 1) {
          phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
@@ -25740,8 +25742,7 @@ int process_http_request(const char *request, int i_conn)
    return_length = 0;
 
    /* extract logbook */
-   if (strchr(request, '/') == NULL || strchr(request, '\r') == NULL
-       || strstr(request, "HTTP") == NULL) {
+   if (strchr(request, '/') == NULL || strchr(request, '\r') == NULL || strstr(request, "HTTP") == NULL) {
       /* invalid request, make valid */
       return process_http_request("GET / HTTP/1.0\r\n\r\n", i_conn);
    }
@@ -25792,7 +25793,7 @@ int process_http_request(const char *request, int i_conn)
    strcpy(logbook_enc, logbook);
    url_decode(logbook);
    /* check for trailing '/' after logbook */
-   if (strncmp(request, "POST", 4) != 0) {  // fix for konqueror
+   if (strncmp(request, "POST", 4) != 0) {      // fix for konqueror
       if (logbook[0] && *p == ' ') {
          if (!chkext(logbook, ".css") && !chkext(logbook, ".htm")
              && !chkext(logbook, ".gif") && !chkext(logbook, ".jpg")
@@ -26067,7 +26068,7 @@ int process_http_request(const char *request, int i_conn)
             return 0;
          *(strstr(request, "HTTP/1") - 1) = 0;
          /* strip logbook from path */
-         strlcpy(str, request+5, sizeof(str));
+         strlcpy(str, request + 5, sizeof(str));
          p = str;
          for (i = 0; *p && *p != '/' && *p != '?'; p++);
          while (*p && *p == '/')
@@ -26163,12 +26164,12 @@ void send_return(const char *net_buffer, int _sock)
          send(_sock, return_buffer, return_length, 0);
          if (verbose > 1) {
             if (strrchr(net_buffer, '/'))
-               strlcpy(str, strrchr(net_buffer, '/')+1, sizeof(str));
+               strlcpy(str, strrchr(net_buffer, '/') + 1, sizeof(str));
             else
                str[0] = 0;
             eprintf("==== Return ================================\n");
             if (chkext(net_buffer, ".gif") || chkext(net_buffer, ".jpg")
-                || chkext(net_buffer, ".png") || chkext(net_buffer, ".ico") 
+                || chkext(net_buffer, ".png") || chkext(net_buffer, ".ico")
                 || chkext(net_buffer, ".pdf") || return_length > 10000)
                eprintf("\n<%d bytes of %s>\n\n", return_length, str);
             else
@@ -26177,7 +26178,7 @@ void send_return(const char *net_buffer, int _sock)
          }
       }
    }
-}         
+}
 
 /*------------------------------------------------------------------*/
 
@@ -26608,7 +26609,7 @@ void server_loop(void)
             len = 0;
             more_requests = 0;
 
-            do { /* pipleline loop */
+            do {                /* pipleline loop */
                header_length = 0;
                n_error = 0;
                return_length = -1;
@@ -26624,13 +26625,13 @@ void server_loop(void)
                         i = recv(_sock, net_buffer + len, net_buffer_size - len, 0);
                      else
                         break;
-                     
+
                      /* abort if connection got broken */
                      if (i < 0)
                         break;
                      if (i > 0)
                         len += i;
-                     
+
                      /* check if net_buffer needs to be increased */
                      if (len == net_buffer_size) {
                         net_buffer = xrealloc(net_buffer, net_buffer_size + 100000);
@@ -26662,11 +26663,11 @@ void server_loop(void)
                   pend = NULL;
                   if (strncmp(net_buffer, "GET", 3) == 0 && strncmp(net_buffer, "POST", 4) != 0) {
                      if (len > 4 && strstr(net_buffer, "\r\n\r\n") != NULL) {
-                        pend = strstr(net_buffer, "\r\n\r\n")+4;
+                        pend = strstr(net_buffer, "\r\n\r\n") + 4;
                         break;
                      }
                      if (len > 6 && strstr(net_buffer, "\r\r\n\r\r\n") != NULL) {
-                        pend = strstr(net_buffer, "\r\r\n\r\r\n")+6;
+                        pend = strstr(net_buffer, "\r\r\n\r\r\n") + 6;
                         break;
                      }
                   } else if (strncmp(net_buffer, "POST", 4) == 0) {
@@ -26678,7 +26679,7 @@ void server_loop(void)
                         strlcpy(logbook, str, sizeof(logbook));
                         strlcpy(logbook_enc, str, sizeof(logbook));
                         url_decode(logbook);
-                        
+
                         /* extract content length */
                         if (strstr(net_buffer, "Content-Length:"))
                            content_length = atoi(strstr(net_buffer, "Content-Length:") + 15);
@@ -26752,19 +26753,19 @@ void server_loop(void)
                   }
 
                } while (1);
-               
+
                /* now process HTTP request and put the result into the return_buffer */
                if (process_http_request(net_buffer, i_conn)) {
 
                   /* send back the return_buffer to the browser */
                   send_return(net_buffer, _sock);
                }
-               
+
                /* check if the net_buffer contains more than one request (pipelining) */
                if (pend && *pend) {
-                  memmove(net_buffer, pend, strlen(pend)+1);
+                  memmove(net_buffer, pend, strlen(pend) + 1);
                   more_requests = 1;
-                  len -= (int)pend - (int)net_buffer;
+                  len -= (int) pend - (int) net_buffer;
                }
 
             } while (more_requests);

@@ -1,3 +1,31 @@
+Version 2.7.1, released Jan. 22th, 2008
+=======================================
+
+- Set current encoding to ELCode if 'allowed encoding = 3'
+- Improved sorting speed when 100000's entries are present
+- Fixed bug with truncated entries
+- Implemented 'sort attributes = ID'
+- Changed default encoding to 2
+- Do not translate 'activate' (gives problems by email program encoding)
+- Implemented pipelining
+- Changed default for allowed encoding
+- Fixed possible buffer overflow
+- Fixed possible endless loop in replace_inline_img
+- Convert "elog:/<n>" to "<ID>/<n>" for HTML encoding
+- Display icon comment also in threaded and summary view
+- Fixed &nbsp; & co. in summary view
+- Fixed umlaute in summary display
+- Added search button for quick filters for MSIE
+- Upgraded to FCKeditor 2.5beta
+- Implemented 'Use Email URL'
+- Fixed bug with --+Text+--
+- Implement InsertLink
+- Fixed double sent attachments in email notifications
+- Added CTRL-N for new list item, thanks to Bill Pier
+- Changed resource directoy to be removed on uninstall
+- Added FCKeditor extraction to Makefile
+- Fixed email notification with HTML inline images
+
 Version 2.7.0, released Oct. 25th, 2007
 =======================================
 
