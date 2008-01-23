@@ -9624,12 +9624,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<script type=\"text/javascript\" src=\"../fckeditor/fckeditor.js\"></script>\n");
       rsprintf("<script type=\"text/javascript\">\n");
       /* define strings for current language */
-      rsprintf("var ELOGSubmitEntry = '%s';\n", loc("Submit entry"));
-      rsprintf("var ELOGInsertImage = '%s';\n", loc("Insert image"));
-      rsprintf("var ELOGInsertDateTime = '%s';\n\n", loc("Insert Date/Time"));
-      rsprintf("var ELOGLinkTextPrompt = '%s';\n\n", loc("Enter name of hyperlink"));
-      rsprintf("var ELOGLinkURLPrompt = '%s';\n\n", loc("Enter URL of hyperlink"));
-      rsprintf("var ELOGSource = '%s';\n\n", loc("Show HTML source code"));
+      rsprintf("var ELOGSubmitEntry = \"%s\";\n", loc("Submit entry"));
+      rsprintf("var ELOGInsertImage = \"%s\";\n", loc("Insert image"));
+      rsprintf("var ELOGInsertDateTime = \"%s\";\n\n", loc("Insert Date/Time"));
+      rsprintf("var ELOGLinkTextPrompt = \"%s\";\n\n", loc("Enter name of hyperlink"));
+      rsprintf("var ELOGLinkURLPrompt = \"%s\";\n\n", loc("Enter URL of hyperlink"));
+      rsprintf("var ELOGSource = \"%s\";\n\n", loc("Show HTML source code"));
       rsprintf("function initFCKedit()\n");
       rsprintf("{\n");
       rsprintf("   var oFCKeditor = new FCKeditor('Text', '100%%', '500');\n");
