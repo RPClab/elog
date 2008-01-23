@@ -17262,7 +17262,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
       if (i == n) {
          n = strbreak(other_str, menu_item, MAX_N_LIST, ",", FALSE);
          for (i = 0; i < n; i++)
-            if (strieq(command, loc(menu_item[i])))
+            if (strieq(command, menu_item[i]) || strieq(command, loc(menu_item[i])))
                break;
 
          if (i == n)
@@ -24970,7 +24970,7 @@ void interprete(char *lbook, char *path)
    }
 
    message_id = atoi(dec_path);
-   if (strieq(command, loc("Upload"))) {
+   if (strieq(command, loc("Upload")) || strieq(command, "Upload")) {
       show_edit_form(lbs, isparam("edit_id") ? atoi(getparam("edit_id")) : 0,
                      FALSE, TRUE, TRUE, FALSE, FALSE, FALSE);
       return;
