@@ -9893,6 +9893,19 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             else
                my_strftime(str, sizeof(str), format, pts);
 
+         } else if (attr_flags[index] & AF_DATETIME) {
+
+            if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+               strcpy(format, DEFAULT_TIME_FORMAT);
+
+            ltime = atoi(attrib[index]);
+            pts = localtime(&ltime);
+            assert(pts);
+            if (ltime == 0)
+               strcpy(str, "-");
+            else
+               my_strftime(str, sizeof(str), format, pts);
+
          } else
             strlcpy(str, attrib[index], sizeof(str));
 
