@@ -10,7 +10,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.7.1"
+#define VERSION "2.7.2"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -8909,14 +8909,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr, n_lines,
        attr_index[MAX_N_ATTR], enc_selected, show_smileys, show_text, n_moptions, display_inline,
        allowed_encoding;
-   char str[2 * NAME_LENGTH], str2[NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80], comment[10000], 
-      reply_string[256], list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80], 
-      script_onload[256], script_onfocus[256], script_onunload[256], attrib[MAX_N_ATTR][NAME_LENGTH], *text, 
-      orig_tag[80], reply_tag[MAX_REPLY_TO * 10], att[MAX_ATTACHMENTS][256], encoding[80], 
-      slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256],
-      class_value[80], class_name[80], ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256],
-      cookie[256], orig_author[256], attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256],
-      tooltip[10000], enc_attr[NAME_LENGTH], user_email[256];
+   char str[2 * NAME_LENGTH], str2[NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80], comment[10000],
+       reply_string[256], list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80],
+       script_onload[256], script_onfocus[256], script_onunload[256], attrib[MAX_N_ATTR][NAME_LENGTH], *text,
+       orig_tag[80], reply_tag[MAX_REPLY_TO * 10], att[MAX_ATTACHMENTS][256], encoding[80],
+       slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256],
+       class_value[80], class_name[80], ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256],
+       cookie[256], orig_author[256], attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256],
+       tooltip[10000], enc_attr[NAME_LENGTH], user_email[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -24873,8 +24873,7 @@ void interprete(char *lbook, char *path)
 
       strencode2(str2, command, sizeof(str2));
       strencode2(str3, full_name, sizeof(str3));
-      sprintf(str, loc("Error: Command \"<b>%s</b>\" is not allowed for user \"<b>%s</b>\""),
-              str2, str3);
+      sprintf(str, loc("Error: Command \"<b>%s</b>\" is not allowed for user \"<b>%s</b>\""), str2, str3);
       show_error(str);
       return;
    }

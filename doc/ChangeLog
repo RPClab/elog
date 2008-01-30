@@ -1,3 +1,11 @@
+Version 2.7.2, released Jan. 30th, 2008
+=======================================
+
+- Fixed vulnerability if logbook contains HTML code
+- Fixed display of locked datetime attributes
+- Fixed problem with FCDeditor in French
+- Fixed problem with image upload in other languages
+
 Version 2.7.1, released Jan. 22th, 2008
 =======================================
 
