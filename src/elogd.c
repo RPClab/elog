@@ -344,7 +344,6 @@ struct {
    ".XSL", "text/xml"}, {
    ".ZIP", "application/x-zip-compressed"}, {
 
-   ".THUMB", "image/jpeg"}, {   // hard-coded for now...
 "", ""},};
 
 typedef struct {
@@ -439,6 +438,7 @@ void strencode2(char *b, const char *text, int size);
 void load_config_section(char *section, char **buffer, char *error);
 void remove_crlf(char *buffer);
 time_t convert_date(char *date_string);
+int create_thumbnail(LOGBOOK * lbs, char *file_name);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -4434,13 +4434,23 @@ int el_submit_attachment(LOGBOOK * lbs, const char *afilename, const char *buffe
 
 void el_delete_attachment(LOGBOOK * lbs, char *file_name)
 {
+   int i;
    char str[MAX_PATH_LENGTH];
 
    strlcpy(str, lbs->data_dir, sizeof(str));
    strlcat(str, file_name, sizeof(str));
    remove(str);
-   strlcat(str, ".thumb", sizeof(str));
+   strlcat(str, ".png", sizeof(str));
    remove(str);
+   for (i=0 ; ; i++) {
+      strlcpy(str, lbs->data_dir, sizeof(str));
+      strlcat(str, file_name, sizeof(str));
+      sprintf(str+strlen(str), "-%d.png", i);
+      if (file_exist(str))
+         remove(str);
+      else
+         break;
+   }
 }
 
 /*------------------------------------------------------------------*/
@@ -16226,10 +16236,10 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                   BOOL select, int *n_display, char *locked_by, int highlight, regex_t * re_buf,
                   int highlight_mid, int absolute_link)
 {
-   char str[NAME_LENGTH], ref[256], thumb_name[256], *nowrap, sclass[80], format[256],
+   char str[NAME_LENGTH], ref[256], *nowrap, sclass[80], format[256],
        file_name[MAX_PATH_LENGTH], *slist, *svalue, comment[256];
    char display[NAME_LENGTH], attr_icon[80];
-   int i, j, i_line, index, colspan, n_attachments, line_len;
+   int i, j, i_line, index, colspan, n_attachments, line_len, thumb_status;
    BOOL skip_comma;
    FILE *f;
    struct tm *pts;
@@ -16816,24 +16826,41 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[index] + 14);
             url_encode(ref, sizeof(ref));       /* for file names with special characters like "+" */
 
-            strlcpy(thumb_name, lbs->data_dir, sizeof(thumb_name));
-            strlcat(thumb_name, attachment[index], sizeof(thumb_name));
-            strlcat(thumb_name, ".thumb", sizeof(thumb_name));
+            strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+            strlcat(file_name, attachment[index], sizeof(file_name));
+            thumb_status = create_thumbnail(lbs, file_name);
 
             if (!show_attachments) {
                rsprintf("<a href=\"%s\" target=\"_blank\">%s</a>&nbsp;&nbsp;&nbsp;&nbsp; ", ref,
                         attachment[index] + 14);
             } else {
 
-               if (file_exist(thumb_name)) {
-                  rsprintf
-                      ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\" target=\"_blank\">%s</a>\n",
+               if (thumb_status) {
+                  rsprintf("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\" target=\"_blank\">%s</a>\n",
                        colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
+                  
                   if (show_attachments) {
                      rsprintf("<tr><td colspan=%d class=\"attachmentframe\">\n", colspan);
-                     rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
-                     rsprintf("<img src=\"%s.thumb\" alt=\"%s\" title=\"%s\"></a>\n", ref,
-                              attachment[index] + 14, attachment[index] + 14);
+                     if (thumb_status == 2) {
+                        for (i=0 ; ; i++) {
+                           strlcpy(str, file_name, sizeof(str));
+                           sprintf(str+strlen(str), "-%d.png", i);
+                           if (file_exist(str)) {
+                              strlcpy(str, ref, sizeof(str));
+                              sprintf(str+strlen(str), "-%d.png", i);
+                              rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
+                              rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\"></a>\n", str,
+                                       attachment[index] + 14, attachment[index] + 14);
+                           } else
+                              break;
+                        }
+                     } else {
+                        rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
+                        strlcpy(str, ref, sizeof(str));
+                        strlcat(str, ".png", sizeof(str));
+                        rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\"></a>\n", str,
+                                 attachment[index] + 14, attachment[index] + 14);
+                     }
                      rsprintf("</td></tr>\n\n");
                   }
                } else {
@@ -21917,12 +21944,61 @@ int is_inline_attachment(char *encoding, int message_id, char *text, int i, char
 
 /*------------------------------------------------------------------*/
 
+int create_thumbnail(LOGBOOK * lbs, char *file_name)
+{
+   char str[MAX_PATH_LENGTH], cmd[2*MAX_PATH_LENGTH], thumb_size[256];
+
+   if (!getcfg(lbs->name, "Thumbnail size", thumb_size, sizeof(thumb_size))) {
+      file_name[0] = 0;
+      return 0;
+   }
+
+   if (!chkext(file_name, ".ps") && !chkext(file_name, ".pdf") && !chkext(file_name, ".eps") &&
+       !chkext(file_name, ".gif") && !chkext(file_name, ".jpg") && !chkext(file_name, ".jpeg") &&
+       !chkext(file_name, ".png") && !chkext(file_name, ".ico"))
+       return 0;
+
+   strlcpy(str, file_name, sizeof(str));
+   strlcat(str, "-0.png", sizeof(str));
+   if (file_exist(str))
+      return 2;
+
+   strlcpy(str, file_name, sizeof(str));
+   strlcat(str, ".png", sizeof(str));
+   if (file_exist(str))
+      return 1;
+
+   sprintf(cmd, "convert %s -thumbnail \"%s\" %s", file_name, thumb_size, str);
+
+   sprintf(str, "SHELL \"%s\"", cmd);
+   write_logfile(lbs, str);
+   if (verbose)
+      eprintf(str);
+
+   system(cmd);
+
+   strlcpy(str, file_name, sizeof(str));
+   strlcat(str, ".png", sizeof(str));
+   if (file_exist(str))
+      return 1;
+
+   strlcpy(str, file_name, sizeof(str));
+   strlcat(str, "-0.png", sizeof(str));
+   if (file_exist(str))
+      return 2;
+
+   return 0;
+}
+
+/*------------------------------------------------------------------*/
+
 void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 {
    int size, i, j, k, n, n_log, status, fh, length, message_error, index, n_hidden,
        message_id, orig_message_id, format_flags[MAX_N_ATTR], att_hide[MAX_ATTACHMENTS],
-       att_inline[MAX_ATTACHMENTS], n_attachments, n_lines, n_disp_attr, attr_index[MAX_N_ATTR];
-   char str[2 * NAME_LENGTH], ref[256], file_enc[256], thumb_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
+       att_inline[MAX_ATTACHMENTS], n_attachments, n_lines, n_disp_attr, attr_index[MAX_N_ATTR],
+       thumb_status;
+   char str[2 * NAME_LENGTH], ref[256], file_enc[256], attrib[MAX_N_ATTR][NAME_LENGTH];
    char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], script[256],
        orig_tag[80], reply_tag[MAX_REPLY_TO * 10], display[NAME_LENGTH],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
@@ -22726,8 +22802,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                /* determine size of attachment */
                strlcpy(file_name, lbs->data_dir, sizeof(file_name));
                strlcat(file_name, attachment[index], sizeof(file_name));
-               strlcpy(thumb_name, file_name, sizeof(thumb_name));
-               strlcat(thumb_name, ".thumb", sizeof(thumb_name));
+               thumb_status = create_thumbnail(lbs, file_name);
 
                length = 0;
                fh = open(file_name, O_RDONLY | O_BINARY);
@@ -22807,7 +22882,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                   display_inline = 0;
                if ((chkext(att, ".HTM") || chkext(att, ".HTML")) && is_full_html(file_name))
                   display_inline = 0;
-               if (file_exist(thumb_name))
+               if (thumb_status)
                   display_inline = 1;
 
                if (display_inline) {
@@ -22868,11 +22943,28 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                if ((!getcfg(lbs->name, "Show attachments", str, sizeof(str))
                     || atoi(str) == 1) && !att_hide[index] && display_inline) {
 
-                  if (file_exist(thumb_name)) {
+                  if (thumb_status) {
                      rsprintf("<tr><td class=\"attachmentframe\">\n");
-                     rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
-                     rsprintf("<img src=\"%s.thumb\" alt=\"%s\" title=\"%s\"></a>\n", ref,
-                              attachment[index] + 14, attachment[index] + 14);
+                     if (thumb_status == 2) {
+                        for (i=0 ; ; i++) {
+                           strlcpy(str, file_name, sizeof(str));
+                           sprintf(str+strlen(str), "-%d.png", i);
+                           if (file_exist(str)) {
+                              strlcpy(str, ref, sizeof(str));
+                              sprintf(str+strlen(str), "-%d.png", i);
+                              rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
+                              rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\"></a>\n", str,
+                                       attachment[index] + 14, attachment[index] + 14);
+                           } else
+                              break;
+                        }
+                     } else {
+                        rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
+                        strlcpy(str, ref, sizeof(str));
+                        strlcat(str, ".png", sizeof(str));
+                        rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\"></a>\n", str,
+                                 attachment[index] + 14, attachment[index] + 14);
+                     }
                      rsprintf("</td></tr>\n\n");
                   } else if (is_image(att)) {
                      rsprintf("<tr><td class=\"attachmentframe\">\n");

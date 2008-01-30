@@ -946,6 +946,21 @@ if the file name starts with a <b><code>"/"</code></b> (Unix) or <b><code>
         entries from when on the "All" link gets hidden can be specified with
         this number, the default value is <b><code>500</code></b>.
       </li>
+      <li>
+        <b><code>Thumbnail size = &lt;size&gt;</code></b><br>
+        This option controls the automatic generation of thumbnails for images
+        and PDF/Postscript files. To make this working, one has to install
+        the <a href="http://www.imagemagick.org">ImageMagick</a> package. Make
+        sure that the <b><code>convert -version</code></b> program is in the 
+        path when called from the command line. The thumbnail size 
+        <b><code>size</code></b> gets passed to the <b><code>-thumbnail</code></b>
+        option of the conversion. A value of <b><code>300</code></b> converts
+        all pictures to thumbnails 300 pixels wide. A value of 
+        <b><code>300&gt;</code></b> converts all pictures to thumbnails 300 
+        pixels wide if they are larger than 300 pixels initially, and leaves
+        them untouched if they are smaller. A value of <b><code>10%</code></b> 
+        converts all pictures to 10% of their original size. 
+      </li>
     </ul><a name="attrib" id="attrib"></a>
     <hr>
     <div class="section">
