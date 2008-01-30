@@ -230,7 +230,7 @@ function browse(evt)
    var unicode = evt.charCode ? evt.charCode : evt.keyCode;
    var actualkey = String.fromCharCode(unicode);
 
-   if (evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
+   if (evt.ctrlKey && !evt.altKey) {
 
       if (browser == 'MSIE') {
          if (unicode == 10)
