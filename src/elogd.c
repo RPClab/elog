@@ -22140,11 +22140,49 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    /*---- menu buttons ----*/
 
    if (!email) {
+
       rsprintf("<tr><td class=\"menuframe\">\n");
       rsprintf("<table width=\"100%%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
-      rsprintf("<tr><td class=\"menu1\">\n");
+      rsprintf("<tr>\n");
+
+      /*---- next/previous buttons ----*/
+
+      if (!getcfg(lbs->name, "Enable browsing", str, sizeof(str)) || atoi(str) == 1) {
+         rsprintf("<td class=\"menu1a\" width=\"1%%\" nowrap align=left>\n");
+
+         /* check if first.png exists, just put link there if not */
+         strlcpy(file_name, resource_dir, sizeof(file_name));
+         if (file_name[0] && file_name[strlen(file_name) - 1] != DIR_SEPARATOR)
+            strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+         strlcat(file_name, "themes", sizeof(file_name));
+         strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+         if (theme_name[0]) {
+            strlcat(file_name, theme_name, sizeof(file_name));
+            strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+         }
+         strlcat(file_name, "first.png", sizeof(file_name));
+         if (stat(file_name, &st) >= 0) {
+            rsprintf("<input type=image name=cmd_first alt=\"%s\"  title=\"%s\" src=\"first.png\">\n",
+                     loc("First entry, Ctrl-Home"), loc("First entry, Ctrl-Home"));
+            rsprintf("<input type=image name=cmd_previous alt=\"%s\"  title=\"%s\" src=\"previous.png\">\n",
+                     loc("Previous entry, Ctrl-PgUp"), loc("Previous entry, Ctrl-PgUp"));
+            rsprintf("<input type=image name=cmd_next alt=\"%s\" title=\"%s\" src=\"next.png\">\n",
+                     loc("Next entry, Ctrl-PgDn"), loc("Next entry, Ctrl-PgDn"));
+            rsprintf("<input type=image name=cmd_last alt=\"%s\" title=\"%s\" src=\"last.png\">\n",
+                     loc("Last entry, Ctrl-End"), loc("Last entry, Ctrl-End"));
+         } else {
+            rsprintf("<a href=\"%d?cmd=%s\">|&lt;</a>&nbsp;\n", message_id, loc("First"));
+            rsprintf("<a href=\"%d?cmd=%s\">&lt;</a>&nbsp;\n", message_id, loc("Previous"));
+            rsprintf("<a href=\"%d?cmd=%s\">&gt;</a>&nbsp;\n", message_id, loc("Next"));
+            rsprintf("<a href=\"%d?cmd=%s\">&gt;|</a>&nbsp;\n", message_id, loc("Last"));
+         }
+
+         rsprintf("&nbsp;&nbsp;</td>\n");
+      }
 
       n = strbreak(menu_str, menu_item, MAX_N_LIST, ",", FALSE);
+
+      rsprintf("<td class=\"menu1\">\n");
 
       for (i = 0; i < n; i++) {
          /* display menu item */
@@ -22201,41 +22239,6 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       }
 
       rsprintf("</td>\n\n");
-
-      /*---- next/previous buttons ----*/
-
-      if (!getcfg(lbs->name, "Enable browsing", str, sizeof(str)) || atoi(str) == 1) {
-         rsprintf("<td class=\"menu1a\" width=\"10%%\" nowrap align=right>\n");
-
-         /* check if first.png exists, just put link there if not */
-         strlcpy(file_name, resource_dir, sizeof(file_name));
-         if (file_name[0] && file_name[strlen(file_name) - 1] != DIR_SEPARATOR)
-            strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
-         strlcat(file_name, "themes", sizeof(file_name));
-         strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
-         if (theme_name[0]) {
-            strlcat(file_name, theme_name, sizeof(file_name));
-            strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
-         }
-         strlcat(file_name, "first.png", sizeof(file_name));
-         if (stat(file_name, &st) >= 0) {
-            rsprintf("<input type=image name=cmd_first alt=\"%s\"  title=\"%s\" src=\"first.png\">\n",
-                     loc("First entry, Ctrl-Home"), loc("First entry, Ctrl-Home"));
-            rsprintf("<input type=image name=cmd_previous alt=\"%s\"  title=\"%s\" src=\"previous.png\">\n",
-                     loc("Previous entry, Ctrl-PgUp"), loc("Previous entry, Ctrl-PgUp"));
-            rsprintf("<input type=image name=cmd_next alt=\"%s\" title=\"%s\" src=\"next.png\">\n",
-                     loc("Next entry, Ctrl-PgDn"), loc("Next entry, Ctrl-PgDn"));
-            rsprintf("<input type=image name=cmd_last alt=\"%s\" title=\"%s\" src=\"last.png\">\n",
-                     loc("Last entry, Ctrl-End"), loc("Last entry, Ctrl-End"));
-         } else {
-            rsprintf("<a href=\"%d?cmd=%s\">|&lt;</a>&nbsp;\n", message_id, loc("First"));
-            rsprintf("<a href=\"%d?cmd=%s\">&lt;</a>&nbsp;\n", message_id, loc("Previous"));
-            rsprintf("<a href=\"%d?cmd=%s\">&gt;</a>&nbsp;\n", message_id, loc("Next"));
-            rsprintf("<a href=\"%d?cmd=%s\">&gt;|</a>&nbsp;\n", message_id, loc("Last"));
-         }
-
-         rsprintf("</td></tr>\n");
-      }
 
       rsprintf("</table></td></tr>\n\n");
 
