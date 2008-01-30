@@ -435,7 +435,7 @@ int setgroup(char *str);
 int setuser(char *str);
 int setegroup(char *str);
 int seteuser(char *str);
-void strencode2(char *b, char *text, int size);
+void strencode2(char *b, const char *text, int size);
 void load_config_section(char *section, char **buffer, char *error);
 void remove_crlf(char *buffer);
 time_t convert_date(char *date_string);
@@ -8177,7 +8177,7 @@ void xmlencode(char *text)
 
 /*------------------------------------------------------------------*/
 
-void strencode2(char *b, char *text, int size)
+void strencode2(char *b, const char *text, int size)
 {
    int i;
 
@@ -8909,14 +8909,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr, n_lines,
        attr_index[MAX_N_ATTR], enc_selected, show_smileys, show_text, n_moptions, display_inline,
        allowed_encoding;
-   char str[2 * NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80], comment[10000], reply_string[256],
-       list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80], script_onload[256],
-       script_onfocus[256], script_onunload[256], attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80],
-       reply_tag[MAX_REPLY_TO * 10], att[MAX_ATTACHMENTS][256], encoding[80],
-       slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256],
-       class_value[80], class_name[80], ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256],
-       cookie[256], orig_author[256], attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256],
-       tooltip[10000], enc_attr[NAME_LENGTH], user_email[256];
+   char str[2 * NAME_LENGTH], str2[NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80], comment[10000], 
+      reply_string[256], list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80], 
+      script_onload[256], script_onfocus[256], script_onunload[256], attrib[MAX_N_ATTR][NAME_LENGTH], *text, 
+      orig_tag[80], reply_tag[MAX_REPLY_TO * 10], att[MAX_ATTACHMENTS][256], encoding[80], 
+      slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256],
+      class_value[80], class_name[80], ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256],
+      cookie[256], orig_author[256], attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256],
+      tooltip[10000], enc_attr[NAME_LENGTH], user_email[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -9238,7 +9238,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        && atoi(str) == 1) {
       if (!is_author(lbs, attrib, owner)) {
          sprintf(str, loc("Only user <i>%s</i> can edit this entry"), owner);
-         show_error(str);
+         strencode2(str2, str, sizeof(str2));
+         show_error(str2);
          xfree(text);
          return;
       }
@@ -12172,8 +12173,8 @@ int save_config(char *buffer, char *error)
 int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 {
    char file_name[256], str[256], *pl, user_enc[256], new_pwd[80], new_pwd2[80], smtp_host[256],
-       email_addr[256], mail_from[256], mail_from_name[256], subject[256], mail_text[2000];
-   char admin_user[80], enc_pwd[80], url[256], error[2000];
+       email_addr[256], mail_from[256], mail_from_name[256], subject[256], mail_text[2000],
+       str2[256], admin_user[80], enc_pwd[80], url[256], error[2000];
    int i, self_register;
    PMXML_NODE node, subnode;
 
@@ -12394,7 +12395,8 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
                sprintf(str, loc("Cannot send email notification to \"%s\""), getparam("new_user_email"));
                strlcat(str, " : ", sizeof(str));
                strlcat(str, error, sizeof(str));
-               show_error(str);
+               strencode2(str2, str, sizeof(str2));
+               show_error(str2);
                return 0;
             }
          }
@@ -12487,7 +12489,8 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
                              getparam("new_user_email"));
                      strlcat(str, " : ", sizeof(str));
                      strlcat(str, error, sizeof(str));
-                     show_error(str);
+                     strencode2(str2, str, sizeof(str2));
+                     show_error(str2);
                      return 0;
                   };
                }
@@ -12529,7 +12532,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
 
 int remove_user(LOGBOOK * lbs, char *user)
 {
-   char file_name[256], str[1000];
+   char file_name[256], str[1000], str2[1000];
    PMXML_NODE node;
 
    if (lbs->pwd_xml_tree == NULL) {
@@ -12541,7 +12544,8 @@ int remove_user(LOGBOOK * lbs, char *user)
    node = mxml_find_node(lbs->pwd_xml_tree, str);
    if (node == NULL) {
       sprintf(str, loc("User \"%s\" not found in password file"), user);
-      show_error(str);
+      strencode2(str2, str, sizeof(str2));
+      show_error(str2);
       return FALSE;
    }
 
@@ -12790,7 +12794,7 @@ void show_config_page(LOGBOOK * lbs)
 void show_forgot_pwd_page(LOGBOOK * lbs)
 {
    int i;
-   char str[1000], login_name[256], full_name[256], user_email[256],
+   char str[1000], str2[1000], login_name[256], full_name[256], user_email[256],
        name[256], pwd[256], redir[256], pwd_encrypted[256], smtp_host[256],
        mail_from[256], mail_from_name[256], subject[256], mail_text[1000], url[1000], error[1000];
 
@@ -12810,7 +12814,8 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
              || strieq(name, user_email)) {
             if (user_email[0] == 0) {
                sprintf(str, loc("No Email address registered with user name <i>\"%s\"</i>"), name);
-               show_error(str);
+               strencode2(str2, str, sizeof(str2));
+               show_error(str2);
                return;
             }
 
@@ -12912,7 +12917,8 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
       else
          sprintf(str, loc("User name <i>\"%s\"</i> not registered"), name);
 
-      show_error(str);
+      strencode2(str2, str, sizeof(str2));
+      show_error(str2);
 
       return;
    } else {
@@ -12999,7 +13005,7 @@ void show_new_user_page(LOGBOOK * lbs)
 void show_elog_delete(LOGBOOK * lbs, int message_id)
 {
    int i, status, reply = 0, next, nsel;
-   char str[256], in_reply_to[80], reply_to[MAX_REPLY_TO * 10], owner[256];
+   char str[256], str2[256], in_reply_to[80], reply_to[MAX_REPLY_TO * 10], owner[256];
    char attrib[MAX_N_ATTR][NAME_LENGTH], mode[80];
 
    /* redirect if confirm = NO */
@@ -13081,7 +13087,8 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
 
          if (!is_author(lbs, attrib, owner)) {
             sprintf(str, loc("Only user <i>%s</i> can delete this entry"), owner);
-            show_error(str);
+            strencode2(str2, str, sizeof(str2));
+            show_error(str2);
             return;
          }
       }
@@ -17839,7 +17846,7 @@ void show_select_navigation(LOGBOOK * lbs)
 time_t retrieve_date(char *index, BOOL bstart)
 {
    int year, month, day, hour, min, sec, current_year, current_month, current_day;
-   char pm[10], py[10], pd[10], ph[10], pn[10], ps[10], str[NAME_LENGTH];
+   char pm[10], py[10], pd[10], ph[10], pn[10], ps[10], str[NAME_LENGTH], str2[NAME_LENGTH];
    struct tm tms;
    time_t ltime;
 
@@ -17866,7 +17873,8 @@ time_t retrieve_date(char *index, BOOL bstart)
       year = atoi(getparam(py));
    if (year < 1970) {
       sprintf(str, "Error: Year %s out of range", getparam(py));
-      show_error(str);
+      strencode2(str2, str, sizeof(str2));
+      show_error(str2);
       return -1;
    }
 
@@ -18694,7 +18702,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          strlcat(line, ": ", sizeof(line));
          regerror(status, re_buf, str, sizeof(str));
          strlcat(line, str, sizeof(line));
-         show_error(line);
+         strencode2(str, line, sizeof(str));
+         show_error(str);
          return;
       }
    }
@@ -18726,7 +18735,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             strlcat(line, ": ", sizeof(line));
             regerror(status, re_buf + i + 1, str, sizeof(str));
             strlcat(line, str, sizeof(line));
-            show_error(line);
+            strencode2(str, line, sizeof(str));
+            show_error(str);
             return;
          }
       }
@@ -21377,7 +21387,8 @@ void submit_elog(LOGBOOK * lbs)
                  sizeof(str));
          strlcat(str, ".", sizeof(str));
 
-         show_error(str);
+         strencode2(str2, str, sizeof(str2));
+         show_error(str2);
          return;
       }
    }
@@ -24337,7 +24348,7 @@ void interprete(char *lbook, char *path)
    char exp[80], list[1000], section[256], str[NAME_LENGTH], str1[NAME_LENGTH], str2[NAME_LENGTH],
        edit_id[80], enc_pwd[80], file_name[256], command[256], enc_path[256], dec_path[256], uname[80],
        logbook[256], logbook_enc[256], *experiment, group[256], css[256], *pfile, attachment[MAX_PATH_LENGTH],
-       full_name[256];
+       full_name[256], str3[NAME_LENGTH];
    BOOL global;
    LOGBOOK *lbs;
    FILE *f;
@@ -24374,7 +24385,7 @@ void interprete(char *lbook, char *path)
             break;
       }
       if (!strieq(logbook, str)) {
-         sprintf(str, "Error: logbook \"%s\" not defined in %s", logbook, CFGFILE);
+         sprintf(str, "Error: logbook \"%s\" not defined in %s", logbook_enc, CFGFILE);
          show_error(str);
          return;
       }
@@ -24859,8 +24870,11 @@ void interprete(char *lbook, char *path)
          strlcpy(full_name, getparam("full_name"), sizeof(full_name));
       else
          full_name[0] = 0;
+
+      strencode2(str2, command, sizeof(str2));
+      strencode2(str3, full_name, sizeof(str3));
       sprintf(str, loc("Error: Command \"<b>%s</b>\" is not allowed for user \"<b>%s</b>\""),
-              command, full_name);
+              str2, str3);
       show_error(str);
       return;
    }
@@ -24873,7 +24887,8 @@ void interprete(char *lbook, char *path)
          return;
       }
 
-      sprintf(str, loc("Error: Command \"<b>%s</b>\" not allowed"), command);
+      strencode2(str2, command, sizeof(str3));
+      sprintf(str, loc("Error: Command \"<b>%s</b>\" not allowed"), str2);
       show_error(str);
       return;
    }
@@ -25356,7 +25371,7 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
    const char *pinit, *p, *pctmp, *pbody;
    char *buffer, *ptmp;
    char file_name[MAX_PATH_LENGTH], full_name[MAX_PATH_LENGTH],
-       str[NAME_LENGTH], line[NAME_LENGTH], item[NAME_LENGTH];
+       str[NAME_LENGTH], str2[NAME_LENGTH], line[NAME_LENGTH], item[NAME_LENGTH];
 
    n_att = 0;
    pinit = string;
@@ -25463,7 +25478,8 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                      eprintf("decode_post: Found attachment %s\n", file_name);
                   /* check filename for invalid characters */
                   if (strpbrk(file_name, ",;")) {
-                     sprintf(str, "Error: Filename \"%s\" contains invalid character", file_name);
+                     strencode2(str2, file_name, sizeof(str2));
+                     sprintf(str, "Error: Filename \"%s\" contains invalid character", str2);
                      show_error(str);
                      return;
                   }
@@ -25497,7 +25513,8 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                   if (stristr(file_name, "http://")) {
                      size = retrieve_url(file_name, &buffer, NULL);
                      if (size <= 0) {
-                        sprintf(str, loc("Cannot retrieve file from URL \"%s\""), file_name);
+                        strencode2(str2, file_name, sizeof(str2));
+                        sprintf(str, loc("Cannot retrieve file from URL \"%s\""), str2);
                         show_error(str);
                         return;
                      }
@@ -25516,7 +25533,8 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                      if (strchr(buffer, ' ')) {
                         status = atoi(strchr(buffer, ' ') + 1);
                         if (status != 200) {
-                           sprintf(str, loc("File not found at URL \"%s\""), file_name);
+                           strencode2(str2, file_name, sizeof(str2));
+                           sprintf(str, loc("File not found at URL \"%s\""), str2);
                            show_error(str);
                            return;
                         }
@@ -25527,7 +25545,8 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                      sprintf(str, "attachment%d", n_att++);
                      setparam(str, full_name);
                   } else {
-                     sprintf(str, loc("Attachment file <b>\"%s\"</b> empty or not found"), file_name);
+                     strencode2(str2, file_name, sizeof(str2));
+                     sprintf(str, loc("Attachment file <b>\"%s\"</b> empty or not found"), str2);
                      show_error(str);
                      return;
                   }
@@ -25609,7 +25628,7 @@ char remote_host[N_MAX_CONNECTION][256];
 int process_http_request(const char *request, int i_conn)
 {
    int i, n, authorized, header_length, content_length;
-   char str[1000], url[256], pwd[256], cl_pwd[256], format[256],
+   char str[1000], str2[1000], url[256], pwd[256], cl_pwd[256], format[256],
        cookie[256], boundary[256], list[1000], theme[256],
        host_list[MAX_N_LIST][NAME_LENGTH], logbook[256], logbook_enc[256], global_cmd[256];
    char *p;
@@ -25772,7 +25791,8 @@ int process_http_request(const char *request, int i_conn)
    url[i] = 0;
 
    if (strstr(url, "../..")) {
-      sprintf(str, "Invalid URL: %s", url);
+      strencode2(str2, url, sizeof(str2));
+      sprintf(str, "Invalid URL: %s", str2);
       show_error(str);
       return 1;
    }
@@ -25785,7 +25805,8 @@ int process_http_request(const char *request, int i_conn)
 
       /* do not allow '..' in file name */
       if (strstr(url, "..")) {
-         sprintf(str, "Invalid URL: %s", url);
+         strencode2(str2, url, sizeof(str2));
+         sprintf(str, "Invalid URL: %s", str2);
          show_error(str);
          return 1;
       }
@@ -25826,7 +25847,8 @@ int process_http_request(const char *request, int i_conn)
          url[i] = *p++;
       url[i] = 0;
       if (*(p - 1) == '/') {
-         sprintf(str, "Invalid URL: %s", url);
+         strencode2(str2, url, sizeof(str2));
+         sprintf(str, "Invalid URL: %s", str2);
          show_error(str);
          return 1;
       }
@@ -25858,7 +25880,8 @@ int process_http_request(const char *request, int i_conn)
 
       /* do not allow '..' in file name */
       if (strstr(logbook, "..")) {
-         sprintf(str, "Invalid URL: %s", logbook);
+         strencode2(str2, logbook, sizeof(str2));
+         sprintf(str, "Invalid URL: %s", str2);
          show_error(str);
          return 1;
       }
@@ -25891,7 +25914,7 @@ int process_http_request(const char *request, int i_conn)
          sprintf(str, "Top group %s", logbook);
          if (!getcfg("global", str, list, sizeof(list))) {
 
-            sprintf(str, "Error: logbook \"%s\" not defined in %s", logbook, CFGFILE);
+            sprintf(str, "Error: logbook \"%s\" not defined in %s", logbook_enc, CFGFILE);
             show_error(str);
             return 1;
          }
@@ -26124,7 +26147,8 @@ int process_http_request(const char *request, int i_conn)
          else
             decode_post(logbook, &lb_list[i], request + header_length, boundary, content_length);
       } else {
-         sprintf(str, "Unknown request:<p>%s", request);
+         strencode2(str2, request, sizeof(str2));
+         sprintf(str, "Unknown request:<p>%s", str2);
          show_error(str);
       }
    }
@@ -26761,8 +26785,8 @@ void server_loop(void)
                   } else {
                      if (strlen(net_buffer) > 0 && verbose) {
                         strcpy(str, "Received unknown HTTP command: ");
-                        strlcat(str, net_buffer, sizeof(str));
-                        show_error(net_buffer);
+                        strencode2(str, net_buffer, sizeof(str));
+                        show_error(str);
                      }
                      break;
                   }
