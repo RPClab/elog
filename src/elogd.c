@@ -22071,12 +22071,12 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
 #ifdef OS_UNIX
    strsubst(str2, sizeof(str2), " ", "\\ ");
    strsubst(str, sizeof(str), " ", "\\ ");
-   if (chkext(file_name, ".pdf") || chkext(file_name, ".ps") | chkext(file_name, ".eps"))
+   if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
       sprintf(cmd, "convert '%s[0-7]' -thumbnail '%s' '%s'", str2, thumb_size, str);
    else
       sprintf(cmd, "convert '%s' -thumbnail '%s' '%s'", str2, thumb_size, str);
 #else
-   if (chkext(file_name, ".pdf") || chkext(file_name, ".ps") | chkext(file_name, ".eps"))
+   if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
       sprintf(cmd, "convert \"%s[0-7]\" -thumbnail \"%s\" \"%s\"", str2, thumb_size, str);
    else
       sprintf(cmd, "convert \"%s\" -thumbnail \"%s\" \"%s\"", str2, thumb_size, str);

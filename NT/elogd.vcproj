@@ -312,6 +312,10 @@
 				RelativePath="..\doc\index.html"
 				>
 			</File>
+			<File
+				RelativePath="..\doc\index_d.html"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
