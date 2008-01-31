@@ -21971,9 +21971,10 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
 #ifdef OS_UNIX
    strsubst(str2, sizeof(str2), " ", "\\ ");
    strsubst(str, sizeof(str), " ", "\\ ");
-#endif
-
+   sprintf(cmd, "convert %s -thumbnail \"%s\" %s", str2, thumb_size, str);
+#else
    sprintf(cmd, "convert \"%s\" -thumbnail \"%s\" \"%s\"", str2, thumb_size, str);
+#endif
 
    sprintf(str, "SHELL \"%s\"", cmd);
    write_logfile(lbs, str);
