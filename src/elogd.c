@@ -1004,6 +1004,78 @@ void redirect_to_stderr(void)
 
 /*------------------------------------------------------------------*/
 
+int my_system(const char *cmd)
+/* execute system() command as original user */
+{
+#ifdef OS_UNIX
+   pid_t child_pid;
+   int status;
+   char str[256];
+
+   if ((child_pid = fork()) < 0)
+      return 0;
+   else if (child_pid > 0) {
+      /* parent process waits for child */
+      waitpid(child_pid, &status, 0);
+   } else {
+      /* child process */
+
+      /* restore original UID/GID */
+      if (setregid(-1, orig_gid) < 0 || setreuid(-1, orig_uid) < 0)
+         eprintf("Cannot restore original GID/UID.\n");
+
+      /* give up root privilege permanently */
+      if (geteuid() == 0) {
+         if (!getcfg("global", "Grp", str, sizeof(str)) || setgroup(str) < 0) {
+            eprintf("Falling back to default group \"elog\"\n");
+            if (setgroup("elog") < 0) {
+               eprintf("Falling back to default group \"%s\"\n", DEFAULT_GROUP);
+               if (setgroup(DEFAULT_GROUP) < 0) {
+                  eprintf("Refuse to run as setgid root.\n");
+                  eprintf("Please consider to define a Grp statement in configuration file\n");
+                  exit(EXIT_FAILURE);
+               }
+            }
+         } else if (verbose)
+            eprintf("Falling back to group \"%s\"\n", str);
+
+         if (!getcfg("global", "Usr", str, sizeof(str)) || setuser(str) < 0) {
+            eprintf("Falling back to default user \"elog\"\n");
+            if (setuser("elog") < 0) {
+               eprintf("Falling back to default user \"%s\"\n", DEFAULT_USER);
+               if (setuser(DEFAULT_USER) < 0) {
+                  eprintf("Refuse to run as setuid root.\n");
+                  eprintf("Please consider to define a Usr statement in configuration file\n");
+                  exit(EXIT_FAILURE);
+               }
+            }
+         } else if (verbose)
+            eprintf("Falling back to user \"%s\"\n", str);
+      }
+
+      /* execute shell with redirection to /tmp/elog-shell */
+      sprintf(str, "/bin/sh -c \"%s\"", cmd);
+
+      if (verbose) {
+         efputs("Going to execute: ");
+         efputs(str);
+         efputs("\n");
+      }
+
+      system(str);
+      exit(0);
+   }
+#endif
+
+#ifdef OS_WINNT
+   system(cmd);
+#endif
+
+   return 1;
+}
+
+/*------------------------------------------------------------------*/
+
 int subst_shell(char *cmd, char *result, int size)
 {
 #ifdef OS_WINNT
@@ -16844,9 +16916,15 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      if (thumb_status == 2) {
                         for (i=0 ; ; i++) {
                            strlcpy(str, file_name, sizeof(str));
+                           if (chkext(str, ".pdf") || chkext(str, ".ps") | chkext(str, ".eps"))
+                              if (strrchr(str, '.'))
+                                 *strrchr(str, '.') = 0;
                            sprintf(str+strlen(str), "-%d.png", i);
                            if (file_exist(str)) {
                               strlcpy(str, ref, sizeof(str));
+                              if (chkext(file_name, ".pdf") || chkext(file_name, ".ps") | chkext(file_name, ".eps"))
+                                 if (strrchr(str, '.'))
+                                    *strrchr(str, '.') = 0;
                               sprintf(str+strlen(str), "-%d.png", i);
                               rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
                               rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\"></a>\n", str,
@@ -16857,6 +16935,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      } else {
                         rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
                         strlcpy(str, ref, sizeof(str));
+                        if (chkext(str, ".pdf") || chkext(str, ".ps") | chkext(str, ".eps"))
+                           if (strrchr(str, '.'))
+                              *strrchr(str, '.') = 0;
                         strlcat(str, ".png", sizeof(str));
                         rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\"></a>\n", str,
                                  attachment[index] + 14, attachment[index] + 14);
@@ -20757,7 +20838,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
    sprintf(str, "SHELL \"%s\"", shell_cmd);
    write_logfile(lbs, str);
 
-   system(shell_cmd);
+   my_system(shell_cmd);
 
    return SUCCESS;
 }
@@ -21953,27 +22034,52 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
 
    if (!chkext(file_name, ".ps") && !chkext(file_name, ".pdf") && !chkext(file_name, ".eps") &&
        !chkext(file_name, ".gif") && !chkext(file_name, ".jpg") && !chkext(file_name, ".jpeg") &&
-       !chkext(file_name, ".png") && !chkext(file_name, ".ico"))
+       !chkext(file_name, ".png") && !chkext(file_name, ".ico") && !chkext(file_name, ".tif"))
        return 0;
 
-   strlcpy(str, file_name, sizeof(str));
-   strlcat(str, "-0.png", sizeof(str));
-   if (file_exist(str))
-      return 2;
+   /* append .png for all files as thumbnail name, except for PDF files (convert bug!) */
+   if (chkext(file_name, ".pdf") || chkext(file_name, ".ps") | chkext(file_name, ".eps")) {
+      strlcpy(str, file_name, sizeof(str));
+      if (strrchr(str, '.'))
+         *strrchr(str, '.') = 0;
+      strlcat(str, "-0.png", sizeof(str));
+      if (file_exist(str))
+         return 2;
 
-   strlcpy(str, file_name, sizeof(str));
-   strlcat(str, ".png", sizeof(str));
-   if (file_exist(str))
-      return 1;
+      strlcpy(str, file_name, sizeof(str));
+      if (strrchr(str, '.'))
+         *strrchr(str, '.') = 0;
+      strlcat(str, ".png", sizeof(str));
+      if (file_exist(str))
+         return 1;
 
-   strlcpy(str2, file_name, sizeof(str2));
+      strlcpy(str2, file_name, sizeof(str2));
+   } else {
+      strlcpy(str, file_name, sizeof(str));
+      strlcat(str, "-0.png", sizeof(str));
+      if (file_exist(str))
+         return 2;
+
+      strlcpy(str, file_name, sizeof(str));
+      strlcat(str, ".png", sizeof(str));
+      if (file_exist(str))
+         return 1;
+
+      strlcpy(str2, file_name, sizeof(str2));
+   }
 
 #ifdef OS_UNIX
    strsubst(str2, sizeof(str2), " ", "\\ ");
    strsubst(str, sizeof(str), " ", "\\ ");
-   sprintf(cmd, "convert %s\[0-9\] -thumbnail \"%s\" %s", str2, thumb_size, str);
+   if (chkext(file_name, ".pdf") || chkext(file_name, ".ps") | chkext(file_name, ".eps"))
+      sprintf(cmd, "convert '%s[0-7]' -thumbnail '%s' '%s'", str2, thumb_size, str);
+   else
+      sprintf(cmd, "convert '%s' -thumbnail '%s' '%s'", str2, thumb_size, str);
 #else
-   sprintf(cmd, "convert \"%s[0-9]\" -thumbnail \"%s\" \"%s\"", str2, thumb_size, str);
+   if (chkext(file_name, ".pdf") || chkext(file_name, ".ps") | chkext(file_name, ".eps"))
+      sprintf(cmd, "convert \"%s[0-7]\" -thumbnail \"%s\" \"%s\"", str2, thumb_size, str);
+   else
+      sprintf(cmd, "convert \"%s\" -thumbnail \"%s\" \"%s\"", str2, thumb_size, str);
 #endif
 
    sprintf(str, "SHELL \"%s\"", cmd);
@@ -21981,19 +22087,35 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
    if (verbose)
       eprintf(str);
 
-   system(cmd);
+   my_system(cmd);
 
-   strlcpy(str, file_name, sizeof(str));
-   strlcat(str, ".png", sizeof(str));
-   if (file_exist(str))
-      return 1;
+   if (chkext(file_name, ".pdf") || chkext(file_name, ".ps") | chkext(file_name, ".eps")) {
+      strlcpy(str, file_name, sizeof(str));
+      if (strrchr(str, '.'))
+         *strrchr(str, '.') = 0;
+      strlcat(str, "-0.png", sizeof(str));
+      if (file_exist(str))
+         return 2;
 
-   strlcpy(str, file_name, sizeof(str));
-   strlcat(str, "-0.png", sizeof(str));
-   if (file_exist(str))
-      return 2;
+      strlcpy(str, file_name, sizeof(str));
+      if (strrchr(str, '.'))
+         *strrchr(str, '.') = 0;
+      strlcat(str, ".png", sizeof(str));
+      if (file_exist(str))
+         return 1;
+   } else {
+      strlcpy(str, file_name, sizeof(str));
+      strlcat(str, ".png", sizeof(str));
+      if (file_exist(str))
+         return 1;
 
-   return 0;
+      strlcpy(str, file_name, sizeof(str));
+      strlcat(str, "-0.png", sizeof(str));
+      if (file_exist(str))
+         return 2;
+   }
+
+   return 3;
 }
 
 /*------------------------------------------------------------------*/
@@ -22951,26 +23073,41 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
                   if (thumb_status) {
                      rsprintf("<tr><td class=\"attachmentframe\">\n");
-                     if (thumb_status == 2 && !email) {
-                        for (i=0 ; ; i++) {
-                           strlcpy(str, file_name, sizeof(str));
-                           sprintf(str+strlen(str), "-%d.png", i);
-                           if (file_exist(str)) {
-                              strlcpy(str, ref, sizeof(str));
+
+                     if (thumb_status == 3) {
+                        rsprintf("<font color=red><b>%s</b></font>\n", 
+                           loc("Cannot create thumbnail, please check ImageMagick installation"));
+                     } else {
+                        if (thumb_status == 2 && !email) {
+                           for (i=0 ; ; i++) {
+                              strlcpy(str, file_name, sizeof(str));
+                              if (chkext(file_name, ".pdf") || chkext(file_name, ".ps") | chkext(file_name, ".eps"))
+                                 if (strrchr(str, '.'))
+                                    *strrchr(str, '.') = 0;
                               sprintf(str+strlen(str), "-%d.png", i);
+                              if (file_exist(str)) {
+                                 strlcpy(str, ref, sizeof(str));
+                                 if (chkext(file_name, ".pdf") || chkext(file_name, ".ps") | chkext(file_name, ".eps"))
+                                    if (strrchr(str, '.'))
+                                       *strrchr(str, '.') = 0;
+                                 sprintf(str+strlen(str), "-%d.png", i);
+                                 rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
+                                 rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\"></a>\n", str,
+                                          attachment[index] + 14, attachment[index] + 14);
+                              } else
+                                 break;
+                           }
+                        } else {
+                           if (!email) {
                               rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
+                              strlcpy(str, ref, sizeof(str));
+                              if (chkext(str, ".pdf"))
+                                 if (strrchr(str, '.'))
+                                    *strrchr(str, '.') = 0;
+                              strlcat(str, ".png", sizeof(str));
                               rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\"></a>\n", str,
                                        attachment[index] + 14, attachment[index] + 14);
-                           } else
-                              break;
-                        }
-                     } else {
-                        if (!email) {
-                           rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
-                           strlcpy(str, ref, sizeof(str));
-                           strlcat(str, ".png", sizeof(str));
-                           rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\"></a>\n", str,
-                                    attachment[index] + 14, attachment[index] + 14);
+                           }
                         }
                      }
                      rsprintf("</td></tr>\n\n");
@@ -25861,7 +25998,6 @@ int process_http_request(const char *request, int i_conn)
          strcpy(remote_host[i_conn], (char *) inet_ntoa(rem_addr));
 
       strcpy(rem_host, remote_host[i_conn]);
-      printf("X-forwarded-host: %s\n", rem_host);
    }
 
    if (_logging_level > 3) {
