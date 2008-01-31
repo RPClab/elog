@@ -21946,7 +21946,7 @@ int is_inline_attachment(char *encoding, int message_id, char *text, int i, char
 
 int create_thumbnail(LOGBOOK * lbs, char *file_name)
 {
-   char str[MAX_PATH_LENGTH], cmd[2*MAX_PATH_LENGTH], thumb_size[256];
+   char str[MAX_PATH_LENGTH], str2[MAX_PATH_LENGTH], cmd[2*MAX_PATH_LENGTH], thumb_size[256];
 
    if (!getcfg(lbs->name, "Thumbnail size", thumb_size, sizeof(thumb_size)))
       return 0;
@@ -21966,7 +21966,14 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
    if (file_exist(str))
       return 1;
 
-   sprintf(cmd, "convert %s -thumbnail \"%s\" %s", file_name, thumb_size, str);
+   strlcpy(str2, file_name, sizeof(str2));
+
+#ifdef OS_UNIX
+   strsubst(str2, sizeof(str2), " ", "\\ ");
+   strsubst(str, sizeof(str), " ", "\\ ");
+#endif
+
+   sprintf(cmd, "convert \"%s\" -thumbnail \"%s\" \"%s\"", str2, thumb_size, str);
 
    sprintf(str, "SHELL \"%s\"", cmd);
    write_logfile(lbs, str);
