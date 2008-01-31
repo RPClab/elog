@@ -21948,10 +21948,8 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
 {
    char str[MAX_PATH_LENGTH], cmd[2*MAX_PATH_LENGTH], thumb_size[256];
 
-   if (!getcfg(lbs->name, "Thumbnail size", thumb_size, sizeof(thumb_size))) {
-      file_name[0] = 0;
+   if (!getcfg(lbs->name, "Thumbnail size", thumb_size, sizeof(thumb_size)))
       return 0;
-   }
 
    if (!chkext(file_name, ".ps") && !chkext(file_name, ".pdf") && !chkext(file_name, ".eps") &&
        !chkext(file_name, ".gif") && !chkext(file_name, ".jpg") && !chkext(file_name, ".jpeg") &&
@@ -22945,7 +22943,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
                   if (thumb_status) {
                      rsprintf("<tr><td class=\"attachmentframe\">\n");
-                     if (thumb_status == 2) {
+                     if (thumb_status == 2 && !email) {
                         for (i=0 ; ; i++) {
                            strlcpy(str, file_name, sizeof(str));
                            sprintf(str+strlen(str), "-%d.png", i);
@@ -22959,19 +22957,23 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                               break;
                         }
                      } else {
-                        rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
-                        strlcpy(str, ref, sizeof(str));
-                        strlcat(str, ".png", sizeof(str));
-                        rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\"></a>\n", str,
-                                 attachment[index] + 14, attachment[index] + 14);
+                        if (!email) {
+                           rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
+                           strlcpy(str, ref, sizeof(str));
+                           strlcat(str, ".png", sizeof(str));
+                           rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\"></a>\n", str,
+                                    attachment[index] + 14, attachment[index] + 14);
+                        }
                      }
                      rsprintf("</td></tr>\n\n");
                   } else if (is_image(att)) {
-                     rsprintf("<tr><td class=\"attachmentframe\">\n");
-                     rsprintf("<a name=\"att%d\"></a>\n", index + 1);
-                     rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\">\n", ref, attachment[index] + 14,
-                              attachment[index] + 14);
-                     rsprintf("</td></tr>\n\n");
+                     if (!email) {
+                        rsprintf("<tr><td class=\"attachmentframe\">\n");
+                        rsprintf("<a name=\"att%d\"></a>\n", index + 1);
+                        rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\">\n", ref, attachment[index] + 14,
+                                 attachment[index] + 14);
+                        rsprintf("</td></tr>\n\n");
+                     }
                   } else {
                      if (is_ascii(file_name)) {
                         /* display attachment */
