@@ -22027,7 +22027,7 @@ int is_inline_attachment(char *encoding, int message_id, char *text, int i, char
 
 int create_thumbnail(LOGBOOK * lbs, char *file_name)
 {
-   char str[MAX_PATH_LENGTH], str2[MAX_PATH_LENGTH], cmd[2*MAX_PATH_LENGTH], thumb_size[256];
+   char str[MAX_PATH_LENGTH], cmd[2*MAX_PATH_LENGTH], thumb_size[256];
 
    if (!getcfg(lbs->name, "Thumbnail size", thumb_size, sizeof(thumb_size)))
       return 0;
@@ -22052,8 +22052,6 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
       strlcat(str, ".png", sizeof(str));
       if (file_exist(str))
          return 1;
-
-      strlcpy(str2, file_name, sizeof(str2));
    } else {
       strlcpy(str, file_name, sizeof(str));
       strlcat(str, "-0.png", sizeof(str));
@@ -22064,22 +22062,18 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
       strlcat(str, ".png", sizeof(str));
       if (file_exist(str))
          return 1;
-
-      strlcpy(str2, file_name, sizeof(str2));
    }
 
 #ifdef OS_UNIX
-   strsubst(str2, sizeof(str2), " ", "\\ ");
-   strsubst(str, sizeof(str), " ", "\\ ");
    if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
-      sprintf(cmd, "convert '%s[0-7]' -thumbnail '%s' '%s'", str2, thumb_size, str);
+      sprintf(cmd, "convert '%s[0-7]' -thumbnail '%s' '%s'", file_name, thumb_size, str);
    else
-      sprintf(cmd, "convert '%s' -thumbnail '%s' '%s'", str2, thumb_size, str);
+      sprintf(cmd, "convert '%s' -thumbnail '%s' '%s'", file_name, thumb_size, str);
 #else
    if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
-      sprintf(cmd, "convert \"%s[0-7]\" -thumbnail \"%s\" \"%s\"", str2, thumb_size, str);
+      sprintf(cmd, "convert \"%s[0-7]\" -thumbnail \"%s\" \"%s\"", file_name, thumb_size, str);
    else
-      sprintf(cmd, "convert \"%s\" -thumbnail \"%s\" \"%s\"", str2, thumb_size, str);
+      sprintf(cmd, "convert \"%s\" -thumbnail \"%s\" \"%s\"", file_name, thumb_size, str);
 #endif
 
    sprintf(str, "SHELL \"%s\"", cmd);
@@ -23101,7 +23095,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                            if (!email) {
                               rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
                               strlcpy(str, ref, sizeof(str));
-                              if (chkext(str, ".pdf"))
+                              if (chkext(file_name, ".pdf") || chkext(file_name, ".ps") | chkext(file_name, ".eps"))
                                  if (strrchr(str, '.'))
                                     *strrchr(str, '.') = 0;
                               strlcat(str, ".png", sizeof(str));
