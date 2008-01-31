@@ -208,7 +208,8 @@ struct in_addr rem_addr;
 char rem_host[256];
 char rem_host_ip[256];
 int _sock;
-BOOL use_keepalive, enable_execute = FALSE, fckedit_exist;
+BOOL use_keepalive, enable_execute = FALSE;
+BOOL fckedit_exist, image_magick_exist;
 int verbose, _current_message_id;
 int _logging_level;
 
@@ -22029,8 +22030,11 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
 {
    char str[MAX_PATH_LENGTH], cmd[2*MAX_PATH_LENGTH], thumb_size[256];
 
-   if (!getcfg(lbs->name, "Thumbnail size", thumb_size, sizeof(thumb_size)))
+   if (!image_magick_exist)
       return 0;
+
+   if (!getcfg(lbs->name, "Thumbnail size", thumb_size, sizeof(thumb_size)))
+      strcpy(thumb_size, "300>");
 
    if (!chkext(file_name, ".ps") && !chkext(file_name, ".pdf") && !chkext(file_name, ".eps") &&
        !chkext(file_name, ".gif") && !chkext(file_name, ".jpg") && !chkext(file_name, ".jpeg") &&
@@ -26775,6 +26779,12 @@ void server_loop(void)
    fckedit_exist = exist_file(str);
    if (fckedit_exist)
       eprintf("FCKedit detected\n");
+
+   /* check for ImageMagick */
+   subst_shell("convert -version", str, sizeof(str));
+   image_magick_exist = (strstr(str, "ImageMagick") != NULL);
+   if (image_magick_exist)
+      eprintf("ImageMagick detected\n");
 
    /* build logbook indices */
    if (!verbose && !running_as_daemon)
