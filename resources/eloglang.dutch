@@ -1,6 +1,6 @@
 #
 # Dutch translation by djek@xs4all.nl
-# 10-11-2007
+# 31-01-2008
 # A more recent version may be available at :
 # http://savannah.psi.ch/websvn/listing.php?repname=elog&path=%2Ftrunk%2Fresources%2F
 #
@@ -451,9 +451,5 @@ Last entry, Ctrl-End = Laatste bericht, Ctrl-End
 ELOG import = ELOG import
 Please choose format to import: = Kies het formaat om te importeren
 Enter text = Voer tekst in
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Show HTML source code = 
-or until I log out = 
+Show HTML source code = Toon HTML broncode
+or until I log out =  of tot ik afmeld
