@@ -142,11 +142,12 @@ SectionEnd
 
 ; optional section
 Section "Start Menu Shortcuts" SecStart
+  SetOutPath $INSTDIR
   CreateDirectory "$SMPROGRAMS\ELOG"
   CreateDirectory "$SMPROGRAMS\ELOG\ELOG Server"
-  CreateShortCut "$SMPROGRAMS\ELOG\ELOG Server\Start ELOG server manually.lnk" "$INSTDIR\elogd.exe" "$INSTDIR\elogd.exe" "$INSTDIR\themes\default\favicon.ico"
-  CreateShortCut "$SMPROGRAMS\ELOG\ELOG Server\Register ELOG server service.lnk" "$INSTDIR\elogd.exe" "$INSTDIR\elogd.exe -install" "$INSTDIR\themes\default\favicon.ico"
-  CreateShortCut "$SMPROGRAMS\ELOG\ELOG Server\Unregister ELOG server service.lnk" "$INSTDIR\elogd.exe" "$INSTDIR\elogd.exe -remove" "$INSTDIR\themes\default\favicon.ico"
+  CreateShortCut "$SMPROGRAMS\ELOG\ELOG Server\Start ELOG server manually.lnk" "$INSTDIR\elogd.exe" "" "$INSTDIR\themes\default\favicon.ico"
+  CreateShortCut "$SMPROGRAMS\ELOG\ELOG Server\Register ELOG server service.lnk" "$INSTDIR\elogd.exe" "-install" "$INSTDIR\themes\default\favicon.ico"
+  CreateShortCut "$SMPROGRAMS\ELOG\ELOG Server\Unregister ELOG server service.lnk" "$INSTDIR\elogd.exe" "-remove" "$INSTDIR\themes\default\favicon.ico"
   Delete "$SMPROGRAMS\ELOG\Demo Logbook (requires running server).lnk"
   WriteINIStr "$SMPROGRAMS\ELOG\Demo Logbook (requires running server).url" \
               "InternetShortcut" "URL" "http://localhost:8080/demo/"
