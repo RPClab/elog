@@ -439,6 +439,7 @@ void strencode2(char *b, const char *text, int size);
 void load_config_section(char *section, char **buffer, char *error);
 void remove_crlf(char *buffer);
 time_t convert_date(char *date_string);
+int get_thumb_name(const char *file_name, char *thumb_name, int size, int index);
 int create_thumbnail(LOGBOOK * lbs, char *file_name);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
@@ -1005,79 +1006,7 @@ void redirect_to_stderr(void)
 
 /*------------------------------------------------------------------*/
 
-int my_system(const char *cmd)
-/* execute system() command as original user */
-{
-#ifdef OS_UNIX
-   pid_t child_pid;
-   int status;
-   char str[256];
-
-   if ((child_pid = fork()) < 0)
-      return 0;
-   else if (child_pid > 0) {
-      /* parent process waits for child */
-      waitpid(child_pid, &status, 0);
-   } else {
-      /* child process */
-
-      /* restore original UID/GID */
-      if (setregid(-1, orig_gid) < 0 || setreuid(-1, orig_uid) < 0)
-         eprintf("Cannot restore original GID/UID.\n");
-
-      /* give up root privilege permanently */
-      if (geteuid() == 0) {
-         if (!getcfg("global", "Grp", str, sizeof(str)) || setgroup(str) < 0) {
-            eprintf("Falling back to default group \"elog\"\n");
-            if (setgroup("elog") < 0) {
-               eprintf("Falling back to default group \"%s\"\n", DEFAULT_GROUP);
-               if (setgroup(DEFAULT_GROUP) < 0) {
-                  eprintf("Refuse to run as setgid root.\n");
-                  eprintf("Please consider to define a Grp statement in configuration file\n");
-                  exit(EXIT_FAILURE);
-               }
-            }
-         } else if (verbose)
-            eprintf("Falling back to group \"%s\"\n", str);
-
-         if (!getcfg("global", "Usr", str, sizeof(str)) || setuser(str) < 0) {
-            eprintf("Falling back to default user \"elog\"\n");
-            if (setuser("elog") < 0) {
-               eprintf("Falling back to default user \"%s\"\n", DEFAULT_USER);
-               if (setuser(DEFAULT_USER) < 0) {
-                  eprintf("Refuse to run as setuid root.\n");
-                  eprintf("Please consider to define a Usr statement in configuration file\n");
-                  exit(EXIT_FAILURE);
-               }
-            }
-         } else if (verbose)
-            eprintf("Falling back to user \"%s\"\n", str);
-      }
-
-      /* execute shell with redirection to /tmp/elog-shell */
-      sprintf(str, "/bin/sh -c \"%s\"", cmd);
-
-      if (verbose) {
-         efputs("Going to execute: ");
-         efputs(str);
-         efputs("\n");
-      }
-
-      system(str);
-      exit(0);
-   }
-#endif
-
-#ifdef OS_WINNT
-   system(cmd);
-#endif
-
-   return 1;
-}
-
-/*------------------------------------------------------------------*/
-
-int subst_shell(char *cmd, char *result, int size)
+int my_shell(char *cmd, char *result, int size)
 {
 #ifdef OS_WINNT
 
@@ -1394,7 +1323,7 @@ void strsubst_list(char *string, int size, char name[][NAME_LENGTH], char value[
             strlcpy(result, loc("Shell execution not enabled via -x flag"), sizeof(result));
             eprintf("Shell execution not enabled via -x flag.\n");
          } else
-            subst_shell(str, result, sizeof(result));
+            my_shell(str, result, sizeof(result));
 
          strlcpy(pt, result, sizeof(tmp) - (pt - tmp));
          pt += strlen(pt);
@@ -8938,7 +8867,7 @@ void ricon(char *name, char *comment, char *onclick)
    rsprintf(" onclick=\"%s\"", onclick);
    rsprintf(" onmousedown=\"document.images.%s.src='icons/eld_%s.png'\"", name, name);
    rsprintf(" onmouseup=\"document.images.%s.src='icons/elc_%s.png'\"", name, name);
-   rsprintf(" onmouseover=\"this.style.cursor='pointer';\" />");
+   rsprintf(" onmouseover=\"this.style.cursor='pointer';\" />\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -8991,7 +8920,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
        format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr, n_lines,
        attr_index[MAX_N_ATTR], enc_selected, show_smileys, show_text, n_moptions, display_inline,
-       allowed_encoding;
+       allowed_encoding, thumb_status;
    char str[2 * NAME_LENGTH], str2[NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80], comment[10000],
        reply_string[256], list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80],
        script_onload[256], script_onfocus[256], script_onunload[256], attrib[MAX_N_ATTR][NAME_LENGTH], *text,
@@ -8999,7 +8928,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256],
        class_value[80], class_name[80], ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256],
        cookie[256], orig_author[256], attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256],
-       tooltip[10000], enc_attr[NAME_LENGTH], user_email[256];
+       tooltip[10000], enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -9699,6 +9628,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
    rsprintf("//-->\n");
    rsprintf("</script>\n");
+
+   /* optionally load ImageMagic JavaScript code */
+   if (image_magick_exist)
+      rsprintf("<script type=\"text/javascript\" src=\"../im.js\"></script>\n\n");
 
    /* optionally load ELCode JavaScript code */
    if (enc_selected == 0)
@@ -11074,41 +11007,101 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), index + 1);
                sprintf(str, "attachment%d", index);
                rsprintf("<td class=\"attribvalue\">\n");
+               rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", str, att[index]);
 
                if (strlen(att[index]) < 14 || att[index][6] != '_' || att[index][13] != '_') {
                   rsprintf("<b>Error: Invalid attachment \"%s\"</b><br>", att);
                } else {
 
-                  rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", str, att[index]);
-                  rsprintf("%s\n", att[index] + 14);
-                  rsprintf("&nbsp;&nbsp;<input type=\"submit\" name=\"delatt%d\" value=\"%s\" ", index,
-                           loc("Delete"));
-                  rsprintf("onClick=\"return mark_submit();\">");
-
                   strlcpy(file_name, lbs->data_dir, sizeof(file_name));
                   strlcat(file_name, att[index], sizeof(file_name));
 
                   display_inline = is_image(file_name) || is_ascii(file_name);
-                  if (chkext(file_name, ".PS") || chkext(file_name, ".PDF") || chkext(file_name, ".EPS"))
+                  if (chkext(file_name, ".ps") || chkext(file_name, ".pdf") || chkext(file_name, ".eps"))
                      display_inline = 0;
-                  if ((chkext(file_name, ".HTM") || chkext(file_name, ".HTML")) && is_full_html(file_name))
+                  if ((chkext(file_name, ".htm") || chkext(file_name, ".html")) && is_full_html(file_name))
                      display_inline = 0;
                   if (getcfg(lbs->name, "Preview attachments", str, sizeof(str)) && atoi(str) == 0)
                      display_inline = 0;
 
+                  thumb_status = create_thumbnail(lbs, file_name);
+                  if (thumb_status)
+                     display_inline = 1;
+
+                  if (thumb_status) {
+                     get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
+                     if (strrchr(thumb_name, DIR_SEPARATOR))
+                        strlcpy(str, strrchr(thumb_name, DIR_SEPARATOR)+1, sizeof(str));
+                     else
+                        strlcpy(str, thumb_name, sizeof(str));
+                     strlcpy(thumb_name, str, sizeof(str));
+
+                     rsprintf("<table><tr><td class=\"toolframe\">\n");
+                     sprintf(str, "im('att'+%d,'%s','%s','smaller');", index, thumb_name, att[index]);
+                     ricon("smaller", loc("Make smaller"), str);
+                     sprintf(str, "im('att'+%d,'%s','%s','larger');", index, thumb_name, att[index]);
+                     ricon("larger", loc("Make larger"), str);
+                     rsprintf("&nbsp;");
+                     sprintf(str, "im('att'+%d,'%s','%s','rotleft');", index, thumb_name, att[index]);
+                     ricon("rotleft", loc("Rotate left"), str);
+                     sprintf(str, "im('att'+%d,'%s','%s','rotright');", index, thumb_name, att[index]);
+                     ricon("rotright", loc("Rotate right"), str);
+                     rsprintf("&nbsp;");
+                     sprintf(str, "document.form1.jcmd.value='delete';");
+                     sprintf(str+strlen(str), "document.form1.smcmd.value='delatt%d';", index);
+                     sprintf(str+strlen(str), "document.form1.submit();");
+                     ricon("delete", loc("Delete attachment"), str);
+                     rsprintf("&nbsp;&nbsp;");
+
+                     /* ImageMagick available, so get image size */
+                     rsprintf("<b>%s</b>&nbsp;\n", att[index] + 14);
+                     sprintf(cmd, "identify -format %%P \"%s\"", file_name);
+                     my_shell(cmd, str, sizeof(str));
+                     if (atoi(str) > 0)
+                        rsprintf("<span class=\"bytes\">%s: %s</span>\n", loc("Original size"), str);
+                     
+                     rsprintf("</td></tr>\n");
+                     rsprintf("<tr><td align=center>");
+                  } else {
+                     rsprintf("%s\n", att[index] + 14);
+                     rsprintf("&nbsp;&nbsp;<input type=\"submit\" name=\"delatt%d\" value=\"%s\" ", 
+                        index, loc("Delete"));
+                     rsprintf("onClick=\"return mark_submit();\">");
+                     rsprintf("<br>\n");
+                  }
+
                   if (display_inline) {
 
-                     rsprintf("<br>\n");
-
-                     strlcpy(str, att[index], sizeof(str));
-                     str[13] = 0;
-                     strcpy(file_enc, att[index] + 14);
-                     url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
-                     sprintf(ref, "%s/%s", str, file_enc);
-
                      if (is_image(att[index])) {
-                        rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\">\n", ref, att[index] + 14,
-                                 att[index] + 14);
+                        if (thumb_status) {
+                           for (i=0 ; ; i++) {
+                              get_thumb_name(file_name, thumb_name, sizeof(thumb_name), i);
+                              if (thumb_name[0]) {
+                                 strlcpy(str, att[index], sizeof(str));
+                                 str[13] = 0;
+                                 if (strrchr(thumb_name, DIR_SEPARATOR))
+                                    strlcpy(file_enc, strrchr(thumb_name, DIR_SEPARATOR)+1+14, sizeof(file_enc));
+                                 else
+                                    strlcpy(file_enc, thumb_name + 14, sizeof(file_enc));
+                                 url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
+                                 sprintf(ref, "%s/%s", str, file_enc);
+
+                                 rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" id=\"att%d\">\n", 
+                                          ref, att[index] + 14, att[index] + 14, index);
+                              } else
+                                 break;
+                           }
+
+                        } else {
+                           strlcpy(str, att[index], sizeof(str));
+                           str[13] = 0;
+                           strcpy(file_enc, att[index] + 14);
+                           url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
+                           sprintf(ref, "%s/%s", str, file_enc);
+
+                           rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" id=\"att%d\">\n", 
+                                    ref, att[index] + 14, att[index] + 14, index);
+                        }
                      } else {
                         if (is_ascii(file_name)) {
                            if (!chkext(att[index], ".HTML"))
@@ -11140,6 +11133,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         }
                      }
                   }
+
+                  if (thumb_status)
+                     rsprintf("</td></tr></table>\n");
                }
 
                rsprintf("</td></tr>\n");
@@ -16917,13 +16913,13 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                      if (thumb_status == 2) {
                         for (i=0 ; ; i++) {
                            strlcpy(str, file_name, sizeof(str));
-                           if (chkext(str, ".pdf") || chkext(str, ".ps") | chkext(str, ".eps"))
+                           if (chkext(str, ".pdf") || chkext(str, ".ps"))
                               if (strrchr(str, '.'))
                                  *strrchr(str, '.') = 0;
                            sprintf(str+strlen(str), "-%d.png", i);
                            if (file_exist(str)) {
                               strlcpy(str, ref, sizeof(str));
-                              if (chkext(file_name, ".pdf") || chkext(file_name, ".ps") | chkext(file_name, ".eps"))
+                              if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
                                  if (strrchr(str, '.'))
                                     *strrchr(str, '.') = 0;
                               sprintf(str+strlen(str), "-%d.png", i);
@@ -17379,6 +17375,9 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
    }
    /* exclude other non-localized commands */
    else if (command[0] && strieq(command, "GetMD5")) {
+      return TRUE;
+   }
+   else if (command[0] && strieq(command, "IM")) {
       return TRUE;
    }
    /* check if command is present in the menu list */
@@ -20839,7 +20838,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
    sprintf(str, "SHELL \"%s\"", shell_cmd);
    write_logfile(lbs, str);
 
-   my_system(shell_cmd);
+   my_shell(shell_cmd, str, sizeof(str));
 
    return SUCCESS;
 }
@@ -22029,6 +22028,7 @@ int is_inline_attachment(char *encoding, int message_id, char *text, int i, char
 int create_thumbnail(LOGBOOK * lbs, char *file_name)
 {
    char str[MAX_PATH_LENGTH], cmd[2*MAX_PATH_LENGTH], thumb_size[256];
+   int status;
 
    if (!image_magick_exist)
       return 0;
@@ -22041,32 +22041,16 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
        !chkext(file_name, ".png") && !chkext(file_name, ".ico") && !chkext(file_name, ".tif"))
        return 0;
 
-   /* append .png for all files as thumbnail name, except for PDF files (convert bug!) */
-   if (chkext(file_name, ".pdf") || chkext(file_name, ".ps") | chkext(file_name, ".eps")) {
-      strlcpy(str, file_name, sizeof(str));
+   status = get_thumb_name(file_name, str, sizeof(str), 0);
+   if (status)
+      return status;
+
+   strlcpy(str, file_name, sizeof(str));
+   if (chkext(file_name, ".pdf") || chkext(file_name, ".ps")) {
       if (strrchr(str, '.'))
          *strrchr(str, '.') = 0;
-      strlcat(str, "-0.png", sizeof(str));
-      if (file_exist(str))
-         return 2;
-
-      strlcpy(str, file_name, sizeof(str));
-      if (strrchr(str, '.'))
-         *strrchr(str, '.') = 0;
-      strlcat(str, ".png", sizeof(str));
-      if (file_exist(str))
-         return 1;
-   } else {
-      strlcpy(str, file_name, sizeof(str));
-      strlcat(str, "-0.png", sizeof(str));
-      if (file_exist(str))
-         return 2;
-
-      strlcpy(str, file_name, sizeof(str));
-      strlcat(str, ".png", sizeof(str));
-      if (file_exist(str))
-         return 1;
    }
+   strlcat(str, ".png", sizeof(str));
 
 #ifdef OS_UNIX
    if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
@@ -22082,38 +22066,136 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
 
    sprintf(str, "SHELL \"%s\"", cmd);
    write_logfile(lbs, str);
-   if (verbose)
+   if (verbose) {
       eprintf(str);
-
-   my_system(cmd);
-
-   if (chkext(file_name, ".pdf") || chkext(file_name, ".ps") | chkext(file_name, ".eps")) {
-      strlcpy(str, file_name, sizeof(str));
-      if (strrchr(str, '.'))
-         *strrchr(str, '.') = 0;
-      strlcat(str, "-0.png", sizeof(str));
-      if (file_exist(str))
-         return 2;
-
-      strlcpy(str, file_name, sizeof(str));
-      if (strrchr(str, '.'))
-         *strrchr(str, '.') = 0;
-      strlcat(str, ".png", sizeof(str));
-      if (file_exist(str))
-         return 1;
-   } else {
-      strlcpy(str, file_name, sizeof(str));
-      strlcat(str, ".png", sizeof(str));
-      if (file_exist(str))
-         return 1;
-
-      strlcpy(str, file_name, sizeof(str));
-      strlcat(str, "-0.png", sizeof(str));
-      if (file_exist(str))
-         return 2;
+      eprintf("\n");
    }
 
+   my_shell(cmd, str, sizeof(str));
+
+   status = get_thumb_name(file_name, str, sizeof(str), 0);
+   if (status)
+      return status;
+
    return 3;
+}
+
+/*------------------------------------------------------------------*/
+
+int get_thumb_name(const char *file_name, char *thumb_name, int size, int index)
+{
+   char str[MAX_PATH_LENGTH];
+
+   thumb_name[0] = 0;
+
+   /* append .png for all files as thumbnail name, except for PDF files (convert bug!) */
+   if (chkext(file_name, ".pdf") || chkext(file_name, ".ps")) {
+      strlcpy(str, file_name, sizeof(str));
+      if (strrchr(str, '.'))
+         *strrchr(str, '.') = 0;
+      sprintf(str+strlen(str), "-%d.png", index);
+      if (file_exist(str)) {
+         strlcpy(thumb_name, str, size);
+         return 2;
+      }
+
+      if (index > 0)
+         return 0;
+
+      strlcpy(str, file_name, sizeof(str));
+      if (strrchr(str, '.'))
+         *strrchr(str, '.') = 0;
+      strlcat(str, ".png", sizeof(str));
+      if (file_exist(str)) {
+         strlcpy(thumb_name, str, size);
+         return 1;
+      }
+   } else {
+      strlcpy(str, file_name, sizeof(str));
+      sprintf(str+strlen(str), "-%d.png", index);
+      if (file_exist(str)) {
+         strlcpy(thumb_name, str, size);
+         return 2;
+      }
+
+      if (index > 0)
+         return 0;
+
+      strlcpy(str, file_name, sizeof(str));
+      strlcat(str, ".png", sizeof(str));
+      if (file_exist(str)) {
+         strlcpy(thumb_name, str, size);
+         return 1;
+      }
+   }
+
+   return 0;
+}
+
+/*------------------------------------------------------------------*/
+
+void call_image_magick(LOGBOOK *lbs, int message_id)
+{
+   char str[256], cmd[256], file_name[256], thumb_name[256];
+   int cur_width, cur_height, new_size, cur_rot, new_rot;
+
+   if (!isparam("req") || !isparam("img")) {
+      show_error("Unknown IM request received");
+      return;
+   }
+      
+   strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+   strlcat(file_name, getparam("img"), sizeof(file_name));
+   get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
+
+   sprintf(cmd, "identify -format %%P%%c \"%s\"", thumb_name);
+   my_shell(cmd, str, sizeof(str));
+   if (atoi(str) > 0) {
+      cur_width = atoi(str);
+      if (strchr(str, 'x')) {
+         cur_height = atoi(strchr(str, 'x')+1);
+      } else
+         cur_height = cur_width;
+      if (strchr(str, ' ')) {
+         cur_rot = atoi(strchr(str, ' ')+1);
+      } else
+         cur_rot = 0;
+   } else {
+      show_error(str);
+      return;
+   }
+
+   if (strieq(getparam("req"), "rotleft")) {
+      new_rot = (cur_rot + 360 - 90) % 360;
+      sprintf(cmd, "convert \"%s\" -rotate %d -thumbnail %d -set comment \" %d\" \"%s\"", 
+         file_name, new_rot, cur_height, new_rot, thumb_name); 
+      my_shell(cmd, str, sizeof(str));
+   }
+
+   if (strieq(getparam("req"), "rotright")) {
+      new_rot = (cur_rot + 90) % 360;
+      sprintf(cmd, "convert \"%s\" -rotate %d -thumbnail %d -set comment \" %d\" \"%s\"", 
+         file_name, new_rot, cur_height, new_rot, thumb_name); 
+      my_shell(cmd, str, sizeof(str));
+   }
+
+   if (strieq(getparam("req"), "smaller")) {
+      new_size = (int) (cur_width/1.5);
+      sprintf(cmd, "convert \"%s\" -rotate %d -thumbnail %d -set comment \" %d\" \"%s\"", 
+         file_name, cur_rot, new_size, cur_rot, thumb_name); 
+      my_shell(cmd, str, sizeof(str));
+   }
+
+   if (strieq(getparam("req"), "larger")) {
+      new_size = (int) (cur_width*1.5);
+      sprintf(cmd, "convert \"%s\" -rotate %d -thumbnail %d -set comment \" %d\" \"%s\"", 
+         file_name, cur_rot, new_size, cur_rot, thumb_name); 
+      my_shell(cmd, str, sizeof(str));
+   }
+
+   show_http_header(NULL, FALSE, NULL);
+   rsputs(str);
+   return;
 }
 
 /*------------------------------------------------------------------*/
@@ -23079,13 +23161,13 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                         if (thumb_status == 2 && !email) {
                            for (i=0 ; ; i++) {
                               strlcpy(str, file_name, sizeof(str));
-                              if (chkext(file_name, ".pdf") || chkext(file_name, ".ps") | chkext(file_name, ".eps"))
+                              if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
                                  if (strrchr(str, '.'))
                                     *strrchr(str, '.') = 0;
                               sprintf(str+strlen(str), "-%d.png", i);
                               if (file_exist(str)) {
                                  strlcpy(str, ref, sizeof(str));
-                                 if (chkext(file_name, ".pdf") || chkext(file_name, ".ps") | chkext(file_name, ".eps"))
+                                 if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
                                     if (strrchr(str, '.'))
                                        *strrchr(str, '.') = 0;
                                  sprintf(str+strlen(str), "-%d.png", i);
@@ -23099,7 +23181,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                            if (!email) {
                               rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
                               strlcpy(str, ref, sizeof(str));
-                              if (chkext(file_name, ".pdf") || chkext(file_name, ".ps") | chkext(file_name, ".eps"))
+                              if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
                                  if (strrchr(str, '.'))
                                     *strrchr(str, '.') = 0;
                               strlcat(str, ".png", sizeof(str));
@@ -23113,8 +23195,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                      if (!email) {
                         rsprintf("<tr><td class=\"attachmentframe\">\n");
                         rsprintf("<a name=\"att%d\"></a>\n", index + 1);
-                        rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\">\n", ref, attachment[index] + 14,
-                                 attachment[index] + 14);
+                        rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\">\n", ref, 
+                                 attachment[index] + 14, attachment[index] + 14);
                         rsprintf("</td></tr>\n\n");
                      }
                   } else {
@@ -25212,7 +25294,7 @@ void interprete(char *lbook, char *path)
    /* check for deletion of attachments */
    for (i = 0; i < MAX_ATTACHMENTS; i++) {
       sprintf(str, "delatt%d", i);
-      if (isparam(str)) {
+      if (isparam(str) || (isparam("smcmd") && stricmp(getparam("smcmd"), str) == 0)) {
          sprintf(str, "attachment%d", i);
          strlcpy(file_name, getparam(str), sizeof(file_name));
          el_delete_attachment(lbs, file_name);
@@ -25535,6 +25617,11 @@ void interprete(char *lbook, char *path)
 
    if (strieq(command, loc("Delete"))) {
       show_elog_delete(lbs, message_id);
+      return;
+   }
+
+   if (strieq(command, "IM")) {
+      call_image_magick(lbs, message_id);
       return;
    }
 
@@ -26781,7 +26868,7 @@ void server_loop(void)
       eprintf("FCKedit detected\n");
 
    /* check for ImageMagick */
-   subst_shell("convert -version", str, sizeof(str));
+   my_shell("convert -version", str, sizeof(str));
    image_magick_exist = (strstr(str, "ImageMagick") != NULL);
    if (image_magick_exist)
       eprintf("ImageMagick detected\n");
