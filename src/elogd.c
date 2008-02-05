@@ -22134,7 +22134,7 @@ int get_thumb_name(const char *file_name, char *thumb_name, int size, int index)
 
 /*------------------------------------------------------------------*/
 
-void call_image_magick(LOGBOOK *lbs, int message_id)
+void call_image_magick(LOGBOOK *lbs)
 {
    char str[256], cmd[256], file_name[256], thumb_name[256];
    int cur_width, cur_height, new_size, cur_rot, new_rot;
@@ -25621,7 +25621,7 @@ void interprete(char *lbook, char *path)
    }
 
    if (strieq(command, "IM")) {
-      call_image_magick(lbs, message_id);
+      call_image_magick(lbs);
       return;
    }
 
