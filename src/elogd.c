@@ -4448,10 +4448,21 @@ void el_delete_attachment(LOGBOOK * lbs, char *file_name)
       strlcpy(str, lbs->data_dir, sizeof(str));
       strlcat(str, file_name, sizeof(str));
       sprintf(str+strlen(str), "-%d.png", i);
-      if (file_exist(str))
+      if (file_exist(str)) {
          remove(str);
-      else
-         break;
+         continue;
+      }
+
+      strlcpy(str, lbs->data_dir, sizeof(str));
+      strlcat(str, file_name, sizeof(str));
+      if (strrchr(str, '.'))
+         *strrchr(str, '.') = 0;
+      sprintf(str+strlen(str), "-%d.png", i);
+      if (file_exist(str)) {
+         remove(str);
+         continue;
+      }
+      break;
    }
 }
 
@@ -11072,7 +11083,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                   if (display_inline) {
 
-                     if (is_image(att[index])) {
+                     if (is_image(att[index]) || thumb_status) {
                         if (thumb_status) {
                            for (i=0 ; ; i++) {
                               get_thumb_name(file_name, thumb_name, sizeof(thumb_name), i);
@@ -22028,22 +22039,24 @@ int is_inline_attachment(char *encoding, int message_id, char *text, int i, char
 int create_thumbnail(LOGBOOK * lbs, char *file_name)
 {
    char str[MAX_PATH_LENGTH], cmd[2*MAX_PATH_LENGTH], thumb_size[256];
-   int status;
+   int i;
 
    if (!image_magick_exist)
       return 0;
 
-   if (!getcfg(lbs->name, "Thumbnail size", thumb_size, sizeof(thumb_size)))
-      strcpy(thumb_size, "300>");
+   if (getcfg(lbs->name, "Thumbnail size", str, sizeof(str)))
+      sprintf(thumb_size, " -thumbnail '%s'", str);
+   else
+      thumb_size[0] = 0;
 
    if (!chkext(file_name, ".ps") && !chkext(file_name, ".pdf") && !chkext(file_name, ".eps") &&
        !chkext(file_name, ".gif") && !chkext(file_name, ".jpg") && !chkext(file_name, ".jpeg") &&
        !chkext(file_name, ".png") && !chkext(file_name, ".ico") && !chkext(file_name, ".tif"))
        return 0;
 
-   status = get_thumb_name(file_name, str, sizeof(str), 0);
-   if (status)
-      return status;
+   i = get_thumb_name(file_name, str, sizeof(str), 0);
+   if (i)
+      return i;
 
    strlcpy(str, file_name, sizeof(str));
    if (chkext(file_name, ".pdf") || chkext(file_name, ".ps")) {
@@ -22052,16 +22065,15 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
    }
    strlcat(str, ".png", sizeof(str));
 
-#ifdef OS_UNIX
    if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
-      sprintf(cmd, "convert '%s[0-7]' -thumbnail '%s' '%s'", file_name, thumb_size, str);
+      sprintf(cmd, "convert '%s[0-7]'%s '%s'", file_name, thumb_size, str);
    else
-      sprintf(cmd, "convert '%s' -thumbnail '%s' '%s'", file_name, thumb_size, str);
-#else
-   if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
-      sprintf(cmd, "convert \"%s[0-7]\" -thumbnail \"%s\" \"%s\"", file_name, thumb_size, str);
-   else
-      sprintf(cmd, "convert \"%s\" -thumbnail \"%s\" \"%s\"", file_name, thumb_size, str);
+      sprintf(cmd, "convert '%s'%s '%s'", file_name, thumb_size, str);
+
+#ifdef OS_WINNT
+   for (i=0 ; i<(int)strlen(cmd) ; i++)
+      if (cmd[i] == '\'')
+         cmd[i] = '\"';
 #endif
 
    sprintf(str, "SHELL \"%s\"", cmd);
@@ -22073,9 +22085,9 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
 
    my_shell(cmd, str, sizeof(str));
 
-   status = get_thumb_name(file_name, str, sizeof(str), 0);
-   if (status)
-      return status;
+   i = get_thumb_name(file_name, str, sizeof(str), 0);
+   if (i)
+      return i;
 
    return 3;
 }
@@ -22137,7 +22149,7 @@ int get_thumb_name(const char *file_name, char *thumb_name, int size, int index)
 void call_image_magick(LOGBOOK *lbs)
 {
    char str[256], cmd[256], file_name[256], thumb_name[256];
-   int cur_width, cur_height, new_size, cur_rot, new_rot;
+   int cur_width, cur_height, new_size, cur_rot, new_rot, i;
 
    if (!isparam("req") || !isparam("img")) {
       show_error("Unknown IM request received");
@@ -22161,40 +22173,46 @@ void call_image_magick(LOGBOOK *lbs)
       } else
          cur_rot = 0;
    } else {
-      show_error(str);
+      show_http_header(NULL, FALSE, NULL);
+      rsputs(str);
       return;
    }
 
+   i = cmd[0] = 0;
    if (strieq(getparam("req"), "rotleft")) {
       new_rot = (cur_rot + 360 - 90) % 360;
-      sprintf(cmd, "convert \"%s\" -rotate %d -thumbnail %d -set comment \" %d\" \"%s\"", 
+      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", 
          file_name, new_rot, cur_height, new_rot, thumb_name); 
-      my_shell(cmd, str, sizeof(str));
    }
 
    if (strieq(getparam("req"), "rotright")) {
       new_rot = (cur_rot + 90) % 360;
-      sprintf(cmd, "convert \"%s\" -rotate %d -thumbnail %d -set comment \" %d\" \"%s\"", 
+      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", 
          file_name, new_rot, cur_height, new_rot, thumb_name); 
-      my_shell(cmd, str, sizeof(str));
    }
 
    if (strieq(getparam("req"), "smaller")) {
       new_size = (int) (cur_width/1.5);
-      sprintf(cmd, "convert \"%s\" -rotate %d -thumbnail %d -set comment \" %d\" \"%s\"", 
+      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", 
          file_name, cur_rot, new_size, cur_rot, thumb_name); 
-      my_shell(cmd, str, sizeof(str));
    }
 
    if (strieq(getparam("req"), "larger")) {
       new_size = (int) (cur_width*1.5);
-      sprintf(cmd, "convert \"%s\" -rotate %d -thumbnail %d -set comment \" %d\" \"%s\"", 
+      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", 
          file_name, cur_rot, new_size, cur_rot, thumb_name); 
-      my_shell(cmd, str, sizeof(str));
    }
 
-   show_http_header(NULL, FALSE, NULL);
-   rsputs(str);
+   if (cmd[0]) {
+#ifdef OS_WINNT
+      for (i=0 ; i<(int)strlen(cmd) ; i++)
+         if (cmd[i] == '\'')
+            cmd[i] = '\"';
+#endif
+      my_shell(cmd, str, sizeof(str));
+      show_http_header(NULL, FALSE, NULL);
+      rsputs(str);
+   }
    return;
 }
 
