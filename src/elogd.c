@@ -5876,7 +5876,7 @@ PATTERN_LIST pattern_list[] = {
    {"[/url]", ""},
    {"[email]", "<a href=\"mailto:%#\">%s</a>"},
    {"[/email]", ""},
-   {"[img]", "<img src=\"%#\">"},
+   {"[img]", "<a href=\"%#\"><img border=0 src=\"%#?thumb=1\"></a>"},
    {"[/img]", ""},
 
    /* quote */
@@ -6183,9 +6183,10 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                               strstr(pattern_list[l].subst, "img") == NULL &&
                               strncmp(pattern_list[l].subst, "<a", 2) != 0)
                         sprintf(hattrib, "http://%s", attrib);
+
                      strlcpy(subst, pattern_list[l].subst, sizeof(subst));
-                     *strchr(subst, '#') = 's';
-                     sprintf(return_buffer + j, subst, hattrib, attrib);
+                     strsubst(subst, sizeof(subst), "%#", hattrib);
+                     sprintf(return_buffer + j, subst, attrib);
                      j += strlen(return_buffer + j);
                   }
 
@@ -11047,6 +11048,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      else
                         strlcpy(str, thumb_name, sizeof(str));
                      strlcpy(thumb_name, str, sizeof(str));
+                     if (thumb_status == 2)
+                        strsubst(thumb_name, sizeof(thumb_name), "-0.png", "");
 
                      rsprintf("<table><tr><td class=\"toolframe\">\n");
                      sprintf(str, "im('att'+%d,'%s','%s','smaller');", index, thumb_name, att[index]);
@@ -11103,8 +11106,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                                  url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
                                  sprintf(ref, "%s/%s", str, file_enc);
 
-                                 rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" id=\"att%d\">\n", 
-                                          ref, att[index] + 14, att[index] + 14, index);
+                                 rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" id=\"att%d_%d\">\n", 
+                                          ref, att[index] + 14, att[index] + 14, index, i);
                               } else
                                  break;
                            }
@@ -11173,7 +11176,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   loc("Maximum number of attachments reached"));
          rsprintf("</td></tr>\n");
       } else {
-         rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), i + 1);
+         rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), index + 1);
          rsprintf
              ("<td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile\" accept=\"filetype/*\">\n");
          rsprintf
@@ -22155,7 +22158,7 @@ int get_thumb_name(const char *file_name, char *thumb_name, int size, int index)
 void call_image_magick(LOGBOOK *lbs)
 {
    char str[256], cmd[256], file_name[256], thumb_name[256];
-   int cur_width, cur_height, new_size, cur_rot, new_rot, i;
+   int cur_width, cur_height, new_size, cur_rot, new_rot, i, thumb_status;
 
    if (!isparam("req") || !isparam("img")) {
       show_error("Unknown IM request received");
@@ -22164,7 +22167,7 @@ void call_image_magick(LOGBOOK *lbs)
       
    strlcpy(file_name, lbs->data_dir, sizeof(file_name));
    strlcat(file_name, getparam("img"), sizeof(file_name));
-   get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
+   thumb_status = get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
 
    sprintf(cmd, "identify -format '%%wx%%h %%c' '%s'", thumb_name);
 #ifdef OS_WINNT
@@ -22189,6 +22192,9 @@ void call_image_magick(LOGBOOK *lbs)
       rsputs(str);
       return;
    }
+
+   if (thumb_status == 2)
+      strsubst(thumb_name, sizeof(thumb_name), "-0", "");
 
    i = cmd[0] = 0;
    if (strieq(getparam("req"), "rotleft")) {
@@ -24700,7 +24706,7 @@ void interprete(char *lbook, char *path)
    char exp[80], list[1000], section[256], str[NAME_LENGTH], str1[NAME_LENGTH], str2[NAME_LENGTH],
        edit_id[80], enc_pwd[80], file_name[256], command[256], enc_path[256], dec_path[256], uname[80],
        logbook[256], logbook_enc[256], *experiment, group[256], css[256], *pfile, attachment[MAX_PATH_LENGTH],
-       full_name[256], str3[NAME_LENGTH];
+       full_name[256], str3[NAME_LENGTH], thumb_name[256];
    BOOL global;
    LOGBOOK *lbs;
    FILE *f;
@@ -25175,7 +25181,11 @@ void interprete(char *lbook, char *path)
          strlcat(file_name, pfile, sizeof(file_name));
       }
 
-      send_file_direct(file_name);
+      if (isparam("thumb")) {
+         get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
+         send_file_direct(thumb_name);
+      } else
+         send_file_direct(file_name);
       return;
    }
 
@@ -25195,6 +25205,8 @@ void interprete(char *lbook, char *path)
          sprintf(str, "Attachment #%d of entry #%d not found", n + 1, message_id);
          show_error(str);
       } else {
+         if (isparam("thumb"))
+            strlcat(attachment, "?thumb=1", sizeof(attachment));
          redirect(lbs, attachment);
       }
 
