@@ -1143,7 +1143,7 @@ int my_shell(char *cmd, char *result, int size)
 
 #ifdef OS_UNIX
    pid_t child_pid;
-   int fh, status;
+   int fh, status, i;
    char str[256];
 
    if ((child_pid = fork()) < 0)
@@ -1153,9 +1153,10 @@ int my_shell(char *cmd, char *result, int size)
       waitpid(child_pid, &status, 0);
 
       /* read back result */
+      memset(result, 0, size);
       fh = open("/tmp/elog-shell", O_RDONLY);
       if (fh > 0) {
-         read(fh, result, size);
+         i = read(fh, result, size);
          close(fh);
       }
 
@@ -11066,7 +11067,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                      /* ImageMagick available, so get image size */
                      rsprintf("<b>%s</b>&nbsp;\n", att[index] + 14);
-                     sprintf(cmd, "identify -format %%P \"%s\"", file_name);
+                     sprintf(cmd, "identify -format '%%wx%%h' '%s'", file_name);
+#ifdef OS_WINNT
+                     for (i=0 ; i<(int)strlen(cmd) ; i++)
+                        if (cmd[i] == '\'')
+                           cmd[i] = '\"';
+#endif
                      my_shell(cmd, str, sizeof(str));
                      if (atoi(str) > 0)
                         rsprintf("<span class=\"bytes\">%s: %s</span>\n", loc("Original size"), str);
@@ -22160,8 +22166,14 @@ void call_image_magick(LOGBOOK *lbs)
    strlcat(file_name, getparam("img"), sizeof(file_name));
    get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
 
-   sprintf(cmd, "identify -format %%P%%c \"%s\"", thumb_name);
+   sprintf(cmd, "identify -format '%%wx%%h %%c' '%s'", thumb_name);
+#ifdef OS_WINNT
+   for (i=0 ; i<(int)strlen(cmd) ; i++)
+      if (cmd[i] == '\'')
+         cmd[i] = '\"';
+#endif
    my_shell(cmd, str, sizeof(str));
+
    if (atoi(str) > 0) {
       cur_width = atoi(str);
       if (strchr(str, 'x')) {
