@@ -11052,14 +11052,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         strsubst(thumb_name, sizeof(thumb_name), "-0.png", "");
 
                      rsprintf("<table><tr><td class=\"toolframe\">\n");
-                     sprintf(str, "im('att'+%d,'%s','%s','smaller');", index, thumb_name, att[index]);
+                     sprintf(str, "im('att'+'%d','%s','%s','smaller');", index, thumb_name, att[index]);
                      ricon("smaller", loc("Make smaller"), str);
-                     sprintf(str, "im('att'+%d,'%s','%s','larger');", index, thumb_name, att[index]);
+                     sprintf(str, "im('att'+'%d','%s','%s','larger');", index, thumb_name, att[index]);
                      ricon("larger", loc("Make larger"), str);
                      rsprintf("&nbsp;");
-                     sprintf(str, "im('att'+%d,'%s','%s','rotleft');", index, thumb_name, att[index]);
+                     sprintf(str, "im('att'+'%d','%s','%s','rotleft');", index, thumb_name, att[index]);
                      ricon("rotleft", loc("Rotate left"), str);
-                     sprintf(str, "im('att'+%d,'%s','%s','rotright');", index, thumb_name, att[index]);
+                     sprintf(str, "im('att'+'%d','%s','%s','rotright');", index, thumb_name, att[index]);
                      ricon("rotright", loc("Rotate right"), str);
                      rsprintf("&nbsp;");
                      sprintf(str, "document.form1.jcmd.value='delete';");
@@ -11093,7 +11093,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   if (display_inline) {
 
                      if (is_image(att[index]) || thumb_status) {
-                        if (thumb_status) {
+                        if (thumb_status == 2) {
                            for (i=0 ; ; i++) {
                               get_thumb_name(file_name, thumb_name, sizeof(thumb_name), i);
                               if (thumb_name[0]) {
