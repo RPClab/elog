@@ -8025,9 +8025,12 @@ void send_file_direct(char *file_name)
       rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
       rsprintf("Accept-Ranges: bytes\r\n");
 
-      /* set expiration time to one day */
+      /* set expiration time to one day if no thumbnail */
       time(&now);
-      now += (int) (3600 * 24);
+      if (isparam("thumb"))
+         now -= (int) (3600 * 24);
+      else
+         now += (int) (3600 * 24);
       gmt = gmtime(&now);
       strcpy(format, "%A, %d-%b-%y %H:%M:%S GMT");
       strftime(str, sizeof(str), format, gmt);
@@ -11021,6 +11024,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          break;
       }
 
+   index = 0;
    if (!getcfg(lbs->name, "Enable attachments", str, sizeof(str))
        || atoi(str) > 0) {
       if (bedit || bduplicate || isparam("fa")) {
@@ -11064,6 +11068,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      rsprintf("<table><tr><td class=\"toolframe\">\n");
                      sprintf(str, "im('att'+'%d','%s','%s','smaller');", index, thumb_name, att[index]);
                      ricon("smaller", loc("Make smaller"), str);
+                     sprintf(str, "im('att'+'%d','%s','%s','original');", index, thumb_name, att[index]);
+                     ricon("original", loc("Original size"), str);
                      sprintf(str, "im('att'+'%d','%s','%s','larger');", index, thumb_name, att[index]);
                      ricon("larger", loc("Make larger"), str);
                      rsprintf("&nbsp;");
@@ -11103,7 +11109,20 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   if (display_inline) {
 
                      if (is_image(att[index]) || thumb_status) {
-                        if (thumb_status == 2) {
+                        if (thumb_status == 1) {
+                           get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
+                           strlcpy(str, att[index], sizeof(str));
+                           str[13] = 0;
+                           if (strrchr(thumb_name, DIR_SEPARATOR))
+                              strlcpy(file_enc, strrchr(thumb_name, DIR_SEPARATOR)+1+14, sizeof(file_enc));
+                           else
+                              strlcpy(file_enc, thumb_name + 14, sizeof(file_enc));
+                           url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
+                           sprintf(ref, "%s/%s", str, file_enc);
+
+                           rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" name=\"att%d\">\n", 
+                                    ref, att[index] + 14, att[index] + 14, index);
+                        } else if (thumb_status == 2) {
                            for (i=0 ; ; i++) {
                               get_thumb_name(file_name, thumb_name, sizeof(thumb_name), i);
                               if (thumb_name[0]) {
@@ -11116,7 +11135,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                                  url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
                                  sprintf(ref, "%s/%s", str, file_enc);
 
-                                 rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" id=\"att%d_%d\">\n", 
+                                 rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" name=\"att%d_%d\">\n", 
                                           ref, att[index] + 14, att[index] + 14, index, i);
                               } else
                                  break;
@@ -11129,7 +11148,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                            url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
                            sprintf(ref, "%s/%s", str, file_enc);
 
-                           rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" id=\"att%d\">\n", 
+                           rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" name=\"att%d\">\n", 
                                     ref, att[index] + 14, att[index] + 14, index);
                         }
                      } else {
@@ -22352,6 +22371,12 @@ void call_image_magick(LOGBOOK *lbs)
          file_name, new_rot, cur_height, new_rot, thumb_name); 
    }
 
+   if (strieq(getparam("req"), "original")) {
+      new_size = (int) (cur_width/1.5);
+      sprintf(cmd, "convert '%s' '%s'", 
+         file_name, thumb_name); 
+   }
+
    if (strieq(getparam("req"), "smaller")) {
       new_size = (int) (cur_width/1.5);
       sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", 
@@ -24768,7 +24793,7 @@ void show_uploader(LOGBOOK * lbs)
 void show_uploader_finished(LOGBOOK * lbs)
 {
    int i;
-   char str[256], att[256], base_url[256], file_enc[256], ref[256];
+   char str[256], att[256], base_url[256], file_enc[256], ref[256], ref_thumb[256];
 
    show_html_header(lbs, FALSE, loc("Image uploaded successfully"), FALSE, FALSE, NULL, FALSE);
 
@@ -24790,7 +24815,8 @@ void show_uploader_finished(LOGBOOK * lbs)
    str[13] = 0;
    strcpy(file_enc, att + 14);
    url_encode(file_enc, sizeof(file_enc));      /* for file names with special characters like "+" */
-   sprintf(ref, "%s/%s", str, file_enc);
+   sprintf(ref, "%s/%s?lb=%s", str, file_enc, lbs->name_enc);
+   sprintf(ref_thumb, "%s/%s?lb=%s&thumb=1", str, file_enc, lbs->name_enc);
 
    compose_base_url(lbs, base_url, sizeof(base_url), TRUE);
 
@@ -24800,9 +24826,9 @@ void show_uploader_finished(LOGBOOK * lbs)
    rsprintf("  {\n");
    rsprintf("    if (opener.document.title == \"FCKeditor\") {\n");
    rsprintf("       i = opener.parent.next_attachment;\n");
-   rsprintf
-       ("       opener.FCKeditorAPI.GetInstance('Text').InsertHtml('<img alt=\"%s\" src=\"%s%s\" name=\"att'+i+'\">');\n",
-        att + 14, base_url, ref);
+   rsprintf("       opener.FCKeditorAPI.GetInstance('Text').\n");
+   rsprintf("InsertHtml('<a href=\"%s\"><img border=0 alt=\"%s\" src=\"%s\" name=\"att'+(i-1)+'\" id=\"att'+(i-1)+'\"></a>');\n",
+            ref, att + 14, ref_thumb);
    rsprintf("       opener.parent.document.form1.inlineatt.value = '%s';\n", att);
    rsprintf("       opener.parent.document.form1.jcmd.value = 'Upload';\n");
    rsprintf("       opener.parent.document.form1.submit();\n");
@@ -26374,6 +26400,16 @@ int process_http_request(const char *request, int i_conn)
          *strchr(global_cmd, '\r') = 0;
    }
 
+   /* redirect image request from inside FCKeditor */
+   if (strieq(logbook, "fckeditor")) {
+      if (strstr(url, "?lb=")) {
+         strlcpy(logbook, strstr(url, "?lb=")+4, sizeof(logbook));
+         if (strchr(logbook, '&'))
+            *strchr(logbook, '&') = 0;
+         url_decode(logbook);
+      }
+   }
+
    /* check if logbook exists */
    for (i = 0;; i++) {
       if (!enumgrp(i, str))
@@ -26619,6 +26655,8 @@ int process_http_request(const char *request, int i_conn)
          for (i = 0; *p && *p != '/' && *p != '?'; p++);
          while (*p && *p == '/')
             p++;
+         if (strncmp(p, "editor/", 7) == 0) // fix for image request inside FCKeditor
+            p += 7;
          /* decode command and return answer */
          decode_get(logbook, p);
       } else if (strncmp(request, "POST", 4) == 0) {

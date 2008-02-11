@@ -11,7 +11,7 @@
 
 var dummy = 0;
 
-function im(id, thumb, image, cmd)
+function im(name, thumb, image, cmd)
 {
    var xmlHttp;
    
@@ -39,13 +39,17 @@ function im(id, thumb, image, cmd)
          if (xmlHttp.responseText != "" &&
              xmlHttp.responseText.search(/Fonts/) == -1)
             alert(xmlHttp.responseText);
-         o = document.getElementById(id);
-         if (o)
-            o.src = thumb+'?'+dummy;
+         o = document.getElementsByName(name);
+         if (o[0])
+            o[0].src = thumb+'?'+dummy;
+         if (o[1])
+            o[1].src = thumb+'?'+dummy;
          for (i=0 ; i<8 ; i++) {
-            o = document.getElementById(id+'_'+i);
-            if (o)
-               o.src = thumb+'-'+i+'.png'+'?'+dummy;
+            o = document.getElementsByName(name+'_'+i);
+            if (o[0])
+               o[0].src = thumb+'-'+i+'.png'+'?'+dummy;
+            if (o[1])
+               o[1].src = thumb+'-'+i+'.png'+'?'+dummy;
          }   
       dummy++;
       }
