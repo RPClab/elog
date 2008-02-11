@@ -5559,6 +5559,44 @@ void replace_inline_img(char *str)
 
 /*------------------------------------------------------------------*/
 
+void convert_elog_link(LOGBOOK *lbs, char *link, char *link_text, char *result, int absolute_link, int message_id)
+{
+   char str[256], base_url[256];
+   int i;
+
+   strlcpy(str, link, sizeof(str));
+   if (strchr(str, '/'))
+      *strchr(str, '/') = 0;
+
+   for (i = 0; i < (int) strlen(str); i++)
+      if (!isdigit(str[i]))
+         break;
+
+   if (i < (int) strlen(str)) {
+      /* if link contains reference to other logbook, put logbook explicitly */
+      if (absolute_link)
+         compose_base_url(NULL, base_url, sizeof(base_url), FALSE);
+      else
+         strcpy(base_url, "../");
+      sprintf(result, "<a href=\"%s%s\">elog:%s</a>", base_url, link, link_text);
+   } else if (link[0] == '/') {
+      if (absolute_link)
+         compose_base_url(NULL, base_url, sizeof(base_url), FALSE);
+      else
+         base_url[0] = 0;
+      sprintf(result, "<a href=\"%s%s/%d%s\">elog:%s</a>", base_url, lbs->name_enc,
+              message_id, link, link_text);
+   } else {
+      if (absolute_link)
+         compose_base_url(lbs, base_url, sizeof(base_url), FALSE);
+      else
+         base_url[0] = 0;
+      sprintf(result, "<a href=\"%s%s\">elog:%s</a>", base_url, link, link_text);
+   }
+}
+
+/*------------------------------------------------------------------*/
+
 void rsputs(const char *str)
 {
    if (strlen_retbuf + (int) strlen(str) + 1 >= return_buffer_size) {
@@ -5577,8 +5615,8 @@ char *key_list[] = { "http://", "https://", "ftp://", "mailto:", "elog:", "file:
 
 void rsputs2(LOGBOOK * lbs, int absolute_link, const char *str)
 {
-   int i, j, k, l, m, n;
-   char *p, *pd, link[1000], link_text[1000], tmp[1000], base_url[256];
+   int i, j, k, l, n;
+   char *p, *pd, link[1000], link_text[1000];
 
    if (strlen_retbuf + (int) (2 * strlen(str) + 1000) >= return_buffer_size) {
       return_buffer = xrealloc(return_buffer, return_buffer_size + 100000);
@@ -5658,36 +5696,7 @@ void rsputs2(LOGBOOK * lbs, int absolute_link, const char *str)
                strlcpy(link_text, link, sizeof(link_text));
 
             if (strcmp(key_list[l], "elog:") == 0) {
-               strlcpy(tmp, link, sizeof(tmp));
-               if (strchr(tmp, '/'))
-                  *strchr(tmp, '/') = 0;
-
-               for (m = 0; m < (int) strlen(tmp); m++)
-                  if (!isdigit(tmp[m]))
-                     break;
-
-               if (m < (int) strlen(tmp)) {
-                  /* if link contains reference to other logbook, put logbook explicitly */
-                  if (absolute_link)
-                     compose_base_url(NULL, base_url, sizeof(base_url), FALSE);
-                  else
-                     strcpy(base_url, "../");
-                  sprintf(return_buffer + j, "<a href=\"%s%s\">elog:%s</a>", base_url, link, link_text);
-               } else if (link[0] == '/') {
-                  if (absolute_link)
-                     compose_base_url(NULL, base_url, sizeof(base_url), FALSE);
-                  else
-                     base_url[0] = 0;
-                  sprintf(return_buffer + j, "<a href=\"%s%s/%d%s\">elog:%s</a>", base_url, lbs->name_enc,
-                          _current_message_id, link, link_text);
-               } else {
-                  if (absolute_link)
-                     compose_base_url(lbs, base_url, sizeof(base_url), FALSE);
-                  else
-                     base_url[0] = 0;
-                  sprintf(return_buffer + j, "<a href=\"%s%s\">elog:%s</a>", base_url, link, link_text);
-               }
-
+               convert_elog_link(lbs, link, link_text, return_buffer+j, absolute_link, _current_message_id);
             } else if (strcmp(key_list[l], "mailto:") == 0) {
                sprintf(return_buffer + j, "<a href=\"mailto:%s\">%s</a>", link, link_text);
             } else {
@@ -21692,6 +21701,22 @@ void submit_elog(LOGBOOK * lbs)
       strsubst(p, TEXT_SIZE, "elog:/", str);
       el_submit(lbs, message_id, TRUE, date, attr_list, attrib, n_attr,
                 p, in_reply_to, reply_to, encoding, att_file, TRUE, NULL);
+   }
+
+   /*---- replace elog: by HTML link ----*/
+   if (strieq(encoding, "HTML") && stristr(getparam("text"), "elog:")) {
+      p = stristr(getparam("text"), "elog:");
+      while (p) {
+         for (i=0 ; i<5 || (p[i] == '/' || isalnum(p[i]))  ; i++)
+            str[i] = p[i];
+         str[i] = 0;
+         convert_elog_link(lbs, str+5, str+5, str2, 0, message_id);
+         strsubst(p, TEXT_SIZE, str, str2);
+         p += strlen(str2);
+         p = stristr(p, "elog:");
+      }
+      el_submit(lbs, message_id, TRUE, date, attr_list, attrib, n_attr,
+                getparam("text"), in_reply_to, reply_to, encoding, att_file, TRUE, NULL);
    }
 
    /*---- email notifications ----*/
