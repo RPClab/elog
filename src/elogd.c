@@ -16328,7 +16328,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    char str[NAME_LENGTH], ref[256], *nowrap, sclass[80], format[256],
        file_name[MAX_PATH_LENGTH], *slist, *svalue, comment[256];
    char display[NAME_LENGTH], attr_icon[80];
-   int i, j, i_line, index, colspan, n_attachments, line_len, thumb_status;
+   int i, j, i_line, index, colspan, n_attachments, line_len, thumb_status,
+      max_line_len;
    BOOL skip_comma;
    FILE *f;
    struct tm *pts;
@@ -16794,7 +16795,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                i_line++;
                line_len = 0;
             } else
-               /* limit line length to 150 characters */
+            /* limit line length to 150 characters */
             if (line_len > 150 && text[i] == ' ') {
                str[i] = '\n';
                i_line++;
@@ -16835,14 +16836,15 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    if (strieq(mode, "Summary") && n_line > 0 && show_text) {
       rsprintf("<td class=\"summary\">");
 
+      max_line_len = n_line >= 10 ? 140 : 40;
       for (i = i_line = line_len = 0; i < (int) sizeof(str) - 1; line_len++, i++) {
          str[i] = text[i];
          if (str[i] == '\n') {
             i_line++;
             line_len = 0;
          } else
-            /* limit line length to 40 characters */
-         if (line_len > 40 && text[i] == ' ') {
+         /* limit line length to max_line_len characters */
+         if (line_len > max_line_len && text[i] == ' ') {
             str[i] = '\n';
             i_line++;
             line_len = 0;
@@ -18160,13 +18162,13 @@ void show_rss_feed(LOGBOOK * lbs)
    rsprintf("<rss version=\"2.0\">\n");
    rsprintf("<channel>\n");
 
-   rsprintf("<title>ELOG %s</title>\n", lbs->name_enc);
+   rsprintf("<title>ELOG %s</title>\n", lbs->name);
 
    /* retrive URL */
    getcfg(lbs->name, "URL", url, sizeof(url));
 
    /* if HTTP request comes from localhost, use localhost as
-      absolute link (needed if running on DSL at home */
+      absolute link (needed if running on DSL at home) */
    if (!url[0] && strstr(http_host, "localhost")) {
       strcpy(url, "http://localhost");
       if (elog_tcp_port != 80)
