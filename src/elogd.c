@@ -26082,10 +26082,9 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                string = strstr(p, boundary) + strlen(boundary);
 
                if (stricmp(item, "text") == 0) {
-                  if ((int) string - (int) p > TEXT_SIZE) {
+                  if (string - p > TEXT_SIZE) {
                      sprintf(str,
-                             "Error: Entry text too big (%lu bytes). Please increase TEXT_SIZE and recompile elogd\n",
-                             (unsigned long) ((int) string - (int) p));
+                             "Error: Entry text too big. Please increase TEXT_SIZE and recompile elogd\n");
                      show_error(str);
                      return;
                   }
@@ -27320,7 +27319,7 @@ void server_loop(void)
                if (pend && *pend) {
                   memmove(net_buffer, pend, strlen(pend) + 1);
                   more_requests = 1;
-                  len -= (int) pend - (int) net_buffer;
+                  len -= (pend - net_buffer);
                }
 
             } while (more_requests);
