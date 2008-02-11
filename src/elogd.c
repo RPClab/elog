@@ -19986,7 +19986,10 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          else
             rsprintf(";");
 
-         rsprintf("%s", date);
+         strlcpy(str, date, sizeof(str));
+         while (strchr(str, ','))
+            *strchr(str, ',') = ' ';
+         rsprintf(str);
          if (strieq(mode, "CSV1"))
             rsprintf(",");
          else
