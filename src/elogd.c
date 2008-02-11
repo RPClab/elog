@@ -439,6 +439,7 @@ void strencode2(char *b, const char *text, int size);
 void load_config_section(char *section, char **buffer, char *error);
 void remove_crlf(char *buffer);
 time_t convert_date(char *date_string);
+time_t convert_datetime(char *date_string);
 int get_thumb_name(const char *file_name, char *thumb_name, int size, int index);
 int create_thumbnail(LOGBOOK * lbs, char *file_name);
 
@@ -13743,7 +13744,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
    const char *p;
    char *line, *list;
    char str[256], date[80], sep[80];
-   int i, j, n, n_attr, iline, n_imported, textcol;
+   int i, j, n, n_attr, iline, n_imported, textcol, attr_offset;
    BOOL first, in_quotes, filltext;
    time_t ltime;
 
@@ -13755,6 +13756,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
    iline = n_imported = 0;
    filltext = FALSE;
    textcol = -1;
+   attr_offset = 0;
 
    strcpy(sep, ",");
    if (isparam("sep"))
@@ -13844,16 +13846,28 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
       }
 
       /* interprete date entries correctly */
-      for (i = 0; i < n; i++)
-         if (attr_flags[i] & AF_DATE) {
-            /* convert to seconds in Unix format */
-            ltime = convert_date(list + i * NAME_LENGTH);
-            if (ltime == 0) {
-               show_error(loc("Invalid date format"));
-               return;
+      if (!(first && isparam("head"))) {
+         for (i = attr_offset; i < n; i++) {
+            if (attr_flags[i-attr_offset] & AF_DATE) {
+               /* convert to seconds in Unix format */
+               ltime = convert_date(list + i * NAME_LENGTH);
+               if (ltime == 0) {
+                  show_error(loc("Invalid date format"));
+                  return;
+               }
+               sprintf(list + i * NAME_LENGTH, "%d", (int) ltime);
             }
-            sprintf(list + i * NAME_LENGTH, "%d", (int) ltime);
+            if (attr_flags[i-attr_offset] & AF_DATETIME) {
+               /* convert to seconds in Unix format */
+               ltime = convert_datetime(list + i * NAME_LENGTH);
+               if (ltime == 0) {
+                  show_error(loc("Invalid date format"));
+                  return;
+               }
+               sprintf(list + i * NAME_LENGTH, "%d", (int) ltime);
+            }
          }
+      }
 
       /* check if text column is present */
       if (first && isparam("filltext") && atoi(getparam("filltext"))) {
@@ -13867,9 +13881,16 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
 
       /* derive attributes from first line */
       if (first && isparam("head")) {
+
+         /* skip message ID and date attributes */
+         for (i = attr_offset = 0; i < n; i++)
+            if (strieq(list + i * NAME_LENGTH, "Message ID") ||
+                strieq(list + i * NAME_LENGTH, "Date"))
+                attr_offset++;
+
          if (isparam("preview")) {
             rsprintf("<tr>\n");
-            for (i = 0; i < n; i++)
+            for (i = attr_offset; i < n; i++)
                if (i != textcol)
                   rsprintf("<th class=\"listtitle\">%s</th>\n", list + i * NAME_LENGTH);
 
@@ -13879,23 +13900,23 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
             rsprintf("</tr>\n");
 
             if (filltext)
-               n_attr = n - 1;
+               n_attr = n - 1 - attr_offset;
             else
-               n_attr = n;
+               n_attr = n - attr_offset;
 
          } else {
-            for (i = j = 0; i < n; i++)
-               if (i != textcol)
-                  strlcpy(attr_list[j++], list + i * NAME_LENGTH, NAME_LENGTH);
+            for (i = j = attr_offset; i < n; i++)
+               if (i != textcol) 
+                  strlcpy(attr_list[j++ - attr_offset], list + i * NAME_LENGTH, NAME_LENGTH);
 
             if (filltext) {
-               if (!set_attributes(lbs, attr_list, n - 1))
+               if (!set_attributes(lbs, attr_list, n - 1 - attr_offset))
                   return;
-               lbs->n_attr = n - 1;
+               lbs->n_attr = n - 1 - attr_offset;
             } else {
-               if (!set_attributes(lbs, attr_list, n))
+               if (!set_attributes(lbs, attr_list, n - attr_offset))
                   return;
-               lbs->n_attr = n;
+               lbs->n_attr = n - attr_offset;
             }
          }
 
@@ -13903,7 +13924,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
 
          if (isparam("preview")) {
             rsprintf("<tr>\n");
-            for (i = j = 0; i < n_attr; i++) {
+            for (i = j = attr_offset; i < n_attr; i++) {
                if (iline % 2 == 0)
                   rsputs("<td class=\"list1\">");
                else
@@ -13939,19 +13960,21 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
             if (!filltext) {
                /* submit entry */
                date[0] = 0;
-               if (el_submit(lbs, 0, FALSE, date, attr_list, (char (*)[NAME_LENGTH]) list,
+               if (el_submit(lbs, 0, FALSE, date, attr_list, 
+                             (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH),
                              n_attr, "", "", "", "plain", NULL, TRUE, NULL))
                   n_imported++;
             } else {
                strlcpy(line, list + textcol * NAME_LENGTH, 10000);
                insert_breaks(line, 78, 10000);
 
-               for (i = textcol; i < n_attr; i++)
+               for (i = textcol; i < n_attr + attr_offset; i++)
                   strlcpy(list + i * NAME_LENGTH, list + (i + 1) * NAME_LENGTH, NAME_LENGTH);
 
                /* submit entry */
                date[0] = 0;
-               if (el_submit(lbs, 0, FALSE, date, attr_list, (char (*)[NAME_LENGTH]) list,
+               if (el_submit(lbs, 0, FALSE, date, attr_list, 
+                            (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH),
                              n_attr, line, "", "", "plain", NULL, TRUE, NULL))
                   n_imported++;
             }
@@ -14171,6 +14194,8 @@ void xml_import(LOGBOOK * lbs, const char *xml, const char *xmlfile)
 
          for (i = 0; i < n_attr; i++) {
             strlcpy(str, attr_list[i], sizeof(str));
+            while (strchr(str, ' '))
+               *strchr(str, ' ') = '_';
             if (mxml_find_node(entry, str) == NULL)
                *(list + (i * NAME_LENGTH)) = 0;
             else
@@ -14178,7 +14203,7 @@ void xml_import(LOGBOOK * lbs, const char *xml, const char *xmlfile)
          }
 
          /* interprete date entries correctly */
-         for (i = 0; i < n_attr; i++)
+         for (i = 0; i < n_attr; i++) {
             if (attr_flags[i] & AF_DATE) {
                /* convert to seconds in Unix format */
                ltime = convert_date(list + i * NAME_LENGTH);
@@ -14188,6 +14213,16 @@ void xml_import(LOGBOOK * lbs, const char *xml, const char *xmlfile)
                }
                sprintf(list + i * NAME_LENGTH, "%d", (int) ltime);
             }
+            if (attr_flags[i] & AF_DATETIME) {
+               /* convert to seconds in Unix format */
+               ltime = convert_datetime(list + i * NAME_LENGTH);
+               if (ltime == 0) {
+                  show_error(loc("Invalid date format"));
+                  return;
+               }
+               sprintf(list + i * NAME_LENGTH, "%d", (int) ltime);
+            }
+         }
 
          encoding[0] = 0;
          if (mxml_find_node(entry, "ENCODING"))
@@ -18133,6 +18168,87 @@ time_t convert_date(char *date_string)
    tms.tm_mon = month - 1;
    tms.tm_mday = day;
    tms.tm_hour = 12;
+
+   ltime = mktime(&tms);
+
+   return ltime;
+}
+
+/*------------------------------------------------------------------*/
+
+time_t convert_datetime(char *date_string)
+{
+   /* convert date string in MM/DD/YY h:m:s AM/PM or DD.MM.YY hh:m:s format into Unix time */
+   int year, month, day, hour, min, sec;
+   char *p, str[256];
+   struct tm tms;
+   time_t ltime;
+
+   strlcpy(str, date_string, sizeof(str));
+   month = day = year = 0;
+
+   if (strchr(str, '/')) {
+      /* MM/DD/YY format */
+      p = strtok(str, "/");
+      if (p) {
+         month = atoi(p);
+         p = strtok(NULL, "/");
+         if (p) {
+            day = atoi(p);
+            p = strtok(NULL, "/");
+            if (p)
+               year = atoi(p);
+         }
+      }
+   } else if (strchr(str, '.')) {
+      /* DD.MM.YY format */
+      p = strtok(str, ".");
+      if (p) {
+         day = atoi(p);
+         p = strtok(NULL, ".");
+         if (p) {
+            month = atoi(p);
+            p = strtok(NULL, ".");
+            if (p)
+               year = atoi(p);
+         }
+      }
+   } else
+      return 0;
+
+   strlcpy(str, p, sizeof(str));
+   p = strtok(p, ":");
+   if (p) {
+      hour = atoi(p);
+      p = strtok(NULL, ":");
+      if (p) {
+         min = atoi(p);
+         p = strtok(NULL, ":");
+         if (p)
+            sec = atoi(p);
+      }
+   } else
+      return 0;
+
+   if (stristr(p, "PM") && hour < 12)
+      hour += 12;
+
+   /* calculate years */
+   if (year > 1900)             /* 1900-2100 */
+      year += 0;
+   else if (year < 70)          /* 00-69 */
+      year += 2000;
+   else if (year < 100)         /* 70-99 */
+      year += 1900;
+
+   /* use last day of month */
+   memset(&tms, 0, sizeof(struct tm));
+   tms.tm_year = year - 1900;
+   tms.tm_mon = month - 1;
+   tms.tm_mday = day;
+   tms.tm_hour = hour;
+   tms.tm_min  = min;
+   tms.tm_sec  = sec;
 
    ltime = mktime(&tms);
 
