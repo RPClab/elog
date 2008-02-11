@@ -8026,15 +8026,16 @@ void send_file_direct(char *file_name)
       rsprintf("Accept-Ranges: bytes\r\n");
 
       /* set expiration time to one day if no thumbnail */
-      time(&now);
-      if (isparam("thumb"))
-         now -= (int) (3600 * 24);
-      else
+      if (isparam("thumb")) {
+         rsprintf("Pragma: no-cache\r\n");
+         rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+      } else {
+         time(&now);
          now += (int) (3600 * 24);
-      gmt = gmtime(&now);
-      strcpy(format, "%A, %d-%b-%y %H:%M:%S GMT");
-      strftime(str, sizeof(str), format, gmt);
-      rsprintf("Expires: %s\r\n", str);
+         gmt = gmtime(&now);
+         strcpy(format, "%A, %d-%b-%y %H:%M:%S GMT");
+         rsprintf("Expires: %s\r\n", str);
+      }
 
       if (use_keepalive) {
          rsprintf("Connection: Keep-Alive\r\n");
@@ -8888,11 +8889,11 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
 
 void ricon(char *name, char *comment, char *onclick)
 {
-   rsprintf("<img align=\"middle\" name=\"%s\" src=\"icons/elc_%s.png\" alt=\"%s\" title=\"%s\" border=\"0\"",
+   rsprintf("<img align=\"middle\" name=\"%s\" src=\"icons/elc_%s.png\" alt=\"%s\" title=\"%s\" border=\"0\"\n",
             name, name, comment, comment);
    rsprintf(" onclick=\"%s\"", onclick);
-   rsprintf(" onmousedown=\"document.images.%s.src='icons/eld_%s.png'\"", name, name);
-   rsprintf(" onmouseup=\"document.images.%s.src='icons/elc_%s.png'\"", name, name);
+   rsprintf(" onmousedown=\"document.images.%s.src='icons/eld_%s.png'\"\n", name, name);
+   rsprintf(" onmouseup=\"document.images.%s.src='icons/elc_%s.png'\"\n", name, name);
    rsprintf(" onmouseover=\"this.style.cursor='pointer';\" />\n");
 }
 
@@ -11072,17 +11073,15 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      ricon("original", loc("Original size"), str);
                      sprintf(str, "im('att'+'%d','%s','%s','larger');", index, thumb_name, att[index]);
                      ricon("larger", loc("Make larger"), str);
-                     rsprintf("&nbsp;");
+                     rsprintf("&nbsp;\n");
                      sprintf(str, "im('att'+'%d','%s','%s','rotleft');", index, thumb_name, att[index]);
                      ricon("rotleft", loc("Rotate left"), str);
                      sprintf(str, "im('att'+'%d','%s','%s','rotright');", index, thumb_name, att[index]);
                      ricon("rotright", loc("Rotate right"), str);
-                     rsprintf("&nbsp;");
-                     sprintf(str, "document.form1.jcmd.value='delete';");
-                     sprintf(str+strlen(str), "document.form1.smcmd.value='delatt%d';", index);
-                     sprintf(str+strlen(str), "document.form1.submit();");
-                     ricon("delete", loc("Delete attachment"), str);
-                     rsprintf("&nbsp;&nbsp;");
+                     rsprintf("&nbsp;\n");
+                     sprintf(str, "deleteAtt('%d')", index);
+                     ricon("delatt", loc("Delete attachment"), str);
+                     rsprintf("&nbsp;&nbsp;\n");
 
                      /* ImageMagick available, so get image size */
                      rsprintf("<b>%s</b>&nbsp;\n", att[index] + 14);
@@ -11118,7 +11117,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                            else
                               strlcpy(file_enc, thumb_name + 14, sizeof(file_enc));
                            url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
-                           sprintf(ref, "%s/%s", str, file_enc);
+                           sprintf(ref, "%s/%s?thumb=1", str, file_enc);
 
                            rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" name=\"att%d\">\n", 
                                     ref, att[index] + 14, att[index] + 14, index);
@@ -11133,7 +11132,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                                  else
                                     strlcpy(file_enc, thumb_name + 14, sizeof(file_enc));
                                  url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
-                                 sprintf(ref, "%s/%s", str, file_enc);
+                                 sprintf(ref, "%s/%s?thumb=1", str, file_enc);
 
                                  rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" name=\"att%d_%d\">\n", 
                                           ref, att[index] + 14, att[index] + 14, index, i);
@@ -22396,7 +22395,7 @@ void call_image_magick(LOGBOOK *lbs)
             cmd[i] = '\"';
 #endif
       my_shell(cmd, str, sizeof(str));
-      show_http_header(NULL, FALSE, NULL);
+      show_http_header(NULL, TRUE, NULL);
       rsputs(str);
    }
    return;
@@ -25352,7 +25351,10 @@ void interprete(char *lbook, char *path)
 
       if (isparam("thumb")) {
          get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
-         send_file_direct(thumb_name);
+         if (thumb_name[0])
+            send_file_direct(thumb_name);
+         else
+            send_file_direct(file_name);
       } else
          send_file_direct(file_name);
       return;

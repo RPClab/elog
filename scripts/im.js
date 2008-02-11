@@ -10,21 +10,22 @@
 \********************************************************************/
 
 var dummy = 0;
+var httpReq;
+var elName;
+var thumbName;
 
 function im(name, thumb, image, cmd)
 {
-   var xmlHttp;
-   
    try {
-      xmlHttp = new XMLHttpRequest(); // Firefox, Opera 8.0+, Safari
+      httpReq = new XMLHttpRequest(); // Firefox, Opera 8.0+, Safari
    }
    catch (e) {
       try {
-         xmlHttp=new ActiveXObject("Msxml2.XMLHTTP"); // Internet Explorer
+         httpReq = new ActiveXObject("Msxml2.XMLHTTP"); // Internet Explorer
       }
       catch (e) {
          try {
-            xmlHttp=new ActiveXObject("Microsoft.XMLHTTP");
+            httpReq = new ActiveXObject("Microsoft.XMLHTTP");
          } 
          catch (e) {
             alert("Your browser does not support AJAX!");
@@ -33,28 +34,39 @@ function im(name, thumb, image, cmd)
       }
    }
   
-   xmlHttp.onreadystatechange = function()
-   {
-      if(xmlHttp.readyState == 4) {
-         if (xmlHttp.responseText != "" &&
-             xmlHttp.responseText.search(/Fonts/) == -1)
-            alert(xmlHttp.responseText);
-         o = document.getElementsByName(name);
+   elName = name;
+   thumbName = thumb;
+   httpReq.onreadystatechange = onReady;
+   httpReq.open("GET","?cmd=im&req="+cmd+"&img="+image, true);
+   httpReq.send(null);
+}
+
+function onReady()
+{
+   if (httpReq.readyState == 4) {
+      if (httpReq.responseText != "" &&
+          httpReq.responseText.search(/Fonts/) == -1)
+         alert(httpReq.responseText);
+      o = document.getElementsByName(elName);
+      if (o[0])
+         o[0].src = thumbName+'?'+dummy;
+      if (o[1])
+         o[1].src = thumbName+'?'+dummy;
+      for (i=0 ; i<8 ; i++) {
+         o = document.getElementsByName(elName+'_'+i);
          if (o[0])
-            o[0].src = thumb+'?'+dummy;
+            o[0].src = thumbName+'-'+i+'.png'+'?'+dummy;
          if (o[1])
-            o[1].src = thumb+'?'+dummy;
-         for (i=0 ; i<8 ; i++) {
-            o = document.getElementsByName(name+'_'+i);
-            if (o[0])
-               o[0].src = thumb+'-'+i+'.png'+'?'+dummy;
-            if (o[1])
-               o[1].src = thumb+'-'+i+'.png'+'?'+dummy;
-         }   
-      dummy++;
+            o[1].src = thumbName+'-'+i+'.png'+'?'+dummy;
       }
+      dummy++;
    }
-  
-   xmlHttp.open("GET","?cmd=im&req="+cmd+"&img="+image, true);
-   xmlHttp.send(null);
+   delete httpReq;
+}
+
+function deleteAtt(idx)
+{
+   document.form1.jcmd.value='delete';
+   document.form1.smcmd.value='delatt'+idx;
+   document.form1.submit();
 }
