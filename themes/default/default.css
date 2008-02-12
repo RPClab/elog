@@ -208,12 +208,15 @@ td {
 .menu1 {
   text-align:left;
   font-size:10pt;
+  vertical-align:middle;
 }
 
 .menu1a {
-  text-align:right;
+  text-align:center;
+  width:110px;
   font-size:10pt;
   font-weight:bold;
+  vertical-align:middle;
 }
 
 .menu2a {
@@ -433,14 +436,6 @@ td {
 .bytes {
   font-family:'lucida console',courier,monospace;
   font-size:10pt;
-  color:#800000
-}
-
-/* upload date */
-.uploaded {
-  font-family:'lucida console',courier,monospace;
-  font-size:10pt;
-  color:#008000;
 }
 
 /* summary display (threaded mode expand) */

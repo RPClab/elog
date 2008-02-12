@@ -22638,7 +22638,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       /*---- next/previous buttons ----*/
 
       if (!getcfg(lbs->name, "Enable browsing", str, sizeof(str)) || atoi(str) == 1) {
-         rsprintf("<td class=\"menu1a\" width=\"1%%\" nowrap align=left>\n");
+         rsprintf("<td class=\"menu1a\">\n");
 
          /* check if first.png exists, just put link there if not */
          strlcpy(file_name, resource_dir, sizeof(file_name));
@@ -22667,7 +22667,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             rsprintf("<a href=\"%d?cmd=%s\">&gt;|</a>&nbsp;\n", message_id, loc("Last"));
          }
 
-         rsprintf("&nbsp;&nbsp;</td>\n");
+         rsprintf("</td>\n");
       }
 
       n = strbreak(menu_str, menu_item, MAX_N_LIST, ",", FALSE);
