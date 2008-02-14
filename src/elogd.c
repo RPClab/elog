@@ -5531,9 +5531,9 @@ void insert_breaks(char *str, int n, int size)
 
 /*------------------------------------------------------------------*/
 
-void replace_inline_img(char *str)
+void replace_inline_img(LOGBOOK *lbs, char *str)
 {
-   char *p, *pn;
+   char *p, *pn, *pa, old[256], link[256], base_url[256];
    int index;
 
    p = str;
@@ -5550,6 +5550,26 @@ void replace_inline_img(char *str)
                pn++;
             sprintf(p, "<img src=\"cid:att%d@psi.ch\">", index);
             memmove(p + strlen(p), pn, strlen(pn) + 1);
+
+            /* now change href to absolute link */
+            pa = p - 1;
+            while (pa > str && *pa != '<') // search '<a href=...>'
+               pa--; 
+            pn = strstr(pa, "href=");
+            if (pn && pn - pa < 10) {
+               strlcpy(old, pn+6, sizeof(old));
+               if (strchr(old, '\"'))
+                  *strchr(old, '\"') = 0;
+               compose_base_url(lbs, base_url, sizeof(base_url), FALSE);
+               strlcpy(link, base_url, sizeof(link));
+               strlcat(link, old, sizeof(link));
+               if (strchr(link, '?'))
+                  *strchr(link, '?') = 0;
+               strsubst(pn+6, TEXT_SIZE, old, link);
+               if (strlen(link) > strlen(old))
+                  p += strlen(link) - strlen(old);
+            }
+
             p++;
          } else
             p++;
@@ -23171,7 +23191,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             rsputs_elcode(lbs, email, text);
          else {
             if (email)
-               replace_inline_img(text);
+               replace_inline_img(lbs, text);
             rsputs(text);
          }
 
