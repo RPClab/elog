@@ -5548,7 +5548,7 @@ void replace_inline_img(char *str)
                pn++;
             if (*pn == '>')
                pn++;
-            sprintf(p, "<img src=\"cid:att%d@psi.ch\">", index - 1);
+            sprintf(p, "<img src=\"cid:att%d@psi.ch\">", index);
             memmove(p + strlen(p), pn, strlen(pn) + 1);
             p++;
          } else
@@ -20379,6 +20379,10 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
       /* encode file */
       strlcpy(file_name, lbs->data_dir, sizeof(file_name));
       strlcat(file_name, att_file[index], sizeof(file_name));
+      if (is_image(file_name)) {
+         get_thumb_name(file_name, str, sizeof(str), 0);
+         strlcpy(file_name, str, sizeof(file_name));
+      }
 
       fh = open(file_name, O_RDONLY | O_BINARY);
       length = strlen(mail_text);
