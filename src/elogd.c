@@ -26745,7 +26745,7 @@ int process_http_request(const char *request, int i_conn)
 #ifdef HAVE_SSL
 void send_return(int _sock, SSL *ssl_con, const char *net_buffer)
 #else
-void send_return(int_sock, const char *net_buffer)
+void send_return(int _sock, const char *net_buffer)
 #endif
 {
    int length, header_length;
