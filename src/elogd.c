@@ -121,6 +121,11 @@ char pidfile[256];              /* Pidfile name                                 
 
 #endif                          /* OS_UNIX */
 
+/* SSL includes */
+#ifdef HAVE_SSL
+#include <openssl/ssl.h>
+#endif
+
 /* local includes */
 #include "regex.h"
 #include "mxml.h"
@@ -211,7 +216,7 @@ int _sock;
 BOOL use_keepalive, enable_execute = FALSE;
 BOOL fckedit_exist, image_magick_exist;
 int verbose, _current_message_id;
-int _logging_level;
+int _logging_level, _ssl_flag;
 
 char *mname[] = {
    "January",
@@ -26187,6 +26192,9 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
 
 int ka_sock[N_MAX_CONNECTION];
 int ka_time[N_MAX_CONNECTION];
+#ifdef HAVE_SSL
+SSL* ka_ssl_con[N_MAX_CONNECTION];
+#endif
 struct in_addr remote_addr[N_MAX_CONNECTION];
 char remote_host[N_MAX_CONNECTION][256];
 
@@ -26734,7 +26742,11 @@ int process_http_request(const char *request, int i_conn)
 
 /*------------------------------------------------------------------*/
 
-void send_return(const char *net_buffer, int _sock)
+#ifdef HAVE_SSL
+void send_return(int _sock, SSL *ssl_con, const char *net_buffer)
+#else
+void send_return(int_sock, const char *net_buffer)
+#endif
 {
    int length, header_length;
    char str[NAME_LENGTH];
@@ -26762,8 +26774,18 @@ void send_return(const char *net_buffer, int _sock)
                header_length = sizeof(header_buffer) - 100;
             memcpy(header_buffer, return_buffer, header_length);
             sprintf(header_buffer + header_length, "\r\nContent-Length: %d\r\n\r\n", length);
+#ifdef HAVE_SSL
+            if (_ssl_flag) {
+               SSL_write(ssl_con, header_buffer, strlen(header_buffer));
+               SSL_write(ssl_con, p + 4, length);
+            } else {
+               send(_sock, header_buffer, strlen(header_buffer), 0);
+               send(_sock, p + 4, length, 0);
+            }
+#else
             send(_sock, header_buffer, strlen(header_buffer), 0);
             send(_sock, p + 4, length, 0);
+#endif
             if (verbose > 1) {
                eprintf("==== Return ================================\n");
                eputs(header_buffer);
@@ -26775,7 +26797,14 @@ void send_return(const char *net_buffer, int _sock)
             keep_alive = 0;
          }
       } else {
+#ifdef HAVE_SSL
+         if (_ssl_flag)
+            SSL_write(ssl_con, return_buffer, return_length);
+         else
+            send(_sock, return_buffer, return_length, 0);
+#else
          send(_sock, return_buffer, return_length, 0);
+#endif
          if (verbose > 1) {
             if (strrchr(net_buffer, '/'))
                strlcpy(str, strrchr(net_buffer, '/') + 1, sizeof(str));
@@ -26918,6 +26947,52 @@ void hup_handler(int sig)
 
 /*------------------------------------------------------------------*/
 
+#ifdef HAVE_SSL
+
+SSL_CTX* init_ssl(void)
+{
+   char str[256];
+   SSL_METHOD *meth;
+   SSL_CTX *ctx;
+
+   SSL_library_init();
+   SSL_load_error_strings();
+
+   meth = SSLv23_method();
+   ctx = SSL_CTX_new(meth);
+
+   strlcpy(str, resource_dir, sizeof(str));
+   strlcat(str, "ssl/server.crt", sizeof(str));
+   if (!file_exist(str)) {
+      eprintf("Cerificate file \"%s\" not found, aborting\n", str);
+      return NULL;
+   }
+   if (SSL_CTX_use_certificate_file(ctx, str, SSL_FILETYPE_PEM) < 0)
+      return NULL;
+   
+   strlcpy(str, resource_dir, sizeof(str));
+   strlcat(str, "ssl/server.key", sizeof(str));
+   if (!file_exist(str)) {
+      eprintf("Key file \"%s\" not found, aborting\n", str);
+      return NULL;
+   }
+   if (SSL_CTX_use_PrivateKey_file(ctx, str, SSL_FILETYPE_PEM) < 0)
+      return NULL;
+   if (SSL_CTX_check_private_key(ctx) < 0)
+      return NULL;
+
+   strlcpy(str, resource_dir, sizeof(str));
+   strlcat(str, "ssl/chain.crt", sizeof(str));
+   if (file_exist(str))
+      SSL_CTX_use_certificate_chain_file(ctx, str);
+
+   return ctx;
+}
+
+#endif // HAVE_SSL
+
+/*------------------------------------------------------------------*/
+
 void server_loop(void)
 {
    int status, i, n_error, min, i_min, i_conn, more_requests;
@@ -26930,6 +27005,10 @@ void server_loop(void)
    struct timeval timeout;
    char *net_buffer = NULL;
    int net_buffer_size;
+#ifdef HAVE_SSL
+   SSL *ssl_con;
+   SSL_CTX *ssl_ctx;
+#endif
 
    i_conn = content_length = 0;
    net_buffer_size = 100000;
@@ -26999,6 +27078,23 @@ void server_loop(void)
 
    /* open configuration file */
    getcfg("dummy", "dummy", str, sizeof(str));
+
+   /* initialize SSL if requested */
+   _ssl_flag = 0;
+   if (getcfg("global", "SSL", str, sizeof(str)) &&
+      atoi(str) == 1) {
+#ifdef HAVE_SSL
+      ssl_ctx = init_ssl();
+      if (ssl_ctx == NULL) {
+         eprintf("Cannot initialize SSL\n");
+         exit(EXIT_FAILURE);
+      }
+      _ssl_flag = 1;
+#else
+      eprintf("SLL support not compiled into elogd\n");
+      exit(EXIT_FAILURE);
+#endif
+   }
 
    /* now, initiate daemon/service */
    if (running_as_daemon) {
@@ -27161,6 +27257,8 @@ void server_loop(void)
       /* close old connections */
       for (i = 0; i < N_MAX_CONNECTION; i++)
          if (ka_sock[i] && (int) time(NULL) - ka_time[i] > 60) {
+#ifdef HAVE_SSL
+#endif
             closesocket(ka_sock[i]);
             ka_sock[i] = 0;
             ka_time[i] = 0;
@@ -27170,6 +27268,22 @@ void server_loop(void)
          if (FD_ISSET(lsock, &readfds)) {
             len = sizeof(acc_addr);
             _sock = accept(lsock, (struct sockaddr *) &acc_addr, (void *) &len);
+
+#ifdef HAVE_SSL
+            if (_ssl_flag) {
+               ssl_con = SSL_new(ssl_ctx);
+               SSL_set_fd(ssl_con, _sock);
+               if (SSL_accept(ssl_con) < 0) {
+                  if (verbose)
+                     eprintf("SSL_accept failed\n");
+                  closesocket(_sock);
+                  ka_sock[i_conn] = 0;
+                  ka_ssl_con[i_conn] = ssl_con;
+                  continue;
+               }
+            }
+#endif
+
             /* find new entry in socket table */
             for (i = 0; i < N_MAX_CONNECTION; i++)
                if (ka_sock[i] == 0)
@@ -27182,6 +27296,18 @@ void server_loop(void)
                      i_min = i;
                   }
 
+#ifdef HAVE_SSL
+               if (_ssl_flag) {
+                  SSL_set_fd(ssl_con, ka_sock[i_min]);
+                  status = SSL_shutdown(ka_ssl_con[i_min]);
+                  if (!status) {
+                     shutdown(ka_sock[i_min], 1);
+                     SSL_shutdown(ka_ssl_con[i_min]);
+                  }
+                  SSL_free(ka_ssl_con[i_min]);
+                  ka_ssl_con[i_min] = NULL;
+               }
+#endif
                closesocket(ka_sock[i_min]);
                ka_sock[i_min] = 0;
                ka_time[i_min] = 0;
@@ -27191,6 +27317,9 @@ void server_loop(void)
             i_conn = i;
             ka_sock[i_conn] = _sock;
             ka_time[i_conn] = (int) time(NULL);
+#ifdef HAVE_SSL
+            ka_ssl_con[i_conn] = ssl_con;
+#endif
             /* save remote host address */
             memcpy(&remote_addr[i_conn], &(acc_addr.sin_addr), sizeof(rem_addr));
             memcpy(&rem_addr, &(acc_addr.sin_addr), sizeof(rem_addr));
@@ -27217,6 +27346,9 @@ void server_loop(void)
             } else {
                i_conn = i;
                _sock = ka_sock[i_conn];
+#ifdef HAVE_SSL
+               ssl_con = ka_ssl_con[i_conn];
+#endif
                ka_time[i_conn] = (int) time(NULL);
                memcpy(&rem_addr, &remote_addr[i_conn], sizeof(rem_addr));
                strcpy(rem_host, remote_host[i_conn]);
@@ -27225,7 +27357,10 @@ void server_loop(void)
 
          /* turn off keep_alive by default */
          keep_alive = FALSE;
+
+         /* receive data */
          if (_sock > 0) {
+
             memset(net_buffer, 0, net_buffer_size);
             len = 0;
             more_requests = 0;
@@ -27242,9 +27377,14 @@ void server_loop(void)
                      timeout.tv_sec = 6;
                      timeout.tv_usec = 0;
                      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
-                     if (FD_ISSET(_sock, &readfds))
-                        i = recv(_sock, net_buffer + len, net_buffer_size - len, 0);
-                     else
+                     if (FD_ISSET(_sock, &readfds)) {
+#ifdef HAVE_SSL
+                        if (_ssl_flag)
+                           i = SSL_read(ssl_con, net_buffer + len, net_buffer_size - len);
+                        else
+#endif
+                           i = recv(_sock, net_buffer + len, net_buffer_size - len, 0);
+                     } else
                         break;
 
                      /* abort if connection got broken */
@@ -27322,9 +27462,14 @@ void server_loop(void)
                               timeout.tv_sec = 6;
                               timeout.tv_usec = 0;
                               status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
-                              if (FD_ISSET(_sock, &readfds))
+                              if (FD_ISSET(_sock, &readfds)) {
+#ifdef HAVE_SSL
+                                 if (_ssl_flag)
+                                    i = SSL_read(ssl_con, net_buffer, net_buffer_size);
+                                 else
+#endif
                                  i = recv(_sock, net_buffer, net_buffer_size, 0);
-                              else
+                              } else
                                  break;
                            } while (i > 0);
 
@@ -27379,7 +27524,11 @@ void server_loop(void)
                if (process_http_request(net_buffer, i_conn)) {
 
                   /* send back the return_buffer to the browser */
-                  send_return(net_buffer, _sock);
+#ifdef HAVE_SSL
+                  send_return(_sock, ssl_con, net_buffer);
+#else
+                  send_return(_sock, net_buffer);
+#endif
                }
 
                /* check if the net_buffer contains more than one request (pipelining) */
@@ -27392,8 +27541,22 @@ void server_loop(void)
             } while (more_requests);
 
             if (!keep_alive) {
+#ifdef HAVE_SSL
+               if (_ssl_flag) {
+                  status = SSL_shutdown(ssl_con);
+                  if (!status) {
+                     shutdown(_sock, 1);
+                     SSL_shutdown(ssl_con);
+                  }
+                  SSL_free(ssl_con);
+               }
+#endif
+
                closesocket(_sock);
                ka_sock[i_conn] = 0;
+#ifdef HAVE_SSL
+               ka_ssl_con[i_conn] = NULL;
+#endif
             }
          }
       }

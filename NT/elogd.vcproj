@@ -43,8 +43,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="\mxml"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
+				AdditionalIncludeDirectories="\mxml;\openssl\include;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;HAVE_SSL"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
@@ -339,6 +339,18 @@
 			</File>
 			<File
 				RelativePath="..\scripts\fckeditor\editor\plugins\elog\fckplugin.js"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Library Files"
+			>
+			<File
+				RelativePath="..\..\OpenSSL\lib\VC\libeay32MD.lib"
+				>
+			</File>
+			<File
+				RelativePath="..\..\OpenSSL\lib\VC\ssleay32MD.lib"
 				>
 			</File>
 		</Filter>
