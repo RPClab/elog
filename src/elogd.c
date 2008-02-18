@@ -132,7 +132,7 @@ char pidfile[256];              /* Pidfile name                                 
 #include "strlcpy.h"
 
 BOOL running_as_daemon;         /* Running as a daemon/service? */
-int elog_tcp_port = (int) DEFAULT_PORT; /* Server's TCP port            */
+int elog_tcp_port;              /* Server's TCP port            */
 
 static void (*printf_handler) (const char *);   /* Handler to printf for logging */
 static void (*fputs_handler) (const char *);    /* Handler to fputs for logging  */
@@ -6162,9 +6162,12 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                         else
                            sprintf(hattrib, "%s", attrib + 5);
 
-                     } else if (strstr(attrib, "://") == 0 && attrib[0] != '#') /* add http:// if missing */
-                        sprintf(hattrib, "http://%s", attrib);
-                     else
+                     } else if (strstr(attrib, "://") == 0 && attrib[0] != '#') { /* add http:// if missing */
+                        if (_ssl_flag)
+                           sprintf(hattrib, "https://%s", attrib);
+                        else
+                           sprintf(hattrib, "http://%s", attrib);
+                     } else
                         strlcpy(hattrib, attrib, sizeof(hattrib));
 
                      strextract(str + i, '[', value, sizeof(value));
@@ -6213,11 +6216,15 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                      }
 
                      /* add http:// if missing */
-                     else if (!strnieq(attrib, "http://", 7) &&
+                     else if ((!strnieq(attrib, "http://", 7) && !strnieq(attrib, "https://", 8)) &&
                               strstr(pattern_list[l].subst, "mailto") == NULL &&
                               strstr(pattern_list[l].subst, "img") == NULL &&
-                              strncmp(pattern_list[l].subst, "<a", 2) != 0)
-                        sprintf(hattrib, "http://%s", attrib);
+                              strncmp(pattern_list[l].subst, "<a", 2) != 0) {
+                        if (_ssl_flag)
+                           sprintf(hattrib, "https://%s", attrib);
+                        else
+                           sprintf(hattrib, "http://%s", attrib);
+                     }
 
                      strlcpy(subst, pattern_list[l].subst, sizeof(subst));
                      strsubst(subst, sizeof(subst), "%#", hattrib);
@@ -6633,7 +6640,10 @@ void compose_base_url(LOGBOOK * lbs, char *base_url, int size, BOOL email_notify
          if (strrchr(base_url, '/'))
             *(strrchr(base_url, '/') + 1) = 0;
       } else {
-         strcpy(base_url, "http://");
+         if (_ssl_flag)
+            strcpy(base_url, "https://");
+         else
+            strcpy(base_url, "http://");
 
          if (elog_tcp_port == 80)
             sprintf(base_url + strlen(base_url), "%s/", host_name);
@@ -6732,7 +6742,10 @@ void set_location(LOGBOOK * lbs, char *rel_path)
 
             } else {
                /* assemble absolute path from host name and port */
-               sprintf(str, "http://%s", http_host);
+               if (_ssl_flag)
+                  sprintf(str, "https://%s", http_host);
+               else
+                  sprintf(str, "http://%s", http_host);
                if (elog_tcp_port != 80 && strchr(str, ':') == NULL)
                   sprintf(str + strlen(str), ":%d", elog_tcp_port);
                strlcat(str, "/", sizeof(str));
@@ -6774,7 +6787,10 @@ void set_location(LOGBOOK * lbs, char *rel_path)
             /* if HTTP request comes from localhost, use localhost as
                absolute link (needed if running on DSL at home) */
             if (!str[0] && strstr(http_host, "localhost")) {
-               strlcpy(str, "http://localhost", sizeof(str));
+               if (_ssl_flag)
+                  strlcpy(str, "https://localhost", sizeof(str));
+               else
+                  strlcpy(str, "http://localhost", sizeof(str));
                if (elog_tcp_port != 80)
                   sprintf(str + strlen(str), ":%d", elog_tcp_port);
                strlcat(str, "/", sizeof(str));
@@ -7314,14 +7330,14 @@ void show_upgrade_page(LOGBOOK * lbs)
 
    rsprintf("It is of course possible to change the attributes or add new ones. The new\n");
    rsprintf("options in the configuration file are described under <a href=\"\n");
-   rsprintf("http://midas.psi.ch/elog/config.html\">http://midas.psi.ch/elog/config.html\n");
+   rsprintf("https://midas.psi.ch/elog/config.html\">https://midas.psi.ch/elog/config.html\n");
    rsprintf("</a>.\n");
 
    rsprintf("</td></tr></table>\n\n");
 
    rsprintf("<hr>\n");
    rsprintf("<address>\n");
-   rsprintf("<a href=\"http://midas.psi.ch/~stefan\">S. Ritt</a>, 18 October 2001");
+   rsprintf("<a href=\"https://midas.psi.ch/~stefan\">S. Ritt</a>, 18 October 2001");
    rsprintf("</address>");
    show_bottom_text(lbs);
    rsprintf("</body></html>\r\n");
@@ -7825,7 +7841,7 @@ void show_bottom_text(LOGBOOK * lbs)
    } else
       /* add little logo */
       rsprintf
-          ("<center><a class=\"bottomlink\" title=\"%s\" href=\"http://midas.psi.ch/elog/\">ELOG V%s-%d</a></center>",
+          ("<center><a class=\"bottomlink\" title=\"%s\" href=\"https://midas.psi.ch/elog/\">ELOG V%s-%d</a></center>",
            loc("Goto ELOG home page"), VERSION, atoi(svn_revision + 13));
 }
 
@@ -7875,7 +7891,7 @@ void show_bottom_text_login(LOGBOOK * lbs)
    } else
       /* add little logo */
       rsprintf
-          ("<center><a class=\"bottomlink\" title=\"%s\" href=\"http://midas.psi.ch/elog/\">ELOG V%s-%d</a></center>",
+          ("<center><a class=\"bottomlink\" title=\"%s\" href=\"https://midas.psi.ch/elog/\">ELOG V%s-%d</a></center>",
            loc("Goto ELOG home page"), VERSION, atoi(svn_revision + 13));
 }
 
@@ -11787,7 +11803,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
    rsprintf("</textarea>\n");
 
    /* put link for config page */
-   rsprintf("<br><a target=\"_blank\" href=\"http://midas.psi.ch/elog/config.html\">Syntax Help</a>");
+   rsprintf("<br><a target=\"_blank\" href=\"https://midas.psi.ch/elog/config.html\">Syntax Help</a>");
 
    rsprintf("</td></tr>\n");
 
@@ -12505,10 +12521,17 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
          if (referer[0])
             strcpy(url, referer);
          else {
-            if (elog_tcp_port == 80)
-               sprintf(url, "http://%s/", http_host);
-            else
-               sprintf(url, "http://%s:%d/", http_host, elog_tcp_port);
+            if (elog_tcp_port == 80) {
+               if (_ssl_flag)
+                  sprintf(url, "https://%s/", http_host);
+               else
+                  sprintf(url, "http://%s/", http_host);
+            } else {
+               if (_ssl_flag)
+                  sprintf(url, "https://%s:%d/", http_host, elog_tcp_port);
+               else
+                  sprintf(url, "http://%s:%d/", http_host, elog_tcp_port);
+            }
             if (lbs) {
                strlcat(url, lbs->name_enc, sizeof(url));
                strlcat(url, "/", sizeof(url));
@@ -12990,10 +13013,17 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
                if (referer[0])
                   strcpy(url, referer);
                else {
-                  if (elog_tcp_port == 80)
-                     sprintf(url, "http://%s/", http_host);
-                  else
-                     sprintf(url, "http://%s:%d/", http_host, elog_tcp_port);
+                  if (elog_tcp_port == 80) {
+                     if (_ssl_flag)
+                        sprintf(url, "https://%s/", http_host);
+                     else
+                        sprintf(url, "http://%s/", http_host);
+                  } else {
+                     if (_ssl_flag)
+                        sprintf(url, "https://%s:%d/", http_host, elog_tcp_port);
+                     else
+                        sprintf(url, "http://%s:%d/", http_host, elog_tcp_port);
+                  }
                }
             } else {
                if (url[strlen(url) - 1] != '/')
@@ -18338,7 +18368,10 @@ void show_rss_feed(LOGBOOK * lbs)
    /* if HTTP request comes from localhost, use localhost as
       absolute link (needed if running on DSL at home) */
    if (!url[0] && strstr(http_host, "localhost")) {
-      strcpy(url, "http://localhost");
+      if (_ssl_flag)
+         strcpy(url, "https://localhost");
+      else
+         strcpy(url, "http://localhost");
       if (elog_tcp_port != 80)
          sprintf(url + strlen(url), ":%d", elog_tcp_port);
       strcat(url, "/");
@@ -18346,7 +18379,10 @@ void show_rss_feed(LOGBOOK * lbs)
 
    if (!url[0]) {
       /* assemble absolute path from host name and port */
-      sprintf(url, "http://%s", host_name);
+      if (_ssl_flag)
+         sprintf(url, "https://%s", host_name);
+      else
+         sprintf(url, "http://%s", host_name);
       if (elog_tcp_port != 80)
          sprintf(url + strlen(url), ":%d", elog_tcp_port);
       strcat(url, "/");
@@ -25465,7 +25501,7 @@ void interprete(char *lbook, char *path)
       if (getcfg(lbs->name, "Help URL", str, sizeof(str))) {
 
          /* if URL is given, redirect */
-         if (strstr(str, "http://")) {
+         if (strstr(str, "http://") || strstr(str, "https://")) {
             redirect(lbs, str);
             return;
          }
@@ -25500,7 +25536,7 @@ void interprete(char *lbook, char *path)
       strlcat(file_name, ".html", sizeof(file_name));
       f = fopen(file_name, "r");
       if (f == NULL)
-         redirect(lbs, "http://midas.psi.ch/elog/eloghelp_english.html");
+         redirect(lbs, "https://midas.psi.ch/elog/eloghelp_english.html");
       else {
          fclose(f);
          send_file_direct(file_name);
@@ -25523,7 +25559,7 @@ void interprete(char *lbook, char *path)
       strlcat(file_name, ".html", sizeof(file_name));
       f = fopen(file_name, "r");
       if (f == NULL)
-         redirect(lbs, "http://midas.psi.ch/elog/elcode_english.html");
+         redirect(lbs, "https://midas.psi.ch/elog/elcode_english.html");
       else {
          fclose(f);
          send_file_direct(file_name);
@@ -26081,7 +26117,7 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                if (file_name[0] && (p - string) == 0) {
 
                   /* check for URL */
-                  if (stristr(file_name, "http://")) {
+                  if (stristr(file_name, "http://") || stristr(file_name, "https://")) {
                      size = retrieve_url(file_name, &buffer, NULL);
                      if (size <= 0) {
                         strencode2(str2, file_name, sizeof(str2));
@@ -26786,10 +26822,21 @@ void send_return(int _sock, const char *net_buffer)
             send(_sock, header_buffer, strlen(header_buffer), 0);
             send(_sock, p + 4, length, 0);
 #endif
-            if (verbose > 1) {
+            if (verbose == 1) {
+               eprintf("Returned %d bytes\n", length);
+            } else if (verbose == 2) {
+               if (strrchr(net_buffer, '/'))
+                  strlcpy(str, strrchr(net_buffer, '/') + 1, sizeof(str));
+               else
+                  str[0] = 0;
                eprintf("==== Return ================================\n");
                eputs(header_buffer);
-               eputs(p + 2);
+               if (chkext(net_buffer, ".gif") || chkext(net_buffer, ".jpg")
+                   || chkext(net_buffer, ".png") || chkext(net_buffer, ".ico")
+                   || chkext(net_buffer, ".pdf") || return_length > 10000)
+                  eprintf("\n<%d bytes of %s>\n\n", length, str);
+               else
+                  eputs(p+4);
                eprintf("\n");
             }
          } else {
@@ -26805,7 +26852,9 @@ void send_return(int _sock, const char *net_buffer)
 #else
          send(_sock, return_buffer, return_length, 0);
 #endif
-         if (verbose > 1) {
+         if (verbose == 1) {
+               eprintf("Returned %d bytes\n", return_length);
+         } else if (verbose == 2) {
             if (strrchr(net_buffer, '/'))
                strlcpy(str, strrchr(net_buffer, '/') + 1, sizeof(str));
             else
@@ -27023,6 +27072,23 @@ void server_loop(void)
    else
       _logging_level = 2;
 
+   /* initialize SSL if requested */
+   _ssl_flag = 0;
+   if (getcfg("global", "SSL", str, sizeof(str)) &&
+      atoi(str) == 1) {
+#ifdef HAVE_SSL
+      ssl_ctx = init_ssl();
+      if (ssl_ctx == NULL) {
+         eprintf("Cannot initialize SSL\n");
+         exit(EXIT_FAILURE);
+      }
+      _ssl_flag = 1;
+#else
+      eprintf("SLL support not compiled into elogd\n");
+      exit(EXIT_FAILURE);
+#endif
+   }
+
    /* create a new socket */
    lsock = socket(AF_INET, SOCK_STREAM, 0);
    if (lsock == -1) {
@@ -27078,23 +27144,6 @@ void server_loop(void)
 
    /* open configuration file */
    getcfg("dummy", "dummy", str, sizeof(str));
-
-   /* initialize SSL if requested */
-   _ssl_flag = 0;
-   if (getcfg("global", "SSL", str, sizeof(str)) &&
-      atoi(str) == 1) {
-#ifdef HAVE_SSL
-      ssl_ctx = init_ssl();
-      if (ssl_ctx == NULL) {
-         eprintf("Cannot initialize SSL\n");
-         exit(EXIT_FAILURE);
-      }
-      _ssl_flag = 1;
-#else
-      eprintf("SLL support not compiled into elogd\n");
-      exit(EXIT_FAILURE);
-#endif
-   }
 
    /* now, initiate daemon/service */
    if (running_as_daemon) {
@@ -27235,7 +27284,10 @@ void server_loop(void)
       exit(EXIT_FAILURE);
    }
 
-   sprintf(str, "Server listening on port %d ...\n", elog_tcp_port);
+   if (_ssl_flag)
+      sprintf(str, "SSLServer listening on port %d ...\n", elog_tcp_port);
+   else
+      sprintf(str, "Server listening on port %d ...\n", elog_tcp_port);
    eprintf("%s", str);
    if (_logging_level > 0)
       write_logfile(NULL, str);
@@ -28550,6 +28602,12 @@ int main(int argc, char *argv[])
       create_password("global", "SMTP Password", str);
       exit(EXIT_SUCCESS);
    }
+
+   /* get default port */
+   if (getcfg("global", "SSL", str, sizeof(str)) && atoi(str) == 1)
+      elog_tcp_port = 443;
+   else
+      elog_tcp_port = 80;
 
    /* get port from configuration file */
    if (tcp_port_cl != 0)
