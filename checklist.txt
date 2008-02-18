@@ -4,7 +4,7 @@ Checklist for new ELOG version
 On PC6562:
 
 - Put all new options in doc/config.html
-- Increse version in elogd.c
+- Increse version in elogd.c and elog.c
 - Do the same in doc/index.html and index_d.html
 - Modify ChangeLog
 - Add release date to ChangeLog

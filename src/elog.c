@@ -9,6 +9,12 @@
 
 \********************************************************************/
 
+#define VERSION "2.7.2"
+char svn_revision[] = "$Id$";
+
+/* ELOG identification */
+static const char ELOGID[] = "elog " VERSION " built " __DATE__ ", " __TIME__;
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -898,7 +904,9 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
    /* check response status */
    if (strstr(response, "302 Found")) {
       if (strstr(response, "Location:")) {
-         if (strstr(response, "fail"))
+         if (strstr(response, "has moved"))
+            printf("Error: elogd server has moved to another location\n");
+         else if (strstr(response, "fail"))
             printf("Error: Invalid user name or password\n");
          else {
             strncpy(str, strstr(response, "Location:") + 10, sizeof(str));
@@ -1010,21 +1018,26 @@ int main(int argc, char *argv[])
                strcpy(textfile, argv[++i]);
             else {
              usage:
+               printf("%s ", ELOGID);
+               strcpy(str, svn_revision + 13);
+               if (strchr(str, ' '))
+                  *strchr(str, ' ') = 0;
+               printf("revision %s\n", str);
                printf("\nusage: elog\n");
-               printf("           -h <hostname> [-p port] [-s subdir]\n");
-               printf("                                    Location where elogd is running\n");
-               printf("           -l logbook/experiment    Name of logbook or experiment\n");
-               printf("           [-v]                     for verbose output\n");
-               printf("           [-w password]            write password defined on server\n");
-               printf("           [-u username password]   user name and password\n");
-               printf("           [-f <attachment>]        (up to %d times)\n", MAX_ATTACHMENTS);
-               printf("           -a <attribute>=<value>   (up to %d times)\n", MAX_N_ATTR);
-               printf("           [-r <id>]                Reply to existing message\n");
-               printf("           [-q]                     Quote original text on reply\n");
-               printf("           [-e <id>]                Edit existing message\n");
-               printf("           [-x]                     Suppress email notification\n");
-               printf("           [-n 0|1|2]               Encoding: 0:ELcode,1:plain,2:HTML\n");
-               printf("           -m <textfile>] | <text>\n");
+               printf("elog -h <hostname> [-p port] [-s subdir]\n");
+               printf("                              Location where elogd is running\n");
+               printf("     -l logbook/experiment    Name of logbook or experiment\n");
+               printf("     [-v]                     for verbose output\n");
+               printf("     [-w password]            write password defined on server\n");
+               printf("     [-u username password]   user name and password\n");
+               printf("     [-f <attachment>]        (up to %d times)\n", MAX_ATTACHMENTS);
+               printf("     -a <attribute>=<value>   (up to %d times)\n", MAX_N_ATTR);
+               printf("     [-r <id>]                Reply to existing message\n");
+               printf("     [-q]                     Quote original text on reply\n");
+               printf("     [-e <id>]                Edit existing message\n");
+               printf("     [-x]                     Suppress email notification\n");
+               printf("     [-n 0|1|2]               Encoding: 0:ELcode,1:plain,2:HTML\n");
+               printf("     -m <textfile>] | <text>\n");
                printf("\nArguments with blanks must be enclosed in quotes\n");
                printf("The elog message can either be submitted on the command line, piped in like\n");
                printf("\"cat text | elog -h ... -l ... -a ...\" or in a file with the -m flag.\n");
