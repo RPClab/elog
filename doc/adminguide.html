@@ -28,6 +28,7 @@
 <div class=menu>&nbsp;* this section :&nbsp;
 &nbsp;[<a class=nav href="#unix">UNIX</a>]&nbsp;
 &nbsp;[<a class=nav href="#windows">Windows</a>]&nbsp;
+&nbsp;[<a class=nav href="#imagemagick">ImageMagick</a>]&nbsp;
 &nbsp;[<a class=nav href="#config">Configuration</a>]&nbsp;
 &nbsp;[<a class=nav href="config.html">elogd.cfg syntax</a>]&nbsp;
 &nbsp;[<a class=nav href="#secure">Secure Connections</a>]&nbsp;
@@ -222,6 +223,39 @@ into elogd.cfg.<p>
 
 Note that the variable $remote_host cannot be used inside elogd since the remote host is always
 the proxy host (anybody knows how to fix that???).<p>
+
+<hr><a name="imagemagick"> <div class=section>&nbsp; Installing ImageMagick &nbsp;</div> <p> 
+When images are attached to ELOG entries, thumbnails can be created for quick preview.
+This works also for PDF and PostScript files. ELOG forwards any image operation
+to the ImageMagic and GhostScript packages, which must be installed for this 
+to work. While these packages are installed on most Linux systems, windows users
+have to download and install these pagages manually. ImageMagick can be obtained
+from <a href="http://www.imagemagick.org/">www.imagemagick.org</a> and GhostScript
+can be obtained from <a href="http://pages.cs.wisc.edu/~ghost/">
+http://pages.cs.wisc.edu/~ghost/</a>. After the installation, it has to be
+made sure that both packages are in the path. This can be checked to open
+a command prompt and typing <code><b>identify -version</b></code>. This
+command should return someting like:<p>
+
+<pre>
+C:\>identify -version
+Version: ImageMagick 6.3.8 01/25/08 Q16 http://www.imagemagick.org
+Copyright: Copyright (C) 1999-2008 ImageMagick Studio LLC
+</pre>
+
+When ELOG is started interactively, it checks for the ImageMagick installation
+and shows a note if it is found:<p>
+
+<pre>
+C:\Program Files\ELOG>elogd
+elogd 2.7.2 built Feb 21 2008, 20:00:42 revision 2051
+<b>ImageMagick detected</b>
+Indexing logbooks ... done
+Server listening on port 8080 ...
+</pre>
+
+If ImageMagick is not installed, the thumbnail functions are simply disabled,
+but ELOG can otherwise run normally.<p>
 
 <hr><a name="windows"> <div class=section>&nbsp; Installing and running in Windows &nbsp;</div> <p> <b>
 ELOG</b> is distributed in binary (executable) form for Windows platforms. It will run happily in <I>
