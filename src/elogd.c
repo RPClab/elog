@@ -26382,6 +26382,10 @@ int process_http_request(const char *request, int i_conn)
 
    return_length = 0;
 
+   /* check for Keep-alive */
+   if (strstr(request, "Keep-Alive") != NULL && use_keepalive)
+      keep_alive = TRUE;
+
    /* extract logbook */
    if (strchr(request, '/') == NULL || strchr(request, '\r') == NULL || strstr(request, "HTTP") == NULL) {
       /* invalid request, make valid */
@@ -26679,9 +26683,6 @@ int process_http_request(const char *request, int i_conn)
       }
    }
 
-   /* check for Keep-alive */
-   if (strstr(request, "Keep-Alive") != NULL && use_keepalive)
-      keep_alive = TRUE;
    if (!authorized) {
       /* return request for authorization */
       rsprintf("HTTP/1.1 401 Authorization Required\r\n");
@@ -27332,7 +27333,7 @@ void server_loop(void)
                   ka_sock[i_conn] = 0;
                   ka_ssl_con[i_conn] = ssl_con;
                   continue;
-               }
+               } 
             }
 #endif
 
@@ -27426,7 +27427,7 @@ void server_loop(void)
                   if (!more_requests) {
                      FD_ZERO(&readfds);
                      FD_SET(_sock, &readfds);
-                     timeout.tv_sec = 6;
+                     timeout.tv_sec = 1;
                      timeout.tv_usec = 0;
                      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
                      if (FD_ISSET(_sock, &readfds)) {
@@ -27595,11 +27596,7 @@ void server_loop(void)
             if (!keep_alive) {
 #ifdef HAVE_SSL
                if (_ssl_flag) {
-                  status = SSL_shutdown(ssl_con);
-                  if (!status) {
-                     shutdown(_sock, 1);
-                     SSL_shutdown(ssl_con);
-                  }
+                  SSL_shutdown(ssl_con);
                   SSL_free(ssl_con);
                }
 #endif
