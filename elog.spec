@@ -2,7 +2,7 @@
 
 Name:       elog
 Summary:    elog is a standalone electronic web logbook
-Version:    2.7.0
+Version:    2.7.3
 Release:    1
 License:    GPL
 Group:      Applications/Networking
@@ -89,6 +89,7 @@ rm -rf $RPM_BUILD_ROOT
 %prefix/bin/*
 %prefix/sbin/elogd
 %prefix/elog/resources
+%prefix/elog/ssl
 %prefix/elog/themes
 %prefix/elog/scripts
 %prefix/elog/logbooks
