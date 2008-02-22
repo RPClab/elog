@@ -9,7 +9,7 @@
 
 \********************************************************************/
 
-#define VERSION "2.7.2"
+#define VERSION "2.7.3"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -212,7 +212,7 @@ Encode the given string in-place by adding %XX escapes
       }
    }
    *pd = '\0';
-   strlcpy(ps, (char *)str, size);
+   strlcpy(ps, (char *) str, size);
 }
 
 /*------------------------------------------------------------------*/

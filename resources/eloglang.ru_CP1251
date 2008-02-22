@@ -454,3 +454,14 @@ or until I log out = или пока я не выйду
 Show HTML source code = Показать исходный код HTML
 Cannot send email notification to "%s" = Не удается отправить уведомление для "%s"
 
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Make smaller = 
+Original size = 
+Make larger = 
+Rotate left = 
+Rotate right = 
+Delete attachment = 
+Cannot create thumbnail, please check ImageMagick installation = 

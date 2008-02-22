@@ -221,9 +221,6 @@ URL = http://your.proxy.host/subdir/
 
 into elogd.cfg.<p>
 
-Note that the variable $remote_host cannot be used inside elogd since the remote host is always
-the proxy host (anybody knows how to fix that???).<p>
-
 <hr><a name="imagemagick"> <div class=section>&nbsp; Installing ImageMagick &nbsp;</div> <p> 
 When images are attached to ELOG entries, thumbnails can be created for quick preview.
 This works also for PDF and PostScript files. ELOG forwards any image operation
@@ -337,16 +334,28 @@ Logbook dir</b></CODE> in the <b><a href="config.html">elogd.cfg description</a>
 <hr><a name="secure">
 <div class=section>&nbsp; Secure Connections HOWTO &nbsp;</div>
 <p>
-Although the <code><b>elogd</b></code> program does not support secure
-connections over SSL directly, it is still possible to access <code><b>elogd</b></code>
-securely using one of the following methods. <b>It is recommented to run elog 
-through an HTTPS proxy to avoid exposing elog passwords to clear text sniffing 
+<h3><i>Using elogd itself</i>:</h3>
+
+Starting from version 2.7.3 on, the <code><b>elogd</b></code> program supports 
+secure connections over the Secure Socker Layer (SSL) directly.
+<b>It is recommented to run elog 
+only through secure HTTPS connections if passwords are used. Otherwise the
+passwords are send over the network in clear text and exposed to sniffing 
 attacks</b>.
+
+To use SSL, put <code><b>SSL = 1</b></code> into the config file. If the 
+<code><b>URL =</b></code> directive is used, make sure to use 
+<code><b>https://...</code></b> instead of <code><b>http://...</code></b>
+there. The ELOG distribution contains a simple self-signed certificate in the
+<code><b>ssl</b></code> subdirectory. One can replace this certificate and key
+with a real ceritficate to avoid browser pop-up windows warning about the
+self-signed certificate.
 
 <h3><i>Using Apache</i>:</h3>
 
-The <a href="http://httpd.apache.org">Apache<a> web server can be used as a proxy
-server allowing secure connections. To do so, Apache has to be configured
+Another possibility is to use the <a href="http://httpd.apache.org">Apache<a> 
+web server as a proxy server allowing secure connections. To do so, Apache 
+has to be configured
 accordingly and a certificate has to be generated. See some
 <a href="http://slacksite.com/apache/certificate.html">instructions</a>
 on how to create a certificate, and see <i>Running elogd under Apache</i>
@@ -394,51 +403,6 @@ This opens a secure tunnel from your local host, port 1234, to the server host
 where the <code><b>elogd</b></code> daemon is running on port 8080. Now you can
 access <b> <code>http://localhost:1234</code></b> from your browser and reach
 <code><b>elogd</b></code> in a secure way.
-<p>
-
-<h3><i>Using stunnel</i>:</h3>
-
-<i><b>Note: It was reported that the below instructions are outdated. However
-I will leave them for a while as a working basis for someone who volunteers
-to update them.</i></b>.<p>
-
-To use <code><b>elogd</b></code> togethwer with
-<a href="http://www.stunnel.or/g">stunnel</a>, following steps are necessary:
-
-<OL>
-<LI>Start <code><b>elogd</b></code>. If another Web server is running
-on port 80, use a different port.
-<P></P>
-<LI>Configure stunnel. This requires the creation of a certificate. See
-the <a href="http://www.stunnel.org/faq/certs.html">manual</a> for
-details.
-<P></P>
-<LI>Start the <b><code>stunnel</code></b> program if not already done
-    and start it with:
-<P>
-    <pre>stunnel -d 443 -r your.host.name:80</pre>
-    Substitute the port 80 if you started <code><b>elogd</b></code> on another port. This
-    causes <b><code>stunnel</code></b> to receive requests on the https port 443 and
-    forward them to the <code><b>elogd</b></code> port.
-<P></P>
-<LI>Put the URL under which <code><b>elogd</b></code> runs into elogd.cfg:<p>
-    <pre>URL = https://your.host.name/</pre>
-
-    Note the <b><code>https</code></b> at the beginning of the URL, which is
-    mandatory. Once you use the <b><code>https</code></b> URL, elog won't work 
-    correctly when accessed not through stunnel via 
-    <b><code>http://..</code></b>, since any redirection would always bring you 
-    back to https://...).<p></p>
-
-<LI>Connect to your logbook with a browser which supports SSL via:
-<P>
-    <pre>https://your.host.name/</pre>
-<LI>If you have problems, start stunnel in the foreground mode with
-<P>
-    <pre>stunnel -f -d 443 -r your.host.name:80</pre>
-
-This reveals any potential error.<p></p></LI>
-</OL>
 <p>
 
 <hr><a name="tech">

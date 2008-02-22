@@ -102,6 +102,18 @@ Use Mail Subject = Location
         80. Can be superseeded via the '-p' command line flag.
       </li>
       <li>
+        <b><code>SSL = &lt;0 | 1&gt;</code></b><br>
+        Turn on Secure Socket Layer transport. If SSL is on, one can connect
+        via <code><b>https://...</b></code> to the elogd daemon. If the 
+        <code><b>URL =</b></code> directive is used, make sure to use 
+        <code><b>https://...</code></b> instead of <code><b>http://...</code></b>
+        there. The ELOG distribution contains a simple self-signed certificate 
+        in the <code><b>ssl</b></code> subdirectory. One can replace this 
+        certificate and key with a real ceritficate to avoid browser pop-up 
+        windows warning about the self-signed certificate. The default for
+        this option is <code><b>0</b></code>.
+      </li>
+      <li>
         <b><code>Resource dir = &lt;directory&gt;</code></b><br>
         Specifies the root directory for ELOG resources like help files,
         themes and icons. Can be overwritten with the
@@ -287,7 +299,7 @@ elogd -t &lt;your password&gt;
         If one of the three cases is true:
         <ul>
           <li>
-            <code><b>elogd</b></code> runs with <i>stunnel</i>
+            <code><b>elogd</b></code> runs with <i>SSL</i> enabled
           </li>
           <li>
             <code><b>elogd</b></code> runs under a proxy
@@ -298,9 +310,8 @@ elogd -t &lt;your password&gt;
         <p>
           then the URL under which <code><b>elogd</b></code> is running has to
           be specified manually with this statement. The URL has to contain the
-          port number if not the standard port 80 is used, it has to specify
-          <i>https://</i> if used under <i>stunnel</i>, and it has to contain
-          the directory if used under a proxy like<br>
+          port number if not the standard port 80 is used or 433 for SSL, 
+          and it has to contain the directory if used under a proxy like<br>
           <br>
         </p>
         <table border="0" cellpadding="10">
@@ -317,7 +328,7 @@ elogd -t &lt;your password&gt;
               <code>URL = https://host.domain/</code>
             </td>
             <td>
-              if running under <i>stunnel</i>
+              if SSL is enabled (SSL = 1) 
             </td>
           </tr>
           <tr>

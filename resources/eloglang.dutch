@@ -453,3 +453,14 @@ Please choose format to import: = Kies het formaat om te importeren
 Enter text = Voer tekst in
 Show HTML source code = Toon HTML broncode
 or until I log out =  of tot ik afmeld
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Make smaller = 
+Original size = 
+Make larger = 
+Rotate left = 
+Rotate right = 
+Delete attachment = 
+Cannot create thumbnail, please check ImageMagick installation = 

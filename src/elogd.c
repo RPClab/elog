@@ -10,7 +10,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.7.2"
+#define VERSION "2.7.3"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -4451,10 +4451,10 @@ void el_delete_attachment(LOGBOOK * lbs, char *file_name)
    remove(str);
    strlcat(str, ".png", sizeof(str));
    remove(str);
-   for (i=0 ; ; i++) {
+   for (i = 0;; i++) {
       strlcpy(str, lbs->data_dir, sizeof(str));
       strlcat(str, file_name, sizeof(str));
-      sprintf(str+strlen(str), "-%d.png", i);
+      sprintf(str + strlen(str), "-%d.png", i);
       if (file_exist(str)) {
          remove(str);
          continue;
@@ -4464,7 +4464,7 @@ void el_delete_attachment(LOGBOOK * lbs, char *file_name)
       strlcat(str, file_name, sizeof(str));
       if (strrchr(str, '.'))
          *strrchr(str, '.') = 0;
-      sprintf(str+strlen(str), "-%d.png", i);
+      sprintf(str + strlen(str), "-%d.png", i);
       if (file_exist(str)) {
          remove(str);
          continue;
@@ -5536,7 +5536,7 @@ void insert_breaks(char *str, int n, int size)
 
 /*------------------------------------------------------------------*/
 
-void replace_inline_img(LOGBOOK *lbs, char *str)
+void replace_inline_img(LOGBOOK * lbs, char *str)
 {
    char *p, *pn, *pa, old[256], link[256], base_url[256];
    int index;
@@ -5558,11 +5558,11 @@ void replace_inline_img(LOGBOOK *lbs, char *str)
 
             /* now change href to absolute link */
             pa = p - 1;
-            while (pa > str && *pa != '<') // search '<a href=...>'
-               pa--; 
+            while (pa > str && *pa != '<')      // search '<a href=...>'
+               pa--;
             pn = strstr(pa, "href=");
             if (pn && pn - pa < 10) {
-               strlcpy(old, pn+6, sizeof(old));
+               strlcpy(old, pn + 6, sizeof(old));
                if (strchr(old, '\"'))
                   *strchr(old, '\"') = 0;
                compose_base_url(lbs, base_url, sizeof(base_url), FALSE);
@@ -5570,7 +5570,7 @@ void replace_inline_img(LOGBOOK *lbs, char *str)
                strlcat(link, old, sizeof(link));
                if (strchr(link, '?'))
                   *strchr(link, '?') = 0;
-               strsubst(pn+6, TEXT_SIZE, old, link);
+               strsubst(pn + 6, TEXT_SIZE, old, link);
                if (strlen(link) > strlen(old))
                   p += strlen(link) - strlen(old);
             }
@@ -5584,7 +5584,8 @@ void replace_inline_img(LOGBOOK *lbs, char *str)
 
 /*------------------------------------------------------------------*/
 
-void convert_elog_link(LOGBOOK *lbs, char *link, char *link_text, char *result, int absolute_link, int message_id)
+void convert_elog_link(LOGBOOK * lbs, char *link, char *link_text, char *result, int absolute_link,
+                       int message_id)
 {
    char str[256], base_url[256];
    int i;
@@ -5721,7 +5722,7 @@ void rsputs2(LOGBOOK * lbs, int absolute_link, const char *str)
                strlcpy(link_text, link, sizeof(link_text));
 
             if (strcmp(key_list[l], "elog:") == 0) {
-               convert_elog_link(lbs, link, link_text, return_buffer+j, absolute_link, _current_message_id);
+               convert_elog_link(lbs, link, link_text, return_buffer + j, absolute_link, _current_message_id);
             } else if (strcmp(key_list[l], "mailto:") == 0) {
                sprintf(return_buffer + j, "<a href=\"mailto:%s\">%s</a>", link, link_text);
             } else {
@@ -6162,7 +6163,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                         else
                            sprintf(hattrib, "%s", attrib + 5);
 
-                     } else if (strstr(attrib, "://") == 0 && attrib[0] != '#') { /* add http:// if missing */
+                     } else if (strstr(attrib, "://") == 0 && attrib[0] != '#') {       /* add http:// if missing */
                         if (_ssl_flag)
                            sprintf(hattrib, "https://%s", attrib);
                         else
@@ -8930,8 +8931,9 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
 
 void ricon(char *name, char *comment, char *onclick)
 {
-   rsprintf("<img align=\"middle\" name=\"%s\" src=\"icons/elc_%s.png\" alt=\"%s\" title=\"%s\" border=\"0\"\n",
-            name, name, comment, comment);
+   rsprintf
+       ("<img align=\"middle\" name=\"%s\" src=\"icons/elc_%s.png\" alt=\"%s\" title=\"%s\" border=\"0\"\n",
+        name, name, comment, comment);
    rsprintf(" onclick=\"%s\"", onclick);
    rsprintf(" onmousedown=\"document.images.%s.src='icons/eld_%s.png'\"\n", name, name);
    rsprintf(" onmouseup=\"document.images.%s.src='icons/elc_%s.png'\"\n", name, name);
@@ -11100,7 +11102,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   if (thumb_status) {
                      get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
                      if (strrchr(thumb_name, DIR_SEPARATOR))
-                        strlcpy(str, strrchr(thumb_name, DIR_SEPARATOR)+1, sizeof(str));
+                        strlcpy(str, strrchr(thumb_name, DIR_SEPARATOR) + 1, sizeof(str));
                      else
                         strlcpy(str, thumb_name, sizeof(str));
                      strlcpy(thumb_name, str, sizeof(str));
@@ -11128,20 +11130,20 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      rsprintf("<b>%s</b>&nbsp;\n", att[index] + 14);
                      sprintf(cmd, "identify -format '%%wx%%h' '%s'", file_name);
 #ifdef OS_WINNT
-                     for (i=0 ; i<(int)strlen(cmd) ; i++)
+                     for (i = 0; i < (int) strlen(cmd); i++)
                         if (cmd[i] == '\'')
                            cmd[i] = '\"';
 #endif
                      my_shell(cmd, str, sizeof(str));
                      if (atoi(str) > 0)
                         rsprintf("<span class=\"bytes\">%s: %s</span>\n", loc("Original size"), str);
-                     
+
                      rsprintf("</td></tr>\n");
                      rsprintf("<tr><td align=center>");
                   } else {
                      rsprintf("%s\n", att[index] + 14);
-                     rsprintf("&nbsp;&nbsp;<input type=\"submit\" name=\"delatt%d\" value=\"%s\" ", 
-                        index, loc("Delete"));
+                     rsprintf("&nbsp;&nbsp;<input type=\"submit\" name=\"delatt%d\" value=\"%s\" ",
+                              index, loc("Delete"));
                      rsprintf("onClick=\"return mark_submit();\">");
                      rsprintf("<br>\n");
                   }
@@ -11154,28 +11156,30 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                            strlcpy(str, att[index], sizeof(str));
                            str[13] = 0;
                            if (strrchr(thumb_name, DIR_SEPARATOR))
-                              strlcpy(file_enc, strrchr(thumb_name, DIR_SEPARATOR)+1+14, sizeof(file_enc));
+                              strlcpy(file_enc, strrchr(thumb_name, DIR_SEPARATOR) + 1 + 14,
+                                      sizeof(file_enc));
                            else
                               strlcpy(file_enc, thumb_name + 14, sizeof(file_enc));
-                           url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
+                           url_encode(file_enc, sizeof(file_enc));      /* for file names with special characters like "+" */
                            sprintf(ref, "%s/%s?thumb=1", str, file_enc);
 
-                           rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" name=\"att%d\">\n", 
+                           rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" name=\"att%d\">\n",
                                     ref, att[index] + 14, att[index] + 14, index);
                         } else if (thumb_status == 2) {
-                           for (i=0 ; ; i++) {
+                           for (i = 0;; i++) {
                               get_thumb_name(file_name, thumb_name, sizeof(thumb_name), i);
                               if (thumb_name[0]) {
                                  strlcpy(str, att[index], sizeof(str));
                                  str[13] = 0;
                                  if (strrchr(thumb_name, DIR_SEPARATOR))
-                                    strlcpy(file_enc, strrchr(thumb_name, DIR_SEPARATOR)+1+14, sizeof(file_enc));
+                                    strlcpy(file_enc, strrchr(thumb_name, DIR_SEPARATOR) + 1 + 14,
+                                            sizeof(file_enc));
                                  else
                                     strlcpy(file_enc, thumb_name + 14, sizeof(file_enc));
-                                 url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
+                                 url_encode(file_enc, sizeof(file_enc));        /* for file names with special characters like "+" */
                                  sprintf(ref, "%s/%s?thumb=1", str, file_enc);
 
-                                 rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" name=\"att%d_%d\">\n", 
+                                 rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" name=\"att%d_%d\">\n",
                                           ref, att[index] + 14, att[index] + 14, index, i);
                               } else
                                  break;
@@ -11185,10 +11189,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                            strlcpy(str, att[index], sizeof(str));
                            str[13] = 0;
                            strcpy(file_enc, att[index] + 14);
-                           url_encode(file_enc, sizeof(file_enc));    /* for file names with special characters like "+" */
+                           url_encode(file_enc, sizeof(file_enc));      /* for file names with special characters like "+" */
                            sprintf(ref, "%s/%s", str, file_enc);
 
-                           rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" name=\"att%d\">\n", 
+                           rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" name=\"att%d\">\n",
                                     ref, att[index] + 14, att[index] + 14, index);
                         }
                      } else {
@@ -13930,7 +13934,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
       /* interprete date entries correctly */
       if (!(first && isparam("head"))) {
          for (i = attr_offset; i < n; i++) {
-            if (attr_flags[i-attr_offset] & AF_DATE) {
+            if (attr_flags[i - attr_offset] & AF_DATE) {
                /* convert to seconds in Unix format */
                ltime = convert_date(list + i * NAME_LENGTH);
                if (ltime == 0) {
@@ -13939,7 +13943,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
                }
                sprintf(list + i * NAME_LENGTH, "%d", (int) ltime);
             }
-            if (attr_flags[i-attr_offset] & AF_DATETIME) {
+            if (attr_flags[i - attr_offset] & AF_DATETIME) {
                /* convert to seconds in Unix format */
                ltime = convert_datetime(list + i * NAME_LENGTH);
                if (ltime == 0) {
@@ -13966,9 +13970,8 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
 
          /* skip message ID and date attributes */
          for (i = attr_offset = 0; i < n; i++)
-            if (strieq(list + i * NAME_LENGTH, "Message ID") ||
-                strieq(list + i * NAME_LENGTH, "Date"))
-                attr_offset++;
+            if (strieq(list + i * NAME_LENGTH, "Message ID") || strieq(list + i * NAME_LENGTH, "Date"))
+               attr_offset++;
 
          if (isparam("preview")) {
             rsprintf("<tr>\n");
@@ -13988,7 +13991,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
 
          } else {
             for (i = j = attr_offset; i < n; i++)
-               if (i != textcol) 
+               if (i != textcol)
                   strlcpy(attr_list[j++ - attr_offset], list + i * NAME_LENGTH, NAME_LENGTH);
 
             if (filltext) {
@@ -14042,7 +14045,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
             if (!filltext) {
                /* submit entry */
                date[0] = 0;
-               if (el_submit(lbs, 0, FALSE, date, attr_list, 
+               if (el_submit(lbs, 0, FALSE, date, attr_list,
                              (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH),
                              n_attr, "", "", "", "plain", NULL, TRUE, NULL))
                   n_imported++;
@@ -14055,8 +14058,8 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
 
                /* submit entry */
                date[0] = 0;
-               if (el_submit(lbs, 0, FALSE, date, attr_list, 
-                            (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH),
+               if (el_submit(lbs, 0, FALSE, date, attr_list,
+                             (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH),
                              n_attr, line, "", "", "plain", NULL, TRUE, NULL))
                   n_imported++;
             }
@@ -16445,8 +16448,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    char str[NAME_LENGTH], ref[256], *nowrap, sclass[80], format[256],
        file_name[MAX_PATH_LENGTH], *slist, *svalue, comment[256];
    char display[NAME_LENGTH], attr_icon[80];
-   int i, j, i_line, index, colspan, n_attachments, line_len, thumb_status,
-      max_line_len;
+   int i, j, i_line, index, colspan, n_attachments, line_len, thumb_status, max_line_len;
    BOOL skip_comma;
    FILE *f;
    struct tm *pts;
@@ -16912,7 +16914,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                i_line++;
                line_len = 0;
             } else
-            /* limit line length to 150 characters */
+               /* limit line length to 150 characters */
             if (line_len > 150 && text[i] == ' ') {
                str[i] = '\n';
                i_line++;
@@ -16960,7 +16962,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             i_line++;
             line_len = 0;
          } else
-         /* limit line length to max_line_len characters */
+            /* limit line length to max_line_len characters */
          if (line_len > max_line_len && text[i] == ' ') {
             str[i] = '\n';
             i_line++;
@@ -17044,24 +17046,25 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
             } else {
 
                if (thumb_status) {
-                  rsprintf("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\" target=\"_blank\">%s</a>\n",
+                  rsprintf
+                      ("<tr><td colspan=%d class=\"attachment\">%s %d: <a href=\"%s\" target=\"_blank\">%s</a>\n",
                        colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
-                  
+
                   if (show_attachments) {
                      rsprintf("<tr><td colspan=%d class=\"attachmentframe\">\n", colspan);
                      if (thumb_status == 2) {
-                        for (i=0 ; ; i++) {
+                        for (i = 0;; i++) {
                            strlcpy(str, file_name, sizeof(str));
                            if (chkext(str, ".pdf") || chkext(str, ".ps"))
                               if (strrchr(str, '.'))
                                  *strrchr(str, '.') = 0;
-                           sprintf(str+strlen(str), "-%d.png", i);
+                           sprintf(str + strlen(str), "-%d.png", i);
                            if (file_exist(str)) {
                               strlcpy(str, ref, sizeof(str));
                               if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
                                  if (strrchr(str, '.'))
                                     *strrchr(str, '.') = 0;
-                              sprintf(str+strlen(str), "-%d.png", i);
+                              sprintf(str + strlen(str), "-%d.png", i);
                               rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
                               rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\"></a>\n", str,
                                        attachment[index] + 14, attachment[index] + 14);
@@ -17515,8 +17518,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
    /* exclude other non-localized commands */
    else if (command[0] && strieq(command, "GetMD5")) {
       return TRUE;
-   }
-   else if (command[0] && strieq(command, "IM")) {
+   } else if (command[0] && strieq(command, "IM")) {
       return TRUE;
    }
    /* check if command is present in the menu list */
@@ -18329,8 +18331,8 @@ time_t convert_datetime(char *date_string)
    tms.tm_mon = month - 1;
    tms.tm_mday = day;
    tms.tm_hour = hour;
-   tms.tm_min  = min;
-   tms.tm_sec  = sec;
+   tms.tm_min = min;
+   tms.tm_sec = sec;
 
    ltime = mktime(&tms);
 
@@ -21793,10 +21795,10 @@ void submit_elog(LOGBOOK * lbs)
    if (strieq(encoding, "HTML") && stristr(getparam("text"), "elog:")) {
       p = stristr(getparam("text"), "elog:");
       while (p) {
-         for (i=0 ; i<5 || (p[i] == '/' || isalnum(p[i]))  ; i++)
+         for (i = 0; i < 5 || (p[i] == '/' || isalnum(p[i])); i++)
             str[i] = p[i];
          str[i] = 0;
-         convert_elog_link(lbs, str+5, str+5, str2, 0, message_id);
+         convert_elog_link(lbs, str + 5, str + 5, str2, 0, message_id);
          strsubst(p, TEXT_SIZE, str, str2);
          p += strlen(str2);
          p = stristr(p, "elog:");
@@ -22276,7 +22278,7 @@ int is_inline_attachment(char *encoding, int message_id, char *text, int i, char
 
 int create_thumbnail(LOGBOOK * lbs, char *file_name)
 {
-   char str[MAX_PATH_LENGTH], cmd[2*MAX_PATH_LENGTH], thumb_size[256];
+   char str[MAX_PATH_LENGTH], cmd[2 * MAX_PATH_LENGTH], thumb_size[256];
    int i;
 
    if (!image_magick_exist)
@@ -22290,7 +22292,7 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
    if (!chkext(file_name, ".ps") && !chkext(file_name, ".pdf") && !chkext(file_name, ".eps") &&
        !chkext(file_name, ".gif") && !chkext(file_name, ".jpg") && !chkext(file_name, ".jpeg") &&
        !chkext(file_name, ".png") && !chkext(file_name, ".ico") && !chkext(file_name, ".tif"))
-       return 0;
+      return 0;
 
    i = get_thumb_name(file_name, str, sizeof(str), 0);
    if (i)
@@ -22309,7 +22311,7 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
       sprintf(cmd, "convert '%s'%s '%s'", file_name, thumb_size, str);
 
 #ifdef OS_WINNT
-   for (i=0 ; i<(int)strlen(cmd) ; i++)
+   for (i = 0; i < (int) strlen(cmd); i++)
       if (cmd[i] == '\'')
          cmd[i] = '\"';
 #endif
@@ -22343,7 +22345,7 @@ int get_thumb_name(const char *file_name, char *thumb_name, int size, int index)
       strlcpy(str, file_name, sizeof(str));
       if (strrchr(str, '.'))
          *strrchr(str, '.') = 0;
-      sprintf(str+strlen(str), "-%d.png", index);
+      sprintf(str + strlen(str), "-%d.png", index);
       if (file_exist(str)) {
          strlcpy(thumb_name, str, size);
          return 2;
@@ -22362,7 +22364,7 @@ int get_thumb_name(const char *file_name, char *thumb_name, int size, int index)
       }
    } else {
       strlcpy(str, file_name, sizeof(str));
-      sprintf(str+strlen(str), "-%d.png", index);
+      sprintf(str + strlen(str), "-%d.png", index);
       if (file_exist(str)) {
          strlcpy(thumb_name, str, size);
          return 2;
@@ -22384,7 +22386,7 @@ int get_thumb_name(const char *file_name, char *thumb_name, int size, int index)
 
 /*------------------------------------------------------------------*/
 
-void call_image_magick(LOGBOOK *lbs)
+void call_image_magick(LOGBOOK * lbs)
 {
    char str[256], cmd[256], file_name[256], thumb_name[256];
    int cur_width, cur_height, new_size, cur_rot, new_rot, i, thumb_status;
@@ -22393,14 +22395,14 @@ void call_image_magick(LOGBOOK *lbs)
       show_error("Unknown IM request received");
       return;
    }
-      
+
    strlcpy(file_name, lbs->data_dir, sizeof(file_name));
    strlcat(file_name, getparam("img"), sizeof(file_name));
    thumb_status = get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
 
    sprintf(cmd, "identify -format '%%wx%%h %%c' '%s'", thumb_name);
 #ifdef OS_WINNT
-   for (i=0 ; i<(int)strlen(cmd) ; i++)
+   for (i = 0; i < (int) strlen(cmd); i++)
       if (cmd[i] == '\'')
          cmd[i] = '\"';
 #endif
@@ -22409,11 +22411,11 @@ void call_image_magick(LOGBOOK *lbs)
    if (atoi(str) > 0) {
       cur_width = atoi(str);
       if (strchr(str, 'x')) {
-         cur_height = atoi(strchr(str, 'x')+1);
+         cur_height = atoi(strchr(str, 'x') + 1);
       } else
          cur_height = cur_width;
       if (strchr(str, ' ')) {
-         cur_rot = atoi(strchr(str, ' ')+1);
+         cur_rot = atoi(strchr(str, ' ') + 1);
       } else
          cur_rot = 0;
    } else {
@@ -22428,37 +22430,36 @@ void call_image_magick(LOGBOOK *lbs)
    i = cmd[0] = 0;
    if (strieq(getparam("req"), "rotleft")) {
       new_rot = (cur_rot + 360 - 90) % 360;
-      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", 
-         file_name, new_rot, cur_height, new_rot, thumb_name); 
+      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'",
+              file_name, new_rot, cur_height, new_rot, thumb_name);
    }
 
    if (strieq(getparam("req"), "rotright")) {
       new_rot = (cur_rot + 90) % 360;
-      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", 
-         file_name, new_rot, cur_height, new_rot, thumb_name); 
+      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'",
+              file_name, new_rot, cur_height, new_rot, thumb_name);
    }
 
    if (strieq(getparam("req"), "original")) {
-      new_size = (int) (cur_width/1.5);
-      sprintf(cmd, "convert '%s' '%s'", 
-         file_name, thumb_name); 
+      new_size = (int) (cur_width / 1.5);
+      sprintf(cmd, "convert '%s' '%s'", file_name, thumb_name);
    }
 
    if (strieq(getparam("req"), "smaller")) {
-      new_size = (int) (cur_width/1.5);
-      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", 
-         file_name, cur_rot, new_size, cur_rot, thumb_name); 
+      new_size = (int) (cur_width / 1.5);
+      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'",
+              file_name, cur_rot, new_size, cur_rot, thumb_name);
    }
 
    if (strieq(getparam("req"), "larger")) {
-      new_size = (int) (cur_width*1.5);
-      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", 
-         file_name, cur_rot, new_size, cur_rot, thumb_name); 
+      new_size = (int) (cur_width * 1.5);
+      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'",
+              file_name, cur_rot, new_size, cur_rot, thumb_name);
    }
 
    if (cmd[0]) {
 #ifdef OS_WINNT
-      for (i=0 ; i<(int)strlen(cmd) ; i++)
+      for (i = 0; i < (int) strlen(cmd); i++)
          if (cmd[i] == '\'')
             cmd[i] = '\"';
 #endif
@@ -22475,8 +22476,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 {
    int size, i, j, k, n, n_log, status, fh, length, message_error, index, n_hidden,
        message_id, orig_message_id, format_flags[MAX_N_ATTR], att_hide[MAX_ATTACHMENTS],
-       att_inline[MAX_ATTACHMENTS], n_attachments, n_lines, n_disp_attr, attr_index[MAX_N_ATTR],
-       thumb_status;
+       att_inline[MAX_ATTACHMENTS], n_attachments, n_lines, n_disp_attr, attr_index[MAX_N_ATTR], thumb_status;
    char str[2 * NAME_LENGTH], ref[256], file_enc[256], attrib[MAX_N_ATTR][NAME_LENGTH];
    char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], script[256],
        orig_tag[80], reply_tag[MAX_REPLY_TO * 10], display[NAME_LENGTH],
@@ -23426,22 +23426,22 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                      rsprintf("<tr><td class=\"attachmentframe\">\n");
 
                      if (thumb_status == 3) {
-                        rsprintf("<font color=red><b>%s</b></font>\n", 
-                           loc("Cannot create thumbnail, please check ImageMagick installation"));
+                        rsprintf("<font color=red><b>%s</b></font>\n",
+                                 loc("Cannot create thumbnail, please check ImageMagick installation"));
                      } else {
                         if (thumb_status == 2 && !email) {
-                           for (i=0 ; ; i++) {
+                           for (i = 0;; i++) {
                               strlcpy(str, file_name, sizeof(str));
                               if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
                                  if (strrchr(str, '.'))
                                     *strrchr(str, '.') = 0;
-                              sprintf(str+strlen(str), "-%d.png", i);
+                              sprintf(str + strlen(str), "-%d.png", i);
                               if (file_exist(str)) {
                                  strlcpy(str, ref, sizeof(str));
                                  if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
                                     if (strrchr(str, '.'))
                                        *strrchr(str, '.') = 0;
-                                 sprintf(str+strlen(str), "-%d.png", i);
+                                 sprintf(str + strlen(str), "-%d.png", i);
                                  rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
                                  rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\"></a>\n", str,
                                           attachment[index] + 14, attachment[index] + 14);
@@ -23466,7 +23466,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                      if (!email) {
                         rsprintf("<tr><td class=\"attachmentframe\">\n");
                         rsprintf("<a name=\"att%d\"></a>\n", index + 1);
-                        rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\">\n", ref, 
+                        rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\">\n", ref,
                                  attachment[index] + 14, attachment[index] + 14);
                         rsprintf("</td></tr>\n\n");
                      }
@@ -24894,8 +24894,9 @@ void show_uploader_finished(LOGBOOK * lbs)
    rsprintf("    if (opener.document.title == \"FCKeditor\") {\n");
    rsprintf("       i = opener.parent.next_attachment;\n");
    rsprintf("       opener.FCKeditorAPI.GetInstance('Text').\n");
-   rsprintf("InsertHtml('<a href=\"%s\"><img border=0 alt=\"%s\" src=\"%s\" name=\"att'+(i-1)+'\" id=\"att'+(i-1)+'\"></a>');\n",
-            ref, att + 14, ref_thumb);
+   rsprintf
+       ("InsertHtml('<a href=\"%s\"><img border=0 alt=\"%s\" src=\"%s\" name=\"att'+(i-1)+'\" id=\"att'+(i-1)+'\"></a>');\n",
+        ref, att + 14, ref_thumb);
    rsprintf("       opener.parent.document.form1.inlineatt.value = '%s';\n", att);
    rsprintf("       opener.parent.document.form1.jcmd.value = 'Upload';\n");
    rsprintf("       opener.parent.document.form1.submit();\n");
@@ -26229,7 +26230,7 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
 int ka_sock[N_MAX_CONNECTION];
 int ka_time[N_MAX_CONNECTION];
 #ifdef HAVE_SSL
-SSL* ka_ssl_con[N_MAX_CONNECTION];
+SSL *ka_ssl_con[N_MAX_CONNECTION];
 #endif
 struct in_addr remote_addr[N_MAX_CONNECTION];
 char remote_host[N_MAX_CONNECTION][256];
@@ -26480,7 +26481,7 @@ int process_http_request(const char *request, int i_conn)
    /* redirect image request from inside FCKeditor */
    if (strieq(logbook, "fckeditor")) {
       if (strstr(url, "?lb=")) {
-         strlcpy(logbook, strstr(url, "?lb=")+4, sizeof(logbook));
+         strlcpy(logbook, strstr(url, "?lb=") + 4, sizeof(logbook));
          if (strchr(logbook, '&'))
             *strchr(logbook, '&') = 0;
          url_decode(logbook);
@@ -26729,7 +26730,7 @@ int process_http_request(const char *request, int i_conn)
          for (i = 0; *p && *p != '/' && *p != '?'; p++);
          while (*p && *p == '/')
             p++;
-         if (strncmp(p, "editor/", 7) == 0) // fix for image request inside FCKeditor
+         if (strncmp(p, "editor/", 7) == 0)     // fix for image request inside FCKeditor
             p += 7;
          /* decode command and return answer */
          decode_get(logbook, p);
@@ -26780,7 +26781,7 @@ int process_http_request(const char *request, int i_conn)
 /*------------------------------------------------------------------*/
 
 #ifdef HAVE_SSL
-void send_return(int _sock, SSL *ssl_con, const char *net_buffer)
+void send_return(int _sock, SSL * ssl_con, const char *net_buffer)
 #else
 void send_return(int _sock, const char *net_buffer)
 #endif
@@ -26837,7 +26838,7 @@ void send_return(int _sock, const char *net_buffer)
                    || chkext(net_buffer, ".pdf") || return_length > 10000)
                   eprintf("\n<%d bytes of %s>\n\n", length, str);
                else
-                  eputs(p+4);
+                  eputs(p + 4);
                eprintf("\n");
             }
          } else {
@@ -26854,7 +26855,7 @@ void send_return(int _sock, const char *net_buffer)
          send(_sock, return_buffer, return_length, 0);
 #endif
          if (verbose == 1) {
-               eprintf("Returned %d bytes\n", return_length);
+            eprintf("Returned %d bytes\n", return_length);
          } else if (verbose == 2) {
             if (strrchr(net_buffer, '/'))
                strlcpy(str, strrchr(net_buffer, '/') + 1, sizeof(str));
@@ -26999,7 +27000,7 @@ void hup_handler(int sig)
 
 #ifdef HAVE_SSL
 
-SSL_CTX* init_ssl(void)
+SSL_CTX *init_ssl(void)
 {
    char str[256];
    SSL_METHOD *meth;
@@ -27019,7 +27020,7 @@ SSL_CTX* init_ssl(void)
    }
    if (SSL_CTX_use_certificate_file(ctx, str, SSL_FILETYPE_PEM) < 0)
       return NULL;
-   
+
    strlcpy(str, resource_dir, sizeof(str));
    strlcat(str, "ssl/server.key", sizeof(str));
    if (!file_exist(str)) {
@@ -27039,7 +27040,7 @@ SSL_CTX* init_ssl(void)
    return ctx;
 }
 
-#endif // HAVE_SSL
+#endif                          // HAVE_SSL
 
 /*------------------------------------------------------------------*/
 
@@ -27075,8 +27076,7 @@ void server_loop(void)
 
    /* initialize SSL if requested */
    _ssl_flag = 0;
-   if (getcfg("global", "SSL", str, sizeof(str)) &&
-      atoi(str) == 1) {
+   if (getcfg("global", "SSL", str, sizeof(str)) && atoi(str) == 1) {
 #ifdef HAVE_SSL
       ssl_ctx = init_ssl();
       if (ssl_ctx == NULL) {
@@ -27333,7 +27333,7 @@ void server_loop(void)
                   ka_sock[i_conn] = 0;
                   ka_ssl_con[i_conn] = ssl_con;
                   continue;
-               } 
+               }
             }
 #endif
 
@@ -27348,7 +27348,6 @@ void server_loop(void)
                      min = ka_time[i];
                      i_min = i;
                   }
-
 #ifdef HAVE_SSL
                if (_ssl_flag) {
                   SSL_set_fd(ssl_con, ka_sock[i_min]);
@@ -27521,7 +27520,7 @@ void server_loop(void)
                                     i = SSL_read(ssl_con, net_buffer, net_buffer_size);
                                  else
 #endif
-                                 i = recv(_sock, net_buffer, net_buffer_size, 0);
+                                    i = recv(_sock, net_buffer, net_buffer_size, 0);
                               } else
                                  break;
                            } while (i > 0);

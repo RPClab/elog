@@ -84,6 +84,10 @@ Section "ELOG system (required)" SecSystem
   SetOutPath $INSTDIR\resources
   File resources\eloghelp_english.html
 
+  ; ssl directory
+  SetOutPath $INSTDIR\ssl
+  File ssl\*.*
+
   ; src directory
   SetOutPath $INSTDIR\src
   File src\*.c

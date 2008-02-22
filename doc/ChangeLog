@@ -1,3 +1,21 @@
+Version 2.7.3, released Feb. 22th, 2008
+=======================================
+
+- Implemented native SSL support
+- Added version information to elog.c
+- Use absolute links for inline images in email notifications
+- Put thumbnails in HTML encoded email notifications
+- Adjusted menu height
+- Remove ',' from date in CSV export
+- Replace elog:... by HTML link when encoding is HTML
+- Fixed importing of datetime attributes
+- Added patch from Olivier Callot regarding max. line length in summary display
+- Fixed shell problems under Linux
+- Added code to auto-detect ImageMagick
+- Implemented thumbnails for PDF and images with resizing and rotation
+- Allow Ctrl-Shift-PgUp/PgDn for browsing
+- Moved browsing buttons to the left side
+
 Version 2.7.2, released Jan. 30th, 2008
 =======================================
 
