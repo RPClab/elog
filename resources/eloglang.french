@@ -1,6 +1,6 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.7.1+)
+# (for 2.7.3+)
 # A more recent version may be available at :
 # http://savannah.psi.ch/viewcvs/trunk/resources/eloglang.french?root=elog
 #
@@ -455,10 +455,10 @@ Please choose format to import: = Veuillez choisir le format d'importation :
 Enter text = Saisir le texte
 Show HTML source code = Voir le code source HTML
 or until I log out = ou jusqu'à ce que je me déconnecte
-Make smaller = 
-Original size = 
-Make larger = 
-Rotate left = 
-Rotate right = 
-Delete attachment = 
-Cannot create thumbnail, please check ImageMagick installation = 
+Make smaller = Réduire
+Original size = Taille d'origine
+Make larger = Agrandir
+Rotate left = Rotation à gauche
+Rotate right = Rotation à droite
+Delete attachment = Supprimer la pièce jointe
+Cannot create thumbnail, please check ImageMagick installation = Impossible de créer l'aperçu, merci de vérifier l'installation de ImageMagick
