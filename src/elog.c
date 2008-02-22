@@ -212,7 +212,7 @@ Encode the given string in-place by adding %XX escapes
       }
    }
    *pd = '\0';
-   strlcpy(ps, str, size);
+   strlcpy(ps, (char *)str, size);
 }
 
 /*------------------------------------------------------------------*/
