@@ -40,6 +40,7 @@ mkdir $dir/scripts/fckeditor/editor
 mkdir $dir/scripts/fckeditor/editor/plugins
 mkdir $dir/scripts/fckeditor/editor/plugins/elog
 mkdir $dir/resources
+mkdir $dir/ssl
 mkdir $dir/themes
 mkdir $dir/themes/default
 mkdir $dir/themes/default/icons
@@ -72,6 +73,7 @@ cp -p scripts/* $dir/scripts
 cp -p scripts/fckeditor/* $dir/scripts/fckeditor
 cp -p scripts/fckeditor/editor/plugins/elog/* $dir/scripts/fckeditor/editor/plugins/elog
 cp -p resources/* $dir/resources
+cp -p ssl/* $dir/ssl
 
 cp -p themes/default/* $dir/themes/default
 cp -p themes/default/icons/* $dir/themes/default/icons
@@ -87,21 +89,21 @@ rm -Rf $dir/../mxml
 rm -Rf $dir
 
 # transfer archive
-cp /tmp/$archive ~/html/elog/download/tar/
-cp /tmp/$archive ~/html/elog/download/tar/elog-latest.tar.gz
+cp /tmp/$archive ~ritt/html/elog/download/tar/
+cp /tmp/$archive ~ritt/html/elog/download/tar/elog-latest.tar.gz
 cp /tmp/$archive /usr/src/redhat/SOURCES/elog-$version.tar.gz
-cd ~/elog
-cp -f doc/ChangeLog ~/html/elog/download/ChangeLog
+cd ~ritt/elog
+cp -f doc/ChangeLog ~ritt/html/elog/download/ChangeLog
 rm /tmp/$archive
 
 # building RPMs
 rm -f /usr/src/redhat/RPMS/i386/*
 rm -f /usr/src/redhat/SRPMS/*
 rpmbuild -ba elog.spec || exit $?
-cp /usr/src/redhat/RPMS/i386/elog*rpm ~/html/elog/download/RPMS/
-cp /usr/src/redhat/RPMS/i386/elog-$version-$release.i386.rpm ~/html/elog/download/RPMS/elog-latest.i386.rpm
+cp /usr/src/redhat/RPMS/i386/elog*rpm ~ritt/html/elog/download/RPMS/
+cp /usr/src/redhat/RPMS/i386/elog-$version-$release.i386.rpm ~ritt/html/elog/download/RPMS/elog-latest.i386.rpm
 cp /usr/src/redhat/SRPMS/elog*rpm ~/html/elog/download/SRPMS/
-cp /usr/src/redhat/SRPMS/elog-$version-$release.src.rpm ~/html/elog/download/SRPMS/elog-latest.src.rpm
+cp /usr/src/redhat/SRPMS/elog-$version-$release.src.rpm ~ritt/html/elog/download/SRPMS/elog-latest.src.rpm
 
 
 
