@@ -78,6 +78,11 @@ CFLAGS += -DHAVE_SSL
 LIBS += -lssl
 endif 
 
+WHOAMI = $(shell whoami)
+ifeq ($(WHOAMI),root)
+BINFLAGS = -o ${BINOWNER} -g ${BINGROUP}
+endif
+
 all: $(EXECS)
 
 regex.o: src/regex.c src/regex.h
@@ -117,27 +122,27 @@ loc: locext
 endif
 
 update: $(EXECS)
-	@$(INSTALL) -v -m 0755 -o ${BINOWNER} -g ${BINGROUP} elogd $(SDESTDIR)
+	@$(INSTALL) -v -m 0755 ${BINFLAGS} elogd $(SDESTDIR)
 
 install: $(EXECS)
 	@$(INSTALL) -m 0755 -d $(DESTDIR) $(SDESTDIR) $(MANDIR)/man1/ $(MANDIR)/man8/
-	@$(INSTALL) -m 0755 -d $(ELOGDIR)/scripts/ $(ELOGDIR)/resources/ $(ELOGDIR)/themes/default/icons 
+	@$(INSTALL) -m 0755 -d $(ELOGDIR)/scripts/ $(ELOGDIR)/resources/ $(ELOGDIR)/ssl/ $(ELOGDIR)/themes/default/icons 
 	@$(INSTALL) -m 0755 -d $(ELOGDIR)/logbooks/demo
-	@$(INSTALL) -v -m 0755 -o ${BINOWNER} -g ${BINGROUP} elog elconv $(DESTDIR)
-	@$(INSTALL) -v -m 0755 -o ${BINOWNER} -g ${BINGROUP} elogd $(SDESTDIR)
+	@$(INSTALL) -v -m 0755 ${BINFLAGS} elog elconv $(DESTDIR)
+	@$(INSTALL) -v -m 0755 ${BINFLAGS} elogd $(SDESTDIR)
 	@$(INSTALL) -v -m 0644 man/elog.1 man/elconv.1 $(MANDIR)/man1/
-	@$(INSTALL) -v -m 0644 man/elogd.8 $(MANDIR)/man8/
 	@$(INSTALL) -v -m 0644 man/elogd.8 $(MANDIR)/man8/
 	@$(INSTALL) -v -m 0644 scripts/*.js $(ELOGDIR)/scripts/
 
 	@echo "Installing FCKeditor to $(ELOGDIR)/scripts/fckeditor"
-	@unzip -q -o scripts/fckeditor.zip -d $(ELOGDIR)/scripts/
+	@unzip -q -f scripts/fckeditor.zip -d $(ELOGDIR)/scripts/
 	@$(INSTALL) -D -v -m 0644 scripts/fckeditor/fckelog.js $(ELOGDIR)/scripts/fckeditor/fckelog.js
 	@$(INSTALL) -D -v -m 0644 scripts/fckeditor/editor/plugins/elog/fckplugin.js $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/fckplugin.js
 	@$(INSTALL) -D -v -m 0644 scripts/fckeditor/editor/plugins/elog/inserttime.gif $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/inserttime.gif
 
 	@echo "Installing resources to $(ELOGDIR)/resources"	
 	@$(INSTALL) -m 0644 resources/* $(ELOGDIR)/resources/
+	@$(INSTALL) -m 0644 ssl/* $(ELOGDIR)/ssl/
 
 	@echo "Installing themes to $(ELOGDIR)/themes"	
 	@$(INSTALL) -m 0644 themes/default/icons/* $(ELOGDIR)/themes/default/icons/
