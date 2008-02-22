@@ -71,6 +71,8 @@ Section "ELOG system (required)" SecSystem
   File nt\release\elogd.exe
   File nt\release\elog.exe
   File nt\release\elconv.exe
+  File \windows\system32\libeay32.dll
+  File \windows\system32\ssleay32.dll
 
   ; doc directory
   SetOutPath $INSTDIR\doc
