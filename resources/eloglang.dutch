@@ -329,7 +329,7 @@ Please enter hour for attribute '%s' = Geef uur op voor attribuut '%s'
 Please enter minute for attribute '%s' = Geef minuten op voor attribuut '%s'
 Please enter second for attribute '%s' = Geef secondes op voor attribuut '%s'
 No admin user has been defined in configuration file = Er is geen admin gebruiker opgegeven in configuratie bestand
-Duplicate = Dubblee
+Duplicate = Kopieer
 Cannot lookup server name = Kan server naam niet vinden
 Cannot connect to server = Kan niet verbinden met server
 %s wrote = %s schreef
@@ -453,14 +453,11 @@ Please choose format to import: = Kies het formaat om te importeren
 Enter text = Voer tekst in
 Show HTML source code = Toon HTML broncode
 or until I log out =  of tot ik afmeld
+Make smaller = Verkleinen
+Original size = Oorspronkelijke grootte
+Make larger = Vergroten
+Rotate left = Links draaien
+Rotate right = Rechts draaien
+Delete attachment = Verwijder bijlage
+Cannot create thumbnail, please check ImageMagick installation = Kan geen voorbeeld maken, controleer de ImageMagick installatie
 
-#
-#---- please translate following items and then remove this comment ----#
-#
-Make smaller = 
-Original size = 
-Make larger = 
-Rotate left = 
-Rotate right = 
-Delete attachment = 
-Cannot create thumbnail, please check ImageMagick installation = 
