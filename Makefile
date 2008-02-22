@@ -21,6 +21,9 @@ DESTDIR    = $(ROOT)$(PREFIX)/bin
 SDESTDIR   = $(ROOT)$(PREFIX)/sbin
 RCDIR      = $(ROOT)/etc/rc.d/init.d
 
+# flag for SSL support
+USE_SSL    = 1
+
 #############################################################
 
 # Default compilation flags unless stated otherwise.
@@ -69,6 +72,11 @@ CC = gcc
 endif
 
 CFLAGS += -DOS_$(OSTYPE)
+
+ifdef USE_SSL
+CFLAGS += -DHAVE_SSL
+LIBS += -lssl
+endif 
 
 all: $(EXECS)
 
