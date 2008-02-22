@@ -14,7 +14,7 @@ On PC6562:
 - c:\elog> svn ci -m "Release x.x.x-y"
 - open VS 2005 command window, build xxx-1 in c:\elog
 
-On PC5082:
+On midas.psi.ch:
 
 - svn update
 - Increase version in elog.spec
@@ -33,7 +33,7 @@ On PC6562:
 - c:\elog> svn ci -m "Version x.x.x-y" 
 - open VS 2005 command window, build xxx-y
 
-On PC5082:
+On midas.psi.ch:
 
 - svn update
 - klog ritt
