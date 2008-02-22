@@ -40,6 +40,11 @@ static const char ELOGID[] = "elog " VERSION " built " __DATE__ ", " __TIME__;
 #endif
 #endif
 
+/* SSL includes */
+#ifdef HAVE_SSL
+#include <openssl/ssl.h>
+#endif
+
 typedef int INT;
 
 #define MAX_ATTACHMENTS  50
@@ -282,7 +287,7 @@ void convert_crlf(char *buffer, int bufsize)
 
 char request[100000], response[100000], *content;
 
-INT retrieve_elog(char *host, int port, char *subdir, char *experiment,
+INT retrieve_elog(int sock, char *subdir, char *experiment,
                   char *passwd, char *uname, char *upwd, int message_id,
                   char attrib_name[MAX_N_ATTR][NAME_LENGTH], char attrib[MAX_N_ATTR][NAME_LENGTH], char *text)
 /********************************************************************\
@@ -292,8 +297,7 @@ INT retrieve_elog(char *host, int port, char *subdir, char *experiment,
   Purpose: Retrive an ELog entry for edit/reply
 
   Input:
-    char   *host            Host name where ELog server runs
-    in     port             ELog server port number
+    int    sock             Socket connected to elog server
     char   *subdir          Subdirectoy to elog server
     char   *passwd          Write password
     char   *uname           User name
@@ -308,67 +312,8 @@ INT retrieve_elog(char *host, int port, char *subdir, char *experiment,
 
 \********************************************************************/
 {
-   int status, sock, i, n, first, index;
-   struct hostent *phe;
-   struct sockaddr_in bind_addr;
-   char host_name[256], str[80], *ph, *ps;
-
-#if defined( _MSC_VER )
-   {
-      WSADATA WSAData;
-
-      /* Start windows sockets */
-      if (WSAStartup(MAKEWORD(1, 1), &WSAData) != 0)
-         return -1;
-   }
-#endif
-
-   /* get local host name */
-   gethostname(host_name, sizeof(host_name));
-
-   phe = gethostbyname(host_name);
-   if (phe == NULL) {
-      perror("Cannot retrieve host name");
-      return -1;
-   }
-   phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
-   if (phe == NULL) {
-      perror("Cannot retrieve host name");
-      return -1;
-   }
-
-   /* if domain name is not in host name, hope to get it from phe */
-   if (strchr(host_name, '.') == NULL)
-      strcpy(host_name, phe->h_name);
-
-   /* create socket */
-   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-      perror("cannot create socket");
-      return -1;
-   }
-
-   /* compose remote address */
-   memset(&bind_addr, 0, sizeof(bind_addr));
-   bind_addr.sin_family = AF_INET;
-   bind_addr.sin_addr.s_addr = 0;
-   bind_addr.sin_port = htons((unsigned short) port);
-
-   phe = gethostbyname(host);
-   if (phe == NULL) {
-      perror("cannot get host name");
-      return -1;
-   }
-   memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
-
-   /* connect to server */
-   status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
-   if (status != 0) {
-      printf("Cannot connect to host %s, port %d\n", host, port);
-      return -1;
-   }
-
-   if (verbose)
-      printf("Successfully connected to host %s, port %d\n", host, port);
+   int i, n, first, index;
+   char str[80], *ph, *ps;
 
    /* compose request */
    strcpy(request, "GET /");
@@ -526,7 +471,57 @@ INT retrieve_elog(char *host, int port, char *subdir, char *experiment,
 
 /*------------------------------------------------------------------*/
 
-INT submit_elog(char *host, int port, char *subdir, char *experiment,
+int elog_connect(char *host, int port, int ssl)
+{
+   int status, sock;
+   struct hostent *phe;
+   struct sockaddr_in bind_addr;
+
+#if defined( _MSC_VER )
+   {
+      WSADATA WSAData;
+
+      /* Start windows sockets */
+      if (WSAStartup(MAKEWORD(1, 1), &WSAData) != 0)
+         return -1;
+   }
+#endif
+
+   /* create socket */
+   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+      perror("cannot create socket");
+      return -1;
+   }
+
+   /* compose remote address */
+   memset(&bind_addr, 0, sizeof(bind_addr));
+   bind_addr.sin_family = AF_INET;
+   bind_addr.sin_addr.s_addr = 0;
+   bind_addr.sin_port = htons((unsigned short) port);
+
+   phe = gethostbyname(host);
+   if (phe == NULL) {
+      perror("cannot get host name");
+      return -1;
+   }
+   memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
+
+   /* connect to server */
+   status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
+   if (status != 0) {
+      printf("Cannot connect to host %s, port %d\n", host, port);
+      return -1;
+   }
+
+   if (verbose)
+      printf("Successfully connected to host %s, port %d\n", host, port);
+
+   return sock;
+}
+
+/*------------------------------------------------------------------*/
+
+INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
                 char *passwd,
                 char *uname, char *upwd,
                 int reply,
@@ -548,6 +543,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
   Input:
     char   *host            Host name where ELog server runs
     in     port             ELog server port number
+    int    ssl              SSL flag
     char   *subdir          Subdirectoy to elog server
     char   *passwd          Write password
     char   *uname           User name
@@ -570,24 +566,56 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
 \********************************************************************/
 {
    int status, sock, i, n, header_length, content_length, index;
-   struct hostent *phe;
-   struct sockaddr_in bind_addr;
    char host_name[256], boundary[80], str[80], *p, *old_encoding;
    char old_attrib_name[MAX_N_ATTR][NAME_LENGTH], old_attrib[MAX_N_ATTR][NAME_LENGTH];
+   struct hostent *phe;
+#ifdef HAVE_SSL
+   SSL *ssl_con;
+#endif
 
-#if defined( _MSC_VER )
-   {
-      WSADATA WSAData;
+   sock = elog_connect(host, port, ssl);
+   if (sock < 0)
+      return sock;
 
-      /* Start windows sockets */
-      if (WSAStartup(MAKEWORD(1, 1), &WSAData) != 0)
+#ifdef HAVE_SSL
+   if (ssl) {
+      SSL_METHOD *meth;
+      SSL_CTX *ctx;
+
+      SSL_library_init();
+      SSL_load_error_strings();
+
+      meth = SSLv23_method();
+      ctx = SSL_CTX_new(meth);
+
+      ssl_con = SSL_new(ctx);
+      SSL_set_fd(ssl_con, sock);
+      if (SSL_connect(ssl_con) <= 0)
          return -1;
    }
 #endif
 
+   /* get local host name */
+   gethostname(host_name, sizeof(host_name));
+
+   phe = gethostbyname(host_name);
+   if (phe == NULL) {
+      perror("Cannot retrieve host name");
+      return -1;
+   }
+   phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
+   if (phe == NULL) {
+      perror("Cannot retrieve host name");
+      return -1;
+   }
+
+   /* if domain name is not in host name, hope to get it from phe */
+   if (strchr(host_name, '.') == NULL)
+      strcpy(host_name, phe->h_name);
+
    if (edit) {
       status =
-          retrieve_elog(host, port, subdir, experiment, passwd, uname, upwd, edit,
+          retrieve_elog(sock, subdir, experiment, passwd, uname, upwd, edit,
                         old_attrib_name, old_attrib, old_text);
 
       if (status != 1)
@@ -617,7 +645,7 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
 
    if (reply) {
       status =
-          retrieve_elog(host, port, subdir, experiment, passwd, uname, upwd, reply,
+          retrieve_elog(sock, subdir, experiment, passwd, uname, upwd, reply,
                         old_attrib_name, old_attrib, old_text);
 
       if (status != 1)
@@ -699,53 +727,6 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
          strlcat(text, new_text, TEXT_SIZE);
       }
    }
-
-   /* get local host name */
-   gethostname(host_name, sizeof(host_name));
-
-   phe = gethostbyname(host_name);
-   if (phe == NULL) {
-      perror("Cannot retrieve host name");
-      return -1;
-   }
-   phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
-   if (phe == NULL) {
-      perror("Cannot retrieve host name");
-      return -1;
-   }
-
-   /* if domain name is not in host name, hope to get it from phe */
-   if (strchr(host_name, '.') == NULL)
-      strcpy(host_name, phe->h_name);
-
-   /* create socket */
-   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-      perror("cannot create socket");
-      return -1;
-   }
-
-   /* compose remote address */
-   memset(&bind_addr, 0, sizeof(bind_addr));
-   bind_addr.sin_family = AF_INET;
-   bind_addr.sin_addr.s_addr = 0;
-   bind_addr.sin_port = htons((unsigned short) port);
-
-   phe = gethostbyname(host);
-   if (phe == NULL) {
-      perror("cannot get host name");
-      return -1;
-   }
-   memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
-
-   /* connect to server */
-   status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
-   if (status != 0) {
-      printf("Cannot connect to host %s, port %d\n", host, port);
-      return -1;
-   }
-
-   if (verbose)
-      printf("Successfully connected to host %s, port %d\n", host, port);
 
    content_length = 100000;
    for (i = 0; i < MAX_ATTACHMENTS; i++)
@@ -867,6 +848,11 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
     */
 
    /* send request */
+#ifdef HAVE_SSL
+   if (ssl)
+      SSL_write(ssl_con, request, header_length);
+   else
+#endif
    send(sock, request, header_length, 0);
    if (verbose) {
       printf("Request sent to host:\n");
@@ -874,12 +860,23 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
    }
 
    /* send content */
+#ifdef HAVE_SSL
+   if (ssl)
+      SSL_write(ssl_con, content, content_length);
+   else
+#endif
    send(sock, content, content_length, 0);
    if (verbose)
       printf("Content sent to host.\n");
 
    /* receive response */
-   i = recv(sock, response, 10000, 0);
+   memset(response, 0, sizeof(response));
+#ifdef HAVE_SSL
+   if (ssl)
+      i = SSL_read(ssl_con, response, sizeof(response)-1);
+   else
+#endif
+   i = recv(sock, response, sizeof(response)-1, 0);
    if (i < 0) {
       perror("Cannot receive response");
       return -1;
@@ -888,11 +885,21 @@ INT submit_elog(char *host, int port, char *subdir, char *experiment,
    /* discard remainder of response */
    n = i;
    while (i > 0) {
-      i = recv(sock, response + n, 10000, 0);
+#ifdef HAVE_SSL
+      if (ssl)
+         i = SSL_read(ssl_con, response + n, sizeof(response)-1-n);
+      else
+#endif
+      i = recv(sock, response + n, sizeof(response)-1-n, 0);
       if (i > 0)
          n += i;
    }
    response[n] = 0;
+
+#ifdef HAVE_SSL
+   SSL_shutdown(ssl_con);
+   SSL_free(ssl_con);
+#endif
 
    closesocket(sock);
 
@@ -956,13 +963,14 @@ int main(int argc, char *argv[])
    char host_name[256], logbook[32], textfile[256], password[80], subdir[256];
    char *buffer[MAX_ATTACHMENTS], attachment[MAX_ATTACHMENTS][256];
    INT att_size[MAX_ATTACHMENTS];
-   INT i, n, fh, n_att, n_attr, port, reply, quote_on_reply, edit, encoding, suppress, size;
+   INT i, n, fh, n_att, n_attr, port, reply, quote_on_reply, edit, encoding, suppress, size, ssl;
    char attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 
    text[0] = textfile[0] = uname[0] = upwd[0] = suppress = quote_on_reply = 0;
    host_name[0] = logbook[0] = password[0] = subdir[0] = 0;
    n_att = n_attr = reply = edit = encoding = 0;
    port = 80;
+   ssl = 0;
 
    for (i = 0; i < MAX_ATTACHMENTS; i++) {
       attachment[i][0] = 0;
@@ -974,6 +982,8 @@ int main(int argc, char *argv[])
    for (i = 1; i < argc; i++) {
       if (argv[i][0] == '-' && argv[i][1] == 'v')
          verbose = 1;
+      if (argv[i][0] == '-' && argv[i][1] == 's')
+         ssl = 1;
       else if (argv[i][0] == '-' && argv[i][1] == 'q')
          quote_on_reply = 1;
       else if (argv[i][0] == '-' && argv[i][1] == 'x')
@@ -1027,6 +1037,7 @@ int main(int argc, char *argv[])
                printf("elog -h <hostname> [-p port] [-s subdir]\n");
                printf("                              Location where elogd is running\n");
                printf("     -l logbook/experiment    Name of logbook or experiment\n");
+               printf("     -s                       Use SSL for communication\n");
                printf("     [-v]                     for verbose output\n");
                printf("     [-w password]            write password defined on server\n");
                printf("     [-u username password]   user name and password\n");
@@ -1050,6 +1061,13 @@ int main(int argc, char *argv[])
          }
       }
    }
+
+#ifndef HAVE_SSL
+   if (ssl) {
+      printf("SLL support not compiled into elogd\n");
+      return 1;
+   }
+#endif
 
    if (host_name[0] == 0) {
       printf("Please specify hostname.\n");
@@ -1140,7 +1158,7 @@ int main(int argc, char *argv[])
    }
 
    /* now submit message */
-   submit_elog(host_name, port, subdir, logbook, password,
+   submit_elog(host_name, port, ssl, subdir, logbook, password,
                uname, upwd, reply, quote_on_reply, edit, suppress, encoding, attr_name, attrib, n_attr, text,
                attachment, buffer, att_size);
 
