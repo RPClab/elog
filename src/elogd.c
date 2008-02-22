@@ -27085,7 +27085,7 @@ void server_loop(void)
       }
       _ssl_flag = 1;
 #else
-      eprintf("SLL support not compiled into elogd\n");
+      eprintf("SSL support not compiled into elogd\n");
       exit(EXIT_FAILURE);
 #endif
    }
@@ -27351,11 +27351,7 @@ void server_loop(void)
 #ifdef HAVE_SSL
                if (_ssl_flag) {
                   SSL_set_fd(ssl_con, ka_sock[i_min]);
-                  status = SSL_shutdown(ka_ssl_con[i_min]);
-                  if (!status) {
-                     shutdown(ka_sock[i_min], 1);
-                     SSL_shutdown(ka_ssl_con[i_min]);
-                  }
+                  SSL_shutdown(ka_ssl_con[i_min]);
                   SSL_free(ka_ssl_con[i_min]);
                   ka_ssl_con[i_min] = NULL;
                }
