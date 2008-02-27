@@ -2312,7 +2312,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
          goto smtp_error;
 
       getcfg(lbs->name, "SMTP username", decoded, sizeof(decoded));
-      base64_encode((unsigned char *) decoded, (unsigned char *) str, sizeof(str));
+      base64_encode((unsigned char *) decoded, (unsigned char *) str, strsize);
       strcat(str, "\r\n");
       send(s, str, strlen(str), 0);
       if (verbose)
