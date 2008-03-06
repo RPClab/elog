@@ -8053,7 +8053,7 @@ int exist_file(char *file_name)
 void send_file_direct(char *file_name)
 {
    int fh, i, length, delta;
-   char str[MAX_PATH_LENGTH], charset[80], format[80];
+   char str[MAX_PATH_LENGTH], charset[80];
    time_t now;
    struct tm *gmt;
 
@@ -8075,7 +8075,7 @@ void send_file_direct(char *file_name)
          time(&now);
          now += (int) (3600 * 24);
          gmt = gmtime(&now);
-         strcpy(format, "%A, %d-%b-%y %H:%M:%S GMT");
+         strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
          rsprintf("Expires: %s\r\n", str);
       }
 
@@ -8990,7 +8990,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
        format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr, n_lines,
        attr_index[MAX_N_ATTR], enc_selected, show_smileys, show_text, n_moptions, display_inline,
-       allowed_encoding, thumb_status;
+       allowed_encoding, thumb_status, max_n_lines;
    char str[2 * NAME_LENGTH], str2[NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80], comment[10000],
        reply_string[256], list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256], date[80],
        script_onload[256], script_onfocus[256], script_onunload[256], attrib[MAX_N_ATTR][NAME_LENGTH], *text,
@@ -11202,12 +11202,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                            f = fopen(file_name, "rt");
                            n_lines = 0;
+                           if (getcfg(lbs->name, "Attachment lines", str, sizeof(str)))
+                              max_n_lines = atoi(str);
+                           else
+                              max_n_lines = 300;
+
                            if (f != NULL) {
                               while (!feof(f)) {
                                  str[0] = 0;
                                  fgets(str, sizeof(str), f);
 
-                                 if (n_lines < 1000) {
+                                 if (n_lines < max_n_lines) {
                                     if (!chkext(att[index], ".HTML"))
                                        rsputs2(lbs, FALSE, str);
                                     else
@@ -11221,8 +11226,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                            if (!chkext(att[index], ".HTML"))
                               rsprintf("</pre>");
                            rsprintf("\n");
-                           if (n_lines > 1000)
-                              rsprintf("<i><b>... %d more lines ...</b></i>\n", n_lines - 1000);
+                           if (max_n_lines == 0)
+                              rsprintf("<i><b>%d lines</b></i>\n", n_lines);
+                           else if (n_lines > max_n_lines)
+                              rsprintf("<i><b>... %d more lines ...</b></i>\n", n_lines - max_n_lines);
                         }
                      }
                   }
@@ -22476,7 +22483,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 {
    int size, i, j, k, n, n_log, status, fh, length, message_error, index, n_hidden,
        message_id, orig_message_id, format_flags[MAX_N_ATTR], att_hide[MAX_ATTACHMENTS],
-       att_inline[MAX_ATTACHMENTS], n_attachments, n_lines, n_disp_attr, attr_index[MAX_N_ATTR], thumb_status;
+       att_inline[MAX_ATTACHMENTS], n_attachments, n_lines, n_disp_attr, attr_index[MAX_N_ATTR], 
+       thumb_status, max_n_lines;
    char str[2 * NAME_LENGTH], ref[256], file_enc[256], attrib[MAX_N_ATTR][NAME_LENGTH];
    char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], script[256],
        orig_tag[80], reply_tag[MAX_REPLY_TO * 10], display[NAME_LENGTH],
@@ -23483,12 +23491,17 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
                         f = fopen(file_name, "rt");
                         n_lines = 0;
+                        if (getcfg(lbs->name, "Attachment lines", str, sizeof(str)))
+                           max_n_lines = atoi(str);
+                        else
+                           max_n_lines = 300;
+
                         if (f != NULL) {
                            while (!feof(f)) {
                               str[0] = 0;
                               fgets(str, sizeof(str), f);
 
-                              if (n_lines < 1000) {
+                              if (n_lines < max_n_lines) {
                                  if (!chkext(att, ".HTML"))
                                     rsputs2(lbs, email, str);
                                  else
@@ -23502,8 +23515,10 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                         if (!chkext(att, ".HTML"))
                            rsprintf("</pre>");
                         rsprintf("\n");
-                        if (n_lines > 1000)
-                           rsprintf("<i><b>... %d more lines ...</b></i>\n", n_lines - 1000);
+                        if (max_n_lines == 0)
+                           rsprintf("<i><b>%d lines</b></i>\n", n_lines);
+                        else if (n_lines > max_n_lines)
+                           rsprintf("<i><b>... %d more lines ...</b></i>\n", n_lines - max_n_lines);
 
                         rsprintf("</td></tr>\n");
                      }
