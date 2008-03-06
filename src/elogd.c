@@ -17762,7 +17762,9 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
          for (attr_index = 0; attr_index < lbs->n_attr; attr_index++)
             if (strieq(list[index], attr_list[attr_index]))
                break;
-         if (attr_index == lbs->n_attr && !strieq(list[index], "Date") && !strieq(list[index], "Subtext")) {
+        
+         if (attr_index == lbs->n_attr && !strieq(list[index], "Date") && !strieq(list[index], "Subtext") &&
+            !strieq(list[index], "ID")) {
             rsprintf("Error: Attribute \"%s\" for quick filter not found", list[index]);
             attr_index = 0;
          }
