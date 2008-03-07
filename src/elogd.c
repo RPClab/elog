@@ -8620,14 +8620,22 @@ auto-increment tags */
       return;
    }
 
-   el_retrieve(lbs, message_id, NULL, attr_list, attrib, lbs->n_attr, NULL, 0, NULL, NULL, att, NULL, NULL);
+   /* search all entries to find largest index */
+   old_index = 0;
+   do {
+      el_retrieve(lbs, message_id, NULL, attr_list, attrib, lbs->n_attr, NULL, 0, NULL, NULL, att, NULL, NULL);
 
-   /* if date part changed, start over with inded */
-   if (strncmp(attrib[index], retstr, loc) != 0)
-      old_index = 0;
-   else
-      /* retrieve old index */
-      old_index = atoi(attrib[index] + loc);
+      /* if date part changed, start over with index */
+      if (strncmp(attrib[index], retstr, loc) != 0)
+         old_index = 0;
+      else
+         /* retrieve old index */
+         if (atoi(attrib[index] + loc) > old_index)
+            old_index = atoi(attrib[index] + loc);
+
+      message_id = el_search_message(lbs, EL_PREV, message_id, FALSE);
+
+   } while (message_id);
 
    /* increment index */
    sprintf(retstr + loc, "%0*d", len, old_index + 1);
