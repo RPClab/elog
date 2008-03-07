@@ -16455,7 +16455,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
    char str[NAME_LENGTH], ref[256], *nowrap, sclass[80], format[256],
        file_name[MAX_PATH_LENGTH], *slist, *svalue, comment[256];
    char display[NAME_LENGTH], attr_icon[80];
-   int i, j, i_line, index, colspan, n_attachments, line_len, thumb_status, max_line_len;
+   int i, j, i_line, index, colspan, n_attachments, line_len, thumb_status, max_line_len, n_lines,
+      max_n_lines;
    BOOL skip_comma;
    FILE *f;
    struct tm *pts;
@@ -17034,8 +17035,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
          if (show_attachments && attachment[index][0]) {
 
             /* check if attachment is inlined */
-            sprintf(str, "[img]elog:/%d[/img]", index + 1);
-            if (strieq(encoding, "ELCode") && stristr(text, str))
+            if (is_inline_attachment(encoding, message_id, text, index, attachment[index]))
                continue;
 
             strlcpy(str, attachment[index], sizeof(str));
@@ -17117,23 +17117,53 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode,
                          !chkext(attachment[index], ".HTM") &&
                          !chkext(attachment[index], ".HTML") && show_attachments) {
 
+                        rsprintf("</td></tr>\n");
+
                         /* display attachment */
-                        rsprintf("</td></tr><tr><td colspan=%d class=\"messagelist\"><pre>", colspan);
+                        rsprintf("<tr><td colspan=%d class=\"messageframe\">\n", colspan);
+
+                        /* anchor for references */
+                        rsprintf("<a name=\"att%d\"></a>\n", index + 1);
+
+                        /* display attachment */
+
+                        if (!chkext(attachment[index], ".HTML"))
+                           rsprintf("<pre class=\"messagepre\">");
 
                         strlcpy(file_name, lbs->data_dir, sizeof(file_name));
                         strlcat(file_name, attachment[index], sizeof(file_name));
 
                         f = fopen(file_name, "rt");
+                  
+                        n_lines = 0;
+                        if (getcfg(lbs->name, "Attachment lines", str, sizeof(str)))
+                           max_n_lines = atoi(str);
+                        else
+                           max_n_lines = 300;
+
                         if (f != NULL) {
                            while (!feof(f)) {
                               str[0] = 0;
                               fgets(str, sizeof(str), f);
-                              rsputs2(lbs, absolute_link, str);
+
+                              if (n_lines < max_n_lines) {
+                                 if (!chkext(attachment[index], ".HTML"))
+                                    rsputs2(lbs, absolute_link, str);
+                                 else
+                                    rsputs(str);
+                              }
+                              n_lines++;
                            }
                            fclose(f);
                         }
 
-                        rsprintf("</pre>\n");
+                        if (!chkext(attachment[index], ".HTML"))
+                           rsprintf("</pre>");
+                        rsprintf("\n");
+                        if (max_n_lines == 0)
+                           rsprintf("<i><b>%d lines</b></i>\n", n_lines);
+                        else if (n_lines > max_n_lines)
+                           rsprintf("<i><b>... %d more lines ...</b></i>\n", n_lines - max_n_lines);
                      }
                      rsprintf("</td></tr>\n");
                   }
