@@ -71,8 +71,6 @@ ifeq ($(OSTYPE),Linux)
 CC = gcc
 endif
 
-CFLAGS += -DOS_$(OSTYPE)
-
 ifdef USE_SSL
 CFLAGS += -DHAVE_SSL
 LIBS += -lssl
