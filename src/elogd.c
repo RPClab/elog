@@ -121,6 +121,10 @@ char pidfile[256];              /* Pidfile name                                 
 
 #endif                          /* OS_UNIX */
 
+#ifdef __CYGWIN__               /* bug in cygwin, 'tmezone' not linked automatically */
+long _timezone;
+#endif
+
 /* SSL includes */
 #ifdef HAVE_SSL
 #include <openssl/ssl.h>
