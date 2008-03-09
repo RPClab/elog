@@ -8630,7 +8630,7 @@ auto-increment tags */
       el_retrieve(lbs, message_id, NULL, attr_list, attrib, lbs->n_attr, NULL, 0, NULL, NULL, att, NULL, NULL);
 
       /* if date part changed, start over with index */
-      if (strncmp(attrib[index], retstr, loc) != 0)
+      if (strlen(attrib[index]) > 0 && strncmp(attrib[index], retstr, loc) != 0)
          old_index = 0;
       else
          /* retrieve old index */
