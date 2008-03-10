@@ -22354,7 +22354,10 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
       if (strrchr(str, '.'))
          *strrchr(str, '.') = 0;
    }
-   strlcat(str, ".png", sizeof(str));
+   if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
+      strlcat(str, "-%d.png", sizeof(str));
+   else
+      strlcat(str, ".png", sizeof(str));
 
    if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
       sprintf(cmd, "convert '%s[0-7]'%s '%s'", file_name, thumb_size, str);
@@ -22476,7 +22479,7 @@ void call_image_magick(LOGBOOK * lbs)
    }
 
    if (thumb_status == 2)
-      strsubst(thumb_name, sizeof(thumb_name), "-0", "");
+      strsubst(thumb_name, sizeof(thumb_name), "-0", "-%d");
 
    i = cmd[0] = 0;
    if (strieq(getparam("req"), "rotleft")) {
