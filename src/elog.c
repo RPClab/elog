@@ -471,7 +471,7 @@ INT retrieve_elog(int sock, char *subdir, char *experiment,
 
 /*------------------------------------------------------------------*/
 
-int elog_connect(char *host, int port, int ssl)
+int elog_connect(char *host, int port)
 {
    int status, sock;
    struct hostent *phe;
@@ -573,7 +573,7 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
    SSL *ssl_con;
 #endif
 
-   sock = elog_connect(host, port, ssl);
+   sock = elog_connect(host, port);
    if (sock < 0)
       return sock;
 
