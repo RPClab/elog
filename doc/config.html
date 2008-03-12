@@ -1500,6 +1500,22 @@ Subst on edit author = $full_name
         using check boxes. 
       </li>
       <li>
+        <b><code>Style &lt;attribute&gt; &lt;value&gt; = &lt;style&gt;</code></b><br>
+
+        Optional formatting of logbok entries in list mode. For some logbooks
+        it might be useful to display different entries in a different color
+        for example. To achieve this, a CSS style sheet can be attached to an
+        entry based on the value of an attribute. If you have an attribute
+        called <code><b>importnace</b></code> and you want to highlight
+        all entries where <code><b>importnace</b></code> is <code><b>severe</b></code>
+        for example, you can specify following style:
+        <pre>
+Style importance severe = background-color:red
+        </pre>
+        For possible formattings, please refer to some CSS documentation. You can
+        change the colors, font styles and sizes.
+      </li>
+      <li>
         <code><b>Change &lt;attribute&gt; = &lt;string&gt;</b></code><br>
         Instead of subsituting an attribute, the original attribute can be kept
         and just the output formatting can be changed. This can be very handy
