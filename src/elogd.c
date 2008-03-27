@@ -22110,7 +22110,7 @@ int is_inline_attachment(char *encoding, int message_id, char *text, int i, char
 
 int create_thumbnail(LOGBOOK * lbs, char *file_name)
 {
-   char str[MAX_PATH_LENGTH], cmd[2 * MAX_PATH_LENGTH], thumb_size[256];
+   char str[2 * MAX_PATH_LENGTH], cmd[2 * MAX_PATH_LENGTH], thumb_size[256];
    int i;
 
    if (!image_magick_exist)
@@ -22141,9 +22141,9 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
       strlcat(str, ".png", sizeof(str));
 
    if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
-      sprintf(cmd, "convert '%s[0-7]'%s '%s'", file_name, thumb_size, str);
+      snprintf(cmd, sizeof(cmd), "convert '%s[0-7]'%s '%s'", file_name, thumb_size, str);
    else
-      sprintf(cmd, "convert '%s'%s '%s'", file_name, thumb_size, str);
+      snprintf(cmd, sizeof(cmd), "convert '%s'%s '%s'", file_name, thumb_size, str);
 
 #ifdef OS_WINNT
    for (i = 0; i < (int) strlen(cmd); i++)
@@ -22151,7 +22151,7 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
    cmd[i] = '\"';
 #endif
 
-   sprintf(str, "SHELL \"%s\"", cmd);
+   snprintf(str, sizeof(str), "SHELL \"%s\"", cmd);
    write_logfile(lbs, str);
    if (verbose) {
       eprintf(str);
@@ -22176,11 +22176,12 @@ int get_thumb_name(const char *file_name, char *thumb_name, int size, int index)
    thumb_name[0] = 0;
 
    /* append .png for all files as thumbnail name, except for PDF files (convert bug!) */
+   memset(str, 0, sizeof(str));
    if (chkext(file_name, ".pdf") || chkext(file_name, ".ps")) {
       strlcpy(str, file_name, sizeof(str));
       if (strrchr(str, '.'))
          *strrchr(str, '.') = 0;
-      sprintf(str + strlen(str), "-%d.png", index);
+      snprintf(str + strlen(str), sizeof(str)-strlen(str)-1, "-%d.png", index);
       if (file_exist(str)) {
          strlcpy(thumb_name, str, size);
          return 2;
