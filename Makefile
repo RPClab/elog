@@ -133,7 +133,7 @@ install: $(EXECS)
 	@$(INSTALL) -v -m 0644 scripts/*.js $(ELOGDIR)/scripts/
 
 	@echo "Installing FCKeditor to $(ELOGDIR)/scripts/fckeditor"
-	@unzip -q -f scripts/fckeditor.zip -d $(ELOGDIR)/scripts/
+	@unzip -q scripts/fckeditor.zip -d $(ELOGDIR)/scripts/
 	@$(INSTALL) -D -v -m 0644 scripts/fckeditor/fckelog.js $(ELOGDIR)/scripts/fckeditor/fckelog.js
 	@$(INSTALL) -D -v -m 0644 scripts/fckeditor/editor/plugins/elog/fckplugin.js $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/fckplugin.js
 	@$(INSTALL) -D -v -m 0644 scripts/fckeditor/editor/plugins/elog/inserttime.gif $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/inserttime.gif
