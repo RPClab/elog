@@ -7998,8 +7998,7 @@ void send_file_direct(char *file_name)
 
       /* return proper header for file type */
       for (i = 0; i < (int) strlen(file_name); i++)
-      str[i] = toupper(file_name[i])
-;
+      str[i] = toupper(file_name[i]);
             str[i] = 0;
 
       for (i = 0; filetype[i].ext[0]; i++)
