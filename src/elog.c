@@ -593,6 +593,9 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
       if (SSL_connect(ssl_con) <= 0)
          return -1;
    }
+#else
+   if (ssl)
+      ssl = 0;
 #endif
 
    /* get local host name */
