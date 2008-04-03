@@ -7964,7 +7964,7 @@ int exist_file(char *file_name)
 void send_file_direct(char *file_name)
 {
    int fh, i, length, delta;
-   char str[MAX_PATH_LENGTH], charset[80];
+   char str[MAX_PATH_LENGTH], charset[80], format[80];
    time_t now;
    struct tm *gmt;
 
@@ -7986,7 +7986,8 @@ void send_file_direct(char *file_name)
          time(&now);
          now += (int) (3600 * 24);
          gmt = gmtime(&now);
-         strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+         strcpy(format, "%A, %d-%b-%y %H:%M:%S GMT");
+         strftime(str, sizeof(str), format, gmt);
          rsprintf("Expires: %s\r\n", str);
       }
 
