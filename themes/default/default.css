@@ -313,6 +313,14 @@ td {
   font-weight:bold;
 }
 
+.listatt {
+  border:1px solid #808040;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  background-color:#B0FFB0;
+  text-align:center;
+}
+
 /* attachment line */
 
 .attachment {

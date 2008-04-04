@@ -16746,6 +16746,20 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
       }
 
       if (strieq(mode, "Threaded")) {
+
+         rsputs("&nbsp;");
+         for (i = 0; i < MAX_ATTACHMENTS; i++)
+            if (attachment[i][0]) {
+               strlcpy(str, attachment[i], sizeof(str));
+               str[13] = 0;
+               sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[i] + 14);
+               url_encode(ref, sizeof(ref)); /* for file names with special characters like "+" */
+
+               rsprintf("<a href=\"%s\" target=\"_blank\">", ref);
+               rsprintf("<img border=\"0\" align=\"absmiddle\" src=\"attachment.png\" alt=\"%s\" title=\"%s\"></a>", 
+                     attachment[i]+14, attachment[i]+14);
+            }
+
          if (highlight != message_id)
             rsprintf("</a>\n");
          else
@@ -16832,10 +16846,27 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
          strencode_nouml(str);
       else
          rsputs("&nbsp;");
+      
       rsputs("</td>\n");
+   }
 
-      if (strieq(mode, "Threaded"))
-         rsprintf("</tr>\n");
+   if (strieq(mode, "Summary")) {
+      /* show attachment icons */
+      rsputs("<td class=\"listatt\">&nbsp;");
+      
+      for (i = 0; i < MAX_ATTACHMENTS; i++)
+         if (attachment[i][0]) {
+            strlcpy(str, attachment[i], sizeof(str));
+            str[13] = 0;
+            sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[i] + 14);
+            url_encode(ref, sizeof(ref)); /* for file names with special characters like "+" */
+            
+            rsprintf("<a href=\"%s\" target=\"_blank\">", ref);
+            rsprintf("<img border=\"0\" align=\"absmiddle\" src=\"attachment.png\" alt=\"%s\" title=\"%s\"></a>", 
+                  attachment[i]+14, attachment[i]+14);
+         }
+      
+      rsputs("&nbsp;</td>");
    }
 
    colspan = n_attr_disp;
@@ -19876,6 +19907,11 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
          if (!strieq(mode, "Full") && n_line > 0 && show_text)
             rsprintf("<th class=\"listtitle\">%s</th>\n", loc("Text"));
+
+         if (strieq(mode, "Summary")) {
+            rsprintf("<th width=\"10\" class=\"listtitle\"><img src=\"attachment.png\" alt=\"%s\" title=\"%s\"</th>",
+                  loc("Attachments"), loc("Attachments"));
+         }
 
          rsprintf("</tr>\n\n");
       }
