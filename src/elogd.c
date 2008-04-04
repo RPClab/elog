@@ -16440,6 +16440,19 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
       else
          rsputs2(lbs, absolute_link, display);
 
+      rsputs("&nbsp;");
+      for (i = 0; i < MAX_ATTACHMENTS; i++)
+         if (attachment[i][0]) {
+            strlcpy(str, attachment[i], sizeof(str));
+            str[13] = 0;
+            sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[i] + 14);
+            url_encode(ref, sizeof(ref)); /* for file names with special characters like "+" */
+
+            rsprintf("<a href=\"%s\" target=\"_blank\">", ref);
+            rsprintf("<img border=\"0\" align=\"absmiddle\" src=\"attachment.png\" alt=\"%s\" title=\"%s\"></a>", 
+                  attachment[i]+14, attachment[i]+14);
+         }
+
       if (highlight != message_id)
          rsprintf("</a>\n", ref);
       else
