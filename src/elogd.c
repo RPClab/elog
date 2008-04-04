@@ -16442,7 +16442,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
 
       rsputs("&nbsp;");
       for (i = 0; i < MAX_ATTACHMENTS; i++)
-         if (attachment[i][0]) {
+         if (attachment && attachment[i][0]) {
             strlcpy(str, attachment[i], sizeof(str));
             str[13] = 0;
             sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[i] + 14);
@@ -16762,7 +16762,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
 
          rsputs("&nbsp;");
          for (i = 0; i < MAX_ATTACHMENTS; i++)
-            if (attachment[i][0]) {
+            if (attachment && attachment[i][0]) {
                strlcpy(str, attachment[i], sizeof(str));
                str[13] = 0;
                sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[i] + 14);
@@ -16868,7 +16868,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
       rsputs("<td class=\"listatt\">&nbsp;");
       
       for (i = 0; i < MAX_ATTACHMENTS; i++)
-         if (attachment[i][0]) {
+         if (attachment && attachment[i][0]) {
             strlcpy(str, attachment[i], sizeof(str));
             str[13] = 0;
             sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[i] + 14);
