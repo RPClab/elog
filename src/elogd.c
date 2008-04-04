@@ -19909,7 +19909,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             rsprintf("<th class=\"listtitle\">%s</th>\n", loc("Text"));
 
          if (strieq(mode, "Summary")) {
-            rsprintf("<th width=\"10\" class=\"listtitle\"><img src=\"attachment.png\" alt=\"%s\" title=\"%s\"</th>",
+            rsprintf("<th class=\"listtitle\"><img src=\"attachment.png\" alt=\"%s\" title=\"%s\"</th>",
                   loc("Attachments"), loc("Attachments"));
          }
 
