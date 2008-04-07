@@ -16300,7 +16300,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
    char str[NAME_LENGTH], ref[256], *nowrap, sclass[80], format[256], file_name[MAX_PATH_LENGTH], *slist,
          *svalue, comment[256];
    char display[NAME_LENGTH], attr_icon[80];
-   int i, j, i_line, index, colspan, n_attachments, line_len, thumb_status, max_line_len, n_lines,
+   int i, j, n, i_line, index, colspan, n_attachments, line_len, thumb_status, max_line_len, n_lines,
          max_n_lines;
    BOOL skip_comma;
    FILE *f;
@@ -16442,18 +16442,28 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
          rsputs2(lbs, absolute_link, display);
 
       rsputs("&nbsp;");
-      for (i = 0; i < MAX_ATTACHMENTS; i++)
-         if (attachment && attachment[i][0]) {
-            strlcpy(str, attachment[i], sizeof(str));
-            str[13] = 0;
-            sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[i] + 14);
-            url_encode(ref, sizeof(ref)); /* for file names with special characters like "+" */
-
-            rsprintf("<a href=\"%s\" target=\"_blank\">", ref);
-            rsprintf("<img border=\"0\" align=\"absmiddle\" src=\"attachment.png\" alt=\"%s\" title=\"%s\"></a>", 
-                  attachment[i]+14, attachment[i]+14);
-         }
-
+      for (i = n = 0; i < MAX_ATTACHMENTS; i++)
+         if (attachment && attachment[i][0])
+            n++;
+      if (n > 5) {
+         if (highlight != message_id)
+            rsprintf("<a href=\"%s\">", ref);
+         rsprintf("<b>%dx", n);
+         rsprintf("<img border=\"0\" align=\"absmiddle\" src=\"attachment.png\"></b></a>"); 
+      } else {
+         for (i = 0; i < MAX_ATTACHMENTS; i++)
+            if (attachment && attachment[i][0]) {
+               strlcpy(str, attachment[i], sizeof(str));
+               str[13] = 0;
+               sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[i] + 14);
+               url_encode(ref, sizeof(ref)); /* for file names with special characters like "+" */
+   
+               rsprintf("<a href=\"%s\" target=\"_blank\">", ref);
+               rsprintf("<img border=\"0\" align=\"absmiddle\" src=\"attachment.png\" alt=\"%s\" title=\"%s\"></a>", 
+                     attachment[i]+14, attachment[i]+14);
+            }
+      }
+   
       if (highlight != message_id)
          rsprintf("</a>\n", ref);
       else
@@ -16762,17 +16772,28 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
       if (strieq(mode, "Threaded")) {
 
          rsputs("&nbsp;");
-         for (i = 0; i < MAX_ATTACHMENTS; i++)
-            if (attachment && attachment[i][0]) {
-               strlcpy(str, attachment[i], sizeof(str));
-               str[13] = 0;
-               sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[i] + 14);
-               url_encode(ref, sizeof(ref)); /* for file names with special characters like "+" */
 
-               rsprintf("<a href=\"%s\" target=\"_blank\">", ref);
-               rsprintf("<img border=\"0\" align=\"absmiddle\" src=\"attachment.png\" alt=\"%s\" title=\"%s\"></a>", 
-                     attachment[i]+14, attachment[i]+14);
-            }
+         for (i = n = 0; i < MAX_ATTACHMENTS; i++)
+            if (attachment && attachment[i][0])
+               n++;
+         if (n > 5) {
+            if (highlight != message_id)
+               rsprintf("<a href=\"%s\">", ref);
+            rsprintf("<b>%dx", n);
+            rsprintf("<img border=\"0\" align=\"absmiddle\" src=\"attachment.png\"></b></a>"); 
+         } else {
+            for (i = 0; i < MAX_ATTACHMENTS; i++)
+               if (attachment && attachment[i][0]) {
+                  strlcpy(str, attachment[i], sizeof(str));
+                  str[13] = 0;
+                  sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[i] + 14);
+                  url_encode(ref, sizeof(ref)); /* for file names with special characters like "+" */
+   
+                  rsprintf("<a href=\"%s\" target=\"_blank\">", ref);
+                  rsprintf("<img border=\"0\" align=\"absmiddle\" src=\"attachment.png\" alt=\"%s\" title=\"%s\"></a>", 
+                        attachment[i]+14, attachment[i]+14);
+               }
+         }
 
          if (highlight != message_id)
             rsprintf("</a>\n");
@@ -16868,17 +16889,27 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
       /* show attachment icons */
       rsputs("<td class=\"listatt\">&nbsp;");
       
-      for (i = 0; i < MAX_ATTACHMENTS; i++)
-         if (attachment && attachment[i][0]) {
-            strlcpy(str, attachment[i], sizeof(str));
-            str[13] = 0;
-            sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[i] + 14);
-            url_encode(ref, sizeof(ref)); /* for file names with special characters like "+" */
-            
-            rsprintf("<a href=\"%s\" target=\"_blank\">", ref);
-            rsprintf("<img border=\"0\" align=\"absmiddle\" src=\"attachment.png\" alt=\"%s\" title=\"%s\"></a>", 
-                  attachment[i]+14, attachment[i]+14);
-         }
+      for (i = n = 0; i < MAX_ATTACHMENTS; i++)
+         if (attachment && attachment[i][0])
+            n++;
+      if (n > 5) {
+         if (highlight != message_id)
+            rsprintf("<a href=\"%s\">", ref);
+         rsprintf("<b>%dx", n);
+         rsprintf("<img border=\"0\" align=\"absmiddle\" src=\"attachment.png\"></b></a>"); 
+      } else {
+         for (i = 0; i < MAX_ATTACHMENTS; i++)
+            if (attachment && attachment[i][0]) {
+               strlcpy(str, attachment[i], sizeof(str));
+               str[13] = 0;
+               sprintf(ref, "../%s/%s/%s", lbs->name, str, attachment[i] + 14);
+               url_encode(ref, sizeof(ref)); /* for file names with special characters like "+" */
+               
+               rsprintf("<a href=\"%s\" target=\"_blank\">", ref);
+               rsprintf("<img border=\"0\" align=\"absmiddle\" src=\"attachment.png\" alt=\"%s\" title=\"%s\"></a>", 
+                     attachment[i]+14, attachment[i]+14);
+            }
+      }
       
       rsputs("&nbsp;</td>");
    }
