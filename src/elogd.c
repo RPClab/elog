@@ -7857,8 +7857,8 @@ void show_query(LOGBOOK * lbs, char *title, char *query_string, char *button1, c
    rsprintf("</td></tr>\n\n");
 
    rsprintf("<tr><td align=center class=\"dlgform\">");
-   rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href='%s';\">\n", button1, button1_url);
-   rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href='%s';\">\n", button2, button2_url);
+   rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href=\"%s\";\">\n", button1, button1_url);
+   rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href=\"%s\";\">\n", button2, button2_url);
    rsprintf("</td></tr>\n\n");
 
    rsprintf("</table>\n");
@@ -9004,8 +9004,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          && !isparam("steal")) {
       sprintf(str, "%d", message_id);
       sprintf(text, "%s %s", loc("Entry is currently edited by"), locked_by);
-      show_query(lbs, loc("Entry is locked"), text, loc("Edit anyhow"), "?cmd=Edit&steal=1", loc("Cancel"),
-            str);
+      sprintf(cmd, "?cmd=%s&steal=1", loc("Edit"));
+      show_query(lbs, loc("Entry is locked"), text, loc("Edit anyhow"), cmd, 
+            loc("Cancel"), str);
       return;
    }
 
