@@ -7857,8 +7857,8 @@ void show_query(LOGBOOK * lbs, char *title, char *query_string, char *button1, c
    rsprintf("</td></tr>\n\n");
 
    rsprintf("<tr><td align=center class=\"dlgform\">");
-   rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href=\"%s\";\">\n", button1, button1_url);
-   rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href=\"%s\";\">\n", button2, button2_url);
+   rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href='%s';\">\n", button1, button1_url);
+   rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href='%s';\">\n", button2, button2_url);
    rsprintf("</td></tr>\n\n");
 
    rsprintf("</table>\n");
