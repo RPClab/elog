@@ -9776,10 +9776,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          assert(pts);
          my_strftime(str, sizeof(str), format, pts);
       } else {
-         if (getcfg(lbs->name, "Time format", format, sizeof(format)))
-            my_strftime(str, sizeof(str), format, localtime(&now));
-         else
-            strcpy(str, ctime(&now));
+         if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+            strcpy(format, DEFAULT_TIME_FORMAT);
+         my_strftime(str, sizeof(str), format, localtime(&now));
          strcpy(date, ctime(&now));
          date[24] = 0;
       }
