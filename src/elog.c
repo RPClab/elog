@@ -383,14 +383,19 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
    SSL *ssl_con;
 #endif
 
+   if (ssl) /* avoid compiler warning */
+      sock = 0;
+   
    sock = elog_connect(host, port);
    if (sock < 0)
       return sock;
 
 #ifdef HAVE_SSL
    if (ssl)
-      if (ssl_connect(sock, &ssl_con) < 0)
+      if (ssl_connect(sock, &ssl_con) < 0) {
+         printf("elogd server does not run SSL protocol\n");
          return -1;
+      }
 #endif
 
    /* compose request */
@@ -439,6 +444,11 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
    strcat(request, "\r\n");
 
    /* send request */
+#ifdef HAVE_SSL
+   if (ssl)
+      SSL_write(ssl_con, request, strlen(request));
+   else
+#endif
    send(sock, request, strlen(request), 0);
    if (verbose) {
       printf("Request sent to host:\n");
@@ -446,7 +456,13 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
    }
 
    /* receive response */
-   i = recv(sock, response, sizeof(response), 0);
+   memset(response, 0, sizeof(response));
+#ifdef HAVE_SSL
+   if (ssl)
+      i = SSL_read(ssl_con, response, sizeof(response)-1);
+   else
+#endif
+   i = recv(sock, response, sizeof(response)-1, 0);
    if (i < 0) {
       perror("Cannot receive response");
       return -1;
@@ -454,11 +470,23 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
 
    n = i;
    while (i > 0) {
-      i = recv(sock, response + n, sizeof(response) - n, 0);
+#ifdef HAVE_SSL
+      if (ssl)
+         i = SSL_read(ssl_con, response + n, sizeof(response)-1-n);
+      else
+#endif
+      i = recv(sock, response + n, sizeof(response)-1-n, 0);
       if (i > 0)
          n += i;
    }
    response[n] = 0;
+
+#ifdef HAVE_SSL
+   if (ssl) {
+      SSL_shutdown(ssl_con);
+      SSL_free(ssl_con);
+   }
+#endif
 
    closesocket(sock);
 
@@ -740,8 +768,10 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
 
 #ifdef HAVE_SSL
    if (ssl)
-      if (ssl_connect(sock, &ssl_con) < 0)
+      if (ssl_connect(sock, &ssl_con) < 0) {
+         printf("elogd server does not run SSL protocol\n");
          return -1;
+      }
 #endif
 
    content_length = 100000;
