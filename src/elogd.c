@@ -25974,7 +25974,7 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                   if (verbose)
                      eprintf("decode_post: Found attachment %s\n", file_name);
                   /* check filename for invalid characters */
-                  if (strpbrk(file_name, ",;+=/\\")) {
+                  if (strpbrk(file_name, ",;+=")) {
                      strencode2(str2, file_name, sizeof(str2));
                      sprintf(str, "Error: Filename \"%s\" contains invalid character", str2);
                      show_error(str);
