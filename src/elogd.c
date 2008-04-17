@@ -11191,7 +11191,7 @@ void show_find_form(LOGBOOK * lbs)
 {
    int i, j;
    char str[NAME_LENGTH], mode[NAME_LENGTH], comment[NAME_LENGTH], option[NAME_LENGTH], login_name[256],
-         full_name[256], user_email[256];
+         full_name[256], user_email[256], enc_attr[NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 
    /*---- header ----*/
 
@@ -11208,8 +11208,19 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf("<input type=submit value=\"%s\">\n", loc("Search"));
    rsprintf("<input type=reset value=\"%s\">\n", loc("Reset Form"));
    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
+   rsprintf("<input type=hidden name=jcmd value=\"\">\n");
    rsprintf("</span></td></tr>\n\n");
 
+   /*---- evaluate conditional attributes ----*/
+   
+   for (i = 0; i < lbs->n_attr; i++)
+      attrib[i][0] = 0;
+   
+   /* get attributes from parameters */
+   attrib_from_param(lbs->n_attr, attrib);
+
+   evaluate_conditions(lbs, attrib);
+   
    /*---- entry form ----*/
 
    rsprintf("<tr><td class=\"form1\">\n");
@@ -11468,15 +11479,23 @@ void show_find_form(LOGBOOK * lbs)
          }
 
          else {
-            rsprintf("<select name=\"%s\">\n", attr_list[i]);
+            rsprintf("<select name=\"%s\"", attr_list[i]);
+            
+            if (is_cond_attr(i))
+               rsprintf(" onChange=\"document.form1.jcmd.value='Find';document.form1.submit();\"");
+            rsprintf(">\n");
+            
             rsprintf("<option value=\"\">\n");
             for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
+               strencode2(str, attr_options[i][j], sizeof(str));
+               if (strchr(str, '{'))
+                  *strchr(str, '{') = 0;
+               strencode2(enc_attr, attrib[i], sizeof(enc_attr));
 
-               strcpy(option, attr_options[i][j]);
-               if (strchr(option, '{'))
-                  *strchr(option, '{') = 0;
-
-               rsprintf("<option value=\"%s\">%s\n", option, option);
+               if (strieq(attr_options[i][j], attrib[i]) || strieq(str, enc_attr))
+                  rsprintf("<option selected value=\"%s\">%s\n", str, str);
+               else
+                  rsprintf("<option value=\"%s\">%s\n", str, str);
             }
             rsprintf("</select>\n");
          }
