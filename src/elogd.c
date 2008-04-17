@@ -2943,9 +2943,8 @@ int getcfg_simple(char *group, char *param, char *value, int vsize, int conditio
       return 0;
 
    for (i = 0; i < (int) strlen(param); i++)
-   uparam[i] = toupper(param[i])
-;
-      uparam[i] = 0;
+      uparam[i] = toupper(param[i]);
+   uparam[i] = 0;
    value[0] = 0;
 
    for (i = 0; i < n_lb_config; i++)
@@ -3000,8 +2999,9 @@ int getcfg(char *group, char *param, char *value, int vsize)
    /* if group is [global] and top group exists, read from there */
    if (strieq(group, "global") && getcfg_topgroup()) {
       sprintf(str, "global %s", getcfg_topgroup());
-      if (getcfg(str, param, value, vsize))
-         return 1;
+      status = getcfg(str, param, value, vsize);
+      if (status)
+         return status;
    }
 
    /* first check if parameter is under condition */
