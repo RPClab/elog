@@ -134,9 +134,10 @@ install: $(EXECS)
 
 	@echo "Installing FCKeditor to $(ELOGDIR)/scripts/fckeditor"
 	@unzip -q -o scripts/fckeditor.zip -d $(ELOGDIR)/scripts/
-	@$(INSTALL) -D -v -m 0644 scripts/fckeditor/fckelog.js $(ELOGDIR)/scripts/fckeditor/fckelog.js
-	@$(INSTALL) -D -v -m 0644 scripts/fckeditor/editor/plugins/elog/fckplugin.js $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/fckplugin.js
-	@$(INSTALL) -D -v -m 0644 scripts/fckeditor/editor/plugins/elog/inserttime.gif $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/inserttime.gif
+	@$(INSTALL) -v -m 0644 scripts/fckeditor/fckelog.js $(ELOGDIR)/scripts/fckeditor/fckelog.js
+	@mkdir -p -m 0644 $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog
+	@$(INSTALL) -v -m 0644 scripts/fckeditor/editor/plugins/elog/fckplugin.js $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/fckplugin.js
+	@$(INSTALL) -v -m 0644 scripts/fckeditor/editor/plugins/elog/inserttime.gif $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/inserttime.gif
 
 	@echo "Installing resources to $(ELOGDIR)/resources"	
 	@$(INSTALL) -m 0644 resources/* $(ELOGDIR)/resources/
@@ -146,7 +147,7 @@ install: $(EXECS)
 	@$(INSTALL) -m 0644 themes/default/icons/* $(ELOGDIR)/themes/default/icons/
 	@for file in `find themes/default -type f | grep -v .svn` ; \
           do \
-          $(INSTALL) -D -m 0644 $$file $(ELOGDIR)/themes/default/`basename $$file` ;\
+          $(INSTALL) -m 0644 $$file $(ELOGDIR)/themes/default/`basename $$file` ;\
           done
 
 	@echo "Installing example logbook to $(ELOGDIR)/logbooks/demo"	
@@ -155,7 +156,7 @@ install: $(EXECS)
 	fi
 
 	@sed "s#\@PREFIX\@#$(PREFIX)#g" elogd.init_template > elogd.init
-	@$(INSTALL) -v -D -m 0755 elogd.init $(RCDIR)/elogd
+	@$(INSTALL) -v -m 0755 elogd.init $(RCDIR)/elogd
 
 	@if [ ! -f $(ELOGDIR)/elogd.cfg ]; then  \
 	  $(INSTALL) -v -m 644 elogd.cfg $(ELOGDIR)/elogd.cfg ; \
