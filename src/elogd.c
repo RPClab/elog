@@ -10995,14 +10995,15 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      display_inline = 0;
                   if ((chkext(file_name, ".htm") || chkext(file_name, ".html")) && is_full_html(file_name))
                      display_inline = 0;
-                  if (getcfg(lbs->name, "Preview attachments", str, sizeof(str)) && atoi(str) == 0)
-                     display_inline = 0;
 
                   thumb_status = create_thumbnail(lbs, file_name);
                   if (thumb_status)
                      display_inline = 1;
 
-                  if (thumb_status) {
+                  if (getcfg(lbs->name, "Preview attachments", str, sizeof(str)) && atoi(str) == 0)
+                     display_inline = 0;
+
+                  if (thumb_status && display_inline) {
                      get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
                      if (strrchr(thumb_name, DIR_SEPARATOR))
                         strlcpy(str, strrchr(thumb_name, DIR_SEPARATOR) + 1, sizeof(str));
