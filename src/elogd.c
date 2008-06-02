@@ -8325,20 +8325,26 @@ void add_subst_list(char list[][NAME_LENGTH], char value[][NAME_LENGTH], char *i
 }
 
 void add_subst_time(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_LENGTH], char *item,
-      char *date, int *i)
+      char *date, int *i, int flags)
 {
    char format[80], str[256];
    time_t ltime;
    struct tm *pts;
 
-   if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
-      strcpy(format, DEFAULT_TIME_FORMAT);
-   ltime = date_to_ltime(date);
-   pts = localtime(&ltime);
-   assert(pts);
-   my_strftime(str, sizeof(str), format, pts);
+   if (flags & (AF_DATE | AF_DATETIME)) {
+      ltime = date_to_ltime(date);
+      sprintf(str, "%d", (int)ltime);
+      add_subst_list(list, value, item, str, i);
+   } else {
+      if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+         strcpy(format, DEFAULT_TIME_FORMAT);
+      ltime = date_to_ltime(date);
+      pts = localtime(&ltime);
+      assert(pts);
+      my_strftime(str, sizeof(str), format, pts);
 
-   add_subst_list(list, value, item, str, i);
+      add_subst_list(list, value, item, str, i);
+   }
 }
 
 /*------------------------------------------------------------------*/
@@ -9301,7 +9307,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      == 0);
                sprintf(str, "%d", message_id);
                add_subst_list(slist, svalue, "message id", str, &i);
-               add_subst_time(lbs, slist, svalue, "entry time", date, &i);
+               add_subst_time(lbs, slist, svalue, "entry time", date, &i, attr_flags[index]);
                strsubst_list(preset, sizeof(preset), slist, svalue, i);
                strcpy(attrib[index], preset);
             }
@@ -9321,7 +9327,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
             sprintf(str, "%d", message_id);
             add_subst_list(slist, svalue, "message id", str, &i);
-            add_subst_time(lbs, slist, svalue, "entry time", date, &i);
+            add_subst_time(lbs, slist, svalue, "entry time", date, &i, attr_flags[index]);
 
             strsubst_list(preset, sizeof(preset), slist, svalue, i);
             if (strlen(preset) > NAME_LENGTH - 100) {
@@ -10664,7 +10670,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
             sprintf(mid, "%d", message_id);
             add_subst_list(slist, svalue, "message id", mid, &j);
-            add_subst_time(lbs, slist, svalue, "entry time", date, &j);
+            add_subst_time(lbs, slist, svalue, "entry time", date, &j, 0);
 
             if (!bupload)
                if (getcfg(lbs->name, "Prepend on edit", str, sizeof(str))) {
@@ -10696,7 +10702,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
                sprintf(mid, "%d", message_id);
                add_subst_list(slist, svalue, "message id", mid, &j);
-               add_subst_time(lbs, slist, svalue, "entry time", date, &j);
+               add_subst_time(lbs, slist, svalue, "entry time", date, &j, 0);
 
                strsubst_list(str, sizeof(str), slist, svalue, j);
                while (strstr(str, "\\n"))
@@ -10783,7 +10789,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
                sprintf(mid, "%d", message_id);
                add_subst_list(slist, svalue, "message id", mid, &j);
-               add_subst_time(lbs, slist, svalue, "entry time", date, &j);
+               add_subst_time(lbs, slist, svalue, "entry time", date, &j, 0);
                strsubst_list(str, sizeof(str), slist, svalue, j);
                while (strstr(str, "\\n"))
                   memcpy(strstr(str, "\\n"), "\r\n", 2);
@@ -16446,7 +16452,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
       j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
       sprintf(str, "%d", message_id);
       add_subst_list((char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "message id", str, &j);
-      add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
+      add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j, 0);
 
       strsubst_list(display, sizeof(display), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
 
@@ -16525,7 +16531,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                   j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
                   sprintf(str, "%d", message_id);
                   add_subst_list((char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "message id", str, &j);
-                  add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
+                  add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j, 0);
 
                   strsubst_list(display, sizeof(display), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
 
@@ -16754,7 +16760,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                            j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
                            sprintf(str, "%d", message_id);
                            add_subst_list((char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "message id", str, &j);
-                           add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
+                           add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j, 0);
 
                            strsubst_list(display, sizeof(display), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
 
@@ -18396,7 +18402,7 @@ void show_rss_feed(LOGBOOK * lbs)
          TRUE);
          sprintf(str, "%d", message_id);
          add_subst_list((char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "message id", str, &i);
-         add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "entry time", date, &i);
+         add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "entry time", date, &i, 0);
 
          strsubst_list(title, sizeof(title), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, i);
       } else {
@@ -19009,7 +19015,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          /* if value starts with '$', substitute it */
          if (str[0] == '$') {
             j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
-            add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
+            add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j, 0);
 
             strsubst_list(str, sizeof(str), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
             setparam(attr_list[i], str);
@@ -19156,7 +19162,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
                   sprintf(mid, "%d", message_id);
                   add_subst_list((char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "message id", mid, &j);
-                  add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
+                  add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j, 0);
 
                   strsubst_list(str, sizeof(str), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
                   setparam(attr_list[i], str);
@@ -22594,7 +22600,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
          sprintf(mid, "%d", message_id);
          add_subst_list(slist, svalue, "message id", mid, &i);
-         add_subst_time(lbs, slist, svalue, "entry time", date, &i);
+         add_subst_time(lbs, slist, svalue, "entry time", date, &i, 0);
          strsubst_list(str, sizeof(str), slist, svalue, i);
          strip_html(str);
       } else
@@ -22851,7 +22857,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
          sprintf(str, "%d", message_id);
          add_subst_list((char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "message id", str, &j);
-         add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j);
+         add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "entry time", date, &j, 0);
 
          strsubst_list(display, sizeof(display), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, j);
 
@@ -23086,7 +23092,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                k = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
                sprintf(str, "%d", message_id);
                add_subst_list((char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "message id", str, &k);
-               add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "entry time", date, &k);
+               add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "entry time", date, &k, attr_flags[i]);
 
                strsubst_list(display, sizeof(display), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, k);
 
@@ -24333,7 +24339,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
             j = build_subst_list(&lb_list[index], slist, svalue, attrib, TRUE);
             sprintf(mid, "%d", message_id);
             add_subst_list(slist, svalue, "message id", mid, &j);
-            add_subst_time(&lb_list[index], slist, svalue, "entry time", date, &j);
+            add_subst_time(&lb_list[index], slist, svalue, "entry time", date, &j, 0);
             strsubst_list(str, sizeof(str), slist, svalue, j);
             rsputs(str);
          }
