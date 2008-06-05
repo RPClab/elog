@@ -19135,12 +19135,12 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
                /* negative i: last [i] days */
                if (ltime < 0)
-                  if (atoi(attrib[i]) < now + ltime * 3600 * 24 || atoi(attrib[i]) > now)
+                  if (atoi(attrib[i]) < now + ltime * 3600 * 24 - 3600 * 12 || atoi(attrib[i]) > now)
                      break;
 
                /* positive i: next [i] days */
                if (ltime > 0)
-                  if (atoi(attrib[i]) > now + ltime * 3600 * 24 || atoi(attrib[i]) < now)
+                  if (atoi(attrib[i]) > now + ltime * 3600 * 24 + 3600 * 12 || atoi(attrib[i]) < now)
                      break;
 
                /* check for start date / end date */
