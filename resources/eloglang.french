@@ -462,3 +462,6 @@ Rotate left = Rotation à gauche
 Rotate right = Rotation à droite
 Delete attachment = Supprimer la pièce jointe
 Cannot create thumbnail, please check ImageMagick installation = Impossible de créer l'aperçu, merci de vérifier l'installation de ImageMagick
+Please log on by clicking on following link and change your password = 
+Attachments = 
+Error: Content length (%d) larger than maximum content length (%d) = 

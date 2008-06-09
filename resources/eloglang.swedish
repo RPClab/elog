@@ -468,3 +468,6 @@ Rotate left =
 Rotate right = 
 Delete attachment = 
 Cannot create thumbnail, please check ImageMagick installation = 
+Please log on by clicking on following link and change your password = 
+Attachments = 
+Error: Content length (%d) larger than maximum content length (%d) = 

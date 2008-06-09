@@ -1,3 +1,27 @@
+Version 2.7.4, released June 9th, 2008
+======================================
+
+- Fixed 'next day' in quick filter with 'date' attributes not showing up correctly
+- Fixed 'preview attachments' with images
+- Made '$entry date' subsitutions work with datetime attributes
+- Replaced 'install -D' by 'mkdir -p' (flag not recognized on some systems)
+- Implemented conditional attributes in find form
+- Fixed 'preset text' under condition with top groups
+- Show localized date on edit form
+- Added SSL libs for elog
+- Show nuber of attachments in summary view if >5
+- Stealing of lock now works in other languages
+- Display attachment icon with "thread display"
+- Implemented attachment icons in summary/threaded list
+- Implemented 'style <attribute> <value> = ...'
+- Added -%d argument for all conversions
+- Fixed problem with auto index and missing attribute
+- Added timezone for CYGWIN
+- Calculate index for automatically incremented preset attributes by searching all old messages for the highest used index
+- Fixed display of inline images and truncated ASCII attachments in list mode
+- Made 'ID' work for quick filter
+- Implemented 'attachment lines'
+
 Version 2.7.3, released Feb. 22th, 2008
 =======================================
 

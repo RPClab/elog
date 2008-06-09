@@ -326,7 +326,7 @@ int elog_connect(char *host, int port)
 /*------------------------------------------------------------------*/
 
 #ifdef HAVE_SSL
-int ssl_connect(int sock, SSL **ssl_con)
+int ssl_connect(int sock, SSL ** ssl_con)
 {
    SSL_METHOD *meth;
    SSL_CTX *ctx;
@@ -383,9 +383,9 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
    SSL *ssl_con;
 #endif
 
-   if (ssl) /* avoid compiler warning */
+   if (ssl)                     /* avoid compiler warning */
       sock = 0;
-   
+
    sock = elog_connect(host, port);
    if (sock < 0)
       return sock;
@@ -449,7 +449,7 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
       SSL_write(ssl_con, request, strlen(request));
    else
 #endif
-   send(sock, request, strlen(request), 0);
+      send(sock, request, strlen(request), 0);
    if (verbose) {
       printf("Request sent to host:\n");
       puts(request);
@@ -459,10 +459,10 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
    memset(response, 0, sizeof(response));
 #ifdef HAVE_SSL
    if (ssl)
-      i = SSL_read(ssl_con, response, sizeof(response)-1);
+      i = SSL_read(ssl_con, response, sizeof(response) - 1);
    else
 #endif
-   i = recv(sock, response, sizeof(response)-1, 0);
+      i = recv(sock, response, sizeof(response) - 1, 0);
    if (i < 0) {
       perror("Cannot receive response");
       return -1;
@@ -472,10 +472,10 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
    while (i > 0) {
 #ifdef HAVE_SSL
       if (ssl)
-         i = SSL_read(ssl_con, response + n, sizeof(response)-1-n);
+         i = SSL_read(ssl_con, response + n, sizeof(response) - 1 - n);
       else
 #endif
-      i = recv(sock, response + n, sizeof(response)-1-n, 0);
+         i = recv(sock, response + n, sizeof(response) - 1 - n, 0);
       if (i > 0)
          n += i;
    }
@@ -899,7 +899,7 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
       SSL_write(ssl_con, request, header_length);
    else
 #endif
-   send(sock, request, header_length, 0);
+      send(sock, request, header_length, 0);
    if (verbose) {
       printf("Request sent to host:\n");
       puts(request);
@@ -911,7 +911,7 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
       SSL_write(ssl_con, content, content_length);
    else
 #endif
-   send(sock, content, content_length, 0);
+      send(sock, content, content_length, 0);
    if (verbose) {
       printf("Content sent to host:\n");
       puts(content);
@@ -921,10 +921,10 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
    memset(response, 0, sizeof(response));
 #ifdef HAVE_SSL
    if (ssl)
-      i = SSL_read(ssl_con, response, sizeof(response)-1);
+      i = SSL_read(ssl_con, response, sizeof(response) - 1);
    else
 #endif
-   i = recv(sock, response, sizeof(response)-1, 0);
+      i = recv(sock, response, sizeof(response) - 1, 0);
    if (i < 0) {
       perror("Cannot receive response");
       return -1;
@@ -935,10 +935,10 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
    while (i > 0) {
 #ifdef HAVE_SSL
       if (ssl)
-         i = SSL_read(ssl_con, response + n, sizeof(response)-1-n);
+         i = SSL_read(ssl_con, response + n, sizeof(response) - 1 - n);
       else
 #endif
-      i = recv(sock, response + n, sizeof(response)-1-n, 0);
+         i = recv(sock, response + n, sizeof(response) - 1 - n, 0);
       if (i > 0)
          n += i;
    }
