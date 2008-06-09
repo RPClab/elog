@@ -135,7 +135,7 @@ install: $(EXECS)
 	@echo "Installing FCKeditor to $(ELOGDIR)/scripts/fckeditor"
 	@unzip -q -o scripts/fckeditor.zip -d $(ELOGDIR)/scripts/
 	@$(INSTALL) -v -m 0644 scripts/fckeditor/fckelog.js $(ELOGDIR)/scripts/fckeditor/fckelog.js
-	@mkdir -p -m 0644 $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog
+	@mkdir -p -m 0755 $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog
 	@$(INSTALL) -v -m 0644 scripts/fckeditor/editor/plugins/elog/fckplugin.js $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/fckplugin.js
 	@$(INSTALL) -v -m 0644 scripts/fckeditor/editor/plugins/elog/inserttime.gif $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/inserttime.gif
 
@@ -156,6 +156,7 @@ install: $(EXECS)
 	fi
 
 	@sed "s#\@PREFIX\@#$(PREFIX)#g" elogd.init_template > elogd.init
+	@mkdir -p -m 0755 $(RCDIR)
 	@$(INSTALL) -v -m 0755 elogd.init $(RCDIR)/elogd
 
 	@if [ ! -f $(ELOGDIR)/elogd.cfg ]; then  \
