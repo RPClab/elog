@@ -10795,7 +10795,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   rsprintf("</tr>\n");
                   rsprintf("</tbody>\n");
                   rsprintf("</table>\n");
-                  rsprintf("</p>\n");
+                  rsprintf("</p><p>&nbsp;</p>\n");
 
                } else {
                   do {
