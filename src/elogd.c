@@ -418,6 +418,7 @@ time_t convert_date(char *date_string);
 time_t convert_datetime(char *date_string);
 int get_thumb_name(const char *file_name, char *thumb_name, int size, int index);
 int create_thumbnail(LOGBOOK * lbs, char *file_name);
+int ascii_compare(const void *s1, const void *s2);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -8968,7 +8969,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
        ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256], cookie[256],
        orig_author[256], attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256], tooltip[10000],
-       enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256];
+       enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256], **user_list;
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -10091,29 +10092,44 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf("<td%s class=\"%s\">\n", title, class_value);
 
                n_moptions = strbreak(attrib[index], attr_moptions, MAX_N_LIST, "|", FALSE);
-               for (i = 0;; i++) {
-                  if (!enum_user_line(lbs, i, login_name, sizeof(login_name)))
-                     break;
-                  get_user_line(lbs, login_name, NULL, full_name, NULL, NULL, NULL);
 
+               /* allocate list of users and populate it */
+               for (n = 0;; n++) {
+                  if (!enum_user_line(lbs, n, login_name, sizeof(login_name)))
+                     break;
+               }
+
+               user_list = xcalloc(sizeof(char *), n);
+               for (i = 0; i < n; i++)
+                  user_list[i] = xcalloc(NAME_LENGTH, 1);
+
+               for (i = 0; i < n; i++) {
+                  enum_user_line(lbs, i, str, NAME_LENGTH);
+                  get_user_line(lbs, str, NULL, user_list[i], NULL, NULL, NULL);
+               }
+
+               /* sort list */
+               qsort(user_list, n, sizeof(char *), ascii_compare);
+
+               for (i = 0; i<n; i++) {
                   sprintf(str, "%s_%d", ua, i);
 
                   rsprintf("<span style=\"white-space:nowrap;\">\n");
 
                   for (j = 0; j < n_moptions; j++)
-                     if (strcmp(attr_moptions[j], full_name) == 0)
+                     if (strcmp(attr_moptions[j], user_list[i]) == 0)
                         break;
 
                   if (j < n_moptions)
                      rsprintf
                          ("<input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
-                          str, str, full_name);
+                          str, str, user_list[i]);
                   else
                      rsprintf
                          ("<input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
-                          str, str, full_name);
+                          str, str, user_list[i]);
 
-                  rsprintf("<label for=\"%s\">%s</label>\n", str, full_name);
+                  rsprintf("<label for=\"%s\">%s</label>\n", str, user_list[i]);
                   rsprintf("</span>\n");
 
                   if (format_flags[index] & AFF_MULTI_LINE)
@@ -10121,6 +10137,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                }
 
                rsprintf("</td>\n");
+
+               for (i = 0; i < n; i++)
+                  xfree(user_list[i]);
+               xfree(user_list);
 
             } else if (attr_flags[index] & AF_MUSEREMAIL) {
 
@@ -10128,29 +10148,44 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf("<td%s class=\"%s\">\n", title, class_value);
 
                n_moptions = strbreak(attrib[index], attr_moptions, MAX_N_LIST, "|", FALSE);
-               for (i = 0;; i++) {
-                  if (!enum_user_line(lbs, i, login_name, sizeof(login_name)))
-                     break;
-                  get_user_line(lbs, login_name, NULL, NULL, user_email, NULL, NULL);
 
+               /* allocate list of users and populate it */
+               for (n = 0;; n++) {
+                  if (!enum_user_line(lbs, n, login_name, sizeof(login_name)))
+                     break;
+               }
+
+               user_list = xcalloc(sizeof(char *), n);
+               for (i = 0; i < n; i++)
+                  user_list[i] = xcalloc(NAME_LENGTH, 1);
+
+               for (i = 0; i < n; i++) {
+                  enum_user_line(lbs, i, str, NAME_LENGTH);
+                  get_user_line(lbs, str, NULL, NULL, user_list[i], NULL, NULL);
+               }
+
+               /* sort list */
+               qsort(user_list, n, sizeof(char *), ascii_compare);
+
+               for (i = 0; i<n ; i++) {
                   sprintf(str, "%s_%d", ua, i);
 
                   rsprintf("<span style=\"white-space:nowrap;\">\n");
 
                   for (j = 0; j < n_moptions; j++)
-                     if (strcmp(attr_moptions[j], user_email) == 0)
+                     if (strcmp(attr_moptions[j], user_list[i]) == 0)
                         break;
 
                   if (j < n_moptions)
                      rsprintf
                          ("<input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
-                          str, str, user_email);
+                          str, str, user_list[i]);
                   else
                      rsprintf
                          ("<input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
-                          str, str, user_email);
+                          str, str, user_list[i]);
 
-                  rsprintf("<label for=\"%s\">%s</label>\n", str, user_email);
+                  rsprintf("<label for=\"%s\">%s</label>\n", str, user_list[i]);
                   rsprintf("</span>\n");
 
                   if (format_flags[index] & AFF_MULTI_LINE)
@@ -10158,6 +10193,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                }
 
                rsprintf("</td>\n");
+
+               for (i = 0; i < n; i++)
+                  xfree(user_list[i]);
+               xfree(user_list);
 
             } else if (attr_flags[index] & AF_USEREMAIL) {
 
