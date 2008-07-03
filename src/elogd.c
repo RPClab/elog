@@ -11522,10 +11522,11 @@ void show_find_form(LOGBOOK * lbs)
                sprintf(str, "Icon comment %s", option);
                getcfg(lbs->name, str, comment, sizeof(comment));
 
-               rsprintf("<nobr><input type=radio name=\"%s\" value=\"%s\">", attr_list[i], option);
-
                if (comment[0] == 0)
                   strcpy(comment, option);
+
+               rsprintf("<nobr><input type=radio name=\"%s\" value=\"%s\">", attr_list[i], comment);
+
                rsprintf("<img src=\"icons/%s\" alt=\"%s\" title=\"%s\"></nobr>\n", option, comment, comment);
             }
          }
@@ -19152,6 +19153,13 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
          /* apply filter for attributes */
          for (i = 0; i < lbs->n_attr; i++) {
+
+            /* replace icon name with their comments if present */
+            if (attr_flags[i] & AF_ICON) {
+               sprintf(str, "Icon comment %s", attrib[i]);
+               if (getcfg(lbs->name, str, comment, sizeof(comment)))
+                  strlcpy(attrib[i], comment, NAME_LENGTH);
+            }
 
             /* check for multi attributes */
             if (attr_flags[i] & AF_MULTI) {
