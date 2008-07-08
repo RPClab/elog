@@ -8090,7 +8090,7 @@ void send_file_direct(char *file_name)
       rsprintf("</b> was not found on this server<p>\r\n");
       rsprintf("<hr><address>ELOG version %s</address></body></html>\r\n\r\n", VERSION);
       return_length = strlen_retbuf;
-      keep_alive = 0;
+      keep_alive = FALSE;
    }
 }
 
@@ -14436,7 +14436,7 @@ int show_md5_page(LOGBOOK * lbs)
       rsprintf("\n");
    }
 
-   keep_alive = 0;
+   keep_alive = FALSE;
 
    return EL_SUCCESS;
 }
@@ -16372,7 +16372,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
    }
 
    flush_return_buffer();
-   keep_alive = 0;
+   keep_alive = FALSE;
 }
 
 /*------------------------------------------------------------------*/
@@ -16419,7 +16419,7 @@ void synchronize(LOGBOOK * lbs, int mode)
 
       rsprintf("</body></html>\n");
       flush_return_buffer();
-      keep_alive = 0;
+      keep_alive = FALSE;
    }
 }
 
@@ -26536,6 +26536,17 @@ int process_http_request(const char *request, int i_conn)
       }
    }
 
+   /* check for invalid URL in the form "http:/server//path" */
+   if (!logbook[0] && *p == '/') {
+      for (i = 0; *p && *p != ' ' && i < (int) sizeof(url); i++)
+         url[i] = *p++;
+      url[i] = 0;
+      strencode2(str2, url, sizeof(str2));
+      sprintf(str, "Invalid URL: %s", str2);
+      show_error(str);
+      return 1;
+   }
+
    /* check for global command */
    global_cmd[0] = 0;
    if ((p = strstr(request, "?cmd=")) != NULL) {
@@ -26715,7 +26726,7 @@ int process_http_request(const char *request, int i_conn)
    }
 
    if (!authorized) {
-      keep_alive = 0;
+      keep_alive = FALSE;
       return 0;
    }
 
@@ -26906,7 +26917,7 @@ void send_return(int _sock, const char *net_buffer)
             }
          } else {
             eprintf("Internal error, no valid header!\n");
-            keep_alive = 0;
+            keep_alive = FALSE;
          }
       } else {
 #ifdef HAVE_SSL
@@ -27107,7 +27118,7 @@ SSL_CTX *init_ssl(void)
 
 void server_loop(void)
 {
-   int status, i, n_error, min, i_min, i_conn, more_requests;
+   int status, i, n_error, broken, min, i_min, i_conn, more_requests;
    char str[1000], logbook[256], logbook_enc[256];
    char *pend;
    int lsock, len, flag, content_length, header_length;
@@ -27476,6 +27487,7 @@ void server_loop(void)
             do {                /* pipleline loop */
                header_length = 0;
                n_error = 0;
+               broken = FALSE;
                return_length = -1;
                do {
 
@@ -27496,8 +27508,10 @@ void server_loop(void)
                         break;
 
                      /* abort if connection got broken */
-                     if (i < 0)
+                     if (i < 0) {
+                        broken = TRUE;
                         break;
+                     }
                      if (i > 0)
                         len += i;
 
@@ -27519,8 +27533,10 @@ void server_loop(void)
                      /* abort if 100x received zero bytes */
                      if (i == 0) {
                         n_error++;
-                        if (n_error == 100)
+                        if (n_error == 100) {
+                           broken = TRUE;
                            break;
+                        }
                      }
                   }
 
@@ -27626,6 +27642,13 @@ void server_loop(void)
                   }
 
                } while (1);
+
+               if (broken) {
+                  if (verbose)
+                     eprintf("TCP connection broken\n");
+                  keep_alive = FALSE;
+                  break;
+               }
 
                /* now process HTTP request and put the result into the return_buffer */
                if (process_http_request(net_buffer, i_conn)) {
