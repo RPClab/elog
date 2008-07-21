@@ -1,6 +1,6 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.7.3+)
+# (for 2.7.4+)
 # A more recent version may be available at :
 # http://savannah.psi.ch/viewcvs/trunk/resources/eloglang.french?root=elog
 #
@@ -399,10 +399,6 @@ Last 6 Months = 6 derniers mois
 Last Year = Année écoulée
 Enter %s = Entrer %s
 Select %s = Sélectionner %s
-
-#
-#---- please translate following items and then remove this comment ----#
-#
 Bold text CTRL+B = Texte centré CTRL+B
 Italics text CTRL+I = Texte italique CTRL+I
 Underlined text CTRL+U = texte souligné CTRL+U
@@ -462,6 +458,6 @@ Rotate left = Rotation à gauche
 Rotate right = Rotation à droite
 Delete attachment = Supprimer la pièce jointe
 Cannot create thumbnail, please check ImageMagick installation = Impossible de créer l'aperçu, merci de vérifier l'installation de ImageMagick
-Please log on by clicking on following link and change your password = 
-Attachments = 
-Error: Content length (%d) larger than maximum content length (%d) = 
+Please log on by clicking on following link and change your password = Merci de vous connecter en cliquant sur le lien suivant et de changer votre mot de passe
+Attachments = Pièces jointes
+Error: Content length (%d) larger than maximum content length (%d) = Erreur : la taille du contenu (%d) est supérieure au maximum autorisé (%d)
