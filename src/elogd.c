@@ -10173,7 +10173,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   rsprintf("<span style=\"white-space:nowrap;\">\n");
 
                   for (j = 0; j < n_moptions; j++)
-                     if (strcmp(attr_moptions[j], user_list[i]) == 0)
+                     if (strcmp(attr_moptions[j], user_list[i]) == 0 ||
+                         strcmp(attr_moptions[j]+7, user_list[i]) == 0)
                         break;
 
                   if (j < n_moptions)
@@ -10218,7 +10219,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      break;
                   get_user_line(lbs, login_name, NULL, NULL, str, NULL, NULL);
 
-                  if (strieq(str, attrib[index]))
+                  if (strieq(str, attrib[index]) || strieq(str, attrib[index]+7))
                      rsprintf("<option selected value=\"%s\">%s\n", str, str);
                   else
                      rsprintf("<option value=\"%s\">%s\n", str, str);
