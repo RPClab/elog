@@ -11598,9 +11598,9 @@ void show_find_form(LOGBOOK * lbs)
                strencode2(enc_attr, attrib[i], sizeof(enc_attr));
 
                if (strieq(attr_options[i][j], attrib[i]) || strieq(str, enc_attr))
-                  rsprintf("<option selected value=\"%s\">%s\n", str, str);
+                  rsprintf("<option selected value=\"^%s$\">%s\n", str, str);
                else
-                  rsprintf("<option value=\"%s\">%s\n", str, str);
+                  rsprintf("<option value=\"^%s$\">%s\n", str, str);
             }
             rsprintf("</select>\n");
          }
@@ -17692,7 +17692,8 @@ void build_ref(char *ref, int size, char *mode, char *expand, char *attach, char
 void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands, char *mode)
 {
    int cur_exp, n, i, j, i1, i2, index, attr_index, size;
-   char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH], list[MAX_N_LIST][NAME_LENGTH], option[NAME_LENGTH];
+   char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH], list[MAX_N_LIST][NAME_LENGTH], 
+      option[NAME_LENGTH], option_whole[NAME_LENGTH];
 
    rsprintf("<tr><td class=\"menuframe\">\n");
    rsprintf("<table width=\"100%%\" border=0 cellpadding=\"0\" cellspacing=\"0\">\n");
@@ -17985,10 +17986,13 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
                         option[i2++] = comment[i1];
                   }
 
-                  if (isparam(attr_list[attr_index]) && strieq(option, getparam(attr_list[attr_index])))
-                     rsprintf("<option selected value=\"%s\">%s\n", option, option);
+                  sprintf(option_whole, "^%s$", option);
+                  if (isparam(attr_list[attr_index]) && 
+                     (strieq(option, getparam(attr_list[attr_index])) || 
+                      strieq(option_whole, getparam(attr_list[attr_index]))))
+                     rsprintf("<option selected value=\"%s\">%s\n", option_whole, option);
                   else
-                     rsprintf("<option value=\"%s\">%s\n", option, option);
+                     rsprintf("<option value=\"%s\">%s\n", option_whole, option);
                }
 
                rsprintf("</select> \n");
@@ -19937,8 +19941,16 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                      getcfg(lbs->name, str, comment, sizeof(comment));
                   }
 
-                  if (comment[0] == 0)
-                     strencode2(comment, getparam(attr_list[i]), sizeof(comment));
+                  if (comment[0] == 0) {
+                     strlcpy(str, getparam(attr_list[i]), sizeof(str));
+                     if (str[0] == '^' && str[strlen(str)-1] == '$') {
+                        str[strlen(str)-1] = 0;
+                        strlcpy(comment, str+1, NAME_LENGTH);
+                     } else
+                        strlcpy(comment, str, NAME_LENGTH);
+                     strlcpy(str, comment, sizeof(str));
+                     strencode2(comment, str, sizeof(comment));
+                  }
 
                   rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", attr_list[i]);
                   rsprintf("<td class=\"attribvalue\"><span style=\"color:black;background-color:#ffff66\">");
@@ -19970,8 +19982,14 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       /*---- evaluate conditions for quick filters */
       for (i = 0; i < lbs->n_attr; i++) {
          attrib[i][0] = 0;
-         if (isparam(attr_list[i]))
-            strlcpy(attrib[i], getparam(attr_list[i]), NAME_LENGTH);
+         if (isparam(attr_list[i])) {
+            strlcpy(str, getparam(attr_list[i]), sizeof(str));
+            if (str[0] == '^' && str[strlen(str)-1] == '$') {
+               str[strlen(str)-1] = 0;
+               strlcpy(attrib[i], str+1, NAME_LENGTH);
+            } else
+              strlcpy(attrib[i], str, NAME_LENGTH);
+         }
       }
       evaluate_conditions(lbs, attrib);
 
