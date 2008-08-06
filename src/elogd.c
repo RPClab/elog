@@ -1191,7 +1191,7 @@ int my_shell(char *cmd, char *result, int size)
       }
 
       system(str);
-      exit(0);
+      _exit(0);
    }
 
    return 1;
@@ -27287,7 +27287,7 @@ void server_loop(void)
          if (stat(pidfile, &finfo) >= 0) {
             /* never overwrite a file */
             eprintf("Refuse to overwrite existing file \"%s\".\n", pidfile);
-            exit(EXIT_FAILURE);
+            _exit(EXIT_FAILURE); /* don't call atexit() hook */
          }
       }
 
