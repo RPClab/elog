@@ -21814,33 +21814,35 @@ void submit_elog(LOGBOOK * lbs)
    }
 
    /* check if lock has been stolen */
-   if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1 && message_id) {
-      el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, locked_by);
+   if (!isparam("skiplock")) {
+      if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1 && message_id) {
+         el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, locked_by);
 
-      if (isparam("full_name"))
-         strlcpy(str, getparam("full_name"), sizeof(str));
-      else
-         strlcpy(str, loc("user"), sizeof(str));
-
-      strcat(str, " ");
-      strcat(str, loc("on"));
-      strcat(str, " ");
-      strcat(str, rem_host);
-
-      if (locked_by[0] == 0 || strcmp(locked_by, str) != 0) {
-         if (locked_by[0])
-            sprintf(str, loc("This entry has in meantime been locked by %s"), locked_by);
+         if (isparam("full_name"))
+            strlcpy(str, getparam("full_name"), sizeof(str));
          else
-            sprintf(str, loc("This entry has in meantime been modified by someone else"));
-         strlcat(str, ".<p>\n", sizeof(str));
-         strlcat(str,
-                 loc("Submitting it now would overwrite the other modification and is therefore prohibited"),
-                 sizeof(str));
-         strlcat(str, ".", sizeof(str));
+            strlcpy(str, loc("user"), sizeof(str));
 
-         strencode2(str2, str, sizeof(str2));
-         show_error(str2);
-         return;
+         strcat(str, " ");
+         strcat(str, loc("on"));
+         strcat(str, " ");
+         strcat(str, rem_host);
+
+         if (locked_by[0] == 0 || strcmp(locked_by, str) != 0) {
+            if (locked_by[0])
+               sprintf(str, loc("This entry has in meantime been locked by %s"), locked_by);
+            else
+               sprintf(str, loc("This entry has in meantime been modified by someone else"));
+            strlcat(str, ".<p>\n", sizeof(str));
+            strlcat(str,
+                    loc("Submitting it now would overwrite the other modification and is therefore prohibited"),
+                    sizeof(str));
+            strlcat(str, ".", sizeof(str));
+
+            strencode2(str2, str, sizeof(str2));
+            show_error(str2);
+            return;
+         }
       }
    }
 
