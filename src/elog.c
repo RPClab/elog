@@ -378,7 +378,7 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
 \********************************************************************/
 {
    int i, n, first, index, sock;
-   char str[80], *ph, *ps;
+   char str[256], *ph, *ps;
 #ifdef HAVE_SSL
    SSL *ssl_con;
 #endif
@@ -400,12 +400,14 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
 
    /* compose request */
    strcpy(request, "GET /");
+   strlcpy(str, experiment, sizeof(str));
+   url_encode(str, sizeof(str));
    if (subdir[0] && experiment[0])
-      sprintf(request + strlen(request), "%s/%s/%d?cmd=download", subdir, experiment, message_id);
+      sprintf(request + strlen(request), "%s/%s/%d?cmd=download", subdir, str, message_id);
    else if (subdir[0])
       sprintf(request + strlen(request), "%s/%d?cmd=download", subdir, message_id);
    else if (experiment[0])
-      sprintf(request + strlen(request), "%s/%d?cmd=download", experiment, message_id);
+      sprintf(request + strlen(request), "%s/%d?cmd=download", str, message_id);
    strcat(request, " HTTP/1.0\r\n");
 
    sprintf(request + strlen(request), "User-Agent: ELOG\r\n");
@@ -808,9 +810,12 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
       sprintf(content + strlen(content),
               "%s\r\nContent-Disposition: form-data; name=\"reply_to\"\r\n\r\n%d\r\n", boundary, reply);
 
-   if (edit)
+   if (edit) {
       sprintf(content + strlen(content),
               "%s\r\nContent-Disposition: form-data; name=\"edit_id\"\r\n\r\n%d\r\n", boundary, edit);
+      sprintf(content + strlen(content),
+              "%s\r\nContent-Disposition: form-data; name=\"skiplock\"\r\n\r\n1\r\n", boundary);
+   }
 
    if (suppress)
       sprintf(content + strlen(content),
