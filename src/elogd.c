@@ -1391,7 +1391,7 @@ Encode the given string in-place by adding %XX escapes
    pd = str;
    p = (unsigned char *) ps;
    while (*p && pd < str + 250) {
-      if (strchr("%&=#?+", *p) || *p > 127) {
+      if (strchr("%&=#?+<>", *p) || *p > 127) {
          sprintf((char *) pd, "%%%02X", *p);
          pd += 3;
          p++;
@@ -23630,7 +23630,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
 BOOL check_password(LOGBOOK * lbs, char *name, char *password, char *redir)
 {
-   char str[256];
+   char str[1000];
 
    /* get password from configuration file */
    if (getcfg(lbs->name, name, str, sizeof(str))) {
@@ -23658,8 +23658,12 @@ BOOL check_password(LOGBOOK * lbs, char *name, char *password, char *redir)
       rsprintf("<tr><td class=\"dlgtitle\">\n");
 
       /* define hidden fields for current destination */
-      if (redir[0])
-         rsprintf("<input type=hidden name=redir value=\"%s\">\n", redir);
+      if (redir[0]) {
+         strlcpy(str, redir, sizeof(str));
+         if (strchr(str, '<'))
+            url_encode(str, sizeof(str));
+         rsprintf("<input type=hidden name=redir value=\"%s\">\n", str);
+      }
 
       if (strcmp(name, "Write password") == 0) {
          rsprintf("%s</td></tr>\n", loc("Please enter password to obtain write access"));
@@ -24272,7 +24276,10 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
       rsprintf("<form name=form1 method=\"POST\" action=\"./\" enctype=\"multipart/form-data\">\n\n");
 
       /* define hidden fields for current destination */
-      rsprintf("<input type=hidden name=redir value=\"%s\">\n", redir);
+      strlcpy(str, redir, sizeof(str));
+      if (strchr(str, '<'))
+         url_encode(str, sizeof(str));
+      rsprintf("<input type=hidden name=redir value=\"%s\">\n", str);
 
       rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
 
