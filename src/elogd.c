@@ -19027,8 +19027,10 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
    /*---- apply start/end date cut ----*/
 
-   if (past_n)
-      ltime_start = now - 3600 * 24 * past_n;
+   if (past_n > 0)
+      ltime_start = now - 3600 * 24 * past_n; // past n days
+   else
+      ltime_start = now + 3600 * past_n;      // past n hours
 
    if (last_n && last_n < n_msg) {
       for (i = n_msg - last_n - 1; i >= 0; i--)
@@ -19595,6 +19597,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          strcat(str, loc("Last day"));
       else if (past_n > 1)
          sprintf(str + strlen(str), loc("Last %d days"), past_n);
+      else if (past_n < 0)
+         sprintf(str + strlen(str), loc("Last %d hours"), -past_n);
       else if (last_n)
          sprintf(str + strlen(str), loc("Last %d entries"), last_n);
       else if (page_n == -1)
@@ -19662,7 +19666,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          for (i = 0; i < n; i++) {
             if (is_user_allowed(lbs, menu_item[i])) {
                if (strieq(menu_item[i], "Last x")) {
-                  if (past_n) {
+                  if (past_n > 0) {
                      sprintf(str, loc("Last %d days"), past_n * 2);
                      rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n * 2, mode, str);
                   }
@@ -25442,8 +25446,9 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   /* check for lastxx and pastxx and listxx */
-   if (strncmp(path, "past", 4) == 0 && isdigit(path[4]) && isparam("cmd") == 0) {
+   /* check for pastxx */
+   if (strncmp(path, "past", 4) == 0 && (isdigit(path[4]) || isdigit(path[5])) 
+       && isparam("cmd") == 0) {
       show_elog_list(lbs, atoi(path + 4), 0, 0, FALSE, NULL);
       return;
    }
