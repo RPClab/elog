@@ -19029,7 +19029,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
    if (past_n > 0)
       ltime_start = now - 3600 * 24 * past_n; // past n days
-   else
+   else if (past_n < 0)
       ltime_start = now + 3600 * past_n;      // past n hours
 
    if (last_n && last_n < n_msg) {
