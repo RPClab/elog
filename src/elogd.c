@@ -25455,7 +25455,7 @@ void interprete(char *lbook, char *path)
 
    if (strncmp(path, "last", 4) == 0 && !chkext(path, ".png") && (!isparam("cmd") || strieq(getparam("cmd"),
                                                                                             loc("Select")))
-       && !isparam("newpwd")) {
+       && !isparam("newpwd") && atoi(path + 4) > 0) {
       show_elog_list(lbs, 0, atoi(path + 4), 0, FALSE, NULL);
       return;
    }
