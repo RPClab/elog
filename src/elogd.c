@@ -19226,7 +19226,16 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                /* search for parameter without '_' coming from quick filter */
                if (isparam(attr_list[i])) {
                   searched = TRUE;
-                  if (strstr(attrib[i], getparam(attr_list[i])))
+
+                  strlcpy(str, getparam(attr_list[i]), sizeof(str));
+                  if (str[0] == '^' && str[strlen(str)-1] == '$') {
+                     str[strlen(str)-1] = 0;
+                     strlcpy(comment, str+1, NAME_LENGTH);
+                  } else
+                     strlcpy(comment, str, NAME_LENGTH);
+                  strlcpy(str, comment, sizeof(str));
+
+                  if (strstr(attrib[i], str))
                      found = TRUE;
                }
 
@@ -19881,9 +19890,17 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                      if (line[0])
                         strlcat(line, " | ", sizeof(line));
 
-                     if (comment[0] == 0)
-                        strencode2(line + strlen(line), getparam(iattr), sizeof(line) - strlen(line));
-                     else
+                     if (comment[0] == 0) {
+                        strlcpy(str, getparam(iattr), sizeof(str));
+                        if (str[0] == '^' && str[strlen(str)-1] == '$') {
+                           str[strlen(str)-1] = 0;
+                           strlcpy(comment, str+1, NAME_LENGTH);
+                        } else
+                           strlcpy(comment, str, NAME_LENGTH);
+                        strlcpy(str, comment, sizeof(str));
+
+                        strencode2(line + strlen(line), str, sizeof(line) - strlen(line));
+                     } else
                         strlcat(line, comment, sizeof(line));
                   }
                }
@@ -19898,9 +19915,16 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   if (line[0])
                      strlcat(line, " | ", sizeof(line));
 
-                  if (comment[0] == 0)
-                     strencode2(line + strlen(line), getparam(attr_list[i]), sizeof(line) - strlen(line));
-                  else
+                  if (comment[0] == 0) {
+                     strlcpy(str, getparam(attr_list[i]), sizeof(str));
+                     if (str[0] == '^' && str[strlen(str)-1] == '$') {
+                        str[strlen(str)-1] = 0;
+                        strlcpy(comment, str+1, NAME_LENGTH);
+                     } else
+                        strlcpy(comment, str, NAME_LENGTH);
+                     strlcpy(str, comment, sizeof(str));
+                     strencode2(line + strlen(line), str, sizeof(line) - strlen(line));
+                  } else
                      strlcat(line, comment, sizeof(line));
                }
 
