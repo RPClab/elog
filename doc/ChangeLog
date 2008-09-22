@@ -1,3 +1,22 @@
+Version 2.7.5, released Sept. 22th 2008
+=======================================
+
+- Added msvcr71.dll to Windows distribution
+- Fixed problem with quick filters and ^xxx$ search
+- Fixed bug which could crash elogd
+- Added "past-n" to display last n hours
+- Encode command line if it contains a '<'
+- Evaluate "skiplock" parameter to make elog submissions work with "use lock=1"
+- encoded logbook in case it contains blanks
+- added "skiplock" parameter to make elog work with "use lock=1"
+- Call _exit in my_shell to prevent calling of cleanup()
+- Search for whole words in quick filter using ^*$ regular expression
+- Made preset of $user_email work with attributes of type useremail
+- Added code to check for invalid URL in the form 'http://server//xyz' 
+- Do not go into infite loop for interrupted POST transfer
+- Added sorting for muserlist and museremail
+- Made quick filter work with icons
+
 Version 2.7.4, released June 9th, 2008
 ======================================
 

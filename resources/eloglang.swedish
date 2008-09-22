@@ -445,7 +445,6 @@ XML Import = XML-Import
 A old entry has been updated on %s = En gammal post har uppdaterats på %s
 This entry has in meantime been locked by %s = Denna post har under tiden låsts av %s
 This entry has in meantime been modified by someone else = Denna post har under tiden ändrats av någon annan
-Submitting it now would overwrite the other modification and is therefore prohibited = Om den sparas nu skulle den andra ändringen skrivas över och är därför inte tillåtet 
 First entry, Ctrl-Home = Första posten, Ctrl-Home
 Previous entry, Ctrl-PgUp = Föregående post, Ctrl-PgUp
 Next entry, Ctrl-PgDn = Nästa post, Ctrl-PgDn

@@ -441,7 +441,6 @@ XML Import = Importar XML
 A old entry has been updated on %s = Una entrada anterior ha sido actualizada en %s
 This entry has in meantime been locked by %s = Esta entrada ha sido bloqueada por %s
 This entry has in meantime been modified by someone else = Esta entrada ha sido modificada por alguien mas mientras se escribia
-Submitting it now would overwrite the other modification and is therefore prohibited = Enviar esto ahora sobreescribiria la otra modificacion, por lo tanto no esta permitido
 First entry, Ctrl-Home = Primera entrada, Ctrl-Home
 Previous entry, Ctrl-PgUp = Entrada anterior, Ctrl-PgUp
 Next entry, Ctrl-PgDn = Entrada siguiente, Ctrl-PgDn

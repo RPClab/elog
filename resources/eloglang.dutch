@@ -443,7 +443,6 @@ XML Import = XML import
 A old entry has been updated on %s = Een oud bericht is vernieuwd op %s
 This entry has in meantime been locked by %s = Dit bericht is intussen geblokkeerd door %s
 This entry has in meantime been modified by someone else = Dit bericht is intussen geblokkeerd door iemand anders
-Submitting it now would overwrite the other modification and is therefore prohibited = Nu versturen zou een andere wijziging overschrijven en is daarom niet toegestaan
 First entry, Ctrl-Home = Eerste bericht, Ctrl-Home
 Previous entry, Ctrl-PgUp = Vorige bericht, Ctrl-PgUp
 Next entry, Ctrl-PgDn = Volgende bericht, Ctrl-PgDn

@@ -23,7 +23,6 @@ On midas.psi.ch:
 
 Declare new version at freshmeat.
 
-
 Checklist for new ELOG intermediate release
 ===========================================
 

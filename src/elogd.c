@@ -9,7 +9,7 @@
  \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.7.4"
+#define VERSION "2.7.5"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -5801,102 +5801,136 @@ PATTERN_LIST pattern_list[] = {
 
    /* smileys */
    {
-   ":))", "<img alt=\"Happy\" title=\"Happy\" src=\"%sicons/happy.png\">"}, {
-   ":-))", "<img alt=\"Happy\" title=\"Happy\" src=\"%sicons/happy.png\">"}, {
-   ":)", "<img alt=\"Smile\" title=\"Smile\" src=\"%sicons/smile.png\">"}, {
-   ":-)", "<img alt=\"Smile\" title=\"Smile\" src=\"%sicons/smile.png\">"}, {
-   ":(", "<img alt=\"Frown\" title=\"Frown\" src=\"%sicons/frown.png\">"}, {
-   ":-(", "<img alt=\"Frown\" title=\"Frown\" src=\"%sicons/frown.png\">"}, {
-   ";)", "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"}, {
-   ";-)", "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"}, {
-   ":d", "<img alt=\"Big grin\" title=\"Big grin\" src=\"%sicons/biggrin.png\">"}, {
-   "?-)", "<img alt=\"Confused\" title=\"Confused\" src=\"%sicons/confused.png\">"}, {
-   ";(", "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"}, {
-   ";-(", "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"}, {
-   ":]", "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"}, {
-   ":-]", "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"}, {
-   ":o", "<img alt=\"Yawn\" title=\"Yawn\" src=\"%sicons/yawn.png\">"}, {
-   ":-o", "<img alt=\"Yawn\" title=\"Yawn\" src=\"%sicons/yawn.png\">"}, {
-   "8-)", "<img alt=\"Cool\" title=\"Cool\" src=\"%sicons/cool.png\">"}, {
-   "8o", "<img alt=\"Astonished\" title=\"Astonished\" src=\"%sicons/astonished.png\">"}, {
-   "x-(", "<img alt=\"Mad\" title=\"Mad\" src=\"%sicons/mad.png\">"}, {
-   ":p", "<img alt=\"Tongue\" title=\"Tongue\" src=\"%sicons/tongue.png\">"}, {
-   ":-p", "<img alt=\"Tongue\" title=\"Tongue\" src=\"%sicons/tongue.png\">"},
-       /* formatting */
+    ":))", "<img alt=\"Happy\" title=\"Happy\" src=\"%sicons/happy.png\">"}, {
+                                                                              ":-))",
+                                                                              "<img alt=\"Happy\" title=\"Happy\" src=\"%sicons/happy.png\">"},
    {
-   "[b]", "<b>"}, {
-   "[/b]", "</b>"}, {
-   "[u]", "<u>"}, {
-   "[/u]", "</u>"}, {
-   "[i]", "<i>"}, {
-   "[/i]", "</i>"}, {
-   "[center]", "<center>"}, {
-   "[/center]", "</center>"}, {
-   "[color=", "<font color=\"%s\">"}, {
-   "[/color]", "</font>"}, {
-   "[size=", "<font size=\"%s\">"}, {
-   "[/size]", "</font>"}, {
-   "[font=", "<font face=\"%s\">"}, {
-   "[/font]", "</font>"}, {
-   "\r\n[code]", "<pre>"}, {
-   "[code]", "<pre>"}, {
-   "[/code]\r\n", "</pre>"}, {
-   "[/code]", "</pre>"}, {
-   "\r\n[code1]", "<pre>"}, {
-   "[code1]", "<pre>"}, {
-   "[/code1]\r\n", "</pre>"}, {
-   "[/code1]", "</pre>"},
-       /* lists */
+    ":)", "<img alt=\"Smile\" title=\"Smile\" src=\"%sicons/smile.png\">"}, {
+                                                                             ":-)",
+                                                                             "<img alt=\"Smile\" title=\"Smile\" src=\"%sicons/smile.png\">"},
    {
-   "[list]\r", "<ul>"}, {
-   "[list]", "<ul>"}, {
-   "[*]", "<li>"}, {
-   "[/list]\r", "</#>"},        // either </ul> or </ol>
+    ":(", "<img alt=\"Frown\" title=\"Frown\" src=\"%sicons/frown.png\">"}, {
+                                                                             ":-(",
+                                                                             "<img alt=\"Frown\" title=\"Frown\" src=\"%sicons/frown.png\">"},
    {
-   "[/list]", "</#>"}, {
-   "[list=", "<ol type=\"%s\">"},
-       /* headings */
+    ";)", "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"}, {
+                                                                          ";-)",
+                                                                          "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"},
    {
-   "[h1]", "<h1>"}, {
-   "[/h1]", "</h1>"}, {
-   "[h2]", "<h2>"}, {
-   "[/h2]", "</h2>"}, {
-   "[h3]", "<h3>"}, {
-   "[/h3]", "</h3>"},
-       /* URLs */
+    ":d", "<img alt=\"Big grin\" title=\"Big grin\" src=\"%sicons/biggrin.png\">"}, {
+                                                                                     "?-)",
+                                                                                     "<img alt=\"Confused\" title=\"Confused\" src=\"%sicons/confused.png\">"},
    {
-   "[url=", "<a href=\"%#\">%s</a>"}, {
-   "[url]", "<a href=\"%#\">%s</a>"}, {
-   "[/url]", ""}, {
-   "[email]", "<a href=\"mailto:%#\">%s</a>"}, {
-   "[/email]", ""}, {
-   "[img]", "<a href=\"%#\"><img border=0 src=\"%#?thumb=1\"></a>"}, {
-   "[/img]", ""},
-       /* quote */
+    ";(", "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"}, {
+                                                                                ";-(",
+                                                                                "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"},
    {
-   "[quote=",
-          "<br /><table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
+    ":]", "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"}, {
+                                                                                   ":-]",
+                                                                                   "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"},
    {
-   "[quote]",
-          "<br /><table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
+    ":o", "<img alt=\"Yawn\" title=\"Yawn\" src=\"%sicons/yawn.png\">"}, {
+                                                                          ":-o",
+                                                                          "<img alt=\"Yawn\" title=\"Yawn\" src=\"%sicons/yawn.png\">"},
    {
-   "[/quote]\r", "</td></tr></table><br />\r\n"}, {
-   "[/quote]", "</td></tr></table>\r\n"},
-       /* table */
+    "8-)", "<img alt=\"Cool\" title=\"Cool\" src=\"%sicons/cool.png\">"}, {
+                                                                           "8o",
+                                                                           "<img alt=\"Astonished\" title=\"Astonished\" src=\"%sicons/astonished.png\">"},
    {
-   "[table]", "<table><tr><td>"}, {
-   "[table ", "<table %s><tr><td>"}, {
-   "|-", "</td></tr><tr><td>"}, {
-   "|", "</td><td>"}, {
-   "[/table]", "</td></tr></table>"},
-       /* horizontal line */
+    "x-(", "<img alt=\"Mad\" title=\"Mad\" src=\"%sicons/mad.png\">"}, {
+                                                                        ":p",
+                                                                        "<img alt=\"Tongue\" title=\"Tongue\" src=\"%sicons/tongue.png\">"},
    {
-   "[line]", "<hr />"},
-       /* anchor */
+    ":-p", "<img alt=\"Tongue\" title=\"Tongue\" src=\"%sicons/tongue.png\">"},
+   /* formatting */
    {
-   "[anchor]", "<a name=\"%#\">"}, {
-   "[/anchor]", "</a>"}, {
-"", ""}};
+    "[b]", "<b>"}, {
+                    "[/b]", "</b>"}, {
+                                      "[u]", "<u>"}, {
+                                                      "[/u]", "</u>"}, {
+                                                                        "[i]", "<i>"}, {
+                                                                                        "[/i]", "</i>"}, {
+                                                                                                          "[center]",
+                                                                                                          "<center>"},
+   {
+    "[/center]", "</center>"}, {
+                                "[color=", "<font color=\"%s\">"}, {
+                                                                    "[/color]", "</font>"}, {
+                                                                                             "[size=",
+                                                                                             "<font size=\"%s\">"},
+   {
+    "[/size]", "</font>"}, {
+                            "[font=", "<font face=\"%s\">"}, {
+                                                              "[/font]", "</font>"}, {
+                                                                                      "\r\n[code]", "<pre>"}, {
+                                                                                                               "[code]",
+                                                                                                               "<pre>"},
+   {
+    "[/code]\r\n", "</pre>"}, {
+                               "[/code]", "</pre>"}, {
+                                                      "\r\n[code1]", "<pre>"}, {
+                                                                                "[code1]", "<pre>"}, {
+                                                                                                      "[/code1]\r\n",
+                                                                                                      "</pre>"},
+   {
+    "[/code1]", "</pre>"},
+   /* lists */
+   {
+    "[list]\r", "<ul>"}, {
+                          "[list]", "<ul>"}, {
+                                              "[*]", "<li>"}, {
+                                                               "[/list]\r", "</#>"},    // either </ul> or </ol>
+   {
+    "[/list]", "</#>"}, {
+                         "[list=", "<ol type=\"%s\">"},
+   /* headings */
+   {
+    "[h1]", "<h1>"}, {
+                      "[/h1]", "</h1>"}, {
+                                          "[h2]", "<h2>"}, {
+                                                            "[/h2]", "</h2>"}, {
+                                                                                "[h3]", "<h3>"}, {
+                                                                                                  "[/h3]",
+                                                                                                  "</h3>"},
+   /* URLs */
+   {
+    "[url=", "<a href=\"%#\">%s</a>"}, {
+                                        "[url]", "<a href=\"%#\">%s</a>"}, {
+                                                                            "[/url]", ""}, {
+                                                                                            "[email]",
+                                                                                            "<a href=\"mailto:%#\">%s</a>"},
+   {
+    "[/email]", ""}, {
+                      "[img]", "<a href=\"%#\"><img border=0 src=\"%#?thumb=1\"></a>"}, {
+                                                                                         "[/img]", ""},
+   /* quote */
+   {
+    "[quote=",
+    "<br /><table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
+   {
+    "[quote]",
+    "<br /><table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
+   {
+    "[/quote]\r", "</td></tr></table><br />\r\n"}, {
+                                                    "[/quote]", "</td></tr></table>\r\n"},
+   /* table */
+   {
+    "[table]", "<table><tr><td>"}, {
+                                    "[table ", "<table %s><tr><td>"}, {
+                                                                       "|-", "</td></tr><tr><td>"}, {
+                                                                                                     "|",
+                                                                                                     "</td><td>"},
+   {
+    "[/table]", "</td></tr></table>"},
+   /* horizontal line */
+   {
+    "[line]", "<hr />"},
+   /* anchor */
+   {
+    "[anchor]", "<a name=\"%#\">"}, {
+                                     "[/anchor]", "</a>"}, {
+                                                            "", ""}
+};
 
 char
 *email_quote_table =
@@ -10111,7 +10145,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                /* sort list */
                qsort(user_list, n, sizeof(char *), ascii_compare);
 
-               for (i = 0; i<n; i++) {
+               for (i = 0; i < n; i++) {
                   sprintf(str, "%s_%d", ua, i);
 
                   rsprintf("<span style=\"white-space:nowrap;\">\n");
@@ -10167,14 +10201,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                /* sort list */
                qsort(user_list, n, sizeof(char *), ascii_compare);
 
-               for (i = 0; i<n ; i++) {
+               for (i = 0; i < n; i++) {
                   sprintf(str, "%s_%d", ua, i);
 
                   rsprintf("<span style=\"white-space:nowrap;\">\n");
 
                   for (j = 0; j < n_moptions; j++)
                      if (strcmp(attr_moptions[j], user_list[i]) == 0 ||
-                         strcmp(attr_moptions[j]+7, user_list[i]) == 0)
+                         strcmp(attr_moptions[j] + 7, user_list[i]) == 0)
                         break;
 
                   if (j < n_moptions)
@@ -10219,7 +10253,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      break;
                   get_user_line(lbs, login_name, NULL, NULL, str, NULL, NULL);
 
-                  if (strieq(str, attrib[index]) || strieq(str, attrib[index]+7))
+                  if (strieq(str, attrib[index]) || strieq(str, attrib[index] + 7))
                      rsprintf("<option selected value=\"%s\">%s\n", str, str);
                   else
                      rsprintf("<option value=\"%s\">%s\n", str, str);
@@ -15739,7 +15773,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
             } else
                /* if config has been changed remotely, but not on this server, receive it */
-            if (!equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)
+               if (!equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)
                    && equal_md5(md5_cache[0].md5_digest, digest)) {
 
                all_identical = FALSE;
@@ -15761,7 +15795,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
             } else
                /* if config has been changed remotely and on this server, show conflict */
-            if (!equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)
+               if (!equal_md5(md5_cache[0].md5_digest, md5_remote[0].md5_digest)
                    && !equal_md5(md5_cache[0].md5_digest, digest)
                    && !equal_md5(md5_remote[0].md5_digest, digest)) {
 
@@ -15870,7 +15904,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
             } else
                /* if message has been changed remotely, but not on this server, receive it */
-            if (!equal_md5(md5_cache[i_cache].md5_digest, md5_remote[i_remote].md5_digest)
+               if (!equal_md5(md5_cache[i_cache].md5_digest, md5_remote[i_remote].md5_digest)
                    && equal_md5(md5_cache[i_cache].md5_digest, lbs->el_index[i_msg].md5_digest)) {
 
                all_identical = FALSE;
@@ -15920,7 +15954,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
             } else
                /* if message has been changed remotely and on this server, show conflict */
-            if (!equal_md5(md5_cache[i_cache].md5_digest, md5_remote[i_remote].md5_digest)
+               if (!equal_md5(md5_cache[i_cache].md5_digest, md5_remote[i_remote].md5_digest)
                    && !equal_md5(md5_cache[i_cache].md5_digest, lbs->el_index[i_msg].md5_digest)
                    && !equal_md5(md5_remote[i_remote].md5_digest, lbs->el_index[i_msg].md5_digest)) {
 
@@ -17692,8 +17726,8 @@ void build_ref(char *ref, int size, char *mode, char *expand, char *attach, char
 void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands, char *mode)
 {
    int cur_exp, n, i, j, i1, i2, index, attr_index, size;
-   char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH], list[MAX_N_LIST][NAME_LENGTH], 
-      option[NAME_LENGTH], option_whole[NAME_LENGTH];
+   char ref[256], str[NAME_LENGTH], comment[NAME_LENGTH], list[MAX_N_LIST][NAME_LENGTH],
+       option[NAME_LENGTH], option_whole[NAME_LENGTH];
 
    rsprintf("<tr><td class=\"menuframe\">\n");
    rsprintf("<table width=\"100%%\" border=0 cellpadding=\"0\" cellspacing=\"0\">\n");
@@ -17987,9 +18021,9 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
                   }
 
                   sprintf(option_whole, "^%s$", option);
-                  if (isparam(attr_list[attr_index]) && 
-                     (strieq(option, getparam(attr_list[attr_index])) || 
-                      strieq(option_whole, getparam(attr_list[attr_index]))))
+                  if (isparam(attr_list[attr_index]) &&
+                      (strieq(option, getparam(attr_list[attr_index])) ||
+                       strieq(option_whole, getparam(attr_list[attr_index]))))
                      rsprintf("<option selected value=\"%s\">%s\n", option_whole, option);
                   else
                      rsprintf("<option value=\"%s\">%s\n", option_whole, option);
@@ -19971,9 +20005,9 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
                   if (comment[0] == 0) {
                      strlcpy(str, getparam(attr_list[i]), sizeof(str));
-                     if (str[0] == '^' && str[strlen(str)-1] == '$') {
-                        str[strlen(str)-1] = 0;
-                        strlcpy(comment, str+1, NAME_LENGTH);
+                     if (str[0] == '^' && str[strlen(str) - 1] == '$') {
+                        str[strlen(str) - 1] = 0;
+                        strlcpy(comment, str + 1, NAME_LENGTH);
                      } else
                         strlcpy(comment, str, NAME_LENGTH);
                      strlcpy(str, comment, sizeof(str));
@@ -20012,11 +20046,11 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          attrib[i][0] = 0;
          if (isparam(attr_list[i])) {
             strlcpy(str, getparam(attr_list[i]), sizeof(str));
-            if (str[0] == '^' && str[strlen(str)-1] == '$') {
-               str[strlen(str)-1] = 0;
-               strlcpy(attrib[i], str+1, NAME_LENGTH);
+            if (str[0] == '^' && str[strlen(str) - 1] == '$') {
+               str[strlen(str) - 1] = 0;
+               strlcpy(attrib[i], str + 1, NAME_LENGTH);
             } else
-              strlcpy(attrib[i], str, NAME_LENGTH);
+               strlcpy(attrib[i], str, NAME_LENGTH);
          }
       }
       evaluate_conditions(lbs, attrib);
@@ -21863,7 +21897,8 @@ void submit_elog(LOGBOOK * lbs)
                sprintf(str, loc("This entry has in meantime been modified by someone else"));
             strlcat(str, ".<p>\n", sizeof(str));
             strlcat(str,
-                    loc("Submitting it now would overwrite the other modification and is therefore prohibited"),
+                    loc
+                    ("Submitting it now would overwrite the other modification and is therefore prohibited"),
                     sizeof(str));
             strlcat(str, ".", sizeof(str));
 
@@ -27325,7 +27360,7 @@ void server_loop(void)
          if (stat(pidfile, &finfo) >= 0) {
             /* never overwrite a file */
             eprintf("Refuse to overwrite existing file \"%s\".\n", pidfile);
-            _exit(EXIT_FAILURE); /* don't call atexit() hook */
+            _exit(EXIT_FAILURE);        /* don't call atexit() hook */
          }
       }
 

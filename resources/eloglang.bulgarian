@@ -447,7 +447,6 @@ XML Import =
 A old entry has been updated on %s = 
 This entry has in meantime been locked by %s = 
 This entry has in meantime been modified by someone else = 
-Submitting it now would overwrite the other modification and is therefore prohibited = 
 First entry, Ctrl-Home = 
 Previous entry, Ctrl-PgUp = 
 Next entry, Ctrl-PgDn = 
