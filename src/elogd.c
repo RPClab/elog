@@ -5459,6 +5459,23 @@ void strip_html(char *s)
 
 /*------------------------------------------------------------------*/
 
+int line_break(char *str, char *encoding)
+{
+   if (strieq(encoding, "plain") || strieq(encoding, "ELCode")) {
+      return str[0] == '\n';
+   }
+
+   // HTML encoding
+   if (strncmp(str, "</p>", 4) == 0 ||
+       strncmp(str, "<br>", 4) == 0 ||
+       strncmp(str, "<br />", 4) == 0)
+      return 1;
+
+   return 0;
+}
+
+/*------------------------------------------------------------------*/
+
 void insert_breaks(char *str, int n, int size)
 {
    int i, j, i_last;
@@ -16993,7 +17010,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
       if (expand == 2) {
          for (i = i_line = line_len = 0; i < (int) sizeof(str) - 1; i++, line_len++) {
             str[i] = text[i];
-            if (str[i] == '\n') {
+            if (line_break(text+i, encoding)) {
                i_line++;
                line_len = 0;
             } else
@@ -17041,7 +17058,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
       max_line_len = n_line >= 10 ? 140 : 40;
       for (i = i_line = line_len = 0; i < (int) sizeof(str) - 1; line_len++, i++) {
          str[i] = text[i];
-         if (str[i] == '\n') {
+         if (line_break(text+i, encoding)) {
             i_line++;
             line_len = 0;
          } else
