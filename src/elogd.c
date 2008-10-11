@@ -11346,7 +11346,8 @@ void show_find_form(LOGBOOK * lbs)
 {
    int i, j;
    char str[NAME_LENGTH], mode[NAME_LENGTH], comment[NAME_LENGTH], option[NAME_LENGTH], login_name[256],
-       full_name[256], user_email[256], enc_attr[NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
+      full_name[256], user_email[256], enc_attr[NAME_LENGTH], whole_attr[NAME_LENGTH], 
+      attrib[MAX_N_ATTR][NAME_LENGTH];
 
    /*---- header ----*/
 
@@ -11648,7 +11649,8 @@ void show_find_form(LOGBOOK * lbs)
                   *strchr(str, '{') = 0;
                strencode2(enc_attr, attrib[i], sizeof(enc_attr));
 
-               if (strieq(attr_options[i][j], attrib[i]) || strieq(str, enc_attr))
+               sprintf(whole_attr, "^%s$", str);
+               if (strieq(attr_options[i][j], attrib[i]) || strieq(str, enc_attr) || strieq(whole_attr, enc_attr))
                   rsprintf("<option selected value=\"^%s$\">%s\n", str, str);
                else
                   rsprintf("<option value=\"^%s$\">%s\n", str, str);
