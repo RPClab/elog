@@ -13552,7 +13552,13 @@ void show_logbook_new(LOGBOOK * lbs)
       strcpy(lbn, getparam("lbname"));
       url_encode(lbn, sizeof(lbn));
       sprintf(str, "../%s/?cmd=Config", lbn);
-      redirect(NULL, str);
+      for (i = 0; lb_list[i].name[0]; i++)
+         if (strieq(lbn, lb_list[i].name))
+            break;
+      if (lb_list[i].name[0])
+         redirect(&lb_list[i], str);
+      else
+         redirect(NULL, str);
       return;
    }
 
@@ -22803,7 +22809,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    /*---- check for valid URL ---------------------------------------*/
 
    if (dec_path[0] && atoi(dec_path) == 0) {
-      sprintf(str, "Invalid URL: <b>%s</b>", dec_path);
+      sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), dec_path);
       show_error(str);
       return;
    }
@@ -25422,6 +25428,13 @@ void interprete(char *lbook, char *path)
       }
    }
 
+   /* check for valid logbook */
+   if (!logbook[0]) {
+      sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), path);
+      show_error(str);
+      return;
+   }
+
    /* if password file given, check password and user name */
    if (getcfg(logbook, "Password file", str, sizeof(str))) {
       /* get current CSS */
@@ -25849,7 +25862,7 @@ void interprete(char *lbook, char *path)
 
    if (strieq(command, loc("Search"))) {
       if (dec_path[0] && atoi(dec_path) == 0 && strchr(dec_path, '/') != NULL) {
-         sprintf(str, "Invalid URL: <b>%s</b>", dec_path);
+         sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), dec_path);
          show_error(str);
          return;
       }
@@ -26586,7 +26599,7 @@ int process_http_request(const char *request, int i_conn)
 
    if (strstr(url, "../..")) {
       strencode2(str2, url, sizeof(str2));
-      sprintf(str, "Invalid URL: %s", str2);
+      sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), str2);
       show_error(str);
       return 1;
    }
@@ -26600,7 +26613,7 @@ int process_http_request(const char *request, int i_conn)
       /* do not allow '..' in file name */
       if (strstr(url, "..")) {
          strencode2(str2, url, sizeof(str2));
-         sprintf(str, "Invalid URL: %s", str2);
+         sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), str2);
          show_error(str);
          return 1;
       }
@@ -26641,7 +26654,7 @@ int process_http_request(const char *request, int i_conn)
       url[i] = 0;
       if (*(p - 1) == '/') {
          strencode2(str2, url, sizeof(str2));
-         sprintf(str, "Invalid URL: %s", str2);
+         sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), str2);
          show_error(str);
          return 1;
       }
@@ -26653,7 +26666,7 @@ int process_http_request(const char *request, int i_conn)
          url[i] = *p++;
       url[i] = 0;
       strencode2(str2, url, sizeof(str2));
-      sprintf(str, "Invalid URL: %s", str2);
+      sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), str2);
       show_error(str);
       return 1;
    }
@@ -26695,7 +26708,7 @@ int process_http_request(const char *request, int i_conn)
       /* do not allow '..' in file name */
       if (strstr(logbook, "..")) {
          strencode2(str2, logbook, sizeof(str2));
-         sprintf(str, "Invalid URL: %s", str2);
+         sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), str2);
          show_error(str);
          return 1;
       }
