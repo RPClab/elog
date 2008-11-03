@@ -7151,21 +7151,8 @@ void show_http_header(LOGBOOK * lbs, BOOL expires, char *cookie)
    else
       rsprintf("Content-Type: text/html;charset=%s\r\n", DEFAULT_HTTP_CHARSET);
 
-   if (cookie && cookie[0]) {
-
+   if (cookie && cookie[0])
       set_cookie(lbs, cookie, NULL, FALSE, "99999");    /* ten years by default */
-
-      if (getcfg(lbs->name, "URL", str, sizeof(str))) {
-         extract_path(str);
-         url_encode(str, sizeof(str));
-         if (str[0])
-            rsprintf(" path=/%s/%s;", str, lbs->name_enc);
-         else
-            rsprintf(" path=/%s;", lbs->name_enc);
-      } else
-         rsprintf(" path=/%s;", lbs->name_enc);
-      rsprintf("\r\n");
-   }
 
    if (use_keepalive) {
       rsprintf("Connection: Keep-Alive\r\n");
@@ -27464,6 +27451,10 @@ void server_loop(void)
    image_magick_exist = (strstr(str, "ImageMagick") != NULL);
    if (image_magick_exist)
       eprintf("ImageMagick detected\n");
+
+   /* check for keepalive */
+   if (!use_keepalive)
+      eprintf("Keep-alive disabled\n");
 
    /* build logbook indices */
    if (!verbose && !running_as_daemon)
