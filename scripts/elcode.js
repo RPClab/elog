@@ -7,7 +7,7 @@ function getSelection(text)
       rng = sel.createRange();
       rng.colapse;
       return rng.text; 
-   } else if (browser == 'Mozilla')
+   } else if (browser == 'Mozilla' || browser == 'Safari')
       if (text.selectionEnd > 0 && text.selectionEnd != text.selectionStart && 
           text.value.charAt(text.selectionEnd-1) == ' ')
          return text.value.substring(text.selectionStart, text.selectionEnd-1);
@@ -31,7 +31,7 @@ function replaceSelection(doc, text, newSelection, cursorPos)
          rng.moveEnd('character', -(newSelection.length-cursorPos));
          rng.select();
       }
-   } else if (browser == 'Mozilla') {
+   } else if (browser == 'Mozilla' || browser == 'Safari') {
       start = text.selectionStart;
       stop  = text.selectionEnd;
       if (text.selectionEnd > 0 && text.selectionStart != text.selectionEnd &&
@@ -166,7 +166,7 @@ function elKeyPress(evt)
 
    if (evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
 
-      if (browser == 'MSIE') {
+      if (browser == 'MSIE' || browser == 'Safari') {
          if (unicode == 10)
             unicode = 13;
          else   
