@@ -23413,7 +23413,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          n_hidden = 0;
          for (i = 0, n_attachments = 0; i < MAX_ATTACHMENTS; i++) {
             att_inline[i] = 0;
-            att_hide[i] = 0;
+            att_hide[i] = getcfg(lbs->name, "Show attachments", str, sizeof(str)) && atoi(str) == 0;
 
             if (is_inline_attachment(encoding, message_id, text, i, attachment[i]))
                att_inline[i] = 1;
@@ -23590,8 +23590,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                strlcpy(file_name, lbs->data_dir, sizeof(file_name));
                strlcat(file_name, attachment[index], sizeof(file_name));
 
-               if ((!getcfg(lbs->name, "Show attachments", str, sizeof(str)) || atoi(str) == 1)
-                   && !att_hide[index] && display_inline) {
+               if (!att_hide[index] && display_inline) {
 
                   if (thumb_status) {
                      rsprintf("<tr><td class=\"attachmentframe\">\n");
