@@ -4630,6 +4630,9 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
             p += 41;
             old_text = xmalloc(size + 1);
             strlcpy(old_text, p, size);
+            if (old_text[strlen(old_text)-1] == '\n' ||
+                old_text[strlen(old_text)-1] == '\r')
+               old_text[strlen(old_text)-1] = 0;
          }
       }
 
@@ -8742,7 +8745,10 @@ void show_date_selector(int day, int month, int year, char *index)
 
    rsprintf("<select name=\"m%s\">\n", index);
 
-   rsprintf("<option value=\"\">\n");
+   if (isparam("nsel"))
+      rsprintf("<option value=\"<keep>\">- %s -\n", loc("keep original values"));
+   else
+      rsprintf("<option value=\"\">\n");
    for (i = 0; i < 12; i++)
       if (i + 1 == month)
          rsprintf("<option selected value=\"%d\">%s\n", i + 1, month_name(i));
@@ -8751,7 +8757,8 @@ void show_date_selector(int day, int month, int year, char *index)
    rsprintf("</select>\n");
 
    rsprintf("<select name=\"d%s\">", index);
-   rsprintf("<option selected value=\"\">\n");
+
+   rsprintf("<option value=\"\">\n");
    for (i = 0; i < 31; i++)
       if (i + 1 == day)
          rsprintf("<option selected value=%d>%d\n", i + 1, i + 1);
@@ -8759,11 +8766,11 @@ void show_date_selector(int day, int month, int year, char *index)
          rsprintf("<option value=%d>%d\n", i + 1, i + 1);
    rsprintf("</select>\n");
 
+   rsprintf("&nbsp;%s: ", loc("Year"));
    if (year)
-      rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y%s\" value=\"%d\">", loc("Year"),
-               index, year);
+      rsprintf("<input type=\"text\" size=5 maxlength=5 name=\"y%s\" value=\"%d\">", index, year);
    else
-      rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y%s\">", loc("Year"), index);
+      rsprintf("<input type=\"text\" size=5 maxlength=5 name=\"y%s\">", index);
 
    rsprintf("\n<script language=\"javascript\" type=\"text/javascript\">\n");
    rsprintf("<!--\n");
@@ -8790,7 +8797,11 @@ void show_time_selector(int hour, int min, int sec, char *index)
    int i;
 
    rsprintf("<select name=\"h%s\">\n", index);
-   rsprintf("<option value=\"\">\n");
+   
+   if (isparam("nsel"))
+      rsprintf("<option value=\"<keep>\">- %s -\n", loc("keep original values"));
+   else
+      rsprintf("<option value=\"\">\n");
    for (i = 0; i < 24; i++)
       if (i == hour)
          rsprintf("<option selected value=\"%d\">%02d\n", i, i);
@@ -8799,7 +8810,7 @@ void show_time_selector(int hour, int min, int sec, char *index)
    rsprintf("</select>&nbsp;<b>:</b>&nbsp;\n");
 
    rsprintf("<select name=\"n%s\">", index);
-   rsprintf("<option selected value=\"\">\n");
+   rsprintf("<option value=\"\">\n");
    for (i = 0; i < 60; i++)
       if (i == min)
          rsprintf("<option selected value=%d>%02d\n", i, i);
@@ -8807,8 +8818,8 @@ void show_time_selector(int hour, int min, int sec, char *index)
          rsprintf("<option value=%d>%02d\n", i, i);
    rsprintf("</select>&nbsp;<b>:</b>&nbsp;\n");
 
-   rsprintf("<select name=\"s%s\">", index);
-   rsprintf("<option selected value=\"\">\n");
+   rsprintf("<select name=\"c%s\">", index);
+   rsprintf("<option value=\"\">\n");
    for (i = 0; i < 60; i++)
       if (i == sec)
          rsprintf("<option selected value=%d>%02d\n", i, i);
@@ -8829,7 +8840,7 @@ void show_time_selector(int hour, int min, int sec, char *index)
    rsprintf("  document.form1.y%s.value = year;\n", index);
    rsprintf("  document.form1.h%s.value = d.getHours();\n", index);
    rsprintf("  document.form1.n%s.value = d.getMinutes();\n", index);
-   rsprintf("  document.form1.s%s.value = d.getSeconds();\n", index);
+   rsprintf("  document.form1.c%s.value = d.getSeconds();\n", index);
    rsprintf("}\n\n");
 
    rsprintf("  document.write(\"&nbsp;&nbsp;\");\n");
@@ -8914,7 +8925,7 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
          sprintf(str, "n%d", i);
          min = atoi(isparam(str) ? getparam(str) : "");
 
-         sprintf(str, "s%d", i);
+         sprintf(str, "c%d", i);
          sec = atoi(isparam(str) ? getparam(str) : "");
 
          memset(&ts, 0, sizeof(struct tm));
@@ -10084,14 +10095,16 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                hour = min = sec = -1;
                if (attrib[index][0]) {
                   ltime = atoi(attrib[index]);
-                  pts = localtime(&ltime);
-                  assert(pts);
-                  year = pts->tm_year + 1900;
-                  month = pts->tm_mon + 1;
-                  day = pts->tm_mday;
-                  hour = pts->tm_hour;
-                  min = pts->tm_min;
-                  sec = pts->tm_sec;
+                  if (ltime > 0) {
+                     pts = localtime(&ltime);
+                     assert(pts);
+                     year = pts->tm_year + 1900;
+                     month = pts->tm_mon + 1;
+                     day = pts->tm_mday;
+                     hour = pts->tm_hour;
+                     min = pts->tm_min;
+                     sec = pts->tm_sec;
+                  }
                }
 
                rsprintf("<td%s class=\"%s\">", title, class_value);
@@ -18323,7 +18336,7 @@ time_t retrieve_date(char *index, BOOL bstart)
    sprintf(pd, "d%s", index);
    sprintf(ph, "h%s", index);
    sprintf(pn, "n%s", index);
-   sprintf(ps, "s%s", index);
+   sprintf(ps, "c%s", index);
 
    time(&ltime);
    memcpy(&tms, localtime(&ltime), sizeof(tms));
@@ -21788,33 +21801,38 @@ void submit_elog(LOGBOOK * lbs)
             strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
          else {
 
-            sprintf(str, "y%d", i);
-            year = isparam(str) ? atoi(getparam(str)) : 0;
-            if (year < 100)
-               year += 2000;
-
             sprintf(str, "m%d", i);
-            month = isparam(str) ? atoi(getparam(str)) : 0;
-
-            sprintf(str, "d%d", i);
-            day = isparam(str) ? atoi(getparam(str)) : 0;
-
-            if (month == 0 || day == 0)
-               strcpy(attrib[i], "");
+            if (isparam(str) && strieq(getparam(str), "<keep>"))
+               strcpy(attrib[i], "<keep>");
             else {
-               memset(&tms, 0, sizeof(struct tm));
-               tms.tm_year = year - 1900;
-               tms.tm_mon = month - 1;
-               tms.tm_mday = day;
-               tms.tm_hour = 12;
+               sprintf(str, "y%d", i);
+               year = isparam(str) ? atoi(getparam(str)) : 0;
+               if (year < 100)
+                  year += 2000;
 
-               ltime = (int) mktime(&tms);
+               sprintf(str, "m%d", i);
+               month = isparam(str) ? atoi(getparam(str)) : 0;
 
-               if (ltime == -1) {
-                  show_error(loc("Date must be between 1970 and 2037"));
-                  return;
+               sprintf(str, "d%d", i);
+               day = isparam(str) ? atoi(getparam(str)) : 0;
+
+               if (month == 0 || day == 0)
+                  strcpy(attrib[i], "");
+               else {
+                  memset(&tms, 0, sizeof(struct tm));
+                  tms.tm_year = year - 1900;
+                  tms.tm_mon = month - 1;
+                  tms.tm_mday = day;
+                  tms.tm_hour = 12;
+
+                  ltime = (int) mktime(&tms);
+
+                  if (ltime == -1) {
+                     show_error(loc("Date must be between 1970 and 2037"));
+                     return;
+                  }
+                  sprintf(attrib[i], "%d", ltime);
                }
-               sprintf(attrib[i], "%d", ltime);
             }
          }
 
@@ -21824,45 +21842,50 @@ void submit_elog(LOGBOOK * lbs)
             strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
          else {
 
-            sprintf(str, "y%d", i);
-            year = isparam(str) ? atoi(getparam(str)) : 0;
-            if (year < 100)
-               year += 2000;
-
             sprintf(str, "m%d", i);
-            month = isparam(str) ? atoi(getparam(str)) : 0;
-
-            sprintf(str, "d%d", i);
-            day = isparam(str) ? atoi(getparam(str)) : 0;
-
-            sprintf(str, "h%d", i);
-            hour = isparam(str) ? atoi(getparam(str)) : 0;
-
-            sprintf(str, "n%d", i);
-            min = isparam(str) ? atoi(getparam(str)) : 0;
-
-            sprintf(str, "s%d", i);
-            sec = isparam(str) ? atoi(getparam(str)) : 0;
-
-            if (month == 0 || day == 0)
-               strcpy(attrib[i], "");
+            if (isparam(str) && strieq(getparam(str), "<keep>"))
+               strcpy(attrib[i], "<keep>");
             else {
-               memset(&tms, 0, sizeof(struct tm));
-               tms.tm_year = year - 1900;
-               tms.tm_mon = month - 1;
-               tms.tm_mday = day;
-               tms.tm_hour = hour;
-               tms.tm_min = min;
-               tms.tm_sec = sec;
-               tms.tm_isdst = -1;
+               sprintf(str, "y%d", i);
+               year = isparam(str) ? atoi(getparam(str)) : 0;
+               if (year < 100)
+                  year += 2000;
 
-               ltime = (int) mktime(&tms);
+               sprintf(str, "m%d", i);
+               month = isparam(str) ? atoi(getparam(str)) : 0;
 
-               if (ltime == -1) {
-                  show_error(loc("Date must be between 1970 and 2037"));
-                  return;
+               sprintf(str, "d%d", i);
+               day = isparam(str) ? atoi(getparam(str)) : 0;
+
+               sprintf(str, "h%d", i);
+               hour = isparam(str) ? atoi(getparam(str)) : 0;
+
+               sprintf(str, "n%d", i);
+               min = isparam(str) ? atoi(getparam(str)) : 0;
+
+               sprintf(str, "c%d", i);
+               sec = isparam(str) ? atoi(getparam(str)) : 0;
+
+               if (month == 0 || day == 0)
+                  strcpy(attrib[i], "");
+               else {
+                  memset(&tms, 0, sizeof(struct tm));
+                  tms.tm_year = year - 1900;
+                  tms.tm_mon = month - 1;
+                  tms.tm_mday = day;
+                  tms.tm_hour = hour;
+                  tms.tm_min = min;
+                  tms.tm_sec = sec;
+                  tms.tm_isdst = -1;
+
+                  ltime = (int) mktime(&tms);
+
+                  if (ltime == -1) {
+                     show_error(loc("Date must be between 1970 and 2037"));
+                     return;
+                  }
+                  sprintf(attrib[i], "%d", ltime);
                }
-               sprintf(attrib[i], "%d", ltime);
             }
          }
 
