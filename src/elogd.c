@@ -4587,7 +4587,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
       }
 
       lseek(fh, lbs->el_index[index].offset, SEEK_SET);
-      i = my_read(fh, message, TEXT_SIZE + 99);
+      i = my_read(fh, message, TEXT_SIZE + 100 - 1);
       if (i >= 0)
          message[i] = 0;
       else
