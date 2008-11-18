@@ -4588,7 +4588,10 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
 
       lseek(fh, lbs->el_index[index].offset, SEEK_SET);
       i = my_read(fh, message, TEXT_SIZE + 100);
-      message[i] = 0;
+      if (i >= 0)
+         message[i] = 0;
+      else
+         message[0] = 0;
 
       /* check for valid message */
       if (strncmp(message, "$@MID@$:", 8) != 0) {
@@ -8930,7 +8933,12 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
             strcpy(attrib[i], "");
 
       } else {
-         strlcpy(attrib[i], isparam(ua) ? getparam(ua) : "", NAME_LENGTH);
+         if (isparam(attr_list[i]))
+            strlcpy(attrib[i], getparam(attr_list[i]), NAME_LENGTH);
+         else if (isparam(ua))
+            strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
+         else
+            attrib[i][0] = 0;
       }
    }
 }
@@ -11331,7 +11339,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
 void show_find_form(LOGBOOK * lbs)
 {
-   int i, j;
+   int i, j, year, month, day, flag;
    char str[NAME_LENGTH], mode[NAME_LENGTH], comment[NAME_LENGTH], option[NAME_LENGTH], login_name[256],
       full_name[256], user_email[256], enc_attr[NAME_LENGTH], whole_attr[NAME_LENGTH], 
       attrib[MAX_N_ATTR][NAME_LENGTH];
@@ -11485,7 +11493,17 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf("<td class=\"attribvalue\"><table width=\"100%%\" cellspacing=0 border=0>\n");
    rsprintf("<tr><td width=\"1%%\">%s:<td>", loc("Start"));
 
-   show_date_selector(0, 0, 0, "a");
+   year = month = day = 0;
+   sprintf(str, "ya");
+   if (isparam(str))
+      year = atoi(getparam(str));
+   sprintf(str, "ma");
+   if (isparam(str))
+      month = atoi(getparam(str));
+   sprintf(str, "da");
+   if (isparam(str))
+      day = atoi(getparam(str));
+   show_date_selector(day, month, year, "a");
 
    rsprintf("&nbsp;&nbsp;/&nbsp;&nbsp;%s:&nbsp;", loc("Show last"));
 
@@ -11503,7 +11521,17 @@ void show_find_form(LOGBOOK * lbs)
 
    rsprintf("<tr><td width=\"1%%\">%s:<td>", loc("End"));
 
-   show_date_selector(0, 0, 0, "b");
+   year = month = day = 0;
+   sprintf(str, "yb");
+   if (isparam(str))
+      year = atoi(getparam(str));
+   sprintf(str, "mb");
+   if (isparam(str))
+      month = atoi(getparam(str));
+   sprintf(str, "db");
+   if (isparam(str))
+      day = atoi(getparam(str));
+   show_date_selector(day, month, year, "b");
 
    rsprintf("</td></tr></table></td></tr>\n");
 
@@ -11516,8 +11544,20 @@ void show_find_form(LOGBOOK * lbs)
 
             rsprintf("<table width=\"100%%\" cellspacing=0 border=0>\n");
             rsprintf("<tr><td width=\"1%%\">%s:<td>", loc("Start"));
+            
+            year = month = day = 0;
+            sprintf(str, "y%da", i);
+            if (isparam(str))
+               year = atoi(getparam(str));
+            sprintf(str, "m%da", i);
+            if (isparam(str))
+               month = atoi(getparam(str));
+            sprintf(str, "d%da", i);
+            if (isparam(str))
+               day = atoi(getparam(str));
+            
             sprintf(str, "%da", i);
-            show_date_selector(0, 0, 0, str);
+            show_date_selector(day, month, year, str);
             if (attr_flags[i] & AF_DATETIME) {
                rsprintf("&nbsp;&nbsp;");
                show_time_selector(-1, -1, -1, str);
@@ -11525,8 +11565,20 @@ void show_find_form(LOGBOOK * lbs)
 
             rsprintf("</td></tr>\n");
             rsprintf("<tr><td width=\"1%%\">%s:<td>", loc("End"));
+            
+            year = month = day = 0;
+            sprintf(str, "y%db", i);
+            if (isparam(str))
+               year = atoi(getparam(str));
+            sprintf(str, "m%db", i);
+            if (isparam(str))
+               month = atoi(getparam(str));
+            sprintf(str, "d%db", i);
+            if (isparam(str))
+               day = atoi(getparam(str));
+
             sprintf(str, "%db", i);
-            show_date_selector(0, 0, 0, str);
+            show_date_selector(day, month, year, str);
             if (attr_flags[i] & AF_DATETIME) {
                rsprintf("&nbsp;&nbsp;");
                show_time_selector(-1, -1, -1, str);
@@ -11565,28 +11617,42 @@ void show_find_form(LOGBOOK * lbs)
             }
 
          } else {
-
-            rsprintf("<input type=\"text\" size=\"30\" maxlength=\"80\" name=\"%s\">\n", attr_list[i]);
+            rsprintf("<input type=\"text\" size=\"30\" maxlength=\"80\" name=\"%s\" value=\"%s\">\n", 
+               attr_list[i], attrib[i]);
          }
 
       } else {
          if (strieq(attr_options[i][0], "boolean")) {
 
+            if (isparam(attr_list[i]) && *getparam(attr_list[i]))
+               flag = atoi(getparam(attr_list[i]));
+            else
+               flag = -1;
+
             sprintf(str, "%s_0", attr_list[i]);
             rsprintf("<span style=\"white-space:nowrap;\">\n");
-            rsprintf("<input type=radio id=\"%s\" name=\"%s\" value=\"0\">\n", str, attr_list[i]);
+            if (flag == 0)
+               rsprintf("<input type=radio checked id=\"%s\" name=\"%s\" value=\"0\">\n", str, attr_list[i]);
+            else
+               rsprintf("<input type=radio id=\"%s\" name=\"%s\" value=\"0\">\n", str, attr_list[i]);
             rsprintf("<label for=\"%s\">0</label>\n", str);
             rsprintf("</span>\n");
 
             sprintf(str, "%s_1", attr_list[i]);
             rsprintf("<span style=\"white-space:nowrap;\">\n");
-            rsprintf("<input type=radio id=\"%s\" name=\"%s\" value=\"1\">\n", str, attr_list[i]);
+            if (flag == 1)
+               rsprintf("<input type=radio checked id=\"%s\" name=\"%s\" value=\"1\">\n", str, attr_list[i]);
+            else
+               rsprintf("<input type=radio id=\"%s\" name=\"%s\" value=\"1\">\n", str, attr_list[i]);
             rsprintf("<label for=\"%s\">1</label>\n", str);
             rsprintf("</span>\n");
 
             sprintf(str, "%s_2", attr_list[i]);
             rsprintf("<span style=\"white-space:nowrap;\">\n");
-            rsprintf("<input type=radio checked id=\"%s\" name=\"%s\" value=\"\">\n", str, attr_list[i]);
+            if (flag == -1)
+               rsprintf("<input type=radio checked id=\"%s\" name=\"%s\" value=\"\">\n", str, attr_list[i]);
+            else
+               rsprintf("<input type=radio id=\"%s\" name=\"%s\" value=\"\">\n", str, attr_list[i]);
             rsprintf("<label for=\"%s\">%s</label>\n", str, loc("unspecified"));
             rsprintf("</span>\n");
          }
@@ -11615,8 +11681,12 @@ void show_find_form(LOGBOOK * lbs)
             for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
                sprintf(str, "%s_%d", attr_list[i], j);
 
-               rsprintf("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\"\">\n", str, str,
-                        attr_options[i][j]);
+               if (isparam(str))
+                  rsprintf("<nobr><input type=checkbox checked id=\"%s\" name=\"%s\" value=\"%s\"\">\n", 
+                           str, str, attr_options[i][j]);
+               else
+                  rsprintf("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\"\">\n", 
+                           str, str, attr_options[i][j]);
 
                rsprintf("<label for=\"%s\">%s</label></nobr>\n", str, attr_options[i][j]);
             }
@@ -11649,8 +11719,12 @@ void show_find_form(LOGBOOK * lbs)
    }
 
    rsprintf("<tr><td class=\"attribname\">%s:</td>", loc("Text"));
-   rsprintf
-       ("<td class=\"attribvalue\"><input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\">\n");
+   rsprintf("<td class=\"attribvalue\">\n");
+   if (isparam("subtext"))
+      strlcpy(str, getparam("subtext"), sizeof(str));
+   else
+      str[0] = 0;
+   rsprintf("<input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\" value=\"%s\">\n", str);
 
    rsprintf("<tr><td><td class=\"attribvalue\">\n");
    rsprintf("<input type=checkbox id=\"sall\" name=\"sall\" value=1>\n");
@@ -26418,7 +26492,7 @@ char remote_host[N_MAX_CONNECTION][256];
 int process_http_request(const char *request, int i_conn)
 {
    int i, n, authorized, header_length, content_length;
-   char str[1000], str2[1000], url[256], pwd[256], cl_pwd[256], format[256], cookie[256], boundary[256],
+   char str[1000], str2[1000], url[2000], pwd[256], cl_pwd[256], format[256], cookie[256], boundary[256],
        list[1000], theme[256], host_list[MAX_N_LIST][NAME_LENGTH], logbook[256], logbook_enc[256],
        global_cmd[256];
    char *p;
