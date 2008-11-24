@@ -26557,7 +26557,7 @@ int process_http_request(const char *request, int i_conn)
          if (str[i] == '=') {
             str[i] = 0;
             p += i + 1;
-            for (i = 0; *p && *p != ';' && *p != '\r' && *p != '\n'; i++)
+            for (i = 0; *p && *p != ';' && *p != '\r' && *p != '\n' && i < (int) sizeof(cookie)-1; i++)
                cookie[i] = *p++;
             cookie[i] = 0;
          } else {
