@@ -1391,7 +1391,7 @@ Encode the given string in-place by adding %XX escapes
    pd = str;
    p = (unsigned char *) ps;
    while (*p && pd < str + 250) {
-      if (strchr("%&=#?+<>", *p) || *p > 127) {
+      if (strchr("%&=#?+<>/", *p) || *p > 127) {
          sprintf((char *) pd, "%%%02X", *p);
          pd += 3;
          p++;
@@ -17491,7 +17491,7 @@ char *param_in_str(char *str, char *param)
 
 /*------------------------------------------------------------------*/
 
-void subst_param(char *str, int size, char *param, char *value)
+BOOL subst_param(char *str, int size, char *param, char *value)
 {
    int len;
    char *p1, *p2, *s, param_enc[256];
@@ -17505,7 +17505,7 @@ void subst_param(char *str, int size, char *param, char *value)
       s = param_in_str(str, param_enc);
 
       if (s == NULL)
-         return;
+         return FALSE;
 
       /* remove parameter */
       p1 = s - 1;
@@ -17516,7 +17516,7 @@ void subst_param(char *str, int size, char *param, char *value)
       if (!strchr(str, '?') && strchr(str, '&'))
          *strchr(str, '&') = '?';
 
-      return;
+      return TRUE;
    }
 
    if ((p1 = param_in_str(str, param_enc)) == NULL) {
@@ -17528,7 +17528,7 @@ void subst_param(char *str, int size, char *param, char *value)
       strlcat(str, param_enc, size);
       strlcat(str, "=", size);
       strlcat(str, value, size);
-      return;
+      return FALSE;
    }
 
    p1 += strlen(param_enc) + 1;
@@ -17547,6 +17547,7 @@ void subst_param(char *str, int size, char *param, char *value)
       xfree(s);
    }
 
+   return TRUE;
 }
 
 /*------------------------------------------------------------------*/
@@ -18797,7 +18798,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
        sort_attr[MAX_N_ATTR + 4][NAME_LENGTH], mode_cookie[80], charset[25], sort_item[NAME_LENGTH];
    char *p, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
    BOOL show_attachments, threaded, csv, xml, raw, mode_commands, expand, filtering, disp_filter, show_text,
-       text_in_attr, searched, found, disp_attr_link[MAX_N_ATTR + 4], sort_attributes;
+       text_in_attr, searched, flag, found, disp_attr_link[MAX_N_ATTR + 4], sort_attributes;
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2;
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
