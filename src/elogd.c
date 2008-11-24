@@ -11421,6 +11421,8 @@ void show_find_form(LOGBOOK * lbs)
       rsprintf("<input type=radio id=\"threaded\" name=\"mode\" value=\"threaded\">");
    rsprintf("<label for=\"threaded\">%s&nbsp;&nbsp;</label>\n", loc("Display threads"));
 
+   rsprintf("<b>%s:</b>&nbsp;&nbsp;", loc("Export to"));
+
    if (strieq(mode, "CSV1"))
       rsprintf("<input type=radio id=\"CSV1\" name=\"mode\" value=\"CSV1\" checked>");
    else
