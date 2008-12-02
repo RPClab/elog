@@ -50,6 +50,7 @@ which should be changed for the whole thread if that problem has been fixed.
 <LI><a href=#16>How can I mark a whole thread open or closed?
 <LI><a href=#17>Does elog have a spell checker?
 <LI><a href=#18>Why are entries with large attachments submitted so slowly?
+<LI><a href=#19>The elgod daemon crashes from time to time, what can I do?
 </OL>
 
 <hr>
@@ -338,6 +339,45 @@ that one can simply turn off the forwarding of email attachments with
 this causes only the attachment names being forwarded, not the attachments
 themselves.<p>
 
+<LI><a name=19><b>The elgod daemon crashes from time to time, what can I do?</b>
+<p>
+Bugs are constantly fixed inside elogd so a upgrade to the current
+version is recommended as a first measrue. If that does not help, the key
+will be the reproducibility of the crash. I only can fix problems if I can 
+reproduce them. Sometimes it's related to strange logbook entries which cause 
+elogd to crash when they are edited. So if there is a way to reproducible
+trigger the problem, I need the files and confiration related with it. If
+I can reproduce it in my local installation, I can fix it pretty soon.<p>
+
+If that is not possible, an alternative is to run elgod under a debugger, and
+do a stack trace if the program dies. Under linux, this can be done using
+the gdb debugger, which might look like this:
+<pre>
+[~/elog]$ gdb ./elogd
+GNU gdb Red Hat Linux (6.5-25.el5rh)
+...
+
+(gdb) run
+Starting program: /afs/psi.ch/user/r/ritt/elog/elogd
+elogd 2.7.5 built Dec  2 2008, 10:47:09 revision 2147
+ImageMagick detected
+Indexing logbooks ... test
+
+Program received signal SIGSEGV, Segmentation fault.
+0x08054beb in el_index_logbooks () at src/elogd.c:3892
+3892       *p = (char)1;
+(gdb) where
+#0  0x08054beb in el_index_logbooks () at src/elogd.c:3892
+#1  0x080b8774 in server_loop () at src/elogd.c:27565
+#2  0x080bbdd5 in main (argc=1, argv=0xbfee5b54) at src/elogd.c:28923
+(gdb)
+</pre>
+
+So the basic command is to make a stack trace with "where" after a
+segmentation fault. This tells me where in the code something wrong happened
+(in this case it was inside the function el_index_logbooks() at line 3892.
+Please send me this information and I will try then to figure out what was
+wrong.
 </OL>
 
 <HR>
