@@ -51,6 +51,7 @@ which should be changed for the whole thread if that problem has been fixed.
 <LI><a href=#17>Does elog have a spell checker?
 <LI><a href=#18>Why are entries with large attachments submitted so slowly?
 <LI><a href=#19>The elgod daemon crashes from time to time, what can I do?
+<LI><a href=#20>How can I create an ELOG entry automatically from a script?
 </OL>
 
 <hr>
@@ -377,7 +378,20 @@ So the basic command is to make a stack trace with "where" after a
 segmentation fault. This tells me where in the code something wrong happened
 (in this case it was inside the function el_index_logbooks() at line 3892.
 Please send me this information and I will try then to figure out what was
-wrong.
+wrong.<p>
+
+<LI><a name=20><b>How can I create an ELOG entry automatically from a script</b>
+<p>
+I agree, it's a bit hidden, but on the 
+<a href="https://midas.psi.ch/elog/userguide.html">User's Guide</a>, at the
+bootom of the page, last point, there is a description of the standalone
+"elog" utility, which can be used from a script or from another program to
+submit an automatic email entry. This works locally or remotely, with optional
+attachments. Enter "elog -h" for a full list of options. The elog utility
+is part of the distribution and resides in the same directory as the elogd
+daemon.
+<p>
+
 </OL>
 
 <HR>
