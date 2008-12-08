@@ -1082,41 +1082,6 @@ Preset Author = $long_name
 attribute which has an options list, the preset value is selected in the drop
 down box by default.<br>
         <br>
-        A special option are automatically generated tags, which are
-        automatically incremented for each new message. This is achieved by
-        putting #'s into the preset string, which is used as a placeholder for
-        the incrementing index. Each "#" stands for one digit, thus the
-        statement
-        <pre>
-Preset Number = XYZ-#####
-</pre>results in automatically created attributes <i>"Number"</i> of the form
-        <pre>
-XYZ-00001
-XYZ-00002
-XYZ-00003
-</pre>and so on. In addition to the #'s one may specify format specifiers which
-are passed to the <a href="strftime.txt">
-        strftime</a> function. This allows to create tags wich contain the
-        current year, month and so on. Once the date part of the attribute
-        changes, the index restarts from one. The statement
-        <pre>
-Preset Number = XYZ-%Y-%b-###
-</pre>results in automatically created attributes <i>"Number"</i> of the form
-        <pre>
-XYZ-2005-Oct-001
-XYZ-2005-Oct-002
-XYZ-2005-Oct-003
-</pre>
-        <p>
-          and
-        </p>
-        <pre>
-XYZ-2005-Nov-001
-XYZ-2005-Nov-002
-</pre>
-        <p>
-          on the next month.
-        </p>
       </li>
       <li>
         <b><code>Preset text = &lt;string&gt; or &lt;file&gt;</code></b><br>
@@ -1362,6 +1327,40 @@ Subst Author = $author from $remote_host
   Subst Info = $shell(cat /tmp/filename)              (Unix)
   Subst Info = $shell(type c:\tmp\filename)           (Windows)
 </pre>
+<br>
+        A special option are automatically generated tags, which are
+        automatically incremented for each new message. This is achieved by
+        putting #'s into the substitution string, which is used as a placeholder for
+        the incrementing index. Each "#" stands for one digit, thus the
+        statement
+        <pre>
+Subst Number = XYZ-#####
+</pre>results in automatically created attributes <i>"Number"</i> of the form
+        <pre>
+XYZ-00001
+XYZ-00002
+XYZ-00003
+</pre>and so on. In addition to the #'s one may specify format specifiers which
+are passed to the <a href="strftime.txt">
+        strftime</a> function. This allows to create tags wich contain the
+        current year, month and so on. Once the date part of the attribute
+        changes, the index restarts from one. The statement
+        <pre>
+Subst Number = XYZ-%Y-%b-###
+</pre>results in automatically created attributes <i>"Number"</i> of the form
+        <pre>
+XYZ-2005-Oct-001
+XYZ-2005-Oct-002
+XYZ-2005-Oct-003</pre>
+        <br>
+          and
+        <br>
+        <pre>
+XYZ-2005-Nov-001
+XYZ-2005-Nov-002</pre>
+        <br>
+          on the next month.
+        <br>
       </li>
       <li>
         <b><code>Remove on reply = &lt;list&gt;</code></b><br>

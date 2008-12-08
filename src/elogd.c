@@ -21920,7 +21920,7 @@ void submit_elog(LOGBOOK * lbs)
          if (getcfg(lbs->name, str, subst_str, sizeof(subst_str))) {
             strsubst_list(subst_str, sizeof(subst_str), slist, svalue, n);
 
-            /* check for index substitution */
+            /* check for index substitution if not in edit mode */
             if (!bedit && strchr(subst_str, '#')) {
                /* get index */
                get_auto_index(lbs, i, subst_str, str, sizeof(str));
