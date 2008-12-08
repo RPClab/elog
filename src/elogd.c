@@ -21581,6 +21581,7 @@ void submit_elog(LOGBOOK * lbs)
    struct tm tms;
 
    bmultiedit = isparam("nsel");
+   bedit = isparam("edit_id");
 
    /* check for required attributs */
    missing = 0;
@@ -21918,6 +21919,14 @@ void submit_elog(LOGBOOK * lbs)
          sprintf(str, "Subst %s", attr_list[i]);
          if (getcfg(lbs->name, str, subst_str, sizeof(subst_str))) {
             strsubst_list(subst_str, sizeof(subst_str), slist, svalue, n);
+
+            /* check for index substitution */
+            if (!bedit && strchr(subst_str, '#')) {
+               /* get index */
+               get_auto_index(lbs, i, subst_str, str, sizeof(str));
+               strcpy(subst_str, str);
+            }
+
             strcpy(attrib[i], subst_str);
          }
       }
@@ -21938,11 +21947,9 @@ void submit_elog(LOGBOOK * lbs)
    date[0] = 0;
    resubmit_orig = 0;
    locked_by[0] = 0;
-   bedit = FALSE;
 
    if (isparam("edit_id") && isparam("resubmit") && atoi(getparam("resubmit")) == 1) {
       resubmit_orig = atoi(getparam("edit_id"));
-      bedit = TRUE;
 
       /* get old links */
       el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0, NULL, 0, in_reply_to, reply_to, NULL, NULL, NULL);
@@ -21966,7 +21973,6 @@ void submit_elog(LOGBOOK * lbs)
       date[0] = 0;
    } else {
       if (isparam("edit_id")) {
-         bedit = TRUE;
          message_id = atoi(getparam("edit_id"));
          strcpy(in_reply_to, "<keep>");
          strcpy(reply_to, "<keep>");
