@@ -2085,8 +2085,7 @@ void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to, ch
    snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1, "User-Agent: Elog Version %s\r\n",
             VERSION);
 
-   if (multipart)
-      strlcat(mail_text, "MIME-Version: 1.0\r\n", size);
+   strlcat(mail_text, "MIME-Version: 1.0\r\n", size);
 
    memset(subject_enc, 0, sizeof(subject_enc));
 
