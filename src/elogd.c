@@ -1391,7 +1391,7 @@ Encode the given string in-place by adding %XX escapes
    pd = str;
    p = (unsigned char *) ps;
    while (*p && pd < str + 250) {
-      if (strchr("%&=#?+<>/", *p) || *p > 127) {
+      if (strchr("%&=#?+<>", *p) || *p > 127) {
          sprintf((char *) pd, "%%%02X", *p);
          pd += 3;
          p++;
@@ -1417,7 +1417,7 @@ Do the same including '/' characters
    pd = str;
    p = (unsigned char *) ps;
    while (*p && pd < str + 250) {
-      if (strchr("%&=#?+/", *p) || *p > 127) {
+      if (strchr("%&=#?+<>/", *p) || *p > 127) {
          sprintf((char *) pd, "%%%02X", *p);
          pd += 3;
          p++;
@@ -17498,7 +17498,7 @@ BOOL subst_param(char *str, int size, char *param, char *value)
    char *p1, *p2, *s, param_enc[256];
 
    strlcpy(param_enc, param, sizeof(param_enc));
-   url_encode(param_enc, sizeof(param_enc));
+   url_slash_encode(param_enc, sizeof(param_enc));
 
    if (!value[0]) {
 
