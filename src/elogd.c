@@ -17284,7 +17284,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                      } else {
                         rsprintf("<a name=\"att%d\" href=\"%s\">\n", index + 1, ref);
                         strlcpy(str, ref, sizeof(str));
-                        if (chkext(str, ".pdf") || chkext(str, ".ps") | chkext(str, ".eps"))
+                        if (chkext(str, ".pdf") || chkext(str, ".ps"))
                            if (strrchr(str, '.'))
                               *strrchr(str, '.') = 0;
                         strlcat(str, ".png", sizeof(str));
