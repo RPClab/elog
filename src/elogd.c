@@ -8882,65 +8882,73 @@ void attrib_from_param(int n_attr, char attrib[MAX_N_ATTR][NAME_LENGTH])
          }
       } else if (attr_flags[i] & AF_DATE) {
 
-         sprintf(str, "y%d", i);
-         year = atoi(isparam(str) ? getparam(str) : "");
-         if (year < 100)
-            year += 2000;
+         if (isparam(ua))
+            strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
+         else {
+            sprintf(str, "y%d", i);
+            year = atoi(isparam(str) ? getparam(str) : "");
+            if (year < 100)
+               year += 2000;
 
-         sprintf(str, "m%d", i);
-         month = atoi(isparam(str) ? getparam(str) : "");
+            sprintf(str, "m%d", i);
+            month = atoi(isparam(str) ? getparam(str) : "");
 
-         sprintf(str, "d%d", i);
-         day = atoi(isparam(str) ? getparam(str) : "");
+            sprintf(str, "d%d", i);
+            day = atoi(isparam(str) ? getparam(str) : "");
 
-         memset(&ts, 0, sizeof(struct tm));
-         ts.tm_year = year - 1900;
-         ts.tm_mon = month - 1;
-         ts.tm_mday = day;
-         ts.tm_hour = 12;
+            memset(&ts, 0, sizeof(struct tm));
+            ts.tm_year = year - 1900;
+            ts.tm_mon = month - 1;
+            ts.tm_mday = day;
+            ts.tm_hour = 12;
 
-         if (month && day) {
-            ltime = mktime(&ts);
-            sprintf(attrib[i], "%d", (int) ltime);
-         } else
-            strcpy(attrib[i], "");
+            if (month && day) {
+               ltime = mktime(&ts);
+               sprintf(attrib[i], "%d", (int) ltime);
+            } else
+               strcpy(attrib[i], "");
+         }
 
       } else if (attr_flags[i] & AF_DATETIME) {
 
-         sprintf(str, "y%d", i);
-         year = atoi(isparam(str) ? getparam(str) : "");
-         if (year < 100)
-            year += 2000;
+         if (isparam(ua))
+            strlcpy(attrib[i], getparam(ua), NAME_LENGTH);
+         else {
+            sprintf(str, "y%d", i);
+            year = atoi(isparam(str) ? getparam(str) : "");
+            if (year < 100)
+               year += 2000;
 
-         sprintf(str, "m%d", i);
-         month = atoi(isparam(str) ? getparam(str) : "");
+            sprintf(str, "m%d", i);
+            month = atoi(isparam(str) ? getparam(str) : "");
 
-         sprintf(str, "d%d", i);
-         day = atoi(isparam(str) ? getparam(str) : "");
+            sprintf(str, "d%d", i);
+            day = atoi(isparam(str) ? getparam(str) : "");
 
-         sprintf(str, "h%d", i);
-         hour = atoi(isparam(str) ? getparam(str) : "");
+            sprintf(str, "h%d", i);
+            hour = atoi(isparam(str) ? getparam(str) : "");
 
-         sprintf(str, "n%d", i);
-         min = atoi(isparam(str) ? getparam(str) : "");
+            sprintf(str, "n%d", i);
+            min = atoi(isparam(str) ? getparam(str) : "");
 
-         sprintf(str, "c%d", i);
-         sec = atoi(isparam(str) ? getparam(str) : "");
+            sprintf(str, "c%d", i);
+            sec = atoi(isparam(str) ? getparam(str) : "");
 
-         memset(&ts, 0, sizeof(struct tm));
-         ts.tm_year = year - 1900;
-         ts.tm_mon = month - 1;
-         ts.tm_mday = day;
-         ts.tm_hour = hour;
-         ts.tm_min = min;
-         ts.tm_sec = sec;
-         ts.tm_isdst = -1;
+            memset(&ts, 0, sizeof(struct tm));
+            ts.tm_year = year - 1900;
+            ts.tm_mon = month - 1;
+            ts.tm_mday = day;
+            ts.tm_hour = hour;
+            ts.tm_min = min;
+            ts.tm_sec = sec;
+            ts.tm_isdst = -1;
 
-         if (month && day) {
-            ltime = mktime(&ts);
-            sprintf(attrib[i], "%d", (int) ltime);
-         } else
-            strcpy(attrib[i], "");
+            if (month && day) {
+               ltime = mktime(&ts);
+               sprintf(attrib[i], "%d", (int) ltime);
+            } else
+               strcpy(attrib[i], "");
+         }
 
       } else {
          if (isparam(attr_list[i]))
