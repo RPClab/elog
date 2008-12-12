@@ -9584,17 +9584,19 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          strcpy(ua, attr_list[i]);
          stou(ua);
 
-         rsprintf("  for (var i=0 ; i<document.form1.%s.value.length ; i++)\n", ua);
-         rsprintf("    if (document.form1.%s.value.charAt(i) != \",\" &&\n", ua);
-         rsprintf("        document.form1.%s.value.charAt(i) != \".\" &&\n", ua);
-         rsprintf("        document.form1.%s.value.charAt(i) != \"-\" &&\n", ua);
-         rsprintf("        (document.form1.%s.value.charAt(i) < \"0\" ||\n", ua);
-         rsprintf("         document.form1.%s.value.charAt(i) > \"9\")) { break }\n", ua);
-         rsprintf("  if (i<document.form1.%s.value.length) {\n", ua);
+         rsprintf("  if (document.form1.%s.value != '- %s -') {\n", ua, loc("keep original values"));
+         rsprintf("    for (var i=0 ; i<document.form1.%s.value.length ; i++)\n", ua);
+         rsprintf("      if (document.form1.%s.value.charAt(i) != \",\" &&\n", ua);
+         rsprintf("          document.form1.%s.value.charAt(i) != \".\" &&\n", ua);
+         rsprintf("          document.form1.%s.value.charAt(i) != \"-\" &&\n", ua);
+         rsprintf("          (document.form1.%s.value.charAt(i) < \"0\" ||\n", ua);
+         rsprintf("           document.form1.%s.value.charAt(i) > \"9\")) { break }\n", ua);
+         rsprintf("    if (i<document.form1.%s.value.length) {\n", ua);
          sprintf(str, loc("Please enter numeric value for '%s'"), attr_list[i]);
-         rsprintf("    alert(\"%s\");\n", str);
-         rsprintf("    document.form1.%s.focus();\n", ua);
-         rsprintf("    return false;\n");
+         rsprintf("      alert(\"%s\");\n", str);
+         rsprintf("      document.form1.%s.focus();\n", ua);
+         rsprintf("      return false;\n");
+         rsprintf("    }\n");
          rsprintf("  }\n");
       }
 
@@ -21664,7 +21666,8 @@ void submit_elog(LOGBOOK * lbs)
             if (!isdigit(str[i]))
                break;
 
-         if (i < (int) strlen(str) && strcmp(str, "<keep>") != 0) {
+         sprintf(str2, "- %s -", loc("keep original values"));
+         if (i < (int) strlen(str) && strcmp(str, "<keep>") != 0 && strcmp(str, str2) != 0) {
             sprintf(error, loc("Error: Attribute <b>%s</b> must be numeric"), attr_list[index]);
             show_error(error);
             return;
