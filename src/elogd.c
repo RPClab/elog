@@ -10396,6 +10396,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      if (getcfg(lbs->name, str, comment, sizeof(comment)))
                         sprintf(tooltip, " title=\"%s\"", comment);
 
+                     sprintf(str, "Tooltip %s %s", attr_list[index], attr_options[index][i]);
+                     tooltip[0] = 0;
+                     if (getcfg(lbs->name, str, comment, sizeof(comment)))
+                        sprintf(tooltip, " title=\"%s\"", comment);
+
                      sprintf(str, "%s_%d", ua, i);
                      rsprintf("<span%s style=\"white-space:nowrap;\">\n", tooltip);
 
