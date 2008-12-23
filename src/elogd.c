@@ -4897,10 +4897,11 @@ int el_delete_message(LOGBOOK * lbs, int message_id, BOOL delete_attachments,
 
  \********************************************************************/
 {
-   int i, index, n, size, fh, tail_size, old_offset;
+   int i, index, n, size, fh, tail_size, old_offset, n_attr;
    char str[MAX_PATH_LENGTH], file_name[MAX_PATH_LENGTH], reply_to[MAX_REPLY_TO * 10], in_reply_to[256];
    char *buffer, *p;
    char *message, attachment_all[64 * MAX_ATTACHMENTS];
+   char attrib[MAX_N_ATTR][NAME_LENGTH];
 
    for (index = 0; index < *lbs->n_el_index; index++)
       if (lbs->el_index[index].message_id == message_id)
@@ -4985,6 +4986,14 @@ int el_delete_message(LOGBOOK * lbs, int message_id, BOOL delete_attachments,
    el_decode(message, "Reply to: ", reply_to);
    el_decode(message, "In reply to: ", in_reply_to);
 
+   /* decoded attributes */
+   for (i = 0;; i++) {
+      el_enum_attr(message, i, attr_list[i], attrib[i]);
+      if (!attr_list[i][0])
+         break;
+   }
+   n_attr = i;
+
    /* buffer tail of logfile */
    lseek(fh, 0, SEEK_END);
    tail_size = TELL(fh) - (lbs->el_index[index].offset + size);
@@ -5065,7 +5074,7 @@ int el_delete_message(LOGBOOK * lbs, int message_id, BOOL delete_attachments,
 
    /* execute shell if requested */
    if (getcfg(lbs->name, "Execute delete", str, sizeof(str)))
-      execute_shell(lbs, message_id, NULL, NULL, str);
+      execute_shell(lbs, message_id, attrib, NULL, str);
 
    return EL_SUCCESS;
 }
