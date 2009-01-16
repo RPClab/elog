@@ -7,14 +7,13 @@ function getSelection(text)
       rng = sel.createRange();
       rng.colapse;
       return rng.text; 
-   } else if (browser == 'Mozilla' || browser == 'Safari')
+   } else {
       if (text.selectionEnd > 0 && text.selectionEnd != text.selectionStart && 
           text.value.charAt(text.selectionEnd-1) == ' ')
          return text.value.substring(text.selectionStart, text.selectionEnd-1);
       else
          return text.value.substring(text.selectionStart, text.selectionEnd);
-   else 
-      return "";
+   }
 }
 
 function replaceSelection(doc, text, newSelection, cursorPos)
@@ -31,7 +30,7 @@ function replaceSelection(doc, text, newSelection, cursorPos)
          rng.moveEnd('character', -(newSelection.length-cursorPos));
          rng.select();
       }
-   } else if (browser == 'Mozilla' || browser == 'Safari') {
+   } else {
       start = text.selectionStart;
       stop  = text.selectionEnd;
       if (text.selectionEnd > 0 && text.selectionStart != text.selectionEnd &&
@@ -48,8 +47,7 @@ function replaceSelection(doc, text, newSelection, cursorPos)
          text.selectionStart = start +	cursorPos;
          text.selectionEnd   = text.selectionStart;
       }
-   } else
-      text.value += newSelection;
+   }
 }
 
 function elcode(text, tag, value)
