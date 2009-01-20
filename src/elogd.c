@@ -3443,20 +3443,32 @@ void retrieve_email_from(LOGBOOK * lbs, char *ret, char *ret_name, char attrib[M
    int i;
 
    if (getcfg(lbs->name, "Use Email from", str, sizeof(str))) {
-      strlcpy(email_from, str, sizeof(email_from));
+      if (str[0] != '<') {
+         strlcpy(email_from, "<", sizeof(email_from));
+         strlcat(email_from, str, sizeof(email_from));
+         strlcat(email_from, ">", sizeof(email_from));
+      } else
+         strlcpy(email_from, str, sizeof(email_from));
       strlcpy(email_from_name, str, sizeof(email_from));
    } else if (isparam("full_name") && isparam("user_email")) {
       strlcpy(email_from_name, getparam("full_name"), sizeof(email_from_name));
       strlcat(email_from_name, " <", sizeof(email_from_name));
       strlcat(email_from_name, getparam("user_email"), sizeof(email_from_name));
       strlcat(email_from_name, ">", sizeof(email_from_name));
-      strlcpy(email_from, getparam("user_email"), sizeof(email_from));
+      strlcpy(email_from, "<", sizeof(email_from));
+      strlcat(email_from, getparam("user_email"), sizeof(email_from));
+      strlcat(email_from, ">", sizeof(email_from));
    } else if (getcfg(lbs->name, "Default Email from", str, sizeof(str))) {
-      strlcpy(email_from, str, sizeof(email_from));
+      if (str[0] != '<') {
+         strlcpy(email_from, "<", sizeof(email_from));
+         strlcat(email_from, str, sizeof(email_from));
+         strlcat(email_from, ">", sizeof(email_from));
+      } else
+         strlcpy(email_from, str, sizeof(email_from));
       strlcpy(email_from_name, str, sizeof(email_from));
    } else {
       sprintf(email_from_name, "ELog <ELog@%s>", host_name);
-      sprintf(email_from, "ELog@%s", host_name);
+      sprintf(email_from, "<ELog@%s>", host_name);
    }
 
    if (attrib) {
