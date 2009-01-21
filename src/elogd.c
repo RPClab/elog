@@ -14019,7 +14019,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
    BOOL first, in_quotes, filltext;
    time_t ltime;
 
-   list = xmalloc(MAX_N_ATTR * NAME_LENGTH);
+   list = xmalloc((MAX_N_ATTR+2) * NAME_LENGTH);
    line = xmalloc(10000);
 
    first = TRUE;
@@ -14199,6 +14199,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
       } else {
 
          datecol = 1;
+         attr_offset = 2;
 
          if (isparam("preview")) {
             rsprintf("<tr>\n");
