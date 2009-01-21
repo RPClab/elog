@@ -2274,14 +2274,18 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
       recv_string(s, str, strsize, 3000);
       if (strchr(str, '\r'))
          *strchr(str, '\r') = 0;
-      if (verbose)
-         efputs(decoded);
-      write_logfile(lbs, str);
-      base64_decode(str + 4, decoded);
-      strcat(decoded, "\n");
-      if (verbose)
-         efputs(decoded);
-      write_logfile(lbs, decoded);
+      if (atoi(str) >= 100) {
+         strcat(str, "\n");
+         if (verbose)
+            efputs(str);
+         write_logfile(lbs, str);
+      } else {
+         base64_decode(str + 4, decoded);
+         strcat(decoded, "\n");
+         if (verbose)
+            efputs(decoded);
+         write_logfile(lbs, decoded);
+      }
       if (!check_smtp_error(str, 334, error, error_size))
          goto smtp_error;
 
