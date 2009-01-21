@@ -11221,7 +11221,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                      /* ImageMagick available, so get image size */
                      rsprintf("<b>%s</b>&nbsp;\n", att[index] + 14);
-                     sprintf(cmd, "identify -format '%%wx%%h' '%s'", file_name);
+                     if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
+                        sprintf(cmd, "identify -format '%%wx%%h' '%s[0]'", file_name);
+                     else
+                        sprintf(cmd, "identify -format '%%wx%%h' '%s'", file_name);
 #ifdef OS_WINNT
                      for (i = 0; i < (int) strlen(cmd); i++)
                         if (cmd[i] == '\'')
@@ -26568,6 +26571,10 @@ int process_http_request(const char *request, int i_conn)
    time_t now;
    struct tm *ts;
 
+   const char *cookie_list[] = 
+   
+   {"upwd", "unm", "elmode", "urem", "wpwd", "apwd", "uname", "upassword", "elattach", "hsm", NULL};
+
    if (!strchr(request, '\r'))
       return 0;
 
@@ -26601,8 +26608,9 @@ int process_http_request(const char *request, int i_conn)
          if (str[i] == '=') {
             str[i] = 0;
             p += i + 1;
-            for (i = 0; *p && *p != ';' && *p != '\r' && *p != '\n' && i < (int) sizeof(cookie)-1; i++)
-               cookie[i] = *p++;
+            for (i = 0; *p && *p != ';' && *p != '\r' && *p != '\n' ; )
+               if (i < (int) sizeof(cookie)-1)
+                  cookie[i++] = *p++;
             cookie[i] = 0;
          } else {
             /* empty cookie */
@@ -26612,7 +26620,16 @@ int process_http_request(const char *request, int i_conn)
          }
 
          /* store cookie as parameter */
-         setparam(str, cookie);
+         for(i=0; cookie_list[i]; i++) {
+            if(strcmp(cookie_list[i], str) == 0) {
+               setparam(str, cookie);
+               break;
+            }
+         }
+
+         if (cookie_list[i] == NULL)
+            printf("Received unknown cookie \"%s\"\n", str);
+
       } while (*p && *p == ';');
    }
 
