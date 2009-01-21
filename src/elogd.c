@@ -14015,7 +14015,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
    const char *p;
    char *line, *list;
    char str[256], date[80], sep[80];
-   int i, j, n, n_attr, iline, n_imported, textcol, attr_offset;
+   int i, j, n, n_attr, iline, n_imported, textcol, datecol, attr_offset;
    BOOL first, in_quotes, filltext;
    time_t ltime;
 
@@ -14027,6 +14027,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
    iline = n_imported = 0;
    filltext = FALSE;
    textcol = -1;
+   datecol = -1;
    attr_offset = 0;
 
    strcpy(sep, ",");
@@ -14153,7 +14154,12 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
       /* derive attributes from first line */
       if (first && isparam("head")) {
 
-         /* skip message ID and date attributes */
+         /* check for date column */
+         for (i = attr_offset = 0; i < n; i++)
+            if (strieq(list + i * NAME_LENGTH, "Date"))
+               datecol = i;
+
+         /* skip message ID */
          for (i = attr_offset = 0; i < n; i++)
             if (strieq(list + i * NAME_LENGTH, "Message ID") || strieq(list + i * NAME_LENGTH, "Date"))
                attr_offset++;
@@ -14192,6 +14198,8 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
 
       } else {
 
+         datecol = 1;
+
          if (isparam("preview")) {
             rsprintf("<tr>\n");
             for (i = j = attr_offset; i < n_attr; i++) {
@@ -14227,9 +14235,11 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
 
          } else {
 
+            /* get date if present */
+            strlcpy(date, list + datecol*NAME_LENGTH, sizeof(date));
+
             if (!filltext) {
                /* submit entry */
-               date[0] = 0;
                if (el_submit
                    (lbs, 0, FALSE, date, attr_list,
                     (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH), n_attr, "", "", "", "plain",
@@ -14243,7 +14253,6 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
                   strlcpy(list + i * NAME_LENGTH, list + (i + 1) * NAME_LENGTH, NAME_LENGTH);
 
                /* submit entry */
-               date[0] = 0;
                if (el_submit
                    (lbs, 0, FALSE, date, attr_list,
                     (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH), n_attr, line, "", "", "plain",
