@@ -14244,34 +14244,42 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
             strlcpy(date, list + datecol*NAME_LENGTH, sizeof(date));
             ltime = date_to_ltime(date);
             if (ltime <= 0) {
-               strcpy(str, loc("Invalid date format"));
-               strlcat(str, ": \"", sizeof(str));
-               strlcat(str, date, sizeof(str));
-               strlcat(str, "\"", sizeof(str));
-               show_error(str);
-               return;
-            } else {
-               if (!filltext) {
-                  /* submit entry */
-                  if (el_submit
-                      (lbs, 0, FALSE, date, attr_list,
-                       (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH), n_attr, "", "", "", "plain",
-                       NULL, TRUE, NULL))
-                     n_imported++;
-               } else {
-                  strlcpy(line, list + textcol * NAME_LENGTH, 10000);
-                  insert_breaks(line, 78, 10000);
-
-                  for (i = textcol; i < n_attr + attr_offset; i++)
-                     strlcpy(list + i * NAME_LENGTH, list + (i + 1) * NAME_LENGTH, NAME_LENGTH);
-
-                  /* submit entry */
-                  if (el_submit
-                      (lbs, 0, FALSE, date, attr_list,
-                       (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH), n_attr, line, "", "", "plain",
-                       NULL, TRUE, NULL))
-                     n_imported++;
+               /* try other date formats */
+               ltime = convert_datetime(date);
+               if (ltime <= 0)
+                  ltime = convert_date(date);
+               if (ltime <= 0) {
+                  strcpy(str, loc("Invalid date format"));
+                  strlcat(str, ": \"", sizeof(str));
+                  strlcat(str, date, sizeof(str));
+                  strlcat(str, "\"", sizeof(str));
+                  show_error(str);
+                  return;
                }
+               /* convert back ltime to date */
+               get_rfc2822_date(date, sizeof(date), ltime);
+            }
+
+            if (!filltext) {
+               /* submit entry */
+               if (el_submit
+                   (lbs, 0, FALSE, date, attr_list,
+                    (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH), n_attr, "", "", "", "plain",
+                    NULL, TRUE, NULL))
+                  n_imported++;
+            } else {
+               strlcpy(line, list + textcol * NAME_LENGTH, 10000);
+               insert_breaks(line, 78, 10000);
+
+               for (i = textcol; i < n_attr + attr_offset; i++)
+                  strlcpy(list + i * NAME_LENGTH, list + (i + 1) * NAME_LENGTH, NAME_LENGTH);
+
+               /* submit entry */
+               if (el_submit
+                   (lbs, 0, FALSE, date, attr_list,
+                    (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH), n_attr, line, "", "", "plain",
+                    NULL, TRUE, NULL))
+                  n_imported++;
             }
          }
       }
@@ -18596,8 +18604,12 @@ time_t convert_datetime(char *date_string)
    } else
       return 0;
 
+   if (!strchr(p, ' '))
+      return 0;
+   p = strchr(p, ' ')+1;
+
    strlcpy(str, p, sizeof(str));
-   p = strtok(p, ":");
+   p = strtok(str, ":");
    if (p) {
       hour = atoi(p);
       p = strtok(NULL, ":");
