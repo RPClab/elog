@@ -2274,7 +2274,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
       recv_string(s, str, strsize, 3000);
       if (strchr(str, '\r'))
          *strchr(str, '\r') = 0;
-      if (atoi(str) >= 100) {
+      if (atoi(str) != 334) {
          strcat(str, "\n");
          if (verbose)
             efputs(str);
@@ -2294,8 +2294,8 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
       strcat(str, "\r\n");
       send(s, str, strlen(str), 0);
       if (verbose)
-         efputs(str);
-      write_logfile(lbs, str);
+         efputs(decoded);
+      write_logfile(lbs, decoded);
       recv_string(s, str, strsize, 3000);
       if (strchr(str, '\r'))
          *strchr(str, '\r') = 0;
@@ -13908,11 +13908,11 @@ void show_import_page_csv(LOGBOOK * lbs)
       rsprintf("<input type=checkbox id=\"head\" name=\"head\" value=\"1\">\n");
    rsprintf("<label for=\"head\">%s</label><br>\n", loc("Derive attributes from CSV file"));
 
-   if (isparam("ignore"))
-      rsprintf("<input type=checkbox checked id=\"ignore\" name=\"ignore\" value=\"1\">\n");
+   if (isparam("notignore"))
+      rsprintf("<input type=checkbox checked id=\"notignore\" name=\"notignore\" value=\"1\">\n");
    else
-      rsprintf("<input type=checkbox id=\"ignore\" name=\"ignore\" value=\"1\">\n");
-   rsprintf("<label for=\"ignore\">%s</label><br>\n", loc("Ignore first line"));
+      rsprintf("<input type=checkbox id=\"notignore\" name=\"notignore\" value=\"1\">\n");
+   rsprintf("<label for=\"notignore\">%s</label><br>\n", loc("Do not ignore first line"));
 
    rsprintf("<input type=checkbox id=\"preview\" name=\"preview\" value=\"1\">\n");
    rsprintf("<label for=\"preview\">%s</label><br>\n", loc("Preview import"));
@@ -14078,8 +14078,8 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
       rsprintf("<input type=hidden name=sep value=\"%s\">\n", sep);
       if (isparam("head"))
          rsprintf("<input type=hidden name=head value=\"%s\">\n", getparam("head"));
-      if (isparam("ignore"))
-         rsprintf("<input type=hidden name=ignore value=\"%s\">\n", getparam("ignore"));
+      if (isparam("notignore"))
+         rsprintf("<input type=hidden name=notignore value=\"%s\">\n", getparam("notignore"));
       if (isparam("filltext"))
          rsprintf("<input type=hidden name=filltext value=\"%s\">\n", getparam("filltext"));
       rsprintf("<input type=hidden name=csvfile value=\"%s\">\n", csvfile);
@@ -14116,7 +14116,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
       }
 
       /* ignore first line */
-      if (first && isparam("ignore")) {
+      if (first && !isparam("notignore")) {
          first = FALSE;
          continue;
       }
@@ -14240,29 +14240,38 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
 
          } else {
 
-            /* get date if present */
+            /* get date and check it */
             strlcpy(date, list + datecol*NAME_LENGTH, sizeof(date));
-
-            if (!filltext) {
-               /* submit entry */
-               if (el_submit
-                   (lbs, 0, FALSE, date, attr_list,
-                    (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH), n_attr, "", "", "", "plain",
-                    NULL, TRUE, NULL))
-                  n_imported++;
+            ltime = date_to_ltime(date);
+            if (ltime <= 0) {
+               strcpy(str, loc("Invalid date format"));
+               strlcat(str, ": \"", sizeof(str));
+               strlcat(str, date, sizeof(str));
+               strlcat(str, "\"", sizeof(str));
+               show_error(str);
+               return;
             } else {
-               strlcpy(line, list + textcol * NAME_LENGTH, 10000);
-               insert_breaks(line, 78, 10000);
+               if (!filltext) {
+                  /* submit entry */
+                  if (el_submit
+                      (lbs, 0, FALSE, date, attr_list,
+                       (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH), n_attr, "", "", "", "plain",
+                       NULL, TRUE, NULL))
+                     n_imported++;
+               } else {
+                  strlcpy(line, list + textcol * NAME_LENGTH, 10000);
+                  insert_breaks(line, 78, 10000);
 
-               for (i = textcol; i < n_attr + attr_offset; i++)
-                  strlcpy(list + i * NAME_LENGTH, list + (i + 1) * NAME_LENGTH, NAME_LENGTH);
+                  for (i = textcol; i < n_attr + attr_offset; i++)
+                     strlcpy(list + i * NAME_LENGTH, list + (i + 1) * NAME_LENGTH, NAME_LENGTH);
 
-               /* submit entry */
-               if (el_submit
-                   (lbs, 0, FALSE, date, attr_list,
-                    (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH), n_attr, line, "", "", "plain",
-                    NULL, TRUE, NULL))
-                  n_imported++;
+                  /* submit entry */
+                  if (el_submit
+                      (lbs, 0, FALSE, date, attr_list,
+                       (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH), n_attr, line, "", "", "plain",
+                       NULL, TRUE, NULL))
+                     n_imported++;
+               }
             }
          }
       }
