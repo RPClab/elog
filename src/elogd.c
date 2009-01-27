@@ -19887,6 +19887,9 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   if (past_n > 0) {
                      sprintf(str, loc("Last %d days"), past_n * 2);
                      rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n * 2, mode, str);
+                  } else {
+                     sprintf(str, loc("Last day"));
+                     rsprintf("&nbsp;<a href=\"past1?mode=%s\">%s</a>&nbsp;|\n", mode, str);
                   }
 
                   if (last_n) {
