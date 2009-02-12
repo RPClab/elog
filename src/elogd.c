@@ -26639,6 +26639,8 @@ int process_http_request(const char *request, int i_conn)
          p++;
          while (*p && *p == ' ')
             p++;
+         if (*p == '\r' || *p == '\n')
+            break;
          strlcpy(str, p, sizeof(str));
          for (i = 0; i < (int) strlen(str); i++)
             if (str[i] == '=' || str[i] == ';')
