@@ -6962,7 +6962,7 @@ void redirect(LOGBOOK * lbs, char *rel_path)
    /* redirect */
    rsprintf("HTTP/1.1 302 Found\r\n");
    rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
-   if (use_keepalive) {
+   if (keep_alive) {
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
    }
@@ -7184,7 +7184,7 @@ void show_http_header(LOGBOOK * lbs, BOOL expires, char *cookie)
    if (cookie && cookie[0])
       set_cookie(lbs, cookie, NULL, FALSE, "99999");    /* ten years by default */
 
-   if (use_keepalive) {
+   if (keep_alive) {
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
    }
@@ -7204,7 +7204,7 @@ void show_plain_header(int size, char *file_name)
    rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
    rsprintf("Accept-Ranges: bytes\r\n");
 
-   if (use_keepalive) {
+   if (keep_alive) {
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
    }
@@ -7990,7 +7990,7 @@ void set_login_cookies(LOGBOOK * lbs, char *user, char *enc_pwd)
 
    rsprintf("HTTP/1.1 302 Found\r\n");
    rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
-   if (use_keepalive) {
+   if (keep_alive) {
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
    }
@@ -8042,7 +8042,7 @@ void remove_all_login_cookies(LOGBOOK * lbs)
 
    rsprintf("HTTP/1.1 302 Found\r\n");
    rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
-   if (use_keepalive) {
+   if (keep_alive) {
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
    }
@@ -8105,7 +8105,7 @@ void send_file_direct(char *file_name)
          rsprintf("Expires: %s\r\n", str);
       }
 
-      if (use_keepalive) {
+      if (keep_alive) {
          rsprintf("Connection: Keep-Alive\r\n");
          rsprintf("Keep-Alive: timeout=60, max=10\r\n");
       }
@@ -25512,7 +25512,7 @@ void interprete(char *lbook, char *path)
          return;
       rsprintf("HTTP/1.1 302 Found\r\n");
       rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
-      if (use_keepalive) {
+      if (keep_alive) {
          rsprintf("Connection: Keep-Alive\r\n");
          rsprintf("Keep-Alive: timeout=60, max=10\r\n");
       }
@@ -25536,7 +25536,7 @@ void interprete(char *lbook, char *path)
          return;
       rsprintf("HTTP/1.1 302 Found\r\n");
       rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
-      if (use_keepalive) {
+      if (keep_alive) {
          rsprintf("Connection: Keep-Alive\r\n");
          rsprintf("Keep-Alive: timeout=60, max=10\r\n");
       }
@@ -26769,7 +26769,8 @@ int process_http_request(const char *request, int i_conn)
    /* extract logbook */
    if (strchr(request, '/') == NULL || strchr(request, '\r') == NULL || strstr(request, "HTTP") == NULL) {
       /* invalid request, make valid */
-      return process_http_request("GET / HTTP/1.0\r\n\r\n", i_conn);
+      strcpy(str, "GET / HTTP/1.0\r\n\r\n");
+      return process_http_request(str, i_conn);
    }
 
    /* initialize topgroups */
@@ -27185,7 +27186,8 @@ void send_return(int _sock, const char *net_buffer)
 
       if ((keep_alive && strstr(return_buffer, "Content-Length") == NULL) || strstr(return_buffer,
                                                                                     "Content-Length") >
-          strstr(return_buffer, "\r\n\r\n")) {
+         strstr(return_buffer, "\r\n\r\n")) {
+
          /*---- add content-length ----*/
 
          p = strstr(return_buffer, "\r\n\r\n");
@@ -27229,14 +27231,42 @@ void send_return(int _sock, const char *net_buffer)
             keep_alive = FALSE;
          }
       } else {
+
+         if (!keep_alive) {
+            /* no keepalive, so add connection close */
+            p = strstr(return_buffer, "\r\n\r\n");
+            if (p != NULL) {
+               length = strlen(p + 4);
+               header_length = (int) (p - return_buffer);
+               if (header_length + 100 > (int) sizeof(header_buffer))
+                  header_length = sizeof(header_buffer) - 100;
+               memcpy(header_buffer, return_buffer, header_length);
+               sprintf(header_buffer + header_length, "\r\nConnection: Close\r\n\r\n");
+            }
+
 #ifdef HAVE_SSL
-         if (_ssl_flag)
-            SSL_write(ssl_con, return_buffer, return_length);
-         else
-            send(_sock, return_buffer, return_length, 0);
+            if (_ssl_flag) {
+               SSL_write(ssl_con, header_buffer, strlen(header_buffer));
+               SSL_write(ssl_con, p + 4, length);
+            } else {
+               send(_sock, header_buffer, strlen(header_buffer), 0);
+               send(_sock, p + 4, length, 0);
+            }
 #else
-         send(_sock, return_buffer, return_length, 0);
+            send(_sock, header_buffer, strlen(header_buffer), 0);
+            send(_sock, p + 4, length, 0);
 #endif
+         } else {
+#ifdef HAVE_SSL
+            if (_ssl_flag)
+               SSL_write(ssl_con, return_buffer, return_length);
+            else
+               send(_sock, return_buffer, return_length, 0);
+#else
+            send(_sock, return_buffer, return_length, 0);
+#endif
+         }
+
          if (verbose == 1) {
             eprintf("Returned %d bytes\n", return_length);
          } else if (verbose == 2) {
