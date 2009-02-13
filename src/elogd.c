@@ -26415,8 +26415,10 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                /* find next boundary */
                pctmp = string;
                do {
-                  while (*pctmp != '-')
+                  while (*pctmp != '-' && pctmp < string + length)
                      pctmp++;
+                  if (pctmp == string + length)
+                     return;
                   if ((p = strstr(pctmp, boundary)) != NULL) {
                      if (*(p - 1) == '-')
                         p--;
@@ -26481,8 +26483,10 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                /* find next boundary */
                pctmp = string;
                do {
-                  while (*pctmp != '-')
+                  while (*pctmp != '-' && pctmp < string + length)
                      pctmp++;
+                  if (pctmp == string + length)
+                     return;
                   if ((p = strstr(pctmp, boundary)) != NULL) {
                      if (*(p - 1) == '-')
                         p--;
@@ -28010,6 +28014,14 @@ void server_loop(void)
                if (broken) {
                   if (verbose)
                      eprintf("TCP connection broken\n");
+                  keep_alive = FALSE;
+                  break;
+               }
+
+               if (strncmp(net_buffer, "POST", 4) == 0 &&
+                   len < header_length + content_length) {
+                  if (verbose)
+                     eprintf("Incomplete POST request\n");
                   keep_alive = FALSE;
                   break;
                }
