@@ -7064,6 +7064,21 @@ int scan_attributes(char *logbook)
       memset(attr_list, 0, sizeof(attr_list));
       n = strbreak(list, attr_list, MAX_N_ATTR, ",", FALSE);
 
+      /* check for forbidden attributes */
+      for (i = 0; i < n; i++) {
+         if (strieq(attr_list[i], "text") || 
+             strieq(attr_list[i], "date") || 
+             strieq(attr_list[i], "encoding") || 
+             strieq(attr_list[i], "reply to") || 
+             strieq(attr_list[i], "locked by") || 
+             strieq(attr_list[i], "in reply to") || 
+             strieq(attr_list[i], "attachment")) {
+            sprintf(str, loc("Forbidden attribute: %s"), attr_list[i]);
+            show_error(str);
+            return -1;
+         }
+      }
+
       /* get options lists for attributes */
       memset(attr_options, 0, sizeof(attr_options));
       for (i = 0; i < n; i++) {
@@ -22216,12 +22231,14 @@ void submit_elog(LOGBOOK * lbs)
                else
                   index--;      /* repeat this loop */
             } else
-               strlcpy(str2, ua, sizeof(str));
+               strlcpy(str2, ua, sizeof(str2));
 
             if (isparam(str2)) {
-               if (strchr(getparam(str2), ' '))
-                  sprintf(str + strlen(str), "\"%s\"", getparam(str2));
-               else
+               if (strchr(getparam(str2), ' ')) {
+                  strlcat(str, "\"", sizeof(str));
+                  strlcat(str, getparam(str2), sizeof(str));
+                  strlcat(str, "\"", sizeof(str));
+               } else
                   strlcat(str, getparam(str2), sizeof(str));
             }
          } else
@@ -25504,6 +25521,10 @@ void interprete(char *lbook, char *path)
    lb_index = i;
    lbs = lb_list + i;
    lbs->n_attr = scan_attributes(lbs->name);
+
+   /* check for error during attribute scan */
+   if (lbs->n_attr < 0)
+      return;
 
    if (isparam("wpassword")) {
       /* check if password correct */
