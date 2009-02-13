@@ -986,7 +986,18 @@ if the file name starts with a <b><code>"/"</code></b> (Unix) or <b><code>
         <b><code>Attributes = &lt;list&gt;</code></b><br>
         Define a number of attributes for the logbook, separated by commata. A
         maximum of 100 attributes can be defined. Typical values are
-        "<i>Author</i>", "<i>Subject</i>" or "<i>Type</i>".
+        "<i>Author</i>", "<i>Subject</i>" or "<i>Type</i>". Following values
+        are not allowed:<p>
+        <ul>
+          <li>Text
+          <li>Date
+          <li>Encoding
+          <li>Reply to
+          <li>In reply to
+          <li>Locked by
+          <li>Attachment
+        </ul><p>
+        since these are used internally by elog.
       </li>
       <li>
         <b><code>Options &lt;attribute&gt; = &lt;list&gt;</code></b><br>
