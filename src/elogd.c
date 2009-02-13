@@ -26594,6 +26594,11 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                   if (setparam(item, str) == 0)
                      return;
                }
+            } else {
+               strlcpy(str, p, sizeof(str));
+               if (setparam(item, str) == 0)
+                  return;
+               string = p + strlen(p);
             }
          }
 
