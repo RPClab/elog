@@ -457,10 +457,6 @@ Rotate left = Girar a la izquierda
 Rotate right = Girar a la derecha
 Delete attachment = Borrar adjunto
 Cannot create thumbnail, please check ImageMagick installation = No se puede crear thumbnail, por favor verifique la instalacion de ImageMagick
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Please log on by clicking on following link and change your password = 
-Attachments = 
-Error: Content length (%d) larger than maximum content length (%d) = 
+Please log on by clicking on following link and change your password = Por favor ingrese haciendo click en el siguiente link y cambie su clave
+Attachments = Adjuntos
+Error: Content length (%d) larger than maximum content length (%d) = Error: La longitud del contenido (%d) es mayor que la permitida (%d)
