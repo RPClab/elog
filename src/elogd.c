@@ -11349,7 +11349,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      }
                   }
 
-                  if (thumb_status)
+                  if (thumb_status && display_inline)
                      rsprintf("</td></tr></table>\n");
                }
 
