@@ -26681,6 +26681,8 @@ int process_http_request(const char *request, int i_conn)
             for (i = 0; *p && *p != ';' && *p != '\r' && *p != '\n' ; )
                if (i < (int) sizeof(cookie)-1)
                   cookie[i++] = *p++;
+               else 
+                  break;
             cookie[i] = 0;
          } else {
             /* empty cookie */
