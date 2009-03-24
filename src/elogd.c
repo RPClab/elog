@@ -6131,7 +6131,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
             if (i > 0 && str[i - 1] == '\\') {
 
                j--;
-               strcpy(return_buffer + j, pattern_list[l].pattern);
+               strncpy(return_buffer + j, str+i, strlen(pattern_list[l].pattern));
                j += strlen(pattern_list[l].pattern);
                i += strlen(pattern_list[l].pattern) - 1;        // 1 gets added in for loop...
                substituted = TRUE;
