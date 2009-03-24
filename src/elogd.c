@@ -24762,14 +24762,18 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
                      loc("This logbook requires authentication"),
                      loc("This logbook requires authentication"));
          rsprintf("<br>\n");
-         str[0] = 0;
-         getcfg(lb_list[index].name, "Comment", str, sizeof(str));
-         rsprintf("<span class=\"selcomment\">");
-         if (is_html(str))
-            rsputs(str);
-         else
-            rsputs3(str);
-         rsprintf("</span></td>\n");
+         
+         if (!getcfg(plb->name, "Hide Comments", str, sizeof(str)) || atoi(str) == 0) {
+            str[0] = 0;
+            getcfg(lb_list[index].name, "Comment", str, sizeof(str));
+            rsprintf("<span class=\"selcomment\">");
+            if (is_html(str))
+               rsputs(str);
+            else
+               rsputs3(str);
+            rsprintf("</span></td>\n");
+         }
+
          rsprintf("<td nowrap class=\"selentries\">");
          rsprintf("%d", *lb_list[index].n_el_index);
          rsprintf("</td>\n");
