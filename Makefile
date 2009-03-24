@@ -24,10 +24,12 @@ RCDIR      = $(ROOT)/etc/rc.d/init.d
 # flag for SSL support
 USE_SSL    = 1
 
+# flag for crypt() support
+USE_CRYPT  =
+
 #############################################################
 
 # Default compilation flags unless stated otherwise.
-# Add "-DHAVE_CRYPT" and "-lcrypt" to use crypt() function.
 #CFLAGS += -O3 -funroll-loops -fomit-frame-pointer -W -Wall
 CFLAGS += -g -funroll-loops -fomit-frame-pointer -W -Wall
 
@@ -75,6 +77,11 @@ ifdef USE_SSL
 CFLAGS += -DHAVE_SSL
 LIBS += -lssl
 endif 
+
+ifdef USE_CRYPT
+CFLAGS += -DHAVE_CRYPT
+LIBS += -lcrypt
+endif
 
 WHOAMI = $(shell whoami)
 ifeq ($(WHOAMI),root)
