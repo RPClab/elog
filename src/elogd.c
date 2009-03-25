@@ -7940,8 +7940,23 @@ void show_bottom_text_login(LOGBOOK * lbs)
 
 void show_error(char *error)
 {
+   char str[256];
+
    /* header */
-   show_html_header(NULL, FALSE, "ELOG error", TRUE, FALSE, NULL, FALSE);
+   rsprintf("HTTP/1.1 404 Not Found\r\n");
+   rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
+   if (getcfg("global", "charset", str, sizeof(str)))
+      rsprintf("Content-Type: text/html;charset=%s\r\n", str);
+   else
+      rsprintf("Content-Type: text/html;charset=%s\r\n", DEFAULT_HTTP_CHARSET);
+   rsprintf("\r\n");
+
+   rsprintf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n");
+   rsprintf("<html><head>\n");
+   rsprintf("<META NAME=\"ROBOTS\" CONTENT=\"NOINDEX, NOFOLLOW\">\n");
+   rsprintf("<title>%s</title>\n", loc("ELOG error"));
+   rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"default.css\">\n");
+   rsprintf("</head>\n");
 
    rsprintf("<body><center>\n");
    rsprintf("<table class=\"dlgframe\" width=\"50%%\" cellpadding=\"1\" cellspacing=\"0\"");
@@ -7949,19 +7964,13 @@ void show_error(char *error)
 
    rsprintf("<tr><td class=\"errormsg\">");
 
-   /*
-      rsprintf("<script language=\"javascript\" type=\"text/javascript\">\n");
-      rsprintf("<button type=button onClick=history.back()>%s</button>\n", loc("Back"));
-      rsprintf("</script>\n");
+   rsprintf("<script language=\"javascript\" type=\"text/javascript\">\n");
+   rsprintf("document.write(\"<button type=button onClick=history.back()>%s</button>\"); \n", loc("Back"));
+   rsprintf("</script>\n");
 
-      rsprintf("<noscript>\n");
-    */
-
+   rsprintf("<noscript>\n");
    rsprintf("%s\n", loc("Please use your browser's back button to go back"));
-
-   /*
-      rsprintf("</noscript>\n");
-    */
+   rsprintf("</noscript>\n");
 
    rsprintf("</td></tr>\n</table>\n");
    rsprintf("</center></body></html>\n");
@@ -9393,9 +9402,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* check for author */
    if (bedit && getcfg(lbs->name, "Restrict edit", str, sizeof(str)) && atoi(str) == 1) {
       if (!is_author(lbs, attrib, owner)) {
-         sprintf(str, loc("Only user <i>%s</i> can edit this entry"), owner);
-         strencode2(str2, str, sizeof(str2));
-         show_error(str2);
+         strencode2(str2, owner, sizeof(str2));
+         sprintf(str, loc("Only user <b>%s</b> can edit this entry"), str2);
+         show_error(str);
          xfree(text);
          return;
       }
