@@ -5395,6 +5395,34 @@ int is_html(char *s)
 
 /*------------------------------------------------------------------*/
 
+char *script_tags[] = { "onerror", "onabort", "onchange", "onclick", "ondblclick", "onfocus", "onkeydown",
+                        "onkeyup", "onload", "onmousedonw", "onmousemove", "onmouseover", "onmouseup",
+                        "onreset", "onselect", "onsubmit", "onunload", "javascript"};
+
+int is_script(char *s)
+{
+   char *str;
+   int i;
+
+   str = xstrdup(s);
+
+   for (i = 0; i < (int) strlen(s); i++)
+      str[i] = tolower(s[i]);
+   str[i] = 0;
+
+   for (i = 0; script_tags[i][0]; i++) {
+      if (strstr(str, script_tags[i])) {
+         xfree(str);
+         return TRUE;
+      }
+   }
+
+   xfree(str);
+   return FALSE;
+}
+
+/*------------------------------------------------------------------*/
+
 char *full_html_tags[] = { "<HTML>", "<BODY>", "<HEAD>", "" };
 
 int is_full_html(char *file_name)
@@ -16803,7 +16831,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
       else
          rsprintf("\n<b>");
 
-      if (is_html(display))
+      if (is_html(display) && !is_script(display))
          rsputs(display);
       else
          rsputs2(lbs, absolute_link, display);
@@ -16956,7 +16984,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                         } else
                            rsprintf(", ");
 
-                        if (is_html(attrib[i]))
+                        if (is_html(attrib[i]) && !is_script(attrib[i]))
                            rsputs(attrib[i]);
                         else
                            rsputs2(lbs, absolute_link, attrib[i]);
@@ -17026,7 +17054,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                      } else
                         rsprintf(", ");
 
-                     if (is_html(attrib[i]))
+                     if (is_html(attrib[i]) && !is_script(attrib[i]))
                         rsputs(attrib[i]);
                      else
                         rsputs2(lbs, absolute_link, attrib[i]);
@@ -17096,7 +17124,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                   else {
                      rsprintf("<td class=\"%s\">", sclass);
 
-                     if (is_html(attrib[i]))
+                     if (is_html(attrib[i]) && !is_script(attrib[i]))
                         rsputs(attrib[i]);
                      else {
                         if (disp_attr_link == NULL || disp_attr_link[index])
@@ -17118,7 +17146,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                         } else
                            strcpy(display, attrib[i]);
 
-                        if (is_html(display))
+                        if (is_html(display) && !is_script(display))
                            rsputs(display);
                         else {
                            if (isparam(attr_list[i])) {
@@ -23553,7 +23581,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             } else
                strcpy(display, attrib[i]);
 
-            if (is_html(display))
+            if (is_html(display) && !is_script(display))
                rsputs(display);
             else
                rsputs2(lbs, email, display);
