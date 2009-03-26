@@ -5368,7 +5368,7 @@ void write_logfile(LOGBOOK * lbs, const char *text)
 
 /*------------------------------------------------------------------*/
 
-char *html_tags[] = { "<A HREF=", "<IMG ", "<B>", "<I>", "<P>", "<HR>", "" };
+char *html_tags[] = { "<A HREF=", "<IMG ", "<B>", "<I>", "<P>", "<BR>", "<HR>", "" };
 
 int is_html(char *s)
 {
