@@ -198,6 +198,7 @@ char http_host[256];
 #define MAX_ATTACHMENTS  50
 #define MAX_N_LIST      100
 #define MAX_N_ATTR      100
+#define MAX_N_EMAIL     500
 #define MAX_REPLY_TO    100
 #define CMD_SIZE      10000
 #define TEXT_SIZE    250000
@@ -2175,7 +2176,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    struct hostent *phe;
    int i, n, s, strsize;
    char *str, *p;
-   char list[1024][NAME_LENGTH], buffer[10000], decoded[256];
+   char list[MAX_N_EMAIL][NAME_LENGTH], buffer[10000], decoded[256];
 
    memset(error, 0, error_size);
 
@@ -2335,7 +2336,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
       goto smtp_error;
 
    /* break recipients into list */
-   n = strbreak(to, list, 1024, ",", FALSE);
+   n = strbreak(to, list, MAX_N_EMAIL, ",", FALSE);
 
    for (i = 0; i < n; i++) {
       if (list[i] == 0 || strchr(list[i], '@') == NULL)
@@ -22238,8 +22239,8 @@ void submit_elog(LOGBOOK * lbs)
    rcpt_to = xmalloc(256);
    rcpt_to[0] = 0;
    rcpt_to_size = 256;
-   mail_list = xmalloc(200 * NAME_LENGTH);
-   rcpt_list = xmalloc(200 * NAME_LENGTH);
+   mail_list = xmalloc(MAX_N_EMAIL * NAME_LENGTH);
+   rcpt_list = xmalloc(MAX_N_EMAIL * NAME_LENGTH);
 
    if (suppress == 1 || suppress == 3) {
       if (suppress == 1)
@@ -22349,23 +22350,27 @@ void submit_elog(LOGBOOK * lbs)
 
    if (strlen(mail_to) > 0) {
       /* convert any '|' to ',', remove duplicate email to's */
-      strbreak(rcpt_to, (void *) rcpt_list, 200, ",|", TRUE);
-      strbreak(mail_to, (void *) mail_list, 200, ",|", TRUE);
-      for (i = 0; i < 200 && rcpt_list[i * NAME_LENGTH]; i++) {
-         for (j = i + 1; j < 200 && rcpt_list[j * NAME_LENGTH]; j++) {
-            if (strstr(&rcpt_list[j * NAME_LENGTH], &rcpt_list[i * NAME_LENGTH])) {
-               for (k = i; k < 199 && rcpt_list[k * NAME_LENGTH]; k++) {
+      n = strbreak(rcpt_to, (void *) rcpt_list, MAX_N_EMAIL, ",|", TRUE);
+      strbreak(mail_to, (void *) mail_list, MAX_N_EMAIL, ",|", TRUE);
+      for (i = 0; i < n-1 ; i++) {
+         for (j = i + 1; j < n ; j++) {
+            if (rcpt_list[i * NAME_LENGTH] && rcpt_list[j * NAME_LENGTH] &&
+               strstr(&rcpt_list[i * NAME_LENGTH], &rcpt_list[j * NAME_LENGTH])) {
+               for (k = j; k < n-1 ; k++) {
                   memcpy(&rcpt_list[k * NAME_LENGTH], &rcpt_list[(k + 1) * NAME_LENGTH], NAME_LENGTH);
                   memcpy(&mail_list[k * NAME_LENGTH], &mail_list[(k + 1) * NAME_LENGTH], NAME_LENGTH);
                }
-               i = i - 1;
+               memset(&rcpt_list[k*NAME_LENGTH], 0, NAME_LENGTH);
+               memset(&mail_list[k*NAME_LENGTH], 0, NAME_LENGTH);
+               j = j - 1;
+               n = n - 1;
                break;
             }
          }
       }
       rcpt_to[0] = 0;
       mail_to[0] = 0;
-      for (i = 0; i < 200 && rcpt_list[i * NAME_LENGTH]; i++) {
+      for (i = 0; i < n ; i++) {
 
          if ((int) strlen(rcpt_to) + (int) strlen(&rcpt_list[i * NAME_LENGTH]) + 5 >= rcpt_to_size) {
             rcpt_to_size += 256;
@@ -22379,7 +22384,7 @@ void submit_elog(LOGBOOK * lbs)
          }
          strcat(mail_to, &mail_list[i * NAME_LENGTH]);
 
-         if (i < 199 && rcpt_list[(i + 1) * NAME_LENGTH]) {
+         if (i < MAX_N_EMAIL-1 && rcpt_list[(i + 1) * NAME_LENGTH]) {
             strcat(rcpt_to, ",");
             strcat(mail_to, ",\r\n\t");
          }
