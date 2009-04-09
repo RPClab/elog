@@ -9821,7 +9821,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (enc_selected == 0)
       rsprintf("<script type=\"text/javascript\" src=\"../elcode.js\"></script>\n\n");
 
-   if (enc_selected == 2 && fckedit_exist) {
+   show_text = !getcfg(lbs->name, "Show text", str, sizeof(str)) || atoi(str) == 1;
+
+   if (enc_selected == 2 && fckedit_exist && show_text) {
       rsprintf("<script type=\"text/javascript\" src=\"../fckeditor/fckeditor.js\"></script>\n");
       rsprintf("<script type=\"text/javascript\">\n");
       /* define strings for current language */
