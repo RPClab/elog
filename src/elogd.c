@@ -7946,14 +7946,18 @@ void show_bottom_text_login(LOGBOOK * lbs)
             buf[size] = 0;
             fclose(f);
 
-            i = build_subst_list(lbs, slist, svalue, NULL, TRUE);
-            strsubst_list(buf, size + 100, slist, svalue, i);
+            if (lbs != NULL) {
+               i = build_subst_list(lbs, slist, svalue, NULL, TRUE);
+               strsubst_list(buf, size + 100, slist, svalue, i);
+            }
 
             rsputs(buf);
             xfree(buf);
          } else {
-            i = build_subst_list(lbs, slist, svalue, NULL, TRUE);
-            strsubst_list(str, sizeof(str), slist, svalue, i);
+            if (lbs != NULL) {
+               i = build_subst_list(lbs, slist, svalue, NULL, TRUE);
+               strsubst_list(str, sizeof(str), slist, svalue, i);
+            }
 
             rsputs(str);
          }
