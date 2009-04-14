@@ -90,7 +90,6 @@ New passwords do not match, please retype = Las claves no coinciden, por favor r
 Old password = Clave anterior
 Retype new password = Reescriba nueva clave
 Maximum number of replies (%d) exceeded = Numero maximo de respuestas (%d) excedido
-Only user <i>%s</i> can edit this entry = Solo el usuario <i>%s</i> puede editar esta entrada
 Update = Actualizar
 Add %s = Agregar %s
 Add new option here = Agregar nueva opcion aqui
@@ -245,7 +244,6 @@ Field separator = Separador de campos
 Comma = Coma
 Semicolon = Punto y coma
 Derive attributes from CSV file = Derivar atributos del archivo CSV
-Ignore first line = Ignorar la primera linea
 Preview import = Vista previa de importacion
 CSV filename = Archivo CVS
 CSV import preview of %s = Vista previa de importacion CSV %s
@@ -460,3 +458,14 @@ Cannot create thumbnail, please check ImageMagick installation = No se puede cre
 Please log on by clicking on following link and change your password = Por favor ingrese haciendo click en el siguiente link y cambie su clave
 Attachments = Adjuntos
 Error: Content length (%d) larger than maximum content length (%d) = Error: La longitud del contenido (%d) es mayor que la permitida (%d)
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Forbidden attribute: %s = 
+ELOG error = 
+Only user <b>%s</b> can edit this entry = 
+Export to = 
+Do not ignore first line = 
+Last %d hours = 
+Invalid URL = 

@@ -1,3 +1,47 @@
+Version 2.7.6, released April 14th 2009
+=======================================
+
+- Fixed broken images for Safari
+- Fixed crash with bottom text on protected selection page
+- Fixed error message when 'Show text = 0'
+- Fixed problem with emtpy email address
+- Fixed XSS vulnerability based on 'img onerror='
+- Return 404 in case of error
+- Implemented 'Hide comments'
+- Fixed case for escaped ELCode tags
+- Fixed bug in cookie handling
+- Fixed broken display with 'preview attachments = 0'
+- Fixed problem with missing boundary in POST request
+- Fixed crash with incomplete attachments
+- Show errer of forbidden attributes are used
+- Fixed crash when HTTP is missing in header, implemented more consistent keep-alive handling
+- Fixed bug with empty cookies
+- Show "Last day" if "Last x" is in the menu list
+- Made CSV import of dates working
+- Only store allowed cookies
+- Added "<>" around email address for "MAIL FROM:"
+- Allow attribute substitution on 'execute delete'
+- Implemented "tooltip <attrib> <value>"
+- Fixed return buffer overflow with very long entries
+- Fixed problem with locked date/time attributes and re-edit of pages
+- Fixed problem with numeric attributes and multi edit
+- Fixed problem with EPS previews in list display
+- Removed '/' from url_encode again, use url_slash_encode to fix redirection problem with quick filter and attributes containing '/'
+- Changed '####' tag generation from 'Preset <>' to 'Subst <>' in order to avoid double entries
+- Include "MIME-Version" always in email header
+- Added 'export to:' on find page
+- Fixed buffer overflow with very long cookies
+- Fixed quick filter redirect problem with attributes containing '/'
+- Made select/edit work with date/time attributes
+- Changed parameter to make things more obvious
+- Fixed crash with very long entries
+- Attributes stay now in find page with conditional attributes
+- Made 'Hide' work with 'Show attachments = 0'
+- Fixed wrong cookies which caused problems with Chrome
+- Fixed crash with invalid URL
+- Fixed bug with conditional attributes on find page
+- Added function to determine line breaks in HTML code
+
 Version 2.7.5, released Sept. 22th 2008
 =======================================
 

@@ -9,7 +9,7 @@
  \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.7.5"
+#define VERSION "2.7.6"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -4646,9 +4646,8 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
             p += 41;
             old_text = xmalloc(size + 1);
             strlcpy(old_text, p, size);
-            if (old_text[strlen(old_text)-1] == '\n' ||
-                old_text[strlen(old_text)-1] == '\r')
-               old_text[strlen(old_text)-1] = 0;
+            if (old_text[strlen(old_text) - 1] == '\n' || old_text[strlen(old_text) - 1] == '\r')
+               old_text[strlen(old_text) - 1] = 0;
          }
       }
 
@@ -5397,8 +5396,9 @@ int is_html(char *s)
 /*------------------------------------------------------------------*/
 
 char *script_tags[] = { "onerror", "onabort", "onchange", "onclick", "ondblclick", "onfocus", "onkeydown",
-                        "onkeyup", "onload", "onmousedonw", "onmousemove", "onmouseover", "onmouseup",
-                        "onreset", "onselect", "onsubmit", "onunload", "javascript"};
+   "onkeyup", "onload", "onmousedonw", "onmousemove", "onmouseover", "onmouseup",
+   "onreset", "onselect", "onsubmit", "onunload", "javascript"
+};
 
 int is_script(char *s)
 {
@@ -5523,11 +5523,8 @@ int line_break(char *str, char *encoding)
    if (strieq(encoding, "plain") || strieq(encoding, "ELCode")) {
       return str[0] == '\n';
    }
-
    // HTML encoding
-   if (strncmp(str, "</p>", 4) == 0 ||
-       strncmp(str, "<br>", 4) == 0 ||
-       strncmp(str, "<br />", 4) == 0)
+   if (strncmp(str, "</p>", 4) == 0 || strncmp(str, "<br>", 4) == 0 || strncmp(str, "<br />", 4) == 0)
       return 1;
 
    return 0;
@@ -5661,7 +5658,7 @@ void rsputs(const char *str)
    if (strlen_retbuf + (int) strlen(str) + 1 >= return_buffer_size) {
       return_buffer = xrealloc(return_buffer, return_buffer_size + (int) strlen(str) + 100000);
       memset(return_buffer + return_buffer_size, 0, (int) strlen(str) + 100000);
-      return_buffer_size += (int) strlen(str)+100000;
+      return_buffer_size += (int) strlen(str) + 100000;
    }
 
    strcpy(return_buffer + strlen_retbuf, str);
@@ -6160,7 +6157,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
             if (i > 0 && str[i - 1] == '\\') {
 
                j--;
-               strncpy(return_buffer + j, str+i, strlen(pattern_list[l].pattern));
+               strncpy(return_buffer + j, str + i, strlen(pattern_list[l].pattern));
                j += strlen(pattern_list[l].pattern);
                i += strlen(pattern_list[l].pattern) - 1;        // 1 gets added in for loop...
                substituted = TRUE;
@@ -7095,13 +7092,12 @@ int scan_attributes(char *logbook)
 
       /* check for forbidden attributes */
       for (i = 0; i < n; i++) {
-         if (strieq(attr_list[i], "text") || 
-             strieq(attr_list[i], "date") || 
-             strieq(attr_list[i], "encoding") || 
-             strieq(attr_list[i], "reply to") || 
-             strieq(attr_list[i], "locked by") || 
-             strieq(attr_list[i], "in reply to") || 
-             strieq(attr_list[i], "attachment")) {
+         if (strieq(attr_list[i], "text") ||
+             strieq(attr_list[i], "date") ||
+             strieq(attr_list[i], "encoding") ||
+             strieq(attr_list[i], "reply to") ||
+             strieq(attr_list[i], "locked by") ||
+             strieq(attr_list[i], "in reply to") || strieq(attr_list[i], "attachment")) {
             sprintf(str, loc("Forbidden attribute: %s"), attr_list[i]);
             show_error(str);
             return -1;
@@ -8878,7 +8874,7 @@ void show_time_selector(int hour, int min, int sec, char *index)
    int i;
 
    rsprintf("<select name=\"h%s\">\n", index);
-   
+
    if (isparam("nsel"))
       rsprintf("<option value=\"<keep>\">- %s -\n", loc("keep original values"));
    else
@@ -11455,8 +11451,8 @@ void show_find_form(LOGBOOK * lbs)
 {
    int i, j, year, month, day, flag;
    char str[NAME_LENGTH], mode[NAME_LENGTH], comment[NAME_LENGTH], option[NAME_LENGTH], login_name[256],
-      full_name[256], user_email[256], enc_attr[NAME_LENGTH], whole_attr[NAME_LENGTH], 
-      attrib[MAX_N_ATTR][NAME_LENGTH];
+       full_name[256], user_email[256], enc_attr[NAME_LENGTH], whole_attr[NAME_LENGTH],
+       attrib[MAX_N_ATTR][NAME_LENGTH];
 
    /*---- header ----*/
 
@@ -11660,7 +11656,7 @@ void show_find_form(LOGBOOK * lbs)
 
             rsprintf("<table width=\"100%%\" cellspacing=0 border=0>\n");
             rsprintf("<tr><td width=\"1%%\">%s:<td>", loc("Start"));
-            
+
             year = month = day = 0;
             sprintf(str, "y%da", i);
             if (isparam(str))
@@ -11671,7 +11667,7 @@ void show_find_form(LOGBOOK * lbs)
             sprintf(str, "d%da", i);
             if (isparam(str))
                day = atoi(getparam(str));
-            
+
             sprintf(str, "%da", i);
             show_date_selector(day, month, year, str);
             if (attr_flags[i] & AF_DATETIME) {
@@ -11681,7 +11677,7 @@ void show_find_form(LOGBOOK * lbs)
 
             rsprintf("</td></tr>\n");
             rsprintf("<tr><td width=\"1%%\">%s:<td>", loc("End"));
-            
+
             year = month = day = 0;
             sprintf(str, "y%db", i);
             if (isparam(str))
@@ -11733,8 +11729,8 @@ void show_find_form(LOGBOOK * lbs)
             }
 
          } else {
-            rsprintf("<input type=\"text\" size=\"30\" maxlength=\"80\" name=\"%s\" value=\"%s\">\n", 
-               attr_list[i], attrib[i]);
+            rsprintf("<input type=\"text\" size=\"30\" maxlength=\"80\" name=\"%s\" value=\"%s\">\n",
+                     attr_list[i], attrib[i]);
          }
 
       } else {
@@ -11798,10 +11794,10 @@ void show_find_form(LOGBOOK * lbs)
                sprintf(str, "%s_%d", attr_list[i], j);
 
                if (isparam(str))
-                  rsprintf("<nobr><input type=checkbox checked id=\"%s\" name=\"%s\" value=\"%s\"\">\n", 
+                  rsprintf("<nobr><input type=checkbox checked id=\"%s\" name=\"%s\" value=\"%s\"\">\n",
                            str, str, attr_options[i][j]);
                else
-                  rsprintf("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\"\">\n", 
+                  rsprintf("<nobr><input type=checkbox id=\"%s\" name=\"%s\" value=\"%s\"\">\n",
                            str, str, attr_options[i][j]);
 
                rsprintf("<label for=\"%s\">%s</label></nobr>\n", str, attr_options[i][j]);
@@ -11823,7 +11819,8 @@ void show_find_form(LOGBOOK * lbs)
                strencode2(enc_attr, attrib[i], sizeof(enc_attr));
 
                sprintf(whole_attr, "^%s$", str);
-               if (strieq(attr_options[i][j], attrib[i]) || strieq(str, enc_attr) || strieq(whole_attr, enc_attr))
+               if (strieq(attr_options[i][j], attrib[i]) || strieq(str, enc_attr)
+                   || strieq(whole_attr, enc_attr))
                   rsprintf("<option selected value=\"^%s$\">%s\n", str, str);
                else
                   rsprintf("<option value=\"^%s$\">%s\n", str, str);
@@ -14082,7 +14079,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
    BOOL first, in_quotes, filltext;
    time_t ltime;
 
-   list = xmalloc((MAX_N_ATTR+2) * NAME_LENGTH);
+   list = xmalloc((MAX_N_ATTR + 2) * NAME_LENGTH);
    line = xmalloc(10000);
 
    first = TRUE;
@@ -14300,7 +14297,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
          } else {
 
             /* get date and check it */
-            strlcpy(date, list + datecol*NAME_LENGTH, sizeof(date));
+            strlcpy(date, list + datecol * NAME_LENGTH, sizeof(date));
             ltime = date_to_ltime(date);
             if (ltime <= 0) {
                /* try other date formats */
@@ -17222,7 +17219,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
       if (expand == 2) {
          for (i = i_line = line_len = 0; i < (int) sizeof(str) - 1; i++, line_len++) {
             str[i] = text[i];
-            if (line_break(text+i, encoding)) {
+            if (line_break(text + i, encoding)) {
                i_line++;
                line_len = 0;
             } else
@@ -17270,7 +17267,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
       max_line_len = n_line >= 10 ? 140 : 40;
       for (i = i_line = line_len = 0; i < (int) sizeof(str) - 1; line_len++, i++) {
          str[i] = text[i];
-         if (line_break(text+i, encoding)) {
+         if (line_break(text + i, encoding)) {
             i_line++;
             line_len = 0;
          } else
@@ -18665,7 +18662,7 @@ time_t convert_datetime(char *date_string)
 
    if (!strchr(p, ' '))
       return 0;
-   p = strchr(p, ' ')+1;
+   p = strchr(p, ' ') + 1;
 
    strlcpy(str, p, sizeof(str));
    p = strtok(str, ":");
@@ -19296,9 +19293,9 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    /*---- apply start/end date cut ----*/
 
    if (past_n > 0)
-      ltime_start = now - 3600 * 24 * past_n; // past n days
+      ltime_start = now - 3600 * 24 * past_n;   // past n days
    else if (past_n < 0)
-      ltime_start = now + 3600 * past_n;      // past n hours
+      ltime_start = now + 3600 * past_n;        // past n hours
 
    if (last_n && last_n < n_msg) {
       for (i = n_msg - last_n - 1; i >= 0; i--)
@@ -19496,9 +19493,9 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   searched = TRUE;
 
                   strlcpy(str, getparam(attr_list[i]), sizeof(str));
-                  if (str[0] == '^' && str[strlen(str)-1] == '$') {
-                     str[strlen(str)-1] = 0;
-                     strlcpy(comment, str+1, NAME_LENGTH);
+                  if (str[0] == '^' && str[strlen(str) - 1] == '$') {
+                     str[strlen(str) - 1] = 0;
+                     strlcpy(comment, str + 1, NAME_LENGTH);
                   } else
                      strlcpy(comment, str, NAME_LENGTH);
                   strlcpy(str, comment, sizeof(str));
@@ -20163,9 +20160,9 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
                      if (comment[0] == 0) {
                         strlcpy(str, getparam(iattr), sizeof(str));
-                        if (str[0] == '^' && str[strlen(str)-1] == '$') {
-                           str[strlen(str)-1] = 0;
-                           strlcpy(comment, str+1, NAME_LENGTH);
+                        if (str[0] == '^' && str[strlen(str) - 1] == '$') {
+                           str[strlen(str) - 1] = 0;
+                           strlcpy(comment, str + 1, NAME_LENGTH);
                         } else
                            strlcpy(comment, str, NAME_LENGTH);
                         strlcpy(str, comment, sizeof(str));
@@ -20188,9 +20185,9 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
                   if (comment[0] == 0) {
                      strlcpy(str, getparam(attr_list[i]), sizeof(str));
-                     if (str[0] == '^' && str[strlen(str)-1] == '$') {
-                        str[strlen(str)-1] = 0;
-                        strlcpy(comment, str+1, NAME_LENGTH);
+                     if (str[0] == '^' && str[strlen(str) - 1] == '$') {
+                        str[strlen(str) - 1] = 0;
+                        strlcpy(comment, str + 1, NAME_LENGTH);
                      } else
                         strlcpy(comment, str, NAME_LENGTH);
                      strlcpy(str, comment, sizeof(str));
@@ -22358,16 +22355,16 @@ void submit_elog(LOGBOOK * lbs)
       /* convert any '|' to ',', remove duplicate email to's */
       n = strbreak(rcpt_to, (void *) rcpt_list, MAX_N_EMAIL, ",|", TRUE);
       strbreak(mail_to, (void *) mail_list, MAX_N_EMAIL, ",|", TRUE);
-      for (i = 0; i < n-1 ; i++) {
-         for (j = i + 1; j < n ; j++) {
+      for (i = 0; i < n - 1; i++) {
+         for (j = i + 1; j < n; j++) {
             if (rcpt_list[i * NAME_LENGTH] && rcpt_list[j * NAME_LENGTH] &&
-               strstr(&rcpt_list[i * NAME_LENGTH], &rcpt_list[j * NAME_LENGTH])) {
-               for (k = j; k < n-1 ; k++) {
+                strstr(&rcpt_list[i * NAME_LENGTH], &rcpt_list[j * NAME_LENGTH])) {
+               for (k = j; k < n - 1; k++) {
                   memcpy(&rcpt_list[k * NAME_LENGTH], &rcpt_list[(k + 1) * NAME_LENGTH], NAME_LENGTH);
                   memcpy(&mail_list[k * NAME_LENGTH], &mail_list[(k + 1) * NAME_LENGTH], NAME_LENGTH);
                }
-               memset(&rcpt_list[k*NAME_LENGTH], 0, NAME_LENGTH);
-               memset(&mail_list[k*NAME_LENGTH], 0, NAME_LENGTH);
+               memset(&rcpt_list[k * NAME_LENGTH], 0, NAME_LENGTH);
+               memset(&mail_list[k * NAME_LENGTH], 0, NAME_LENGTH);
                j = j - 1;
                n = n - 1;
                break;
@@ -22376,7 +22373,7 @@ void submit_elog(LOGBOOK * lbs)
       }
       rcpt_to[0] = 0;
       mail_to[0] = 0;
-      for (i = 0; i < n ; i++) {
+      for (i = 0; i < n; i++) {
 
          if ((int) strlen(rcpt_to) + (int) strlen(&rcpt_list[i * NAME_LENGTH]) + 5 >= rcpt_to_size) {
             rcpt_to_size += 256;
@@ -22390,7 +22387,7 @@ void submit_elog(LOGBOOK * lbs)
          }
          strcat(mail_to, &mail_list[i * NAME_LENGTH]);
 
-         if (i < MAX_N_EMAIL-1 && rcpt_list[(i + 1) * NAME_LENGTH]) {
+         if (i < MAX_N_EMAIL - 1 && rcpt_list[(i + 1) * NAME_LENGTH]) {
             strcat(rcpt_to, ",");
             strcat(mail_to, ",\r\n\t");
          }
@@ -24810,7 +24807,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
                      loc("This logbook requires authentication"),
                      loc("This logbook requires authentication"));
          rsprintf("<br>\n");
-         
+
          if (!getcfg(plb->name, "Hide Comments", str, sizeof(str)) || atoi(str) == 0) {
             str[0] = 0;
             getcfg(lb_list[index].name, "Comment", str, sizeof(str));
@@ -25780,7 +25777,7 @@ void interprete(char *lbook, char *path)
    }
 
    /* check for pastxx */
-   if (strncmp(path, "past", 4) == 0 && (isdigit(path[4]) || isdigit(path[5])) 
+   if (strncmp(path, "past", 4) == 0 && (isdigit(path[4]) || isdigit(path[5]))
        && isparam("cmd") == 0) {
       show_elog_list(lbs, atoi(path + 4), 0, 0, FALSE, NULL);
       return;
@@ -26691,9 +26688,8 @@ int process_http_request(const char *request, int i_conn)
    time_t now;
    struct tm *ts;
 
-   const char *cookie_list[] = 
-   
-   {"upwd", "unm", "elmode", "urem", "wpwd", "apwd", "uname", "upassword", "elattach", "hsm", NULL};
+   const char *cookie_list[] =
+       { "upwd", "unm", "elmode", "urem", "wpwd", "apwd", "uname", "upassword", "elattach", "hsm", NULL };
 
    if (!strchr(request, '\r'))
       return 0;
@@ -26730,10 +26726,10 @@ int process_http_request(const char *request, int i_conn)
          if (str[i] == '=') {
             str[i] = 0;
             p += i + 1;
-            for (i = 0; *p && *p != ';' && *p != '\r' && *p != '\n' ; )
-               if (i < (int) sizeof(cookie)-1)
+            for (i = 0; *p && *p != ';' && *p != '\r' && *p != '\n';)
+               if (i < (int) sizeof(cookie) - 1)
                   cookie[i++] = *p++;
-               else 
+               else
                   break;
             cookie[i] = 0;
          } else {
@@ -26744,8 +26740,8 @@ int process_http_request(const char *request, int i_conn)
          }
 
          /* store cookie as parameter */
-         for(i=0; cookie_list[i]; i++) {
-            if(strcmp(cookie_list[i], str) == 0) {
+         for (i = 0; cookie_list[i]; i++) {
+            if (strcmp(cookie_list[i], str) == 0) {
                setparam(str, cookie);
                break;
             }
@@ -27272,7 +27268,7 @@ void send_return(int _sock, const char *net_buffer)
 
       if ((keep_alive && strstr(return_buffer, "Content-Length") == NULL) || strstr(return_buffer,
                                                                                     "Content-Length") >
-         strstr(return_buffer, "\r\n\r\n")) {
+          strstr(return_buffer, "\r\n\r\n")) {
 
          /*---- add content-length ----*/
 
@@ -27329,7 +27325,6 @@ void send_return(int _sock, const char *net_buffer)
                memcpy(header_buffer, return_buffer, header_length);
                sprintf(header_buffer + header_length, "\r\nConnection: Close\r\n\r\n");
             }
-
 #ifdef HAVE_SSL
             if (_ssl_flag) {
                SSL_write(ssl_con, header_buffer, strlen(header_buffer));
@@ -28079,8 +28074,7 @@ void server_loop(void)
                   break;
                }
 
-               if (strncmp(net_buffer, "POST", 4) == 0 &&
-                   len < header_length + content_length) {
+               if (strncmp(net_buffer, "POST", 4) == 0 && len < header_length + content_length) {
                   if (verbose)
                      eprintf("Incomplete POST request\n");
                   keep_alive = FALSE;
