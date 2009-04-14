@@ -26849,6 +26849,8 @@ int process_http_request(const char *request, int i_conn)
    /* check for Keep-alive */
    if (strstr(request, "Keep-Alive") != NULL && use_keepalive)
       keep_alive = TRUE;
+   if (strstr(request, "keep-alive") != NULL && use_keepalive)
+      keep_alive = TRUE;
 
    /* extract logbook */
    if (strchr(request, '/') == NULL || strchr(request, '\r') == NULL || strstr(request, "HTTP") == NULL) {
@@ -27276,8 +27278,8 @@ void send_return(int _sock, const char *net_buffer)
 
          p = strstr(return_buffer, "\r\n\r\n");
          if (p != NULL) {
-            length = strlen(p + 4);
             header_length = (int) (p - return_buffer);
+            length = return_length - header_length - 4;
             if (header_length + 100 > (int) sizeof(header_buffer))
                header_length = sizeof(header_buffer) - 100;
             memcpy(header_buffer, return_buffer, header_length);
@@ -27320,8 +27322,8 @@ void send_return(int _sock, const char *net_buffer)
             /* no keepalive, so add connection close */
             p = strstr(return_buffer, "\r\n\r\n");
             if (p != NULL) {
-               length = strlen(p + 4);
                header_length = (int) (p - return_buffer);
+               length = return_length - header_length - 4;
                if (header_length + 100 > (int) sizeof(header_buffer))
                   header_length = sizeof(header_buffer) - 100;
                memcpy(header_buffer, return_buffer, header_length);
