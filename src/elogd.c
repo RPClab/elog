@@ -10531,7 +10531,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         *strchr(str, '{') = 0;
                      strencode2(enc_attr, attrib[index], sizeof(enc_attr));
 
-                     if (strstr(attrib[index], attr_options[index][i]) || strieq(str, enc_attr))
+                     if (strieq(attrib[index], attr_options[index][i]) || strieq(str, enc_attr))
                         rsprintf
                             ("<input type=radio id=\"%s\" name=\"%s\" value=\"%s\" checked onChange=\"mod();\">\n",
                              str, ua, str);
