@@ -13513,9 +13513,9 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
                      NULL, NULL, NULL, NULL, NULL);
 
          if (!is_author(lbs, attrib, owner)) {
-            sprintf(str, loc("Only user <i>%s</i> can delete this entry"), owner);
-            strencode2(str2, str, sizeof(str2));
-            show_error(str2);
+            strencode2(str2, owner, sizeof(str2));
+            sprintf(str, loc("Only user <b>%s</b> can delete this entry"), str2);
+            show_error(str);
             return;
          }
       }
