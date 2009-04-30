@@ -16687,8 +16687,8 @@ void synchronize(LOGBOOK * lbs, int mode)
 /*------------------------------------------------------------------*/
 
 void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int expand, int level,
-                  BOOL printable, int n_line, int show_attachments, char *date, char *reply_to,
-                  int n_attr_disp, char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH],
+                  BOOL printable, int n_line, int show_attachments, int show_att_column, 
+                  char *date, char *reply_to, int n_attr_disp, char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH],
                   BOOL disp_attr_link[MAX_N_ATTR + 4], char attrib[MAX_N_ATTR][NAME_LENGTH], int n_attr,
                   char *text, BOOL show_text, char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
                   char *encoding, BOOL select, int *n_display, char *locked_by, int highlight,
@@ -17294,7 +17294,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
       rsputs("</td>\n");
    }
 
-   if (strieq(mode, "Summary")) {
+   if (show_att_column) {
       /* show attachment icons */
       rsputs("<td class=\"listatt\">&nbsp;");
 
@@ -17542,7 +17542,7 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable, int expand, int
       return;
    }
 
-   display_line(lbs, message_id, 0, "threaded", expand, level, printable, n_line, FALSE, date, reply_to,
+   display_line(lbs, message_id, 0, "threaded", expand, level, printable, n_line, FALSE, FALSE, date, reply_to,
                 n_attr_disp, disp_attr, NULL, (void *) attrib, lbs->n_attr, text, show_text,
                 NULL, encoding, 0, NULL, locked_by, highlight, &re_buf[0], highlight_mid, absolute_link);
 
@@ -18929,7 +18929,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
        sort_attr[MAX_N_ATTR + 4][NAME_LENGTH], mode_cookie[80], charset[25], sort_item[NAME_LENGTH];
    char *p, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
    BOOL show_attachments, threaded, csv, xml, raw, mode_commands, expand, filtering, disp_filter, show_text,
-       text_in_attr, searched, found, disp_attr_link[MAX_N_ATTR + 4], sort_attributes;
+       text_in_attr, searched, found, disp_attr_link[MAX_N_ATTR + 4], sort_attributes, show_att_column;
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2;
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
@@ -20270,6 +20270,15 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       if (getcfg(lbs->name, "Summary lines", str, sizeof(str)))
          n_line = atoi(str);
 
+      /* suppress summary completely if text body is disabled */
+      if (getcfg(lbs->name, "Show text", str, sizeof(str)) && atoi(str) == 0)
+         n_line = 0;
+
+      /* suppress attachment colum if switched off */
+      show_att_column = strieq(mode, "Summary");
+      if (getcfg(lbs->name, "Enable attachments", str, sizeof(str)) && atoi(str) == 0)
+         show_att_column = FALSE;
+
       /* get mode commands flag */
       mode_commands = TRUE;
       if (getcfg(lbs->name, "Mode commands", str, sizeof(str)) && atoi(str) == 0)
@@ -20433,10 +20442,9 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          if (!strieq(mode, "Full") && n_line > 0 && show_text)
             rsprintf("<th class=\"listtitle\">%s</th>\n", loc("Text"));
 
-         if (strieq(mode, "Summary")) {
+         if (show_att_column)
             rsprintf("<th class=\"listtitle\"><img src=\"attachment.png\" alt=\"%s\" title=\"%s\"</th>",
                      loc("Attachments"), loc("Attachments"));
-         }
 
          rsprintf("</tr>\n\n");
       }
@@ -20639,7 +20647,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          }
 
          display_line(msg_list[index].lbs, message_id, index, mode, expand, 0, printable, n_line,
-                      show_attachments, date, reply_to, n_attr_disp, disp_attr, disp_attr_link, attrib,
+                      show_attachments, show_att_column, date, reply_to, n_attr_disp, disp_attr, disp_attr_link, attrib,
                       lbs->n_attr, text, show_text, attachment, encoding,
                       isparam("select") ? atoi(getparam("select")) : 0, &n_display, locked_by, 0, re_buf,
                       page_mid, FALSE);
@@ -20750,7 +20758,7 @@ void show_elog_thread(LOGBOOK * lbs, int message_id, int absolute_links, int hig
    rsprintf("<tr><td><table width=\"100%%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
 
    display_line(lbs, head_id, 0, "Threaded", 1, 0, FALSE, 0,
-                FALSE, date, reply_to, n_attr_disp, disp_attr, NULL, attrib, lbs->n_attr, text, FALSE,
+                FALSE, FALSE, date, reply_to, n_attr_disp, disp_attr, NULL, attrib, lbs->n_attr, text, FALSE,
                 attachment, encoding, 0, &n_display, locked_by, message_id, NULL, highlight_mid,
                 absolute_links);
 
