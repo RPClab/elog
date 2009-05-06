@@ -8555,6 +8555,9 @@ BOOL change_pwd(LOGBOOK * lbs, char *user, char *pwd)
    char str[256], file_name[256];
    PMXML_NODE node;
 
+   if (lbs == NULL)
+      lbs = &lb_list[0];
+
    if (!lbs->pwd_xml_tree)
       return FALSE;
 
@@ -25565,6 +25568,13 @@ void interprete(char *lbook, char *path)
    /* if no logbook given, display logbook selection page */
    if (!logbook[0] && !path[0]) {
       if (n > 1) {
+
+         /* check for forgot password page */
+         if (strieq(command, loc("Forgot"))) {
+            show_forgot_pwd_page(NULL);
+            return;
+         }
+
          show_selection_page();
          return;
       }
@@ -26289,6 +26299,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
+   /* check for forgot password page */
    if (strieq(command, loc("Forgot"))) {
       show_forgot_pwd_page(lbs);
       return;
