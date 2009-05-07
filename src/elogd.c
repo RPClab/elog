@@ -7882,6 +7882,8 @@ void show_bottom_text(LOGBOOK * lbs)
    char str[NAME_LENGTH], slist[20][NAME_LENGTH], svalue[20][NAME_LENGTH];
    int i, size;
 
+   if (lbs == NULL)
+      return;
    if (getcfg(lbs->name, "bottom text", str, sizeof(str))) {
       FILE *f;
       char file_name[256], *buf;
