@@ -5411,7 +5411,7 @@ int is_html(char *s)
 
 char *script_tags[] = { "onerror", "onabort", "onchange", "onclick", "ondblclick", "onfocus", "onkeydown",
    "onkeyup", "onload", "onmousedonw", "onmousemove", "onmouseover", "onmouseup",
-   "onreset", "onselect", "onsubmit", "onunload", "javascript"
+   "onreset", "onselect", "onsubmit", "onunload", "javascript", NULL
 };
 
 int is_script(char *s)
@@ -5425,7 +5425,7 @@ int is_script(char *s)
       str[i] = tolower(s[i]);
    str[i] = 0;
 
-   for (i = 0; script_tags[i][0]; i++) {
+   for (i = 0; script_tags[i] != NULL; i++) {
       if (strstr(str, script_tags[i])) {
          xfree(str);
          return TRUE;
