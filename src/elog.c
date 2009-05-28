@@ -182,13 +182,14 @@ size_t strlcat(char *dst, const char *src, size_t size)
 
 /*-------------------------------------------------------------------*/
 
-void btou(char *str)
-/* convert all blanks to underscores in a string */
+void stou(char *str)
+/* convert all special characters to underscores in a string */
 {
    int i;
 
    for (i = 0; i < (int) strlen(str); i++)
-      if (str[i] == ' ')
+      if (str[i] == ' ' || str[i] == '.' || str[i] == '/' ||
+          str[i] == '\\' || str[i] == '-' || str[i] == '(' || str[i] == ')')
          str[i] = '_';
 }
 
@@ -834,7 +835,7 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
    for (i = 0; i < n_attr; i++) {
       strcpy(str, attrib_name[i]);
       if (str[0]) {
-         btou(str);
+         stou(str);
          sprintf(content + strlen(content),
                  "%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n", boundary, str, attrib[i]);
       }
