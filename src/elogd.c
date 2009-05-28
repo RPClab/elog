@@ -5538,7 +5538,7 @@ int line_break(char *str, char *encoding)
       return str[0] == '\n';
    }
    // HTML encoding
-   if (strncmp(str, "</p>", 4) == 0 || strncmp(str, "<br>", 4) == 0 || strncmp(str, "<br />", 4) == 0)
+   if (strncmp(str, "</p>", 4) == 0 || strncmp(str, "<br>", 4) == 0 || strncmp(str, "<br />", 6) == 0)
       return 1;
 
    return 0;
