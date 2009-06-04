@@ -22547,7 +22547,7 @@ void submit_elog_mirror(LOGBOOK * lbs)
 void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_id)
 {
    int size, i, n, n_done, n_done_reply, n_reply, index, status, fh, source_id, message_id;
-   char str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
+   char str[256], str2[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
    char date[80], *text, msg_str[32], in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256], *buffer,
        list[MAX_N_ATTR][NAME_LENGTH];
@@ -22625,8 +22625,8 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
                read(fh, buffer, size);
                close(fh);
 
-               /* stip date/time from file name */
-               strlcpy(file_name, attachment[i] + 14, NAME_LENGTH);
+               /* keep original file name for inline references */
+               strlcpy(file_name, attachment[i], NAME_LENGTH);
 
                el_submit_attachment(lbs_dest, file_name, buffer, size, attachment[i]);
 
@@ -22636,6 +22636,22 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
                /* attachment is invalid */
                attachment[i][0] = 0;
          }
+
+      /* correct possible references to attachments */
+      if (strieq(encoding, "ELCode")) {
+         sprintf(str, "[IMG]elog:%d/", src_id);
+         while (stristr(text, str))
+            strsubst(text, TEXT_SIZE, str, "[IMG]elog:/");
+      } else if (strieq(encoding, "HTML")) {
+         sprintf(str, "?lb=%s\"", lbs->name_enc);
+         sprintf(str2, "?lb=%s\"", dest_logbook);
+         while (stristr(text, str))
+            strsubst(text, TEXT_SIZE, str, str2);
+         sprintf(str, "?lb=%s&", lbs->name_enc);
+         sprintf(str2, "?lb=%s&", dest_logbook);
+         while (stristr(text, str))
+            strsubst(text, TEXT_SIZE, str, str2);
+      }
 
       /* if called recursively (for threads), put in correct in_reply_to */
       str[0] = 0;
