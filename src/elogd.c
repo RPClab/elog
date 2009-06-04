@@ -10096,9 +10096,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("</td>\n");
 
       /* if attribute cannot be changed, just display text */
-      if ((attr_flags[index] & AF_LOCKED) || ((bedit && !breedit && !bupload) && (attr_flags[index]
-                                                                                  & AF_FIXED_EDIT))
-          || (message_id && !bedit && (attr_flags[index] & AF_FIXED_REPLY))) {
+      if ((attr_flags[index] & AF_LOCKED) || 
+           (message_id && bedit && (attr_flags[index] & AF_FIXED_EDIT)) ||
+           (message_id && !bedit && (attr_flags[index] & AF_FIXED_REPLY))) {
 
          if (attr_flags[index] & AF_DATE) {
 
