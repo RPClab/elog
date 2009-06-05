@@ -27670,6 +27670,13 @@ void server_loop(void)
    SSL_CTX *ssl_ctx;
 #endif
 
+#ifdef OS_UNIX
+   /* sigaction structs */
+   struct sigaction ctrlc_handle;
+   struct sigaction ignore_handle;
+   struct sigaction hup_handle;
+#endif
+
    i_conn = content_length = 0;
    net_buffer_size = 100000;
    net_buffer = xmalloc(net_buffer_size);
@@ -27825,11 +27832,22 @@ void server_loop(void)
       close(fd);
    }
 
-   /* install signal handler */
-   signal(SIGTERM, ctrlc_handler);
-   signal(SIGINT, ctrlc_handler);
-   signal(SIGPIPE, SIG_IGN);
-   signal(SIGHUP, hup_handler);
+   /* install signal handlers */
+   ctrlc_handle.sa_handler = ctrlc_handler;
+   sigemptyset(&ctrlc_handle.sa_mask);
+   ctrlc_handle.sa_flags = 0;
+
+   sigaction(SIGTERM, &ctrlc_handle, NULL);
+   sigaction(SIGINT, &ctrlc_handle, NULL);
+
+   ignore_handle.sa_handler = SIG_IGN;
+   sigaction(SIGPIPE, &ignore_handle, NULL);
+
+   hup_handle.sa_handler = hup_handler;
+   sigemptyset(&hup_handle.sa_mask);
+   hup_handle.sa_flags = 0;
+   sigaction(SIGHUP, &hup_handle, NULL);
+
    /* give up root privilege */
    if (geteuid() == 0) {
       if (!getcfg("global", "Grp", str, sizeof(str)) || setegroup(str) < 0) {
