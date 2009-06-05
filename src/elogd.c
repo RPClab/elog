@@ -22546,11 +22546,12 @@ void submit_elog_mirror(LOGBOOK * lbs)
 
 void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_id)
 {
-   int size, i, n, n_done, n_done_reply, n_reply, index, status, fh, source_id, message_id;
-   char str[256], str2[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
-   char date[80], *text, msg_str[32], in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
-       attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256], *buffer,
-       list[MAX_N_ATTR][NAME_LENGTH];
+   int size, i, n, n_done, n_done_reply, n_reply, index, status, fh, source_id, message_id,
+      thumb_status;
+   char str[256], str2[256], file_name[MAX_PATH_LENGTH], thumb_name[MAX_PATH_LENGTH],
+      attrib[MAX_N_ATTR][NAME_LENGTH], date[80], *text, msg_str[32], in_reply_to[80], 
+      reply_to[MAX_REPLY_TO * 10], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], 
+      encoding[80], locked_by[256], *buffer, list[MAX_N_ATTR][NAME_LENGTH];
    LOGBOOK *lbs_dest;
    BOOL bedit;
 
@@ -22629,13 +22630,68 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
                /* keep original file name for inline references */
                strlcpy(file_name, attachment[i], NAME_LENGTH);
 
-               el_submit_attachment(lbs_dest, file_name, buffer, size, attachment[i]);
+               el_submit_attachment(lbs_dest, file_name, buffer, size, NULL);
 
                if (buffer)
                   xfree(buffer);
             } else
                /* attachment is invalid */
                attachment[i][0] = 0;
+
+            /* check for thumbnail */
+            strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+            strlcat(file_name, attachment[i], sizeof(file_name));
+            thumb_status = get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
+
+            if (thumb_status == 1) {
+               fh = open(thumb_name, O_RDONLY | O_BINARY);
+               if (fh > 0) {
+                  lseek(fh, 0, SEEK_END);
+                  size = TELL(fh);
+                  lseek(fh, 0, SEEK_SET);
+                  buffer = xmalloc(size);
+                  read(fh, buffer, size);
+                  close(fh);
+
+                  /* keep original file name for inline references */
+                  if (strrchr(thumb_name, '\\'))
+                     strlcpy(str, strrchr(thumb_name, '\\')+1, sizeof(str));
+                  else
+                     strlcpy(str, thumb_name, sizeof(str));
+
+                  el_submit_attachment(lbs_dest, str, buffer, size, NULL);
+
+                  if (buffer)
+                     xfree(buffer);
+               }
+            } if (thumb_status == 2) {
+               for (i = 0;; i++) {
+                  get_thumb_name(file_name, thumb_name, sizeof(thumb_name), i);
+                  if (thumb_name[0]) {
+                     fh = open(thumb_name, O_RDONLY | O_BINARY);
+                     if (fh > 0) {
+                        lseek(fh, 0, SEEK_END);
+                        size = TELL(fh);
+                        lseek(fh, 0, SEEK_SET);
+                        buffer = xmalloc(size);
+                        read(fh, buffer, size);
+                        close(fh);
+
+                        /* keep original file name for inline references */
+                        if (strrchr(thumb_name, '\\'))
+                           strlcpy(str, strrchr(thumb_name, '\\')+1, sizeof(str));
+                        else
+                           strlcpy(str, thumb_name, sizeof(str));
+
+                        el_submit_attachment(lbs_dest, str, buffer, size, NULL);
+
+                        if (buffer)
+                           xfree(buffer);
+                     }
+                  } else
+                     break;
+               }
+            }
          }
 
       /* correct possible references to attachments */
