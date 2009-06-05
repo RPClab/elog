@@ -22552,6 +22552,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256], *buffer,
        list[MAX_N_ATTR][NAME_LENGTH];
    LOGBOOK *lbs_dest;
+   BOOL bedit;
 
    for (i = 0; lb_list[i].name[0]; i++)
       if (strieq(lb_list[i].name, dest_logbook))
@@ -22653,6 +22654,17 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
             strsubst(text, TEXT_SIZE, str, str2);
       }
 
+      /* keep original message ID if requested */
+      message_id = 0;
+      bedit = FALSE;
+      if (getcfg(lbs->name, "Preserve IDs", str, sizeof(str)) && atoi(str) == 1) {
+         message_id = source_id;
+
+         /* test if entry exists already */
+         status = el_retrieve(lbs_dest, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, NULL);
+         bedit = (status == EL_SUCCESS);
+      }
+
       /* if called recursively (for threads), put in correct in_reply_to */
       str[0] = 0;
       if (orig_id)
@@ -22661,7 +22673,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
       /* submit in destination logbook without links, submit all attributes from
          the source logbook even if the destination has a differnt number of attributes */
 
-      message_id = el_submit(lbs_dest, 0, FALSE, date, attr_list, attrib, lbs->n_attr, text, str, "",
+      message_id = el_submit(lbs_dest, message_id, bedit, date, attr_list, attrib, lbs->n_attr, text, str, "",
                              encoding, attachment, TRUE, NULL);
 
       if (message_id <= 0) {

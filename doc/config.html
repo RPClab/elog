@@ -753,7 +753,8 @@ Menu commands = List, New, Edit, Delete, Reply, Duplicate, Find, Config, Help
         <b><code>Copy to = &lt;logbook list&gt;</code></b> and <b><code>Move to
         = &lt;logbook list&gt;</code></b> it is possible to specify a list of
         destination logbooks, separated by commata. This can make sense if only
-        certain logbooks make sense as destinations.
+        certain logbooks make sense as destinations. The flag <code><b>Preserve IDs</b></code>
+        can be used to keep the entry ID in the destination logbook.
       </li>
       <li>
         <b><code>List Menu commands = &lt;list&gt;</code></b><br>
@@ -2539,6 +2540,15 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
         script. The setting of this flag determines the default state of this
         checkbox. In logbooks where a script should only be ocasionally
         executed, it could make sense to set this flag to <b>1</b>.
+      </li>
+      <li>
+        <b><code>Preserve IDs = 0|1</code></b><br>
+        When a logbook entry is copied or moved to another logbook, it obtains
+        a new entry ID in the destination logbook. This can cause problems
+        if the logbook entries reference each other with their IDs. To keep the
+        same ID in the destination logbook, this setting can be set to <b>1</b>.
+        If an entry with the same ID in the destination logbook exists already,
+        it gets overwritten. Default for this setting is <b>0</b>.
       </li>
     </ul>
     <p>
