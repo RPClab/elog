@@ -22726,7 +22726,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
       if (getcfg(lbs->name, "Preserve IDs", str, sizeof(str)) && atoi(str) == 1)
          message_id = el_submit(lbs_dest, message_id, bedit, date, attr_list, attrib, lbs->n_attr, text, in_reply_to, reply_to,
-                                encoding, attachment, TRUE, NULL);
+                                encoding, attachment, FALSE, NULL);
       else {
          /* if called recursively (for threads), put in correct in_reply_to */
          str[0] = 0;
