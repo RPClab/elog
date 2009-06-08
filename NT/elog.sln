@@ -1,6 +1,6 @@
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "elog", "elog.vcproj", "{A1453D3C-2FD7-41EC-9057-C01E299DA71C}"
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "elog", "elog.vcproj", "{FD6FCAF3-A94B-40FA-AE52-07705DE2E519}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -8,10 +8,10 @@ Global
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A1453D3C-2FD7-41EC-9057-C01E299DA71C}.Debug|Win32.ActiveCfg = Debug|Win32
-		{A1453D3C-2FD7-41EC-9057-C01E299DA71C}.Debug|Win32.Build.0 = Debug|Win32
-		{A1453D3C-2FD7-41EC-9057-C01E299DA71C}.Release|Win32.ActiveCfg = Release|Win32
-		{A1453D3C-2FD7-41EC-9057-C01E299DA71C}.Release|Win32.Build.0 = Release|Win32
+		{FD6FCAF3-A94B-40FA-AE52-07705DE2E519}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FD6FCAF3-A94B-40FA-AE52-07705DE2E519}.Debug|Win32.Build.0 = Debug|Win32
+		{FD6FCAF3-A94B-40FA-AE52-07705DE2E519}.Release|Win32.ActiveCfg = Release|Win32
+		{FD6FCAF3-A94B-40FA-AE52-07705DE2E519}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
