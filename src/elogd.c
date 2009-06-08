@@ -22721,20 +22721,21 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
          bedit = (status == EL_SUCCESS);
       }
 
-      /* if called recursively (for threads), put in correct in_reply_to */
-      str[0] = 0;
-      if (orig_id)
-         sprintf(str, "%d", orig_id);
-
       /* submit in destination logbook without links, submit all attributes from
          the source logbook even if the destination has a differnt number of attributes */
 
       if (getcfg(lbs->name, "Preserve IDs", str, sizeof(str)) && atoi(str) == 1)
          message_id = el_submit(lbs_dest, message_id, bedit, date, attr_list, attrib, lbs->n_attr, text, in_reply_to, reply_to,
                                 encoding, attachment, TRUE, NULL);
-      else
+      else {
+         /* if called recursively (for threads), put in correct in_reply_to */
+         str[0] = 0;
+         if (orig_id)
+            sprintf(str, "%d", orig_id);
+
          message_id = el_submit(lbs_dest, message_id, bedit, date, attr_list, attrib, lbs->n_attr, text, str, "",
                                 encoding, attachment, TRUE, NULL);
+      }
 
       if (message_id <= 0) {
          sprintf(str, loc("New entry cannot be written to directory \"%s\""), lbs_dest->data_dir);
