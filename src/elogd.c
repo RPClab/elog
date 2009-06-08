@@ -4697,16 +4697,17 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
       lseek(fh, lbs->el_index[index].offset, SEEK_SET);
    } else {
       /* create new message */
-      if (!date[0])
+      if (!date[0]) {
          get_rfc2822_date(date1, sizeof(date1), 0);
-      else
-         strlcpy(date1, date, sizeof(date1));
+         ltime = date_to_ltime(date1);
+      } else {
+         ltime = date_to_ltime(date);
+         get_rfc2822_date(date1, sizeof(date1), ltime);
+      }
 
       for (i = 0; i < 12; i++)
          if (strncmp(date1 + 8, mname[i], 3) == 0)
             break;
-
-      ltime = date_to_ltime(date1);
 
       sprintf(file_name, "%c%c%02d%c%ca.log", date1[14], date1[15], i + 1, date1[5], date1[6]);
 
