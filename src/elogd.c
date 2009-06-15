@@ -21744,6 +21744,15 @@ void submit_elog(LOGBOOK * lbs)
    bmultiedit = isparam("nsel");
    bedit = isparam("edit_id");
 
+   /* check for condition */
+   if (isparam("condition")) {
+      set_condition(getparam("condition"));
+
+      /* rescan attributes */
+      n_attr = scan_attributes(lbs->name);
+   } else
+      n_attr = lbs->n_attr;
+
    /* check for required attributs */
    missing = 0;
    for (i = 0; i < lbs->n_attr; i++) {
@@ -21832,15 +21841,6 @@ void submit_elog(LOGBOOK * lbs)
             return;
          }
       }
-
-   /* check for extended attributs */
-   if (isparam("condition")) {
-      set_condition(getparam("condition"));
-
-      /* rescan attributes */
-      n_attr = scan_attributes(lbs->name);
-   } else
-      n_attr = lbs->n_attr;
 
    for (i = 0; i < n_attr; i++) {
       strcpy(ua, attr_list[i]);
