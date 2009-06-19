@@ -11215,16 +11215,16 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          if (atoi(str) == 0) {
             rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
             rsprintf("<input type=\"checkbox\" name=\"resubmit\" id=\"resubmit\" value=1>");
-            rsprintf("<label for=\"resubmit\">%s</lable>\n", loc("Resubmit as new entry"));
+            rsprintf("<label for=\"resubmit\">%s</label>\n", loc("Resubmit as new entry"));
          } else if (atoi(str) == 1) {
             rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
             rsprintf("<input type=\"checkbox\" checked name=\"resubmit\" id=\"resubmit\" value=1>");
-            rsprintf("<label for=\"resubmit\">%s</lable>\n", loc("Resubmit as new entry"));
+            rsprintf("<label for=\"resubmit\">%s</label>\n", loc("Resubmit as new entry"));
          }
       } else {
          rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
          rsprintf("<input type=\"checkbox\" name=\"resubmit\" id=\"resubmit\" value=1>");
-         rsprintf("<label for=\"resubmit\">%s</lable>\n", loc("Resubmit as new entry"));
+         rsprintf("<label for=\"resubmit\">%s</label>\n", loc("Resubmit as new entry"));
       }
    }
 
