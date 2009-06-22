@@ -38,7 +38,8 @@ function replaceSelection(doc, text, newSelection, cursorPos)
         stop--;
       end   = text.textLength;
       endtext = text.value.substring(stop, end);
-      starttext = text.value.substring(0,	start);
+      starttext = text.value.substring(0, start);
+      oldTop = text.scrollTop;
       text.value = starttext + newSelection + endtext;
       if (start != stop) {
          text.selectionStart = start;
@@ -46,7 +47,8 @@ function replaceSelection(doc, text, newSelection, cursorPos)
       } else {
          text.selectionStart = start +	cursorPos;
          text.selectionEnd   = text.selectionStart;
-      }
+     }
+     text.scrollTop = oldTop;
    }
 }
 
