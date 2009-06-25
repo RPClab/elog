@@ -22551,7 +22551,7 @@ void submit_elog_mirror(LOGBOOK * lbs)
 void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_id)
 {
    int size, i, n, n_done, n_done_reply, n_reply, index, status, fh, source_id, message_id,
-      thumb_status;
+      thumb_status, next_id = 0;
    char str[256], str2[256], file_name[MAX_PATH_LENGTH], thumb_name[MAX_PATH_LENGTH],
       attrib[MAX_N_ATTR][NAME_LENGTH], date[80], *text, msg_str[32], in_reply_to[80], 
       reply_to[MAX_REPLY_TO * 10], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], 
@@ -22573,7 +22573,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
    text = xmalloc(TEXT_SIZE);
 
-   n_done = n_done_reply = source_id = status = 0;
+   n_done = n_done_reply = source_id = status = next_id = 0;
    for (index = 0; index < n; index++) {
       if (src_id)
          source_id = src_id;
@@ -22761,15 +22761,15 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
       n_done_reply += n_reply;
 
       /* delete original message for move */
+      next_id = source_id;
       if (move && orig_id == 0) {
+
+         /* find next message head */
+         next_id = el_search_message(lbs, EL_NEXT, source_id, TRUE);
+         if (next_id <= 0)
+            next_id = el_search_message(lbs, EL_LAST, 0, FALSE);
+
          el_delete_message(lbs, source_id, TRUE, NULL, TRUE, TRUE);
-
-         /* check if this was the last message */
-         source_id = el_search_message(lbs, EL_NEXT, source_id, FALSE);
-
-         /* if yes, force display of new last message */
-         if (source_id <= 0)
-            source_id = el_search_message(lbs, EL_LAST, 0, FALSE);
       }
    }
 
@@ -22779,8 +22779,8 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
       return;
 
    /* redirect to next entry of source logbook */
-   if (source_id)
-      sprintf(str, "%d", source_id);
+   if (next_id)
+      sprintf(str, "%d", next_id);
    else
       str[0] = 0;
    redirect(lbs, str);
