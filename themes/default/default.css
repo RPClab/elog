@@ -275,6 +275,25 @@ td {
   border-left:1px solid white;
   background-color:#CCCCFF;
   text-align:center;
+  width:0%;
+}
+
+.listtitle2 {
+  border:1px solid #0000FF;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  background-color:#DDDDFF;
+  text-align:center;
+  width:100%;
+}
+
+.listtitle3 {
+  border:1px solid #0000FF;
+  border-top:1px solid white;
+  border-left:1px solid white;
+  background-color:#FFCCFF;
+  text-align:center;
+  width:0%;
 }
 
 /* odd and even lines in message listing */

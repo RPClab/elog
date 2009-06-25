@@ -20463,10 +20463,10 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          }
 
          if (!strieq(mode, "Full") && n_line > 0 && show_text)
-            rsprintf("<th class=\"listtitle\">%s</th>\n", loc("Text"));
+            rsprintf("<th class=\"listtitle2\">%s</th>\n", loc("Text"));
 
          if (show_att_column)
-            rsprintf("<th class=\"listtitle\"><img src=\"attachment.png\" alt=\"%s\" title=\"%s\"</th>",
+            rsprintf("<th class=\"listtitle3\"><img src=\"attachment.png\" alt=\"%s\" title=\"%s\"</th>",
                      loc("Attachments"), loc("Attachments"));
 
          rsprintf("</tr>\n\n");
