@@ -6750,10 +6750,18 @@ void compose_base_url(LOGBOOK * lbs, char *base_url, int size, BOOL email_notify
 
 /*------------------------------------------------------------------*/
 
-void set_location(LOGBOOK * lbs, char *rel_path)
+void set_location(LOGBOOK * lbs, char *rp)
 {
-   char str[NAME_LENGTH], group[NAME_LENGTH], list[NAME_LENGTH], *p;
+   char str[NAME_LENGTH], group[NAME_LENGTH], list[NAME_LENGTH], *p,
+      rel_path[NAME_LENGTH];
    int i;
+
+   /* remove any CR/LF from path */
+   strlcpy(rel_path, rp, sizeof(rel_path));
+   if (strchr(rel_path, '\r'))
+      *strchr(rel_path, '\r') = 0;
+   if (strchr(rel_path, '\n'))
+      *strchr(rel_path, '\n') = 0;
 
    if (getcfg(lbs->name, "Relative redirect", str, sizeof(str)) && atoi(str) == 1) {
 
