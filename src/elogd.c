@@ -17876,7 +17876,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
    strlcat(other_str, "Cancel, First, Last, Previous, Next, Requested, Forgot, ", sizeof(other_str));
 
    /* only allow Submit & Co if "New" is allowed */
-   if (stristr(menu_str, "New"))
+   if (stristr(menu_str, "New,") || stristr(menu_str, "Edit"))
       strlcat(other_str, "Update, Upload, Submit, Save, ", sizeof(other_str));
 
    /* add save for new user registration */
@@ -17895,7 +17895,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
       return TRUE;
    }
    /* exclude non-localized submit for elog */
-   else if (command[0] && strieq(command, "Submit") && stristr(menu_str, "New")) {
+   else if (command[0] && strieq(command, "Submit") && (stristr(menu_str, "New,") || stristr(menu_str, "Edit"))) {
       return TRUE;
    }
    /* exclude other non-localized commands */
