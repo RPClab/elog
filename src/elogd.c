@@ -8729,13 +8729,10 @@ void get_auto_index(LOGBOOK * lbs, int index, char *format, char *retstr, int si
       el_retrieve(lbs, message_id, NULL, attr_list, attrib, lbs->n_attr, NULL, 0, NULL, NULL, att, NULL,
                   NULL);
 
-      /* if date part changed, start over with index */
-      if (strlen(attrib[index]) > 0 && strncmp(attrib[index], retstr, loc) != 0)
-         old_index = 0;
-      else
-         /* retrieve old index */
-      if (atoi(attrib[index] + loc) > old_index)
-         old_index = atoi(attrib[index] + loc);
+      /* if same date found, obtain largest index */
+      if (strlen(attrib[index]) > 0 && strncmp(attrib[index], retstr, loc) == 0)
+         if (atoi(attrib[index] + loc) > old_index)
+            old_index = atoi(attrib[index] + loc);
 
       message_id = el_search_message(lbs, EL_PREV, message_id, FALSE);
 
