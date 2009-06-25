@@ -18801,7 +18801,7 @@ void show_rss_feed(LOGBOOK * lbs)
 
    text = xmalloc(TEXT_SIZE);
    message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
-   for (index = 0; index < n; index++) {
+   for (index = 0; index < n && message_id ; index++) {
       rsprintf("<item>\n");
 
       size = TEXT_SIZE;
@@ -18866,8 +18866,6 @@ void show_rss_feed(LOGBOOK * lbs)
 
       rsprintf("</item>\n");
       message_id = el_search_message(lbs, EL_PREV, message_id, FALSE);
-      if (!message_id)
-         break;
    }
 
    xfree(text);
