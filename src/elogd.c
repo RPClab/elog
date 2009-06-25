@@ -22566,11 +22566,16 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
    int size, i, n, n_done, n_done_reply, n_reply, index, status, fh, source_id, message_id,
       thumb_status, next_id = 0;
    char str[256], str2[256], file_name[MAX_PATH_LENGTH], thumb_name[MAX_PATH_LENGTH],
-      attrib[MAX_N_ATTR][NAME_LENGTH], date[80], *text, msg_str[32], in_reply_to[80], 
-      reply_to[MAX_REPLY_TO * 10], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], 
-      encoding[80], locked_by[256], *buffer, list[MAX_N_ATTR][NAME_LENGTH];
+      *attrib, date[80], *text, msg_str[32], in_reply_to[80], 
+      reply_to[MAX_REPLY_TO * 10], *attachment, 
+      encoding[80], locked_by[256], *buffer, *list;
    LOGBOOK *lbs_dest;
    BOOL bedit;
+
+   attachment= xmalloc(MAX_ATTACHMENTS * MAX_PATH_LENGTH); 
+   attrib = xmalloc(MAX_N_ATTR * NAME_LENGTH);
+   list = xmalloc(MAX_N_ATTR * NAME_LENGTH);
+   text = xmalloc(TEXT_SIZE);
 
    for (i = 0; lb_list[i].name[0]; i++)
       if (strieq(lb_list[i].name, dest_logbook))
@@ -22583,8 +22588,6 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
       n = 1;
    else
       n = isparam("nsel") ? atoi(getparam("nsel")) : 0;
-
-   text = xmalloc(TEXT_SIZE);
 
    n_done = n_done_reply = source_id = status = next_id = 0;
    for (index = 0; index < n; index++) {
@@ -22600,13 +22603,16 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
       /* get message */
       size = TEXT_SIZE;
-      status = el_retrieve(lbs, source_id, date, attr_list, attrib, lbs->n_attr, text, &size, in_reply_to,
-                           reply_to, attachment, encoding, locked_by);
+      status = el_retrieve(lbs, source_id, date, attr_list, (void *) attrib, lbs->n_attr, text, &size, in_reply_to,
+                           reply_to, (void *) attachment, encoding, locked_by);
 
       if (status != EL_SUCCESS) {
          sprintf(msg_str, "%d", source_id);
          sprintf(str, loc("Entry %s cannot be read from logbook \"%s\""), msg_str, lbs->name);
          show_error(str);
+         xfree(attachment);
+         xfree(attrib);
+         xfree(list);
          xfree(text);
          return;
       }
@@ -22616,13 +22622,16 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
          while (atoi(in_reply_to) > 0) {
             source_id = atoi(in_reply_to);
             size = TEXT_SIZE;
-            status = el_retrieve(lbs, source_id, date, attr_list, attrib, lbs->n_attr, text, &size,
-                                 in_reply_to, reply_to, attachment, encoding, locked_by);
+            status = el_retrieve(lbs, source_id, date, attr_list, (void *) attrib, lbs->n_attr, text, &size,
+                                 in_reply_to, reply_to, (void *) attachment, encoding, locked_by);
 
             if (status != EL_SUCCESS) {
                sprintf(msg_str, "%d", source_id);
                sprintf(str, loc("Entry %s cannot be read from logbook \"%s\""), msg_str, lbs->name);
                show_error(str);
+               xfree(attachment);
+               xfree(attrib);
+               xfree(list);
                xfree(text);
                return;
             }
@@ -22631,9 +22640,9 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
       /* read attachments */
       for (i = 0; i < MAX_ATTACHMENTS; i++)
-         if (attachment[i][0]) {
+         if (attachment[i*MAX_PATH_LENGTH]) {
             strlcpy(file_name, lbs->data_dir, sizeof(file_name));
-            strlcat(file_name, attachment[i], sizeof(file_name));
+            strlcat(file_name, attachment+i*MAX_PATH_LENGTH, sizeof(file_name));
 
             fh = open(file_name, O_RDONLY | O_BINARY);
             if (fh > 0) {
@@ -22645,7 +22654,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
                close(fh);
 
                /* keep original file name for inline references */
-               strlcpy(file_name, attachment[i], NAME_LENGTH);
+               strlcpy(file_name, attachment+i*MAX_PATH_LENGTH, NAME_LENGTH);
 
                el_submit_attachment(lbs_dest, file_name, buffer, size, NULL);
 
@@ -22653,11 +22662,11 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
                   xfree(buffer);
             } else
                /* attachment is invalid */
-               attachment[i][0] = 0;
+               attachment[i*MAX_PATH_LENGTH] = 0;
 
             /* check for thumbnail */
             strlcpy(file_name, lbs->data_dir, sizeof(file_name));
-            strlcat(file_name, attachment[i], sizeof(file_name));
+            strlcat(file_name, attachment+i*MAX_PATH_LENGTH, sizeof(file_name));
             thumb_status = get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
 
             if (thumb_status == 1) {
@@ -22742,16 +22751,16 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
          the source logbook even if the destination has a differnt number of attributes */
 
       if (getcfg(lbs->name, "Preserve IDs", str, sizeof(str)) && atoi(str) == 1)
-         message_id = el_submit(lbs_dest, message_id, bedit, date, attr_list, attrib, lbs->n_attr, text, in_reply_to, reply_to,
-                                encoding, attachment, FALSE, NULL);
+         message_id = el_submit(lbs_dest, message_id, bedit, date, attr_list, (void *) attrib, lbs->n_attr, text, in_reply_to, reply_to,
+                                encoding, (void *) attachment, FALSE, NULL);
       else {
          /* if called recursively (for threads), put in correct in_reply_to */
          str[0] = 0;
          if (orig_id)
             sprintf(str, "%d", orig_id);
 
-         message_id = el_submit(lbs_dest, message_id, bedit, date, attr_list, attrib, lbs->n_attr, text, str, "",
-                                encoding, attachment, TRUE, NULL);
+         message_id = el_submit(lbs_dest, message_id, bedit, date, attr_list, (void *) attrib, lbs->n_attr, text, str, "",
+                                encoding, (void *) attachment, TRUE, NULL);
       }
 
       if (message_id <= 0) {
@@ -22759,6 +22768,9 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
          strcat(str, "\n<p>");
          strcat(str, loc("Please check that it exists and elogd has write access"));
          show_error(str);
+         xfree(attachment);
+         xfree(attrib);
+         xfree(list);
          xfree(text);
          return;
       }
@@ -22766,9 +22778,9 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
       n_done++;
 
       /* submit all replies */
-      n_reply = strbreak(reply_to, list, MAX_N_ATTR, ",", FALSE);
+      n_reply = strbreak(reply_to, (void *) list, MAX_N_ATTR, ",", FALSE);
       for (i = 0; i < n_reply; i++) {
-         copy_to(lbs, atoi(list[i]), dest_logbook, move, message_id);
+         copy_to(lbs, atoi(list+i*NAME_LENGTH), dest_logbook, move, message_id);
       }
 
       n_done_reply += n_reply;
@@ -22786,6 +22798,9 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
       }
    }
 
+   xfree(attachment);
+   xfree(attrib);
+   xfree(list);
    xfree(text);
 
    if (orig_id)
