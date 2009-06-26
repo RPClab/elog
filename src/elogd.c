@@ -22853,9 +22853,11 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
    if (!image_magick_exist)
       return 0;
 
-   if (getcfg(lbs->name, "Thumbnail size", str, sizeof(str)))
+   if (getcfg(lbs->name, "Thumbnail size", str, sizeof(str))) {
+      if (strcmp(str, "0") == 0)
+         return 0;
       sprintf(thumb_size, " -thumbnail '%s'", str);
-   else
+   } else
       thumb_size[0] = 0;
 
    if (!chkext(file_name, ".ps") && !chkext(file_name, ".pdf") && !chkext(file_name, ".eps")
