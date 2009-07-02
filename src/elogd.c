@@ -9672,10 +9672,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf("    document.form1.n%d.focus();\n", i);
                rsprintf("    return false;\n");
                rsprintf("  }\n");
-               rsprintf("  if (document.form1.s%d.value == \"\") {\n", i);
+               rsprintf("  if (document.form1.c%d.value == \"\") {\n", i);
                sprintf(str, loc("Please enter second for attribute '%s'"), attr_list[i]);
                rsprintf("    alert(\"%s\");\n", str);
-               rsprintf("    document.form1.s%d.focus();\n", i);
+               rsprintf("    document.form1.c%d.focus();\n", i);
                rsprintf("    return false;\n");
                rsprintf("  }\n");
             }
