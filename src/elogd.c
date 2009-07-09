@@ -5410,6 +5410,16 @@ int is_html(char *s)
 
 /*------------------------------------------------------------------*/
 
+int html_allowed(LOGBOOK *lbs)
+{
+   char str[80];
+
+   return (getcfg(lbs->name, "Allow HTML", str, sizeof(str)) && atoi(str) == 1);
+}
+
+
+/*------------------------------------------------------------------*/
+
 char *script_tags[] = { "onerror", "onabort", "onchange", "onclick", "ondblclick", "onfocus", "onkeydown",
    "onkeyup", "onload", "onmousedonw", "onmousemove", "onmouseover", "onmouseup",
    "onreset", "onselect", "onsubmit", "onunload", "javascript", NULL
@@ -16860,7 +16870,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
       else
          rsprintf("\n<b>");
 
-      if (is_html(display) && !is_script(display))
+
+      if (is_html(display) && !is_script(display) && html_allowed(lbs))
          rsputs(display);
       else
          rsputs2(lbs, absolute_link, display);
@@ -17013,7 +17024,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                         } else
                            rsprintf(", ");
 
-                        if (is_html(attrib[i]) && !is_script(attrib[i]))
+                        if (is_html(attrib[i]) && !is_script(attrib[i]) && html_allowed(lbs))
                            rsputs(attrib[i]);
                         else
                            rsputs2(lbs, absolute_link, attrib[i]);
@@ -17083,7 +17094,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                      } else
                         rsprintf(", ");
 
-                     if (is_html(attrib[i]) && !is_script(attrib[i]))
+                     if (is_html(attrib[i]) && !is_script(attrib[i]) && html_allowed(lbs))
                         rsputs(attrib[i]);
                      else
                         rsputs2(lbs, absolute_link, attrib[i]);
@@ -17153,48 +17164,44 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                   else {
                      rsprintf("<td class=\"%s\">", sclass);
 
-                     if (is_html(attrib[i]) && !is_script(attrib[i]))
-                        rsputs(attrib[i]);
+                     if (disp_attr_link == NULL || disp_attr_link[index])
+                        rsprintf("<a href=\"%s\">", ref);
+
+                     sprintf(str, "List Change %s", attr_list[i]);
+                     if (getcfg(lbs->name, str, display, sizeof(display))) {
+                        j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
+                                             (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
+                        sprintf(str, "%d", message_id);
+                        add_subst_list((char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
+                                       "message id", str, &j);
+                        add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
+                                       "entry time", date, &j, 0);
+
+                        strsubst_list(display, sizeof(display), (char (*)[NAME_LENGTH]) slist,
+                                      (char (*)[NAME_LENGTH]) svalue, j);
+
+                     } else
+                        strcpy(display, attrib[i]);
+
+                     if (is_html(display) && !is_script(display) && html_allowed(lbs))
+                        rsputs(display);
                      else {
-                        if (disp_attr_link == NULL || disp_attr_link[index])
-                           rsprintf("<a href=\"%s\">", ref);
-
-                        sprintf(str, "List Change %s", attr_list[i]);
-                        if (getcfg(lbs->name, str, display, sizeof(display))) {
-                           j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist,
-                                                (char (*)[NAME_LENGTH]) svalue, attrib, TRUE);
-                           sprintf(str, "%d", message_id);
-                           add_subst_list((char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
-                                          "message id", str, &j);
-                           add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
-                                          "entry time", date, &j, 0);
-
-                           strsubst_list(display, sizeof(display), (char (*)[NAME_LENGTH]) slist,
-                                         (char (*)[NAME_LENGTH]) svalue, j);
-
-                        } else
-                           strcpy(display, attrib[i]);
-
-                        if (is_html(display) && !is_script(display))
-                           rsputs(display);
-                        else {
-                           if (isparam(attr_list[i])) {
-                              highlight_searchtext(re_buf + 1 + i, display, str, TRUE);
-                              strlcpy(display, str, sizeof(display));
-                           } else if (isparam("subtext") && isparam("sall") && atoi(getparam("sall"))) {
-                              highlight_searchtext(re_buf, display, str, TRUE);
-                              strlcpy(display, str, sizeof(display));
-                           }
-                           rsputs2(lbs, absolute_link, display);
+                        if (isparam(attr_list[i])) {
+                           highlight_searchtext(re_buf + 1 + i, display, str, TRUE);
+                           strlcpy(display, str, sizeof(display));
+                        } else if (isparam("subtext") && isparam("sall") && atoi(getparam("sall"))) {
+                           highlight_searchtext(re_buf, display, str, TRUE);
+                           strlcpy(display, str, sizeof(display));
                         }
-
-                        if (disp_attr_link == NULL || disp_attr_link[index])
-                           rsprintf("</a>");
-
-                        /* at least one space to produce non-empty table cell */
-                        if (!display[0])
-                           rsprintf("&nbsp;");
+                        rsputs2(lbs, absolute_link, display);
                      }
+
+                     if (disp_attr_link == NULL || disp_attr_link[index])
+                        rsprintf("</a>");
+
+                     /* at least one space to produce non-empty table cell */
+                     if (!display[0])
+                        rsprintf("&nbsp;");
 
                      rsprintf("</td>");
                   }
@@ -23739,7 +23746,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             } else
                strcpy(display, attrib[i]);
 
-            if (is_html(display) && !is_script(display))
+            if (is_html(display) && !is_script(display) && html_allowed(lbs))
                rsputs(display);
             else
                rsputs2(lbs, email, display);

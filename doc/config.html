@@ -2341,6 +2341,14 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
         public write access.
       </li>
       <li>
+        <b><code>Allow HTML = 0|1</code></b><br>
+        This flag allows or denys the usage of HTML in attributes. Note that
+        allowing HTML encoding may cause some security risk, since an elog
+        entry may contain malicious scripting code. It should therefor only
+        be allowed for installations where it is really needed and with no
+        public write access. The default value is <b>0</b>.
+      </li>
+      <li>
         <b><code>Suppress default = 0|1|2|3</code></b><br>
         This specifies the default state of the "<i>Suppress Email
         notification</i>" button on the new message entry form. For
