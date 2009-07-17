@@ -66,7 +66,6 @@ function onReady()
 
 function deleteAtt(idx)
 {
-   document.form1.jcmd.value='delete';
    document.form1.smcmd.value='delatt'+idx;
    document.form1.submit();
 }
