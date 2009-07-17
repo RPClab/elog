@@ -290,6 +290,10 @@
 				RelativePath="..\resources\eloglang.german"
 				>
 			</File>
+			<File
+				RelativePath="..\scripts\im.js"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Documentation"
