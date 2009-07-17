@@ -52,6 +52,7 @@ which should be changed for the whole thread if that problem has been fixed.
 <LI><a href=#18>Why are entries with large attachments submitted so slowly?
 <LI><a href=#19>The elgod daemon crashes from time to time, what can I do?
 <LI><a href=#20>How can I create an ELOG entry automatically from a script?
+<LI><a href=#21>I want to notify different people for different things, how do I set up this?
 </OL>
 
 <hr>
@@ -390,6 +391,30 @@ submit an automatic email entry. This works locally or remotely, with optional
 attachments. Enter "elog -h" for a full list of options. The elog utility
 is part of the distribution and resides in the same directory as the elogd
 daemon.
+<p>
+
+<LI><a name=21><b>I want to notify different people for different things, how do I set up this?</b>
+<p>
+Assume you want to send an email notification to person A for a problem report,
+to person B for problem fix and so on. The simplest way is to use the 
+<code>Email &lt;attribute&gt; &lt;value&gt; = &lt;email address&gt;</code> syntax.
+So you could set-up following configuration:
+<pre>
+Attributes = Author, Type
+Options Type = Problem Report, Problem Fix
+Email Type Problem Report = person.a@elog.com
+Email Type Problem Fix = person.b@elog.com
+</pre>
+If you want to select email addresses directly from a list, you can do the set-up
+as following:
+<pro>
+Attributes = Author, Notify
+MOptions Notify = Person A, Person B
+Email Notify Person A = person.a@elog.com
+Email Notify Person B = person.b@elog.com
+</pro>
+This way you can for each entry select one or more people to be notified from
+the pre-defined list.
 <p>
 
 </OL>
