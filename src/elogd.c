@@ -3565,6 +3565,21 @@ void el_decode(char *message, char *key, char *result)
 
 /*------------------------------------------------------------------*/
 
+void el_decode_int(char *message, char *key, char *result)
+{
+   char str[80];
+
+   if (result == NULL)
+      return;
+
+   *result = 0;
+   el_decode(message, key, str);
+   if (str[0])
+      sprintf(result, "%d", atoi(str));
+}
+
+/*------------------------------------------------------------------*/
+
 void el_enum_attr(char *message, int n, char *attr_name, char *attr_value)
 {
    char *p, str[NAME_LENGTH], tmp[NAME_LENGTH];
@@ -3854,7 +3869,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
                strcpy(lbs->el_index[*lbs->n_el_index].file_name, str);
 
                el_decode(p, "Date: ", date);
-               el_decode(p, "In reply to: ", in_reply_to);
+               el_decode_int(p, "In reply to: ", in_reply_to);
 
                lbs->el_index[*lbs->n_el_index].file_time = date_to_ltime(date);
 
@@ -4291,9 +4306,9 @@ int el_retrieve(LOGBOOK * lbs, int message_id, char *date, char attr_list[MAX_N_
    if (date)
       el_decode(message, "Date: ", date);
    if (reply_to)
-      el_decode(message, "Reply to: ", reply_to);
+      el_decode_int(message, "Reply to: ", reply_to);
    if (in_reply_to)
-      el_decode(message, "In reply to: ", in_reply_to);
+      el_decode_int(message, "In reply to: ", in_reply_to);
 
    if (n_attr == -1) {
       /* derive attribute names from message */
@@ -4670,9 +4685,9 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
       else
          strlcpy(date1, date, sizeof(date1));
       if (strieq(reply_to1, "<keep>"))
-         el_decode(message, "Reply to: ", reply_to1);
+         el_decode_int(message, "Reply to: ", reply_to1);
       if (strieq(in_reply_to1, "<keep>"))
-         el_decode(message, "In reply to: ", in_reply_to1);
+         el_decode_int(message, "In reply to: ", in_reply_to1);
       if (strieq(encoding1, "<keep>"))
          el_decode(message, "Encoding: ", encoding1);
       el_decode(message, "Attachment: ", attachment_all);
@@ -5014,8 +5029,8 @@ int el_delete_message(LOGBOOK * lbs, int message_id, BOOL delete_attachments,
    }
 
    /* decode references */
-   el_decode(message, "Reply to: ", reply_to);
-   el_decode(message, "In reply to: ", in_reply_to);
+   el_decode_int(message, "Reply to: ", reply_to);
+   el_decode_int(message, "In reply to: ", in_reply_to);
 
    /* decoded attributes */
    for (i = 0;; i++) {
@@ -15205,8 +15220,8 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
 
    /* decode entry */
    el_decode(p, "Date: ", date);
-   el_decode(p, "Reply to: ", reply_to);
-   el_decode(p, "In reply to: ", in_reply_to);
+   el_decode_int(p, "Reply to: ", reply_to);
+   el_decode_int(p, "In reply to: ", in_reply_to);
 
    /* derive attribute names from message */
    for (i = 0;; i++) {
