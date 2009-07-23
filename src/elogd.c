@@ -21931,7 +21931,12 @@ void submit_elog(LOGBOOK * lbs)
    else
       allowed_encoding = 7;
 
-   strcpy(encoding, isparam("encoding") ? getparam("encoding") : "plain");
+   strlcpy(encoding, isparam("encoding") ? getparam("encoding") : "plain", sizeof(encoding));
+
+   /* check for valid encoding */
+   if (!strieq(encoding, "plain") && !strieq(encoding, "ELCode") &&
+       !strieq(encoding, "HTML"))
+      strcpy(encoding, "plain");
 
    if (strieq(encoding, "plain") && (allowed_encoding & 1) == 0) {
       show_error("Plain encoding not allowed");
@@ -23798,16 +23803,16 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       if (show_text) {
          rsprintf("<tr><td class=\"messageframe\">");
 
-         if (strieq(encoding, "plain")) {
-            rsputs("<pre class=\"messagepre\">");
-            rsputs2(lbs, email, text);
-            rsputs("</pre>");
-         } else if (strieq(encoding, "ELCode"))
-            rsputs_elcode(lbs, email, text);
-         else {
+         if (strieq(encoding, "html")) {
             if (email)
                replace_inline_img(lbs, text);
             rsputs(text);
+         } else if (strieq(encoding, "ELCode")) {
+            rsputs_elcode(lbs, email, text);
+         } else {
+            rsputs("<pre class=\"messagepre\">");
+            rsputs2(lbs, email, text);
+            rsputs("</pre>");
          }
 
          rsputs("</td></tr>\n");
