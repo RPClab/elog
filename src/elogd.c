@@ -9205,6 +9205,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       /* get encoding */
       strlcpy(encoding, isparam("encoding") ? getparam("encoding") : "", sizeof(encoding));
+      if (!strieq(encoding, "plain") && !strieq(encoding, "ELCode") &&
+          !strieq(encoding, "HTML"))
+         strcpy(encoding, "plain");
    } else {
       if (message_id) {
          /* get message for reply/edit */
