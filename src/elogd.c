@@ -275,54 +275,54 @@ struct {
 } filetype[] = {
 
    {
-   ".AI",   "application/postscript"}, {
-   ".ASC",  "text/plain"}, {
-   ".BZ2",  "application/x-bzip2"}, {
-   ".CFG",  "text/plain"}, {
+   ".AI", "application/postscript"}, {
+   ".ASC", "text/plain"}, {
+   ".BZ2", "application/x-bzip2"}, {
+   ".CFG", "text/plain"}, {
    ".CHRT", "application/x-kchart"}, {
    ".CONF", "text/plain"}, {
-   ".CSH",  "application/x-csh"}, {
-   ".CSS",  "text/css"}, {
-   ".DOC",  "application/msword"}, {
-   ".DVI",  "application/x-dvi"}, {
-   ".EPS",  "application/postscript"}, {
-   ".GIF",  "image/gif"}, {
-   ".GZ",   "application/x-gzip"}, {
-   ".HTM",  "text/html"}, {
+   ".CSH", "application/x-csh"}, {
+   ".CSS", "text/css"}, {
+   ".DOC", "application/msword"}, {
+   ".DVI", "application/x-dvi"}, {
+   ".EPS", "application/postscript"}, {
+   ".GIF", "image/gif"}, {
+   ".GZ", "application/x-gzip"}, {
+   ".HTM", "text/html"}, {
    ".HTML", "text/html"}, {
-   ".ICO",  "image/x-icon"}, {
+   ".ICO", "image/x-icon"}, {
    ".JPEG", "image/jpeg"}, {
-   ".JPG",  "image/jpeg"}, {
-   ".JS",   "application/x-javascript"}, {
-   ".KPR",  "application/x-kpresenter"}, {
-   ".KSP",  "application/x-kspread"}, {
-   ".KWD",  "application/x-kword"}, {
-   ".MP3",  "audio/mpeg"}, {
-   ".OGG",  "application/x-ogg"}, {
-   ".PDF",  "application/pdf"}, {
-   ".PNG",  "image/png"}, {
-   ".PS",   "application/postscript"}, {
-   ".RAM",  "audio/x-pn-realaudio"}, {
-   ".RM",   "audio/x-pn-realaudio"}, {
-   ".RM",   "audio/x-pn-realaudio"}, {
-   ".RM",   "audio/x-pn-realaudio"}, {
-   ".RPM",  "application/x-rpm"}, {
-   ".RTF",  "application/rtf"}, {
-   ".SH",   "application/x-sh"}, {
-   ".TAR",  "application/x-tar"}, {
-   ".TCL",  "application/x-tcl"}, {
-   ".TEX",  "application/x-tex"}, {
-   ".TGZ",  "application/x-gzip"}, {
-   ".TIF",  "image/tiff"}, {
+   ".JPG", "image/jpeg"}, {
+   ".JS", "application/x-javascript"}, {
+   ".KPR", "application/x-kpresenter"}, {
+   ".KSP", "application/x-kspread"}, {
+   ".KWD", "application/x-kword"}, {
+   ".MP3", "audio/mpeg"}, {
+   ".OGG", "application/x-ogg"}, {
+   ".PDF", "application/pdf"}, {
+   ".PNG", "image/png"}, {
+   ".PS", "application/postscript"}, {
+   ".RAM", "audio/x-pn-realaudio"}, {
+   ".RM", "audio/x-pn-realaudio"}, {
+   ".RM", "audio/x-pn-realaudio"}, {
+   ".RM", "audio/x-pn-realaudio"}, {
+   ".RPM", "application/x-rpm"}, {
+   ".RTF", "application/rtf"}, {
+   ".SH", "application/x-sh"}, {
+   ".TAR", "application/x-tar"}, {
+   ".TCL", "application/x-tcl"}, {
+   ".TEX", "application/x-tex"}, {
+   ".TGZ", "application/x-gzip"}, {
+   ".TIF", "image/tiff"}, {
    ".TIFF", "image/tiff"}, {
-   ".TXT",  "text/plain"}, {
-   ".WAV",  "audio/x-wav"}, {
-   ".XLS",  "application/x-msexcel"}, {
-   ".XML",  "text/xml"}, {
-   ".XSL",  "text/xml"}, {
-   ".ZIP",  "application/x-zip-compressed"}, {
+   ".TXT", "text/plain"}, {
+   ".WAV", "audio/x-wav"}, {
+   ".XLS", "application/x-msexcel"}, {
+   ".XML", "text/xml"}, {
+   ".XSL", "text/xml"}, {
+   ".ZIP", "application/x-zip-compressed"}, {
 
-   /* Open XML file types */
+      /* Open XML file types */
    ".DOCM", "application/vnd.ms-word.document.macroEnabled.12"}, {
    ".DOCX", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}, {
    ".DOTM", "application/vnd.ms-word.template.macroEnabled.12"}, {
@@ -334,7 +334,7 @@ struct {
    ".XLSB", "application/vnd.ms-excel.sheet.binary.macroEnabled.12"}, {
    ".XLSM", "application/vnd.ms-excel.sheet.macroEnabled.12"}, {
    ".XLSX", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}, {
-   ".XPS",  "application/vnd.ms-xpsdocument"}, {
+   ".XPS", "application/vnd.ms-xpsdocument"}, {
 
 "", ""},};
 
@@ -421,7 +421,7 @@ char *loc(char *orig);
 void strencode(char *text);
 void strencode_nouml(char *text);
 int scan_attributes(char *logbook);
-int is_inline_attachment(char *encoding, int message_id, char *text, int i, char *att);
+int is_inline_attachment(LOGBOOK *lbs, char *encoding, int message_id, char *text, int i, char *att);
 int setgroup(char *str);
 int setuser(char *str);
 int setegroup(char *str);
@@ -3455,6 +3455,19 @@ void check_config()
 
 /*-------------------------------------------------------------------*/
 
+void retrieve_domain(LOGBOOK * lbs, char *ret, int size)
+{
+   char smtp_host[80];
+
+   strlcpy(ret, "tmp.org", size);
+   if (getcfg("global", "SMTP host", smtp_host, sizeof(smtp_host))) {
+      if (strchr(smtp_host, '.'))
+         strlcpy(ret, strchr(smtp_host, '.')+1, size);
+   }
+}
+ 
+/*-------------------------------------------------------------------*/
+
 void retrieve_email_from(LOGBOOK * lbs, char *ret, char *ret_name, char attrib[MAX_N_ATTR][NAME_LENGTH])
 {
    char email_from[256], email_from_name[256], str[256], *p, login_name[256];
@@ -5425,7 +5438,7 @@ int is_html(char *s)
 
 /*------------------------------------------------------------------*/
 
-int html_allowed(LOGBOOK *lbs)
+int html_allowed(LOGBOOK * lbs)
 {
    char str[80];
 
@@ -5607,7 +5620,7 @@ void insert_breaks(char *str, int n, int size)
 
 void replace_inline_img(LOGBOOK * lbs, char *str)
 {
-   char *p, *pn, *pa, old[256], link[256], base_url[256];
+   char *p, *pn, *pa, old[256], link[256], base_url[256], domain[256];
    int index;
 
    p = str;
@@ -5622,7 +5635,8 @@ void replace_inline_img(LOGBOOK * lbs, char *str)
                pn++;
             if (*pn == '>')
                pn++;
-            sprintf(p, "<img src=\"cid:att%d@psi.ch\">", index);
+            retrieve_domain(lbs, domain, sizeof(domain));
+            sprintf(p, "<img border=\"0\" src=\"cid:att%d@%s\">", index, domain);
             memmove(p + strlen(p), pn, strlen(pn) + 1);
 
             /* now change href to absolute link */
@@ -5913,136 +5927,97 @@ typedef struct {
 PATTERN_LIST pattern_list[] = {
 
    /* smileys */
-   {
-    ":))", "<img alt=\"Happy\" title=\"Happy\" src=\"%sicons/happy.png\">"}, {
-                                                                              ":-))",
-                                                                              "<img alt=\"Happy\" title=\"Happy\" src=\"%sicons/happy.png\">"},
-   {
-    ":)", "<img alt=\"Smile\" title=\"Smile\" src=\"%sicons/smile.png\">"}, {
-                                                                             ":-)",
-                                                                             "<img alt=\"Smile\" title=\"Smile\" src=\"%sicons/smile.png\">"},
-   {
-    ":(", "<img alt=\"Frown\" title=\"Frown\" src=\"%sicons/frown.png\">"}, {
-                                                                             ":-(",
-                                                                             "<img alt=\"Frown\" title=\"Frown\" src=\"%sicons/frown.png\">"},
-   {
-    ";)", "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"}, {
-                                                                          ";-)",
-                                                                          "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"},
-   {
-    ":d", "<img alt=\"Big grin\" title=\"Big grin\" src=\"%sicons/biggrin.png\">"}, {
-                                                                                     "?-)",
-                                                                                     "<img alt=\"Confused\" title=\"Confused\" src=\"%sicons/confused.png\">"},
-   {
-    ";(", "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"}, {
-                                                                                ";-(",
-                                                                                "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"},
-   {
-    ":]", "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"}, {
-                                                                                   ":-]",
-                                                                                   "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"},
-   {
-    ":o", "<img alt=\"Yawn\" title=\"Yawn\" src=\"%sicons/yawn.png\">"}, {
-                                                                          ":-o",
-                                                                          "<img alt=\"Yawn\" title=\"Yawn\" src=\"%sicons/yawn.png\">"},
-   {
-    "8-)", "<img alt=\"Cool\" title=\"Cool\" src=\"%sicons/cool.png\">"}, {
-                                                                           "8o",
-                                                                           "<img alt=\"Astonished\" title=\"Astonished\" src=\"%sicons/astonished.png\">"},
-   {
-    "x-(", "<img alt=\"Mad\" title=\"Mad\" src=\"%sicons/mad.png\">"}, {
-                                                                        ":p",
-                                                                        "<img alt=\"Tongue\" title=\"Tongue\" src=\"%sicons/tongue.png\">"},
-   {
-    ":-p", "<img alt=\"Tongue\" title=\"Tongue\" src=\"%sicons/tongue.png\">"},
+   {":))",  "<img alt=\"Happy\" title=\"Happy\" src=\"%sicons/happy.png\">"}, 
+   {":-))", "<img alt=\"Happy\" title=\"Happy\" src=\"%sicons/happy.png\">"},
+   {":)",   "<img alt=\"Smile\" title=\"Smile\" src=\"%sicons/smile.png\">"}, 
+   {":-)",  "<img alt=\"Smile\" title=\"Smile\" src=\"%sicons/smile.png\">"},
+   {":(",   "<img alt=\"Frown\" title=\"Frown\" src=\"%sicons/frown.png\">"}, 
+   {":-(",  "<img alt=\"Frown\" title=\"Frown\" src=\"%sicons/frown.png\">"},
+   {";)",   "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"}, 
+   {";-)",  "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"},
+   {":d",   "<img alt=\"Big grin\" title=\"Big grin\" src=\"%sicons/biggrin.png\">"}, 
+   {"?-)",  "<img alt=\"Confused\" title=\"Confused\" src=\"%sicons/confused.png\">"},
+   {";(",   "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"}, 
+   {";-(",  "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"},
+   {":]",   "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"}, 
+   {":-]",  "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"},
+   {":o",   "<img alt=\"Yawn\" title=\"Yawn\" src=\"%sicons/yawn.png\">"}, 
+   {":-o",  "<img alt=\"Yawn\" title=\"Yawn\" src=\"%sicons/yawn.png\">"},
+   {"8-)",  "<img alt=\"Cool\" title=\"Cool\" src=\"%sicons/cool.png\">"}, 
+   {"8o",   "<img alt=\"Astonished\" title=\"Astonished\" src=\"%sicons/astonished.png\">"},
+   {"x-(",  "<img alt=\"Mad\" title=\"Mad\" src=\"%sicons/mad.png\">"}, 
+   {":p",   "<img alt=\"Tongue\" title=\"Tongue\" src=\"%sicons/tongue.png\">"},
+   {":-p",  "<img alt=\"Tongue\" title=\"Tongue\" src=\"%sicons/tongue.png\">"},
+   
    /* formatting */
-   {
-    "[b]", "<b>"}, {
-                    "[/b]", "</b>"}, {
-                                      "[u]", "<u>"}, {
-                                                      "[/u]", "</u>"}, {
-                                                                        "[i]", "<i>"}, {
-                                                                                        "[/i]", "</i>"}, {
-                                                                                                          "[center]",
-                                                                                                          "<center>"},
-   {
-    "[/center]", "</center>"}, {
-                                "[color=", "<font color=\"%s\">"}, {
-                                                                    "[/color]", "</font>"}, {
-                                                                                             "[size=",
-                                                                                             "<font size=\"%s\">"},
-   {
-    "[/size]", "</font>"}, {
-                            "[font=", "<font face=\"%s\">"}, {
-                                                              "[/font]", "</font>"}, {
-                                                                                      "\r\n[code]", "<pre>"}, {
-                                                                                                               "[code]",
-                                                                                                               "<pre>"},
-   {
-    "[/code]\r\n", "</pre>"}, {
-                               "[/code]", "</pre>"}, {
-                                                      "\r\n[code1]", "<pre>"}, {
-                                                                                "[code1]", "<pre>"}, {
-                                                                                                      "[/code1]\r\n",
-                                                                                                      "</pre>"},
-   {
-    "[/code1]", "</pre>"},
+   {"[b]", "<b>"}, 
+   {"[/b]", "</b>"}, 
+   {"[u]", "<u>"}, 
+   {"[/u]", "</u>"}, 
+   {"[i]", "<i>"}, 
+   {"[/i]", "</i>"}, 
+   {"[center]", "<center>"},
+   {"[/center]", "</center>"}, 
+   {"[color=", "<font color=\"%s\">"}, 
+   {"[/color]", "</font>"}, 
+   {"[size=", "<font size=\"%s\">"},
+   {"[/size]", "</font>"}, 
+   {"[font=", "<font face=\"%s\">"}, 
+   {"[/font]", "</font>"}, 
+   {"\r\n[code]", "<pre>"}, 
+   {"[code]", "<pre>"},
+   {"[/code]\r\n", "</pre>"}, 
+   {"[/code]", "</pre>"}, 
+   {"\r\n[code1]", "<pre>"}, 
+   {"[code1]", "<pre>"}, 
+   {"[/code1]\r\n","</pre>"},
+   {"[/code1]", "</pre>"},
+   
    /* lists */
-   {
-    "[list]\r", "<ul>"}, {
-                          "[list]", "<ul>"}, {
-                                              "[*]", "<li>"}, {
-                                                               "[/list]\r", "</#>"},    // either </ul> or </ol>
-   {
-    "[/list]", "</#>"}, {
-                         "[list=", "<ol type=\"%s\">"},
+   {"[list]\r", "<ul>"}, 
+   {"[list]", "<ul>"}, 
+   {"[*]", "<li>"}, 
+   {"[/list]\r", "</#>"},    // either </ul> or </ol>
+   {"[/list]", "</#>"}, 
+   {"[list=", "<ol type=\"%s\">"},
+   
    /* headings */
-   {
-    "[h1]", "<h1>"}, {
-                      "[/h1]", "</h1>"}, {
-                                          "[h2]", "<h2>"}, {
-                                                            "[/h2]", "</h2>"}, {
-                                                                                "[h3]", "<h3>"}, {
-                                                                                                  "[/h3]",
-                                                                                                  "</h3>"},
+   {"[h1]", "<h1>"}, 
+   {"[/h1]", "</h1>"}, 
+   {"[h2]", "<h2>"}, 
+   {"[/h2]", "</h2>"}, 
+   {"[h3]", "<h3>"}, 
+   {"[/h3]", "</h3>"},
+
    /* URLs */
-   {
-    "[url=", "<a href=\"%#\">%s</a>"}, {
-                                        "[url]", "<a href=\"%#\">%s</a>"}, {
-                                                                            "[/url]", ""}, {
-                                                                                            "[email]",
-                                                                                            "<a href=\"mailto:%#\">%s</a>"},
-   {
-    "[/email]", ""}, {
-                      "[img]", "<a href=\"%#\"><img border=0 src=\"%#?thumb=1\"></a>"}, {
-                                                                                         "[/img]", ""},
+   {"[url=", "<a href=\"%#\">%s</a>"}, 
+   {"[url]", "<a href=\"%#\">%s</a>"}, 
+   {"[/url]", ""}, 
+   {"[email]", "<a href=\"mailto:%#\">%s</a>"},
+   {"[/email]", ""}, 
+   {"[img]", "<a href=\"%#\"><img border=0 src=\"%#?thumb=1\"></a>"}, 
+   {"[/img]", ""},
+
    /* quote */
-   {
-    "[quote=",
-    "<br /><table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
-   {
-    "[quote]",
-    "<br /><table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
-   {
-    "[/quote]\r", "</td></tr></table><br />\r\n"}, {
-                                                    "[/quote]", "</td></tr></table>\r\n"},
+   {"[quote=", "<br /><table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
+   {"[quote]", "<br /><table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
+   {"[/quote]\r", "</td></tr></table><br />\r\n"}, 
+   {"[/quote]", "</td></tr></table>\r\n"},
+
    /* table */
-   {
-    "[table]", "<table><tr><td>"}, {
-                                    "[table ", "<table %s><tr><td>"}, {
-                                                                       "|-", "</td></tr><tr><td>"}, {
-                                                                                                     "|",
-                                                                                                     "</td><td>"},
-   {
-    "[/table]", "</td></tr></table>"},
+   {"[table]", "<table><tr><td>"}, 
+   {"[table ", "<table %s><tr><td>"}, 
+   {"|-", "</td></tr><tr><td>"}, 
+   {"|", "</td><td>"},
+   {"[/table]", "</td></tr></table>"},
+
    /* horizontal line */
-   {
-    "[line]", "<hr />"},
+   {"[line]", "<hr />"},
+   
    /* anchor */
-   {
-    "[anchor]", "<a name=\"%#\">"}, {
-                                     "[/anchor]", "</a>"}, {
-                                                            "", ""}
+   {"[anchor]", "<a name=\"%#\">"}, 
+   {"[/anchor]", "</a>"}, 
+   {"", ""}
 };
 
 char
@@ -6053,7 +6028,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 {
    int i, j, k, l, m, elcode_disabled, elcode_disabled1, escape_char, ordered_list, substituted, inside_table;
    char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[1000], hattrib[1000], value[1000],
-       subst[1000], base_url[256], param[256], *lstr;
+       subst[1000], base_url[256], param[256], *lstr, domain[256];
 
    if (strlen_retbuf + (int) (2 * strlen(str) + 1000) >= return_buffer_size) {
       return_buffer = xrealloc(return_buffer, return_buffer_size + 100000);
@@ -6296,15 +6271,8 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                      /* replace elog:x/x for images */
                      if (strnieq(attrib, "elog:", 5)) {
                         if (email_notify) {
-                           retrieve_email_from(lbs, link, NULL, NULL);
-                           p = strchr(attrib, '/');
-                           if (p)
-                              m = atoi(p + 1) - 1;
-                           if (strchr(link, '@'))
-                              p = strchr(link, '@') + 1;
-                           else
-                              p = link;
-                           sprintf(hattrib, "cid:att%d@%s", m, p);
+                           retrieve_domain(lbs, domain, sizeof(domain));
+                           sprintf(hattrib, "cid:att%d@%s", m, domain);
                         } else {
                            if (email_notify)
                               compose_base_url(lbs, hattrib, sizeof(hattrib), TRUE);
@@ -6335,6 +6303,8 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                      }
 
                      strlcpy(subst, pattern_list[l].subst, sizeof(subst));
+                     if (email_notify && stristr(subst, "?thumb=1"))
+                        strlcpy(subst, "<a href=\"%#\"><img border=0 src=\"%#\"></a>", sizeof(subst));
                      strsubst(subst, sizeof(subst), "%#", hattrib);
                      sprintf(return_buffer + j, subst, attrib);
                      j += strlen(return_buffer + j);
@@ -6777,8 +6747,7 @@ void compose_base_url(LOGBOOK * lbs, char *base_url, int size, BOOL email_notify
 
 void set_location(LOGBOOK * lbs, char *rp)
 {
-   char str[NAME_LENGTH], group[NAME_LENGTH], list[NAME_LENGTH], *p,
-      rel_path[NAME_LENGTH];
+   char str[NAME_LENGTH], group[NAME_LENGTH], list[NAME_LENGTH], *p, rel_path[NAME_LENGTH];
    int i;
 
    /* remove any CR/LF from path */
@@ -9220,8 +9189,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       /* get encoding */
       strlcpy(encoding, isparam("encoding") ? getparam("encoding") : "", sizeof(encoding));
-      if (!strieq(encoding, "plain") && !strieq(encoding, "ELCode") &&
-          !strieq(encoding, "HTML"))
+      if (!strieq(encoding, "plain") && !strieq(encoding, "ELCode") && !strieq(encoding, "HTML"))
          strcpy(encoding, "plain");
    } else {
       if (message_id) {
@@ -10130,9 +10098,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("</td>\n");
 
       /* if attribute cannot be changed, just display text */
-      if ((attr_flags[index] & AF_LOCKED) || 
-           (message_id && bedit && (attr_flags[index] & AF_FIXED_EDIT)) ||
-           (message_id && !bedit && (attr_flags[index] & AF_FIXED_REPLY))) {
+      if ((attr_flags[index] & AF_LOCKED) ||
+          (message_id && bedit && (attr_flags[index] & AF_FIXED_EDIT)) ||
+          (message_id && !bedit && (attr_flags[index] & AF_FIXED_REPLY))) {
 
          if (attr_flags[index] & AF_DATE) {
 
@@ -16740,12 +16708,13 @@ void synchronize(LOGBOOK * lbs, int mode)
 /*------------------------------------------------------------------*/
 
 void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int expand, int level,
-                  BOOL printable, int n_line, int show_attachments, int show_att_column, 
-                  char *date, char *in_reply_to, char *reply_to, int n_attr_disp, char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH],
-                  BOOL disp_attr_link[MAX_N_ATTR + 4], char attrib[MAX_N_ATTR][NAME_LENGTH], int n_attr,
-                  char *text, BOOL show_text, char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
-                  char *encoding, BOOL select, int *n_display, char *locked_by, int highlight,
-                  regex_t * re_buf, int highlight_mid, int absolute_link)
+                  BOOL printable, int n_line, int show_attachments, int show_att_column,
+                  char *date, char *in_reply_to, char *reply_to, int n_attr_disp,
+                  char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], BOOL disp_attr_link[MAX_N_ATTR + 4],
+                  char attrib[MAX_N_ATTR][NAME_LENGTH], int n_attr, char *text, BOOL show_text,
+                  char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], char *encoding, BOOL select,
+                  int *n_display, char *locked_by, int highlight, regex_t * re_buf, int highlight_mid,
+                  int absolute_link)
 {
    char str[NAME_LENGTH], ref[256], *nowrap, sclass[80], format[256], file_name[MAX_PATH_LENGTH], *slist,
        *svalue, comment[256];
@@ -17414,7 +17383,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
          if (show_attachments && attachment[index][0]) {
 
             /* check if attachment is inlined */
-            if (is_inline_attachment(encoding, message_id, text, index, attachment[index]))
+            if (is_inline_attachment(lbs, encoding, message_id, text, index, attachment[index]))
                continue;
 
             strlcpy(str, attachment[index], sizeof(str));
@@ -17592,9 +17561,10 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable, int expand, int
       return;
    }
 
-   display_line(lbs, message_id, 0, "threaded", expand, level, printable, n_line, FALSE, FALSE, date, in_reply_to, reply_to,
-                n_attr_disp, disp_attr, NULL, (void *) attrib, lbs->n_attr, text, show_text,
-                NULL, encoding, 0, NULL, locked_by, highlight, &re_buf[0], highlight_mid, absolute_link);
+   display_line(lbs, message_id, 0, "threaded", expand, level, printable, n_line, FALSE, FALSE, date,
+                in_reply_to, reply_to, n_attr_disp, disp_attr, NULL, (void *) attrib, lbs->n_attr, text,
+                show_text, NULL, encoding, 0, NULL, locked_by, highlight, &re_buf[0], highlight_mid,
+                absolute_link);
 
    if (reply_to[0]) {
       p = reply_to;
@@ -17920,7 +17890,8 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
       return TRUE;
    }
    /* exclude non-localized submit for elog */
-   else if (command[0] && strieq(command, "Submit") && (stristr(menu_str, "New,") || stristr(menu_str, "Edit"))) {
+   else if (command[0] && strieq(command, "Submit")
+            && (stristr(menu_str, "New,") || stristr(menu_str, "Edit"))) {
       return TRUE;
    }
    /* exclude other non-localized commands */
@@ -18834,7 +18805,7 @@ void show_rss_feed(LOGBOOK * lbs)
 
    text = xmalloc(TEXT_SIZE);
    message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
-   for (index = 0; index < n && message_id ; index++) {
+   for (index = 0; index < n && message_id; index++) {
       rsprintf("<item>\n");
 
       size = TEXT_SIZE;
@@ -20700,16 +20671,17 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             while (reply_to[0]) {
                message_id = atoi(reply_to);
                size = TEXT_SIZE;
-               status = el_retrieve(msg_list[index].lbs, message_id, date, attr_list, attrib, lbs->n_attr, text,
-                                    &size, in_reply_to, reply_to, attachment, encoding, locked_by);
+               status =
+                   el_retrieve(msg_list[index].lbs, message_id, date, attr_list, attrib, lbs->n_attr, text,
+                               &size, in_reply_to, reply_to, attachment, encoding, locked_by);
                if (status == SUCCESS)
                   level = 1;
             }
          }
 
          display_line(msg_list[index].lbs, message_id, index, mode, expand, level, printable, n_line,
-                      show_attachments, show_att_column, date, in_reply_to, reply_to, n_attr_disp, disp_attr, disp_attr_link, attrib,
-                      lbs->n_attr, text, show_text, attachment, encoding,
+                      show_attachments, show_att_column, date, in_reply_to, reply_to, n_attr_disp, disp_attr,
+                      disp_attr_link, attrib, lbs->n_attr, text, show_text, attachment, encoding,
                       isparam("select") ? atoi(getparam("select")) : 0, &n_display, locked_by, 0, re_buf,
                       page_mid, FALSE);
 
@@ -20819,8 +20791,8 @@ void show_elog_thread(LOGBOOK * lbs, int message_id, int absolute_links, int hig
    rsprintf("<tr><td><table width=\"100%%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
 
    display_line(lbs, head_id, 0, "Threaded", 1, 0, FALSE, 0,
-                FALSE, FALSE, date, in_reply_to, reply_to, n_attr_disp, disp_attr, NULL, attrib, lbs->n_attr, text, FALSE,
-                attachment, encoding, 0, &n_display, locked_by, message_id, NULL, highlight_mid,
+                FALSE, FALSE, date, in_reply_to, reply_to, n_attr_disp, disp_attr, NULL, attrib, lbs->n_attr,
+                text, FALSE, attachment, encoding, 0, &n_display, locked_by, message_id, NULL, highlight_mid,
                 absolute_links);
 
    if (reply_to[0]) {
@@ -20859,7 +20831,7 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
                               char *multipart_boundary, int content_id)
 {
    int i, index, n_att, fh, n, is_inline, length;
-   char str[256], file_name[256], buffer[256], email_from[256], *p;
+   char str[256], file_name[256], buffer[256], domain[256];
 
    /* count attachments */
    for (n_att = 0; att_file[n_att][0] && n_att < MAX_ATTACHMENTS; n_att++);
@@ -20869,8 +20841,8 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
       if (att_file[index][0] == 0)
          continue;
 
-      is_inline = is_inline_attachment(getparam("encoding"), message_id, getparam("text"), index,
-                                       att_file[index]);
+      is_inline = is_inline_attachment(lbs, getparam("encoding"), message_id, 
+                                       getparam("text"), index, att_file[index]);
       if (attachment_type == 1 && is_inline)
          continue;
       if (attachment_type == 2 && !is_inline)
@@ -20902,13 +20874,9 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
       strlcat(mail_text, "Content-Transfer-Encoding: BASE64\r\n", size);
 
       if (content_id) {
-         retrieve_email_from(lbs, email_from, NULL, NULL);
-         if (strchr(email_from, '@'))
-            p = strchr(email_from, '@') + 1;
-         else
-            p = email_from;
+         retrieve_domain(lbs, domain, sizeof(domain));
          snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1, "Content-ID: <att%d@%s>\r\n",
-                  index, p);
+                  index, domain);
          snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1,
                   "Content-Disposition: inline; filename=\"%s\"\r\n\r\n", att_file[index] + 14);
       } else
@@ -21400,8 +21368,8 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
    n_attachments = 0;
    if (att_file)
       for (i = 0; att_file[i][0] && i < MAX_ATTACHMENTS; i++) {
-         if ((mail_encoding & 6) == 0 || !is_inline_attachment(encoding, message_id, getparam("text"), i,
-                                                               att_file[i]))
+         if ((mail_encoding & 6) == 0 || !is_inline_attachment(lbs, encoding, message_id, 
+                                                               getparam("text"), i, att_file[i]))
             n_attachments++;
       }
 
@@ -21952,8 +21920,7 @@ void submit_elog(LOGBOOK * lbs)
    strlcpy(encoding, isparam("encoding") ? getparam("encoding") : "plain", sizeof(encoding));
 
    /* check for valid encoding */
-   if (!strieq(encoding, "plain") && !strieq(encoding, "ELCode") &&
-       !strieq(encoding, "HTML"))
+   if (!strieq(encoding, "plain") && !strieq(encoding, "ELCode") && !strieq(encoding, "HTML"))
       strcpy(encoding, "plain");
 
    if (strieq(encoding, "plain") && (allowed_encoding & 1) == 0) {
@@ -22594,15 +22561,14 @@ void submit_elog_mirror(LOGBOOK * lbs)
 void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_id)
 {
    int size, i, n, n_done, n_done_reply, n_reply, index, status, fh, source_id, message_id,
-      thumb_status, next_id = 0;
+       thumb_status, next_id = 0;
    char str[256], str2[256], file_name[MAX_PATH_LENGTH], thumb_name[MAX_PATH_LENGTH],
-      *attrib, date[80], *text, msg_str[32], in_reply_to[80], 
-      reply_to[MAX_REPLY_TO * 10], *attachment, 
-      encoding[80], locked_by[256], *buffer, *list;
+       *attrib, date[80], *text, msg_str[32], in_reply_to[80],
+       reply_to[MAX_REPLY_TO * 10], *attachment, encoding[80], locked_by[256], *buffer, *list;
    LOGBOOK *lbs_dest;
    BOOL bedit;
 
-   attachment= xmalloc(MAX_ATTACHMENTS * MAX_PATH_LENGTH); 
+   attachment = xmalloc(MAX_ATTACHMENTS * MAX_PATH_LENGTH);
    attrib = xmalloc(MAX_N_ATTR * NAME_LENGTH);
    list = xmalloc(MAX_N_ATTR * NAME_LENGTH);
    text = xmalloc(TEXT_SIZE);
@@ -22633,8 +22599,9 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
       /* get message */
       size = TEXT_SIZE;
-      status = el_retrieve(lbs, source_id, date, attr_list, (void *) attrib, lbs->n_attr, text, &size, in_reply_to,
-                           reply_to, (void *) attachment, encoding, locked_by);
+      status =
+          el_retrieve(lbs, source_id, date, attr_list, (void *) attrib, lbs->n_attr, text, &size, in_reply_to,
+                      reply_to, (void *) attachment, encoding, locked_by);
 
       if (status != EL_SUCCESS) {
          sprintf(msg_str, "%d", source_id);
@@ -22670,9 +22637,9 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
       /* read attachments */
       for (i = 0; i < MAX_ATTACHMENTS; i++)
-         if (attachment[i*MAX_PATH_LENGTH]) {
+         if (attachment[i * MAX_PATH_LENGTH]) {
             strlcpy(file_name, lbs->data_dir, sizeof(file_name));
-            strlcat(file_name, attachment+i*MAX_PATH_LENGTH, sizeof(file_name));
+            strlcat(file_name, attachment + i * MAX_PATH_LENGTH, sizeof(file_name));
 
             fh = open(file_name, O_RDONLY | O_BINARY);
             if (fh > 0) {
@@ -22684,7 +22651,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
                close(fh);
 
                /* keep original file name for inline references */
-               strlcpy(file_name, attachment+i*MAX_PATH_LENGTH, NAME_LENGTH);
+               strlcpy(file_name, attachment + i * MAX_PATH_LENGTH, NAME_LENGTH);
 
                el_submit_attachment(lbs_dest, file_name, buffer, size, NULL);
 
@@ -22692,11 +22659,11 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
                   xfree(buffer);
             } else
                /* attachment is invalid */
-               attachment[i*MAX_PATH_LENGTH] = 0;
+               attachment[i * MAX_PATH_LENGTH] = 0;
 
             /* check for thumbnail */
             strlcpy(file_name, lbs->data_dir, sizeof(file_name));
-            strlcat(file_name, attachment+i*MAX_PATH_LENGTH, sizeof(file_name));
+            strlcat(file_name, attachment + i * MAX_PATH_LENGTH, sizeof(file_name));
             thumb_status = get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
 
             if (thumb_status == 1) {
@@ -22711,7 +22678,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
                   /* keep original file name for inline references */
                   if (strrchr(thumb_name, '\\'))
-                     strlcpy(str, strrchr(thumb_name, '\\')+1, sizeof(str));
+                     strlcpy(str, strrchr(thumb_name, '\\') + 1, sizeof(str));
                   else
                      strlcpy(str, thumb_name, sizeof(str));
 
@@ -22720,7 +22687,8 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
                   if (buffer)
                      xfree(buffer);
                }
-            } if (thumb_status == 2) {
+            }
+            if (thumb_status == 2) {
                for (i = 0;; i++) {
                   get_thumb_name(file_name, thumb_name, sizeof(thumb_name), i);
                   if (thumb_name[0]) {
@@ -22735,7 +22703,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
                         /* keep original file name for inline references */
                         if (strrchr(thumb_name, '\\'))
-                           strlcpy(str, strrchr(thumb_name, '\\')+1, sizeof(str));
+                           strlcpy(str, strrchr(thumb_name, '\\') + 1, sizeof(str));
                         else
                            strlcpy(str, thumb_name, sizeof(str));
 
@@ -22773,7 +22741,8 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
          message_id = source_id;
 
          /* test if entry exists already */
-         status = el_retrieve(lbs_dest, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, NULL);
+         status =
+             el_retrieve(lbs_dest, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, NULL);
          bedit = (status == EL_SUCCESS);
       }
 
@@ -22781,16 +22750,18 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
          the source logbook even if the destination has a differnt number of attributes */
 
       if (getcfg(lbs->name, "Preserve IDs", str, sizeof(str)) && atoi(str) == 1)
-         message_id = el_submit(lbs_dest, message_id, bedit, date, attr_list, (void *) attrib, lbs->n_attr, text, in_reply_to, reply_to,
-                                encoding, (void *) attachment, FALSE, NULL);
+         message_id =
+             el_submit(lbs_dest, message_id, bedit, date, attr_list, (void *) attrib, lbs->n_attr, text,
+                       in_reply_to, reply_to, encoding, (void *) attachment, FALSE, NULL);
       else {
          /* if called recursively (for threads), put in correct in_reply_to */
          str[0] = 0;
          if (orig_id)
             sprintf(str, "%d", orig_id);
 
-         message_id = el_submit(lbs_dest, message_id, bedit, date, attr_list, (void *) attrib, lbs->n_attr, text, str, "",
-                                encoding, (void *) attachment, TRUE, NULL);
+         message_id =
+             el_submit(lbs_dest, message_id, bedit, date, attr_list, (void *) attrib, lbs->n_attr, text, str,
+                       "", encoding, (void *) attachment, TRUE, NULL);
       }
 
       if (message_id <= 0) {
@@ -22810,7 +22781,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
       /* submit all replies */
       n_reply = strbreak(reply_to, (void *) list, MAX_N_ATTR, ",", FALSE);
       for (i = 0; i < n_reply; i++) {
-         copy_to(lbs, atoi(list+i*NAME_LENGTH), dest_logbook, move, message_id);
+         copy_to(lbs, atoi(list + i * NAME_LENGTH), dest_logbook, move, message_id);
       }
 
       n_done_reply += n_reply;
@@ -22847,9 +22818,9 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
 /*------------------------------------------------------------------*/
 
-int is_inline_attachment(char *encoding, int message_id, char *text, int i, char *att)
+int is_inline_attachment(LOGBOOK *lbs, char *encoding, int message_id, char *text, int i, char *att)
 {
-   char str[256], att_enc[256];
+   char str[256], att_enc[256], domain[256];
 
    if (text == NULL)
       return 0;
@@ -22865,7 +22836,8 @@ int is_inline_attachment(char *encoding, int message_id, char *text, int i, char
       att_enc[13] = '/';
       if (stristr(text, att_enc))
          return 1;
-      sprintf(str, "cid:att%d@psi.ch", i);
+      retrieve_domain(lbs, domain, sizeof(domain));
+      sprintf(str, "cid:att%d@%s", i, domain);
       if (stristr(text, str))
          return 1;
    }
@@ -23089,7 +23061,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
        format[80], slist[MAX_N_ATTR + 10][NAME_LENGTH], file_name[MAX_PATH_LENGTH],
        gattr[MAX_N_ATTR][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], *p,
        lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256], class_name[80], class_value[80],
-       fl[8][NAME_LENGTH], list[MAX_N_ATTR][NAME_LENGTH], email_from[256];
+       fl[8][NAME_LENGTH], list[MAX_N_ATTR][NAME_LENGTH], domain[256];
    FILE *f;
    BOOL first, show_text, display_inline, subtable, email;
    struct tm *pts;
@@ -23840,7 +23812,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             att_inline[i] = 0;
             att_hide[i] = getcfg(lbs->name, "Show attachments", str, sizeof(str)) && atoi(str) == 0;
 
-            if (is_inline_attachment(encoding, message_id, text, i, attachment[i]))
+            if (is_inline_attachment(lbs, encoding, message_id, text, i, attachment[i]))
                att_inline[i] = 1;
 
             if (attachment[i][0])
@@ -23893,12 +23865,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                strcpy(file_enc, attachment[index] + 14);
                url_encode(file_enc, sizeof(file_enc));  /* for file names with special characters like "+" */
                if (email) {
-                  retrieve_email_from(lbs, email_from, NULL, NULL);
-                  if (strchr(email_from, '@'))
-                     p = strchr(email_from, '@') + 1;
-                  else
-                     p = email_from;
-                  sprintf(ref, "cid:att%d@%s", index, p);
+                  retrieve_domain(lbs, domain, sizeof(domain));
+                  sprintf(ref, "cid:att%d@%s", index, domain);
                } else
                   sprintf(ref, "%s/%s", str, file_enc);
 
@@ -25489,46 +25457,49 @@ void show_uploader_finished(LOGBOOK * lbs)
          break;
       }
    }
-   strlcpy(str, att, sizeof(str));
-   str[13] = 0;
-   strcpy(file_enc, att + 14);
-   url_encode(file_enc, sizeof(file_enc));      /* for file names with special characters like "+" */
-   sprintf(ref, "%s/%s?lb=%s", str, file_enc, lbs->name_enc);
-   sprintf(ref_thumb, "%s/%s?lb=%s&thumb=1", str, file_enc, lbs->name_enc);
 
-   compose_base_url(lbs, base_url, sizeof(base_url), TRUE);
+   if (att[0]) {
+      strlcpy(str, att, sizeof(str));
+      str[13] = 0;
+      strcpy(file_enc, att + 14);
+      url_encode(file_enc, sizeof(file_enc));      /* for file names with special characters like "+" */
+      sprintf(ref, "%s/%s?lb=%s", str, file_enc, lbs->name_enc);
+      sprintf(ref_thumb, "%s/%s?lb=%s&thumb=1", str, file_enc, lbs->name_enc);
 
-   rsprintf("<script type=\"text/javascript\">\n\n");
+      compose_base_url(lbs, base_url, sizeof(base_url), TRUE);
 
-   rsprintf("  function update()\n");
-   rsprintf("  {\n");
-   rsprintf("    if (opener.document.title == \"FCKeditor\") {\n");
-   rsprintf("       i = opener.parent.next_attachment;\n");
-   rsprintf("       opener.FCKeditorAPI.GetInstance('Text').\n");
-   rsprintf
-       ("InsertHtml('<a href=\"%s\"><img border=0 alt=\"%s\" src=\"%s\" name=\"att'+(i-1)+'\" id=\"att'+(i-1)+'\"></a>');\n",
-        ref, att + 14, ref_thumb);
-   rsprintf("       opener.parent.document.form1.inlineatt.value = '%s';\n", att);
-   rsprintf("       opener.parent.document.form1.jcmd.value = 'Upload';\n");
-   rsprintf("       opener.parent.document.form1.submit();\n");
-   rsprintf("    } else {\n");
-   rsprintf("       i = opener.document.form1.next_attachment.value;\n");
-   rsprintf("       elcode2(opener.document, opener.document.form1.Text, 'IMG', 'elog:/'+i);\n");
-   rsprintf("       opener.document.form1.inlineatt.value = '%s';\n", att);
-   rsprintf("       opener.document.form1.jcmd.value = 'Upload';\n");
-   rsprintf("       opener.cond_submit();\n");
-   rsprintf("    }\n");
-   rsprintf("    window.close();\n");
-   rsprintf("  }\n\n");
+      rsprintf("<script type=\"text/javascript\">\n\n");
 
-   /* strings for elcode.js */
-   show_browser(browser);
+      rsprintf("  function update()\n");
+      rsprintf("  {\n");
+      rsprintf("    if (opener.document.title == \"FCKeditor\") {\n");
+      rsprintf("       i = opener.parent.next_attachment;\n");
+      rsprintf("       opener.FCKeditorAPI.GetInstance('Text').\n");
+      rsprintf
+          ("InsertHtml('<a href=\"%s\"><img border=0 alt=\"%s\" src=\"%s\" name=\"att'+(i-1)+'\" id=\"att'+(i-1)+'\"></a>');\n",
+           ref, att + 14, ref_thumb);
+      rsprintf("       opener.parent.document.form1.inlineatt.value = '%s';\n", att);
+      rsprintf("       opener.parent.document.form1.jcmd.value = 'Upload';\n");
+      rsprintf("       opener.parent.document.form1.submit();\n");
+      rsprintf("    } else {\n");
+      rsprintf("       i = opener.document.form1.next_attachment.value;\n");
+      rsprintf("       elcode2(opener.document, opener.document.form1.Text, 'IMG', 'elog:/'+i);\n");
+      rsprintf("       opener.document.form1.inlineatt.value = '%s';\n", att);
+      rsprintf("       opener.document.form1.jcmd.value = 'Upload';\n");
+      rsprintf("       opener.cond_submit();\n");
+      rsprintf("    }\n");
+      rsprintf("    window.close();\n");
+      rsprintf("  }\n\n");
 
-   rsprintf("</script>\n\n");
+      /* strings for elcode.js */
+      show_browser(browser);
 
-   rsprintf("<center>\n");
-   rsprintf(loc("Image \"%s\" uploaded successfully"), att + 14);
-   rsprintf("</center>\n");
+      rsprintf("</script>\n\n");
+
+      rsprintf("<center>\n");
+      rsprintf(loc("Image \"%s\" uploaded successfully"), att + 14);
+      rsprintf("</center>\n");
+   }
 
    rsprintf("</body></html>\n");
 }
