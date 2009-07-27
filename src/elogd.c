@@ -421,7 +421,7 @@ char *loc(char *orig);
 void strencode(char *text);
 void strencode_nouml(char *text);
 int scan_attributes(char *logbook);
-int is_inline_attachment(LOGBOOK *lbs, char *encoding, int message_id, char *text, int i, char *att);
+int is_inline_attachment(char *encoding, int message_id, char *text, int i, char *att);
 int setgroup(char *str);
 int setuser(char *str);
 int setegroup(char *str);
@@ -3455,7 +3455,7 @@ void check_config()
 
 /*-------------------------------------------------------------------*/
 
-void retrieve_domain(LOGBOOK * lbs, char *ret, int size)
+void retrieve_domain(char *ret, int size)
 {
    char smtp_host[80];
 
@@ -5635,7 +5635,7 @@ void replace_inline_img(LOGBOOK * lbs, char *str)
                pn++;
             if (*pn == '>')
                pn++;
-            retrieve_domain(lbs, domain, sizeof(domain));
+            retrieve_domain(domain, sizeof(domain));
             sprintf(p, "<img border=\"0\" src=\"cid:att%d@%s\">", index, domain);
             memmove(p + strlen(p), pn, strlen(pn) + 1);
 
@@ -6271,7 +6271,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                      /* replace elog:x/x for images */
                      if (strnieq(attrib, "elog:", 5)) {
                         if (email_notify) {
-                           retrieve_domain(lbs, domain, sizeof(domain));
+                           retrieve_domain(domain, sizeof(domain));
                            sprintf(hattrib, "cid:att%d@%s", m, domain);
                         } else {
                            if (email_notify)
@@ -17383,7 +17383,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
          if (show_attachments && attachment[index][0]) {
 
             /* check if attachment is inlined */
-            if (is_inline_attachment(lbs, encoding, message_id, text, index, attachment[index]))
+            if (is_inline_attachment(encoding, message_id, text, index, attachment[index]))
                continue;
 
             strlcpy(str, attachment[index], sizeof(str));
@@ -20841,7 +20841,7 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
       if (att_file[index][0] == 0)
          continue;
 
-      is_inline = is_inline_attachment(lbs, getparam("encoding"), message_id, 
+      is_inline = is_inline_attachment(getparam("encoding"), message_id, 
                                        getparam("text"), index, att_file[index]);
       if (attachment_type == 1 && is_inline)
          continue;
@@ -20874,7 +20874,7 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
       strlcat(mail_text, "Content-Transfer-Encoding: BASE64\r\n", size);
 
       if (content_id) {
-         retrieve_domain(lbs, domain, sizeof(domain));
+         retrieve_domain(domain, sizeof(domain));
          snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1, "Content-ID: <att%d@%s>\r\n",
                   index, domain);
          snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1,
@@ -21368,7 +21368,7 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
    n_attachments = 0;
    if (att_file)
       for (i = 0; att_file[i][0] && i < MAX_ATTACHMENTS; i++) {
-         if ((mail_encoding & 6) == 0 || !is_inline_attachment(lbs, encoding, message_id, 
+         if ((mail_encoding & 6) == 0 || !is_inline_attachment(encoding, message_id, 
                                                                getparam("text"), i, att_file[i]))
             n_attachments++;
       }
@@ -22818,7 +22818,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
 /*------------------------------------------------------------------*/
 
-int is_inline_attachment(LOGBOOK *lbs, char *encoding, int message_id, char *text, int i, char *att)
+int is_inline_attachment(char *encoding, int message_id, char *text, int i, char *att)
 {
    char str[256], att_enc[256], domain[256];
 
@@ -22836,7 +22836,7 @@ int is_inline_attachment(LOGBOOK *lbs, char *encoding, int message_id, char *tex
       att_enc[13] = '/';
       if (stristr(text, att_enc))
          return 1;
-      retrieve_domain(lbs, domain, sizeof(domain));
+      retrieve_domain(domain, sizeof(domain));
       sprintf(str, "cid:att%d@%s", i, domain);
       if (stristr(text, str))
          return 1;
@@ -23812,7 +23812,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             att_inline[i] = 0;
             att_hide[i] = getcfg(lbs->name, "Show attachments", str, sizeof(str)) && atoi(str) == 0;
 
-            if (is_inline_attachment(lbs, encoding, message_id, text, i, attachment[i]))
+            if (is_inline_attachment(encoding, message_id, text, i, attachment[i]))
                att_inline[i] = 1;
 
             if (attachment[i][0])
@@ -23865,7 +23865,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                strcpy(file_enc, attachment[index] + 14);
                url_encode(file_enc, sizeof(file_enc));  /* for file names with special characters like "+" */
                if (email) {
-                  retrieve_domain(lbs, domain, sizeof(domain));
+                  retrieve_domain(domain, sizeof(domain));
                   sprintf(ref, "cid:att%d@%s", index, domain);
                } else
                   sprintf(ref, "%s/%s", str, file_enc);
