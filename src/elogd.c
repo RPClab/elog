@@ -7109,13 +7109,14 @@ int scan_attributes(char *logbook)
 
       /* check for forbidden attributes */
       for (i = 0; i < n; i++) {
-         if (strieq(attr_list[i], "text") ||
+         if (strieq(attr_list[i], "id") ||
+             strieq(attr_list[i], "text") ||
              strieq(attr_list[i], "date") ||
              strieq(attr_list[i], "encoding") ||
              strieq(attr_list[i], "reply to") ||
              strieq(attr_list[i], "locked by") ||
              strieq(attr_list[i], "in reply to") || strieq(attr_list[i], "attachment")) {
-            sprintf(str, loc("Forbidden attribute: %s"), attr_list[i]);
+            sprintf(str, loc("Attribute \"%s\" is not allowed in config file"), attr_list[i]);
             show_error(str);
             return -1;
          }
@@ -19084,18 +19085,6 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    if (found) {
       redirect(lbs, str);
       return;
-   }
-
-   /* check for invalid attributes in config file */
-   for (i = 0; i < MAX_N_ATTR; i++) {
-      if (strieq(attr_list[i], "Date")) {
-         show_error("Attribute name \"Date\" is not allowed in config file");
-         return;
-      }
-      if (strieq(attr_list[i], "ID")) {
-         show_error("Attribute name \"Date\" is not allowed in config file");
-         return;
-      }
    }
 
    slist = xmalloc((MAX_N_ATTR + 10) * NAME_LENGTH);
