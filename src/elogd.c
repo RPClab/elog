@@ -3785,20 +3785,6 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
       xfree(lbs->n_el_index);
    }
 
-   /* check if this logbook has same data dir as previous */
-   for (i = 0; lb_list[i].name[0] && &lb_list[i] != lbs; i++)
-      if (strieq(lb_list[i].data_dir, lbs->data_dir))
-         break;
-
-   if (strieq(lb_list[i].data_dir, lbs->data_dir) && &lb_list[i] != lbs) {
-      if (verbose)
-         eprintf("\n  Same index as logbook %s\n", lb_list[i].name);
-
-      lbs->el_index = lb_list[i].el_index;
-      lbs->n_el_index = lb_list[i].n_el_index;
-      return EL_SUCCESS;
-   }
-
    lbs->n_el_index = xmalloc(sizeof(int));
    *lbs->n_el_index = 0;
    lbs->el_index = xmalloc(0);
