@@ -3535,9 +3535,10 @@ void retrieve_email_from(LOGBOOK * lbs, char *ret, char *ret_name, char attrib[M
 
 /*------------------------------------------------------------------*/
 
-void el_decode(char *message, char *key, char *result)
+void el_decode(char *message, char *key, char *result, int size)
 {
    char *pc, *ph;
+   int i;
 
    if (result == NULL)
       return;
@@ -3562,9 +3563,9 @@ void el_decode(char *message, char *key, char *result)
 
       if (strncmp(pc, key, strlen(key)) == 0) {
          pc += strlen(key);
-         while (*pc != '\n' && *pc != '\r')
-            *result++ = *pc++;
-         *result = 0;
+         for(i=0 ; *pc != '\n' && *pc != '\r' && i<size-1 ; i++)
+            result[i] = *pc++;
+         result[i] = 0;
          return;
       }
 
@@ -3578,7 +3579,7 @@ void el_decode(char *message, char *key, char *result)
 
 /*------------------------------------------------------------------*/
 
-void el_decode_int(char *message, char *key, char *result)
+void el_decode_int(char *message, char *key, char *result, int size)
 {
    char str[80];
 
@@ -3586,9 +3587,27 @@ void el_decode_int(char *message, char *key, char *result)
       return;
 
    *result = 0;
-   el_decode(message, key, str);
+   el_decode(message, key, str, sizeof(str));
    if (str[0])
       sprintf(result, "%d", atoi(str));
+}
+
+/*------------------------------------------------------------------*/
+
+void el_decode_intlist(char *message, char *key, char *result, int size)
+{
+   int  i;
+
+   if (result == NULL)
+      return;
+
+   *result = 0;
+   el_decode(message, key, result, size);
+
+   /* remove any non allowed characters */
+   for (i=0 ; i<size && i<(int)strlen(result); i++)
+      if (!isdigit(result[i]) && result[i] != ' ' && result[i] != ',')
+         result[i] = ' ';
 }
 
 /*------------------------------------------------------------------*/
@@ -3867,8 +3886,8 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
                strcpy(str, file_list + index * MAX_PATH_LENGTH);
                strcpy(lbs->el_index[*lbs->n_el_index].file_name, str);
 
-               el_decode(p, "Date: ", date);
-               el_decode_int(p, "In reply to: ", in_reply_to);
+               el_decode(p, "Date: ", date, sizeof(date));
+               el_decode_int(p, "In reply to: ", in_reply_to, sizeof(in_reply_to));
 
                lbs->el_index[*lbs->n_el_index].file_time = date_to_ltime(date);
 
@@ -4303,11 +4322,11 @@ int el_retrieve(LOGBOOK * lbs, int message_id, char *date, char attr_list[MAX_N_
 
    /* decode message */
    if (date)
-      el_decode(message, "Date: ", date);
+      el_decode(message, "Date: ", date, 80);
    if (reply_to)
-      el_decode_int(message, "Reply to: ", reply_to);
+      el_decode_intlist(message, "Reply to: ", reply_to, MAX_REPLY_TO * 10);
    if (in_reply_to)
-      el_decode_int(message, "In reply to: ", in_reply_to);
+      el_decode_int(message, "In reply to: ", in_reply_to, 80);
 
    if (n_attr == -1) {
       /* derive attribute names from message */
@@ -4322,13 +4341,13 @@ int el_retrieve(LOGBOOK * lbs, int message_id, char *date, char attr_list[MAX_N_
       if (attrib)
          for (i = 0; i < n_attr; i++) {
             sprintf(str, "%s: ", attr_list[i]);
-            el_decode(message, str, attrib[i]);
+            el_decode(message, str, attrib[i], NAME_LENGTH);
          }
    }
 
-   el_decode(message, "Attachment: ", attachment_all);
+   el_decode(message, "Attachment: ", attachment_all, sizeof(attachment_all));
    if (encoding)
-      el_decode(message, "Encoding: ", encoding);
+      el_decode(message, "Encoding: ", encoding, 80);
 
    if (attachment) {
       /* break apart attachements */
@@ -4352,7 +4371,7 @@ int el_retrieve(LOGBOOK * lbs, int message_id, char *date, char attr_list[MAX_N_
    }
 
    if (locked_by)
-      el_decode(message, "Locked by: ", locked_by);
+      el_decode(message, "Locked by: ", locked_by, 80);
 
    p = strstr(message, "========================================\n");
 
@@ -4535,7 +4554,7 @@ int el_retrieve_attachment(LOGBOOK * lbs, int message_id, int n, char name[MAX_P
 
    message[size] = 0;
 
-   el_decode(message, "Attachment: ", attachment_all);
+   el_decode(message, "Attachment: ", attachment_all, sizeof(attachment_all));
 
    name[0] = 0;
 
@@ -4680,21 +4699,21 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
       }
 
       if (strieq(date1, "<keep>"))
-         el_decode(message, "Date: ", date1);
+         el_decode(message, "Date: ", date1, sizeof(date1));
       else
          strlcpy(date1, date, sizeof(date1));
       if (strieq(reply_to1, "<keep>"))
-         el_decode_int(message, "Reply to: ", reply_to1);
+         el_decode_intlist(message, "Reply to: ", reply_to1, sizeof(reply_to1));
       if (strieq(in_reply_to1, "<keep>"))
-         el_decode_int(message, "In reply to: ", in_reply_to1);
+         el_decode_int(message, "In reply to: ", in_reply_to1, sizeof(in_reply_to1));
       if (strieq(encoding1, "<keep>"))
-         el_decode(message, "Encoding: ", encoding1);
-      el_decode(message, "Attachment: ", attachment_all);
+         el_decode(message, "Encoding: ", encoding1, sizeof(encoding1));
+      el_decode(message, "Attachment: ", attachment_all, sizeof(attachment_all));
 
       for (i = 0; i < n_attr; i++) {
          sprintf(str, "%s: ", attr_name[i]);
          if (strieq(attrib[i], "<keep>"))
-            el_decode(message, str, attrib[i]);
+            el_decode(message, str, attrib[i], NAME_LENGTH);
       }
 
       /* buffer tail of logfile */
@@ -5004,7 +5023,7 @@ int el_delete_message(LOGBOOK * lbs, int message_id, BOOL delete_attachments,
    message[size] = 0;
 
    /* delete attachments */
-   el_decode(message, "Attachment: ", attachment_all);
+   el_decode(message, "Attachment: ", attachment_all, sizeof(attachment_all));
 
    for (i = 0; i < MAX_ATTACHMENTS; i++) {
       if (i == 0)
@@ -5028,8 +5047,8 @@ int el_delete_message(LOGBOOK * lbs, int message_id, BOOL delete_attachments,
    }
 
    /* decode references */
-   el_decode_int(message, "Reply to: ", reply_to);
-   el_decode_int(message, "In reply to: ", in_reply_to);
+   el_decode_intlist(message, "Reply to: ", reply_to, sizeof(reply_to));
+   el_decode_int(message, "In reply to: ", in_reply_to, sizeof(in_reply_to));
 
    /* decoded attributes */
    for (i = 0;; i++) {
@@ -15174,9 +15193,9 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
    }
 
    /* decode entry */
-   el_decode(p, "Date: ", date);
-   el_decode_int(p, "Reply to: ", reply_to);
-   el_decode_int(p, "In reply to: ", in_reply_to);
+   el_decode(p, "Date: ", date, sizeof(date));
+   el_decode_intlist(p, "Reply to: ", reply_to, sizeof(reply_to));
+   el_decode_int(p, "In reply to: ", in_reply_to, sizeof(in_reply_to));
 
    /* derive attribute names from message */
    for (i = 0;; i++) {
@@ -15186,8 +15205,8 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
    }
    n_attr = i;
 
-   el_decode(p, "Attachment: ", attachment_all);
-   el_decode(p, "Encoding: ", encoding);
+   el_decode(p, "Attachment: ", attachment_all, sizeof(attachment_all));
+   el_decode(p, "Encoding: ", encoding, sizeof(encoding));
 
    /* break apart attachements */
    for (i = 0; i < MAX_ATTACHMENTS; i++)
@@ -15205,7 +15224,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
          break;
    }
 
-   el_decode(p, "Locked by: ", locked_by);
+   el_decode(p, "Locked by: ", locked_by, sizeof(locked_by));
    if (locked_by[0]) {
       xfree(message);
       sprintf(error_str, loc("Entry #%d is locked on remote server"), message_id);
