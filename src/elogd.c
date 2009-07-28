@@ -3589,7 +3589,8 @@ void el_decode_int(char *message, char *key, char *result, int size)
    *result = 0;
    el_decode(message, key, str, sizeof(str));
    if (str[0])
-      sprintf(result, "%d", atoi(str));
+      sprintf(str, "%d", atoi(str));
+   strlcpy(result, str, size);
 }
 
 /*------------------------------------------------------------------*/
