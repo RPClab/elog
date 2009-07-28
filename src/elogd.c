@@ -22795,7 +22795,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
 int is_inline_attachment(char *encoding, int message_id, char *text, int i, char *att)
 {
-   char str[256], att_enc[256], domain[256];
+   char str[256], att_enc[256], domain[256], *pt, *p;
 
    if (text == NULL)
       return 0;
@@ -22809,8 +22809,19 @@ int is_inline_attachment(char *encoding, int message_id, char *text, int i, char
    } else if (strieq(encoding, "HTML")) {
       strlcpy(att_enc, att, sizeof(att_enc));
       att_enc[13] = '/';
-      if (stristr(text, att_enc))
-         return 1;
+      pt = text;
+      while (stristr(pt, att_enc)) {
+         /* make sure that it's really an inline image */
+         for (p = stristr(pt, att_enc) ; p > pt ; p--)
+            if (*p == '<')
+               break;
+         if (p > pt) {
+            strncpy(str, p, 5);
+            if (stristr(str, "<img "))
+               return 1;
+         }
+         pt = stristr(pt, att_enc)+1;
+      }
       retrieve_domain(domain, sizeof(domain));
       sprintf(str, "cid:att%d@%s", i, domain);
       if (stristr(text, str))
