@@ -10746,7 +10746,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf(" onclick=\"switch_smileys()\"");
       rsprintf(" onmouseover=\"this.style.cursor='pointer';\" />\n");
 
-      rsprintf(" <select name=\"font\" ");
+      rsprintf(" <select name=\"_font_name\" ");
       rsprintf("onchange=\"elcode(document.form1.Text,'FONT',this.options[this.selectedIndex].value);");
       rsprintf("this.selectedIndex=0;\">\n");
       rsprintf("<option value=\"0\">%s</option>\n", loc("FONT"));
@@ -10760,7 +10760,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       rsprintf("</select>\n");
 
-      rsprintf(" <select name=\"size\" ");
+      rsprintf(" <select name=\"_font_size\" ");
       rsprintf("onchange=\"elcode(document.form1.Text,'SIZE',this.options[this.selectedIndex].value);");
       rsprintf("this.selectedIndex=0;\">\n");
       rsprintf("<option value=\"0\">%s</option>\n", loc("SIZE"));
@@ -10772,7 +10772,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<option value=\"6\">6</option>\n");
       rsprintf("</select>\n");
 
-      rsprintf(" <select name=\"color\" ");
+      rsprintf(" <select name=\"_font_color\" ");
       rsprintf("onchange=\"elcode(document.form1.Text,'COLOR',this.options[this.selectedIndex].value);");
       rsprintf("this.selectedIndex=0;\">\n");
       rsprintf("<option value=\"0\">%s</option>\n", loc("COLOR"));
