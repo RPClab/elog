@@ -9,7 +9,7 @@
  \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.7.6"
+#define VERSION "2.7.7"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -3462,10 +3462,10 @@ void retrieve_domain(char *ret, int size)
    strlcpy(ret, "tmp.org", size);
    if (getcfg("global", "SMTP host", smtp_host, sizeof(smtp_host))) {
       if (strchr(smtp_host, '.'))
-         strlcpy(ret, strchr(smtp_host, '.')+1, size);
+         strlcpy(ret, strchr(smtp_host, '.') + 1, size);
    }
 }
- 
+
 /*-------------------------------------------------------------------*/
 
 void retrieve_email_from(LOGBOOK * lbs, char *ret, char *ret_name, char attrib[MAX_N_ATTR][NAME_LENGTH])
@@ -3563,7 +3563,7 @@ void el_decode(char *message, char *key, char *result, int size)
 
       if (strncmp(pc, key, strlen(key)) == 0) {
          pc += strlen(key);
-         for(i=0 ; *pc != '\n' && *pc != '\r' && i<size-1 ; i++)
+         for (i = 0; *pc != '\n' && *pc != '\r' && i < size - 1; i++)
             result[i] = *pc++;
          result[i] = 0;
          return;
@@ -3597,7 +3597,7 @@ void el_decode_int(char *message, char *key, char *result, int size)
 
 void el_decode_intlist(char *message, char *key, char *result, int size)
 {
-   int  i;
+   int i;
 
    if (result == NULL)
       return;
@@ -3606,7 +3606,7 @@ void el_decode_intlist(char *message, char *key, char *result, int size)
    el_decode(message, key, result, size);
 
    /* remove any non allowed characters */
-   for (i=0 ; i<size && i<(int)strlen(result); i++)
+   for (i = 0; i < size && i < (int) strlen(result); i++)
       if (!isdigit(result[i]) && result[i] != ' ' && result[i] != ',')
          result[i] = ' ';
 }
@@ -5933,96 +5933,98 @@ typedef struct {
 PATTERN_LIST pattern_list[] = {
 
    /* smileys */
-   {":))",  "<img alt=\"Happy\" title=\"Happy\" src=\"%sicons/happy.png\">"}, 
+   {":))", "<img alt=\"Happy\" title=\"Happy\" src=\"%sicons/happy.png\">"},
    {":-))", "<img alt=\"Happy\" title=\"Happy\" src=\"%sicons/happy.png\">"},
-   {":)",   "<img alt=\"Smile\" title=\"Smile\" src=\"%sicons/smile.png\">"}, 
-   {":-)",  "<img alt=\"Smile\" title=\"Smile\" src=\"%sicons/smile.png\">"},
-   {":(",   "<img alt=\"Frown\" title=\"Frown\" src=\"%sicons/frown.png\">"}, 
-   {":-(",  "<img alt=\"Frown\" title=\"Frown\" src=\"%sicons/frown.png\">"},
-   {";)",   "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"}, 
-   {";-)",  "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"},
-   {":d",   "<img alt=\"Big grin\" title=\"Big grin\" src=\"%sicons/biggrin.png\">"}, 
-   {"?-)",  "<img alt=\"Confused\" title=\"Confused\" src=\"%sicons/confused.png\">"},
-   {";(",   "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"}, 
-   {";-(",  "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"},
-   {":]",   "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"}, 
-   {":-]",  "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"},
-   {":o",   "<img alt=\"Yawn\" title=\"Yawn\" src=\"%sicons/yawn.png\">"}, 
-   {":-o",  "<img alt=\"Yawn\" title=\"Yawn\" src=\"%sicons/yawn.png\">"},
-   {"8-)",  "<img alt=\"Cool\" title=\"Cool\" src=\"%sicons/cool.png\">"}, 
-   {"8o",   "<img alt=\"Astonished\" title=\"Astonished\" src=\"%sicons/astonished.png\">"},
-   {"x-(",  "<img alt=\"Mad\" title=\"Mad\" src=\"%sicons/mad.png\">"}, 
-   {":p",   "<img alt=\"Tongue\" title=\"Tongue\" src=\"%sicons/tongue.png\">"},
-   {":-p",  "<img alt=\"Tongue\" title=\"Tongue\" src=\"%sicons/tongue.png\">"},
-   
+   {":)", "<img alt=\"Smile\" title=\"Smile\" src=\"%sicons/smile.png\">"},
+   {":-)", "<img alt=\"Smile\" title=\"Smile\" src=\"%sicons/smile.png\">"},
+   {":(", "<img alt=\"Frown\" title=\"Frown\" src=\"%sicons/frown.png\">"},
+   {":-(", "<img alt=\"Frown\" title=\"Frown\" src=\"%sicons/frown.png\">"},
+   {";)", "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"},
+   {";-)", "<img alt=\"Wink\" title=\"Wink\" src=\"%sicons/wink.png\">"},
+   {":d", "<img alt=\"Big grin\" title=\"Big grin\" src=\"%sicons/biggrin.png\">"},
+   {"?-)", "<img alt=\"Confused\" title=\"Confused\" src=\"%sicons/confused.png\">"},
+   {";(", "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"},
+   {";-(", "<img alt=\"Crying\" title=\"Crying\" src=\"%sicons/crying.png\">"},
+   {":]", "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"},
+   {":-]", "<img alt=\"Pleased\" title=\"Pleased\" src=\"%sicons/pleased.png\">"},
+   {":o", "<img alt=\"Yawn\" title=\"Yawn\" src=\"%sicons/yawn.png\">"},
+   {":-o", "<img alt=\"Yawn\" title=\"Yawn\" src=\"%sicons/yawn.png\">"},
+   {"8-)", "<img alt=\"Cool\" title=\"Cool\" src=\"%sicons/cool.png\">"},
+   {"8o", "<img alt=\"Astonished\" title=\"Astonished\" src=\"%sicons/astonished.png\">"},
+   {"x-(", "<img alt=\"Mad\" title=\"Mad\" src=\"%sicons/mad.png\">"},
+   {":p", "<img alt=\"Tongue\" title=\"Tongue\" src=\"%sicons/tongue.png\">"},
+   {":-p", "<img alt=\"Tongue\" title=\"Tongue\" src=\"%sicons/tongue.png\">"},
+
    /* formatting */
-   {"[b]", "<b>"}, 
-   {"[/b]", "</b>"}, 
-   {"[u]", "<u>"}, 
-   {"[/u]", "</u>"}, 
-   {"[i]", "<i>"}, 
-   {"[/i]", "</i>"}, 
+   {"[b]", "<b>"},
+   {"[/b]", "</b>"},
+   {"[u]", "<u>"},
+   {"[/u]", "</u>"},
+   {"[i]", "<i>"},
+   {"[/i]", "</i>"},
    {"[center]", "<center>"},
-   {"[/center]", "</center>"}, 
-   {"[color=", "<font color=\"%s\">"}, 
-   {"[/color]", "</font>"}, 
+   {"[/center]", "</center>"},
+   {"[color=", "<font color=\"%s\">"},
+   {"[/color]", "</font>"},
    {"[size=", "<font size=\"%s\">"},
-   {"[/size]", "</font>"}, 
-   {"[font=", "<font face=\"%s\">"}, 
-   {"[/font]", "</font>"}, 
-   {"\r\n[code]", "<pre>"}, 
+   {"[/size]", "</font>"},
+   {"[font=", "<font face=\"%s\">"},
+   {"[/font]", "</font>"},
+   {"\r\n[code]", "<pre>"},
    {"[code]", "<pre>"},
-   {"[/code]\r\n", "</pre>"}, 
-   {"[/code]", "</pre>"}, 
-   {"\r\n[code1]", "<pre>"}, 
-   {"[code1]", "<pre>"}, 
-   {"[/code1]\r\n","</pre>"},
+   {"[/code]\r\n", "</pre>"},
+   {"[/code]", "</pre>"},
+   {"\r\n[code1]", "<pre>"},
+   {"[code1]", "<pre>"},
+   {"[/code1]\r\n", "</pre>"},
    {"[/code1]", "</pre>"},
-   
+
    /* lists */
-   {"[list]\r", "<ul>"}, 
-   {"[list]", "<ul>"}, 
-   {"[*]", "<li>"}, 
-   {"[/list]\r", "</#>"},    // either </ul> or </ol>
-   {"[/list]", "</#>"}, 
+   {"[list]\r", "<ul>"},
+   {"[list]", "<ul>"},
+   {"[*]", "<li>"},
+   {"[/list]\r", "</#>"},       // either </ul> or </ol>
+   {"[/list]", "</#>"},
    {"[list=", "<ol type=\"%s\">"},
-   
+
    /* headings */
-   {"[h1]", "<h1>"}, 
-   {"[/h1]", "</h1>"}, 
-   {"[h2]", "<h2>"}, 
-   {"[/h2]", "</h2>"}, 
-   {"[h3]", "<h3>"}, 
+   {"[h1]", "<h1>"},
+   {"[/h1]", "</h1>"},
+   {"[h2]", "<h2>"},
+   {"[/h2]", "</h2>"},
+   {"[h3]", "<h3>"},
    {"[/h3]", "</h3>"},
 
    /* URLs */
-   {"[url=", "<a href=\"%#\">%s</a>"}, 
-   {"[url]", "<a href=\"%#\">%s</a>"}, 
-   {"[/url]", ""}, 
+   {"[url=", "<a href=\"%#\">%s</a>"},
+   {"[url]", "<a href=\"%#\">%s</a>"},
+   {"[/url]", ""},
    {"[email]", "<a href=\"mailto:%#\">%s</a>"},
-   {"[/email]", ""}, 
-   {"[img]", "<a href=\"%#\"><img border=0 src=\"%#?thumb=1\"></a>"}, 
+   {"[/email]", ""},
+   {"[img]", "<a href=\"%#\"><img border=0 src=\"%#?thumb=1\"></a>"},
    {"[/img]", ""},
 
    /* quote */
-   {"[quote=", "<br /><table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
-   {"[quote]", "<br /><table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
-   {"[/quote]\r", "</td></tr></table><br />\r\n"}, 
+   {"[quote=",
+    "<br /><table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
+   {"[quote]",
+    "<br /><table class=\"quotetable\" align=\"center\" cellspacing=\"1\"><tr><td class=\"quotetitle\">%s:</td></tr><tr><td class=\"quote\">"},
+   {"[/quote]\r", "</td></tr></table><br />\r\n"},
    {"[/quote]", "</td></tr></table>\r\n"},
 
    /* table */
-   {"[table]", "<table><tr><td>"}, 
-   {"[table ", "<table %s><tr><td>"}, 
-   {"|-", "</td></tr><tr><td>"}, 
+   {"[table]", "<table><tr><td>"},
+   {"[table ", "<table %s><tr><td>"},
+   {"|-", "</td></tr><tr><td>"},
    {"|", "</td><td>"},
    {"[/table]", "</td></tr></table>"},
 
    /* horizontal line */
    {"[line]", "<hr />"},
-   
+
    /* anchor */
-   {"[anchor]", "<a name=\"%#\">"}, 
-   {"[/anchor]", "</a>"}, 
+   {"[anchor]", "<a name=\"%#\">"},
+   {"[/anchor]", "</a>"},
    {"", ""}
 };
 
@@ -20836,7 +20838,7 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
       if (att_file[index][0] == 0)
          continue;
 
-      is_inline = is_inline_attachment(getparam("encoding"), message_id, 
+      is_inline = is_inline_attachment(getparam("encoding"), message_id,
                                        getparam("text"), index, att_file[index]);
       if (attachment_type == 1 && is_inline)
          continue;
@@ -21363,7 +21365,7 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
    n_attachments = 0;
    if (att_file)
       for (i = 0; att_file[i][0] && i < MAX_ATTACHMENTS; i++) {
-         if ((mail_encoding & 6) == 0 || !is_inline_attachment(encoding, message_id, 
+         if ((mail_encoding & 6) == 0 || !is_inline_attachment(encoding, message_id,
                                                                getparam("text"), i, att_file[i]))
             n_attachments++;
       }
@@ -22832,7 +22834,7 @@ int is_inline_attachment(char *encoding, int message_id, char *text, int i, char
       pt = text;
       while (stristr(pt, att_enc)) {
          /* make sure that it's really an inline image */
-         for (p = stristr(pt, att_enc) ; p > pt ; p--)
+         for (p = stristr(pt, att_enc); p > pt; p--)
             if (*p == '<')
                break;
          if (p > pt) {
@@ -22840,7 +22842,7 @@ int is_inline_attachment(char *encoding, int message_id, char *text, int i, char
             if (stristr(str, "<img "))
                return 1;
          }
-         pt = stristr(pt, att_enc)+1;
+         pt = stristr(pt, att_enc) + 1;
       }
       retrieve_domain(domain, sizeof(domain));
       sprintf(str, "cid:att%d@%s", i, domain);
@@ -25468,7 +25470,7 @@ void show_uploader_finished(LOGBOOK * lbs)
       strlcpy(str, att, sizeof(str));
       str[13] = 0;
       strcpy(file_enc, att + 14);
-      url_encode(file_enc, sizeof(file_enc));      /* for file names with special characters like "+" */
+      url_encode(file_enc, sizeof(file_enc));   /* for file names with special characters like "+" */
       sprintf(ref, "%s/%s?lb=%s", str, file_enc, lbs->name_enc);
       sprintf(ref_thumb, "%s/%s?lb=%s&thumb=1", str, file_enc, lbs->name_enc);
 

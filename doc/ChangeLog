@@ -1,3 +1,37 @@
+Version 2.7.7, released July 31st 2009
+======================================
+
+- Upgraded FCKEdit to 2.6.4.1
+- Changed ELCode select box names not to collide with "size" attribute
+- Better check for inline images
+- Fixed crash with two logbooks using same subdir
+- Completed list of forbidden attributes
+- Fixed broken inline images in email notification
+- Fixed problem with invalid encoding
+- Fixed JavaScript check for required date_time attributes
+- Implemented "Thumbnail size = 0"
+- Reworked memory allocation in copy_to
+- Implemented "Collapse to last"
+- After a "Move to" the next thread head is displayed
+- Use dedicated class for text and attachment titles in list display
+- Allow "Submit" if "Edit" is in menu list
+- Removed CR/LF from redirection to avoid XSS
+- Fixed bug with RSS feed if logbook is empty
+- Fixed problem with auto indices
+- Fixed required attributes under a condition
+- Fixed wrong file names on copy/move of old entries
+- Replaced signal() calls by sigaction() calls to avoid Solaris problems, thanks to Paul T. Keener
+- Include thumbnails in "move to" and "copy to" commands
+- Implemented "Preserve IDs"
+- Fixed inline image references when moving entries between logbooks
+- Fixed NULL pointer at end of scipt_tags[] array
+- Fixed crash with password recovery and bottom text
+- Make password recovery working with protected selection pages
+- Added Open XML MIME types
+- Hide attachment column in lis display if "enable attachments = 0"
+- Fixed bug with ROptions when one option is a substring of another
+- Fixed cookie handling, thanks to Simon Patton
+
 Version 2.7.6, released April 14th 2009
 =======================================
 

@@ -138,7 +138,6 @@ Upload = Envoyer
 Requested = Demandé
 Registration request on logbook "%s" = Demande d'inscription pour le registre "%s"
 A new ELOG user wants to register on "%s" = Un nouvel utilisateur ELOG souhaite s'inscrire à "%s"
-Only user <i>%s</i> can delete this entry = Seul l'utilisateur <i>%s</i> peut supprimer cette entrée
 Search text also in attributes = Rechercher également le texte dans les attributs
 Date = Date
 ID = ID
@@ -461,10 +460,11 @@ Error: Content length (%d) larger than maximum content length (%d) = Erreur : la
 #
 #---- please translate following items and then remove this comment ----#
 #
-Forbidden attribute: %s = 
 ELOG error = 
 Only user <b>%s</b> can edit this entry = 
 Export to = 
 Do not ignore first line = 
 Last %d hours = 
 Invalid URL = 
+Attribute "%s" is not allowed in config file = 
+Only user <b>%s</b> can delete this entry = 

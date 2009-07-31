@@ -139,7 +139,6 @@ Enter your user name or email address = Ingrese su nombre de usuario o direccion
 Forgot = Olvidar
 ELOG new user = Nuevo usuario de ELOG
 Retype password = Reescriba la clave
-Only user <i>%s</i> can delete this entry = Solamente el usuario <i>%s</i> puede borrar esta entrada
 Are you sure to delete these messages? = Esta seguro de borrar estos mensajes?
 and all their replies = y todas sus respuestas
 Synchronization = Sincronizacion
@@ -462,10 +461,11 @@ Error: Content length (%d) larger than maximum content length (%d) = Error: La l
 #
 #---- please translate following items and then remove this comment ----#
 #
-Forbidden attribute: %s = 
 ELOG error = 
 Only user <b>%s</b> can edit this entry = 
 Export to = 
 Do not ignore first line = 
 Last %d hours = 
 Invalid URL = 
+Attribute "%s" is not allowed in config file = 
+Only user <b>%s</b> can delete this entry = 
