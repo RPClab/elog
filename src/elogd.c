@@ -20632,7 +20632,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          rsprintf("\r\n");
 
          rsprintf("Encoding: %s\r\n", encoding);
-         if (locked_by && locked_by[0])
+         if (locked_by[0])
             rsprintf("Locked by: %s\r\n", locked_by);
 
          rsprintf("========================================\r\n");
@@ -23476,7 +23476,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          rsprintf("</td></tr>\n");
       }
 
-      if (locked_by && locked_by[0]) {
+      if (locked_by[0]) {
          sprintf(str, "%s %s", loc("Entry is currently edited by"), locked_by);
          rsprintf
              ("<tr><td nowrap colspan=2 class=\"errormsg\"><img src=\"stop.png\" alt=\"%s\"  title=\"%s\">\n",
