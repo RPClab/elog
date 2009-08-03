@@ -27425,6 +27425,9 @@ void send_return(int _sock, const char *net_buffer)
       if (return_length == 0)
          return_length = strlen_retbuf;
 
+      if (return_length == 0)
+         return;
+
       if (_logging_level > 3) {
          strlcpy(str, net_buffer, sizeof(str));
          sprintf(str, "Return %d bytes", return_length);
