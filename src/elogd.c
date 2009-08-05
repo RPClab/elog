@@ -9798,30 +9798,28 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("   document.form1.submit();\n");
    rsprintf("}\n\n");
 
-   if (enc_selected != 2) {
-      if (!getcfg(lbs->name, "Message height", str, sizeof(str)) && !getcfg(lbs->name, "Message width", str,
-                                                                            sizeof(str))) {
-         /* javascript for resizing edit box */
-         rsprintf("\nfunction init_resize()\n");
-         rsprintf("{\n");
-         rsprintf("   window.onresize = resize_textarea;\n");
-         rsprintf("   resize_textarea();\n");
-         rsprintf("}\n\n");
-         rsprintf("function resize_textarea()\n");
-         rsprintf("{\n");
-         rsprintf("   p = document.form1.Text;\n");
-         rsprintf("   t = p.offsetTop;\n");
-         rsprintf("   while (p = p.offsetParent)\n");
-         rsprintf("      t += p.offsetTop;\n");
-         rsprintf("   if (window.innerHeight) // netscape\n");
-         rsprintf("      height = window.innerHeight - t - 135;\n");
-         rsprintf("   else // IE\n");
-         rsprintf("      height = document.body.offsetHeight - t - 135;\n");
-         rsprintf("   if (height < 300)\n");
-         rsprintf("      height = 300;\n");
-         rsprintf("   document.form1.Text.style.height = height;\n");
-         rsprintf("}\n\n");
-      }
+   if (enc_selected != 2 && !getcfg(lbs->name, "Message height", str, sizeof(str)) && 
+                            !getcfg(lbs->name, "Message width", str, sizeof(str))) {
+      /* javascript for resizing edit box */
+      rsprintf("\nfunction init_resize()\n");
+      rsprintf("{\n");
+      rsprintf("   window.onresize = resize_textarea;\n");
+      rsprintf("   resize_textarea();\n");
+      rsprintf("}\n\n");
+      rsprintf("function resize_textarea()\n");
+      rsprintf("{\n");
+      rsprintf("   p = document.form1.Text;\n");
+      rsprintf("   t = p.offsetTop;\n");
+      rsprintf("   while (p = p.offsetParent)\n");
+      rsprintf("      t += p.offsetTop;\n");
+      rsprintf("   if (window.innerHeight) // netscape\n");
+      rsprintf("      height = window.innerHeight - t - 135;\n");
+      rsprintf("   else // IE\n");
+      rsprintf("      height = document.body.offsetHeight - t - 135;\n");
+      rsprintf("   if (height < 300)\n");
+      rsprintf("      height = 300;\n");
+      rsprintf("   document.form1.Text.style.height = height;\n");
+      rsprintf("}\n\n");
    }
 
    /* strings for elcode.js */
@@ -9911,9 +9909,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       strcpy(script_onload, "document.form1.Text.focus();");
 
    if (enc_selected == 0) {
-      if (!getcfg(lbs->name, "Message height", str, sizeof(str)) && !getcfg(lbs->name, "Message width", str,
-                                                                            sizeof(str))) {
-
+      if (!getcfg(lbs->name, "Message height", str, sizeof(str)) && 
+          !getcfg(lbs->name, "Message width", str, sizeof(str))) {
          strcat(script_onload, "elKeyInit();init_resize();");
          strcat(script_onfocus, "elKeyInit();");
       } else
@@ -9921,8 +9918,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       strcat(script_onfocus, "elKeyInit();");
    } else if (enc_selected == 2 && fckedit_exist) {
       strcat(script_onload, "initFCKedit();");
-   } else
-      strcat(script_onload, "init_resize();");
+   } else if (enc_selected == 1) {
+      if (!getcfg(lbs->name, "Message height", str, sizeof(str)) && 
+          !getcfg(lbs->name, "Message width", str, sizeof(str)))
+         strcat(script_onload, "init_resize();");
+   }
 
    script_onunload[0] = 0;
    if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1)
