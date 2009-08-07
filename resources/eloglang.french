@@ -1,6 +1,6 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.7.4+)
+# (for 2.7.7+)
 # A more recent version may be available at :
 # http://savannah.psi.ch/viewcvs/trunk/resources/eloglang.french?root=elog
 #
@@ -456,15 +456,11 @@ Cannot create thumbnail, please check ImageMagick installation = Impossible de c
 Please log on by clicking on following link and change your password = Merci de vous connecter en cliquant sur le lien suivant et de changer votre mot de passe
 Attachments = Pièces jointes
 Error: Content length (%d) larger than maximum content length (%d) = Erreur : la taille du contenu (%d) est supérieure au maximum autorisé (%d)
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-ELOG error = 
-Only user <b>%s</b> can edit this entry = 
-Export to = 
-Do not ignore first line = 
-Last %d hours = 
-Invalid URL = 
-Attribute "%s" is not allowed in config file = 
-Only user <b>%s</b> can delete this entry = 
+ELOG error = erreur ELOG
+Only user <b>%s</b> can edit this entry = Seul l'utilisateur <b>%s</b> peut modifier cette entrée
+Export to = Exporter vers
+Do not ignore first line = Ne pas sauter la première ligne
+Last %d hours =  %d dernières heures
+Invalid URL = URL invalide
+Attribute "%s" is not allowed in config file = L'attribut  "%s" n'est pas autorisé dans le fichier de configuration
+Only user <b>%s</b> can delete this entry = Seul l'utilisateur <b>%s</b> peut supprimer cette entrée
