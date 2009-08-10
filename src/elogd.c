@@ -434,6 +434,7 @@ time_t convert_datetime(char *date_string);
 int get_thumb_name(const char *file_name, char *thumb_name, int size, int index);
 int create_thumbnail(LOGBOOK * lbs, char *file_name);
 int ascii_compare(const void *s1, const void *s2);
+int ascii_compare2(const void *s1, const void *s2);
 
 /*---- Funcions from the MIDAS library -----------------------------*/
 
@@ -7105,7 +7106,7 @@ int scan_attributes(char *logbook)
  and attr_flags arrays */
 {
    char list[10000], str[NAME_LENGTH], type[NAME_LENGTH], tmp_list[MAX_N_ATTR][NAME_LENGTH];
-   int i, j, n, m;
+   int i, j, n, m, n_options;
 
    if (getcfg(logbook, "Attributes", list, sizeof(list))) {
       /* reset attribute flags */
@@ -7133,26 +7134,32 @@ int scan_attributes(char *logbook)
       /* get options lists for attributes */
       memset(attr_options, 0, sizeof(attr_options));
       for (i = 0; i < n; i++) {
+         n_options = 0;
+
          sprintf(str, "Options %s", attr_list[i]);
          if (getcfg(logbook, str, list, sizeof(list)))
-            strbreak(list, attr_options[i], MAX_N_LIST, ",", FALSE);
+            n_options = strbreak(list, attr_options[i], MAX_N_LIST, ",", FALSE);
 
          sprintf(str, "MOptions %s", attr_list[i]);
          if (getcfg(logbook, str, list, sizeof(list))) {
-            strbreak(list, attr_options[i], MAX_N_LIST, ",", FALSE);
+            n_options = strbreak(list, attr_options[i], MAX_N_LIST, ",", FALSE);
             attr_flags[i] |= AF_MULTI;
          }
 
          sprintf(str, "ROptions %s", attr_list[i]);
          if (getcfg(logbook, str, list, sizeof(list))) {
-            strbreak(list, attr_options[i], MAX_N_LIST, ",", FALSE);
+            n_options = strbreak(list, attr_options[i], MAX_N_LIST, ",", FALSE);
             attr_flags[i] |= AF_RADIO;
          }
 
          sprintf(str, "IOptions %s", attr_list[i]);
          if (getcfg(logbook, str, list, sizeof(list))) {
-            strbreak(list, attr_options[i], MAX_N_LIST, ",", FALSE);
+            n_options = strbreak(list, attr_options[i], MAX_N_LIST, ",", FALSE);
             attr_flags[i] |= AF_ICON;
+         }
+
+         if (n_options && getcfg(logbook, "Sort Attribute Options", str, sizeof(str)) && atoi(str) == 1) {
+            qsort(attr_options[i], n_options, NAME_LENGTH, ascii_compare2);
          }
       }
 
@@ -13026,6 +13033,13 @@ int remove_user(LOGBOOK * lbs, char *user)
 int ascii_compare(const void *s1, const void *s2)
 {
    return stricmp(*(char **) s1, *(char **) s2);
+}
+
+/*------------------------------------------------------------------*/
+
+int ascii_compare2(const void *s1, const void *s2)
+{
+   return stricmp((char *) s1, (char *) s2);
 }
 
 /*------------------------------------------------------------------*/
