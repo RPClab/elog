@@ -7105,7 +7105,7 @@ int scan_attributes(char *logbook)
 /* scan configuration file for attributes and fill attr_list, attr_options
  and attr_flags arrays */
 {
-   char list[10000], str[NAME_LENGTH], type[NAME_LENGTH], tmp_list[MAX_N_ATTR][NAME_LENGTH];
+   char list[10000], str[NAME_LENGTH], str2[NAME_LENGTH], type[NAME_LENGTH], tmp_list[MAX_N_ATTR][NAME_LENGTH];
    int i, j, n, m, n_options;
 
    if (getcfg(logbook, "Attributes", list, sizeof(list))) {
@@ -7158,7 +7158,8 @@ int scan_attributes(char *logbook)
             attr_flags[i] |= AF_ICON;
          }
 
-         if (n_options && getcfg(logbook, "Sort Attribute Options", str, sizeof(str)) && atoi(str) == 1) {
+         sprintf(str2, "Sort Attribute Options %s", attr_list[i]);
+         if (n_options && getcfg(logbook, str2, str, sizeof(str)) && atoi(str) == 1) {
             qsort(attr_options[i], n_options, NAME_LENGTH, ascii_compare2);
          }
       }
