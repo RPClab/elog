@@ -13290,7 +13290,6 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             }
 
             /* create random password */
-            srand((unsigned int) time(NULL));
             for (i = 0; i < 8; i++)
                str[i] = 'A' + (rand() % 25);
             str[i] = 0;
@@ -15004,7 +15003,6 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    content = xmalloc(content_length);
 
    /* compose content */
-   srand((unsigned) time(NULL));
    sprintf(boundary, "---------------------------%04X%04X%04X", rand(), rand(), rand());
    strcpy(content, boundary);
    strcat(content, "\r\nContent-Disposition: form-data; name=\"cmd\"\r\n\r\nSubmit\r\n");
@@ -15350,7 +15348,6 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
    content = xmalloc(content_length);
 
    /* compose content */
-   srand((unsigned) time(NULL));
    sprintf(boundary, "---------------------------%04X%04X%04X", rand(), rand(), rand());
    strcpy(content, boundary);
    strcat(content, "\r\nContent-Disposition: form-data; name=\"cmd\"\r\n\r\nSave\r\n");
@@ -28003,6 +28000,9 @@ void server_loop(void)
       if (_abort)
          break;
 
+      /* call random number generator on each access to completely randomize it */
+      rand();
+
       /* close old connections */
       for (i = 0; i < N_MAX_CONNECTION; i++)
          if (ka_sock[i] && (int) time(NULL) - ka_time[i] > 60) {
@@ -28922,6 +28922,9 @@ int main(int argc, char *argv[])
    silent = tcp_port_cl = sync_flag = 0;
    use_keepalive = TRUE;
    running_as_daemon = FALSE;
+
+   /* initialize random number generator */
+   srand((unsigned) time(NULL));
 
    /*
     * Initially, redirect all messages handled with eprintf/efputs to stderr.
