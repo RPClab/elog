@@ -9138,7 +9138,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
        format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr, n_lines,
        attr_index[MAX_N_ATTR], enc_selected, show_smileys, show_text, n_moptions, display_inline,
-       allowed_encoding, thumb_status, max_n_lines;
+       allowed_encoding, thumb_status, max_n_lines, fixed_text;
    char str[2 * NAME_LENGTH], str2[NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80],
        comment[10000], reply_string[256], list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer,
        format[256], date[80], script_onload[256], script_onfocus[256], script_onunload[256],
@@ -9858,8 +9858,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<script type=\"text/javascript\" src=\"../elcode.js\"></script>\n\n");
 
    show_text = !getcfg(lbs->name, "Show text", str, sizeof(str)) || atoi(str) == 1;
+   fixed_text = getcfg(lbs->name, "Fix text", str, sizeof(str)) && atoi(str) == 1 && bedit && message_id;
 
-   if (enc_selected == 2 && fckedit_exist && show_text) {
+   if (enc_selected == 2 && fckedit_exist && show_text && !fixed_text) {
       rsprintf("<script type=\"text/javascript\" src=\"../fckeditor/fckeditor.js\"></script>\n");
       rsprintf("<script type=\"text/javascript\">\n");
       /* define strings for current language */
@@ -10699,7 +10700,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
    }
 
-   if (bpreview) {
+   if (bpreview && !fixed_text) {
       _current_message_id = message_id;
       rsprintf("<tr><td colspan=2 class=\"messageframe\">\n");
 
@@ -10715,7 +10716,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("</td></tr>\n");
    }
 
-   if (enc_selected == 0 && show_text) {
+   if (enc_selected == 0 && show_text && !fixed_text) {
       rsprintf("<tr><td colspan=2 class=\"toolframe\">\n");
 
       ricon("bold", loc("Bold text CTRL+B"), "elcode(document.form1.Text, 'B','')");
@@ -10841,7 +10842,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("</td>\n");
    }
 
-   if (enc_selected == 0)
+   if (enc_selected == 0 && !fixed_text)
       rsprintf("<td width=\"100%%\" class=\"attribvalue\">\n");
 
    /* set textarea width */
@@ -10925,249 +10926,273 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    if (show_text) {
 
-      if (getcfg(lbs->name, "Fix text", str, sizeof(str)) && atoi(str) == 1)
-         strcpy(str, " readonly");
-      else
-         strcpy(str, "");
+      if (fixed_text) {
 
-      if (enc_selected == 1)
-         /* use hard wrapping only for plain text */
-         rsprintf("<textarea rows=%d cols=%d wrap=hard %s name=\"Text\" onChange=\"mod();\">\n", height,
-                  width, str);
-      else
-         rsprintf("<textarea rows=%d cols=%d %s name=\"Text\" onChange=\"mod();\" style=\"width:100%%;\">\n",
-                  height, width, str);
+         rsprintf("<input type=hidden name=\"text\" value=\"<keep>\">\n");
+         rsprintf("<input type=hidden name=\"encoding\" value=\"%s\">\n", encoding);
 
-      if (isparam("nsel")) {
-         rsprintf("- %s -\n", loc("keep original text"));
-      } else if (bedit) {
-         if (!preset_text) {
+         _current_message_id = message_id;
+         rsprintf("<tr><td colspan=2 class=\"messageframe\">\n");
 
-            j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-            sprintf(mid, "%d", message_id);
-            add_subst_list(slist, svalue, "message id", mid, &j);
-            add_subst_time(lbs, slist, svalue, "entry time", date, &j, 0);
+         if (strieq(text, "<keep>") && message_id) {
+            size = TEXT_SIZE;
+            el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, text, &size, NULL, NULL, NULL, NULL, NULL);
+         }
 
-            if (!bupload)
-               if (getcfg(lbs->name, "Prepend on edit", str, sizeof(str))) {
-                  strsubst_list(str, sizeof(str), slist, svalue, j);
-                  while (strstr(str, "\\n"))
-                     memcpy(strstr(str, "\\n"), "\r\n", 2);
-                  rsputs3(str);
-               }
+         if (strieq(encoding, "plain")) {
+            rsputs("<pre class=\"messagepre\">");
+            rsputs2(lbs, FALSE, text);
+            rsputs("</pre>");
+         } else if (strieq(encoding, "ELCode"))
+            rsputs_elcode(lbs, FALSE, text);
+         else
+            rsputs(text);
 
-            /* use rsputs3 which just converts "<", ">", "&", "\"" to &gt; etc. */
-            /* otherwise some HTML statments would break the page syntax        */
+         rsprintf("</td></tr>\n");
+
+         rsprintf("<tr><td colspan=2 width=\"100%%\" class=\"attribvalue\">\n");
+
+      } else {
+
+         if (enc_selected == 1)
+            /* use hard wrapping only for plain text */
+            rsprintf("<textarea rows=%d cols=%d wrap=hard %s name=\"Text\" onChange=\"mod();\">\n", height,
+                     width, str);
+         else
+            rsprintf("<textarea rows=%d cols=%d %s name=\"Text\" onChange=\"mod();\" style=\"width:100%%;\">\n",
+                     height, width, str);
+
+         if (isparam("nsel")) {
+            rsprintf("- %s -\n", loc("keep original text"));
+         } else if (bedit) {
+            if (!preset_text) {
+
+               j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+               sprintf(mid, "%d", message_id);
+               add_subst_list(slist, svalue, "message id", mid, &j);
+               add_subst_time(lbs, slist, svalue, "entry time", date, &j, 0);
+
+               if (!bupload)
+                  if (getcfg(lbs->name, "Prepend on edit", str, sizeof(str))) {
+                     strsubst_list(str, sizeof(str), slist, svalue, j);
+                     while (strstr(str, "\\n"))
+                        memcpy(strstr(str, "\\n"), "\r\n", 2);
+                     rsputs3(str);
+                  }
+
+               /* use rsputs3 which just converts "<", ">", "&", "\"" to &gt; etc. */
+               /* otherwise some HTML statments would break the page syntax        */
+               rsputs3(text);
+
+               if (!bupload)
+                  if (getcfg(lbs->name, "Append on edit", str, sizeof(str))) {
+                     strsubst_list(str, sizeof(str), slist, svalue, j);
+                     while (strstr(str, "\\n"))
+                        memcpy(strstr(str, "\\n"), "\r\n", 2);
+                     rsputs3(str);
+                  }
+            }
+         } else if (bduplicate) {
+
             rsputs3(text);
 
-            if (!bupload)
-               if (getcfg(lbs->name, "Append on edit", str, sizeof(str))) {
+         } else if (breply) {
+            if (!getcfg(lbs->name, "Quote on reply", str, sizeof(str)) || atoi(str) > 0) {
+               if (getcfg(lbs->name, "Prepend on reply", str, sizeof(str))) {
+                  j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+                  sprintf(mid, "%d", message_id);
+                  add_subst_list(slist, svalue, "message id", mid, &j);
+                  add_subst_time(lbs, slist, svalue, "entry time", date, &j, 0);
+
                   strsubst_list(str, sizeof(str), slist, svalue, j);
                   while (strstr(str, "\\n"))
                      memcpy(strstr(str, "\\n"), "\r\n", 2);
                   rsputs3(str);
                }
-         }
-      } else if (bduplicate) {
 
-         rsputs3(text);
+               p = text;
 
-      } else if (breply) {
-         if (!getcfg(lbs->name, "Quote on reply", str, sizeof(str)) || atoi(str) > 0) {
-            if (getcfg(lbs->name, "Prepend on reply", str, sizeof(str))) {
-               j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-               sprintf(mid, "%d", message_id);
-               add_subst_list(slist, svalue, "message id", mid, &j);
-               add_subst_time(lbs, slist, svalue, "entry time", date, &j, 0);
+               if (text[0]) {
+                  if (!getcfg(lbs->name, "Reply string", reply_string, sizeof(reply_string)))
+                     strcpy(reply_string, "> ");
 
-               strsubst_list(str, sizeof(str), slist, svalue, j);
-               while (strstr(str, "\\n"))
-                  memcpy(strstr(str, "\\n"), "\r\n", 2);
-               rsputs3(str);
-            }
+                  if (enc_selected == 0) {
 
-            p = text;
+                     /* check for author */
+                     if (orig_author[0])
+                        rsprintf("[quote=\"%s\"]", orig_author);
+                     else
+                        rsprintf("[quote]");
+                     rsputs3(text);
+                     rsprintf("[/quote]\r\n");
 
-            if (text[0]) {
-               if (!getcfg(lbs->name, "Reply string", reply_string, sizeof(reply_string)))
-                  strcpy(reply_string, "> ");
+                  } else if (enc_selected == 2) {
 
-               if (enc_selected == 0) {
+                     rsprintf("<p>\n");
+                     rsprintf
+                         ("<table width=\"98%%\" align=\"center\" cellspacing=\"1\" style=\"border:1px solid #486090;\">\n");
+                     rsprintf("<tbody>\n");
+                     rsprintf("<tr>\n");
+                     rsprintf
+                         ("<td cellpadding=\"3px\" style=\"background-color:#486090; font-weidht:bold; color:white;\">");
 
-                  /* check for author */
-                  if (orig_author[0])
-                     rsprintf("[quote=\"%s\"]", orig_author);
-                  else
-                     rsprintf("[quote]");
-                  rsputs3(text);
-                  rsprintf("[/quote]\r\n");
-
-               } else if (enc_selected == 2) {
-
-                  rsprintf("<p>\n");
-                  rsprintf
-                      ("<table width=\"98%%\" align=\"center\" cellspacing=\"1\" style=\"border:1px solid #486090;\">\n");
-                  rsprintf("<tbody>\n");
-                  rsprintf("<tr>\n");
-                  rsprintf
-                      ("<td cellpadding=\"3px\" style=\"background-color:#486090; font-weidht:bold; color:white;\">");
-
-                  /* check for author */
-                  if (orig_author[0]) {
-                     rsprintf(loc("%s wrote"), orig_author);
-                  } else {
-                     rsprintf(loc("Quote"));
-                  }
-                  rsprintf(":</td></tr>\n");
-                  rsprintf("<tr>\n");
-                  rsprintf("<td cellpadding=\"10px\" style=\"background-color:#FFFFB0;\">");
-                  rsputs3(text);
-                  rsprintf("</td>\n");
-                  rsprintf("</tr>\n");
-                  rsprintf("</tbody>\n");
-                  rsprintf("</table>\n");
-                  rsprintf("</p><p>&nbsp;</p>\n");
-
-               } else {
-                  do {
-                     if (strchr(p, '\n')) {
-                        *strchr(p, '\n') = 0;
-
-                        if (encoding[0] == 'H') {
-                           rsputs3(reply_string);
-                           rsprintf("%s<br>\n", p);
-                        } else {
-                           rsputs(reply_string);
-                           rsputs3(p);
-                           rsprintf("\n");
-                        }
-
-                        p += strlen(p) + 1;
-                        if (*p == '\n')
-                           p++;
+                     /* check for author */
+                     if (orig_author[0]) {
+                        rsprintf(loc("%s wrote"), orig_author);
                      } else {
-                        if (encoding[0] == 'H') {
-                           rsputs3(reply_string);
-                           rsprintf("%s<p>\n", p);
+                        rsprintf(loc("Quote"));
+                     }
+                     rsprintf(":</td></tr>\n");
+                     rsprintf("<tr>\n");
+                     rsprintf("<td cellpadding=\"10px\" style=\"background-color:#FFFFB0;\">");
+                     rsputs3(text);
+                     rsprintf("</td>\n");
+                     rsprintf("</tr>\n");
+                     rsprintf("</tbody>\n");
+                     rsprintf("</table>\n");
+                     rsprintf("</p><p>&nbsp;</p>\n");
+
+                  } else {
+                     do {
+                        if (strchr(p, '\n')) {
+                           *strchr(p, '\n') = 0;
+
+                           if (encoding[0] == 'H') {
+                              rsputs3(reply_string);
+                              rsprintf("%s<br>\n", p);
+                           } else {
+                              rsputs(reply_string);
+                              rsputs3(p);
+                              rsprintf("\n");
+                           }
+
+                           p += strlen(p) + 1;
+                           if (*p == '\n')
+                              p++;
                         } else {
-                           rsputs(reply_string);
-                           rsputs3(p);
-                           rsprintf("\n\n");
+                           if (encoding[0] == 'H') {
+                              rsputs3(reply_string);
+                              rsprintf("%s<p>\n", p);
+                           } else {
+                              rsputs(reply_string);
+                              rsputs3(p);
+                              rsprintf("\n\n");
+                           }
+
+                           break;
                         }
 
-                        break;
-                     }
+                     } while (TRUE);
+                  }
+               }
 
-                  } while (TRUE);
+               if (getcfg(lbs->name, "Append on reply", str, sizeof(str))) {
+
+                  j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+                  sprintf(mid, "%d", message_id);
+                  add_subst_list(slist, svalue, "message id", mid, &j);
+                  add_subst_time(lbs, slist, svalue, "entry time", date, &j, 0);
+                  strsubst_list(str, sizeof(str), slist, svalue, j);
+                  while (strstr(str, "\\n"))
+                     memcpy(strstr(str, "\\n"), "\r\n", 2);
+                  rsputs3(str);
                }
             }
+         }
 
-            if (getcfg(lbs->name, "Append on reply", str, sizeof(str))) {
+         if (preset_text && !isparam("nsel")) {
+            getcfg(lbs->name, "Preset text", str, sizeof(str));
 
+            /* check if file starts with an absolute directory */
+            if (str[0] == DIR_SEPARATOR || str[1] == ':')
+               strcpy(file_name, str);
+            else {
+               strlcpy(file_name, logbook_dir, sizeof(file_name));
+               strlcat(file_name, str, sizeof(file_name));
+            }
+
+            /* check if file exists */
+            fh = open(file_name, O_RDONLY | O_BINARY);
+            if (fh > 0) {
+               length = lseek(fh, 0, SEEK_END);
+               lseek(fh, 0, SEEK_SET);
+               buffer = xmalloc(length + 1);
+               read(fh, buffer, length);
+               buffer[length] = 0;
+               close(fh);
+               rsputs3(buffer);
+               xfree(buffer);
+            } else {
                j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-               sprintf(mid, "%d", message_id);
-               add_subst_list(slist, svalue, "message id", mid, &j);
-               add_subst_time(lbs, slist, svalue, "entry time", date, &j, 0);
                strsubst_list(str, sizeof(str), slist, svalue, j);
                while (strstr(str, "\\n"))
                   memcpy(strstr(str, "\\n"), "\r\n", 2);
                rsputs3(str);
             }
          }
-      }
 
-      if (preset_text && !isparam("nsel")) {
-         getcfg(lbs->name, "Preset text", str, sizeof(str));
+         rsprintf("</textarea><br>\n");
 
-         /* check if file starts with an absolute directory */
-         if (str[0] == DIR_SEPARATOR || str[1] == ':')
-            strcpy(file_name, str);
-         else {
-            strlcpy(file_name, logbook_dir, sizeof(file_name));
-            strlcat(file_name, str, sizeof(file_name));
+         /* Encoding radio buttons */
+
+         if (allowed_encoding < 1 || allowed_encoding > 7) {
+            rsprintf
+                ("<h1>Invalid \"Allowed encoding\" in configuration file, value must be between 1 and 7</h1>\n");
+            rsprintf("</table><!-- show_standard_title -->\n");
+            show_bottom_text(lbs);
+            rsprintf("</form></body></html>\r\n");
+            return;
          }
 
-         /* check if file exists */
-         fh = open(file_name, O_RDONLY | O_BINARY);
-         if (fh > 0) {
-            length = lseek(fh, 0, SEEK_END);
-            lseek(fh, 0, SEEK_SET);
-            buffer = xmalloc(length + 1);
-            read(fh, buffer, length);
-            buffer[length] = 0;
-            close(fh);
-            rsputs3(buffer);
-            xfree(buffer);
-         } else {
-            j = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-            strsubst_list(str, sizeof(str), slist, svalue, j);
-            while (strstr(str, "\\n"))
-               memcpy(strstr(str, "\\n"), "\r\n", 2);
-            rsputs3(str);
-         }
-      }
-
-      rsprintf("</textarea><br>\n");
-
-      /* Encoding radio buttons */
-
-      if (allowed_encoding < 1 || allowed_encoding > 7) {
-         rsprintf
-             ("<h1>Invalid \"Allowed encoding\" in configuration file, value must be between 1 and 7</h1>\n");
-         rsprintf("</table><!-- show_standard_title -->\n");
-         show_bottom_text(lbs);
-         rsprintf("</form></body></html>\r\n");
-         return;
-      }
-
-      if (allowed_encoding == 1)
-         rsprintf("<input type=\"hidden\" name=\"encoding\" value=\"plain\">\n");
-      else if (allowed_encoding == 2)
-         rsprintf("<input type=\"hidden\" name=\"encoding\" value=\"ELCode\">\n");
-      else if (allowed_encoding == 4)
-         rsprintf("<input type=\"hidden\" name=\"encoding\" value=\"HTML\">\n");
-      else {
-         if (allowed_encoding == 4)
-            rsprintf("<input type=hidden name=\"encoding\" value=\"HTML\">\n");
+         if (allowed_encoding == 1)
+            rsprintf("<input type=\"hidden\" name=\"encoding\" value=\"plain\">\n");
          else if (allowed_encoding == 2)
-            rsprintf("<input type=hidden name=\"encoding\" value=\"ELCode\">\n");
-         else if (allowed_encoding == 1)
-            rsprintf("<input type=hidden name=\"encoding\" value=\"plain\">\n");
+            rsprintf("<input type=\"hidden\" name=\"encoding\" value=\"ELCode\">\n");
+         else if (allowed_encoding == 4)
+            rsprintf("<input type=\"hidden\" name=\"encoding\" value=\"HTML\">\n");
          else {
-            rsprintf("<b>%s</b>: ", loc("Encoding"));
+            if (allowed_encoding == 4)
+               rsprintf("<input type=hidden name=\"encoding\" value=\"HTML\">\n");
+            else if (allowed_encoding == 2)
+               rsprintf("<input type=hidden name=\"encoding\" value=\"ELCode\">\n");
+            else if (allowed_encoding == 1)
+               rsprintf("<input type=hidden name=\"encoding\" value=\"plain\">\n");
+            else {
+               rsprintf("<b>%s</b>: ", loc("Encoding"));
 
-            if (allowed_encoding & 4) {
-               if (enc_selected == 2)
-                  rsprintf
-                      ("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" checked=\"checked\">");
-               else
-                  rsprintf
-                      ("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" onclick=\"cond_submit()\">");
-               rsprintf("<label for=\"HTML\">HTML&nbsp;&nbsp;</label>\n");
-            }
+               if (allowed_encoding & 4) {
+                  if (enc_selected == 2)
+                     rsprintf
+                         ("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" checked=\"checked\">");
+                  else
+                     rsprintf
+                         ("<input type=radio id=\"HTML\" name=\"encoding\" value=\"HTML\" onclick=\"cond_submit()\">");
+                  rsprintf("<label for=\"HTML\">HTML&nbsp;&nbsp;</label>\n");
+               }
 
-            if (allowed_encoding & 2) {
-               if (enc_selected == 0)
-                  rsprintf("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" checked>");
-               else
+               if (allowed_encoding & 2) {
+                  if (enc_selected == 0)
+                     rsprintf("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" checked>");
+                  else
+                     rsprintf
+                         ("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" onclick=\"cond_submit()\">");
                   rsprintf
-                      ("<input type=radio id=\"ELCode\" name=\"encoding\" value=\"ELCode\" onclick=\"cond_submit()\">");
-               rsprintf
-                   ("<label for=\"ELCode\"><a target=\"_blank\" href=\"?cmd=HelpELCode\">ELCode</a>&nbsp;&nbsp;</label>\n");
-            }
+                      ("<label for=\"ELCode\"><a target=\"_blank\" href=\"?cmd=HelpELCode\">ELCode</a>&nbsp;&nbsp;</label>\n");
+               }
 
-            if (allowed_encoding & 1) {
-               if (enc_selected == 1)
-                  rsprintf("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" checked>");
-               else
-                  rsprintf
-                      ("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" onclick=\"cond_submit()\">");
-               rsprintf("<label for=\"plain\">plain&nbsp;&nbsp;</label>\n");
+               if (allowed_encoding & 1) {
+                  if (enc_selected == 1)
+                     rsprintf("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" checked>");
+                  else
+                     rsprintf
+                         ("<input type=radio id=\"plain\" name=\"encoding\" value=\"plain\" onclick=\"cond_submit()\">");
+                  rsprintf("<label for=\"plain\">plain&nbsp;&nbsp;</label>\n");
+               }
             }
          }
-      }
 
-      rsprintf("<br>\n");
+         rsprintf("<br>\n");
+      }
    }
 
    /* Suppress email check box */
@@ -27691,7 +27716,7 @@ SSL_CTX *init_ssl(void)
       eprintf("Cerificate file \"%s\" not found, aborting\n", str);
       return NULL;
    }
-   if (SSL_CTX_use_certificate_file(ctx, str, SSL_FILETYPE_PEM) < 0)
+   if (SSL_CTX_use_certificate_file(ctx, str, SSL_FILETYPE_PEM) == 0)
       return NULL;
 
    strlcpy(str, resource_dir, sizeof(str));
@@ -27700,15 +27725,17 @@ SSL_CTX *init_ssl(void)
       eprintf("Key file \"%s\" not found, aborting\n", str);
       return NULL;
    }
-   if (SSL_CTX_use_PrivateKey_file(ctx, str, SSL_FILETYPE_PEM) < 0)
+   if (SSL_CTX_use_PrivateKey_file(ctx, str, SSL_FILETYPE_PEM) == 0)
       return NULL;
    if (SSL_CTX_check_private_key(ctx) < 0)
       return NULL;
 
    strlcpy(str, resource_dir, sizeof(str));
    strlcat(str, "ssl/chain.crt", sizeof(str));
-   if (file_exist(str))
-      SSL_CTX_use_certificate_chain_file(ctx, str);
+   if (file_exist(str)) {
+      if (SSL_CTX_use_certificate_chain_file(ctx, str) == 0)
+         return NULL;
+   }
 
    return ctx;
 }
