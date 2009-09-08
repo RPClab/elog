@@ -457,15 +457,15 @@ Cannot create thumbnail, please check ImageMagick installation = No se puede cre
 Please log on by clicking on following link and change your password = Por favor ingrese haciendo click en el siguiente link y cambie su clave
 Attachments = Adjuntos
 Error: Content length (%d) larger than maximum content length (%d) = Error: La longitud del contenido (%d) es mayor que la permitida (%d)
+ELOG error = error de ELOG
+Only user <b>%s</b> can edit this entry = Sólo el usuario <b>%s</b> puede editar esta entrada
+Export to = Exportar a
+Do not ignore first line = No ignorar la primera línea
+Last %d hours = Ultimas %d horas
+Invalid URL = URL inválido
+Attribute "%s" is not allowed in config file = El atributo "%s" no está permitido en el archivo de configuración
+Only user <b>%s</b> can delete this entry = Sólo el usuario <b>%s</b> puede borrar esta entrada
 
-#
-#---- please translate following items and then remove this comment ----#
-#
-ELOG error = 
-Only user <b>%s</b> can edit this entry = 
-Export to = 
-Do not ignore first line = 
-Last %d hours = 
-Invalid URL = 
-Attribute "%s" is not allowed in config file = 
-Only user <b>%s</b> can delete this entry = 
+
+
+
