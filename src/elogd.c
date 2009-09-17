@@ -9786,7 +9786,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("    }\n");
    rsprintf("}\n\n");
 
-   /* mod() gets called via throuch "onchange" event */
+   /* mod() gets called via "onchange" event */
    rsprintf("function mod()\n");
    rsprintf("{\n");
    rsprintf("  entry_modified = true;\n");
@@ -9863,6 +9863,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (enc_selected == 2 && fckedit_exist && show_text && !fixed_text) {
       rsprintf("<script type=\"text/javascript\" src=\"../fckeditor/fckeditor.js\"></script>\n");
       rsprintf("<script type=\"text/javascript\">\n");
+
+      /* cannot detect real modifications, so assume text will get changed */
+      rsprintf("entry_modified = true;");
+
       /* define strings for current language */
       rsprintf("var ELOGSubmitEntry = \"%s\";\n", loc("Submit entry"));
       rsprintf("var ELOGInsertImage = \"%s\";\n", loc("Insert image"));
