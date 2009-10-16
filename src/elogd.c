@@ -24514,7 +24514,26 @@ int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name, ch
 
 /*------------------------------------------------------------------*/
 
-void set_user_login_time(LOGBOOK * lbs, char *user)
+int is_file_system_full(char *file_name)
+{
+   char str[256];
+   char buf[1024];
+   int n, fh;
+
+   strlcpy(str, file_name, sizeof(str));
+   strlcat(str, ".tmp", sizeof(str));
+   fh = open(str, O_CREAT | O_RDWR, 0644);
+   if (fh < 0)
+      return 0;
+   n = write(fh, buf, sizeof(buf));
+   close(fh);
+   remove(str);
+   return n < sizeof(buf);
+}
+
+/*------------------------------------------------------------------*/
+
+int set_user_login_time(LOGBOOK * lbs, char *user)
 {
    int i;
    char str[256], global[256], orig_topgroup[256], file_name[256];
@@ -24540,7 +24559,7 @@ void set_user_login_time(LOGBOOK * lbs, char *user)
       }
 
       if (!lb_list[i].name[0])
-         return;
+         return 1;
 
       if (orig_topgroup[0])
          setcfg_topgroup(orig_topgroup);
@@ -24549,12 +24568,12 @@ void set_user_login_time(LOGBOOK * lbs, char *user)
    getcfg(lbs->name, "Password file", str, sizeof(str));
 
    if (!str[0] || !user[0])
-      return;
+      return 1;
 
    if (lbs->pwd_xml_tree) {
       sprintf(str, "/list/user[name=%s]", user);
       if ((user_node = mxml_find_node(lbs->pwd_xml_tree, str)) == NULL)
-         return;
+         return 1;
 
       if ((node = mxml_find_node(user_node, "last_activity")) != NULL) {
          strlcpy(str, mxml_get_value(node), sizeof(str));
@@ -24588,10 +24607,17 @@ void set_user_login_time(LOGBOOK * lbs, char *user)
             mxml_add_node(user_node, "last_activity", str);
 
          /* flush to password file */
-         if (get_password_file(lbs, file_name, sizeof(file_name)))
+         if (get_password_file(lbs, file_name, sizeof(file_name))) {
+            /* check if file system if full */
+            if (is_file_system_full(file_name))
+               return 0;
+
             mxml_write_tree(file_name, lbs->pwd_xml_tree);
+         }
       }
    }
+
+   return 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -24727,7 +24753,10 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
       status = get_user_line(lbs, user, upwd, full_name, email, NULL, NULL);
 
       if (status == 1 && user[0])
-         set_user_login_time(lbs, user);
+         if (!set_user_login_time(lbs, user)) {
+            show_error(loc("File system full, ELOG cannot continue to work"));
+            return FALSE;
+         }
 
       /* check for logout */
       if (isparam("LO")) {
