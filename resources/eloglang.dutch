@@ -455,19 +455,14 @@ Rotate left = Links draaien
 Rotate right = Rechts draaien
 Delete attachment = Verwijder bijlage
 Cannot create thumbnail, please check ImageMagick installation = Kan geen voorbeeld maken, controleer de ImageMagick installatie
-
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Please log on by clicking on following link and change your password = 
-Attachments = 
-Error: Content length (%d) larger than maximum content length (%d) = 
-ELOG error = 
-Only user <b>%s</b> can edit this entry = 
-Export to = 
-Do not ignore first line = 
-Last %d hours = 
-Invalid URL = 
-Attribute "%s" is not allowed in config file = 
-Only user <b>%s</b> can delete this entry = 
+Please log on by clicking on following link and change your password = Klik op de link om je aan te melden en je wachtwoord te wijzigen
+Attachments = Bijlagen
+Error: Content length (%d) larger than maximum content length (%d) = Fout: Berichtgrootte (%d) is groter dan de maximum grootte (%d)
+ELOG error = ELOG fout
+Only user <b>%s</b> can edit this entry = Alleen gebruiker <b>%s</b> kan dit bericht wijzigen
+Export to = Exporteer naar
+Do not ignore first line = Negeer de eerste regel niet
+Last %d hours = Laatste %d uur
+Invalid URL = Ongeldige URL
+Attribute "%s" is not allowed in config file = Attribuut "%s" is niet toegestaan in het configuratiebestand
+Only user <b>%s</b> can delete this entry = Alleen gebruiker <b>%s</b> kan dit bericht verwijderen
