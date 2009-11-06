@@ -16767,7 +16767,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                   int absolute_link)
 {
    char str[NAME_LENGTH], ref[256], *nowrap, sclass[80], format[256], file_name[MAX_PATH_LENGTH], *slist,
-       *svalue, comment[256];
+       *svalue, comment[256], param[80];
    char display[NAME_LENGTH], attr_icon[80];
    int i, j, n, i_line, index, colspan, n_attachments, line_len, thumb_status, max_line_len, n_lines,
        max_n_lines;
@@ -17333,7 +17333,10 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
    if (strieq(mode, "Summary") && n_line > 0 && show_text) {
       rsprintf("<td class=\"summary\">");
 
-      max_line_len = n_line >= 10 ? 140 : 40;
+      if (getcfg(lbs->name, "Summary line length", param, sizeof(param)))
+         max_line_len = atoi(param);
+      else
+         max_line_len = n_line >= 10 ? 140 : 40;
       for (i = i_line = line_len = 0; i < (int) sizeof(str) - 1; line_len++, i++) {
          str[i] = text[i];
          if (line_break(text + i, encoding)) {
