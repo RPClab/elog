@@ -7283,7 +7283,7 @@ void show_plain_header(int size, char *file_name)
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
    }
 
-   rsprintf("Pragma: no-cache\r\n");
+   // rsprintf("Pragma: no-cache\r\n");
    rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
    rsprintf("Content-Type: text/plain\r\n");
    rsprintf("Content-disposition: attachment; filename=\"%s\"\r\n", file_name);
