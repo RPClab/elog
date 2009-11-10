@@ -22077,7 +22077,7 @@ void submit_elog(LOGBOOK * lbs)
       add_subst_list(slist, svalue, "message id", getparam("edit_id"), &n);
 
    /* substitute attributes */
-   if (!isparam("edit_id")) {
+   if (!isparam("edit_id") && !isparam("reply_to")) {
       for (i = 0; i < n_attr; i++) {
          sprintf(str, "Subst %s", attr_list[i]);
          if (getcfg(lbs->name, str, subst_str, sizeof(subst_str))) {
