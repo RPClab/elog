@@ -9519,59 +9519,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          }
    }
 
-   /* subst attributes for replies */
-   if (breply) {
-      for (index = 0; index < n_attr; index++) {
-         sprintf(str, "Subst on reply %s", attr_list[index]);
-         if (getcfg(lbs->name, str, preset, sizeof(preset))) {
-            /* check if already second reply */
-            if (orig_tag[0] == 0) {
-
-               /* do not format date for date attributes */
-               i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & (AF_DATE | AF_DATETIME))
-                                    == 0);
-               sprintf(str, "%d", message_id);
-               add_subst_list(slist, svalue, "message id", str, &i);
-               add_subst_time(lbs, slist, svalue, "entry time", date, &i, attr_flags[index]);
-               strsubst_list(preset, sizeof(preset), slist, svalue, i);
-               strcpy(attrib[index], preset);
-            }
-         }
-      }
-   }
-
-   /* subst attributes for edits */
-   if (message_id && bedit && !breedit && !bupload) {
-      for (index = 0; index < n_attr; index++) {
-         sprintf(str, "Subst on edit %s", attr_list[index]);
-         if (getcfg(lbs->name, str, preset, sizeof(preset))) {
-
-            /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & (AF_DATE | AF_DATETIME))
-                                 == 0);
-
-            sprintf(str, "%d", message_id);
-            add_subst_list(slist, svalue, "message id", str, &i);
-            add_subst_time(lbs, slist, svalue, "entry time", date, &i, attr_flags[index]);
-
-            strsubst_list(preset, sizeof(preset), slist, svalue, i);
-            if (strlen(preset) > NAME_LENGTH - 100) {
-               if (strstr(preset + 100, "<br>")) {
-                  strlcpy(str, strstr(preset + 100, "<br>"), sizeof(str));
-               } else
-                  strlcpy(str, preset + 100, sizeof(str));
-
-               strcpy(preset, "...");
-               strlcat(preset, str, sizeof(preset));
-            }
-            if (strncmp(preset, "<br>", 4) == 0)
-               strcpy(attrib[index], preset + 4);
-            else
-               strcpy(attrib[index], preset);
-         }
-      }
-   }
-
    /* header */
 
    if (getcfg(lbs->name, "Edit Page Title", str, sizeof(str))) {
@@ -22130,8 +22077,8 @@ void submit_elog(LOGBOOK * lbs)
       add_subst_list(slist, svalue, "message id", getparam("edit_id"), &n);
 
    /* substitute attributes */
-   for (i = 0; i < n_attr; i++) {
-      if (!isparam("edit_id")) {
+   if (!isparam("edit_id")) {
+      for (i = 0; i < n_attr; i++) {
          sprintf(str, "Subst %s", attr_list[i]);
          if (getcfg(lbs->name, str, subst_str, sizeof(subst_str))) {
             strsubst_list(subst_str, sizeof(subst_str), slist, svalue, n);
@@ -22144,6 +22091,53 @@ void submit_elog(LOGBOOK * lbs)
             }
 
             strcpy(attrib[i], subst_str);
+         }
+      }
+   } 
+   
+   /* subst attributes for edits */
+   if (isparam("edit_id")) {
+      for (index = 0; index < n_attr; index++) {
+         sprintf(str, "Subst on edit %s", attr_list[index]);
+         if (getcfg(lbs->name, str, str2, sizeof(str2))) {
+
+            /* do not format date for date attributes */
+            i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & (AF_DATE | AF_DATETIME))
+                                 == 0);
+
+            add_subst_list(slist, svalue, "message id", getparam("edit_id"), &i);
+            add_subst_time(lbs, slist, svalue, "entry time", date, &i, attr_flags[index]);
+
+            strsubst_list(str2, sizeof(str2), slist, svalue, i);
+            if (strlen(str2) > NAME_LENGTH - 100) {
+               if (strstr(str2 + 100, "<br>")) {
+                  strlcpy(str, strstr(str2 + 100, "<br>"), sizeof(str));
+               } else
+                  strlcpy(str, str2 + 100, sizeof(str));
+
+               strcpy(str2, "...");
+               strlcat(str2, str, sizeof(str2));
+            }
+            if (strncmp(str2, "<br>", 4) == 0)
+               strcpy(attrib[index], str2 + 4);
+            else
+               strcpy(attrib[index], str2);
+         }
+      }
+   }
+
+   /* subst attributes for replies */
+   if (isparam("reply_to")) {
+      for (index = 0; index < n_attr; index++) {
+         sprintf(str, "Subst on reply %s", attr_list[index]);
+         if (getcfg(lbs->name, str, str2, sizeof(str2))) {
+            /* do not format date for date attributes */
+            i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & (AF_DATE | AF_DATETIME))
+                                 == 0);
+            add_subst_list(slist, svalue, "Reply to", getparam("reply_to"), &i);
+            add_subst_time(lbs, slist, svalue, "entry time", date, &i, attr_flags[index]);
+            strsubst_list(str2, sizeof(str2), slist, svalue, i);
+            strcpy(attrib[index], str2);
          }
       }
    }
