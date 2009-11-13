@@ -17529,11 +17529,11 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable, int expand, int
                    char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], BOOL show_text, int level, int highlight,
                    regex_t * re_buf, int highlight_mid, int absolute_link)
 {
-   char *date, *text, *in_reply_to, *reply_to, *encoding, *locked_by, *attachment, *attrib, *p;
+   char *date, *text, *in_reply_to, *reply_to, *encoding, *attachment, *locked_by, *attrib, *p;
    int status, size;
 
    text = xmalloc(TEXT_SIZE);
-   attachment = xmalloc(MAX_ATTACHMENTS * MAX_PATH_LENGTH);
+   attachment = xmalloc(MAX_PATH_LENGTH*MAX_ATTACHMENTS);
    attrib = xmalloc(MAX_N_ATTR * NAME_LENGTH);
    date = xmalloc(80);
    in_reply_to = xmalloc(80);
@@ -17547,7 +17547,7 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable, int expand, int
    reply_to[0] = 0;
    size = TEXT_SIZE;
    status = el_retrieve(lbs, message_id, date, attr_list, (void *) attrib, lbs->n_attr, text, &size,
-                        in_reply_to, reply_to, (void *) attachment, encoding, locked_by);
+                        in_reply_to, reply_to, (char (*)[256])attachment, encoding, locked_by);
 
    if (status != EL_SUCCESS) {
       xfree(text);
@@ -17563,7 +17563,7 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable, int expand, int
 
    display_line(lbs, message_id, 0, "threaded", expand, level, printable, n_line, FALSE, FALSE, date,
                 in_reply_to, reply_to, n_attr_disp, disp_attr, NULL, (void *) attrib, lbs->n_attr, text,
-                show_text, NULL, encoding, 0, NULL, locked_by, highlight, &re_buf[0], highlight_mid,
+                show_text, (char (*)[256])attachment, encoding, 0, NULL, locked_by, highlight, &re_buf[0], highlight_mid,
                 absolute_link);
 
    if (reply_to[0]) {
