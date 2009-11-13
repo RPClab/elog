@@ -81,7 +81,8 @@ Section "ELOG system (required)" SecSystem
 
   ; script directory
   SetOutPath $INSTDIR\scripts
-  File /r /x .svn /x fckeditor.zip scripts\*.*
+  File /r /x .svn /x fckeditor.zip /x fckeditor_dist scripts\*.*
+  File /r scripts\fckeditor_dist\*.*
 
   ; resources directory
   SetOutPath $INSTDIR\resources
