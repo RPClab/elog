@@ -24561,7 +24561,7 @@ int is_file_system_full(char *file_name)
    n = write(fh, buf, sizeof(buf));
    close(fh);
    remove(str);
-   return n < sizeof(buf);
+   return n < (int)sizeof(buf);
 }
 
 /*------------------------------------------------------------------*/
