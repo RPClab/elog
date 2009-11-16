@@ -18935,6 +18935,42 @@ void highlight_searchtext(regex_t * re_buf, char *src, char *dst, int hidden)
 }
 
 /*------------------------------------------------------------------*/
+ 
+time_t search_last_reply(LOGBOOK *lbs, int *message_id)
+{
+   char reply_to[MAX_REPLY_TO * 10], date[80];
+   int n_reply, i, id;
+   char *list;
+   time_t lt, last;
+
+   list = xmalloc(MAX_REPLY_TO * NAME_LENGTH);
+
+   el_retrieve(lbs, *message_id, date, NULL, NULL, 0, NULL, 0, NULL, reply_to, NULL, NULL, NULL);
+   lt = date_to_ltime(date);
+
+   /* if no reply, this is the last message in thread */
+   if (reply_to[0] == 0) {
+      xfree(list);
+      return lt;
+   }
+
+   n_reply = strbreak(reply_to, (char (*)[NAME_LENGTH])list, MAX_REPLY_TO, ",", FALSE);
+   last = lt;
+   for (i = 0; i < n_reply; i++) {
+      id = atoi(list+i*NAME_LENGTH);
+      lt = search_last_reply(lbs, &id);
+      if (lt > last) {
+         last = lt;
+         *message_id = id;
+      }
+   }
+
+   xfree(list);
+
+   return last;   
+}
+
+/*------------------------------------------------------------------*/
 
 void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL default_page, char *info)
 {
@@ -20656,8 +20692,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          level = 0;
          if (expand == 0 && (!getcfg(lbs->name, "Collapse to last", str, sizeof(str)) || atoi(str) == 1)) {
             /* search last entry in this thread */
-            while (reply_to[0]) {
-               message_id = atoi(reply_to);
+            if (reply_to[0]) {
+               search_last_reply(msg_list[index].lbs, &message_id);
                size = TEXT_SIZE;
                status =
                    el_retrieve(msg_list[index].lbs, message_id, date, attr_list, attrib, lbs->n_attr, text,
