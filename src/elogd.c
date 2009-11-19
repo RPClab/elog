@@ -9319,20 +9319,31 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
          if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
 
-            /* do not format date for date attributes */
-            i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & (AF_DATE | AF_DATETIME))
-                                 == 0);
-            strsubst_list(preset, sizeof(preset), slist, svalue, i);
+            /* check for multiple substitution */
+            strlcpy(str, preset, sizeof(str));
+            if (strchr(str, '$'))
+               *strchr(str, '$') = 0;
+            if (strchr(str, '%'))
+               *strchr(str, '%') = 0;
+            if (strchr(str, '#'))
+               *strchr(str, '#') = 0;
+            if (strncmp(str, attrib[index], strlen(str)) != 0) {
 
-            /* check for index substitution */
-            if (!bedit && (strchr(preset, '%') || strchr(preset, '#'))) {
-               /* get index */
-               get_auto_index(lbs, index, preset, str, sizeof(str));
-               strcpy(preset, str);
+               /* do not format date for date attributes */
+               i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & (AF_DATE | AF_DATETIME))
+                                    == 0);
+               strsubst_list(preset, sizeof(preset), slist, svalue, i);
+
+               /* check for index substitution */
+               if (!bedit && (strchr(preset, '%') || strchr(preset, '#'))) {
+                  /* get index */
+                  get_auto_index(lbs, index, preset, str, sizeof(str));
+                  strcpy(preset, str);
+               }
+
+               if (!strchr(preset, '%'))
+                  strcpy(attrib[index], preset);
             }
-
-            if (!strchr(preset, '%'))
-               strcpy(attrib[index], preset);
          }
       }
 
