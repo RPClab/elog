@@ -1114,6 +1114,19 @@ down box by default.<br>
         replies.
       </li>
       <li>
+        <b><code>Preset on first reply &lt;attribute&gt; =
+        &lt;string&gt;</code></b><br>
+        While <b><code>Preset on reply &lt;attribute&gt;</code></b>, is
+        evaluated for any replies, this one is only executed for the first
+        reply to an entry. It can be useful for example to so do something
+        like this:
+        <pre>
+Preset on first reply Subject = Re: $Subject
+</pre>
+        So the "Re:" only gets added once, and you don't get long chains of
+        "Re: Re: Re: ....".        
+      </li>
+      <li>
         <b><code>Preset on duplicate &lt;attribute&gt; =
         &lt;string&gt;</code></b><br>
         Same as <b><code>Preset &lt;attribute&gt;</code></b>, but evaluated for
