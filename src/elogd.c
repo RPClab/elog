@@ -9163,6 +9163,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    text = xmalloc(TEXT_SIZE);
    text[0] = 0;
    orig_author[0] = 0;
+   orig_tag[0] = 0;
    encoding[0] = 0;
    date[0] = 0;
    locked_by[0] = 0;
@@ -9316,10 +9317,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       sprintf(str, "Preset on first reply %s", attr_list[index]);
       if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0 && breply) {
-
-         el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, 0, str, NULL, NULL, NULL, NULL);
-
-         if (str[0] == 0) {
+         if (orig_tag[0] == 0) {
             if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
 
                /* do not format date for date attributes */
@@ -9487,6 +9485,15 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       if (i >= MAX_REPLY_TO) {
          sprintf(str, loc("Maximum number of replies (%d) exceeded"), MAX_REPLY_TO);
          show_error(str);
+         xfree(text);
+         return;
+      }
+   }
+
+   /* check for non-allowed branching */
+   if (breply && getcfg(lbs->name, "Allow branching", str, sizeof(str)) && atoi(str) == 0) {
+      if (reply_tag[0]) {
+         show_error("Branches are not allowed in this logbook");
          xfree(text);
          return;
       }
