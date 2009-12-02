@@ -19018,7 +19018,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    char *p, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
    BOOL show_attachments, threaded, csv, xml, raw, mode_commands, expand, filtering, disp_filter, show_text,
        text_in_attr, searched, found, disp_attr_link[MAX_N_ATTR + 4], sort_attributes, show_att_column;
-   time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2;
+   time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2, entry_ltime;
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
    LOGBOOK *lbs_cur;
@@ -19721,7 +19721,13 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                sprintf(str, "%08d", message_id);
                strlcat(msg_list[index].string, str, sizeof(msg_list[index].string));
             } else if (strieq(sort_attr[i], loc("Logbook"))) {
-               strlcpy(msg_list[index].string, msg_list[index].lbs->name, 256);
+               strlcat(msg_list[index].string, " ", sizeof(msg_list[index].string));
+               strlcat(msg_list[index].string, msg_list[index].lbs->name, sizeof(msg_list[index].string));
+            } else if (strieq(sort_attr[i], loc("Date"))) {
+               strlcat(msg_list[index].string, " ", sizeof(msg_list[index].string));
+               entry_ltime = date_to_ltime(date);
+               sprintf(str, "%08d", entry_ltime);
+               strlcat(msg_list[index].string, str, sizeof(msg_list[index].string));
             }
          }
       }

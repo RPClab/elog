@@ -322,6 +322,20 @@ second logbook ("closed items"). This can be done with the "Move To" command (se
 two separate logbooks. One can still search both logbooks at the same time if one checks
 "Search all logbooks" in the find page.<p>
 
+Starting from elog version 2.7.7, there now even a third way to do this.
+With an additional line in the configuration file:
+
+Collapse tn last = 1
+
+(in fact the default, but to be explicit), then when the thread is 
+ready to be marked as closed, select the "closed entry" icon when 
+writing the last entry.  
+
+When the entries are viewed in "threaded" mode, then the closed entry
+icon appears on the last entry; and when in "threaded, collapsed" mode,
+then the closed entry icon appears in the one line that represents that
+whole thread.
+
 <LI><a name=17><b>Does elog have a spell checker?</b>
 <p>
 No, but you can use any spell checker which works with your browser. Examples are
