@@ -469,3 +469,8 @@ Only user <b>%s</b> can delete this entry = Sólo el usuario <b>%s</b> puede borr
 
 
 
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+File system full, ELOG cannot continue to work = 

@@ -9,7 +9,7 @@
  \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.7.7"
+#define VERSION "2.7.8"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -7105,7 +7105,8 @@ int scan_attributes(char *logbook)
 /* scan configuration file for attributes and fill attr_list, attr_options
  and attr_flags arrays */
 {
-   char list[10000], str[NAME_LENGTH], str2[NAME_LENGTH], type[NAME_LENGTH], tmp_list[MAX_N_ATTR][NAME_LENGTH];
+   char list[10000], str[NAME_LENGTH], str2[NAME_LENGTH], type[NAME_LENGTH],
+       tmp_list[MAX_N_ATTR][NAME_LENGTH];
    int i, j, n, m, n_options;
 
    if (getcfg(logbook, "Attributes", list, sizeof(list))) {
@@ -7282,7 +7283,6 @@ void show_plain_header(int size, char *file_name)
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
    }
-
    // rsprintf("Pragma: no-cache\r\n");
    rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
    rsprintf("Content-Type: text/plain\r\n");
@@ -9318,7 +9318,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       sprintf(str, "Preset on first reply %s", attr_list[index]);
       if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0 && breply) {
          if (orig_tag[0] == 0) {
-            if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
+            if (!breedit || (breedit && i == 2)) {      /* subst on reedit only if preset is under condition */
 
                /* do not format date for date attributes */
                i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & (AF_DATE | AF_DATETIME))
@@ -9786,8 +9786,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("   document.form1.submit();\n");
    rsprintf("}\n\n");
 
-   if (enc_selected != 2 && !getcfg(lbs->name, "Message height", str, sizeof(str)) && 
-                            !getcfg(lbs->name, "Message width", str, sizeof(str))) {
+   if (enc_selected != 2 && !getcfg(lbs->name, "Message height", str, sizeof(str)) &&
+       !getcfg(lbs->name, "Message width", str, sizeof(str))) {
       /* javascript for resizing edit box */
       rsprintf("\nfunction init_resize()\n");
       rsprintf("{\n");
@@ -9902,7 +9902,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       strcpy(script_onload, "document.form1.Text.focus();");
 
    if (enc_selected == 0) {
-      if (!getcfg(lbs->name, "Message height", str, sizeof(str)) && 
+      if (!getcfg(lbs->name, "Message height", str, sizeof(str)) &&
           !getcfg(lbs->name, "Message width", str, sizeof(str))) {
          strcat(script_onload, "elKeyInit();init_resize();");
          strcat(script_onfocus, "elKeyInit();");
@@ -9912,7 +9912,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    } else if (enc_selected == 2 && fckedit_exist) {
       strcat(script_onload, "initFCKedit();");
    } else if (enc_selected == 1) {
-      if (!getcfg(lbs->name, "Message height", str, sizeof(str)) && 
+      if (!getcfg(lbs->name, "Message height", str, sizeof(str)) &&
           !getcfg(lbs->name, "Message width", str, sizeof(str)))
          strcat(script_onload, "init_resize();");
    }
@@ -10943,8 +10943,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             rsprintf("<textarea rows=%d cols=%d wrap=hard %s name=\"Text\" onChange=\"mod();\">\n", height,
                      width, str);
          else
-            rsprintf("<textarea rows=%d cols=%d %s name=\"Text\" onChange=\"mod();\" style=\"width:100%%;\">\n",
-                     height, width, str);
+            rsprintf
+                ("<textarea rows=%d cols=%d %s name=\"Text\" onChange=\"mod();\" style=\"width:100%%;\">\n",
+                 height, width, str);
 
          if (isparam("nsel")) {
             rsprintf("- %s -\n", loc("keep original text"));
@@ -17566,7 +17567,7 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable, int expand, int
    int status, size;
 
    text = xmalloc(TEXT_SIZE);
-   attachment = xmalloc(MAX_PATH_LENGTH*MAX_ATTACHMENTS);
+   attachment = xmalloc(MAX_PATH_LENGTH * MAX_ATTACHMENTS);
    attrib = xmalloc(MAX_N_ATTR * NAME_LENGTH);
    date = xmalloc(80);
    in_reply_to = xmalloc(80);
@@ -17580,7 +17581,7 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable, int expand, int
    reply_to[0] = 0;
    size = TEXT_SIZE;
    status = el_retrieve(lbs, message_id, date, attr_list, (void *) attrib, lbs->n_attr, text, &size,
-                        in_reply_to, reply_to, (char (*)[256])attachment, encoding, locked_by);
+                        in_reply_to, reply_to, (char (*)[256]) attachment, encoding, locked_by);
 
    if (status != EL_SUCCESS) {
       xfree(text);
@@ -17596,8 +17597,8 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable, int expand, int
 
    display_line(lbs, message_id, 0, "threaded", expand, level, printable, n_line, FALSE, FALSE, date,
                 in_reply_to, reply_to, n_attr_disp, disp_attr, NULL, (void *) attrib, lbs->n_attr, text,
-                show_text, (char (*)[256])attachment, encoding, 0, NULL, locked_by, highlight, &re_buf[0], highlight_mid,
-                absolute_link);
+                show_text, (char (*)[256]) attachment, encoding, 0, NULL, locked_by, highlight, &re_buf[0],
+                highlight_mid, absolute_link);
 
    if (reply_to[0]) {
       p = reply_to;
@@ -18968,8 +18969,8 @@ void highlight_searchtext(regex_t * re_buf, char *src, char *dst, int hidden)
 }
 
 /*------------------------------------------------------------------*/
- 
-time_t search_last_reply(LOGBOOK *lbs, int *message_id)
+
+time_t search_last_reply(LOGBOOK * lbs, int *message_id)
 {
    char reply_to[MAX_REPLY_TO * 10], date[80];
    int n_reply, i, id;
@@ -18987,10 +18988,10 @@ time_t search_last_reply(LOGBOOK *lbs, int *message_id)
       return lt;
    }
 
-   n_reply = strbreak(reply_to, (char (*)[NAME_LENGTH])list, MAX_REPLY_TO, ",", FALSE);
+   n_reply = strbreak(reply_to, (char (*)[NAME_LENGTH]) list, MAX_REPLY_TO, ",", FALSE);
    last = lt;
    for (i = 0; i < n_reply; i++) {
-      id = atoi(list+i*NAME_LENGTH);
+      id = atoi(list + i * NAME_LENGTH);
       lt = search_last_reply(lbs, &id);
       if (lt > last) {
          last = lt;
@@ -19000,7 +19001,7 @@ time_t search_last_reply(LOGBOOK *lbs, int *message_id)
 
    xfree(list);
 
-   return last;   
+   return last;
 }
 
 /*------------------------------------------------------------------*/
@@ -22168,8 +22169,8 @@ void submit_elog(LOGBOOK * lbs)
             strcpy(attrib[i], subst_str);
          }
       }
-   } 
-   
+   }
+
    /* subst attributes for edits */
    if (isparam("edit_id")) {
       for (index = 0; index < n_attr; index++) {
@@ -24600,7 +24601,7 @@ int is_file_system_full(char *file_name)
    n = write(fh, buf, sizeof(buf));
    close(fh);
    remove(str);
-   return n < (int)sizeof(buf);
+   return n < (int) sizeof(buf);
 }
 
 /*------------------------------------------------------------------*/

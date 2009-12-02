@@ -9,7 +9,7 @@
 
 \********************************************************************/
 
-#define VERSION "2.7.7"
+#define VERSION "2.7.8"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */

@@ -1,3 +1,20 @@
+Version 2.7.8, released December 2nd 2009
+=========================================
+
+- Implemented "Sort attributes = Date"
+- Implemented "Allow branching"
+- Implemented "Preset on first reply"
+- Avoid double substitutions on 'preset on reply'
+- Fixed paper clip display in replies
+- Removed "Pragma: no-cache" from export.* (IE SSL problem)
+- Do not execute 'Subst <attrib>' on replies
+- Execute 'subst on edit' and 'subst on reply' AFTER submission
+- Added 'summary line length'
+- Added check for full file system in order not to corrupt the password file
+- Implemented "sort attribute options"
+- Fixed problem with init_resize and plain text with restricted message height, thanks to Richard S
+- Avoid sending empty header after synchronizing
+
 Version 2.7.7, released July 31st 2009
 ======================================
 

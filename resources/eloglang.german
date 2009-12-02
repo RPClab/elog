@@ -463,3 +463,5 @@ Last %d hours = Letzte %d Stunden
 Invalid URL = Ungültige URL
 Attribute "%s" is not allowed in config file = Das Attribut "%s" ist in der Konfigurationsdatei nicht erlaubt 
 Only user <b>%s</b> can delete this entry = Nur der Benutzer <b>%s</b> kann diesen Entrag löschen
+File system full, ELOG cannot continue to work = Dateisystem voll, ELOG kann nicht weiterarbeiten
+
