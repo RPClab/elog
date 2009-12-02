@@ -19727,7 +19727,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             } else if (strieq(sort_attr[i], loc("Date"))) {
                strlcat(msg_list[index].string, " ", sizeof(msg_list[index].string));
                entry_ltime = date_to_ltime(date);
-               sprintf(str, "%08d", entry_ltime);
+               sprintf(str, "%08d", (int)entry_ltime);
                strlcat(msg_list[index].string, str, sizeof(msg_list[index].string));
             }
          }
