@@ -22182,7 +22182,6 @@ void submit_elog(LOGBOOK * lbs)
                                  == 0);
 
             add_subst_list(slist, svalue, "message id", getparam("edit_id"), &i);
-            add_subst_time(lbs, slist, svalue, "entry time", date, &i, attr_flags[index]);
 
             strsubst_list(str2, sizeof(str2), slist, svalue, i);
             if (strlen(str2) > NAME_LENGTH - 100) {
@@ -22210,8 +22209,8 @@ void submit_elog(LOGBOOK * lbs)
             /* do not format date for date attributes */
             i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & (AF_DATE | AF_DATETIME))
                                  == 0);
-            add_subst_list(slist, svalue, "Reply to", getparam("reply_to"), &i);
-            add_subst_time(lbs, slist, svalue, "entry time", date, &i, attr_flags[index]);
+            if (isparam("reply_to"))
+               add_subst_list(slist, svalue, "Reply to", getparam("reply_to"), &i);
             strsubst_list(str2, sizeof(str2), slist, svalue, i);
             strcpy(attrib[index], str2);
          }
