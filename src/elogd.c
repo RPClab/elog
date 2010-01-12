@@ -19765,7 +19765,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
    /*---- in threaded mode, set date of latest entry of thread ----*/
 
-   if (threaded) {
+   if (threaded && !filtering) {
       for (index = 0; index < n_msg; index++) {
          if (!msg_list[index].lbs)
             continue;
@@ -20729,17 +20729,19 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                expand = atoi(getparam("expand"));
          }
 
-         level = 0;
-         if (expand == 0 && (!getcfg(lbs->name, "Collapse to last", str, sizeof(str)) || atoi(str) == 1)) {
-            /* search last entry in this thread */
-            if (reply_to[0]) {
-               search_last_reply(msg_list[index].lbs, &message_id);
-               size = TEXT_SIZE;
-               status =
-                   el_retrieve(msg_list[index].lbs, message_id, date, attr_list, attrib, lbs->n_attr, text,
-                               &size, in_reply_to, reply_to, attachment, encoding, locked_by);
-               if (status == SUCCESS)
-                  level = 1;
+         if (!filtering) {
+            level = 0;
+            if (expand == 0 && (!getcfg(lbs->name, "Collapse to last", str, sizeof(str)) || atoi(str) == 1)) {
+               /* search last entry in this thread */
+               if (reply_to[0]) {
+                  search_last_reply(msg_list[index].lbs, &message_id);
+                  size = TEXT_SIZE;
+                  status =
+                      el_retrieve(msg_list[index].lbs, message_id, date, attr_list, attrib, lbs->n_attr, text,
+                                  &size, in_reply_to, reply_to, attachment, encoding, locked_by);
+                  if (status == SUCCESS)
+                     level = 1;
+               }
             }
          }
 
@@ -20749,7 +20751,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                       isparam("select") ? atoi(getparam("select")) : 0, &n_display, locked_by, 0, re_buf,
                       page_mid, FALSE);
 
-         if (threaded) {
+         if (threaded && !filtering) {
             if (reply_to[0] && expand > 0) {
                p = reply_to;
                do {
