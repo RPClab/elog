@@ -24,6 +24,10 @@ static const char ELOGID[] = "elog " VERSION " built " __DATE__ ", " __TIME__;
 #include <time.h>
 #include <ctype.h>
 
+#ifndef __USE_XOPEN
+#define __USE_XOPEN             /* needed for crypt() */
+#endif
+
 #ifdef _MSC_VER
 #include <windows.h>
 #include <io.h>
@@ -61,13 +65,15 @@ char text[TEXT_SIZE], old_text[TEXT_SIZE], new_text[TEXT_SIZE];
 
 char *map = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-void base64_encode(char *s, char *d)
+void base64_encode(unsigned char *s, unsigned char *d, int size)
 {
    unsigned int t, pad;
+   unsigned char *p;
 
-   pad = 3 - strlen(s) % 3;
+   pad = 3 - strlen((char *) s) % 3;
    if (pad == 3)
       pad = 0;
+   p = d;
    while (*s) {
       t = (*s++) << 16;
       if (*s)
@@ -84,11 +90,14 @@ void base64_encode(char *s, char *d)
       *(d + 0) = map[t & 63];
 
       d += 4;
+      if (d - p >= size - 3)
+        return;
    }
    *d = 0;
    while (pad--)
       *(--d) = '=';
 }
+
 
 /*---- string comparison -------------------------------------------*/
 
@@ -179,6 +188,16 @@ size_t strlcat(char *dst, const char *src, size_t size)
 }
 
 #endif                          // STRLCPY_DEFINED
+
+
+void do_crypt(char *s, char *d, int size)
+{
+#ifdef HAVE_CRYPT
+   strlcpy(d, crypt(s, "el"), size);
+#else
+   base64_encode((unsigned char *) s, (unsigned char *) d, size);
+#endif
+}
 
 /*-------------------------------------------------------------------*/
 
@@ -379,7 +398,7 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
 \********************************************************************/
 {
    int i, n, first, index, sock;
-   char str[256], *ph, *ps;
+   char str[256], encrypted_passwd[256], *ph, *ps;
 #ifdef HAVE_SSL
    SSL *ssl_con;
 #endif
@@ -419,8 +438,8 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
          sprintf(request + strlen(request), "Cookie: ");
       first = 0;
 
-      base64_encode(passwd, str);
-      sprintf(request + strlen(request), "wpwd=%s;", str);
+      do_crypt(passwd, encrypted_passwd, sizeof(encrypted_passwd));
+      sprintf(request + strlen(request), "wpwd=%s;", encrypted_passwd);
    }
 
    if (uname[0]) {
@@ -436,8 +455,8 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
          sprintf(request + strlen(request), "Cookie: ");
       first = 0;
 
-      base64_encode(upwd, str);
-      sprintf(request + strlen(request), "upwd=%s;", str);
+      do_crypt(upwd, encrypted_passwd, sizeof(encrypted_passwd) );
+      sprintf(request + strlen(request), "upwd=%s;", encrypted_passwd);
    }
 
    /* finish cookie line */
@@ -625,7 +644,7 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
 \********************************************************************/
 {
    int status, sock, i, n, header_length, content_length, index;
-   char host_name[256], boundary[80], str[80], *p, *old_encoding;
+   char host_name[256], boundary[80], str[80], encrypted_passwd[256], *p, *old_encoding;
    char old_attrib_name[MAX_N_ATTR][NAME_LENGTH], old_attrib[MAX_N_ATTR][NAME_LENGTH];
    struct hostent *phe;
 #ifdef HAVE_SSL
@@ -798,9 +817,9 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
               "%s\r\nContent-Disposition: form-data; name=\"unm\"\r\n\r\n%s\r\n", boundary, uname);
 
    if (upwd[0]) {
-      base64_encode(upwd, str);
+      do_crypt(upwd, encrypted_passwd, sizeof(encrypted_passwd));
       sprintf(content + strlen(content),
-              "%s\r\nContent-Disposition: form-data; name=\"upwd\"\r\n\r\n%s\r\n", boundary, str);
+              "%s\r\nContent-Disposition: form-data; name=\"upwd\"\r\n\r\n%s\r\n", boundary, encrypted_passwd);
    }
 
    if (experiment[0])
@@ -882,8 +901,8 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
    sprintf(request + strlen(request), "Content-Length: %d\r\n", content_length);
 
    if (passwd[0]) {
-      base64_encode(passwd, str);
-      sprintf(request + strlen(request), "Cookie: wpwd=%s\r\n", str);
+      do_crypt(passwd, encrypted_passwd, sizeof(encrypted_passwd) );
+      sprintf(request + strlen(request), "Cookie: wpwd=%s\r\n", encrypted_passwd);
    }
 
    strcat(request, "\r\n");
