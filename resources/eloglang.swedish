@@ -1,7 +1,7 @@
 # Swedish translation by Johan Nyberg <nyberg@tsl.uu.se>
 # 2006-09-29
 # Completed and adjusted by Kenneth Andersson <kenneth.h.andersson@telia.com>
-# 2008-01-08
+# 2008-01-08, 2010-02-06
 # A more recent version may be available at :
 # http://savannah.psi.ch/websvn/listing.php?repname=elog&path=%2Ftrunk%2Fresources%2F
 #
@@ -389,9 +389,6 @@ Entry %s cannot be read from logbook "%s" = Posten %s kan inte läsas i loggboken
 Your request has been forwarded to the administrator = Din registrering har vidarebefordrats till ELOG administratören
 You will be notified by email upon activation of your new account = Du kommer att få en bekräftelse per email när ditt nya användarkonto är aktiverat
 Error: Command "<b>%s</b>" not allowed = Kommandot "<b>%s</b>" är inte tillåtet
-
-# Completed items 2008-01-08
-
 Select period = Välj period
 Last week = Senaste veckan
 Last month = Senaste månaden
@@ -451,28 +448,22 @@ Please choose format to import: = Välj format för import:
 Enter text = Skriv text
 Show HTML source code = Visa HTML källkod
 or until I log out = eller tills jag loggar ut
-
-
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Make smaller = 
-Original size = 
-Make larger = 
-Rotate left = 
-Rotate right = 
-Delete attachment = 
-Cannot create thumbnail, please check ImageMagick installation = 
-Please log on by clicking on following link and change your password = 
-Attachments = 
-Error: Content length (%d) larger than maximum content length (%d) = 
-ELOG error = 
-Only user <b>%s</b> can edit this entry = 
-Export to = 
-Do not ignore first line = 
-Last %d hours = 
-Invalid URL = 
-Attribute "%s" is not allowed in config file = 
-Only user <b>%s</b> can delete this entry = 
-File system full, ELOG cannot continue to work = 
+Make smaller = Förminska
+Original size = Originalstorlek
+Make larger = Förstora
+Rotate left = Rotera vänster
+Rotate right = Rotera höger
+Delete attachment = Radera bilaga
+Cannot create thumbnail, please check ImageMagick installation = Kan inte skapa thumbnail, kontrollera installationen av ImageMagick
+Please log on by clicking on following link and change your password = Logga in genom att klicka på följande länk och byt ditt lösenord 
+Attachments = Bilagor
+Error: Content length (%d) larger than maximum content length (%d) = Fel: Innehållet (%d) är större än max tillåtet (%d)
+ELOG error = ELOG fel
+Only user <b>%s</b> can edit this entry = Endast användare <b>%s</b> kan redigera denna post 
+Export to = Exportera till
+Do not ignore first line = Ignorera inte första raden
+Last %d hours = Senaste %d timmarna
+Invalid URL = Ogiltig URL
+Attribute "%s" is not allowed in config file = Attributet "%s" är inte tillåtet i konfigurationsfilen
+Only user <b>%s</b> can delete this entry = Endast användare <b>%s</b> kan radera denna post
+File system full, ELOG cannot continue to work = Filsystemet fullt, ELOG kan inte fortsätta arbeta
