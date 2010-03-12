@@ -28267,7 +28267,7 @@ void server_loop(void)
                   if (!more_requests) {
                      FD_ZERO(&readfds);
                      FD_SET(_sock, &readfds);
-                     timeout.tv_sec = 1;
+                     timeout.tv_sec = 6;
                      timeout.tv_usec = 0;
                      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
                      if (FD_ISSET(_sock, &readfds)) {
@@ -28277,6 +28277,7 @@ void server_loop(void)
                         else
 #endif
                            i = recv(_sock, net_buffer + len, net_buffer_size - len, 0);
+
                      } else
                         break;
 
@@ -28384,6 +28385,11 @@ void server_loop(void)
                                   ("Please increase <b>\"Max content length\"</b> in [global] part of config file and restart elogd"));
                            keep_alive = FALSE;
                            show_error(str);
+#ifdef HAVE_SSL
+                           send_return(_sock, ssl_con, net_buffer);
+#else
+                           send_return(_sock, net_buffer);
+#endif
                            break;
                         }
                      }
