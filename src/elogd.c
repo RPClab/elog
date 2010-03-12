@@ -11670,6 +11670,7 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf("<select name=last>\n");
    rsprintf("<option value=\"\">\n");
    rsprintf("<option value=1>%s\n", loc("Day"));
+   rsprintf("<option value=3>%s\n", loc("3 Days"));
    rsprintf("<option value=7>%s\n", loc("Week"));
    rsprintf("<option value=31>%s\n", loc("Month"));
    rsprintf("<option value=92>%s\n", loc("3 Months"));
@@ -18185,6 +18186,7 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
             rsprintf("<option value=\"_all_\">-- %s --\n", loc("All entries"));
 
             rsprintf("<option %s value=1>%s\n", i == 1 ? "selected" : "", loc("Last day"));
+            rsprintf("<option %s value=3>%s\n", i == 3 ? "selected" : "", loc("Last 3 Days"));
             rsprintf("<option %s value=7>%s\n", i == 7 ? "selected" : "", loc("Last week"));
             rsprintf("<option %s value=31>%s\n", i == 31 ? "selected" : "", loc("Last month"));
             rsprintf("<option %s value=92>%s\n", i == 92 ? "selected" : "", loc("Last 3 Months"));
@@ -18232,12 +18234,15 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
                            loc("Month"));
                   rsprintf("<option %s value=-7>%s %s\n", i == -7 ? "selected" : "", loc("Last"),
                            loc("Week"));
+                  rsprintf("<option %s value=-3>%s %s\n", i == -3 ? "selected" : "", loc("Last"),
+                           loc("3 Days"));
                   rsprintf("<option %s value=-1>%s %s\n", i == -1 ? "selected" : "", loc("Last"), loc("Day"));
 
                   sprintf(str, "-- %s  --", list[index]);
                   rsprintf("<option %s value=\"_all_\">%s\n", i == 0 ? "selected" : "", str);
 
                   rsprintf("<option %s value=1>%s %s\n", i == 1 ? "selected" : "", loc("Next"), loc("Day"));
+                  rsprintf("<option %s value=3>%s %s\n", i == 3 ? "selected" : "", loc("Next"), loc("3 Days"));
                   rsprintf("<option %s value=7>%s %s\n", i == 7 ? "selected" : "", loc("Next"), loc("Week"));
                   rsprintf("<option %s value=31>%s %s\n", i == 31 ? "selected" : "", loc("Next"),
                            loc("Month"));
