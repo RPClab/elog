@@ -9688,7 +9688,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          strcpy(ua, attr_list[i]);
          stou(ua);
 
-         rsprintf("  if (document.form1.%s.value != '- %s -') {\n", ua, loc("keep original values"));
+         rsprintf("  if (document.form1.%s.value != \"- %s -\") {\n", ua, loc("keep original values"));
          rsprintf("    for (var i=0 ; i<document.form1.%s.value.length ; i++)\n", ua);
          rsprintf("      if (document.form1.%s.value.charAt(i) != \",\" &&\n", ua);
          rsprintf("          document.form1.%s.value.charAt(i) != \".\" &&\n", ua);
