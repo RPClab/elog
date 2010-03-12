@@ -19022,8 +19022,9 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
        mid[80], menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH], format[80],
        sort_attr[MAX_N_ATTR + 4][NAME_LENGTH], mode_cookie[80], charset[25], sort_item[NAME_LENGTH];
    char *p, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
-   BOOL show_attachments, threaded, csv, xml, raw, mode_commands, expand, filtering, disp_filter, show_text,
-       text_in_attr, searched, found, disp_attr_link[MAX_N_ATTR + 4], sort_attributes, show_att_column;
+   BOOL show_attachments, threaded, csv, xml, raw, mode_commands, expand, filtering, date_filtering,
+      disp_filter, show_text, text_in_attr, searched, found, disp_attr_link[MAX_N_ATTR + 4], 
+      sort_attributes, show_att_column;
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2, entry_ltime;
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
@@ -19374,29 +19375,35 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
    /*---- apply start/end date cut ----*/
 
+   date_filtering = FALSE;
+
    if (past_n > 0)
       ltime_start = now - 3600 * 24 * past_n;   // past n days
    else if (past_n < 0)
       ltime_start = now + 3600 * past_n;        // past n hours
 
    if (last_n && last_n < n_msg) {
+      date_filtering = TRUE;
       for (i = n_msg - last_n - 1; i >= 0; i--)
          msg_list[i].lbs = NULL;
    }
 
    if (ltime_start) {
+      date_filtering = TRUE;
       for (i = 0; i < n_msg; i++)
          if (msg_list[i].lbs && msg_list[i].lbs->el_index[msg_list[i].index].file_time < ltime_start)
             msg_list[i].lbs = NULL;
    }
 
    if (ltime_end) {
+      date_filtering = TRUE;
       for (i = 0; i < n_msg; i++)
          if (msg_list[i].lbs && msg_list[i].lbs->el_index[msg_list[i].index].file_time > ltime_end)
             msg_list[i].lbs = NULL;
    }
 
    if (isparam("last")) {
+      date_filtering = TRUE;
       n = atoi(getparam("last"));
 
       if (n > 0) {
@@ -19770,7 +19777,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
    /*---- in threaded mode, set date of latest entry of thread ----*/
 
-   if (threaded && !filtering) {
+   if (threaded && !filtering && !date_filtering) {
       for (index = 0; index < n_msg; index++) {
          if (!msg_list[index].lbs)
             continue;
@@ -20734,8 +20741,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                expand = atoi(getparam("expand"));
          }
 
-         if (!filtering) {
-            level = 0;
+         level = 0;
+         if (!filtering && !date_filtering) {
             if (expand == 0 && (!getcfg(lbs->name, "Collapse to last", str, sizeof(str)) || atoi(str) == 1)) {
                /* search last entry in this thread */
                if (reply_to[0]) {
@@ -20748,7 +20755,9 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                      level = 1;
                }
             }
-         }
+         } else
+            if (in_reply_to[0])
+               level = 1;
 
          display_line(msg_list[index].lbs, message_id, index, mode, expand, level, printable, n_line,
                       show_attachments, show_att_column, date, in_reply_to, reply_to, n_attr_disp, disp_attr,
@@ -20756,7 +20765,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                       isparam("select") ? atoi(getparam("select")) : 0, &n_display, locked_by, 0, re_buf,
                       page_mid, FALSE);
 
-         if (threaded && !filtering) {
+         if (threaded && !filtering && !date_filtering) {
             if (reply_to[0] && expand > 0) {
                p = reply_to;
                do {
