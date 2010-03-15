@@ -25072,13 +25072,13 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
             else {
                if (pparent != NULL) {
                   if (getcfg_topgroup())
-                     rsprintf("<a href=\"%s/?gexp=%s\">- %s</a> ", getcfg_topgroup(), pparent->name,
+                     rsprintf("<a href=\"../%s/?gexp=%s\">- %s</a> ", getcfg_topgroup(), pparent->name,
                               plb->name);
                   else
                      rsprintf("<a href=\"?gexp=%s\">- %s</a> ", pparent->name, plb->name);
                } else {
                   if (getcfg_topgroup())
-                     rsprintf("<a href=\"%s/\">- %s</a> ", getcfg_topgroup(), plb->name);
+                     rsprintf("<a href=\"../%s/\">- %s</a> ", getcfg_topgroup(), plb->name);
                   else
                      rsprintf("<a href=\".\">- %s</a> ", plb->name);
                }
@@ -25088,7 +25088,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
                rsprintf("%s", plb->name);
             else {
                if (getcfg_topgroup())
-                  rsprintf("<a href=\"%s/?gexp=%s\">+ %s</a> ", getcfg_topgroup(), plb->name, plb->name);
+                  rsprintf("<a href=\"../%s/?gexp=%s\">+ %s</a> ", getcfg_topgroup(), plb->name, plb->name);
                else
                   rsprintf("<a href=\".?gexp=%s\">+ %s</a> ", plb->name, plb->name);
             }
