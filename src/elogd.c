@@ -16759,7 +16759,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                   int *n_display, char *locked_by, int highlight, regex_t * re_buf, int highlight_mid,
                   int absolute_link)
 {
-   char str[NAME_LENGTH], ref[256], *nowrap, sclass[80], format[256], file_name[MAX_PATH_LENGTH], *slist,
+   char str[NAME_LENGTH], ref[256], *nowrap, rowstyle[80], tdstyle[80], format[256], file_name[MAX_PATH_LENGTH], *slist,
        *svalue, comment[256], param[80];
    char display[NAME_LENGTH], attr_icon[80];
    int i, j, n, i_line, index, colspan, n_attachments, line_len, thumb_status, max_line_len, n_lines,
@@ -16781,56 +16781,56 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
    if (strieq(mode, "Summary")) {
       if (highlight_mid == message_id) {
          if (number % 2 == 1)
-            strcpy(sclass, "list1h");
+            strcpy(rowstyle, "list1h");
          else
-            strcpy(sclass, "list2h");
+            strcpy(rowstyle, "list2h");
       } else {
          if (number % 2 == 1)
-            strcpy(sclass, "list1");
+            strcpy(rowstyle, "list1");
          else
-            strcpy(sclass, "list2");
+            strcpy(rowstyle, "list2");
       }
    } else if (strieq(mode, "Full")) {
       if (highlight_mid == message_id)
-         strcpy(sclass, "list1h");
+         strcpy(rowstyle, "list1h");
       else
-         strcpy(sclass, "list1");
+         strcpy(rowstyle, "list1");
    } else if (strieq(mode, "Threaded")) {
       if (highlight) {
          if (highlight == message_id)
-            strcpy(sclass, "thread");
+            strcpy(rowstyle, "thread");
          else
-            strcpy(sclass, "threadreply");
+            strcpy(rowstyle, "threadreply");
       } else {
          if (highlight_mid == message_id) {
             if (level == 0)
-               strcpy(sclass, "threadh");
+               strcpy(rowstyle, "threadh");
             else
-               strcpy(sclass, "threadreply");
+               strcpy(rowstyle, "threadreply");
          } else {
             if (level == 0)
-               strcpy(sclass, "thread");
+               strcpy(rowstyle, "thread");
             else
-               strcpy(sclass, "threadreply");
+               strcpy(rowstyle, "threadreply");
          }
       }
    }
 
    rsprintf("<tr>");
 
-   /* check attributes for style */
+   /* check attributes for row style */
    for (i = 0; i < n_attr; i++) {
       sprintf(str, "Style %s %s", attr_list[i], attrib[i]);
       if (getcfg(lbs->name, str, display, sizeof(display))) {
-         sprintf(str, "%s\" style=\"%s\"", sclass, display);
-         strlcpy(sclass, str, sizeof(sclass));
+         sprintf(str, "%s\" style=\"%s\"", rowstyle, display);
+         strlcpy(rowstyle, str, sizeof(rowstyle));
          break;
       }
    }
 
    /* only single cell for threaded display */
    if (strieq(mode, "Threaded")) {
-      rsprintf("<td align=left class=\"%s\">", sclass);
+      rsprintf("<td align=left class=\"%s\">", rowstyle);
 
       if (locked_by && locked_by[0]) {
          sprintf(str, "%s %s", loc("Entry is currently edited by"), locked_by);
@@ -16937,7 +16937,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
    } else {
       /* show select box */
       if (select && !strieq(mode, "Threaded")) {
-         rsprintf("<td class=\"%s\">", sclass);
+         rsprintf("<td class=\"%s\">", rowstyle);
          rsprintf("<input type=checkbox name=\"s%d\" value=%d>\n", (*n_display)++, message_id);
          rsprintf("</td>\n");
       }
@@ -16961,7 +16961,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                            loc("Reply"));
 
             } else {
-               rsprintf("<td class=\"%s\">", sclass);
+
+               rsprintf("<td class=\"%s\">", rowstyle);
 
                if (locked_by && locked_by[0]) {
                   sprintf(str, "%s %s", loc("Entry is currently edited by"), locked_by);
@@ -16997,16 +16998,16 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                   rsprintf(", %s", lbs->name);
             } else {
                if (disp_attr_link == NULL || disp_attr_link[index])
-                  rsprintf("\n<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", sclass, nowrap, ref,
+                  rsprintf("\n<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", rowstyle, nowrap, ref,
                            lbs->name);
                else
-                  rsprintf("\n<td class=\"%s\" %s>%s</td>\n", sclass, nowrap, lbs->name);
+                  rsprintf("\n<td class=\"%s\" %s>%s</td>\n", rowstyle, nowrap, lbs->name);
             }
          }
 
          if (strieq(disp_attr[index], loc("Edit"))) {
             if (!strieq(mode, "Threaded")) {
-               rsprintf("\n<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref, loc("Edit"));
+               rsprintf("\n<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", rowstyle, nowrap, ref, loc("Edit"));
                rsprintf("\n<img src=\"edit.png\" border=0 alt=\"%s\" title=\"%s\"></a></td>\n",
                         loc("Edit entry"), loc("Edit entry"));
             }
@@ -17014,7 +17015,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
 
          if (strieq(disp_attr[index], loc("Delete"))) {
             if (!strieq(mode, "Threaded")) {
-               rsprintf("\n<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", sclass, nowrap, ref, loc("Delete"));
+               rsprintf("\n<td class=\"%s\" %s><a href=\"%s?cmd=%s\">", rowstyle, nowrap, ref, loc("Delete"));
                rsprintf("\n<img src=\"delete.png\" border=0 alt=\"%s\" title=\"%s\"></a></td>\n",
                         loc("Delete entry"), loc("Delete entry"));
             }
@@ -17037,14 +17038,23 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                   rsprintf(", %s", str);
             } else {
                if (disp_attr_link == NULL || disp_attr_link[index])
-                  rsprintf("\n<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", sclass, nowrap, ref, str);
+                  rsprintf("\n<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", rowstyle, nowrap, ref, str);
                else
-                  rsprintf("\n<td class=\"%s\" %s>%s</td>\n", sclass, nowrap, str);
+                  rsprintf("\n<td class=\"%s\" %s>%s</td>\n", rowstyle, nowrap, str);
             }
          }
 
          for (i = 0; i < n_attr; i++)
             if (strieq(disp_attr[index], attr_list[i])) {
+               
+               /* check attributes for cell style */
+               strlcpy(tdstyle, rowstyle, sizeof(tdstyle));
+               sprintf(str, "Cell Style %s %s", attr_list[i], attrib[i]);
+               if (getcfg(lbs->name, str, display, sizeof(display))) {
+                  sprintf(str, "%s\" style=\"%s\"", rowstyle, display);
+                  strlcpy(tdstyle, str, sizeof(rowstyle));
+               }
+               
                if (strieq(mode, "Threaded")) {
                   if (strieq(attr_options[i][0], "boolean")) {
                      if (atoi(attrib[i]) == 1) {
@@ -17133,9 +17143,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                } else {
                   if (strieq(attr_options[i][0], "boolean")) {
                      if (atoi(attrib[i]) == 1)
-                        rsprintf("\n<td class=\"%s\"><input type=checkbox checked disabled></td>\n", sclass);
+                        rsprintf("\n<td class=\"%s\"><input type=checkbox checked disabled></td>\n", tdstyle);
                      else
-                        rsprintf("\n<td class=\"%s\"><input type=checkbox disabled></td>\n", sclass);
+                        rsprintf("\n<td class=\"%s\"><input type=checkbox disabled></td>\n", tdstyle);
                   }
 
                   else if (attr_flags[i] & AF_DATE) {
@@ -17152,9 +17162,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                         my_strftime(str, sizeof(str), format, pts);
 
                      if (disp_attr_link == NULL || disp_attr_link[index])
-                        rsprintf("\n<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", sclass, ref, str);
+                        rsprintf("\n<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", tdstyle, ref, str);
                      else
-                        rsprintf("\n<td class=\"%s\">%s</td>\n", sclass, str);
+                        rsprintf("\n<td class=\"%s\">%s</td>\n", tdstyle, str);
                   }
 
                   else if (attr_flags[i] & AF_DATETIME) {
@@ -17171,13 +17181,13 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                         my_strftime(str, sizeof(str), format, pts);
 
                      if (disp_attr_link == NULL || disp_attr_link[index])
-                        rsprintf("\n<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", sclass, ref, str);
+                        rsprintf("\n<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", tdstyle, ref, str);
                      else
-                        rsprintf("\n<td class=\"%s\">%s</td>\n", sclass, str);
+                        rsprintf("\n<td class=\"%s\">%s</td>\n", tdstyle, str);
                   }
 
                   else if (attr_flags[i] & AF_ICON) {
-                     rsprintf("<td class=\"%s\">", sclass);
+                     rsprintf("<td class=\"%s\">", rowstyle);
 
                      sprintf(str, "Icon comment %s", attrib[i]);
                      getcfg(lbs->name, str, comment, sizeof(comment));
@@ -17192,7 +17202,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                   }
 
                   else {
-                     rsprintf("<td class=\"%s\">", sclass);
+                     rsprintf("<td class=\"%s\">", tdstyle);
 
                      if (disp_attr_link == NULL || disp_attr_link[index])
                         rsprintf("<a href=\"%s\">", ref);
