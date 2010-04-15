@@ -1541,7 +1541,23 @@ Subst on edit author = $full_name
 Style importance severe = background-color:red
         </pre>
         For possible formattings, please refer to some CSS documentation. You can
-        change the colors, font styles and sizes.
+        change the colors, font styles and sizes. The style is then valid for the
+        whole row of that entry.
+      </li>
+      <li>
+        <b><code>Cell Style &lt;attribute&gt; &lt;value&gt; = &lt;style&gt;</code></b><br>
+
+        Same as above, but only for a specific cell containing &lt;<attribute>&gt;.
+        Following options 
+        <pre>
+Attributes = Author, Status
+Options Status = Fixed, Under Process, Not Fixed
+Cell Style Status Fixed  = background-color:green
+Cell Style Status Not Fixed  = background-color:red
+Cell Style Status Under Process  = background-color:yellow
+        </pre>
+        <p>for example produce following listing:</p>
+        <p><img border=0 src="cell_style.png"></p>
       </li>
       <li>
         <code><b>Change &lt;attribute&gt; = &lt;string&gt;</b></code><br>
