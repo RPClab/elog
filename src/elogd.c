@@ -15704,7 +15704,7 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
          fgets(pwd, sizeof(pwd), stdin);
          while (pwd[strlen(pwd) - 1] == '\n' || pwd[strlen(pwd) - 1] == '\r')
             pwd[strlen(pwd) - 1] = 0;
-      } else if (status != 200 && status != 302) {
+      } else if (status != 200 && status != 302 && status != 404) {
          xfree(buffer);
          *strchr(str, '?') = 0;
          sprintf(error_str, "Received invalid response from elogd server at http://%s", str);
