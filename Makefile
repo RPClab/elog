@@ -25,7 +25,7 @@ RCDIR      = $(ROOT)/etc/rc.d/init.d
 USE_SSL    = 1
 
 # flag for crypt() support
-USE_CRYPT  =
+USE_CRYPT  = 0
 
 #############################################################
 
@@ -74,13 +74,17 @@ CC = gcc
 endif
 
 ifdef USE_SSL
+ifneq ($(USE_SSL),0)
 CFLAGS += -DHAVE_SSL
 LIBS += -lssl
-endif 
+endif
+endif
 
 ifdef USE_CRYPT
+ifneq ($(USE_CRYPT),0)
 CFLAGS += -DHAVE_CRYPT
 LIBS += -lcrypt
+endif
 endif
 
 WHOAMI = $(shell whoami)
