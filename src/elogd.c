@@ -6035,7 +6035,8 @@ char
 
 void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 {
-   int i, j, k, l, m, elcode_disabled, elcode_disabled1, escape_char, ordered_list, substituted, inside_table;
+   int i, j, k, l, m, elcode_disabled, elcode_disabled1, escape_char, ordered_list, substituted, inside_table,
+      smileys_enabled;
    char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[1000], hattrib[1000], value[1000],
        subst[1000], base_url[256], param[256], *lstr, domain[256];
 
@@ -6049,9 +6050,14 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
    elcode_disabled1 = FALSE;
    ordered_list = FALSE;
    escape_char = FALSE;
+   smileys_enabled = TRUE;
    inside_table = 0;
    j = strlen_retbuf;
    m = 0;
+
+   /* check for smileys */
+   if (getcfg(lbs->name, "Enable smileys", tmp, sizeof(tmp)) && atoi(tmp) == 0)
+      smileys_enabled = FALSE;
 
    /* make lower case copy of str */
    lstr = xmalloc(strlen(str) + 1);
@@ -6181,6 +6187,18 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
             if (i > 0 && str[i - 1] == '\\') {
 
                j--;
+               strncpy(return_buffer + j, str + i, strlen(pattern_list[l].pattern));
+               j += strlen(pattern_list[l].pattern);
+               i += strlen(pattern_list[l].pattern) - 1;        // 1 gets added in for loop...
+               substituted = TRUE;
+
+               break;
+            }
+
+            /* check for blank before smiley and if smileys are allowed */
+            if (l <= 20 && 
+                (str[i - 1] != ' ' && str[i - 1] != '\r' && str[i - 1] != '\n') ||
+                (smileys_enabled == FALSE)) {
                strncpy(return_buffer + j, str + i, strlen(pattern_list[l].pattern));
                j += strlen(pattern_list[l].pattern);
                i += strlen(pattern_list[l].pattern) - 1;        // 1 gets added in for loop...
