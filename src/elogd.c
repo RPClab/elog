@@ -9938,7 +9938,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       } else
          strcat(script_onload, "elKeyInit();");
       strcat(script_onfocus, "elKeyInit();");
-   } else if (enc_selected == 2 && fckedit_exist) {
+   } else if (enc_selected == 2 && fckedit_exist && show_text && !fixed_text) {
       strcat(script_onload, "initFCKedit();");
    } else if (enc_selected == 1) {
       if (!getcfg(lbs->name, "Message height", str, sizeof(str)) &&
