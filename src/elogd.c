@@ -18890,6 +18890,9 @@ void show_rss_feed(LOGBOOK * lbs)
       status = el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text, &size, NULL, NULL,
                            NULL, NULL, NULL);
 
+      /* limit text size to 2k */
+      text[2048] = 0;
+
       if (getcfg(lbs->name, "RSS Title", title, sizeof(title))) {
          i = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, attrib,
                               TRUE);
