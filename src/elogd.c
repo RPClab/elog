@@ -6197,8 +6197,8 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 
             /* check for blank before smiley and if smileys are allowed */
             if (l <= 20 && 
-                (str[i - 1] != ' ' && str[i - 1] != '\r' && str[i - 1] != '\n') ||
-                (smileys_enabled == FALSE)) {
+                ((str[i - 1] != ' ' && str[i - 1] != '\r' && str[i - 1] != '\n') ||
+                 (smileys_enabled == FALSE))) {
                strncpy(return_buffer + j, str + i, strlen(pattern_list[l].pattern));
                j += strlen(pattern_list[l].pattern);
                i += strlen(pattern_list[l].pattern) - 1;        // 1 gets added in for loop...
