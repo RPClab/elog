@@ -27871,7 +27871,7 @@ void hup_handler(int sig)
 
 SSL_CTX *init_ssl(void)
 {
-   char str[256];
+   char str[256], pwd[256];
    SSL_METHOD *meth;
    SSL_CTX *ctx;
 
@@ -27880,6 +27880,10 @@ SSL_CTX *init_ssl(void)
 
    meth = SSLv23_method();
    ctx = SSL_CTX_new(meth);
+
+   if (getcfg("global", "SSL Passphrase", pwd, sizeof(pwd))) {
+      SSL_CTX_set_default_passwd_cb_userdata(ctx, pwd);
+   }
 
    strlcpy(str, resource_dir, sizeof(str));
    strlcat(str, "ssl/server.crt", sizeof(str));
@@ -27896,6 +27900,7 @@ SSL_CTX *init_ssl(void)
       eprintf("Key file \"%s\" not found, aborting\n", str);
       return NULL;
    }
+
    if (SSL_CTX_use_PrivateKey_file(ctx, str, SSL_FILETYPE_PEM) == 0)
       return NULL;
    if (SSL_CTX_check_private_key(ctx) < 0)
