@@ -25,7 +25,7 @@ RCDIR      = $(ROOT)/etc/rc.d/init.d
 USE_SSL    = 1
 
 # flag for crypt() support
-USE_CRYPT  = 0
+USE_CRYPT  = 1
 
 #############################################################
 
@@ -97,17 +97,20 @@ all: $(EXECS)
 regex.o: src/regex.c src/regex.h
 	$(CC) $(CFLAGS) -w -c -o regex.o src/regex.c
 
+crypt.o: src/crypt.c
+	$(CC) $(CFLAGS) -w -c -o crypt.o src/crypt.c
+
 mxml.o: $(MXMLDIR)/mxml.c $(MXMLDIR)/mxml.h
 	$(CC) $(CFLAGS) -c -o mxml.o $(MXMLDIR)/mxml.c
 
 strlcpy.o: $(MXMLDIR)/strlcpy.c $(MXMLDIR)/strlcpy.h
 	$(CC) $(CFLAGS) -c -o strlcpy.o $(MXMLDIR)/strlcpy.c
 
-elogd: src/elogd.c regex.o mxml.o strlcpy.o
-	$(CC) $(CFLAGS) -I$(MXMLDIR) -o elogd src/elogd.c regex.o mxml.o strlcpy.o $(LIBS)
+elogd: src/elogd.c regex.o crypt.o mxml.o strlcpy.o
+	$(CC) $(CFLAGS) -I$(MXMLDIR) -o elogd src/elogd.c crypt.o regex.o mxml.o strlcpy.o $(LIBS)
 
 debug: src/elogd.c regex.o mxml.o strlcpy.o
-	$(CC) -g -I$(MXMLDIR) -o elogd src/elogd.c regex.o mxml.o strlcpy.o $(LIBS)
+	$(CC) -g -I$(MXMLDIR) -o elogd src/elogd.c crypt.o regex.o mxml.o strlcpy.o $(LIBS)
 
 %: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
