@@ -83,10 +83,6 @@ static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
 #define PIDFILE "/var/run/elogd.pid"
 #endif
 
-#ifndef __USE_XOPEN
-#define __USE_XOPEN             /* needed for crypt() */
-#endif
-
 typedef int BOOL;
 
 #include <netdb.h>
@@ -1601,10 +1597,12 @@ void base64_bufenc(unsigned char *s, int len, char *d)
       *(--d) = '=';
 }
 
+char *sha256_crypt (const char *key, const char *salt);
+
 void do_crypt(char *s, char *d, int size)
 {
 #ifdef HAVE_CRYPT
-   strlcpy(d, crypt(s, "el"), size);
+   strlcpy(d, sha256_crypt(s, "$5$el"), size);
 #else
    base64_encode((unsigned char *) s, (unsigned char *) d, size);
 #endif
