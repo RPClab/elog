@@ -8631,8 +8631,10 @@ void show_change_pwd_page(LOGBOOK * lbs)
       do_crypt(getparam("newpwd2"), new_pwd2, sizeof(new_pwd2));
 
    strlcpy(user, isparam("unm") ? getparam("unm") : "", sizeof(user));
-   if (isparam("config"))
-      strlcpy(user, getparam("config"), sizeof(user));
+   if (isparam("config")) {
+      strlcpy(str, getparam("config"), sizeof(str));
+      strencode2(user, str, sizeof(user));
+   }
 
    wrong_pwd = FALSE;
 
@@ -23233,7 +23235,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    int size, i, j, k, n, n_log, status, fh, length, message_error, index, n_hidden, message_id,
        orig_message_id, format_flags[MAX_N_ATTR], att_hide[MAX_ATTACHMENTS], att_inline[MAX_ATTACHMENTS],
        n_attachments, n_lines, n_disp_attr, attr_index[MAX_N_ATTR], thumb_status, max_n_lines;
-   char str[2 * NAME_LENGTH], ref[256], file_enc[256], attrib[MAX_N_ATTR][NAME_LENGTH];
+   char str[2 * NAME_LENGTH], str2[NAME_LENGTH], ref[256], file_enc[256], attrib[MAX_N_ATTR][NAME_LENGTH];
    char date[80], text[TEXT_SIZE], menu_str[1000], cmd[256], script[256], orig_tag[80],
        reply_tag[MAX_REPLY_TO * 10], display[NAME_LENGTH], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
        encoding[80], locked_by[256], att[256], lattr[256], mid[80], menu_item[MAX_N_LIST][NAME_LENGTH],
@@ -23372,7 +23374,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    /*---- check for valid URL ---------------------------------------*/
 
    if (dec_path[0] && atoi(dec_path) == 0) {
-      sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), dec_path);
+      strencode2(str2, dec_path, sizeof(str2));
+      sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), str2);
       show_error(str);
       return;
    }
@@ -25501,7 +25504,7 @@ void show_calendar(LOGBOOK * lbs)
       cur_year = ts->tm_year + 1900;
    }
    if (isparam("i"))
-      strcpy(index, getparam("i"));
+      strencode2(index, getparam("i"), sizeof(index));
    else
       strcpy(index, "1");
 
@@ -25548,6 +25551,11 @@ void show_calendar(LOGBOOK * lbs)
    /* go to first day of month */
    ts->tm_mday = 1;
    stime = mktime(ts);
+   if (stime < 0) {
+      rsprintf("<tr><td>Invalid date</td></tr>");
+      rsprintf("</table>\n</form></body></html>\n");
+      return;
+   }
 
    /* go to last sunday */
    stime = stime - 3600 * 24 * ts->tm_wday;
@@ -26035,7 +26043,8 @@ void interprete(char *lbook, char *path)
 
    /* check for valid logbook */
    if (!logbook[0]) {
-      sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), path);
+      strencode2(str2, path, sizeof(str2));
+      sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), str2);
       show_error(str);
       return;
    }
@@ -26467,7 +26476,8 @@ void interprete(char *lbook, char *path)
 
    if (strieq(command, loc("Search"))) {
       if (dec_path[0] && atoi(dec_path) == 0 && strchr(dec_path, '/') != NULL) {
-         sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), dec_path);
+         strencode2(str2, dec_path, sizeof(str2));
+         sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), str2);
          show_error(str);
          return;
       }
