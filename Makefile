@@ -24,9 +24,6 @@ RCDIR      = $(ROOT)/etc/rc.d/init.d
 # flag for SSL support
 USE_SSL    = 1
 
-# flag for crypt() support
-USE_CRYPT  = 1
-
 #############################################################
 
 # Default compilation flags unless stated otherwise.
@@ -77,13 +74,6 @@ ifdef USE_SSL
 ifneq ($(USE_SSL),0)
 CFLAGS += -DHAVE_SSL
 LIBS += -lssl
-endif
-endif
-
-ifdef USE_CRYPT
-ifneq ($(USE_CRYPT),0)
-CFLAGS += -DHAVE_CRYPT
-LIBS += -lcrypt
 endif
 endif
 
@@ -180,5 +170,5 @@ install: $(EXECS)
 restart:
 	$(RCDIR)/elogd restart
 clean:
-	-$(RM) *~ $(EXECS) regex.o mxml.o strlcpy.o locext
+	-$(RM) *~ $(EXECS) regex.o crypt.o mxml.o strlcpy.o locext
 
