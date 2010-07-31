@@ -1601,11 +1601,7 @@ char *sha256_crypt (const char *key, const char *salt);
 
 void do_crypt(char *s, char *d, int size)
 {
-#ifdef HAVE_CRYPT
-   strlcpy(d, sha256_crypt(s, "$5$el"), size);
-#else
-   base64_encode((unsigned char *) s, (unsigned char *) d, size);
-#endif
+   strlcpy(d, sha256_crypt(s, "$5$")+4, size);
 }
 
 /*------------------------------------------------------------------*
@@ -8616,7 +8612,7 @@ BOOL change_pwd(LOGBOOK * lbs, char *user, char *pwd)
 
 void show_change_pwd_page(LOGBOOK * lbs)
 {
-   char str[256], config[80], old_pwd[32], new_pwd[32], new_pwd2[32], act_pwd[32], user[80];
+   char str[256], config[256], old_pwd[256], new_pwd[256], new_pwd2[256], act_pwd[256], user[256];
    int wrong_pwd;
 
    old_pwd[0] = new_pwd[0] = new_pwd2[0] = 0;
@@ -24444,6 +24440,54 @@ BOOL convert_password_file(char *file_name)
 
 /*------------------------------------------------------------------*/
 
+BOOL convert_password_encoding(LOGBOOK * lbs)
+{
+   PMXML_NODE node, pwd;
+   int i;
+   char str[256], oldpwd[256], file_name[256];
+
+   if (lbs->pwd_xml_tree == NULL)
+      return FALSE;
+
+   if ((node = mxml_find_node(lbs->pwd_xml_tree, "/list/user[1]/password")) == NULL)
+      return FALSE;
+
+   str[0] = 0;
+   if (mxml_get_attribute(node, "encoding") != NULL)
+      strlcpy(str, mxml_get_attribute(node, "encoding"), sizeof(str));
+
+   if (!strieq(str, "SHA256")) {
+      if ((node = mxml_find_node(lbs->pwd_xml_tree, "/list")) == NULL)
+         return FALSE;
+
+      printf("Converting password file for logbook \"%s\" to new encoding ... ", lbs->name);
+
+      for (i=0 ; i<mxml_get_number_of_children(node) ; i++) {
+         sprintf(str, "/list/user[%d]/password", i+1);
+         pwd = mxml_find_node(lbs->pwd_xml_tree, str);
+         if (pwd) {
+            strlcpy(str, mxml_get_value(pwd), sizeof(str));
+            
+            /* assume base64 encoding, might be wrong if HAVE_CRYPT was used */
+            base64_decode(str, oldpwd);
+            do_crypt(oldpwd, str, sizeof(str));
+
+            mxml_replace_node_value(pwd, str);
+            mxml_add_attribute(pwd, "encoding", "SHA256");
+         }
+      }
+
+      if (get_password_file(lbs, file_name, sizeof(file_name)))
+         mxml_write_tree(file_name, lbs->pwd_xml_tree);
+
+      printf("ok\n");
+   }
+
+   return TRUE;
+}
+
+/*------------------------------------------------------------------*/
+
 PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size)
 {
    PMXML_NODE root, list, xml_tree;
@@ -24534,6 +24578,9 @@ int load_password_files()
                   lb_list[j].pwd_xml_tree = xml_tree;
                }
             }
+
+            /* convert old password encoding into new format */
+            convert_password_encoding(&lb_list[i]);
          }
       }
    }
