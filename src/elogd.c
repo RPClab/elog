@@ -29249,27 +29249,27 @@ int main(int argc, char *argv[])
             if (i + 1 >= argc || argv[i + 1][0] == '-')
                clone_url[0] = 1;
             else
-               strcpy(clone_url, argv[++i]);
+               strlcpy(clone_url, argv[++i], sizeof(clone_url));
          } else if (i + 1 >= argc || argv[i + 1][0] == '-')
             goto usage;
          else if (argv[i][1] == 'p')
             tcp_port_cl = atoi(argv[++i]);
          else if (argv[i][1] == 'c')
-            strcpy(config_file, argv[++i]);
+            strlcpy(config_file, argv[++i], sizeof(config_file));
          else if (argv[i][1] == 's')
-            strcpy(resource_dir, argv[++i]);
+            strlcpy(resource_dir, argv[++i], sizeof(resource_dir));
          else if (argv[i][1] == 'd')
-            strcpy(logbook_dir, argv[++i]);
+            strlcpy(logbook_dir, argv[++i], sizeof(logbook_dir));
          else if (argv[i][1] == 'r')
-            strcpy(read_pwd, argv[++i]);
+            strlcpy(read_pwd, argv[++i], sizeof(read_pwd));
          else if (argv[i][1] == 'w')
-            strcpy(write_pwd, argv[++i]);
+            strlcpy(write_pwd, argv[++i], sizeof(write_pwd));
          else if (argv[i][1] == 'a')
-            strcpy(admin_pwd, argv[++i]);
+            strlcpy(admin_pwd, argv[++i], sizeof(admin_pwd));
          else if (argv[i][1] == 't')
-            strcpy(smtp_pwd, argv[++i]);
+            strlcpy(smtp_pwd, argv[++i], sizeof(smtp_pwd));
          else if (argv[i][1] == 'l')
-            strcpy(logbook, argv[++i]);
+            strlcpy(logbook, argv[++i], sizeof(logbook));
          else if (argv[i][1] == 'n')
             strlcpy(listen_interface, argv[++i], sizeof(listen_interface));
 #ifdef OS_UNIX
