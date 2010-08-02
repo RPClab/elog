@@ -24465,7 +24465,8 @@ BOOL convert_password_encoding(LOGBOOK * lbs)
       for (i = 0; i < mxml_get_number_of_children(node); i++) {
          sprintf(str, "/list/user[%d]/password", i + 1);
          pwd = mxml_find_node(lbs->pwd_xml_tree, str);
-         if (pwd) {
+
+         if (pwd && mxml_get_value(pwd)) {
             strlcpy(str, mxml_get_value(pwd), sizeof(str));
 
             /* assume base64 encoding, might be wrong if HAVE_CRYPT was used */
@@ -24578,6 +24579,9 @@ int load_password_files()
                   lb_list[j].pwd_xml_tree = xml_tree;
                }
             }
+
+            if (lb_list[i].top_group[0])
+               setcfg_topgroup(lb_list[i].top_group);
 
             /* convert old password encoding into new format */
             convert_password_encoding(&lb_list[i]);
