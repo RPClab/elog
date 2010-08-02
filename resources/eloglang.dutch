@@ -471,3 +471,5 @@ Only user <b>%s</b> can delete this entry = Alleen gebruiker <b>%s</b> kan dit b
 #---- please translate following items and then remove this comment ----#
 #
 File system full, ELOG cannot continue to work = 
+3 Days = 
+Last 3 Days = 

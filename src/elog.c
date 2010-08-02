@@ -9,7 +9,7 @@
 
 \********************************************************************/
 
-#define VERSION "2.7.8"
+#define VERSION "2.8.0"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -91,7 +91,7 @@ void base64_encode(unsigned char *s, unsigned char *d, int size)
 
       d += 4;
       if (d - p >= size - 3)
-        return;
+         return;
    }
    *d = 0;
    while (pad--)
@@ -455,7 +455,7 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
          sprintf(request + strlen(request), "Cookie: ");
       first = 0;
 
-      do_crypt(upwd, encrypted_passwd, sizeof(encrypted_passwd) );
+      do_crypt(upwd, encrypted_passwd, sizeof(encrypted_passwd));
       sprintf(request + strlen(request), "upwd=%s;", encrypted_passwd);
    }
 
@@ -819,7 +819,8 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
    if (upwd[0]) {
       do_crypt(upwd, encrypted_passwd, sizeof(encrypted_passwd));
       sprintf(content + strlen(content),
-              "%s\r\nContent-Disposition: form-data; name=\"upwd\"\r\n\r\n%s\r\n", boundary, encrypted_passwd);
+              "%s\r\nContent-Disposition: form-data; name=\"upwd\"\r\n\r\n%s\r\n", boundary,
+              encrypted_passwd);
    }
 
    if (experiment[0])
@@ -901,7 +902,7 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
    sprintf(request + strlen(request), "Content-Length: %d\r\n", content_length);
 
    if (passwd[0]) {
-      do_crypt(passwd, encrypted_passwd, sizeof(encrypted_passwd) );
+      do_crypt(passwd, encrypted_passwd, sizeof(encrypted_passwd));
       sprintf(request + strlen(request), "Cookie: wpwd=%s\r\n", encrypted_passwd);
    }
 

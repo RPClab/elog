@@ -9,7 +9,7 @@
  \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.7.8"
+#define VERSION "2.8.0"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -1597,11 +1597,11 @@ void base64_bufenc(unsigned char *s, int len, char *d)
       *(--d) = '=';
 }
 
-char *sha256_crypt (const char *key, const char *salt);
+char *sha256_crypt(const char *key, const char *salt);
 
 void do_crypt(char *s, char *d, int size)
 {
-   strlcpy(d, sha256_crypt(s, "$5$")+4, size);
+   strlcpy(d, sha256_crypt(s, "$5$") + 4, size);
 }
 
 /*------------------------------------------------------------------*
@@ -6030,7 +6030,7 @@ char
 void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 {
    int i, j, k, l, m, elcode_disabled, elcode_disabled1, escape_char, ordered_list, substituted, inside_table,
-      smileys_enabled;
+       smileys_enabled;
    char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[1000], hattrib[1000], value[1000],
        subst[1000], base_url[256], param[256], *lstr, domain[256];
 
@@ -6190,7 +6190,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
             }
 
             /* check for blank before smiley and if smileys are allowed */
-            if (l <= 20 && 
+            if (l <= 20 &&
                 ((str[i - 1] != ' ' && str[i - 1] != '\r' && str[i - 1] != '\n') ||
                  (smileys_enabled == FALSE))) {
                strncpy(return_buffer + j, str + i, strlen(pattern_list[l].pattern));
@@ -9134,7 +9134,7 @@ void compare_attributes(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][N
       memcpy(attrib, attr, sizeof(attr));
    else {
       for (i = 0; i < lbs->n_attr; i++)
-         if (!strieq(attrib[i], attr+i*NAME_LENGTH))
+         if (!strieq(attrib[i], attr + i * NAME_LENGTH))
             sprintf(attrib[i], "- %s -", loc("keep original values"));
    }
    (*n)++;
@@ -9146,9 +9146,9 @@ void compare_attributes(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][N
       // go through all replies in threaded mode
       n_reply = strbreak(reply_to, (char (*)[NAME_LENGTH]) list, MAX_N_ATTR, ",", FALSE);
       for (i = 0; i < n_reply; i++) {
-         compare_attributes(lbs, atoi(list+i*NAME_LENGTH), attrib, n);
+         compare_attributes(lbs, atoi(list + i * NAME_LENGTH), attrib, n);
 
-      xfree(list);
+         xfree(list);
       }
    }
 
@@ -16773,8 +16773,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                   int *n_display, char *locked_by, int highlight, regex_t * re_buf, int highlight_mid,
                   int absolute_link)
 {
-   char str[NAME_LENGTH], ref[256], *nowrap, rowstyle[80], tdstyle[80], format[256], file_name[MAX_PATH_LENGTH], *slist,
-       *svalue, comment[256], param[80];
+   char str[NAME_LENGTH], ref[256], *nowrap, rowstyle[80], tdstyle[80], format[256],
+       file_name[MAX_PATH_LENGTH], *slist, *svalue, comment[256], param[80];
    char display[NAME_LENGTH], attr_icon[80];
    int i, j, n, i_line, index, colspan, n_attachments, line_len, thumb_status, max_line_len, n_lines,
        max_n_lines;
@@ -17060,7 +17060,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
 
          for (i = 0; i < n_attr; i++)
             if (strieq(disp_attr[index], attr_list[i])) {
-               
+
                /* check attributes for cell style */
                strlcpy(tdstyle, rowstyle, sizeof(tdstyle));
                sprintf(str, "Cell Style %s %s", attr_list[i], attrib[i]);
@@ -17068,7 +17068,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                   sprintf(str, "%s\" style=\"%s\"", rowstyle, display);
                   strlcpy(tdstyle, str, sizeof(rowstyle));
                }
-               
+
                if (strieq(mode, "Threaded")) {
                   if (strieq(attr_options[i][0], "boolean")) {
                      if (atoi(attrib[i]) == 1) {
@@ -18277,7 +18277,8 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
                   rsprintf("<option %s value=\"_all_\">%s\n", i == 0 ? "selected" : "", str);
 
                   rsprintf("<option %s value=1>%s %s\n", i == 1 ? "selected" : "", loc("Next"), loc("Day"));
-                  rsprintf("<option %s value=3>%s %s\n", i == 3 ? "selected" : "", loc("Next"), loc("3 Days"));
+                  rsprintf("<option %s value=3>%s %s\n", i == 3 ? "selected" : "", loc("Next"),
+                           loc("3 Days"));
                   rsprintf("<option %s value=7>%s %s\n", i == 7 ? "selected" : "", loc("Next"), loc("Week"));
                   rsprintf("<option %s value=31>%s %s\n", i == 31 ? "selected" : "", loc("Next"),
                            loc("Month"));
@@ -19061,8 +19062,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
        sort_attr[MAX_N_ATTR + 4][NAME_LENGTH], mode_cookie[80], charset[25], sort_item[NAME_LENGTH];
    char *p, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
    BOOL show_attachments, threaded, csv, xml, raw, mode_commands, expand, filtering, date_filtering,
-      disp_filter, show_text, text_in_attr, searched, found, disp_attr_link[MAX_N_ATTR + 4], 
-      sort_attributes, show_att_column;
+       disp_filter, show_text, text_in_attr, searched, found, disp_attr_link[MAX_N_ATTR + 4],
+       sort_attributes, show_att_column;
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2, entry_ltime;
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
@@ -19777,7 +19778,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             } else if (strieq(sort_attr[i], loc("Date"))) {
                strlcat(msg_list[index].string, " ", sizeof(msg_list[index].string));
                entry_ltime = date_to_ltime(date);
-               sprintf(str, "%08d", (int)entry_ltime);
+               sprintf(str, "%08d", (int) entry_ltime);
                strlcat(msg_list[index].string, str, sizeof(msg_list[index].string));
             }
          }
@@ -20793,9 +20794,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                      level = 1;
                }
             }
-         } else
-            if (in_reply_to[0])
-               level = 1;
+         } else if (in_reply_to[0])
+            level = 1;
 
          display_line(msg_list[index].lbs, message_id, index, mode, expand, level, printable, n_line,
                       show_attachments, show_att_column, date, in_reply_to, reply_to, n_attr_disp, disp_attr,
@@ -24462,12 +24462,12 @@ BOOL convert_password_encoding(LOGBOOK * lbs)
 
       printf("Converting password file for logbook \"%s\" to new encoding ... ", lbs->name);
 
-      for (i=0 ; i<mxml_get_number_of_children(node) ; i++) {
-         sprintf(str, "/list/user[%d]/password", i+1);
+      for (i = 0; i < mxml_get_number_of_children(node); i++) {
+         sprintf(str, "/list/user[%d]/password", i + 1);
          pwd = mxml_find_node(lbs->pwd_xml_tree, str);
          if (pwd) {
             strlcpy(str, mxml_get_value(pwd), sizeof(str));
-            
+
             /* assume base64 encoding, might be wrong if HAVE_CRYPT was used */
             base64_decode(str, oldpwd);
             do_crypt(oldpwd, str, sizeof(str));

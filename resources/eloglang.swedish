@@ -467,3 +467,9 @@ Invalid URL = Ogiltig URL
 Attribute "%s" is not allowed in config file = Attributet "%s" är inte tillåtet i konfigurationsfilen
 Only user <b>%s</b> can delete this entry = Endast användare <b>%s</b> kan radera denna post
 File system full, ELOG cannot continue to work = Filsystemet fullt, ELOG kan inte fortsätta arbeta
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+3 Days = 
+Last 3 Days = 

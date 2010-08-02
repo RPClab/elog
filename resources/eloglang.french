@@ -465,3 +465,9 @@ Invalid URL = URL invalide
 Attribute "%s" is not allowed in config file = L'attribut  "%s" n'est pas autorisé dans le fichier de configuration
 Only user <b>%s</b> can delete this entry = Seul l'utilisateur <b>%s</b> peut supprimer cette entrée
 File system full, ELOG cannot continue to work = Le système de fichiers est plein, ELOG ne peut plus fonctionner
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+3 Days = 
+Last 3 Days = 

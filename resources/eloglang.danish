@@ -468,3 +468,9 @@ Attribute "%s" is not allowed in config file = Attributten ''%s'' er ikke tillad
 Only user <b>%s</b> can delete this entry = Kun bruger <b>%s</b> kan slette dette indlæg
 File system full, ELOG cannot continue to work = Filsystemet er løbet fuld, ELOG kan ikke fortsætte
  
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+3 Days = 
+Last 3 Days = 

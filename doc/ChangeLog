@@ -1,3 +1,24 @@
+Version 2.8.0, released August 2nd 2010
+=======================================
+
+- Truncate command line arguments if they exceed internal string lengths
+- Changed encryption method to strong encryption, thanks to Lukasz Olejnik
+- Implemented SLL passphrase, although this should be deprecated
+- Fixed three XSS holes, thanks to Lukasz Olejnik
+- Limit text body size for RSS feed to 2k to avoid lock-up for very long entries
+- Fixed JS bug with "Fix text"
+- Implemented 'Enable Smileys'
+- Fixed problem with cloning and "Guest menu commands = .." being present in the config file
+- Added option "Cell Style <atrib> <value>"
+- Fixed bug with URL in expanding groups using top groups
+- Fixed stack overflow of Select -> Edit with many replies
+- Increased socket timeout, show content length error correctly
+- Fixed bug with quick date filter and threaded display
+- Fixed problem with "'" in french translation for JavaScript
+- Added 'last 3 days' option from David Pilgram
+- Do no thread evaluation when doing filtering
+- Fixed usage of undefine 'date' under 'subst on reply...'
+
 Version 2.7.8, released December 2nd 2009
 =========================================
 
