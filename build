@@ -56,6 +56,7 @@ if ( ! $?noupdate ) then
 endif
 
 # copy files to archive
+unalias cp
 cp -p src/*.c $dir/src
 cp -p src/*.h $dir/src
 cp -p ../mxml/*.c $dir/../mxml
@@ -94,7 +95,7 @@ cp /tmp/$archive ~ritt/html/elog/download/tar/elog-latest.tar.gz
 cp /tmp/$archive /usr/src/redhat/SOURCES/elog-$version.tar.gz
 cd ~ritt/elog
 cp -f doc/ChangeLog ~ritt/html/elog/download/ChangeLog
-rm /tmp/$archive
+rm -f /tmp/$archive
 
 # building RPMs
 rm -f /usr/src/redhat/RPMS/i386/*
