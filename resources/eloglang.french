@@ -1,6 +1,6 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.7.8+)
+# (for 2.8.0+)
 # A more recent version may be available at :
 # http://savannah.psi.ch/viewcvs/trunk/resources/eloglang.french?root=elog
 #
@@ -469,5 +469,5 @@ File system full, ELOG cannot continue to work = Le système de fichiers est plei
 #
 #---- please translate following items and then remove this comment ----#
 #
-3 Days = 
-Last 3 Days = 
+3 Days = 3 jours
+Last 3 Days = Les 3 derniers jours
