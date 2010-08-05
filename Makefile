@@ -99,6 +99,9 @@ strlcpy.o: $(MXMLDIR)/strlcpy.c $(MXMLDIR)/strlcpy.h
 elogd: src/elogd.c regex.o crypt.o mxml.o strlcpy.o
 	$(CC) $(CFLAGS) -I$(MXMLDIR) -o elogd src/elogd.c crypt.o regex.o mxml.o strlcpy.o $(LIBS)
 
+elog: src/elog.c crypt.o
+	$(CC) $(CFLAGS) -I$(MXMLDIR) -o elog src/elog.c crypt.o $(LIBS)
+
 debug: src/elogd.c regex.o mxml.o strlcpy.o
 	$(CC) -g -I$(MXMLDIR) -o elogd src/elogd.c crypt.o regex.o mxml.o strlcpy.o $(LIBS)
 
