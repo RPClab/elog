@@ -5,7 +5,8 @@ On PC6562:
 
 - Put all new options in doc/config.html
 - Increse version in elogd.c and elog.c
-- Do the same in doc/index.html and index_d.html
+- Do the same in doc/index.html and index_nd.html
+- copy index_nd.html to index.html on web server
 - Modify ChangeLog
 - Add release date to ChangeLog
 - Do a "make indent"
@@ -13,6 +14,7 @@ On PC6562:
 - Translate new strings in eloglang.german
 - c:\elog> svn ci -m "Release x.x.x-y"
 - open VS 2008 command window, build xxx-1 in c:\elog
+- copy index_nd.html to index.html on web server
 
 On midas.psi.ch:
 

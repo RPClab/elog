@@ -24,10 +24,6 @@ static const char ELOGID[] = "elog " VERSION " built " __DATE__ ", " __TIME__;
 #include <time.h>
 #include <ctype.h>
 
-#ifndef __USE_XOPEN
-#define __USE_XOPEN             /* needed for crypt() */
-#endif
-
 #ifdef _MSC_VER
 #include <windows.h>
 #include <io.h>
@@ -190,13 +186,11 @@ size_t strlcat(char *dst, const char *src, size_t size)
 #endif                          // STRLCPY_DEFINED
 
 
+char *sha256_crypt(const char *key, const char *salt);
+
 void do_crypt(char *s, char *d, int size)
 {
-#ifdef HAVE_CRYPT
-   strlcpy(d, crypt(s, "el"), size);
-#else
-   base64_encode((unsigned char *) s, (unsigned char *) d, size);
-#endif
+   strlcpy(d, sha256_crypt(s, "$5$") + 4, size);
 }
 
 /*-------------------------------------------------------------------*/
