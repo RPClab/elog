@@ -1108,11 +1108,11 @@ int main(int argc, char *argv[])
                printf("                              Location where elogd is running\n");
                printf("     -l logbook/experiment    Name of logbook or experiment\n");
                printf("     -s                       Use SSL for communication\n");
-               printf("     [-v]                     for verbose output\n");
-               printf("     [-w password]            write password defined on server\n");
-               printf("     [-u username password]   user name and password\n");
-               printf("     [-f <attachment>]        (up to %d times)\n", MAX_ATTACHMENTS);
-               printf("     -a <attribute>=<value>   (up to %d times)\n", MAX_N_ATTR);
+               printf("     [-v]                     For verbose output\n");
+               printf("     [-w password]            Write password defined on server\n");
+               printf("     [-u username password]   Wser name and password\n");
+               printf("     [-f <attachment>]        (up to %d attachments)\n", MAX_ATTACHMENTS);
+               printf("     -a <attribute>=<value>   (up to %d attributes)\n", MAX_N_ATTR);
                printf("     [-r <id>]                Reply to existing message\n");
                printf("     [-q]                     Quote original text on reply\n");
                printf("     [-e <id>]                Edit existing message\n");
@@ -1134,7 +1134,7 @@ int main(int argc, char *argv[])
 
 #ifndef HAVE_SSL
    if (ssl) {
-      printf("SLL support not compiled into elogd\n");
+      printf("SLL support not compiled into this program\n");
       return 1;
    }
 #endif
