@@ -12,12 +12,10 @@
 #define MIN(x,y) ((x)<(y)?(x):(y))
 #define __alignof__(x) sizeof(x)
 #define alloca(x) malloc(x)
-#define mempcpy(d, s, n) ((char *)memcpy(d,s,n)+n)
 #define ERANGE 34
 
 typedef unsigned int uint32_t;
 #else
-#include <endian.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdint.h>
@@ -418,8 +416,10 @@ static char *sha256_crypt_r(const char *key, const char *salt, char *buffer, int
 
    /* Create byte sequence P.  */
    cp = p_bytes = alloca(key_len);
-   for (cnt = key_len; cnt >= 32; cnt -= 32)
-      cp = mempcpy(cp, temp_result, 32);
+   for (cnt = key_len; cnt >= 32; cnt -= 32) {
+      memcpy(cp, temp_result, 32);
+      cp += 32;
+   } 
    memcpy(cp, temp_result, cnt);
 
    /* Start computation of S byte sequence.  */
@@ -434,8 +434,10 @@ static char *sha256_crypt_r(const char *key, const char *salt, char *buffer, int
 
    /* Create byte sequence S.  */
    cp = s_bytes = alloca(salt_len);
-   for (cnt = salt_len; cnt >= 32; cnt -= 32)
-      cp = mempcpy(cp, temp_result, 32);
+   for (cnt = salt_len; cnt >= 32; cnt -= 32) {
+      memcpy(cp, temp_result, 32);
+      cp += 32;
+   }
    memcpy(cp, temp_result, cnt);
 
    /* Repeatedly run the collected hash value through SHA256 to burn
