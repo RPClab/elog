@@ -240,23 +240,29 @@ standalone "<I>client</I>" program <b><code>elog</code></b> can be used. The par
 are:
 <p>
 <ul><pre>
-elog -h hostname [-p port] [-l logbook]
-     [-w password]
-     [-u username password]
-     -a &lt;attribute1&gt;=&lt;value1&gt;
-     -a &lt;attribute2&gt;=&lt;value2&gt;
-     ...
-     -f attachment1
-     -f attachment2
-     ...
-     -m textfile | text
-</pre></ul>
-The password must match the write password defined on the server. If
-user level access is defined on the server (via the "<I>password file </I>=" option),
-a valid user name / password pair must be specified with the <b><code>-u</code></b> option.
-<br><br>
-Multiple attributes can be specified as well as several attachments. If
-attributes with multiple possible values are defined in a logbook (via the
+elog -h &lt;hostname&gt; [-p port] [-d subdir]
+                              Location where elogd is running
+     -l logbook               Name of logbook
+     -s                       Use SSL for communication
+     [-v]                     For verbose output
+     [-w password]            Write password defined on server
+     [-u username password]   User name and password
+     [-f &lt;attachment&gt;]        Up to 50 attachments
+     -a &lt;attribute>=&lt;value&gt;   Up to 50 attributes
+     [-r &lt;id>]                Reply to existing message
+     [-q]                     Quote original text on reply
+     [-e &lt;id>]                Edit existing message
+     [-x]                     Suppress email notification
+     [-n 0|1|2]               Encoding: 0:ELcode,1:plain,2:HTML
+     -m &lt;textfile&gt;] | &lt;text&gt;
+</pre><ul>     
+Arguments with blanks must be enclosed in quotes. The elog message can either 
+be submitted on the command line, piped in like 
+
+<pre>"cat text | elog -h ... -l ... -a ..."</pre> 
+
+or in a file with the -m flag. Multiple attributes and attachments can be 
+supplied. If attributes with multiple possible values are defined in a logbook (via the
 <i>"MOptions"</i> keyword), they can be separated with a "|",
 like <code><b>-a "&lt;attribute&gt;=&lt;value1&gt; | &lt;value2&gt;"</b></code>.
 The message text can be supplied directly at the command line or submitted
