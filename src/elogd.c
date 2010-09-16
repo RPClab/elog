@@ -9194,8 +9194,21 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    date[0] = 0;
    locked_by[0] = 0;
 
-   /* check for custom form */
-   if (getcfg(lbs->name, "Custom form", str, sizeof(str))) {
+   /* check for custom form for new entries */
+   if (!bedit && getcfg(lbs->name, "Custom new form", str, sizeof(str))) {
+            /* check if file starts with an absolute directory */
+      if (str[0] == DIR_SEPARATOR || str[1] == ':')
+         strcpy(file_name, str);
+      else {
+         strlcpy(file_name, logbook_dir, sizeof(file_name));
+         strlcat(file_name, str, sizeof(file_name));
+      }
+      send_file_direct(str);
+      return;
+   }
+
+   /* check for custom form for editing an entry */
+   if (bedit && getcfg(lbs->name, "Custom edit form", str, sizeof(str))) {
             /* check if file starts with an absolute directory */
       if (str[0] == DIR_SEPARATOR || str[1] == ':')
          strcpy(file_name, str);
@@ -23262,6 +23275,19 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    message_error = EL_SUCCESS;
    _current_message_id = message_id;
    email = strieq(command, "email") || strieq(command, "oldemail");
+
+   /* check for custom form to display entry */
+   if (getcfg(lbs->name, "Custom display form", str, sizeof(str))) {
+            /* check if file starts with an absolute directory */
+      if (str[0] == DIR_SEPARATOR || str[1] == ':')
+         strcpy(file_name, str);
+      else {
+         strlcpy(file_name, logbook_dir, sizeof(file_name));
+         strlcat(file_name, str, sizeof(file_name));
+      }
+      send_file_direct(str);
+      return;
+   }
 
    /* check for guest access */
    if (!getcfg(lbs->name, "Guest Menu commands", menu_str, sizeof(menu_str)) || isparam("unm") != 0)
