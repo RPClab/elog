@@ -8083,7 +8083,7 @@ void show_query(LOGBOOK * lbs, char *title, char *query_string, char *button1, c
 
 /*------------------------------------------------------------------*/
 
-void set_login_cookies(LOGBOOK * lbs, char *user, char *enc_pwd)
+void set_login_cookies(LOGBOOK * lbs, char *user, char *full_user, char *enc_pwd)
 {
    char str[256], lb_name[256], exp[80];
    BOOL global;
@@ -8112,8 +8112,9 @@ void set_login_cookies(LOGBOOK * lbs, char *user, char *enc_pwd)
    /* check if cookies should be global */
    global = getcfg("global", "Password file", str, sizeof(str));
 
-   /* two cookies for password and user name */
+   /* three cookies for password, short and full user name */
    set_cookie(lbs, "unm", user, global, exp);
+   set_cookie(lbs, "ufnm", full_user, global, exp);
    set_cookie(lbs, "upwd", enc_pwd, global, exp);
 
    if (global &&user[0] == 0 && enc_pwd[0] == 0) {
@@ -8612,7 +8613,7 @@ BOOL change_pwd(LOGBOOK * lbs, char *user, char *pwd)
 
 void show_change_pwd_page(LOGBOOK * lbs)
 {
-   char str[256], config[256], old_pwd[256], new_pwd[256], new_pwd2[256], act_pwd[256], user[256];
+   char str[256], config[256], old_pwd[256], new_pwd[256], new_pwd2[256], act_pwd[256], user[256], full_user[256];
    int wrong_pwd;
 
    old_pwd[0] = new_pwd[0] = new_pwd2[0] = 0;
@@ -8633,7 +8634,7 @@ void show_change_pwd_page(LOGBOOK * lbs)
    wrong_pwd = FALSE;
 
    if (old_pwd[0] || new_pwd[0]) {
-      if (user[0] && get_user_line(lbs, user, act_pwd, NULL, NULL, NULL, NULL)) {
+      if (user[0] && get_user_line(lbs, user, act_pwd, full_user, NULL, NULL, NULL)) {
 
          /* administrator does not have to supply old password if changing other user's password */
          if (isparam("unm") && is_admin_user(lbs->name, getparam("unm"))
@@ -8654,7 +8655,7 @@ void show_change_pwd_page(LOGBOOK * lbs)
             change_pwd(lbs, user, new_pwd);
 
          if (!wrong_pwd && isparam("unm") && strcmp(user, getparam("unm")) == 0) {
-            set_login_cookies(lbs, user, new_pwd);
+            set_login_cookies(lbs, user, full_user, new_pwd);
             return;
          }
 
@@ -9192,6 +9193,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    encoding[0] = 0;
    date[0] = 0;
    locked_by[0] = 0;
+
+   /* check for custom form */
+   if (getcfg(lbs->name, "Custom form", str, sizeof(str))) {
+      send_file_direct(str);
+      return;
+   }
 
    /* check for file attachment (mhttpd) */
    if (isparam("fa")) {
@@ -13014,7 +13021,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
    /* if user name changed, set cookie */
    if (isparam("new_user_name") && isparam("unm")) {
       if (strcmp(user_enc, getparam("new_user_name")) != 0 && strcmp(user_enc, getparam("unm")) == 0) {
-         set_login_cookies(lbs, getparam("new_user_name"), new_pwd);
+         set_login_cookies(lbs, getparam("new_user_name"), getparam("new_full_name"), new_pwd);
          return 0;
       }
    }
@@ -13022,7 +13029,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
    /* if new user, login as this user */
    if (new_user && !isparam("unm")) {
       if (isparam("new_user_name"))
-         set_login_cookies(lbs, getparam("new_user_name"), new_pwd);
+         set_login_cookies(lbs, getparam("new_user_name"), getparam("new_full_name"), new_pwd);
       return 0;
    }
 
@@ -24943,7 +24950,7 @@ BOOL check_user_password(LOGBOOK * lbs, char *user, char *password, char *redir)
       /* check for logout */
       if (isparam("LO")) {
          /* remove cookies */
-         set_login_cookies(lbs, "", "");
+         set_login_cookies(lbs, "", "", "");
          return FALSE;
       }
 
@@ -25788,8 +25795,8 @@ void interprete(char *lbook, char *path)
    int status, i, j, n, index, lb_index, message_id;
    char exp[80], list[1000], section[256], str[NAME_LENGTH], str1[NAME_LENGTH], str2[NAME_LENGTH],
        edit_id[80], enc_pwd[80], file_name[256], command[256], enc_path[256], dec_path[256], uname[80],
-       logbook[256], logbook_enc[256], *experiment, group[256], css[256], *pfile,
-       attachment[MAX_PATH_LENGTH], full_name[256], str3[NAME_LENGTH], thumb_name[256];
+       full_name[256], logbook[256], logbook_enc[256], *experiment, group[256], css[256], *pfile,
+       attachment[MAX_PATH_LENGTH], str3[NAME_LENGTH], thumb_name[256];
    BOOL global;
    LOGBOOK *lbs;
    FILE *f;
@@ -25922,7 +25929,11 @@ void interprete(char *lbook, char *path)
          sprintf(str, "LOGIN user \"%s\" (success)", uname);
          write_logfile(NULL, str);
          /* set cookies */
-         set_login_cookies(NULL, uname, enc_pwd);
+         if (isparam("full_name"))
+            strlcpy(full_name, getparam("full_name"), sizeof(full_name));
+         else
+            strlcpy(full_name, uname, sizeof(full_name));
+         set_login_cookies(NULL, uname, full_name, enc_pwd);
          return;
       }
 
@@ -26062,7 +26073,11 @@ void interprete(char *lbook, char *path)
       sprintf(str, "LOGIN user \"%s\" (success)", uname);
       write_logfile(lbs, str);
       /* set cookies */
-      set_login_cookies(lbs, uname, enc_pwd);
+      if (isparam("full_name"))
+         strlcpy(full_name, getparam("full_name"), sizeof(full_name));
+      else
+         strlcpy(full_name, uname, sizeof(full_name));
+      set_login_cookies(lbs, uname, full_name, enc_pwd);
       return;
    }
 
@@ -26678,7 +26693,7 @@ void interprete(char *lbook, char *path)
          /* log activity */
          write_logfile(lbs, "LOGOUT");
          /* set cookies */
-         set_login_cookies(lbs, "", "");
+         set_login_cookies(lbs, "", "", "");
       }
 
       /* continue configuration as administrator */
@@ -26753,7 +26768,7 @@ void interprete(char *lbook, char *path)
          sprintf(str, "../");
          setparam("redir", str);
       }
-      set_login_cookies(lbs, "", "");
+      set_login_cookies(lbs, "", "", "");
       return;
    }
 
