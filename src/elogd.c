@@ -9196,6 +9196,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    /* check for custom form */
    if (getcfg(lbs->name, "Custom form", str, sizeof(str))) {
+            /* check if file starts with an absolute directory */
+      if (str[0] == DIR_SEPARATOR || str[1] == ':')
+         strcpy(file_name, str);
+      else {
+         strlcpy(file_name, logbook_dir, sizeof(file_name));
+         strlcat(file_name, str, sizeof(file_name));
+      }
       send_file_direct(str);
       return;
    }
