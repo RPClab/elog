@@ -22667,7 +22667,7 @@ void submit_elog(LOGBOOK * lbs)
    }
 
    if (getcfg(lbs->name, "List after submit", str, sizeof(str)) && atoi(str) == 1)
-      sprintf(str, "");
+      str[0] = 0;
    else
       sprintf(str, "%d%s", message_id, mail_param);
    redirect(lbs, str);
