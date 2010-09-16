@@ -22666,7 +22666,10 @@ void submit_elog(LOGBOOK * lbs)
       return;
    }
 
-   sprintf(str, "%d%s", message_id, mail_param);
+   if (getcfg(lbs->name, "List after submit", str, sizeof(str)) && atoi(str) == 1)
+      sprintf(str, "");
+   else
+      sprintf(str, "%d%s", message_id, mail_param);
    redirect(lbs, str);
 }
 
@@ -23568,9 +23571,12 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             strlcpy(str, loc(menu_item[i]), sizeof(str));
             url_encode(str, sizeof(str));
 
-            if (strieq(menu_item[i], "list"))
-               rsprintf("&nbsp;<a href=\".?id=%d\">%s</a>&nbsp;\n", message_id, loc(menu_item[i]));
-            else
+            if (strieq(menu_item[i], "list")) {
+               if (getcfg(lbs->name, "Back to main", str, sizeof(str)) && atoi(str) == 1)
+                  rsprintf("&nbsp;<a href=\"../\">%s</a>&nbsp;\n", loc(menu_item[i]));
+               else
+                  rsprintf("&nbsp;<a href=\".?id=%d\">%s</a>&nbsp;\n", message_id, loc(menu_item[i]));
+            } else
                rsprintf("&nbsp;<a href=\"%d?cmd=%s\">%s</a>&nbsp;\n", message_id, str, loc(menu_item[i]));
 
             if (i < n - 1)
@@ -26216,6 +26222,12 @@ void interprete(char *lbook, char *path)
 
    /* check for "List" button */
    if (strieq(command, loc("List"))) {
+
+      if (getcfg(lbs->name, "Back to main", str, sizeof(str)) && atoi(str) == 1) {
+         redirect(lbs, "../");
+         return;
+      }
+
       show_elog_list(lbs, 0, 0, 0, TRUE, NULL);
       return;
    }
