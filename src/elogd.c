@@ -12704,7 +12704,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
        email_addr[256], mail_from[256], mail_from_name[256], subject[256], mail_text[2000], str2[256],
        admin_user[80], enc_pwd[80], url[256], error[2000];
    int i, self_register;
-   PMXML_NODE node, subnode;
+   PMXML_NODE node, subnode, npwd;
 
    /* do not allow HTML in user name */
    strencode2(user_enc, user, sizeof(user_enc));
@@ -12825,9 +12825,11 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user, BOOL activate)
          }
          if (activate) {
             if (isparam("encpwd"))
-               mxml_add_node(node, "password", getparam("encpwd"));
+               npwd = mxml_add_node(node, "password", getparam("encpwd"));
          } else
-            mxml_add_node(node, "password", new_pwd);
+            npwd = mxml_add_node(node, "password", new_pwd);
+         if (npwd)
+            mxml_add_attribute(npwd, "encoding", "SHA256");
 
          if (isparam("new_full_name")) {
             strencode2(str, getparam("new_full_name"), sizeof(str));
@@ -24385,7 +24387,7 @@ BOOL convert_password_file(char *file_name)
    char name[256], password[256], full_name[256], email[256], email_notify[256];
    int i, len, fh;
    char *buf, *p;
-   PMXML_NODE root, list, node;
+   PMXML_NODE root, list, node, npwd;
 
    printf("Converting password file \"%s\" to new XML format ... ", file_name);
 
@@ -24467,7 +24469,8 @@ BOOL convert_password_file(char *file_name)
 
          node = mxml_add_node(list, "user", NULL);
          mxml_add_node(node, "name", name);
-         mxml_add_node(node, "password", password);
+         npwd = mxml_add_node(node, "password", password);
+         mxml_add_attribute(npwd, "encoding", "SHA256");
          mxml_add_node(node, "full_name", full_name);
          mxml_add_node(node, "last_logout", "0");
          mxml_add_node(node, "last_activity", "0");
