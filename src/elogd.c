@@ -8180,10 +8180,11 @@ int exist_file(char *file_name)
 void send_file_direct(char *file_name)
 {
    int fh, i, length, delta;
-   char str[MAX_PATH_LENGTH], charset[80], format[80];
+   char str[MAX_PATH_LENGTH], dir[MAX_PATH_LENGTH], charset[80], format[80];
    time_t now;
    struct tm *gmt;
 
+   getcwd(dir, sizeof(dir));
    fh = open(file_name, O_RDONLY | O_BINARY);
    if (fh > 0) {
       lseek(fh, 0, SEEK_END);
@@ -8256,7 +8257,10 @@ void send_file_direct(char *file_name)
       rsprintf("<body><h1>Not Found</h1>\r\n");
       rsprintf("The requested file <b>");
       strencode2(encodedname, file_name, sizeof(encodedname));
-      rsprintf("%s", encodedname);
+      if (strchr(file_name, DIR_SEPARATOR))
+         rsprintf("%s", encodedname);
+      else
+         rsprintf("%s%c%s", dir, DIR_SEPARATOR, encodedname);
       rsprintf("</b> was not found on this server<p>\r\n");
       rsprintf("<hr><address>ELOG version %s</address></body></html>\r\n\r\n", VERSION);
       return_length = strlen_retbuf;
@@ -21896,7 +21900,7 @@ void submit_elog(LOGBOOK * lbs)
    struct tm tms;
 
    bmultiedit = isparam("nsel");
-   bedit = isparam("edit_id");
+   bedit = isparam("edit_id") && atoi(getparam("edit_id"));
 
    /* check for condition */
    if (isparam("condition")) {
@@ -22230,11 +22234,11 @@ void submit_elog(LOGBOOK * lbs)
 
    /* compile substitution list */
    n = build_subst_list(lbs, slist, svalue, attrib, TRUE);
-   if (isparam("edit_id") && atoi(getparam("edit_id")))
+   if (bedit)
       add_subst_list(slist, svalue, "message id", getparam("edit_id"), &n);
 
    /* substitute attributes */
-   if (!isparam("edit_id") && !isparam("reply_to")) {
+   if (!bedit && !isparam("reply_to")) {
       for (i = 0; i < n_attr; i++) {
          sprintf(str, "Subst %s", attr_list[i]);
          if (getcfg(lbs->name, str, subst_str, sizeof(subst_str))) {
@@ -22253,7 +22257,7 @@ void submit_elog(LOGBOOK * lbs)
    }
 
    /* subst attributes for edits */
-   if (isparam("edit_id")) {
+   if (bedit) {
       for (index = 0; index < n_attr; index++) {
          sprintf(str, "Subst on edit %s", attr_list[index]);
          if (getcfg(lbs->name, str, str2, sizeof(str2))) {
@@ -22314,7 +22318,7 @@ void submit_elog(LOGBOOK * lbs)
    resubmit_orig = 0;
    locked_by[0] = 0;
 
-   if (isparam("edit_id") && isparam("resubmit") && atoi(getparam("resubmit")) == 1) {
+   if (bedit && isparam("resubmit") && atoi(getparam("resubmit")) == 1) {
       resubmit_orig = atoi(getparam("edit_id"));
 
       /* get old links */
@@ -22338,7 +22342,7 @@ void submit_elog(LOGBOOK * lbs)
       strcpy(reply_to, "<keep>");
       date[0] = 0;
    } else {
-      if (isparam("edit_id")) {
+      if (bedit) {
          message_id = atoi(getparam("edit_id"));
          strcpy(in_reply_to, "<keep>");
          strcpy(reply_to, "<keep>");
@@ -22350,7 +22354,7 @@ void submit_elog(LOGBOOK * lbs)
    if (_logging_level > 1) {
       if (bmultiedit)
          sprintf(str, "EDIT multiple entries");
-      else if (isparam("edit_id"))
+      else if (bedit)
          sprintf(str, "EDIT entry #%d", message_id);
       else
          sprintf(str, "NEW entry #%d", message_id);
@@ -22625,7 +22629,7 @@ void submit_elog(LOGBOOK * lbs)
          }
       }
 
-      if (compose_email(lbs, rcpt_to, mail_to, message_id, attrib, mail_param, isparam("edit_id"), att_file,
+      if (compose_email(lbs, rcpt_to, mail_to, message_id, attrib, mail_param, bedit, att_file,
                         isparam("encoding") ? getparam("encoding") : "plain", atoi(in_reply_to)) == 0) {
          xfree(mail_to);
          xfree(rcpt_to);
@@ -22643,7 +22647,7 @@ void submit_elog(LOGBOOK * lbs)
    /*---- shell execution ----*/
 
    if (!(isparam("shell_suppress") && atoi(getparam("shell_suppress")))) {
-      if (!isparam("edit_id")) {
+      if (!bedit) {
          if (getcfg(lbs->name, "Execute new", str, sizeof(str)))
             execute_shell(lbs, message_id, attrib, att_file, str);
       } else {
@@ -27175,7 +27179,7 @@ int process_http_request(const char *request, int i_conn)
    struct tm *ts;
 
    const char *cookie_list[] =
-       { "upwd", "unm", "elmode", "urem", "wpwd", "apwd", "uname", "upassword", "elattach", "hsm", NULL };
+       { "upwd", "unm", "ufnm", "elmode", "urem", "wpwd", "apwd", "uname", "upassword", "elattach", "hsm", NULL };
 
    if (!strchr(request, '\r'))
       return 0;
