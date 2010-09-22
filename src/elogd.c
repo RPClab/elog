@@ -10996,12 +10996,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
          if (enc_selected == 1)
             /* use hard wrapping only for plain text */
-            rsprintf("<textarea rows=%d cols=%d wrap=hard %s name=\"Text\" onChange=\"mod();\">\n", height,
-                     width, str);
+            rsprintf("<textarea rows=%d cols=%d wrap=hard name=\"Text\" onChange=\"mod();\">\n", height,
+                     width);
          else
             rsprintf
-                ("<textarea rows=%d cols=%d %s name=\"Text\" onChange=\"mod();\" style=\"width:100%%;\">\n",
-                 height, width, str);
+                ("<textarea rows=%d cols=%d name=\"Text\" onChange=\"mod();\" style=\"width:100%%;\">\n",
+                 height, width);
 
          if (isparam("nsel")) {
             rsprintf("- %s -\n", loc("keep original text"));
