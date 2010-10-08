@@ -53,6 +53,10 @@ case "$1" in
      fi
      
 	;;
+  status)
+     status -p /var/run/elogd.pid /usr/local/sbin/elogd
+     RETVAL=$?
+        ;;
   restart|reload)
 	$0 stop
 	sleep 1
