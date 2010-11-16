@@ -8,8 +8,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define MAX(x,y) ((x)>(y)?(x):(y))
-#define MIN(x,y) ((x)<(y)?(x):(y))
 #define __alignof__(x) sizeof(x)
 #define alloca(x) malloc(x)
 #define ERANGE 34
@@ -27,6 +25,11 @@ typedef unsigned int uint32_t;
 #include <sys/types.h>
 #endif
 
+#ifndef MAX
+#define MAX(x,y) ((x)>(y)?(x):(y))
+#define MIN(x,y) ((x)<(y)?(x):(y))
+#endif
+      
 /* Structure to save state of computation between the single steps.  */
 struct sha256_ctx {
    uint32_t H[8];
