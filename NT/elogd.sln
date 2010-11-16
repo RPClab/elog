@@ -1,18 +1,14 @@
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "elconv", "elconv.vcproj", "{8D6EBED8-48F3-4719-907E-7BE46A3C0FA4}"
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "elconv", "elconv.vcxproj", "{8D6EBED8-48F3-4719-907E-7BE46A3C0FA4}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "elog", "elog.vcproj", "{FD6FCAF3-A94B-40FA-AE52-07705DE2E519}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "elog", "elog.vcxproj", "{FD6FCAF3-A94B-40FA-AE52-07705DE2E519}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "elogd", "elogd.vcproj", "{CB6EB7FE-CC3D-4548-B8B8-8DDA05916759}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "elogd", "elogd.vcxproj", "{CB6EB7FE-CC3D-4548-B8B8-8DDA05916759}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "locext", "locext.vcproj", "{77ED3530-9382-4830-8513-9729C051A93E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "locext", "locext.vcxproj", "{77ED3530-9382-4830-8513-9729C051A93E}"
 EndProject
 Global
-	GlobalSection(SubversionScc) = preSolution
-		Svn-Managed = True
-		Manager = AnkhSVN - Subversion Support for Visual Studio
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
 		Release|Win32 = Release|Win32
@@ -31,5 +27,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(SubversionScc) = preSolution
+		Svn-Managed = True
+		Manager = AnkhSVN - Subversion Support for Visual Studio
 	EndGlobalSection
 EndGlobal

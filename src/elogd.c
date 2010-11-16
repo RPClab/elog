@@ -23046,7 +23046,7 @@ int is_inline_attachment(char *encoding, int message_id, char *text, int i, char
 
 int create_thumbnail(LOGBOOK * lbs, char *file_name)
 {
-   char str[2 * MAX_PATH_LENGTH], cmd[2 * MAX_PATH_LENGTH], thumb_size[256];
+   char str[2 * MAX_PATH_LENGTH], cmd[2 * MAX_PATH_LENGTH], thumb_size[256], thumb_options[256];
    int i;
 
    if (!image_magick_exist)
@@ -23058,6 +23058,8 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
       sprintf(thumb_size, " -thumbnail '%s'", str);
    } else
       thumb_size[0] = 0;
+
+   getcfg(lbs->name, "Thumbnail options", thumb_options, sizeof(thumb_options));
 
    if (!chkext(file_name, ".ps") && !chkext(file_name, ".pdf") && !chkext(file_name, ".eps")
        && !chkext(file_name, ".gif") && !chkext(file_name, ".jpg") && !chkext(file_name, ".jpeg")
@@ -23079,9 +23081,9 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
       strlcat(str, ".png", sizeof(str));
 
    if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
-      snprintf(cmd, sizeof(cmd), "convert '%s[0-7]'%s '%s'", file_name, thumb_size, str);
+      snprintf(cmd, sizeof(cmd), "convert %s '%s[0-7]'%s '%s'", thumb_options, file_name, thumb_size, str);
    else
-      snprintf(cmd, sizeof(cmd), "convert '%s'%s '%s'", file_name, thumb_size, str);
+      snprintf(cmd, sizeof(cmd), "convert %s '%s'%s '%s'", thumb_options, file_name, thumb_size, str);
 
 #ifdef OS_WINNT
    for (i = 0; i < (int) strlen(cmd); i++)
