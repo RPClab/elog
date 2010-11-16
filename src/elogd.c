@@ -2147,14 +2147,14 @@ void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to, ch
 
       sprintf(multipart_boundary, "------------%04X%04X%04X", rand(), rand(), rand());
       snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1,
-               "Content-Type: multipart/alternative;\r\n boundary=\"%s\"\r\n\r\n", multipart_boundary);
+               "MIME-Version: 1.0\r\nContent-Type: multipart/alternative;\r\n boundary=\"%s\"\r\n\r\n", multipart_boundary);
 
       strlcat(mail_text, "This is a multi-part message in MIME format.\r\n", size);
    } else {
       if (n_attachments) {
          sprintf(multipart_boundary, "------------%04X%04X%04X", rand(), rand(), rand());
          snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1,
-                  "Content-Type: multipart/mixed;\r\n boundary=\"%s\"\r\n\r\n", multipart_boundary);
+                  "MIME-Version: 1.0\r\nContent-Type: multipart/mixed;\r\n boundary=\"%s\"\r\n\r\n", multipart_boundary);
 
          strlcat(mail_text, "This is a multi-part message in MIME format.\r\n", size);
       } else {
@@ -21245,7 +21245,7 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
    if (attachments_present) {
       sprintf(multipart_boundary_related, "------------%04X%04X%04X", rand(), rand(), rand());
       snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1,
-               "Content-Type: multipart/related;\r\n boundary=\"%s\"\r\n\r\n", multipart_boundary_related);
+               "MIME-Version: 1.0\r\nContent-Type: multipart/related;\r\n boundary=\"%s\"\r\n\r\n", multipart_boundary_related);
       strlcat(mail_text, "--", size);
       strlcat(mail_text, multipart_boundary_related, size);
       strlcat(mail_text, "\r\n", size);
@@ -21436,7 +21436,7 @@ void format_email_html2(LOGBOOK * lbs, int message_id, char att_file[MAX_ATTACHM
    if (attachments_present) {
       sprintf(multipart_boundary_related, "------------%04X%04X%04X", rand(), rand(), rand());
       snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1,
-               "Content-Type: multipart/related;\r\n boundary=\"%s\"\r\n\r\n", multipart_boundary_related);
+               "MIME-Version: 1.0\r\nContent-Type: multipart/related;\r\n boundary=\"%s\"\r\n\r\n", multipart_boundary_related);
       strlcat(mail_text, "--", size);
       strlcat(mail_text, multipart_boundary_related, size);
       strlcat(mail_text, "\r\n", size);
