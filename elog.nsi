@@ -73,7 +73,7 @@ Section "ELOG system (required)" SecSystem
   File nt\release\elconv.exe
   File \windows\system32\libeay32.dll
   File \windows\system32\ssleay32.dll
-  File nt\msvcr90.dll
+  File nt\msvcr100.dll
 
   ; doc directory
   SetOutPath $INSTDIR\doc
