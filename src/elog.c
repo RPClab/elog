@@ -348,7 +348,7 @@ int ssl_connect(int sock, SSL ** ssl_con)
    SSL_library_init();
    SSL_load_error_strings();
 
-   meth = SSLv23_method();
+   meth = (SSL_METHOD *)SSLv23_method();
    ctx = SSL_CTX_new(meth);
 
    *ssl_con = SSL_new(ctx);
