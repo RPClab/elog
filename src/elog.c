@@ -342,7 +342,7 @@ int elog_connect(char *host, int port)
 #ifdef HAVE_SSL
 int ssl_connect(int sock, SSL ** ssl_con)
 {
-   SSL_METHOD *meth;
+   const SSL_METHOD *meth;
    SSL_CTX *ctx;
 
    SSL_library_init();

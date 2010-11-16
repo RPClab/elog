@@ -27990,7 +27990,7 @@ void hup_handler(int sig)
 SSL_CTX *init_ssl(void)
 {
    char str[256], pwd[256];
-   SSL_METHOD *meth;
+   const SSL_METHOD *meth;
    SSL_CTX *ctx;
 
    SSL_library_init();
