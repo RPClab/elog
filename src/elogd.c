@@ -9177,7 +9177,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
        ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256], cookie[256],
        orig_author[256], attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256], tooltip[10000],
-       enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256], **user_list;
+       enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256], **user_list, fid[20];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -9619,7 +9619,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("var entry_modified = false;\n");
    } else
       rsprintf("var entry_modified = false;\n");
-
+   rsprintf("var submission_blocked = true;\n");
    rsprintf("\n");
    rsprintf("function chkform()\n");
    rsprintf("{\n");
@@ -9761,6 +9761,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    }
 
+   /* check if sumbission is not blocked. Needed to avoid submission by hitting <Enter> */
+   rsprintf("  if (submission_blocked) {\n");
+   rsprintf("    submission_blocked = false;\n");
+   rsprintf("    return false;\n");
+   rsprintf("  }\n");
+
    rsprintf("  submitted = true;\n");
    rsprintf("  return true;\n");
    rsprintf("}\n\n");
@@ -9810,11 +9816,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("}\n\n");
 
    /* mod() gets called via "onchange" event */
-   rsprintf("function mod()\n");
+   rsprintf("function mod(e)\n");
    rsprintf("{\n");
    rsprintf("  entry_modified = true;\n");
    rsprintf("  window.status = \"%s\";\n", loc("Entry has been modified"));
    rsprintf("  document.form1.entry_modified.value = \"1\";\n");
+   rsprintf("}\n\n");
+
+   rsprintf("function kp(e)\n");
+   rsprintf("{\n");
+   rsprintf("  var e = e || window.event;\n");
+   rsprintf("  submission_blocked = (e.keyCode == 13)\n");
    rsprintf("}\n\n");
 
    /* switch_smileys turn on/off the smiley bar by setting the smcmd, which in turn
@@ -9943,6 +9955,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    script_onfocus[0] = 0;
    if ((isparam("inlineatt") && *getparam("inlineatt")) || bpreview)
       strcpy(script_onload, "document.form1.Text.focus();");
+   else
+      strcpy(script_onload, "i=document.getElementById('fid');if(i)i.focus()");
 
    if (enc_selected == 0) {
       if (!getcfg(lbs->name, "Message height", str, sizeof(str)) &&
@@ -10085,6 +10099,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          attr_index[i] = i;
       n_disp_attr = n_attr;
    }
+
+   strcpy(fid, "id=\"fid\" ");
 
    /* display attributes */
    for (aindex = 0; aindex < n_disp_attr; aindex++) {
@@ -10450,8 +10466,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                strencode2(str, attrib[index], sizeof(str));
                rsprintf
-                   ("<input type=\"text\" size=%d maxlength=%d name=\"%s\" value=\"%s\" onChange=\"mod();\">\n",
-                    input_size, input_maxlen, ua, str);
+                   ("<input type=\"text\" %ssize=%d maxlength=%d name=\"%s\" value=\"%s\" onKeyPress=\"kp()\" onChange=\"mod()\">\n",
+                    fid, input_size, input_maxlen, ua, str);
+               fid[0] = 0;
 
                rsprintf("</td>\n");
             }
