@@ -11000,11 +11000,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
          if (enc_selected == 1)
             /* use hard wrapping only for plain text */
-            rsprintf("<textarea rows=%d cols=%d wrap=hard name=\"Text\" onChange=\"mod();\">\n", height,
+            rsprintf("<textarea rows=%d cols=%d wrap=hard name=\"Text\" onKeyPress=\"submission_blocked=false\" onChange=\"mod();\">\n", height,
                      width);
          else
             rsprintf
-                ("<textarea rows=%d cols=%d name=\"Text\" onChange=\"mod();\" style=\"width:100%%;\">\n",
+                ("<textarea rows=%d cols=%d name=\"Text\" onKeyPress=\"submission_blocked=false\" onChange=\"mod();\" style=\"width:100%%;\">\n",
                  height, width);
 
          if (isparam("nsel")) {
