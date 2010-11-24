@@ -9956,7 +9956,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if ((isparam("inlineatt") && *getparam("inlineatt")) || bpreview)
       strcpy(script_onload, "document.form1.Text.focus();");
    else
-      strcpy(script_onload, "i=document.getElementById('fid');if(i)i.focus()");
+      strcpy(script_onload, "i=document.getElementById('fid');if(i)i.focus();");
 
    if (enc_selected == 0) {
       if (!getcfg(lbs->name, "Message height", str, sizeof(str)) &&
