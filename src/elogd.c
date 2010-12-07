@@ -9619,10 +9619,18 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("var entry_modified = false;\n");
    } else
       rsprintf("var entry_modified = false;\n");
-   rsprintf("var submission_blocked = true;\n");
+   rsprintf("var last_key = 0;\n");
    rsprintf("\n");
    rsprintf("function chkform()\n");
    rsprintf("{\n");
+
+   rsprintf("  if (last_key == 13) {\n");
+   rsprintf("    var ret = confirm('%s');", loc("Really submit this entry?"));
+   rsprintf("    if (!ret) {\n");
+   rsprintf("      last_key = 0;\n");
+   rsprintf("      return false;\n");
+   rsprintf("    }\n");
+   rsprintf("  }\n");
 
    for (i = 0; i < n_attr; i++) {
       if ((attr_flags[i] & AF_REQUIRED)) {
@@ -9761,12 +9769,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    }
 
-   /* check if sumbission is not blocked. Needed to avoid submission by hitting <Enter> */
-   rsprintf("  if (submission_blocked) {\n");
-   rsprintf("    submission_blocked = false;\n");
-   rsprintf("    return false;\n");
-   rsprintf("  }\n");
-
    rsprintf("  submitted = true;\n");
    rsprintf("  return true;\n");
    rsprintf("}\n\n");
@@ -9826,7 +9828,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("function kp(e)\n");
    rsprintf("{\n");
    rsprintf("  var e = e || window.event;\n");
-   rsprintf("  submission_blocked = (e.keyCode == 13)\n");
+   rsprintf("  last_key = e.keyCode;\n");
    rsprintf("}\n\n");
 
    /* switch_smileys turn on/off the smiley bar by setting the smcmd, which in turn
@@ -11000,11 +11002,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
          if (enc_selected == 1)
             /* use hard wrapping only for plain text */
-            rsprintf("<textarea rows=%d cols=%d wrap=hard name=\"Text\" onKeyPress=\"submission_blocked=false\" onChange=\"mod();\">\n", height,
+            rsprintf("<textarea rows=%d cols=%d wrap=hard name=\"Text\" onChange=\"mod();\">\n", height,
                      width);
          else
             rsprintf
-                ("<textarea rows=%d cols=%d name=\"Text\" onKeyPress=\"submission_blocked=false\" onChange=\"mod();\" style=\"width:100%%;\">\n",
+                ("<textarea rows=%d cols=%d name=\"Text\" onChange=\"mod();\" style=\"width:100%%;\">\n",
                  height, width);
 
          if (isparam("nsel")) {
