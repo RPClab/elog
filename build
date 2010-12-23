@@ -103,7 +103,7 @@ rm -f /usr/src/redhat/SRPMS/*
 rpmbuild -ba elog.spec || exit $?
 cp /usr/src/redhat/RPMS/i386/elog*rpm ~ritt/html/elog/download/RPMS/
 cp /usr/src/redhat/RPMS/i386/elog-$version-$release.i386.rpm ~ritt/html/elog/download/RPMS/elog-latest.i386.rpm
-cp /usr/src/redhat/SRPMS/elog*rpm ~/html/elog/download/SRPMS/
+cp /usr/src/redhat/SRPMS/elog*rpm ~ritt/html/elog/download/SRPMS/
 cp /usr/src/redhat/SRPMS/elog-$version-$release.src.rpm ~ritt/html/elog/download/SRPMS/elog-latest.src.rpm
 
 
