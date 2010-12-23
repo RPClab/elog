@@ -19757,9 +19757,11 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   setparam(attr_list[i], str);
                }
 
-               status = regexec(re_buf + 1 + i, attrib[i], 10, pmatch, 0);
-               if (status == REG_NOMATCH)
-                  break;
+               if (isparam(attr_list[i])) {
+                  status = regexec(re_buf + 1 + i, attrib[i], 10, pmatch, 0);
+                  if (status == REG_NOMATCH)
+                     break;
+               }
             }
          }
 
