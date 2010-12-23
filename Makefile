@@ -110,7 +110,9 @@ debug: src/elogd.c regex.o mxml.o strlcpy.o
 
 indent:
 	for src in src/*.c; do \
+		d2u $$src; \
 		indent $(IFLAGS) $$src; \
+		u2d $$src; \
 	done
 
 ifeq ($(OSTYPE),CYGWIN_NT-5.1)
