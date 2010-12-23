@@ -29,7 +29,7 @@ typedef unsigned int uint32_t;
 #define MAX(x,y) ((x)>(y)?(x):(y))
 #define MIN(x,y) ((x)<(y)?(x):(y))
 #endif
-      
+
 /* Structure to save state of computation between the single steps.  */
 struct sha256_ctx {
    uint32_t H[8];
@@ -41,10 +41,10 @@ struct sha256_ctx {
 
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-# define SWAP(n) \
+#define SWAP(n) \
     (((n) << 24) | (((n) & 0xff00) << 8) | (((n) >> 8) & 0xff00) | ((n) >> 24))
 #else
-# define SWAP(n) (n)
+#define SWAP(n) (n)
 #endif
 
 
@@ -252,9 +252,9 @@ static void sha256_process_bytes(const void *buffer, size_t len, struct sha256_c
 /* To check alignment gcc has an appropriate operator.  Other
    compilers don't.  */
 #if __GNUC__ >= 2
-# define UNALIGNED_P(p) (((uintptr_t) p) % __alignof__ (uint32_t) != 0)
+#define UNALIGNED_P(p) (((uintptr_t) p) % __alignof__ (uint32_t) != 0)
 #else
-# define UNALIGNED_P(p) (((uintptr_t) p) % sizeof (uint32_t) != 0)
+#define UNALIGNED_P(p) (((uintptr_t) p) % sizeof (uint32_t) != 0)
 #endif
       if (UNALIGNED_P(buffer))
          while (len > 64) {
@@ -422,7 +422,7 @@ static char *sha256_crypt_r(const char *key, const char *salt, char *buffer, int
    for (cnt = key_len; cnt >= 32; cnt -= 32) {
       memcpy(cp, temp_result, 32);
       cp += 32;
-   } 
+   }
    memcpy(cp, temp_result, cnt);
 
    /* Start computation of S byte sequence.  */

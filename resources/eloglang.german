@@ -466,3 +466,5 @@ Only user <b>%s</b> can delete this entry = Nur der Benutzer <b>%s</b> kann dies
 File system full, ELOG cannot continue to work = Dateisystem voll, ELOG kann nicht weiterarbeiten
 3 Days = 3 Tage
 Last 3 Days = Letzte 3 Tage
+Really submit this entry? = Diesen Entrag wirklich abschicken?
+

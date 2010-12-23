@@ -4553,7 +4553,7 @@ int cflags;
    } else
       preg->newline_anchor = 0;
 
-   preg->no_sub = !!(cflags & REG_NOSUB);
+   preg->no_sub = ! !(cflags & REG_NOSUB);
 
    /* POSIX says a null character in the pattern terminates it, so we 
       can use strlen here in compiling the pattern.  */
@@ -4597,8 +4597,8 @@ int eflags;
 
    private_preg = *preg;
 
-   private_preg.not_bol = !!(eflags & REG_NOTBOL);
-   private_preg.not_eol = !!(eflags & REG_NOTEOL);
+   private_preg.not_bol = ! !(eflags & REG_NOTBOL);
+   private_preg.not_eol = ! !(eflags & REG_NOTEOL);
 
    /* The user has told us exactly how many registers to return
       information about, via `nmatch'.  We have to pass that on to the

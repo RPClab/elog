@@ -9,7 +9,7 @@
  \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.8.0"
+#define VERSION "2.8.1"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -741,7 +741,7 @@ char *xstrdup(const char *string)
 
 /* Have vasprintf? (seems that only libc6 based Linux has this) */
 #ifdef __linux__
-#  define HAVE_VASPRintF
+#define HAVE_VASPRintF
 #endif
 
 #ifndef HAVE_VASPRintF
@@ -847,11 +847,11 @@ int xvasprintf(char **ptr, const char *format, va_list ap)
 #ifdef va_copy
    va_copy(save, ap);
 #else
-# ifdef __va_copy
+#ifdef __va_copy
    __va_copy(save, ap);
-# else
+#else
    save = ap;
-# endif
+#endif
 #endif
 
    n = vasprintf(ptr, format, save);
@@ -2149,14 +2149,16 @@ void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to, ch
 
       sprintf(multipart_boundary, "------------%04X%04X%04X", rand(), rand(), rand());
       snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1,
-               "MIME-Version: 1.0\r\nContent-Type: multipart/alternative;\r\n boundary=\"%s\"\r\n\r\n", multipart_boundary);
+               "MIME-Version: 1.0\r\nContent-Type: multipart/alternative;\r\n boundary=\"%s\"\r\n\r\n",
+               multipart_boundary);
 
       strlcat(mail_text, "This is a multi-part message in MIME format.\r\n", size);
    } else {
       if (n_attachments) {
          sprintf(multipart_boundary, "------------%04X%04X%04X", rand(), rand(), rand());
          snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1,
-                  "MIME-Version: 1.0\r\nContent-Type: multipart/mixed;\r\n boundary=\"%s\"\r\n\r\n", multipart_boundary);
+                  "MIME-Version: 1.0\r\nContent-Type: multipart/mixed;\r\n boundary=\"%s\"\r\n\r\n",
+                  multipart_boundary);
 
          strlcat(mail_text, "This is a multi-part message in MIME format.\r\n", size);
       } else {
@@ -8619,7 +8621,8 @@ BOOL change_pwd(LOGBOOK * lbs, char *user, char *pwd)
 
 void show_change_pwd_page(LOGBOOK * lbs)
 {
-   char str[256], config[256], old_pwd[256], new_pwd[256], new_pwd2[256], act_pwd[256], user[256], full_user[256];
+   char str[256], config[256], old_pwd[256], new_pwd[256], new_pwd2[256], act_pwd[256], user[256],
+       full_user[256];
    int wrong_pwd;
 
    old_pwd[0] = new_pwd[0] = new_pwd2[0] = 0;
@@ -9202,7 +9205,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    /* check for custom form for new entries */
    if (!bedit && getcfg(lbs->name, "Custom new form", str, sizeof(str))) {
-            /* check if file starts with an absolute directory */
+      /* check if file starts with an absolute directory */
       if (str[0] == DIR_SEPARATOR || str[1] == ':')
          strcpy(file_name, str);
       else {
@@ -9215,7 +9218,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    /* check for custom form for editing an entry */
    if (bedit && getcfg(lbs->name, "Custom edit form", str, sizeof(str))) {
-            /* check if file starts with an absolute directory */
+      /* check if file starts with an absolute directory */
       if (str[0] == DIR_SEPARATOR || str[1] == ':')
          strcpy(file_name, str);
       else {
@@ -21255,7 +21258,8 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
    if (attachments_present) {
       sprintf(multipart_boundary_related, "------------%04X%04X%04X", rand(), rand(), rand());
       snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1,
-               "MIME-Version: 1.0\r\nContent-Type: multipart/related;\r\n boundary=\"%s\"\r\n\r\n", multipart_boundary_related);
+               "MIME-Version: 1.0\r\nContent-Type: multipart/related;\r\n boundary=\"%s\"\r\n\r\n",
+               multipart_boundary_related);
       strlcat(mail_text, "--", size);
       strlcat(mail_text, multipart_boundary_related, size);
       strlcat(mail_text, "\r\n", size);
@@ -21446,7 +21450,8 @@ void format_email_html2(LOGBOOK * lbs, int message_id, char att_file[MAX_ATTACHM
    if (attachments_present) {
       sprintf(multipart_boundary_related, "------------%04X%04X%04X", rand(), rand(), rand());
       snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1,
-               "MIME-Version: 1.0\r\nContent-Type: multipart/related;\r\n boundary=\"%s\"\r\n\r\n", multipart_boundary_related);
+               "MIME-Version: 1.0\r\nContent-Type: multipart/related;\r\n boundary=\"%s\"\r\n\r\n",
+               multipart_boundary_related);
       strlcat(mail_text, "--", size);
       strlcat(mail_text, multipart_boundary_related, size);
       strlcat(mail_text, "\r\n", size);
@@ -23298,7 +23303,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
    /* check for custom form to display entry */
    if (getcfg(lbs->name, "Custom display form", str, sizeof(str))) {
-            /* check if file starts with an absolute directory */
+      /* check if file starts with an absolute directory */
       if (str[0] == DIR_SEPARATOR || str[1] == ':')
          strcpy(file_name, str);
       else {
@@ -25271,10 +25276,10 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
          if (getcfg(lb_list[index].name, "Read password", str, sizeof(str)) || (getcfg(lb_list[index].name,
                                                                                        "Password file", str,
                                                                                        sizeof(str))
-                                                                                && !getcfg(lb_list[index].
-                                                                                           name,
-                                                                                           "Guest menu commands",
-                                                                                           str, sizeof(str))))
+                                                                                &&
+                                                                                !getcfg(lb_list[index].name,
+                                                                                        "Guest menu commands",
+                                                                                        str, sizeof(str))))
             rsprintf("&nbsp;&nbsp;<img src=\"lock.png\" alt=\"%s\" title=\"%s\">",
                      loc("This logbook requires authentication"),
                      loc("This logbook requires authentication"));
@@ -27193,7 +27198,9 @@ int process_http_request(const char *request, int i_conn)
    struct tm *ts;
 
    const char *cookie_list[] =
-       { "upwd", "unm", "ufnm", "elmode", "urem", "wpwd", "apwd", "uname", "upassword", "elattach", "hsm", NULL };
+       { "upwd", "unm", "ufnm", "elmode", "urem", "wpwd", "apwd", "uname", "upassword", "elattach", "hsm",
+      NULL
+   };
 
    if (!strchr(request, '\r'))
       return 0;
@@ -28007,7 +28014,7 @@ SSL_CTX *init_ssl(void)
    SSL_library_init();
    SSL_load_error_strings();
 
-   meth = (SSL_METHOD *)SSLv23_method();
+   meth = (SSL_METHOD *) SSLv23_method();
    ctx = SSL_CTX_new(meth);
 
    if (getcfg("global", "SSL Passphrase", pwd, sizeof(pwd))) {

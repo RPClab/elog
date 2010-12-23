@@ -9,7 +9,7 @@
 
 \********************************************************************/
 
-#define VERSION "2.8.0"
+#define VERSION "2.8.1"
 char svn_revision[] = "$Id$";
 
 /* ELOG identification */
@@ -348,7 +348,7 @@ int ssl_connect(int sock, SSL ** ssl_con)
    SSL_library_init();
    SSL_load_error_strings();
 
-   meth = (SSL_METHOD *)SSLv23_method();
+   meth = (SSL_METHOD *) SSLv23_method();
    ctx = SSL_CTX_new(meth);
 
    *ssl_con = SSL_new(ctx);

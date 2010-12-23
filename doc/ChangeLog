@@ -1,3 +1,22 @@
+Version 2.8.1, released December 23th 2010
+==========================================
+
+- Fixed bug with regexec, thanks to Christian Richter
+- Fixed bug with $attachments in shell command
+- Fixed problem with hitting "submit" twice
+- Fixed submission_locked in <textarea>
+- Fixed bug with init script
+- Prevent form submission via <Enter> key, put focus on first input field
+- Implemented 'Thumbnail options'
+- Fixed crash with '%' in attribute and 'Preset on reply <attr> = Re: $sttr'
+- Added MIME-Version: 1.0
+- Fixed bug with name of textarea
+- Implemented 'List after submit'
+- Implemented 'Custom xxx form'
+- Add logbook dir to custom form
+- Implemented custom form
+- Fixed password conversion wiht several top groups
+
 Version 2.8.0, released August 2nd 2010
 =======================================
 
