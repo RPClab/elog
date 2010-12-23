@@ -1272,8 +1272,7 @@ void strsubst_list(char *string, int size, char name[][NAME_LENGTH], char value[
    /* check for $shell() subsitution */
    pt = tmp;
    ps = string;
-   p = strchr(ps, '$');
-   if (p != NULL) {
+   for (p = strchr(ps, '$'); p != NULL; p = strchr(ps, '$')) {
 
       /* copy leading characters */
       j = (int) (p - ps);
@@ -1317,6 +1316,9 @@ void strsubst_list(char *string, int size, char name[][NAME_LENGTH], char value[
 
          strlcpy(pt, result, sizeof(tmp) - (pt - tmp));
          pt += strlen(pt);
+      } else {
+         *pt++ = '$';
+         ps = p;
       }
    }
 
