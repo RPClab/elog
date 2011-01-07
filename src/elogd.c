@@ -22774,7 +22774,7 @@ void submit_elog_mirror(LOGBOOK * lbs)
 
 void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_id)
 {
-   int size, i, n, n_done, n_done_reply, n_reply, index, status, fh, source_id, message_id,
+   int size, i, j, n, n_done, n_done_reply, n_reply, index, status, fh, source_id, message_id,
        thumb_status, next_id = 0;
    char str[256], str2[256], file_name[MAX_PATH_LENGTH], thumb_name[MAX_PATH_LENGTH],
        *attrib, date[80], *text, msg_str[32], in_reply_to[80],
@@ -22903,8 +22903,8 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
                }
             }
             if (thumb_status == 2) {
-               for (i = 0;; i++) {
-                  get_thumb_name(file_name, thumb_name, sizeof(thumb_name), i);
+               for (j = 0;; j++) {
+                  get_thumb_name(file_name, thumb_name, sizeof(thumb_name), j);
                   if (thumb_name[0]) {
                      fh = open(thumb_name, O_RDONLY | O_BINARY);
                      if (fh > 0) {
