@@ -218,6 +218,10 @@ BOOL fckedit_exist, image_magick_exist;
 int verbose, _current_message_id;
 int _logging_level, _ssl_flag;
 
+#ifdef HAVE_SSL
+SSL *_ssl_con;
+#endif
+
 char *mname[] = { "January", "February", "March", "April", "May", "June", "July", "August", "September",
    "October", "November", "December"
 };
@@ -2437,6 +2441,64 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    return -1;
 }
 
+/*------------------------------------------------------------------*/
+
+int elog_connect(char *host, int port)
+{
+   int status, sock;
+   struct hostent *phe;
+   struct sockaddr_in bind_addr;
+
+   /* create socket */
+   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+      perror("cannot create socket");
+      return -1;
+   }
+
+   /* compose remote address */
+   memset(&bind_addr, 0, sizeof(bind_addr));
+   bind_addr.sin_family = AF_INET;
+   bind_addr.sin_addr.s_addr = 0;
+   bind_addr.sin_port = htons((unsigned short) port);
+
+   phe = gethostbyname(host);
+   if (phe == NULL) {
+      perror("cannot get host name");
+      return -1;
+   }
+   memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
+
+   /* connect to server */
+   status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
+   if (status != 0)
+      return -1;
+
+   return sock;
+}
+
+/*------------------------------------------------------------------*/
+
+#ifdef HAVE_SSL
+int ssl_connect(int sock, SSL ** ssl_con)
+{
+   SSL_METHOD *meth;
+   SSL_CTX *ctx;
+
+   SSL_library_init();
+   SSL_load_error_strings();
+
+   meth = (SSL_METHOD *) SSLv23_method();
+   ctx = SSL_CTX_new(meth);
+
+   *ssl_con = SSL_new(ctx);
+   SSL_set_fd(*ssl_con, sock);
+   if (SSL_connect(*ssl_con) <= 0)
+      return -1;
+
+   return 0;
+}
+#endif
+
 /*-------------------------------------------------------------------*/
 
 void split_url(const char *url, char *host, int *port, char *subdir, char *param)
@@ -2494,16 +2556,16 @@ void split_url(const char *url, char *host, int *port, char *subdir, char *param
 
 /*-------------------------------------------------------------------*/
 
-int retrieve_url(const char *url, char **buffer, char *rpwd)
+int retrieve_url(const char *url, int ssl, char **buffer, char *rpwd)
 {
-   struct sockaddr_in bind_addr;
-   struct hostent *phe;
    char str[1000], unm[256], upwd[256], host[256], subdir[256], param[256], auth[256], pwd_enc[256];
    int port, bufsize;
    int i, n;
    fd_set readfds;
    struct timeval timeout;
-
+#ifdef HAVE_SSL
+   static SSL *ssl_con;
+#endif
    static int sock, last_port;
    static char last_host[256];
 
@@ -2511,36 +2573,39 @@ int retrieve_url(const char *url, char **buffer, char *rpwd)
    split_url(url, host, &port, subdir, param);
 
    if (sock && (strcmp(host, last_host) != 0 || port != last_port)) {
+#ifdef HAVE_SSL
+      if (ssl) {
+         SSL_shutdown(ssl_con);
+         SSL_free(ssl_con);
+      }
+#endif
       closesocket(sock);
       sock = 0;
    }
 
    if (sock) {                  // keep-alive does not yet work, requires evaluation of Content-Length !!!
+#ifdef HAVE_SSL
+      if (ssl) {
+         SSL_shutdown(ssl_con);
+         SSL_free(ssl_con);
+      }
+#endif
       closesocket(sock);
       sock = 0;
    }
 
    /* create a new socket for connecting to remote server */
    if (!sock) {
-
-      sock = socket(AF_INET, SOCK_STREAM, 0);
+      sock = elog_connect(host, port);
       if (sock == -1)
          return -1;
-
-      /* connect to remote node */
-      memset(&bind_addr, 0, sizeof(bind_addr));
-      bind_addr.sin_family = AF_INET;
-      bind_addr.sin_port = htons((short) port);
-
-      phe = gethostbyname(host);
-      if (phe == NULL)
-         return -1;
-      memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
-
-      if (connect(sock, (void *) &bind_addr, sizeof(bind_addr)) < 0) {
-         closesocket(sock);
-         return -1;
-      }
+#ifdef HAVE_SSL
+      if (ssl)
+         if (ssl_connect(sock, &ssl_con) < 0) {
+            printf("Error initiating SSL connection\n");
+            return -1;
+         }
+#endif
    }
 
    last_port = port;
@@ -2571,7 +2636,12 @@ int retrieve_url(const char *url, char **buffer, char *rpwd)
 
    strcat(str, "\r\n");
 
-   send(sock, str, strlen(str), 0);
+#ifdef HAVE_SSL
+   if (ssl)
+      SSL_write(ssl_con, str, strlen(str));
+   else
+#endif
+      send(sock, str, strlen(str), 0);
 
    bufsize = TEXT_SIZE + 1000;
    *buffer = xmalloc(bufsize);
@@ -2596,7 +2666,12 @@ int retrieve_url(const char *url, char **buffer, char *rpwd)
          return -1;
       }
 
-      i = recv(sock, *buffer + n, bufsize - n, 0);
+#ifdef HAVE_SSL
+      if (ssl)
+         i = SSL_read(ssl_con, *buffer + n, bufsize - n);
+      else
+#endif
+         i = recv(sock, *buffer + n, bufsize - n, 0);
 
       if (i <= 0)
          break;
@@ -2606,7 +2681,7 @@ int retrieve_url(const char *url, char **buffer, char *rpwd)
       if (n >= bufsize) {
          /* increase buffer size */
          bufsize += 10000;
-         *buffer = xrealloc(*buffer, bufsize);
+         *buffer = (char *)xrealloc(*buffer, bufsize);
          if (*buffer == NULL) {
             closesocket(sock);
             return -1;
@@ -6523,7 +6598,13 @@ void rsprintf(const char *format, ...)
 
 void flush_return_buffer()
 {
+#ifdef HAVE_SSL
+   if (_ssl_flag) {
+      SSL_write(_ssl_con, return_buffer, strlen_retbuf);
+   } else 
+#endif
    send(_sock, return_buffer, strlen_retbuf, 0);
+
    memset(return_buffer, 0, return_buffer_size);
    strlen_retbuf = 0;
 }
@@ -14828,14 +14909,17 @@ int show_md5_page(LOGBOOK * lbs)
 
 /*------------------------------------------------------------------*/
 
-void combine_url(LOGBOOK * lbs, char *url, char *param, char *result, int size)
+void combine_url(LOGBOOK * lbs, char *url, char *param, char *result, int size, int *ssl)
 {
-
+   if (ssl)
+      *ssl = 0;
    if (strstr(url, "http://"))
       strlcpy(result, url + 7, size);
-   else if (strstr(url, "https://"))
+   else if (strstr(url, "https://")) {
+      if (ssl)
+         *ssl = 1;
       strlcpy(result, url + 8, size);
-   else
+   } else
       strlcpy(result, url, size);
 
    url_encode(result, size);
@@ -14858,16 +14942,16 @@ void combine_url(LOGBOOK * lbs, char *url, char *param, char *result, int size)
 
 int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index, char *error_str)
 {
-   int i, n, id, x, version;
+   int i, n, id, x, version, ssl;
    char *text, *p, url[256], str[1000];
 
    *md5_index = NULL;
 
-   combine_url(lbs, host, "?cmd=GetMD5", url, sizeof(url));
+   combine_url(lbs, host, "?cmd=GetMD5", url, sizeof(url), &ssl);
 
    text = NULL;
    error_str[0] = 0;
-   if (retrieve_url(url, &text, NULL) < 0) {
+   if (retrieve_url(url, ssl, &text, NULL) < 0) {
       sprintf(error_str, loc("Cannot connect to remote server \"%s\""), host);
       return -1;
    }
@@ -15003,14 +15087,13 @@ int send_tcp(int sock, char *buffer, unsigned int buffer_size, int flags)
 
 int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 {
-   int size, i, n, status, fh, port, sock, content_length, header_length, remote_id, n_attr;
+   int size, i, n, status, fh, port, sock, content_length, header_length, remote_id, n_attr, ssl;
    char str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
    char subdir[256], param[256], remote_host_name[256], url[256];
    char date[80], *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256], *buffer;
    char *content, *p, boundary[80], request[10000], response[10000];
-   struct hostent *phe;
-   struct sockaddr_in bind_addr;
+   SSL *ssl_con; 
 
    text = xmalloc(TEXT_SIZE);
    error_str[0] = 0;
@@ -15029,39 +15112,21 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    /* count attributes */
    for (n_attr = 0; attr_list[n_attr][0]; n_attr++);
 
-   combine_url(lbs, host, "", url, sizeof(url));
+   combine_url(lbs, host, "", url, sizeof(url), &ssl);
    split_url(url, remote_host_name, &port, subdir, param);
 
-   /* create socket */
-   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-      xfree(text);
-      strcpy(error_str, loc("Cannot create socket"));
-      return -1;
-   }
-
-   /* compose remote address */
-   memset(&bind_addr, 0, sizeof(bind_addr));
-   bind_addr.sin_family = AF_INET;
-   bind_addr.sin_addr.s_addr = 0;
-   bind_addr.sin_port = htons((unsigned short) port);
-
-   phe = gethostbyname(remote_host_name);
-   if (phe == NULL) {
-      closesocket(sock);
-      xfree(text);
-      sprintf(error_str, loc("Cannot resolve host name \"%s\""), remote_host_name);
-      return -1;
-   }
-   memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
-
-   /* connect to server */
-   status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
-   if (status != 0) {
-      closesocket(sock);
-      xfree(text);
+   sock = elog_connect(remote_host_name, port);
+   if (sock == -1) {
       sprintf(error_str, loc("Cannot connect to host %s, port %d"), remote_host_name, port);
       return -1;
    }
+#ifdef HAVE_SSL
+   if (ssl)
+      if (ssl_connect(sock, &ssl_con) < 0) {
+         strcpy(error_str, "Error initiating SSL connection\n");
+         return -1;
+      }
+#endif
 
    content_length = 100000;
    for (i = 0; i < MAX_ATTACHMENTS; i++)
@@ -15181,14 +15246,30 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 
    header_length = strlen(request);
 
-   /* send request */
-   send(sock, request, header_length, 0);
+#ifdef HAVE_SSL
+   if (ssl) {
+      /* send request */
+      SSL_write(ssl_con, request, header_length);
 
-   /* send content */
-   send_tcp(sock, content, content_length, 0);
+      /* send content */
+      SSL_write(ssl_con, content, content_length);
 
-   /* receive response */
-   i = recv(sock, response, 10000, 0);
+      /* receive response */
+      i = SSL_read(ssl_con, response, 10000);
+
+   } else
+#endif
+          {
+      /* send request */
+      send(sock, request, header_length, 0);
+
+      /* send content */
+      send_tcp(sock, content, content_length, 0);
+
+      /* receive response */
+      i = recv(sock, response, 10000, 0);
+   }
+
    if (i < 0) {
       closesocket(sock);
       xfree(text);
@@ -15204,6 +15285,13 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
          n += i;
    }
    response[n] = 0;
+
+#ifdef HAVE_SSL
+   if (ssl) {
+      SSL_shutdown(ssl_con);
+      SSL_free(ssl_con);
+   }
+#endif
 
    closesocket(sock);
    remote_id = -1;
@@ -15254,17 +15342,17 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 
 int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, BOOL bnew)
 {
-   int i, status, size, n_attr, header_size;
+   int i, status, size, n_attr, header_size, ssl;
    char str[NAME_LENGTH], str2[NAME_LENGTH], *p, *p2, *message, date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
        in_reply_to[80], reply_to[MAX_REPLY_TO * 10], encoding[80], locked_by[256],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], attachment_all[64 * MAX_ATTACHMENTS];
 
    error_str[0] = 0;
 
-   combine_url(lbs, url, "", str, sizeof(str));
+   combine_url(lbs, url, "", str, sizeof(str), &ssl);
    sprintf(str + strlen(str), "%d?cmd=%s", message_id, loc("Download"));
 
-   retrieve_url(str, &message, NULL);
+   retrieve_url(str, ssl, &message, NULL);
    if (message == NULL) {
       sprintf(error_str, loc("Cannot receive \"%s\""), str);
       return -1;
@@ -15353,12 +15441,12 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
       for (i = 0; i < MAX_ATTACHMENTS; i++) {
          if (attachment[i][0]) {
 
-            combine_url(lbs, url, "", str, sizeof(str));
+            combine_url(lbs, url, "", str, sizeof(str), &ssl);
             strlcpy(str2, attachment[i], sizeof(str2));
             str2[13] = '/';
             strlcat(str, str2, sizeof(str));
 
-            size = retrieve_url(str, &message, NULL);
+            size = retrieve_url(str, ssl, &message, NULL);
             p = strstr(message, "\r\n\r\n");
             if (p == NULL) {
                xfree(message);
@@ -15384,45 +15472,29 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
 
 void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
 {
-   int i, n, status, port, sock, content_length, header_length;
+   int i, n, port, sock, content_length, header_length, ssl;
    char str[256];
    char subdir[256], param[256], remote_host_name[256];
    char *content, *p, boundary[80], request[10000], response[10000];
-   struct hostent *phe;
-   struct sockaddr_in bind_addr;
+   SSL *ssl_con;
 
    error_str[0] = 0;
 
-   combine_url(lbs, server, "", str, sizeof(str));
+   combine_url(lbs, server, "", str, sizeof(str), &ssl);
    split_url(str, remote_host_name, &port, subdir, param);
 
-   /* create socket */
-   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-      strcpy(error_str, loc("Cannot create socket"));
-      return;
-   }
-
-   /* compose remote address */
-   memset(&bind_addr, 0, sizeof(bind_addr));
-   bind_addr.sin_family = AF_INET;
-   bind_addr.sin_addr.s_addr = 0;
-   bind_addr.sin_port = htons((unsigned short) port);
-
-   phe = gethostbyname(remote_host_name);
-   if (phe == NULL) {
-      closesocket(sock);
-      sprintf(error_str, loc("Cannot resolve host name \"%s\""), remote_host_name);
-      return;
-   }
-   memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
-
-   /* connect to server */
-   status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
-   if (status != 0) {
-      closesocket(sock);
+   sock = elog_connect(remote_host_name, port);
+   if (sock == -1) {
       sprintf(error_str, loc("Cannot connect to host %s, port %d"), remote_host_name, port);
       return;
    }
+#ifdef HAVE_SSL
+   if (ssl)
+      if (ssl_connect(sock, &ssl_con) < 0) {
+         strcpy(error_str, "Error initiating SSL connection\n");
+         return;
+      }
+#endif
 
    content_length = 100000;
    content = xmalloc(content_length);
@@ -15470,14 +15542,30 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
 
    header_length = strlen(request);
 
-   /* send request */
-   send(sock, request, header_length, 0);
+#ifdef HAVE_SSL
+   if (ssl) {
+      /* send request */
+      SSL_write(ssl_con, request, header_length);
 
-   /* send content */
-   send(sock, content, content_length, 0);
+      /* send content */
+      SSL_write(ssl_con, content, content_length);
 
-   /* receive response */
-   i = recv(sock, response, 10000, 0);
+      /* receive response */
+      i = SSL_read(ssl_con, response, 10000);
+
+   } else
+#endif
+          {
+      /* send request */
+      send(sock, request, header_length, 0);
+
+      /* send content */
+      send_tcp(sock, content, content_length, 0);
+
+      /* receive response */
+      i = recv(sock, response, 10000, 0);
+   }
+
    if (i < 0) {
       closesocket(sock);
       strcpy(error_str, "Cannot receive response");
@@ -15492,6 +15580,13 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
          n += i;
    }
    response[n] = 0;
+
+#ifdef HAVE_SSL
+   if (ssl) {
+      SSL_shutdown(ssl_con);
+      SSL_free(ssl_con);
+   }
+#endif
 
    closesocket(sock);
 
@@ -15521,19 +15616,19 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
 void receive_config(LOGBOOK * lbs, char *server, char *error_str)
 {
    char str[256], pwd[256], *buffer, *p;
-   int status, version;
+   int status, version, ssl;
 
    error_str[0] = pwd[0] = 0;
 
    do {
 
-      combine_url(lbs, server, "", str, sizeof(str));
+      combine_url(lbs, server, "", str, sizeof(str), &ssl);
       if (lbs == NULL)
          strcat(str, "?cmd=GetConfig"); // request complete config file
       else
          strcat(str, "?cmd=Download");  // request config section of logbook
 
-      if (retrieve_url(str, &buffer, pwd) < 0) {
+      if (retrieve_url(str, ssl, &buffer, pwd) < 0) {
          *strchr(str, '?') = 0;
          sprintf(error_str, "Cannot contact elogd server at http://%s", str);
          return;
@@ -15569,7 +15664,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
             puts(buffer);
          xfree(buffer);
          *strchr(str, '?') = 0;
-         sprintf(error_str, "Received invalid response from elogd server at http://%s", str);
+         sprintf(error_str, "Received invalid response from elogd server at http%s://%s", ssl ? "s" : "", str);
          xfree(buffer);
          return;
       }
@@ -15588,7 +15683,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
             puts(buffer);
          xfree(buffer);
          *strchr(str, '?') = 0;
-         sprintf(error_str, "Received invalid response from elogd server at http://%s", str);
+         sprintf(error_str, "Received invalid response from elogd server at http%s://%s", ssl ? "s" : "", str);
          return;
       }
 
@@ -15711,17 +15806,17 @@ int adjust_config(char *url)
 void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
 {
    char str[256], pwd[256], url[256], *buffer, *buf, *p;
-   int i, status, version, fh;
+   int i, status, version, fh, ssl;
 
    error_str[0] = pwd[0] = 0;
 
    do {
 
-      combine_url(lbs, server, "", url, sizeof(url));
+      combine_url(lbs, server, "", url, sizeof(url), &ssl);
       strlcpy(str, url, sizeof(str));
       strcat(str, "?cmd=GetPwdFile");   // request password file
 
-      if (retrieve_url(str, &buffer, pwd) < 0) {
+      if (retrieve_url(str, ssl, &buffer, pwd) < 0) {
          *strchr(str, '?') = 0;
          sprintf(error_str, "Cannot contact elogd server at http://%s", str);
          return;
@@ -15845,7 +15940,7 @@ int save_md5(LOGBOOK * lbs, char *server, MD5_INDEX * md5_index, int n)
    int i, j;
    FILE *f;
 
-   combine_url(lbs, server, "", url, sizeof(url));
+   combine_url(lbs, server, "", url, sizeof(url), NULL);
    url_decode(url);
    if (strstr(url, "http://"))
       strlcpy(str, url + 7, sizeof(str));
@@ -15890,7 +15985,7 @@ int load_md5(LOGBOOK * lbs, char *server, MD5_INDEX ** md5_index)
 
    *md5_index = NULL;
 
-   combine_url(lbs, server, "", url, sizeof(url));
+   combine_url(lbs, server, "", url, sizeof(url), NULL);
    url_decode(url);
    if (strstr(url, "http://"))
       strlcpy(str, url + 7, sizeof(str));
@@ -15979,7 +16074,7 @@ void mprint(LOGBOOK * lbs, int mode, char *str)
 void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 {
    int index, i, j, i_msg, i_remote, i_cache, n_remote, n_cache, nserver, remote_id, exist_remote,
-       exist_cache, message_id, max_id;
+       exist_cache, message_id, max_id, ssl;
    int all_identical, n_delete;
    char str[2000], url[256], loc_ref[256], rem_ref[256], pwd[256], locked_by[256];
    MD5_INDEX *md5_remote, *md5_cache;
@@ -16030,7 +16125,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                if (n_remote == -3)
                   eprintf("\nInvalid username or password.");
 
-               combine_url(lbs, list[index], "", url, sizeof(url));
+               combine_url(lbs, list[index], "", url, sizeof(url), NULL);
                /* ask for username and password */
                eprintf("\nPlease enter username to access\n%s: ", url);
                fgets(str, sizeof(str), stdin);
@@ -16320,7 +16415,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                      write_logfile(lbs, str);
                   }
 
-                  combine_url(lbs, list[index], "", str, sizeof(str));
+                  combine_url(lbs, list[index], "", str, sizeof(str), NULL);
 
                   if (getcfg_topgroup())
                      sprintf(loc_ref, "<a href=\"../%s/%d\">%s</a>", lbs->name_enc, message_id, loc("local"));
@@ -16395,7 +16490,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                if (!isparam("confirm") && mode == SYNC_HTML) {
 
-                  combine_url(lbs, list[index], "", str, sizeof(str));
+                  combine_url(lbs, list[index], "", str, sizeof(str), NULL);
 
                   if (getcfg_topgroup())
                      sprintf(loc_ref, "<a href=\"../%s/%d\">%s</a>", lbs->name_enc, message_id, loc("local"));
@@ -16644,7 +16739,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
 
                      if (!isparam("confirm") && mode == SYNC_HTML) {
 
-                        combine_url(lbs, list[index], "", str, sizeof(str));
+                        combine_url(lbs, list[index], "", str, sizeof(str), NULL);
                         sprintf(rem_ref, "<a href=\"http://%s%d\">%s</a>", str, message_id,
                                 loc("Remote entry"));
 
@@ -16665,10 +16760,10 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                         }
 
                         sprintf(str, "%d?cmd=%s&confirm=%s", message_id, loc("Delete"), loc("Yes"));
-                        combine_url(lbs, list[index], str, url, sizeof(url));
+                        combine_url(lbs, list[index], str, url, sizeof(url), &ssl);
 
                         if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0) {
-                           retrieve_url(url, &buffer, NULL);
+                           retrieve_url(url, ssl, &buffer, NULL);
 
                            if (strstr(buffer, "Location: ")) {
                               if (mode == SYNC_HTML)
@@ -27065,7 +27160,7 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
 
                   /* check for URL */
                   if (stristr(file_name, "http://") || stristr(file_name, "https://")) {
-                     size = retrieve_url(file_name, &buffer, NULL);
+                     size = retrieve_url(file_name, stristr(file_name, "https://") != NULL, &buffer, NULL);
                      if (size <= 0) {
                         strencode2(str2, file_name, sizeof(str2));
                         sprintf(str, loc("Cannot retrieve file from URL \"%s\""), str2);
@@ -28068,7 +28163,6 @@ void server_loop(void)
    char *net_buffer = NULL;
    int net_buffer_size;
 #ifdef HAVE_SSL
-   SSL *ssl_con;
    SSL_CTX *ssl_ctx;
 #endif
 
@@ -28346,6 +28440,12 @@ void server_loop(void)
       for (i = 0; i < N_MAX_CONNECTION; i++)
          if (ka_sock[i] && (int) time(NULL) - ka_time[i] > 60) {
 #ifdef HAVE_SSL
+            if (_ssl_flag) {
+               SSL_set_fd(ka_ssl_con[i_min], ka_sock[i_min]);
+               SSL_shutdown(ka_ssl_con[i_min]);
+               SSL_free(ka_ssl_con[i_min]);
+               ka_ssl_con[i_min] = NULL;
+            }
 #endif
             closesocket(ka_sock[i]);
             ka_sock[i] = 0;
@@ -28359,14 +28459,14 @@ void server_loop(void)
 
 #ifdef HAVE_SSL
             if (_ssl_flag) {
-               ssl_con = SSL_new(ssl_ctx);
-               SSL_set_fd(ssl_con, _sock);
-               if (SSL_accept(ssl_con) < 0) {
+               _ssl_con = SSL_new(ssl_ctx);
+               SSL_set_fd(_ssl_con, _sock);
+               if (SSL_accept(_ssl_con) < 0) {
                   if (verbose)
                      eprintf("SSL_accept failed\n");
                   closesocket(_sock);
                   ka_sock[i_conn] = 0;
-                  ka_ssl_con[i_conn] = ssl_con;
+                  ka_ssl_con[i_conn] = _ssl_con;
                   continue;
                }
             }
@@ -28385,7 +28485,7 @@ void server_loop(void)
                   }
 #ifdef HAVE_SSL
                if (_ssl_flag) {
-                  SSL_set_fd(ssl_con, ka_sock[i_min]);
+                  SSL_set_fd(ka_ssl_con[i_min], ka_sock[i_min]);
                   SSL_shutdown(ka_ssl_con[i_min]);
                   SSL_free(ka_ssl_con[i_min]);
                   ka_ssl_con[i_min] = NULL;
@@ -28401,7 +28501,7 @@ void server_loop(void)
             ka_sock[i_conn] = _sock;
             ka_time[i_conn] = (int) time(NULL);
 #ifdef HAVE_SSL
-            ka_ssl_con[i_conn] = ssl_con;
+            ka_ssl_con[i_conn] = _ssl_con;
 #endif
             /* save remote host address */
             memcpy(&remote_addr[i_conn], &(acc_addr.sin_addr), sizeof(rem_addr));
@@ -28430,7 +28530,7 @@ void server_loop(void)
                i_conn = i;
                _sock = ka_sock[i_conn];
 #ifdef HAVE_SSL
-               ssl_con = ka_ssl_con[i_conn];
+               _ssl_con = ka_ssl_con[i_conn];
 #endif
                ka_time[i_conn] = (int) time(NULL);
                memcpy(&rem_addr, &remote_addr[i_conn], sizeof(rem_addr));
@@ -28464,7 +28564,7 @@ void server_loop(void)
                      if (FD_ISSET(_sock, &readfds)) {
 #ifdef HAVE_SSL
                         if (_ssl_flag)
-                           i = SSL_read(ssl_con, net_buffer + len, net_buffer_size - len);
+                           i = SSL_read(_ssl_con, net_buffer + len, net_buffer_size - len);
                         else
 #endif
                            i = recv(_sock, net_buffer + len, net_buffer_size - len, 0);
@@ -28554,7 +28654,7 @@ void server_loop(void)
                               if (FD_ISSET(_sock, &readfds)) {
 #ifdef HAVE_SSL
                                  if (_ssl_flag)
-                                    i = SSL_read(ssl_con, net_buffer, net_buffer_size);
+                                    i = SSL_read(_ssl_con, net_buffer, net_buffer_size);
                                  else
 #endif
                                     i = recv(_sock, net_buffer, net_buffer_size, 0);
@@ -28577,7 +28677,7 @@ void server_loop(void)
                            keep_alive = FALSE;
                            show_error(str);
 #ifdef HAVE_SSL
-                           send_return(_sock, ssl_con, net_buffer);
+                           send_return(_sock, _ssl_con, net_buffer);
 #else
                            send_return(_sock, net_buffer);
 #endif
@@ -28632,7 +28732,7 @@ void server_loop(void)
 
                   /* send back the return_buffer to the browser */
 #ifdef HAVE_SSL
-                  send_return(_sock, ssl_con, net_buffer);
+                  send_return(_sock, _ssl_con, net_buffer);
 #else
                   send_return(_sock, net_buffer);
 #endif
@@ -28650,8 +28750,8 @@ void server_loop(void)
             if (!keep_alive) {
 #ifdef HAVE_SSL
                if (_ssl_flag) {
-                  SSL_shutdown(ssl_con);
-                  SSL_free(ssl_con);
+                  SSL_shutdown(_ssl_con);
+                  SSL_free(_ssl_con);
                }
 #endif
 
