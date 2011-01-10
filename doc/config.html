@@ -2728,6 +2728,11 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
         <pre>
 elogd -C http://master.your.domain
 </pre>
+or
+        <pre>
+elogd -C https://master.your.domain
+</pre>
+        for a remote server running under the SSL protocol.
         <p>
           This command tells elogd to retrieve the configuration file, and
           optionally all logbook entries and password files from the master
@@ -2763,11 +2768,12 @@ elogd -v -C http://master.your.domain
             statement looks like:<br>
             <br>
             <code>Mirror server = myhost.mydomain.org:8080,
-            http://another.server.org/elog/</code><br>
+            http://another.server.org/elog/, https://yet.another.org</code><br>
             <br>
             The URL should not contain any logbook name, this gets added
             automatically. The second example contains a subdirectory, which is
             typically used if the elogd daemon runs under an Apache proxy.
+            The third example shows a server running under the SSL protocol.
           </li>
           <li>
             <b><code>Mirror config = 0 | 1</code></b><br>
