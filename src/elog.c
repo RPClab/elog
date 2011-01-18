@@ -186,6 +186,13 @@ size_t strlcat(char *dst, const char *src, size_t size)
 #endif                          // STRLCPY_DEFINED
 
 
+char *sha256_crypt(const char *key, const char *salt);
+
+void do_crypt(char *s, char *d, int size)
+{
+   strlcpy(d, sha256_crypt(s, "$5$") + 4, size);
+}
+
 /*-------------------------------------------------------------------*/
 
 void stou(char *str)
@@ -357,8 +364,9 @@ int ssl_connect(int sock, SSL ** ssl_con)
 
 char request[100000], response[100000], *content;
 
-INT retrieve_sid(char *host, int port, char *subdir, int ssl, char *experiment,
-                 char *uname, char *upwd, char *sid)
+INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
+                  char *uname, char *upwd, int message_id, 
+                  char attrib_name[MAX_N_ATTR][NAME_LENGTH], char attrib[MAX_N_ATTR][NAME_LENGTH], char *text)
 /********************************************************************\
 
   Routine: retrive_elog
@@ -372,172 +380,6 @@ INT retrieve_sid(char *host, int port, char *subdir, int ssl, char *experiment,
     int    ssl              Flag for using SSL layer
     char   *uname           User name
     char   *upwd            User password
-
-  Output:
-    char   *sid             Session ID
-
-  Function value:
-    EL_SUCCESS              Successful completion
-
-\********************************************************************/
-{
-   int i, n, first, sock;
-   char str[256];
-#ifdef HAVE_SSL
-   SSL *ssl_con;
-#endif
-
-   if (ssl)                     /* avoid compiler warning */
-      sock = 0;
-
-   sock = elog_connect(host, port);
-   if (sock < 0)
-      return sock;
-
-#ifdef HAVE_SSL
-   if (ssl)
-      if (ssl_connect(sock, &ssl_con) < 0) {
-         printf("elogd server does not run SSL protocol\n");
-         return -1;
-      }
-#endif
-
-   /* compose request */
-   strcpy(request, "GET /");
-   strlcpy(str, experiment, sizeof(str));
-   url_encode(str, sizeof(str));
-   if (subdir[0] && experiment[0])
-      sprintf(request + strlen(request), "%s/%s/", subdir, str);
-   else if (subdir[0])
-      sprintf(request + strlen(request), "%s/", subdir);
-   else if (experiment[0])
-      sprintf(request + strlen(request), "%s/", str);
-   strcat(request, " HTTP/1.0\r\n");
-
-   sprintf(request + strlen(request), "User-Agent: ELOG\r\n");
-
-   first = 1;
-
-   if (uname[0]) {
-      if (first)
-         sprintf(request + strlen(request), "Cookie: ");
-      first = 0;
-
-      sprintf(request + strlen(request), "uname=%s;", uname);
-   }
-
-   if (upwd[0]) {
-      if (first)
-         sprintf(request + strlen(request), "Cookie: ");
-      first = 0;
-
-      sprintf(request + strlen(request), "upassword=%s;", upwd);
-   }
-
-   /* finish cookie line */
-   if (!first)
-      strcat(request, "\r\n");
-
-   strcat(request, "\r\n");
-
-   /* send request */
-#ifdef HAVE_SSL
-   if (ssl)
-      SSL_write(ssl_con, request, strlen(request));
-   else
-#endif
-      send(sock, request, strlen(request), 0);
-   if (verbose) {
-      printf("Request sent to host:\n");
-      puts(request);
-   }
-
-   /* receive response */
-   memset(response, 0, sizeof(response));
-#ifdef HAVE_SSL
-   if (ssl)
-      i = SSL_read(ssl_con, response, sizeof(response) - 1);
-   else
-#endif
-      i = recv(sock, response, sizeof(response) - 1, 0);
-   if (i < 0) {
-      perror("Cannot receive response");
-      return -1;
-   }
-
-   n = i;
-   while (i > 0) {
-#ifdef HAVE_SSL
-      if (ssl)
-         i = SSL_read(ssl_con, response + n, sizeof(response) - 1 - n);
-      else
-#endif
-         i = recv(sock, response + n, sizeof(response) - 1 - n, 0);
-      if (i > 0)
-         n += i;
-   }
-   response[n] = 0;
-
-#ifdef HAVE_SSL
-   if (ssl) {
-      SSL_shutdown(ssl_con);
-      SSL_free(ssl_con);
-   }
-#endif
-
-   closesocket(sock);
-
-   if (verbose) {
-      printf("Response received:\n");
-      puts(response);
-   }
-
-   /* check response status */
-   if (strstr(response, "302 Found")) {
-      if (strstr(response, "Location:")) {
-         if (strstr(response, "fail"))
-            printf("Error: Invalid user name or password\n");
-         else {
-            if (strstr(response, "sid")) {
-               strlcpy(str, strstr(response, "sid")+4, sizeof(str));
-               if (strchr(str, ';'))
-                  *strchr(str, ';') = 0;
-               strcpy(sid, str);
-               return 1;
-            }
-         }
-      }
-   } else if (strstr(response, "Logbook Selection"))
-      printf("Error: No logbook specified\n");
-   else if (strstr(response, "enter password"))
-      printf("Error: Missing or invalid password\n");
-   else if (strstr(response, "form name=form1"))
-      printf("Error: Missing or invalid user name/password\n");
-   else
-      printf("Error transmitting message\n");
-
-   return 0;
-}
-
-/*------------------------------------------------------------------*/
-
-char request[100000], response[100000], *content;
-
-INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
-                  char *sid, int message_id, char attrib_name[MAX_N_ATTR][NAME_LENGTH], 
-                  char attrib[MAX_N_ATTR][NAME_LENGTH], char *text)
-/********************************************************************\
-
-  Routine: retrive_elog
-
-  Purpose: Retrive an ELog entry for edit/reply
-
-  Input:
-    char   *host            Host name where ELog server runs
-    int    port             ELog server port number
-    char   *subdir          Subdirectoy to elog server
-    int    ssl              Flag for using SSL layer
-    char   *sid             Session ID
     int    message_id       Message to retrieve
     char   *attrib_name     Attribute names
     char   *attrib          Attribute values
@@ -549,7 +391,7 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
 \********************************************************************/
 {
    int i, n, first, index, sock;
-   char str[256], *ph, *ps;
+   char str[256], encrypted_passwd[256], *ph, *ps;
 #ifdef HAVE_SSL
    SSL *ssl_con;
 #endif
@@ -585,12 +427,21 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
 
    first = 1;
 
-   if (sid[0]) {
+   if (uname[0]) {
       if (first)
          sprintf(request + strlen(request), "Cookie: ");
       first = 0;
 
-      sprintf(request + strlen(request), "sid=%s;", sid);
+      sprintf(request + strlen(request), "unm=%s;", uname);
+   }
+
+   if (upwd[0]) {
+      if (first)
+         sprintf(request + strlen(request), "Cookie: ");
+      first = 0;
+
+      do_crypt(upwd, encrypted_passwd, sizeof(encrypted_passwd));
+      sprintf(request + strlen(request), "upwd=%s;", encrypted_passwd);
    }
 
    /* finish cookie line */
@@ -776,7 +627,7 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
 \********************************************************************/
 {
    int status, sock, i, n, header_length, content_length, index;
-   char host_name[256], boundary[80], str[80], *p, *old_encoding, sid[32];
+   char host_name[256], boundary[80], str[80], encrypted_passwd[256], *p, *old_encoding;
    char old_attrib_name[MAX_N_ATTR][NAME_LENGTH], old_attrib[MAX_N_ATTR][NAME_LENGTH];
    struct hostent *phe;
 #ifdef HAVE_SSL
@@ -801,16 +652,9 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
    if (strchr(host_name, '.') == NULL)
       strcpy(host_name, phe->h_name);
 
-   /* first retrieve our session ID */
-   status = retrieve_sid(host, port, subdir, ssl, experiment,
-                 uname, upwd, sid);
-
-   if (status != 1)
-      return status;
-
    if (edit) {
       status =
-          retrieve_elog(host, port, subdir, ssl, experiment, sid, edit,
+          retrieve_elog(host, port, subdir, ssl, experiment, uname, upwd, edit,
                         old_attrib_name, old_attrib, old_text);
 
       if (status != 1)
@@ -840,7 +684,7 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
 
    if (reply) {
       status =
-          retrieve_elog(host, port, subdir, ssl, experiment, sid, reply,
+          retrieve_elog(host, port, subdir, ssl, experiment, uname, upwd, reply,
                         old_attrib_name, old_attrib, old_text);
 
       if (status != 1)
@@ -951,11 +795,15 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
    strcpy(content, boundary);
    strcat(content, "\r\nContent-Disposition: form-data; name=\"cmd\"\r\n\r\nSubmit\r\n");
 
-   if (sid[0]) {
+   if (uname[0])
       sprintf(content + strlen(content),
-              "%s\r\nContent-Disposition: form-data; name=\"sid\"\r\n\r\n%s\r\n", boundary, sid);
+              "%s\r\nContent-Disposition: form-data; name=\"unm\"\r\n\r\n%s\r\n", boundary, uname);
+
+   if (upwd[0]) {
+      do_crypt(upwd, encrypted_passwd, sizeof(encrypted_passwd));
       sprintf(content + strlen(content),
-              "%s\r\nContent-Disposition: form-data; name=\"sidclose\"\r\n\r\n1\r\n", boundary);
+              "%s\r\nContent-Disposition: form-data; name=\"upwd\"\r\n\r\n%s\r\n", boundary,
+              encrypted_passwd);
    }
 
    if (experiment[0])
@@ -1243,7 +1091,7 @@ int main(int argc, char *argv[])
                printf("     -l logbook/experiment    Name of logbook or experiment\n");
                printf("     -s                       Use SSL for communication\n");
                printf("     [-v]                     For verbose output\n");
-               printf("     [-u username password]   User name and password\n");
+               printf("     [-u username password]   Wser name and password\n");
                printf("     [-f <attachment>]        (up to %d attachments)\n", MAX_ATTACHMENTS);
                printf("     -a <attribute>=<value>   (up to %d attributes)\n", MAX_N_ATTR);
                printf("     [-r <id>]                Reply to existing message\n");
@@ -1371,8 +1219,9 @@ int main(int argc, char *argv[])
    }
 
    /* now submit message */
-   submit_elog(host_name, port, ssl, subdir, logbook, uname, upwd, reply, quote_on_reply, 
-      edit, suppress, encoding, attr_name, attrib, n_attr, text, attachment, buffer, att_size);
+   submit_elog(host_name, port, ssl, subdir, logbook, 
+               uname, upwd, reply, quote_on_reply, edit, suppress, encoding, attr_name, attrib, n_attr, text,
+               attachment, buffer, att_size);
 
    for (i = 0; i < MAX_ATTACHMENTS; i++)
       if (buffer[i])

@@ -2383,9 +2383,9 @@ void split_url(const char *url, char *host, int *port, char *subdir, char *param
 
 /*-------------------------------------------------------------------*/
 
-int retrieve_url(const char *url, int ssl, char **buffer, char *rpwd)
+int retrieve_url(LOGBOOK *lbs, const char *url, int ssl, char **buffer)
 {
-   char str[1000], unm[256], upwd[256], host[256], subdir[256], param[256], auth[256], pwd_enc[256];
+   char str[1000], unm[256], upwd[256], host[256], subdir[256], param[256];
    int port, bufsize;
    int i, n;
    fd_set readfds;
@@ -2442,16 +2442,14 @@ int retrieve_url(const char *url, int ssl, char **buffer, char *rpwd)
    sprintf(str, "GET %s%s HTTP/1.0\r\nConnection: Close\r\n", subdir, param);
 
    /* add local username/password */
-   if (isparam("unm") && isparam("upwd")) {
+   if (isparam("unm")) {
       strlcpy(unm, getparam("unm"), sizeof(unm));
-      strlcpy(upwd, getparam("upwd"), sizeof(upwd));
-      sprintf(str + strlen(str), "Cookie: unm=%s; upwd=%s\r\n", getparam("unm"), getparam("upwd"));
-   }
-
-   if (rpwd && rpwd[0]) {
-      sprintf(auth, "anybody:%s", rpwd);
-      base64_encode((unsigned char *) auth, (unsigned char *) pwd_enc, sizeof(pwd_enc));
-      sprintf(str + strlen(str), "Authorization: Basic %s\r\n", pwd_enc);
+      if (isparam("upwd"))
+         strlcpy(upwd, getparam("upwd"), sizeof(upwd));
+      else
+         get_user_line(lbs, getparam("unm"), upwd, NULL, NULL, NULL, NULL, NULL);
+         
+      sprintf(str + strlen(str), "Cookie: unm=%s; upwd=%s\r\n", unm, upwd);
    }
 
    /* add host (RFC2616, Sec. 14) */
@@ -8504,7 +8502,7 @@ void show_change_pwd_page(LOGBOOK * lbs)
 
    old_pwd[0] = new_pwd[0] = new_pwd2[0] = 0;
 
-   if (stricmp(auth, "Kerberos Password") == 0) {
+   if (stricmp(auth, "Kerberos") == 0) {
       if (isparam("oldpwd"))
          strlcpy(old_pwd, getparam("oldpwd"), sizeof(old_pwd));
       if (isparam("newpwd"))
@@ -8541,7 +8539,7 @@ void show_change_pwd_page(LOGBOOK * lbs)
    if (old_pwd[0] || new_pwd[0]) {
       if (user[0] && get_user_line(lbs, user, act_pwd, full_user, NULL, NULL, NULL, NULL)) {
 
-         if (stricmp(auth, "Kerberos Password") == 0) {
+         if (stricmp(auth, "Kerberos") == 0) {
             if (strcmp(new_pwd, new_pwd2) != 0)
                wrong_pwd = 2;
          } else {
@@ -9103,7 +9101,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
        ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256], cookie[256],
        orig_author[256], attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256], tooltip[10000],
-       enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256], **user_list, fid[20];
+       enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256], **user_list, fid[20], upwd[80];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -9922,8 +9920,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /*---- add password in case cookie expires during edit ----*/
 
    if (getcfg(lbs->name, "Password file", str, sizeof(str)) && isparam("unm")) {
-      rsprintf("<input type=hidden name=\"sid\" value=\"%s\">\n", getparam("sid"));
-      rsprintf("<input type=hidden name=\"exp\" value=\"1\">\n");
+      rsprintf("<input type=hidden name=\"unm\" value=\"%s\">\n", getparam("unm"));
+      if (isparam("upwd"))
+         strlcpy(upwd, getparam("upwd"), sizeof(upwd));
+      else
+         get_user_line(lbs, getparam("unm"), upwd, NULL, NULL, NULL, NULL, NULL);
+      rsprintf("<input type=hidden name=\"upwd\" value=\"%s\">\n", upwd);
    }
 
    rsprintf("<input type=hidden name=\"jcmd\">\n");
@@ -12672,7 +12674,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
 
    /* check for blank password if not external authentication*/
    getcfg(lbs->name, "Authentication", auth, sizeof(auth));
-   if (stricmp(auth, "Kerberos Password") != 0) {
+   if (stricmp(auth, "Kerberos") != 0) {
       if (isparam("newpwd")) {
          strlcpy(str, getparam("newpwd"), sizeof(str));
          if (str[0] == 0) {
@@ -12692,7 +12694,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
       self_register = atoi(str);
 
    new_pwd[0] = 0;
-   if (stricmp(auth, "Kerberos Password") != 0) {
+   if (stricmp(auth, "Kerberos") != 0) {
       /* check if passwords match */
       if (isparam("newpwd") && isparam("newpwd2")) {
          do_crypt(getparam("newpwd"), new_pwd, sizeof(new_pwd));
@@ -12750,12 +12752,8 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
          mxml_add_node(node, "name", str);
       }
       npwd = mxml_add_node(node, "password", new_pwd);
-      if (npwd) {
-         if (stricmp(auth, "Kerberos Password") == 0)
-            mxml_add_attribute(npwd, "encoding", "Kerberos Password");
-         else
-            mxml_add_attribute(npwd, "encoding", "SHA256");
-      }
+      if (npwd)
+         mxml_add_attribute(npwd, "encoding", "SHA256");
 
       if (isparam("new_full_name")) {
          strencode2(str, getparam("new_full_name"), sizeof(str));
@@ -14940,7 +14938,7 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index, char 
 
    text = NULL;
    error_str[0] = 0;
-   if (retrieve_url(url, ssl, &text, NULL) < 0) {
+   if (retrieve_url(lbs, url, ssl, &text) < 0) {
       sprintf(error_str, loc("Cannot connect to remote server \"%s\""), host);
       return -1;
    }
@@ -15078,7 +15076,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 {
    int size, i, n, status, fh, port, sock, content_length, header_length, remote_id, n_attr, ssl;
    char str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
-   char subdir[256], param[256], remote_host_name[256], url[256];
+   char subdir[256], param[256], remote_host_name[256], url[256], upwd[80];
    char date[80], *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256], *buffer;
    char *content, *p, boundary[80], request[10000], response[10000];
@@ -15144,13 +15142,17 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    sprintf(content + strlen(content),
            "%s\r\nContent-Disposition: form-data; name=\"mirror_id\"\r\n\r\n%d\r\n", boundary, message_id);
 
-   if (isparam("unm"))
+   if (isparam("unm")) {
       sprintf(content + strlen(content), "%s\r\nContent-Disposition: form-data; name=\"unm\"\r\n\r\n%s\r\n",
               boundary, getparam("unm"));
 
-   if (isparam("upwd"))
+      if (isparam("upwd"))
+         strlcpy(upwd, getparam("upwd"), sizeof(upwd));
+      else
+         get_user_line(lbs, getparam("unm"), upwd, NULL, NULL, NULL, NULL, NULL);
       sprintf(content + strlen(content), "%s\r\nContent-Disposition: form-data; name=\"upwd\"\r\n\r\n%s\r\n",
-              boundary, getparam("upwd"));
+              boundary, upwd);
+   }
 
    if (in_reply_to[0])
       sprintf(content + strlen(content),
@@ -15341,7 +15343,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
    combine_url(lbs, url, "", str, sizeof(str), &ssl);
    sprintf(str + strlen(str), "%d?cmd=%s", message_id, loc("Download"));
 
-   retrieve_url(str, ssl, &message, NULL);
+   retrieve_url(lbs, str, ssl, &message);
    if (message == NULL) {
       sprintf(error_str, loc("Cannot receive \"%s\""), str);
       return -1;
@@ -15435,7 +15437,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
             str2[13] = '/';
             strlcat(str, str2, sizeof(str));
 
-            size = retrieve_url(str, ssl, &message, NULL);
+            size = retrieve_url(lbs, str, ssl, &message);
             p = strstr(message, "\r\n\r\n");
             if (p == NULL) {
                xfree(message);
@@ -15462,7 +15464,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
 void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
 {
    int i, n, port, sock, content_length, header_length, ssl;
-   char str[256];
+   char str[256], upwd[80];
    char subdir[256], param[256], remote_host_name[256];
    char *content, *p, boundary[80], request[10000], response[10000];
    SSL *ssl_con;
@@ -15493,13 +15495,17 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
    strcpy(content, boundary);
    strcat(content, "\r\nContent-Disposition: form-data; name=\"cmd\"\r\n\r\nSave\r\n");
 
-   if (isparam("unm"))
+   if (isparam("unm")) {
       sprintf(content + strlen(content), "%s\r\nContent-Disposition: form-data; name=\"unm\"\r\n\r\n%s\r\n",
               boundary, getparam("unm"));
 
-   if (isparam("upwd"))
+      if (isparam("upwd"))
+         strlcpy(upwd, getparam("upwd"), sizeof(upwd));
+      else
+         get_user_line(lbs, getparam("unm"), upwd, NULL, NULL, NULL, NULL, NULL);
       sprintf(content + strlen(content), "%s\r\nContent-Disposition: form-data; name=\"upwd\"\r\n\r\n%s\r\n",
-              boundary, getparam("upwd"));
+              boundary, upwd);
+   }
 
    sprintf(content + strlen(content),
            "%s\r\nContent-Disposition: form-data; name=\"Text\"\r\n\r\n%s\r\n%s\r\n", boundary, buffer,
@@ -15607,7 +15613,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
    char str[256], pwd[256], *buffer, *p;
    int status, version, ssl;
 
-   error_str[0] = pwd[0] = 0;
+   error_str[0] = 0;
 
    do {
 
@@ -15617,7 +15623,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
       else
          strcat(str, "?cmd=Download");  // request config section of logbook
 
-      if (retrieve_url(str, ssl, &buffer, pwd) < 0) {
+      if (retrieve_url(lbs, str, ssl, &buffer) < 0) {
          *strchr(str, '?') = 0;
          sprintf(error_str, "Cannot contact elogd server at http://%s", str);
          return;
@@ -15794,10 +15800,10 @@ int adjust_config(char *url)
 
 void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
 {
-   char str[256], pwd[256], url[256], *buffer, *buf, *p;
+   char str[256], url[256], pwd[256], *buffer, *buf, *p;
    int i, status, version, fh, ssl;
 
-   error_str[0] = pwd[0] = 0;
+   error_str[0] = 0;
 
    do {
 
@@ -15805,7 +15811,7 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
       strlcpy(str, url, sizeof(str));
       strcat(str, "?cmd=GetPwdFile");   // request password file
 
-      if (retrieve_url(str, ssl, &buffer, pwd) < 0) {
+      if (retrieve_url(lbs, str, ssl, &buffer) < 0) {
          *strchr(str, '?') = 0;
          sprintf(error_str, "Cannot contact elogd server at http://%s", str);
          return;
@@ -15840,13 +15846,7 @@ void receive_pwdfile(LOGBOOK * lbs, char *server, char *error_str)
       }
       p++;
       status = atoi(p);
-      if (status == 401) {
-         xfree(buffer);
-         eprintf("Please enter password to access remote elogd server: ");
-         fgets(pwd, sizeof(pwd), stdin);
-         while (pwd[strlen(pwd) - 1] == '\n' || pwd[strlen(pwd) - 1] == '\r')
-            pwd[strlen(pwd) - 1] = 0;
-      } else if (status != 200 && status != 302 && status != 404) {
+      if (status != 200 && status != 302 && status != 404) {
          xfree(buffer);
          *strchr(str, '?') = 0;
          sprintf(error_str, "Received invalid response from elogd server at http://%s", str);
@@ -16752,7 +16752,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                         combine_url(lbs, list[index], str, url, sizeof(url), &ssl);
 
                         if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0) {
-                           retrieve_url(url, ssl, &buffer, NULL);
+                           retrieve_url(lbs, url, ssl, &buffer);
 
                            if (strstr(buffer, "Location: ")) {
                               if (mode == SYNC_HTML)
@@ -24973,6 +24973,63 @@ int set_user_inactive(LOGBOOK * lbs, char *user, int inactive)
 
 /*------------------------------------------------------------------*/
 
+int set_user_password(LOGBOOK * lbs, char *user, char *password)
+{
+   int i;
+   char str[256], pwd_enc[256], file_name[256], orig_topgroup[256], global[256];
+   PMXML_NODE user_node, node, npwd;
+
+   orig_topgroup[0] = 0;
+   if (lbs == NULL) {
+      getcfg("global", "Password file", global, sizeof(global));
+      if (getcfg_topgroup() && *getcfg_topgroup())
+         strcpy(orig_topgroup, getcfg_topgroup());
+
+      for (i = 0; lb_list[i].name[0]; i++) {
+         if (lb_list[i].top_group[0])
+            setcfg_topgroup(lb_list[i].top_group);
+         getcfg(lb_list[i].name, "Password file", str, sizeof(str));
+         if (str[0] && strieq(str, global)) {
+            lbs = lb_list + i;
+            break;
+         }
+      }
+
+      if (!lb_list[i].name[0])
+         return 0;
+
+      if (orig_topgroup[0])
+         setcfg_topgroup(orig_topgroup);
+   }
+
+   if (lbs->pwd_xml_tree) {
+      sprintf(str, "/list/user[name=%s]", user);
+      if ((user_node = mxml_find_node(lbs->pwd_xml_tree, str)) == NULL)
+         return 0;
+
+      do_crypt(password, pwd_enc, sizeof(pwd_enc));
+      if ((node = mxml_find_node(user_node, "password")) != NULL)
+         mxml_replace_node_value(node, pwd_enc);
+      else {
+         npwd = mxml_add_node(user_node, "password", pwd_enc);
+         mxml_add_attribute(npwd, "encoding", "SHA256");
+      }
+
+      /* flush to password file */
+      if (get_password_file(lbs, file_name, sizeof(file_name))) {
+         /* check if file system if full */
+         if (is_file_system_full(file_name))
+            return 0;
+
+         mxml_write_tree(file_name, lbs->pwd_xml_tree);
+      }
+   }
+
+   return 1;
+}
+
+/*------------------------------------------------------------------*/
+
 BOOL enum_user_line(LOGBOOK * lbs, int n, char *user, int size)
 {
    char str[256], file_name[256];
@@ -25205,8 +25262,8 @@ void show_login_page(LOGBOOK *lbs, char *redir, int fail)
 
 BOOL check_login(LOGBOOK * lbs, char *sid)
 {
-   char str[1000], pwd_file[256], user_name[256];
-   int status, inactive;
+   char str[1000], pwd_file[256], user_name[256], upwd[256];
+   int status, inactive, skip_sid_check;
 
    /* show new user screen if password file is empty */
    if (!enum_user_line(lbs, 0, str, sizeof(str))) { 
@@ -25225,8 +25282,22 @@ BOOL check_login(LOGBOOK * lbs, char *sid)
       return FALSE;
    }
 
+
+   /* check for password login (elog & mirroring) */
+   skip_sid_check = FALSE;
+   if (isparam("unm") && isparam("upwd")) {
+      get_user_line(lbs, getparam("unm"), upwd, NULL, NULL, NULL, NULL, NULL);
+      if (strcmp(upwd, getparam("upwd")) != 0) {
+         show_login_page(lbs, "", 0);
+         return FALSE;
+      } else {
+         strlcpy(user_name, getparam("unm"), sizeof(user_name));
+         skip_sid_check = TRUE;
+      }
+   }
+
    /* if invalid or no session ID, show login page */
-   if (!sid_check(lbs, sid, user_name)) {
+   if (!skip_sid_check && !sid_check(lbs, sid, user_name)) {
       if (isparam("redir"))
          strlcpy(str, getparam("redir"), sizeof(str));
       else
@@ -26114,6 +26185,9 @@ void interprete(char *lbook, char *path)
             }
          }
 
+         /* put encoded password into password file */
+         set_user_password(NULL, uname, getparam("upassword"));
+
          sprintf(str, "LOGIN user \"%s\" (success)", uname);
          write_logfile(NULL, str);
 
@@ -26222,6 +26296,9 @@ void interprete(char *lbook, char *path)
          }
       }
 
+      /* put encoded password into password file */
+      set_user_password(lbs, uname, getparam("upassword"));
+
       sprintf(str, "LOGIN user \"%s\" (success)", uname);
       write_logfile(lbs, str);
 
@@ -26313,9 +26390,30 @@ void interprete(char *lbook, char *path)
                   return;
             }
 
-            if (!check_login(lbs, getparam("sid"))) {
+            /* authorize via negotiation */
+            rsprintf("HTTP/1.1 401 Authorization Required\r\n");
+            rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
+            rsprintf("WWW-Authenticate: NegotiateBasic realm=\"%s\"\r\n", lbs->name);
+            //rsprintf("WWW-Authenticate: Negotiate\r\n");
+            rsprintf("Connection: close\r\n");
+            rsprintf("Content-Type: text/html\r\n\r\n");
+            rsprintf("<HTML><HEAD>\r\n");
+            rsprintf("<TITLE>401 Authorization Required</TITLE>\r\n");
+            rsprintf("</HEAD><BODY>\r\n");
+            rsprintf("<H1>Authorization Required</H1>\r\n");
+            rsprintf("This server could not verify that you\r\n");
+            rsprintf("are authorized to access the document\r\n");
+            rsprintf("requested. Either you supplied the wrong\r\n");
+            rsprintf("credentials (e.g., bad password), or your\r\n");
+            rsprintf("browser doesn't understand how to supply\r\n");
+            rsprintf("the credentials required.<P>\r\n");
+            rsprintf("</BODY></HTML>\r\n");
+            return;
+
+
+            /* check for correct session ID */
+            if (!check_login(lbs, getparam("sid")))
                return;
-            }
          }
       }
    }
@@ -27196,7 +27294,7 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
 
                   /* check for URL */
                   if (stristr(file_name, "http://") || stristr(file_name, "https://")) {
-                     size = retrieve_url(file_name, stristr(file_name, "https://") != NULL, &buffer, NULL);
+                     size = retrieve_url(lbs, file_name, stristr(file_name, "https://") != NULL, &buffer);
                      if (size <= 0) {
                         strencode2(str2, file_name, sizeof(str2));
                         sprintf(str, loc("Cannot retrieve file from URL \"%s\""), str2);

@@ -187,7 +187,7 @@ int auth_verify_password(LOGBOOK *lbs, const char *user, const char *password)
    char str[256];
 
    getcfg(lbs->name, "Authentication", str, sizeof(str));
-   if (stricmp(str, "Kerberos Password") == 0)
+   if (stricmp(str, "Kerberos") == 0)
       return auth_verify_password_krb5(lbs, user, password);
 
    return auth_verify_password_file(lbs, user, password);
@@ -198,7 +198,7 @@ int auth_change_password(LOGBOOK *lbs, const char *user, const char *old_pwd, co
    char str[256];
 
    getcfg(lbs->name, "Authentication", str, sizeof(str));
-   if (stricmp(str, "Kerberos Password") == 0)
+   if (stricmp(str, "Kerberos") == 0)
       return auth_change_password_krb5(lbs, user, old_pwd, new_pwd, error_str, error_size);
 
    return auth_change_password_file(lbs, user, old_pwd, new_pwd, error_str, error_size);
