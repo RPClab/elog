@@ -3984,13 +3984,25 @@ int el_index_logbooks()
       strcpy(lb_list[n].data_dir, data_dir);
       lb_list[n].el_index = NULL;
 
-      if (is_verbose())
-         eprintf("Indexing logbook \"%s\" in \"%s\" ... ", logbook, lb_list[n].data_dir);
-      eflush();
-      status = el_build_index(&lb_list[n], FALSE);
-      if (is_verbose())
-         if (status == EL_SUCCESS)
-            eprintf("ok\n");
+      /* check if other logbook uses the same directory */
+      for (j=0 ; j<n ; j++)
+         if (strcmp(lb_list[j].data_dir, lb_list[n].data_dir) == 0) {
+            if (is_verbose())
+               eprintf("Logbook \"%s\" uses same directory as logbook \"%s\"\n", logbook, lb_list[j].name);
+            lb_list[n].el_index = lb_list[j].el_index;
+            lb_list[n].n_el_index = lb_list[j].n_el_index;
+            break;
+         }
+
+      if (j == n) {
+         if (is_verbose())
+            eprintf("Indexing logbook \"%s\" in \"%s\" ... ", logbook, lb_list[n].data_dir);
+         eflush();
+         status = el_build_index(&lb_list[n], FALSE);
+         if (is_verbose())
+            if (status == EL_SUCCESS)
+               eprintf("ok\n");
+      }
 
       if (status == EL_EMPTY) {
          if (is_verbose())
@@ -17822,14 +17834,22 @@ char *param_in_str(char *str, char *param)
 
       p = stristr(p, param);
 
-      /* if parameter is value of another parameter, skip it */
-      if (p > str + 1 && *(p - 1) == '=')
+      /* if parameter not followed by '=', skip it */
+      if (*(p+strlen(param)) != '=') {
          p += strlen(param);
-      else
-         return p;
+         continue;
+      }
+
+      /* if parameter is value of another parameter, skip it */
+      if (p > str + 1 && *(p - 1) == '=') {
+         p += strlen(param);
+         continue;
+      }
 
       if (*p == 0)
          return NULL;
+
+      return p;
 
    } while (1);
 }
@@ -26391,6 +26411,7 @@ void interprete(char *lbook, char *path)
             }
 
             /* authorize via negotiation */
+            /*
             rsprintf("HTTP/1.1 401 Authorization Required\r\n");
             rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
             rsprintf("WWW-Authenticate: NegotiateBasic realm=\"%s\"\r\n", lbs->name);
@@ -26409,7 +26430,7 @@ void interprete(char *lbook, char *path)
             rsprintf("the credentials required.<P>\r\n");
             rsprintf("</BODY></HTML>\r\n");
             return;
-
+            */
 
             /* check for correct session ID */
             if (!check_login(lbs, getparam("sid")))
