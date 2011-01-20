@@ -1798,11 +1798,15 @@ Options Operating System = Linux{1}, Windows{2}
     </p>
     <h2>
       Multiple conditions
-    </h2>It is possible to define conditions in more than one options list. The
+    </h2>
+    
+    <p>
+    It is possible to define conditions in more than one options list. The
     only requiremnt is that conditions are uniquie, meaning that a condition in
     one option list cannot be used in another list. This can easily be avoided
     by using numbers for one condition and letters for the other condition,
     like in the following example:
+    </p>
     <ul>
       <li>
         <pre>
@@ -1828,88 +1832,61 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
 {1&amp;a} ...
 </pre>
       </li>
-    </ul>specifies for example the condition "Linux AND Main Building". If
+    </ul>
+    <p>
+    specifies for example the condition "Linux AND Main Building". If
     several lines with condition combinations are true, the upper one is used.
+    </p>
 
     <h2>
       Conditions in the list display
-    </h2>Conditional attributes are usually only used for change items
+    </h2>
+    
+    <p>
+    Conditional attributes are usually only used for change items
     in the entry form. It might however be desirable to have conditional
     attibutes also working in the list display (the page where several
     entries are shown on a single page). The value of one attribute can then
     for example change which other attributes gets displayed via the <B><code>
     list display</code></b> option. To enable the evaluation of conditional
     attributes for the list display, on uses the option
-
+    </p>
+    
     <ul>
       <li>
         <code><b>List conditions = 1</b></code><br>
       </li>
-    </ul>It should be noted that this option can cause a significant performance
+    </ul>
+    
+    <p>
+    It should be noted that this option can cause a significant performance
     degradation if many conditional attributes are defines, so it should only
     be turned on when it is really needed.
+    </p>
+    
+    <a name="access" id="access"></a>
+    <hr>
+    <div class="section">Access control</div>
+    <p>
+      <b>Note: Starting with version 2.9.0, the password level access using
+      the options <i>Read password</i>, <i>Write password</i> and 
+      <i>Admin password</i> is not supported any more. Please use the user
+      level access as described below.</b>
+    </p>
+
+    <h2>
+      Password file
+    </h2>
 
     <p>
-      <a name="access" id="access"></a>
-    </p>
-    <hr>
-    <div class="section">
-       Access control 
-    </div>
-    <p>
-      Reading and writing into logbooks can be constrained using two different
-      access methods, either with global passwords for read, write and admin
-      (config, delete), or with user- level passwords. Both methods can be
-      combined on the same server using different logbooks. For these two
-      schemes to work properly, <b>cookies have to be turned on in your
-      browser</b>. Please consult your browser documentation about how to do
-      that.
-    </p>
-    <ul>
-      <li>
-        <b><code>Read password = &lt;encoded password&gt;</code></b>
-      </li>
-      <li>
-        <b><code>Write password = &lt;encoded password&gt;</code></b>
-      </li>
-      <li>
-        <b><code>Admin password = &lt;encoded password&gt;</code></b>
-      </li>
-      <li>
-        <b><code>Write password expiration = &lt;hours&gt;</code></b>
-      </li>
-      <li>
-        <b><code>Admin password expiration = &lt;hours&gt;</code></b>
-      </li>
-    </ul>
-    <p>
-      These optional password statements define passwords for reading and
-      writing to the logbook, to delete entries in the logbook and to configure
-      a logbook via the <i>Config</i> menu. The passwords are stored in an
-      encoded form. To change them, use <code><b>elogd</b></code> directly with
-      the <b><code>-r</code></b> , <b><code>-w</code></b> and
-      <b><code>-a</code></b> flags. To set the write password of logbook
-      "<i>linux</i>" to "<i>test</i>", enter:
-    </p>
-    <ul>
-      <li>
-        <code>elogd -w test -l linux</code>
-      </li>
-    </ul>
-    <p>
-      The read password is queried by the browser with a pop-up window and
-      usually stays active for the entire browser session. The write and admin
-      passwords are stored in cookies on the browser side and expire after the
-      browser session. This time can be changed with the statement
-      <b><code>Write Password Expiration = x</code></b> or <b><code>Admin
-      Password Expiration = x</code></b>, where <i>x</i> is the expiration time
-      in hours. It should be noted that on some systems the daylight savings
-      time is calculated incorrectly, which can cause time offsets of one hour
-      between a server PC and a client PC. In this case one hour must be added
-      to the expiration time. If the expiration is set to "0", which is the
-      default, the passwords are kept for the current browser session only.
-      When the browser is restarted, the password must be re-entered.
-    </p>
+      Access control is done on a user level with a password file. When a user
+      logs in, a session ID is created and placed as a "cookie" in the browser.
+      Using this cookie, the user can workin on the logbook until the cookie
+      expires. For this it is necessary that cookies are enabled in the browser.
+   </p> 
+      
+    <p>  
+      Following options can be used to control the behavior:        
     <ul>
       <li>
         <b><code>Password file = &lt;file&gt;</code></b>
@@ -1924,10 +1901,9 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
         <b><code>Login user = &lt;user list&gt;</code></b>
       </li>
     </ul>
+    </p>
     <p>
-      An alternative to the read/write/admin passwords is the user level access
-      with a password file. This file contains user names and passwords in
-      XML format, such as
+      This file contains user names and passwords in XML format, such as
     </p>
     <ul>
 <pre>
@@ -1937,7 +1913,7 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
 &lt;list&gt;
   &lt;user&gt;
     &lt;name&gt;stefan&lt;/name&gt;
-    &lt;password&gt;A1kk838Kjl==&lt;/password&gt;
+    &lt;password encoding="SHA256"&gt;Ebx/a.9tFFQ/iUW3mU8GbnPpCVk74jFt56CmiJXVwdm&lt;/password&gt;
     &lt;full_name&gt;Stefan Ritt&lt;/full_name&gt;
     &lt;last_logout&gt;Tue Oct 17 12:59:47 2006&lt;/last_logout&gt;
     &lt;last_activity&gt;Tue Nov 07 08:15:51 2006&lt;/last_activity&gt;
@@ -1948,7 +1924,7 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
   &lt;/user&gt;
   &lt;user&gt;
     &lt;name&gt;midas&lt;/name&gt;
-    &lt;password&gt;P387sdkK98ko98==&lt;/password&gt;
+    &lt;password encoding="SHA256"&gt;t56CmiJXVwdmEbx/a.9tFFQ/iUW3mU8GbnPpCVk74jF&lt;/password&gt;
     &lt;full_name&gt;Midas User&lt;/full_name&gt;
     &lt;last_logout&gt;0&lt;/last_logout&gt;
     &lt;last_activity&gt;0&lt;/last_activity&gt;
@@ -1977,15 +1953,9 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
       <li>Specify a password file name with <code><b>Password file =
       &lt;file&gt;</b></code> in the configuration file
       </li>
-      <li>Set <code><b>Self register = 1</b></code> in the configuration file
-      </li>
-      <li>Connect to the logbook. You will be presented the login page. If you
-      have a <code><b>Guest menu commands</b></code> entry, you have to click
-      on "Login" to get that screen.
-      </li>
-      <li>Click on "Register as new user"
-      </li>
-      <li>Enter your login information and save it
+      <li>Connect to the logbook. You will be presented with the new user page.
+      Enter the user login name, full name, email and password, then click
+      on the "Save" button.
       </li>
       <li>Add <b><code>Admin user = &lt;user&gt;</code></b> into the
       configuration file, using your login name from above
@@ -2060,7 +2030,7 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
     </p>
     <ul>
       <li>
-        <b><code>Self register = 0|1|2|3</code></b>
+        <b><code>Self register = 0|1|2|3|4</code></b>
       </li>
     </ul>
     <p>
@@ -2075,10 +2045,13 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
       Setting this option to <b>0</b> disables self registration. With option
       <b>1</b>, users can silently register, while setting it to <b>2</b>
       causes elogd to send an email notification to the admin user(s). The
-      option <b>3</b> is used to <i>only</i> send an email notification to tha
+      option <b>3</b> is used to <i>only</i> send an email notification to the
       admin users(s), which then can validate the account and commit it by
-      hitting the URL given in the email notification.
-    </p>
+      hitting the URL given in the email notification. Setting this to <b>4</b>
+      causes and email notification to be sent to the user, which then can
+      validate the account herself/himself proving to have a working 
+      email account. 
+      </p>
     <ul>
       <li>
         <b><code>Allow password change = 0|1</code></b>
@@ -2153,6 +2126,57 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
       If the password statements are in the individual logbook sections, one
       has to log in to each logbook separately.
     </p>
+    
+    <h2>
+      Site authentication
+    </h2>
+    <p>
+    Starting from version 2.9.0, site authentication has been implemented
+    in elog using the <a href="http://web.mit.edu/kerberos/">Kerberos</a> 
+    authentication scheme. This widely used system is also used in MS Windows
+    Domain Controllers, and can be used for site logins, meaning that the
+    same credentials can be used on all computers of a site.   
+    </p>
+    <p>
+    To use that authetication, Kerberos has to be installed on the server
+    running the elogd daemon. Please read the Kerberos documentation how to
+    do this or talk to your site administrator. There are packages for Linux,
+    Windows and Mac OSX. If you compile the elogd program yourself, make sure
+    to have the flag <code><B>HAVE_KRB5</B></code>> defined in the compilation process.
+    To configure elogd to use Kerberos, use following options:
+    </p>
+    <ul>
+      <li>
+        <b><code>Authentication = &lt;method(s)&gt;</code></b>
+      </li>
+      <li>  
+        <b><code>Kerberos Realm = &lt;realm&gt;</code></b>
+      </li>
+    </ul>
+    
+    <p>
+    where &lt;method(s)&gt; can be <code><b>File</b></code> or 
+    <code><b>Kerberos</b></code> or both such
+    as in <code><b>Kerberos, File</b></code>. If the authentication option contains 
+    <b>Kerberos</b>, the user credentials are authenticated using the default
+    Kerberos Realm. This is typically obtained from the file
+    <b><code>c:\windows\krb5.ini</code></b> (Windows) or
+    <b><code>/etc/krb5.conf</code></b> (Linux). If another than the default
+    realm should be used, this can be overwritten with the <b><code>Kerberos 
+    Realm</code></b> option.
+    </p>
+    <p>
+    When Kerberos authentication is used, the password file is still used
+    to store additional user information such as the full name and the email
+    address, but the authentication is done via the Kerberos server.
+    </p>
+    <p>
+    If both authentications <code><b>Kerberos, File</b></code> are enabled,
+    the credentials are first authenticated via the Kerberos server, and - if
+    not successful - via the password file. This allows combined elog 
+    installations with centralized and local elog accounts.  
+    </p>
+    
     <p>
       <a name="email" id="email"></a>
     </p>
