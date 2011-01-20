@@ -286,6 +286,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command);
 char *loc(char *orig);
 void strencode(char *text);
 void strencode_nouml(char *text);
+char *stristr(const char *str, const char *pattern);
 int scan_attributes(char *logbook);
 int is_inline_attachment(char *encoding, int message_id, char *text, int i, char *att);
 int setgroup(char *str);

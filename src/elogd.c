@@ -8514,22 +8514,12 @@ void show_change_pwd_page(LOGBOOK * lbs)
 
    old_pwd[0] = new_pwd[0] = new_pwd2[0] = 0;
 
-   if (stricmp(auth, "Kerberos") == 0) {
-      if (isparam("oldpwd"))
-         strlcpy(old_pwd, getparam("oldpwd"), sizeof(old_pwd));
-      if (isparam("newpwd"))
-         strlcpy(new_pwd, getparam("newpwd"), sizeof(new_pwd));
-      if (isparam("newpwd2"))
-         strlcpy(new_pwd2, getparam("newpwd2"), sizeof(new_pwd2));
-
-   } else {
-      if (isparam("oldpwd"))
-         do_crypt(getparam("oldpwd"), old_pwd, sizeof(old_pwd));
-      if (isparam("newpwd"))
-         do_crypt(getparam("newpwd"), new_pwd, sizeof(new_pwd));
-      if (isparam("newpwd2"))
-         do_crypt(getparam("newpwd2"), new_pwd2, sizeof(new_pwd2));
-   }
+   if (isparam("oldpwd"))
+      strlcpy(old_pwd, getparam("oldpwd"), sizeof(old_pwd));
+   if (isparam("newpwd"))
+      strlcpy(new_pwd, getparam("newpwd"), sizeof(new_pwd));
+   if (isparam("newpwd2"))
+      strlcpy(new_pwd2, getparam("newpwd2"), sizeof(new_pwd2));
 
    strlcpy(user, isparam("unm") ? getparam("unm") : "", sizeof(user));
    if (isparam("config")) {
@@ -8549,9 +8539,9 @@ void show_change_pwd_page(LOGBOOK * lbs)
    }
 
    if (old_pwd[0] || new_pwd[0]) {
-      if (user[0] && get_user_line(lbs, user, act_pwd, full_user, NULL, NULL, NULL, NULL)) {
+      if (user[0]) {
 
-         if (stricmp(auth, "Kerberos") == 0) {
+         if (stristr(auth, "Kerberos")) {
             if (strcmp(new_pwd, new_pwd2) != 0)
                wrong_pwd = 2;
          } else {
@@ -8560,7 +8550,7 @@ void show_change_pwd_page(LOGBOOK * lbs)
                 && stricmp(getparam("unm"), user) != 0)
                wrong_pwd = 0;
             else {
-               if (strcmp(old_pwd, act_pwd) != 0)
+               if (!auth_verify_password(lbs, user, old_pwd, str, sizeof(str)))
                   wrong_pwd = 1;
             }
 
@@ -12700,7 +12690,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
 
    /* check for blank password if not external authentication*/
    getcfg(lbs->name, "Authentication", auth, sizeof(auth));
-   if (stricmp(auth, "Kerberos") != 0) {
+   if (stristr(auth, "Kerberos") == NULL) {
       if (isparam("newpwd")) {
          strlcpy(str, getparam("newpwd"), sizeof(str));
          if (str[0] == 0) {
@@ -12720,7 +12710,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
       self_register = atoi(str);
 
    new_pwd[0] = 0;
-   if (stricmp(auth, "Kerberos") != 0) {
+   if (stristr(auth, "Kerberos") == NULL) {
       /* check if passwords match */
       if (isparam("newpwd") && isparam("newpwd2")) {
          do_crypt(getparam("newpwd"), new_pwd, sizeof(new_pwd));
@@ -13424,7 +13414,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
 {
    int i;
    char str[1000], str2[1000], login_name[256], full_name[256], user_email[256], name[256], pwd[256],
-       redir[256], pwd_encrypted[256], smtp_host[256], mail_from[256], mail_from_name[256], subject[256],
+       redir[256], smtp_host[256], mail_from[256], mail_from_name[256], subject[256],
        mail_text[1000], url[1000], error[1000];
 
    if (isparam("login_name")) {
@@ -13447,11 +13437,9 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             }
 
             /* create random password */
-            for (i = 0; i < 8; i++)
-               str[i] = 'A' + (rand() % 25);
-            str[i] = 0;
-            base64_encode((unsigned char *) str, (unsigned char *) pwd, sizeof(pwd));
-            do_crypt(pwd, pwd_encrypted, sizeof(pwd_encrypted));
+            for (i = 0; i < 16; i++)
+               pwd[i] = 'A' + (rand() % 25);
+            pwd[i] = 0;
 
             /* send email with new password */
             if (!getcfg("global", "SMTP host", smtp_host, sizeof(smtp_host))) {
@@ -13515,7 +13503,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
 
             if (sendmail(lbs, smtp_host, mail_from, user_email, mail_text, error, sizeof(error)) != -1) {
                /* save new password */
-               auth_change_password(lbs, login_name, NULL, pwd_encrypted, str, sizeof(str));
+               auth_change_password(lbs, login_name, NULL, pwd, str, sizeof(str));
 
                /* show notification web page */
                show_standard_header(lbs, FALSE, loc("ELOG password recovery"), "", FALSE, NULL, NULL);

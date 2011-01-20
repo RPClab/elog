@@ -72,7 +72,8 @@ int auth_verify_password_krb5(LOGBOOK *lbs, const char *user, const char *passwo
    krb5_get_init_creds_opt_free(context, &options);
    krb5_free_context(context);
 
-   if (error && error != KRB5KDC_ERR_PREAUTH_FAILED) {
+   if (error && error != KRB5KDC_ERR_PREAUTH_FAILED &&
+                error != KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN) {
       strlcpy(error_str, "<b>Kerberos error:</b><br>", error_size);
       strlcat(error_str, krb5_get_error_message(context, error), error_size);
       strlcat(error_str, ".<br>Please check your Kerberos configuration.", error_size);
@@ -186,7 +187,7 @@ int auth_verify_password_file(LOGBOOK *lbs, const char *user, const char *passwo
 
 int auth_change_password_file(LOGBOOK *lbs, const char *user, const char *old_pwd, const char *new_pwd, char *error_str, int error_size)
 {
-   char str[256], file_name[256];
+   char str[256], file_name[256], enc_pwd[256];
    PMXML_NODE node;
 
    if (lbs == NULL)
@@ -200,7 +201,8 @@ int auth_change_password_file(LOGBOOK *lbs, const char *user, const char *old_pw
    if (node == NULL)
       return FALSE;
 
-   mxml_replace_node_value(node, new_pwd);
+   do_crypt(new_pwd, enc_pwd, sizeof(enc_pwd));
+   mxml_replace_node_value(node, enc_pwd);
 
    if (get_password_file(lbs, file_name, sizeof(file_name)))
       mxml_write_tree(file_name, lbs->pwd_xml_tree);
@@ -213,29 +215,40 @@ int auth_change_password_file(LOGBOOK *lbs, const char *user, const char *old_pw
 int auth_verify_password(LOGBOOK *lbs, const char *user, const char *password, char *error_str, int error_size)
 {
    char str[256];
+   BOOL verified;
 
    error_str[0] = 0;
+   verified = FALSE;
    getcfg(lbs->name, "Authentication", str, sizeof(str));
 
 #ifdef HAVE_KRB5
-   if (stricmp(str, "Kerberos") == 0)
-      return auth_verify_password_krb5(lbs, user, password, error_str, error_size);
+   if (stristr(str, "Kerberos"))
+      verified = auth_verify_password_krb5(lbs, user, password, error_str, error_size);
+   if (verified)
+      return TRUE;
 #endif
 
-   return auth_verify_password_file(lbs, user, password, error_str, error_size);
+   if (str[0] == 0 || stristr(str, "File"))
+      verified = auth_verify_password_file(lbs, user, password, error_str, error_size);
+
+   return verified;
 }
 
 int auth_change_password(LOGBOOK *lbs, const char *user, const char *old_pwd, const char *new_pwd, char *error_str, int error_size)
 {
+   int status;
    char str[256];
 
    error_str[0] = 0;
    getcfg(lbs->name, "Authentication", str, sizeof(str));
 
+   if (str[0] == 0 || stristr(str, "File"))
+      status = auth_change_password_file(lbs, user, old_pwd, new_pwd, error_str, error_size);
+
 #ifdef HAVE_KRB5
-   if (stricmp(str, "Kerberos") == 0)
-      return auth_change_password_krb5(lbs, user, old_pwd, new_pwd, error_str, error_size);
+   if (stristr(str, "Kerberos"))
+      status = auth_change_password_krb5(lbs, user, old_pwd, new_pwd, error_str, error_size);
 #endif
 
-   return auth_change_password_file(lbs, user, old_pwd, new_pwd, error_str, error_size);
+   return status;
 }
