@@ -14375,6 +14375,16 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
          show_error(str);
       }
 
+      /* check if text column is present */
+      if (first && isparam("filltext") && atoi(getparam("filltext"))) {
+         for (i = 0; i < n; i++)
+            if (strieq(list + i * NAME_LENGTH, loc("text"))) {
+               filltext = TRUE;
+               textcol = i;
+               break;
+            }
+      }
+
       /* ignore first line */
       if (first && !isparam("notignore")) {
          first = FALSE;
@@ -14403,16 +14413,6 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
                sprintf(list + i * NAME_LENGTH, "%d", (int) ltime);
             }
          }
-      }
-
-      /* check if text column is present */
-      if (first && isparam("filltext") && atoi(getparam("filltext"))) {
-         for (i = 0; i < n; i++)
-            if (strieq(list + i * NAME_LENGTH, loc("text"))) {
-               filltext = TRUE;
-               textcol = i;
-               break;
-            }
       }
 
       /* derive attributes from first line */
@@ -26409,28 +26409,6 @@ void interprete(char *lbook, char *path)
                if (!do_self_register(lbs, command))
                   return;
             }
-
-            /* authorize via negotiation */
-            /*
-            rsprintf("HTTP/1.1 401 Authorization Required\r\n");
-            rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
-            rsprintf("WWW-Authenticate: NegotiateBasic realm=\"%s\"\r\n", lbs->name);
-            //rsprintf("WWW-Authenticate: Negotiate\r\n");
-            rsprintf("Connection: close\r\n");
-            rsprintf("Content-Type: text/html\r\n\r\n");
-            rsprintf("<HTML><HEAD>\r\n");
-            rsprintf("<TITLE>401 Authorization Required</TITLE>\r\n");
-            rsprintf("</HEAD><BODY>\r\n");
-            rsprintf("<H1>Authorization Required</H1>\r\n");
-            rsprintf("This server could not verify that you\r\n");
-            rsprintf("are authorized to access the document\r\n");
-            rsprintf("requested. Either you supplied the wrong\r\n");
-            rsprintf("credentials (e.g., bad password), or your\r\n");
-            rsprintf("browser doesn't understand how to supply\r\n");
-            rsprintf("the credentials required.<P>\r\n");
-            rsprintf("</BODY></HTML>\r\n");
-            return;
-            */
 
             /* check for correct session ID */
             if (!check_login(lbs, getparam("sid")))
