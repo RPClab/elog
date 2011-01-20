@@ -216,8 +216,11 @@ int auth_verify_password(LOGBOOK *lbs, const char *user, const char *password, c
 
    error_str[0] = 0;
    getcfg(lbs->name, "Authentication", str, sizeof(str));
+
+#ifdef HAVE_KRB5
    if (stricmp(str, "Kerberos") == 0)
       return auth_verify_password_krb5(lbs, user, password, error_str, error_size);
+#endif
 
    return auth_verify_password_file(lbs, user, password, error_str, error_size);
 }
@@ -228,8 +231,11 @@ int auth_change_password(LOGBOOK *lbs, const char *user, const char *old_pwd, co
 
    error_str[0] = 0;
    getcfg(lbs->name, "Authentication", str, sizeof(str));
+
+#ifdef HAVE_KRB5
    if (stricmp(str, "Kerberos") == 0)
       return auth_change_password_krb5(lbs, user, old_pwd, new_pwd, error_str, error_size);
+#endif
 
    return auth_change_password_file(lbs, user, old_pwd, new_pwd, error_str, error_size);
 }
