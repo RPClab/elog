@@ -41,8 +41,6 @@
 
 #define snprintf _snprintf
 
-#define __attribute__(x)
-
 #include <windows.h>
 #include <io.h>
 #include <conio.h>

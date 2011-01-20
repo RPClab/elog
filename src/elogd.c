@@ -1830,7 +1830,7 @@ int sid_new(LOGBOOK *lbs, const char *user, const char *host, char *sid)
 
 /*-------------------------------------------------------------------*/
 
-int sid_check(LOGBOOK *lbs, char *sid, char *user_name)
+int sid_check(char *sid, char *user_name)
 {
    int i;
    time_t now;
@@ -1853,7 +1853,7 @@ int sid_check(LOGBOOK *lbs, char *sid, char *user_name)
 
 /*-------------------------------------------------------------------*/
 
-int sid_remove(LOGBOOK *lbs, char *sid)
+int sid_remove(char *sid)
 {
    int i;
 
@@ -25335,7 +25335,7 @@ BOOL check_login(LOGBOOK * lbs, char *sid)
    }
 
    /* if invalid or no session ID, show login page */
-   if (!skip_sid_check && !sid_check(lbs, sid, user_name)) {
+   if (!skip_sid_check && !sid_check(sid, user_name)) {
       if (isparam("redir"))
          strlcpy(str, getparam("redir"), sizeof(str));
       else
@@ -26422,7 +26422,7 @@ void interprete(char *lbook, char *path)
       /* check if guest access */
       if (getcfg(lbs->name, "Guest menu commands", str, sizeof(str))) {
          /* if logged int via SID, set user name */
-         if (sid_check(lbs, getparam("sid"), uname))
+         if (sid_check(getparam("sid"), uname))
             setparam("unm", uname);
       }
 
@@ -26831,7 +26831,7 @@ void interprete(char *lbook, char *path)
 
       /* elog command line utility wants to remove sid after submission */
       if (isparam("sidclose"))
-         sid_remove(lbs, getparam("sid"));
+         sid_remove(getparam("sid"));
       return;
    }
 
@@ -27013,7 +27013,7 @@ void interprete(char *lbook, char *path)
          /* log activity */
          write_logfile(lbs, "LOGOUT");
          /* set cookies */
-         sid_remove(lbs, getparam("sid"));
+         sid_remove(getparam("sid"));
          set_sid_cookie(lbs, "");
       }
 
@@ -27088,7 +27088,7 @@ void interprete(char *lbook, char *path)
          setparam("redir", str);
       }
       set_sid_cookie(lbs, "");
-      sid_remove(lbs, getparam("sid")); 
+      sid_remove(getparam("sid")); 
       return;
    }
 
