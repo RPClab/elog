@@ -24,6 +24,9 @@ RCDIR      = $(ROOT)/etc/rc.d/init.d
 # flag for SSL support
 USE_SSL    = 1
 
+# flag for Kerberos support
+USE_KRB5   = 0
+
 #############################################################
 
 # Default compilation flags unless stated otherwise.
@@ -70,10 +73,19 @@ ifeq ($(OSTYPE),Linux)
 CC = gcc
 endif
 
+CFLAGS += -I$(MXMLDIR) 
+
 ifdef USE_SSL
 ifneq ($(USE_SSL),0)
 CFLAGS += -DHAVE_SSL
 LIBS += -lssl
+endif
+endif
+
+ifdef USE_KRB5
+ifneq ($(USE_KRB5),0)
+CFLAGS += -DHAVE_KRB5
+LIBS += -lkrb5
 endif
 endif
 
@@ -90,20 +102,23 @@ regex.o: src/regex.c src/regex.h
 crypt.o: src/crypt.c
 	$(CC) $(CFLAGS) -w -c -o crypt.o src/crypt.c
 
+auth.o: src/auth.c
+	$(CC) $(CFLAGS) -w -c -o auth.o src/auth.c
+
 mxml.o: $(MXMLDIR)/mxml.c $(MXMLDIR)/mxml.h
 	$(CC) $(CFLAGS) -c -o mxml.o $(MXMLDIR)/mxml.c
 
 strlcpy.o: $(MXMLDIR)/strlcpy.c $(MXMLDIR)/strlcpy.h
 	$(CC) $(CFLAGS) -c -o strlcpy.o $(MXMLDIR)/strlcpy.c
 
-elogd: src/elogd.c regex.o crypt.o mxml.o strlcpy.o
-	$(CC) $(CFLAGS) -I$(MXMLDIR) -o elogd src/elogd.c crypt.o regex.o mxml.o strlcpy.o $(LIBS)
+elogd: src/elogd.c regex.o crypt.o auth.o mxml.o strlcpy.o
+	$(CC) $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o strlcpy.o $(LIBS)
 
 elog: src/elog.c crypt.o
-	$(CC) $(CFLAGS) -I$(MXMLDIR) -o elog src/elog.c crypt.o $(LIBS)
+	$(CC) $(CFLAGS) -o elog src/elog.c crypt.o $(LIBS)
 
-debug: src/elogd.c regex.o mxml.o strlcpy.o
-	$(CC) -g -I$(MXMLDIR) -o elogd src/elogd.c crypt.o regex.o mxml.o strlcpy.o $(LIBS)
+debug: src/elogd.c regex.o crypt.o auth.o mxml.o strlcpy.o
+	$(CC) -g -I$(MXMLDIR) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o strlcpy.o $(LIBS)
 
 %: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
@@ -175,5 +190,5 @@ install: $(EXECS)
 restart:
 	$(RCDIR)/elogd restart
 clean:
-	-$(RM) *~ $(EXECS) regex.o crypt.o mxml.o strlcpy.o locext
+	-$(RM) *~ $(EXECS) regex.o crypt.o auth.o mxml.o strlcpy.o locext
 
