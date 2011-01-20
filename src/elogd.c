@@ -15092,7 +15092,9 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    char date[80], *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256], *buffer;
    char *content, *p, boundary[80], request[10000], response[10000];
+#ifdef HAVE_SSL
    SSL *ssl_con; 
+#endif
 
    text = (char *)xmalloc(TEXT_SIZE);
    error_str[0] = 0;
@@ -15479,7 +15481,9 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
    char str[256], upwd[80];
    char subdir[256], param[256], remote_host_name[256];
    char *content, *p, boundary[80], request[10000], response[10000];
+#ifdef HAVE_SSL
    SSL *ssl_con;
+#endif
 
    error_str[0] = 0;
 
