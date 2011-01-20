@@ -8506,8 +8506,8 @@ BOOL get_password_file(LOGBOOK * lbs, char *file_name, int size)
 
 void show_change_pwd_page(LOGBOOK * lbs)
 {
-   char str[256], config[256], old_pwd[256], new_pwd[256], new_pwd2[256], act_pwd[256], user[256],
-       full_user[256], auth[32], error_str[256];
+   char str[256], config[256], old_pwd[256], new_pwd[256], new_pwd2[256], user[256],
+       auth[32], error_str[256];
    int wrong_pwd;
 
    getcfg(lbs->name, "Authentication", auth, sizeof(auth));
