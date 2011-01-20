@@ -305,8 +305,8 @@ void do_crypt(const char *s, char *d, int size);
 BOOL get_password_file(LOGBOOK * lbs, char *file_name, int size);
 
 /* functions from auth.c */
-int auth_verify_password(LOGBOOK *lbs, const char *user, const char *password);
+int auth_verify_password(LOGBOOK *lbs, const char *user, const char *password, char *error_str, int error_size);
 int auth_change_password(LOGBOOK *lbs, const char *user, const char *old_pwd, const char *new_pwd, char *error_str, int error_size);
-int auth_verify_password_krb5(LOGBOOK *lbs, const char *user, const char *password);
+int auth_verify_password_krb5(LOGBOOK *lbs, const char *user, const char *password, char *error_str, int error_size);
 int auth_change_password_krb5(LOGBOOK *lbs, const char *user, const char *old_pwd, const char *new_pwd, char *error, int error_size);
 

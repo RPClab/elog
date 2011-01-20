@@ -26,7 +26,7 @@ extern LOGBOOK *lb_list;
 
 #ifdef HAVE_KRB5
 
-int auth_verify_password_krb5(LOGBOOK *lbs, const char *user, const char *password)
+int auth_verify_password_krb5(LOGBOOK *lbs, const char *user, const char *password, char *error_str, int error_size)
 {
    char *princ_name, str[256], realm[256];
    krb5_error_code error;
@@ -43,10 +43,20 @@ int auth_verify_password_krb5(LOGBOOK *lbs, const char *user, const char *passwo
       strlcat(str, "@", sizeof(str));
       strlcat(str, realm, sizeof(str));
    }
-   if ((error = krb5_parse_name(context, str, &princ)) != 0)
+   if ((error = krb5_parse_name(context, str, &princ)) != 0) {
+      strlcpy(error_str, "<b>Kerberos error:</b><br>", error_size);
+      strlcat(error_str, krb5_get_error_message(context, error), error_size);
+      strlcat(error_str, ".<br>Please check your Kerberos configuration.", error_size);
       return FALSE;
+   }
 
    error = krb5_unparse_name(context, princ, &princ_name);
+   if (error) {
+      strlcpy(error_str, "<b>Kerberos error:</b><br>", error_size);
+      strlcat(error_str, krb5_get_error_message(context, error), error_size);
+      strlcat(error_str, ".<br>Please check your Kerberos configuration.", error_size);
+      return FALSE;
+   }
 
    if (is_verbose())
       eprintf("Using %s as server principal for authentication\n", princ_name);
@@ -61,6 +71,13 @@ int auth_verify_password_krb5(LOGBOOK *lbs, const char *user, const char *passwo
    krb5_free_cred_contents(context, &creds);
    krb5_get_init_creds_opt_free(context, &options);
    krb5_free_context(context);
+
+   if (error && error != KRB5KDC_ERR_PREAUTH_FAILED) {
+      strlcpy(error_str, "<b>Kerberos error:</b><br>", error_size);
+      strlcat(error_str, krb5_get_error_message(context, error), error_size);
+      strlcat(error_str, ".<br>Please check your Kerberos configuration.", error_size);
+      return FALSE;
+   }
 
    if (error)
       return FALSE;
@@ -87,8 +104,12 @@ int auth_change_password_krb5(LOGBOOK *lbs, const char *user, const char *old_pw
       strlcat(str, "@", sizeof(str));
       strlcat(str, realm, sizeof(str));
    }
-   if ((error = krb5_parse_name(context, str, &princ)) != 0)
+   if ((error = krb5_parse_name(context, str, &princ)) != 0) {
+      strlcpy(error_str, "<b>Kerberos error:</b><br>", error_size);
+      strlcat(error_str, krb5_get_error_message(context, error), error_size);
+      strlcat(error_str, ".<br>Please check your Kerberos configuration.", error_size);
       return FALSE;
+   }
 
    error = krb5_unparse_name(context, princ, &princ_name);
 
@@ -105,17 +126,24 @@ int auth_change_password_krb5(LOGBOOK *lbs, const char *user, const char *old_pw
    error = krb5_get_init_creds_password(context, &creds, princ, 
 	 			      (char *)old_pwd, NULL,
 				      NULL, 0, "kadmin/changepw", &options);
-   if (error)
+   if (error) {
+      strlcpy(error_str, "<b>Kerberos error:</b><br>", error_size);
+      strlcat(error_str, krb5_get_error_message(context, error), error_size);
+      strlcat(error_str, ".<br>Please check your Kerberos configuration.", error_size);
       return FALSE;
+   }
 
    error = krb5_set_password(context, &creds, (char *)new_pwd, princ,
 					  &result_code,
 					  &result_code_string,
 					  &result_string);
-   if (error)
+   if (error) {
+      strlcpy(error_str, "<b>Kerberos error:</b><br>", error_size);
+      strlcat(error_str, krb5_get_error_message(context, error), error_size);
+      strlcat(error_str, ".<br>Please check your Kerberos configuration.", error_size);
       return FALSE;
+   }
 
-   error_str[0] = 0;
    if (result_code > 0) {
       if (result_code_string.length > 0) {
          strlcpy(error_str, result_code_string.data, error_size);
@@ -146,7 +174,7 @@ int auth_change_password_krb5(LOGBOOK *lbs, const char *user, const char *old_pw
 
 /*---- local password file routines --------------------------------*/
 
-int auth_verify_password_file(LOGBOOK *lbs, const char *user, const char *password)
+int auth_verify_password_file(LOGBOOK *lbs, const char *user, const char *password, char *error_str, int error_size)
 {
    char upwd[256], enc_pwd[256];
 
@@ -182,21 +210,23 @@ int auth_change_password_file(LOGBOOK *lbs, const char *user, const char *old_pw
 
 /*---- common function entry points --------------------------------*/
 
-int auth_verify_password(LOGBOOK *lbs, const char *user, const char *password)
+int auth_verify_password(LOGBOOK *lbs, const char *user, const char *password, char *error_str, int error_size)
 {
    char str[256];
 
+   error_str[0] = 0;
    getcfg(lbs->name, "Authentication", str, sizeof(str));
    if (stricmp(str, "Kerberos") == 0)
-      return auth_verify_password_krb5(lbs, user, password);
+      return auth_verify_password_krb5(lbs, user, password, error_str, error_size);
 
-   return auth_verify_password_file(lbs, user, password);
+   return auth_verify_password_file(lbs, user, password, error_str, error_size);
 }
 
 int auth_change_password(LOGBOOK *lbs, const char *user, const char *old_pwd, const char *new_pwd, char *error_str, int error_size)
 {
    char str[256];
 
+   error_str[0] = 0;
    getcfg(lbs->name, "Authentication", str, sizeof(str));
    if (stricmp(str, "Kerberos") == 0)
       return auth_change_password_krb5(lbs, user, old_pwd, new_pwd, error_str, error_size);

@@ -26077,7 +26077,7 @@ void interprete(char *lbook, char *path)
        edit_id[80], file_name[256], command[256], enc_path[256], dec_path[256], uname[80],
        full_name[256], user_email[256], logbook[256], logbook_enc[256], *experiment, 
        group[256], css[256], *pfile, attachment[MAX_PATH_LENGTH], str3[NAME_LENGTH], 
-       thumb_name[256], sid[32];
+       thumb_name[256], sid[32], error_str[256];
    LOGBOOK *lbs;
    FILE *f;
 
@@ -26209,8 +26209,11 @@ void interprete(char *lbook, char *path)
             strlcpy(str, isparam("cmdline") ? getparam("cmdline") : "", sizeof(str));
 
          /* authorize user via password file or site authentication */
-         if (!auth_verify_password(NULL, uname, getparam("upassword"))) {
-            show_login_page(NULL, str, 1);
+         if (!auth_verify_password(NULL, uname, getparam("upassword"), error_str, sizeof(error_str))) {
+            if (error_str[0])
+               show_error(error_str);
+            else
+               show_login_page(NULL, str, 1);
             return;
          }
 
@@ -26320,8 +26323,11 @@ void interprete(char *lbook, char *path)
          strlcpy(str, isparam("cmdline") ? getparam("cmdline") : "", sizeof(str));
 
       /* authorize user via password file or site authentication */
-      if (!auth_verify_password(lbs, uname, getparam("upassword"))) {
-         show_login_page(lbs, str, 1);
+      if (!auth_verify_password(lbs, uname, getparam("upassword"), error_str, sizeof(error_str))) {
+         if (error_str[0])
+            show_error(error_str);
+         else
+            show_login_page(lbs, str, 1);
          return;
       }
 
