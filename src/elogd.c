@@ -12649,7 +12649,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
 {
    char file_name[256], str[256], *pl, user_enc[256], new_pwd[80], new_pwd2[80], smtp_host[256],
        email_addr[256], mail_from[256], mail_from_name[256], subject[256], mail_text[2000], str2[256],
-       admin_user[80], url[256], error[2000], auth[32];
+       admin_user[80], url[256], error[2000];
    int i, self_register, code, first_user;
    PMXML_NODE node, subnode, npwd;
 
@@ -12689,18 +12689,15 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
    }
 
    /* check for blank password if not external authentication*/
-   getcfg(lbs->name, "Authentication", auth, sizeof(auth));
-   if (stristr(auth, "Kerberos") == NULL) {
-      if (isparam("newpwd")) {
-         strlcpy(str, getparam("newpwd"), sizeof(str));
-         if (str[0] == 0) {
-            show_error(loc("Empty password not allowed"));
-            return 0;
-         }
-         if (strchr(str, ' ')) {
-            show_error(loc("Password may not contain blanks"));
-            return 0;
-         }
+   if (isparam("newpwd")) {
+      strlcpy(str, getparam("newpwd"), sizeof(str));
+      if (str[0] == 0) {
+         show_error(loc("Empty password not allowed"));
+         return 0;
+      }
+      if (strchr(str, ' ')) {
+         show_error(loc("Password may not contain blanks"));
+         return 0;
       }
    }
 
@@ -12709,17 +12706,15 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
    if (getcfg(lbs->name, "Self register", str, sizeof(str)))
       self_register = atoi(str);
 
+   /* check if passwords match */
    new_pwd[0] = 0;
-   if (stristr(auth, "Kerberos") == NULL) {
-      /* check if passwords match */
-      if (isparam("newpwd") && isparam("newpwd2")) {
-         do_crypt(getparam("newpwd"), new_pwd, sizeof(new_pwd));
-         do_crypt(getparam("newpwd2"), new_pwd2, sizeof(new_pwd2));
+   if (isparam("newpwd") && isparam("newpwd2")) {
+      strlcpy(new_pwd, getparam("newpwd"), sizeof(new_pwd));
+      strlcpy(new_pwd2, getparam("newpwd2"), sizeof(new_pwd2));
 
-         if (strcmp(new_pwd, new_pwd2) != 0) {
-            show_error(loc("New passwords do not match, please retype"));
-            return 0;
-         }
+      if (strcmp(new_pwd, new_pwd2) != 0) {
+         show_error(loc("New passwords do not match, please retype"));
+         return 0;
       }
    }
 
@@ -12767,7 +12762,8 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
          strencode2(str, getparam("new_user_name"), sizeof(str));
          mxml_add_node(node, "name", str);
       }
-      npwd = mxml_add_node(node, "password", new_pwd);
+      do_crypt(new_pwd, str, sizeof(str));
+      npwd = mxml_add_node(node, "password", str);
       if (npwd)
          mxml_add_attribute(npwd, "encoding", "SHA256");
 
@@ -13572,8 +13568,6 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
 
 void show_new_user_page(LOGBOOK * lbs, char *user)
 {
-   char auth[32];
-
    /*---- header ----*/
 
    show_html_header(lbs, TRUE, loc("ELOG new user"), TRUE, FALSE, NULL, FALSE);
@@ -13610,15 +13604,11 @@ void show_new_user_page(LOGBOOK * lbs, char *user)
    rsprintf("<tr><td nowrap>Email:</td>\n");
    rsprintf("<td colspan=2><input type=text size=40 name=new_user_email></tr>\n");
 
-   /* don't need a password for extenral authentication */
-   getcfg(lbs->name, "Authentication", auth, sizeof(auth));
-   if (stristr(auth, "Kerberos") == NULL) {
-      rsprintf("<tr><td nowrap>%s:</td>\n", loc("Password"));
-      rsprintf("<td colspan=2><input type=password size=40 name=newpwd>\n");
+   rsprintf("<tr><td nowrap>%s:</td>\n", loc("Password"));
+   rsprintf("<td colspan=2><input type=password size=40 name=newpwd>\n");
 
-      rsprintf("<tr><td nowrap>%s:</td>\n", loc("Retype password"));
-      rsprintf("<td colspan=2><input type=password size=40 name=newpwd2>\n");
-   }
+   rsprintf("<tr><td nowrap>%s:</td>\n", loc("Retype password"));
+   rsprintf("<td colspan=2><input type=password size=40 name=newpwd2>\n");
 
    rsprintf("</td></tr></table>\n");
 
