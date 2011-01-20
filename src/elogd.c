@@ -9709,6 +9709,20 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("  return true;\n");
    rsprintf("}\n\n");
 
+   /* go_back() gets called via "Back" button */
+   rsprintf("function go_back()\n");
+   rsprintf("{\n");
+   rsprintf("  if (!submitted && entry_modified) {\n");
+   rsprintf("    var subm = confirm(\"%s\");\n", loc("Are you sure to abandon any entered text?"));
+   rsprintf("    if (subm) {\n");
+   rsprintf("      mark_submit();\n");
+   rsprintf("      return true;\n");
+   rsprintf("    } else\n");
+   rsprintf("      return false;\n");
+   rsprintf("  }\n");
+   rsprintf("  return true;\n");
+   rsprintf("}\n\n");
+
    /* mark_submit() gets called via "Back" button */
    rsprintf("function mark_submit()\n");
    rsprintf("{\n");
@@ -9838,14 +9852,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<script type=\"text/javascript\">\n");
 
       /* cannot detect real modifications, so assume text will get changed */
-      rsprintf("entry_modified = true;");
+      rsprintf("entry_modified = true;\n");
 
       /* define strings for current language */
       rsprintf("var ELOGSubmitEntry = \"%s\";\n", loc("Submit entry"));
       rsprintf("var ELOGInsertImage = \"%s\";\n", loc("Insert image"));
-      rsprintf("var ELOGInsertDateTime = \"%s\";\n\n", loc("Insert Date/Time"));
-      rsprintf("var ELOGLinkTextPrompt = \"%s\";\n\n", loc("Enter name of hyperlink"));
-      rsprintf("var ELOGLinkURLPrompt = \"%s\";\n\n", loc("Enter URL of hyperlink"));
+      rsprintf("var ELOGInsertDateTime = \"%s\";\n", loc("Insert Date/Time"));
+      rsprintf("var ELOGLinkTextPrompt = \"%s\";\n", loc("Enter name of hyperlink"));
+      rsprintf("var ELOGLinkURLPrompt = \"%s\";\n", loc("Enter URL of hyperlink"));
       rsprintf("var ELOGSource = \"%s\";\n\n", loc("Show HTML source code"));
       rsprintf("function initFCKedit()\n");
       rsprintf("{\n");
@@ -9964,7 +9978,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             loc("Submit"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n",
             loc("Preview"));
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submit();\">\n",
+   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return go_back();\">\n",
             loc("Back"));
    rsprintf("</span></td></tr>\n\n");
 
@@ -11477,7 +11491,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             loc("Submit"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n",
             loc("Preview"));
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submit();\">\n",
+   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return go_back();\">\n",
             loc("Back"));
    rsprintf("</span></td></tr>\n\n");
 
@@ -13489,10 +13503,10 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
                                  sizeof(mail_text), 1, 0, NULL, 0, 0);
 
             strlcat(mail_text, "\r\n", sizeof(mail_text));
-            sprintf(mail_text + strlen(mail_text), loc("A new password has been created for you on host %s"),
+            sprintf(mail_text + strlen(mail_text), loc("This is an automatically generated password recovery email for host %s"),
                     http_host);
             strlcat(mail_text, ".\r\n", sizeof(mail_text));
-            strlcat(mail_text, loc("Please log on by clicking on following link and change your password"),
+            strlcat(mail_text, loc("Please click on following link to reset your password"),
                     sizeof(mail_text));
             strlcat(mail_text, ":\r\n\r\n", sizeof(mail_text));
             strlcat(mail_text, url, sizeof(mail_text));
@@ -13512,7 +13526,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
                rsprintf("</td></tr>\n");
 
                rsprintf("<tr><td align=center class=\"dlgform\">\n");
-               rsprintf(loc("A new password for user <i>\"%s\"</i> has been sent to %s"), full_name,
+               rsprintf(loc("A password recovery email for user <i>\"%s\"</i> has been sent to %s"), full_name,
                         user_email);
                rsprintf("</td></tr></table>\n");
                show_bottom_text(lbs);
@@ -14385,12 +14399,6 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
             }
       }
 
-      /* ignore first line */
-      if (first && !isparam("notignore")) {
-         first = FALSE;
-         continue;
-      }
-
       /* interprete date entries correctly */
       if (!(first && isparam("head"))) {
          for (i = attr_offset; i < n; i++) {
@@ -14462,12 +14470,18 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
 
       } else {
 
+         /* ignore first line */
+         if (first && !isparam("notignore")) {
+            first = FALSE;
+            continue;
+         }
+
          datecol = 1;
          attr_offset = 2;
 
          if (isparam("preview")) {
             rsprintf("<tr>\n");
-            for (i = j = attr_offset; i < n_attr; i++) {
+            for (i = j = attr_offset; i < n_attr + attr_offset; i++) {
                if (iline % 2 == 0)
                   rsputs("<td class=\"list1\">");
                else
