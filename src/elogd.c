@@ -4813,7 +4813,7 @@ void remove_reference(LOGBOOK * lbs, int message_id, int remove_id, BOOL reply_t
 
    /* retrieve original message */
    size = TEXT_SIZE + 1000;
-   message = xmalloc(size);
+   message = (char *)xmalloc(size);
    status = el_retrieve(lbs, message_id, date, attr_list, attr, lbs->n_attr, message, &size, in_reply_to,
                         reply_to, att, enc, lock);
    if (status != EL_SUCCESS)
@@ -5068,19 +5068,19 @@ int el_correct_links(LOGBOOK * lbs, int old_id, int new_id)
    char list[MAX_N_ATTR][NAME_LENGTH], list1[MAX_N_ATTR][NAME_LENGTH];
    char *att_file;
 
-   attrib = xmalloc(MAX_N_ATTR * NAME_LENGTH);
-   text = xmalloc(TEXT_SIZE);
-   att_file = xmalloc(MAX_ATTACHMENTS * 256);
+   attrib = (char *)xmalloc(MAX_N_ATTR * NAME_LENGTH);
+   text = (char *)xmalloc(TEXT_SIZE);
+   att_file = (char *)xmalloc(MAX_ATTACHMENTS * 256);
 
-   el_retrieve(lbs, new_id, date, attr_list, (void *) attrib, lbs->n_attr, NULL, 0, in_reply_to, reply_to,
-               (void *) att_file, encoding, locked_by);
+   el_retrieve(lbs, new_id, date, attr_list, (char (*)[1500]) attrib, lbs->n_attr, NULL, 0, in_reply_to, reply_to,
+               (char (*)[256]) att_file, encoding, locked_by);
 
    /* go through in_reply_to list */
    n = strbreak(in_reply_to, list, MAX_N_ATTR, ",", FALSE);
    for (i = 0; i < n; i++) {
       size = TEXT_SIZE;
-      el_retrieve(lbs, atoi(list[i]), date, attr_list, (void *) attrib, lbs->n_attr, text, &size,
-                  in_reply_to, reply_to, (void *) att_file, encoding, locked_by);
+      el_retrieve(lbs, atoi(list[i]), date, attr_list, (char (*)[1500]) attrib, lbs->n_attr, text, &size,
+                  in_reply_to, reply_to, (char (*)[256]) att_file, encoding, locked_by);
 
       n1 = strbreak(reply_to, list1, MAX_N_ATTR, ",", FALSE);
       reply_to[0] = 0;
@@ -5095,19 +5095,19 @@ int el_correct_links(LOGBOOK * lbs, int old_id, int new_id)
             strcat(reply_to, ", ");
       }
 
-      el_submit(lbs, atoi(list[i]), TRUE, date, attr_list, (void *) attrib, lbs->n_attr, text, in_reply_to,
-                reply_to, encoding, (void *) att_file, TRUE, locked_by);
+      el_submit(lbs, atoi(list[i]), TRUE, date, attr_list, (char (*)[1500]) attrib, lbs->n_attr, text, in_reply_to,
+                reply_to, encoding, (char (*)[256]) att_file, TRUE, locked_by);
    }
 
-   el_retrieve(lbs, new_id, date, attr_list, (void *) attrib, lbs->n_attr, NULL, 0, in_reply_to, reply_to,
-               (void *) att_file, encoding, locked_by);
+   el_retrieve(lbs, new_id, date, attr_list, (char (*)[1500]) attrib, lbs->n_attr, NULL, 0, in_reply_to, reply_to,
+               (char (*)[256]) att_file, encoding, locked_by);
 
    /* go through reply_to list */
    n = strbreak(reply_to, list, MAX_N_ATTR, ",", FALSE);
    for (i = 0; i < n; i++) {
       size = sizeof(text);
-      el_retrieve(lbs, atoi(list[i]), date, attr_list, (void *) attrib, lbs->n_attr, text, &size,
-                  in_reply_to, reply_to, (void *) att_file, encoding, locked_by);
+      el_retrieve(lbs, atoi(list[i]), date, attr_list, (char (*)[1500]) attrib, lbs->n_attr, text, &size,
+                  in_reply_to, reply_to, (char (*)[256]) att_file, encoding, locked_by);
 
       n1 = strbreak(in_reply_to, list1, MAX_N_ATTR, ",", FALSE);
       in_reply_to[0] = 0;
@@ -5122,8 +5122,8 @@ int el_correct_links(LOGBOOK * lbs, int old_id, int new_id)
             strcat(in_reply_to, ", ");
       }
 
-      el_submit(lbs, atoi(list[i]), TRUE, date, attr_list, (void *) attrib, lbs->n_attr, text, in_reply_to,
-                reply_to, encoding, (void *) att_file, TRUE, locked_by);
+      el_submit(lbs, atoi(list[i]), TRUE, date, attr_list, (char (*)[1500]) attrib, lbs->n_attr, text, in_reply_to,
+                reply_to, encoding, (char (*)[256]) att_file, TRUE, locked_by);
    }
 
    xfree(text);
@@ -21006,15 +21006,32 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
 /*------------------------------------------------------------------*/
 
+int find_thread_head(LOGBOOK *lbs, int message_id)
+{
+   int i;
+
+   /* search index of message */
+   for (i = 0; i < *lbs->n_el_index; i++)
+      if (lbs->el_index[i].message_id == message_id)
+         break;
+
+   if (lbs->el_index[i].in_reply_to)
+      return find_thread_head(lbs, lbs->el_index[i].in_reply_to);
+
+   return message_id;
+}
+
+/*------------------------------------------------------------------*/
+
 void show_elog_thread(LOGBOOK * lbs, int message_id, int absolute_links, int highlight_mid)
 {
-   int i, size, status, in_reply_to_id, head_id, n_display, n_attr_disp;
+   int size, status, in_reply_to_id, head_id, n_display, n_attr_disp;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        disp_attr[MAX_N_ATTR + 4][NAME_LENGTH];
    char *p;
 
-   text = xmalloc(TEXT_SIZE);
+   text = (char *)xmalloc(TEXT_SIZE);
 
    /* retrieve message */
    size = TEXT_SIZE;
@@ -21024,24 +21041,10 @@ void show_elog_thread(LOGBOOK * lbs, int message_id, int absolute_links, int hig
    in_reply_to_id = atoi(in_reply_to);
 
    /* find message head */
-   head_id = message_id;
-   if (in_reply_to_id) {
-      do {
-         head_id = in_reply_to_id;
-
-         /* search index of message */
-         for (i = 0; i < *lbs->n_el_index; i++)
-            if (lbs->el_index[i].message_id == head_id)
-               break;
-
-         /* stop if not found */
-         if (i == *lbs->n_el_index)
-            break;
-
-         in_reply_to_id = lbs->el_index[i].in_reply_to;
-
-      } while (in_reply_to_id);
-   }
+   if (atoi(in_reply_to))
+      head_id = find_thread_head(lbs, atoi(in_reply_to));
+   else
+      head_id = message_id;
 
    n_attr_disp = lbs->n_attr + 2;
    strcpy(disp_attr[0], loc("ID"));
@@ -21965,6 +21968,42 @@ int set_attributes(LOGBOOK * lbs, char attributes[][NAME_LENGTH], int n)
 
 /*------------------------------------------------------------------*/
 
+int propagate_attrib(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH])
+{
+   int n, i, j, status;
+   char str[NAME_LENGTH], att_file[MAX_ATTACHMENTS][256], attr[MAX_N_ATTR][NAME_LENGTH], 
+      list[MAX_N_ATTR][NAME_LENGTH], reply_to[MAX_REPLY_TO * 10];
+
+   status = el_retrieve(lbs, message_id, NULL, attr_list, (char (*)[NAME_LENGTH])attr, lbs->n_attr,
+                        NULL, NULL, NULL, reply_to, att_file, NULL, NULL);
+   if (status != EL_SUCCESS)
+      return status;
+
+   getcfg(lbs->name, "Propagate attributes", str, sizeof(str));
+   n = strbreak(str, list, MAX_N_ATTR, ",", FALSE);
+   for (i=0 ; i<n ; i++) {
+      for (j=0 ; j<lbs->n_attr ; j++)
+         if (stricmp(attr_list[j], list[i]) == 0) {
+            strlcpy(attr[j], attrib[j], NAME_LENGTH);
+            break;
+         }
+   }
+
+   message_id = el_submit(lbs, message_id, TRUE, "<keep>", attr_list, attrib, lbs->n_attr, "<keep>",
+                           "<keep>", "<keep>", "<keep>", att_file, TRUE, NULL);
+   if (message_id < 0)
+      return 0;
+
+   // go through all replies of this entry
+   n = strbreak(reply_to, list, MAX_N_ATTR, ",", FALSE);
+   for (i = 0; i < n; i++)
+      propagate_attrib(lbs, atoi(list[i]), attrib);
+
+   return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 int submit_elog_reply(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LENGTH], char *text)
 {
    int n_reply, i, status;
@@ -22546,6 +22585,10 @@ void submit_elog(LOGBOOK * lbs)
       }
    }
 
+   /* evaluate propagation of attributes */
+   if (getcfg(lbs->name, "Propagate attributes", str, sizeof(str)))
+      propagate_attrib(lbs, find_thread_head(lbs, message_id), attrib);
+
    /* resubmit thread if requested */
    if (resubmit_orig)
       message_id = el_move_message_thread(lbs, resubmit_orig);
@@ -22588,14 +22631,14 @@ void submit_elog(LOGBOOK * lbs)
 
    /* check for mail submissions */
    mail_param[0] = 0;
-   mail_to = xmalloc(256);
+   mail_to = (char *)xmalloc(256);
    mail_to[0] = 0;
    mail_to_size = 256;
-   rcpt_to = xmalloc(256);
+   rcpt_to = (char *)xmalloc(256);
    rcpt_to[0] = 0;
    rcpt_to_size = 256;
-   mail_list = xmalloc(MAX_N_EMAIL * NAME_LENGTH);
-   rcpt_list = xmalloc(MAX_N_EMAIL * NAME_LENGTH);
+   mail_list = (char *)xmalloc(MAX_N_EMAIL * NAME_LENGTH);
+   rcpt_list = (char *)xmalloc(MAX_N_EMAIL * NAME_LENGTH);
 
    if (suppress == 1 || suppress == 3) {
       if (suppress == 1)
