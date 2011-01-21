@@ -58,8 +58,8 @@ int auth_verify_password_krb5(LOGBOOK *lbs, const char *user, const char *passwo
       return FALSE;
    }
 
-   if (is_verbose())
-      eprintf("Using %s as server principal for authentication\n", princ_name);
+   sprintf(str, "Using %s as server principal for authentication", princ_name);
+   write_logfile(lbs, str);
 
    memset(&options, 0, sizeof(options));
    krb5_get_init_creds_opt_init(&options);
@@ -114,8 +114,8 @@ int auth_change_password_krb5(LOGBOOK *lbs, const char *user, const char *old_pw
 
    error = krb5_unparse_name(context, princ, &princ_name);
 
-   if (is_verbose())
-      eprintf("Using %s as server principal for authentication\n", princ_name);
+   sprintf(str, "Using %s as server principal for authentication", princ_name);
+   write_logfile(lbs, str);
 
    memset(&options, 0, sizeof(options));
    krb5_get_init_creds_opt_init(&options);
