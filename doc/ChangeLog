@@ -1,3 +1,17 @@
+Version 2.9.0, released Januar xxxx
+==========================================
+
+- Implemented Kerberos authentication
+- Implemented "Propagate attributes = ..."
+- fixed bug with importing CSV containing a text body
+- fixed preview of import data
+- added confirmation for "Back" button
+- Added vcxproj files
+- Fixed bug with "B" attribute and quick filter
+- Made two logoobks with same subdir work (again)
+- Implemented mirroring through SSL
+- Fixed bug with moving attachments with thumbnails
+
 Version 2.8.1, released December 23th 2010
 ==========================================
 

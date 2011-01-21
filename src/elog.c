@@ -365,7 +365,7 @@ int ssl_connect(int sock, SSL ** ssl_con)
 char request[100000], response[100000], *content;
 
 INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
-                  char *uname, char *upwd, int message_id, 
+                  char *uname, char *upwd, int message_id,
                   char attrib_name[MAX_N_ATTR][NAME_LENGTH], char attrib[MAX_N_ATTR][NAME_LENGTH], char *text)
 /********************************************************************\
 
@@ -1219,7 +1219,7 @@ int main(int argc, char *argv[])
    }
 
    /* now submit message */
-   submit_elog(host_name, port, ssl, subdir, logbook, 
+   submit_elog(host_name, port, ssl, subdir, logbook,
                uname, upwd, reply, quote_on_reply, edit, suppress, encoding, attr_name, attrib, n_attr, text,
                attachment, buffer, att_size);
 
