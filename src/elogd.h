@@ -9,7 +9,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.8.1"
+#define VERSION "2.9.0"
 
 #define _GNU_SOURCE
 #include <stdio.h>

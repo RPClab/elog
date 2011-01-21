@@ -1177,6 +1177,16 @@ Preset on first reply Subject = Re: $Subject
         The same as <b><code>Show Attributes</code></b>, but for the entry form.
       </li>
       <li>
+        <b><code>Propagate Attributes = &lt;list&gt;</code></b><br>
+        With this option, changed in an attribute are autmatically propagated
+        to all entries of a thread. This can be useful if one has an attribute
+        "problem status" for example with the options "open", 
+        "under investigation", "fixed". A thread related to a specific problem
+        can then have several replies. If the problem gets fixed, a new
+        reply can be made with the attribute "problem status" being "fixed", and
+        then the propagation causes all entries of this thread to become "fixed".
+      </li>
+      <li>
         <b><code>Page title = &lt;string&gt;</code></b><br>
         The string specified here is used for the title of the web page. It is
         also used by most browsers for bookmark names. The string can contain
