@@ -25298,7 +25298,6 @@ BOOL check_login(LOGBOOK * lbs, char *sid)
       return FALSE;
    }
 
-
    /* check for password login (elog & mirroring) */
    skip_sid_check = FALSE;
    if (isparam("unm") && isparam("upwd")) {
@@ -25318,6 +25317,9 @@ BOOL check_login(LOGBOOK * lbs, char *sid)
          strlcpy(str, getparam("redir"), sizeof(str));
       else
          strlcpy(str, isparam("cmdline") ? getparam("cmdline") : _cmdline, sizeof(str));
+      /* avoid recursive loops with ?cmd=Login */
+      if (stristr(str, loc("Login")))
+         str[0] = 0;
       show_login_page(lbs, str, 0);
       return FALSE;
    }
