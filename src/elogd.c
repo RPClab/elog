@@ -21985,7 +21985,7 @@ int propagate_attrib(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME
          }
    }
 
-   message_id = el_submit(lbs, message_id, TRUE, "<keep>", attr_list, attrib, lbs->n_attr, "<keep>",
+   message_id = el_submit(lbs, message_id, TRUE, "<keep>", attr_list, attr, lbs->n_attr, "<keep>",
                           "<keep>", "<keep>", "<keep>", att_file, TRUE, NULL);
    if (message_id < 0)
       return 0;
