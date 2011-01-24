@@ -11663,6 +11663,8 @@ void show_find_form(LOGBOOK * lbs)
    if (isparam(str))
       day = atoi(getparam(str));
    show_date_selector(day, month, year, "a");
+   rsprintf("&nbsp;&nbsp;");
+   show_time_selector(-1, -1, -1, "a");
 
    rsprintf("&nbsp;&nbsp;/&nbsp;&nbsp;%s:&nbsp;", loc("Show last"));
 
@@ -11692,6 +11694,8 @@ void show_find_form(LOGBOOK * lbs)
    if (isparam(str))
       day = atoi(getparam(str));
    show_date_selector(day, month, year, "b");
+   rsprintf("&nbsp;&nbsp;");
+   show_time_selector(-1, -1, -1, "b");
 
    rsprintf("</td></tr></table></td></tr>\n");
 
@@ -19192,9 +19196,10 @@ time_t search_last_reply(LOGBOOK * lbs, int *message_id)
 
 void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL default_page, char *info)
 {
-   int i, j, n, index, size, status, d1, m1, y1, d2, m2, y2, n_line, flags, current_year, current_month,
-       current_day, printable, n_logbook, n_display, reverse, numeric, n_attr_disp, total_n_msg, n_msg,
-       search_all, message_id, n_page, i_start, i_stop, in_reply_to_id, page_mid, page_mid_head, level;
+   int i, j, n, index, size, status, d1, m1, y1, h1, n1, c1, d2, m2, y2, h2, n2, c2, n_line, flags, 
+       current_year, current_month, current_day, printable, n_logbook, n_display, reverse, numeric, 
+       n_attr_disp, total_n_msg, n_msg, search_all, message_id, n_page, i_start, i_stop, in_reply_to_id, 
+       page_mid, page_mid_head, level;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], *list, *text,
        *text1, in_reply_to[80], reply_to[MAX_REPLY_TO * 10], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
        encoding[80], locked_by[256], str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH], mode[80],
@@ -19438,7 +19443,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
    ltime_end = ltime_start = 0;
 
-   d1 = m1 = y1 = d2 = m2 = y2 = 0;
+   d1 = m1 = y1 = h1 = n1 = c1 = d2 = m2 = y2 = h2 = n2 = c2 = 0;
 
    if (!past_n && !last_n) {
 
@@ -19456,6 +19461,9 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          y1 = tms.tm_year + 1900;
          m1 = tms.tm_mon + 1;
          d1 = tms.tm_mday;
+         h1 = tms.tm_hour;
+         n1 = tms.tm_min;
+         c1 = tms.tm_sec;
       }
 
       ltime_end = retrieve_date("b", FALSE);
@@ -19483,6 +19491,9 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          y2 = tms.tm_year + 1900;
          m2 = tms.tm_mon + 1;
          d2 = tms.tm_mday;
+         h2 = tms.tm_hour;
+         n2 = tms.tm_min;
+         c2 = tms.tm_sec;
       }
    }
 
@@ -20343,35 +20354,39 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          rsprintf("<tr><td class=\"listframe\">\n");
          rsprintf("<table width=\"100%%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
 
-         if (isparam("ma") || isparam("ya") || isparam("da")) {
+         if (isparam("ma") || isparam("ya") || isparam("da") || isparam("ha") || isparam("na") || isparam("ca")) {
             memset(&tms, 0, sizeof(struct tm));
             tms.tm_year = y1 - 1900;
             tms.tm_mon = m1 - 1;
             tms.tm_mday = d1;
-            tms.tm_hour = 12;
+            tms.tm_hour = h2;
+            tms.tm_min = n1;
+            tms.tm_sec = c1;
             if (tms.tm_year < 90)
                tms.tm_year += 100;
             mktime(&tms);
-            strcpy(format, "%x");
+            if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+                strcpy(format, DEFAULT_TIME_FORMAT);
             strftime(str, sizeof(str), format, &tms);
 
             rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Start date"));
             rsprintf("<td class=\"attribvalue\">%s</td></tr>", str);
          }
 
-         if (isparam("mb") || isparam("yb") || isparam("db")) {
-            /* calculate previous day */
+         if (isparam("mb") || isparam("yb") || isparam("db") || isparam("hb") || isparam("nb") || isparam("cb")) {
             memset(&tms, 0, sizeof(struct tm));
             tms.tm_year = y2 - 1900;
             tms.tm_mon = m2 - 1;
             tms.tm_mday = d2;
-            tms.tm_hour = 12;
+            tms.tm_hour = h2;
+            tms.tm_min = n2;
+            tms.tm_sec = c2;
             if (tms.tm_year < 90)
                tms.tm_year += 100;
             ltime = mktime(&tms);
-            ltime -= 3600 * 24;
             memcpy(&tms, localtime(&ltime), sizeof(struct tm));
-            strcpy(format, "%x");
+            if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+                strcpy(format, DEFAULT_TIME_FORMAT);
             strftime(str, sizeof(str), format, &tms);
 
             rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("End date"));
