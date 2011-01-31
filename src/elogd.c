@@ -9549,7 +9549,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("{\n");
 
    rsprintf("  if (last_key == 13) {\n");
-   rsprintf("    var ret = confirm('%s');", loc("Really submit this entry?"));
+   rsprintf("    var ret = confirm('%s');\n", loc("Really submit this entry?"));
    rsprintf("    if (!ret) {\n");
    rsprintf("      last_key = 0;\n");
    rsprintf("      return false;\n");
@@ -9804,6 +9804,20 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("   document.form1.Text.style.height = height;\n");
       rsprintf("}\n\n");
    }
+
+   /* ToggleAll() to toggle MOptions buttons */
+   rsprintf("function ToggleAll(attrib)\n");
+   rsprintf("  {\n");
+   rsprintf("  for (var i = 0; i < document.form1.elements.length; i++)\n");
+   rsprintf("    {\n");
+   rsprintf("    if (document.form1.elements[i].type == 'checkbox' && document.form1.elements[i].disabled == false) {\n");
+   rsprintf("      a = document.form1.elements[i].name;\n");
+   rsprintf("      a = a.substring(0, attrib.length);\n"); 
+   rsprintf("      if (a == attrib)\n");
+   rsprintf("        document.form1.elements[i].checked = !(document.form1.elements[i].checked);\n");
+   rsprintf("      }\n");
+   rsprintf("    }\n");
+   rsprintf("  }\n\n");
 
    /* strings for elcode.js */
    if (enc_selected == 0) {
@@ -10526,6 +10540,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      if (format_flags[index] & AFF_MULTI_LINE)
                         rsprintf("<br>");
                   }
+
+                  rsprintf("<input type=button value=\"%s\" onClick=\"ToggleAll('%s');\">\n", loc("Toggle all"), ua);
 
                   if (attr_flags[index] & AF_EXTENDABLE) {
                      sprintf(str, loc("Add %s"), attr_list[index]);
@@ -11891,10 +11907,10 @@ void show_find_form(LOGBOOK * lbs)
       str[0] = 0;
    rsprintf("<input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\" value=\"%s\">\n", str);
 
-   rsprintf("<tr><td><td class=\"attribvalue\">\n");
    rsprintf("<input type=checkbox id=\"sall\" name=\"sall\" value=1>\n");
    rsprintf("<label for=\"sall\">%s</label>\n", loc("Search text also in attributes"));
 
+   rsprintf("<tr><td><td class=\"attribvalue\">\n");
    if (getcfg(lbs->name, "Case sensitive search", str, sizeof(str)) && atoi(str))
       rsprintf("<input type=checkbox id=\"sall\" name=\"casesensitive\" value=1 checked>\n");
    else
