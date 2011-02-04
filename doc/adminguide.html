@@ -91,7 +91,9 @@ Expand the compressed TAR file with <code><b>tar -xzvf elog-x.x.x.tar.gz</code><
 This creates a subdirectory <code><b>elog-x.x.x</b></code> where x.x.x is the
 version number. In that directory execute <code><b>make</b></code>, which
 creates the executables <code><b>elogd</b></code>, <code><b>elog</b></code> and
-<code><b>elconv</b></code>. These executables can then be copied to a convenient place like
+<code><b>elconv</b></code>. On some systems like OpenBSD you have to execut
+<code><b>gmake</b></code>. 
+These executables can then be copied to a convenient place like
 <code><b>/usr/local/bin</b></code> or <code><b>~/bin</b></code>. Alternatively,
 a <code><b>"make install"</b></code> will copy the daemon <code><b>elogd</b></code>
 to <b><code>SDESTDIR</code></b> (by default <b><code>/usr/local/sbin</code></b>) and
