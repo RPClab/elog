@@ -325,7 +325,7 @@ int my_read(int fh, void *buffer, unsigned int bytes)
 /* workaround for wong timezone under MAX OSX */
 long my_timezone()
 {
-#if defined(OS_MACOSX) || defined(__FreeBSD__)
+#if defined(OS_MACOSX) || defined(__FreeBSD__) || defined(__OpenBSD__)
    time_t tp;
    time(&tp);
    return -localtime(&tp)->tm_gmtoff;
