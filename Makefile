@@ -53,6 +53,10 @@ INSTALL = /usr/ucb/install
 RM = /usr/bin/rm -f
 endif
 
+ifeq ($(OSTYPE),OpenBSD)
+LIBS += -lcrypto
+endif
+
 ifeq ($(OSTYPE),Darwin)
 OSTYPE=darwin
 endif
