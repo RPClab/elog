@@ -28598,10 +28598,10 @@ void server_loop(void)
          if (ka_sock[i] && (int) time(NULL) - ka_time[i] > 60) {
 #ifdef HAVE_SSL
             if (_ssl_flag) {
-               SSL_set_fd(ka_ssl_con[i_min], ka_sock[i_min]);
-               SSL_shutdown(ka_ssl_con[i_min]);
-               SSL_free(ka_ssl_con[i_min]);
-               ka_ssl_con[i_min] = NULL;
+               SSL_set_fd(ka_ssl_con[i], ka_sock[i]);
+               SSL_shutdown(ka_ssl_con[i]);
+               SSL_free(ka_ssl_con[i]);
+               ka_ssl_con[i] = NULL;
             }
 #endif
             closesocket(ka_sock[i]);
@@ -28633,7 +28633,7 @@ void server_loop(void)
             for (i = 0; i < N_MAX_CONNECTION; i++)
                if (ka_sock[i] == 0)
                   break;
-            /* recycle last connection */
+            /* recycle oldest connection */
             if (i == N_MAX_CONNECTION) {
                for (i = i_min = 0, min = ka_time[0]; i < N_MAX_CONNECTION; i++)
                   if (ka_time[i] < min) {
