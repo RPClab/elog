@@ -13117,7 +13117,7 @@ void show_config_page(LOGBOOK * lbs)
    rsprintf("}\n\n");
    rsprintf("function chkdeact(c)\n");
    rsprintf("{\n");
-   sprintf(str, loc("Are you sure you want to deactivate your own account?"));
+   strlcpy(str, loc("Are you sure you want to deactivate your own account?"), sizeof(str));
    rsprintf("    if (c.checked == false)\n");
    rsprintf("       return confirm(\"%s\");\n", str);
    rsprintf("    return true;\n");
@@ -13314,7 +13314,7 @@ void show_config_page(LOGBOOK * lbs)
 
    if (is_admin_user(logbook, getparam("unm"))) {
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("New user"));
-      sprintf(str, loc("Change config file"));
+      strlcpy(str, loc("Change config file"), sizeof(str));
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", str);
    }
 
@@ -14376,7 +14376,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
       n = strbreak(line, (char (*)[NAME_LENGTH]) list, MAX_N_ATTR, sep, FALSE);
 
       if (n == MAX_N_ATTR) {
-         sprintf(str, loc("Too many attributes in CSV file"));
+         strlcpy(str, loc("Too many attributes in CSV file"), sizeof(str));
          show_error(str);
       }
 
@@ -14990,8 +14990,8 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index, char 
          strlcpy(str, p + 9, sizeof(str));
          if (strchr(str, '?'))
             *strchr(str, '?') = 0;
-         strcpy(error_str, loc("URL is redirected to:"));
-         strcat(error_str, str);
+         strlcpy(error_str, loc("URL is redirected to:"), 256);
+         strlcat(error_str, str, 256);
       }
 
       return -3;
@@ -15001,7 +15001,7 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index, char 
    if (!p) {
       if (isparam("debug"))
          rsputs(text);
-      sprintf(error_str, loc("Invalid HTTP header"));
+      strlcpy(error_str, loc("Invalid HTTP header"), 256);
       xfree(text);
       return -1;
    }
@@ -15040,7 +15040,7 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index, char 
          xfree(text);
          return -2;
       } else
-         sprintf(error_str, loc("Error accessing remote logbook"));
+         strlcpy(error_str, loc("Error accessing remote logbook"), 256);
    }
 
    xfree(text);
@@ -15444,7 +15444,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
       xfree(message);
 
       if (status != message_id) {
-         sprintf(error_str, loc("Cannot save remote entry locally"));
+         strlcpy(error_str, loc("Cannot save remote entry locally"), 256);
          return -1;
       }
 
@@ -15503,7 +15503,7 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
 #ifdef HAVE_SSL
    if (ssl)
       if (ssl_connect(sock, &ssl_con) < 0) {
-         strcpy(error_str, "Error initiating SSL connection\n");
+         strlcpy(error_str, "Error initiating SSL connection\n", 256);
          return;
       }
 #endif
@@ -15584,7 +15584,7 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
 
    if (i < 0) {
       closesocket(sock);
-      strcpy(error_str, "Cannot receive response");
+      strlcpy(error_str, "Cannot receive response", 256);
       return;
    }
 
@@ -15610,21 +15610,21 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
    if (strstr(response, "302 Found")) {
       if (strstr(response, "Location:")) {
          if (strstr(response, "fail"))
-            sprintf(error_str, "Invalid usr name or password\n");
+            strlcpy(error_str, "Invalid usr name or password\n", 256);
       }
    } else if (strstr(response, "Logbook Selection"))
-      sprintf(error_str, "No logbook specified\n");
+      strlcpy(error_str, "No logbook specified\n", 256);
    else if (strstr(response, "enter password"))
-      sprintf(error_str, "Missing or invalid password\n");
+      strlcpy(error_str, "Missing or invalid password\n", 256);
    else if (strstr(response, "form name=form1"))
-      sprintf(error_str, "Missing or invalid user name/password\n");
+      strlcpy(error_str, "Missing or invalid user name/password\n", 256);
    else if (strstr(response, "Error: Attribute")) {
       strncpy(str, strstr(response, "Error: Attribute") + 20, sizeof(str));
       if (strchr(str, '<'))
          *strchr(str, '<') = 0;
       sprintf(error_str, "Missing required attribute \"%s\"\n", str);
    } else
-      sprintf(error_str, "Error transmitting message\n");
+      strlcpy(error_str, "Error transmitting message\n", 256);
 }
 
 /*------------------------------------------------------------------*/
@@ -20178,7 +20178,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       else if (last_n)
          sprintf(str + strlen(str), loc("Last %d entries"), last_n);
       else if (page_n == -1)
-         sprintf(str + strlen(str), loc("all entries"));
+         strlcpy(str + strlen(str), loc("all entries"), sizeof(str)-strlen(str));
       else if (page_n)
          sprintf(str + strlen(str), loc("Page %d of %d"), page_n, (n_msg - 1) / n_page + 1);
       if (strlen(str) == 2)
@@ -20246,7 +20246,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                      sprintf(str, loc("Last %d days"), past_n * 2);
                      rsprintf("&nbsp;<a href=\"past%d?mode=%s\">%s</a>&nbsp;|\n", past_n * 2, mode, str);
                   } else {
-                     sprintf(str, loc("Last day"));
+                     strlcpy(str, loc("Last day"), sizeof(str));
                      rsprintf("&nbsp;<a href=\"past1?mode=%s\">%s</a>&nbsp;|\n", mode, str);
                   }
 
@@ -21249,17 +21249,17 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH],
          i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
          strsubst_list(heading, sizeof(heading), slist, svalue, i);
 
-         sprintf(mail_text + strlen(mail_text), heading);
+         strlcpy(mail_text + strlen(mail_text), heading, size-strlen(mail_text));
 
       } else {
          if (old_mail)
-            sprintf(mail_text + strlen(mail_text), loc("An old ELOG entry has been updated"));
+            strlcpy(mail_text + strlen(mail_text), loc("An old ELOG entry has been updated"), size-strlen(mail_text));
          else
-            sprintf(mail_text + strlen(mail_text), loc("A new ELOG entry has been submitted"));
+            strlcpy(mail_text + strlen(mail_text), loc("A new ELOG entry has been submitted"), size-strlen(mail_text));
          strcat(mail_text, ":");
       }
 
-      sprintf(mail_text + strlen(mail_text), "\r\n\r\n");
+      strlcpy(mail_text + strlen(mail_text), "\r\n\r\n", size-strlen(mail_text));
    }
 
    if (flags & 32)
@@ -21420,7 +21420,7 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
          i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
          strsubst_list(heading, sizeof(heading), slist, svalue, i);
 
-         sprintf(mail_text + strlen(mail_text), heading);
+         strlcpy(mail_text + strlen(mail_text), heading, size-strlen(mail_text));
 
       } else {
          if (old_mail)
@@ -21430,10 +21430,10 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
          strcat(mail_text, ":");
       }
 
-      strcpy(mail_text + strlen(mail_text), "</h3>\r\n");
+      strlcpy(mail_text + strlen(mail_text), "</h3>\r\n", size-strlen(mail_text));
    }
 
-   sprintf(mail_text + strlen(mail_text), "<table border=\"3\" cellpadding=\"4\">\r\n");
+   strlcpy(mail_text + strlen(mail_text), "<table border=\"3\" cellpadding=\"4\">\r\n", size-strlen(mail_text));
 
    if (flags & 32) {
       sprintf(mail_text + strlen(mail_text), "<tr><td bgcolor=\"#CCCCFF\">%s</td>", loc("Logbook"));
@@ -22562,7 +22562,7 @@ void submit_elog(LOGBOOK * lbs)
             if (locked_by[0])
                sprintf(str, loc("This entry has in meantime been locked by %s"), locked_by);
             else
-               sprintf(str, loc("This entry has in meantime been modified by someone else"));
+               strlcpy(str, loc("This entry has in meantime been modified by someone else"), sizeof(str));
             strlcat(str, ".<p>\n", sizeof(str));
             strlcat(str,
                     loc
@@ -25271,7 +25271,7 @@ void show_login_page(LOGBOOK * lbs, char *redir, int fail)
    rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
 
    if (fail == 1) {
-      sprintf(str, loc("Invalid user name or password"));
+      strlcpy(str, loc("Invalid user name or password"), sizeof(str));
       rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n", str);
    }
 
