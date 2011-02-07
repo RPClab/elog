@@ -14963,7 +14963,7 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index, char 
    if (!p) {
       if (isparam("debug"))
          rsputs(text);
-      sprintf(error_str, loc("Remote server is not an ELOG server"));
+      strlcpy(error_str, loc("Remote server is not an ELOG server"), 256);
       xfree(text);
       return -1;
    }
@@ -15036,7 +15036,7 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index, char 
       if (isparam("debug"))
          rsputs(text);
       if (strstr(text, "Login")) {
-         sprintf(error_str, loc("No user name supplied to access remote logbook"));
+	strlcpy(error_str, loc("No user name supplied to access remote logbook"), 256);
          xfree(text);
          return -2;
       } else
