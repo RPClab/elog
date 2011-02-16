@@ -20374,7 +20374,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             tms.tm_year = y1 - 1900;
             tms.tm_mon = m1 - 1;
             tms.tm_mday = d1;
-            tms.tm_hour = h2;
+            tms.tm_hour = h1;
             tms.tm_min = n1;
             tms.tm_sec = c1;
             if (tms.tm_year < 90)
