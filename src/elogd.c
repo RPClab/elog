@@ -13032,7 +13032,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
    }
 
    /* log in user automatically */
-   if (new_user && self_register == 1 || self_register == 2) {
+   if (new_user && (self_register == 1 || self_register == 2)) {
 
       if (isparam("new_user_name")) {
          /* get a new session ID */
