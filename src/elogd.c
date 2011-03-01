@@ -23855,14 +23855,16 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          rsprintf("<tr><td class=\"notifymsg\" colspan=2>%s</td></tr>\n",
                   loc("Email notification suppressed"));
       } else if (isparam("error")) {
-         rsprintf("<tr><td class=\"errormsg\" colspan=2>%s</td></tr>\n", getparam("error"));
+         strencode2(str, getparam("error"), sizeof(str));
+         rsprintf("<tr><td class=\"errormsg\" colspan=2>%s</td></tr>\n", str);
       } else {
          for (i = 0;; i++) {
             sprintf(str, "mail%d", i);
             if (isparam(str)) {
                if (i == 0)
                   rsprintf("<tr><td class=\"notifymsg\" colspan=2>");
-               rsprintf("%s <b>%s</b><br>\n", loc("Email sent to"), getparam(str));
+               strencode2(str, getparam(str), sizeof(str));
+               rsprintf("%s <b>%s</b><br>\n", loc("Email sent to"), str);
             } else
                break;
          }
