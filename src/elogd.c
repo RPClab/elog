@@ -12664,7 +12664,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
 {
    char file_name[256], str[256], *pl, user_enc[256], new_pwd[80], new_pwd2[80], smtp_host[256],
        email_addr[256], mail_from[256], mail_from_name[256], subject[256], mail_text[2000], str2[256],
-       admin_user[80], url[256], error[2000];
+       admin_user[80], url[256], error[2000], sid[32];
    int i, self_register, code, first_user;
    PMXML_NODE node, subnode, npwd;
 
@@ -13028,6 +13028,35 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
             redirect(lbs, str);
             return 0;
          }
+      }
+   }
+
+   /* log in user automatically */
+   if (new_user && self_register == 1 || self_register == 2) {
+
+      if (isparam("new_user_name")) {
+         /* get a new session ID */
+         sid_new(lbs, getparam("new_user_name"), (char *) inet_ntoa(rem_addr), sid);
+
+
+         if (lbs)
+            sprintf(str, "../%s/", lbs->name_enc);
+         else
+            sprintf(str, ".");
+         if (isparam("new_user_name")) {
+            sprintf(str + strlen(str), "?cmd=%s&cfg_user=", loc("Config"));
+            strlcat(str, getparam("new_user_name"), sizeof(str));
+         } else if (isparam("cfg_user")) {
+            sprintf(str + strlen(str), "?cmd=%s&cfg_user=", loc("Config"));
+            strlcat(str, getparam("cfg_user"), sizeof(str));
+         } else if (getcfg(lbs->name, "password file", str2, sizeof(str2)))
+            sprintf(str + strlen(str), "?cmd=%s", loc("Config"));
+         setparam("redir", str);
+
+         /* set SID cookie */
+         set_sid_cookie(lbs, sid);
+
+         return 0;
       }
    }
 
