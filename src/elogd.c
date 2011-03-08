@@ -12167,7 +12167,7 @@ void adjust_crlf(char *buffer, int bufsize)
    bufsize = 0;                 // avoid compiler warning about unused bufsize
    p = buffer;
    while ((p = strstr(p, "\r\n")) != NULL) {
-      strcpy(p, p + 1);
+      memmove(p, p + 1, strlen(p)); // strcpy() gives error under Ubuntu
    }
 #else
 
