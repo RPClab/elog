@@ -1076,9 +1076,9 @@ void strsubst(char *string, int size, char *pattern, char *subst)
          memcpy(p, subst, strlen(subst));
       } else if (strlen(pattern) > strlen(subst)) {
          memcpy(p, subst, strlen(subst));
-         strcpy(p + strlen(subst), p + strlen(pattern));
+         memmove(p + strlen(subst), p + strlen(pattern), strlen(p+strlen(pattern))+1);
       } else {
-         tail = xmalloc(strlen(p) - strlen(pattern) + 1);
+         tail = (char *)xmalloc(strlen(p) - strlen(pattern) + 1);
          strcpy(tail, p + strlen(pattern));
          s = size - (p - string);
          strlcpy(p, subst, s);
@@ -3409,9 +3409,9 @@ void retrieve_email_from(LOGBOOK * lbs, char *ret, char *ret_name, char attrib[M
 
       /* remove possible 'mailto:' */
       if ((p = strstr(email_from_name, "mailto:")) != NULL)
-         strcpy(p, p + 7);
+         memmove(p, p + 7, strlen(p+7)+1);
       if ((p = strstr(email_from, "mailto:")) != NULL)
-         strcpy(p, p + 7);
+         memmove(p, p + 7, strlen(p+7)+1);
    }
 
    /* if nothing available, figure out email from an administrator */
@@ -5480,7 +5480,7 @@ void strip_html(char *s)
 
    while ((p = strchr(s, '<')) != NULL) {
       if (strchr(p, '>'))
-         strcpy(p, strchr(p, '>') + 1);
+         memmove(p, strchr(p, '>') + 1, strlen(strchr(p, '>') + 1)+1);
       else
          *p = 0;
    }
@@ -5554,7 +5554,7 @@ void replace_inline_img(LOGBOOK * lbs, char *str)
                pn++;
             retrieve_domain(domain, sizeof(domain));
             sprintf(p, "<img border=\"0\" src=\"cid:att%d@%s\">", index, domain);
-            memmove(p + strlen(p), pn, strlen(pn) + 1);
+            memmove(p + strlen(p), pn, strlen(pn)+1);
 
             /* now change href to absolute link */
             pa = p - 1;
@@ -5687,7 +5687,7 @@ void rsputs2(LOGBOOK * lbs, int absolute_link, const char *str)
                while (*pd && *pd != '\002')
                   *p = *pd++;
 
-               strcpy(p, pd + 1);
+               memmove(p, pd + 1, strlen(pd+1)+1);
 
                /* skip '</B>' */
                p = strchr(link, '\001');
@@ -5697,7 +5697,7 @@ void rsputs2(LOGBOOK * lbs, int absolute_link, const char *str)
                   while (*pd && *pd != '\002')
                      *p = *pd++;
 
-                  strcpy(p, pd + 1);
+                  memmove(p, pd + 1, strlen(pd+1)+1);
                }
 
                /* correct link text */
@@ -6011,7 +6011,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                while (*pd && *pd != '\002')
                   *p = *pd++;
 
-               strcpy(p, pd + 1);
+               memmove(p, pd + 1, strlen(pd+1)+1);
 
                /* skip '</B>' */
                p = strchr(link, '\001');
@@ -6021,7 +6021,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                   while (*pd && *pd != '\002')
                      *p = *pd++;
 
-                  strcpy(p, pd + 1);
+                  memmove(p, pd + 1, strlen(pd+1)+1);
                }
             }
 
@@ -6136,7 +6136,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                      i += strlen(attrib);
 
                      if (attrib[0] == '\"')
-                        strcpy(attrib, attrib + 1);
+                        memmove(attrib, attrib + 1, strlen(attrib+1)+1);
                      if (attrib[strlen(attrib) - 1] == '\"')
                         attrib[strlen(attrib) - 1] = 0;
 
@@ -12151,7 +12151,7 @@ void remove_crlf(char *buffer)
    /* convert \r\n -> \n */
    p = buffer;
    while ((p = strstr(p, "\r\n")) != NULL) {
-      strcpy(p, p + 1);
+      memmove(p, p + 1, strlen(p+1)+1);
    }
 }
 
@@ -12167,7 +12167,7 @@ void adjust_crlf(char *buffer, int bufsize)
    bufsize = 0;                 // avoid compiler warning about unused bufsize
    p = buffer;
    while ((p = strstr(p, "\r\n")) != NULL) {
-      memmove(p, p + 1, strlen(p)); // strcpy() gives error under Ubuntu
+      memmove(p, p + 1, strlen(p+1)+1); // strcpy() gives error under Ubuntu
    }
 #else
 
@@ -19269,7 +19269,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          pt1++;
          strcpy(param, pt1);
          param[pt2 - pt1] = 0;
-         strcpy(pt1, pt2 + 2);
+         memmove(pt1, pt2 + 2, strlen(pt2+2)+1);
 
          /* remove param from lastcmd if present */
          if ((pt1 = strstr(_cmdline, "lastcmd=")) != NULL) {
@@ -19280,7 +19280,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   pt2++;
                if (*pt2 == '%')
                   pt2 += 3;
-               strcpy(pt1, pt2);
+               memmove(pt1, pt2, strlen(pt2)+1);
             }
          }
       }
@@ -19303,7 +19303,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   pt2++;
                if (*pt2 == '%')
                   pt2 += 3;
-               strcpy(pt1, pt2);
+               memmove(pt1, pt2, strlen(pt2)+1);
             }
          }
       }
@@ -22747,7 +22747,7 @@ void submit_elog(LOGBOOK * lbs)
             for (i = 0; i < n; i++) {
                /* remove possible 'mailto:' */
                if ((p = strstr(&mail_list[i * NAME_LENGTH], "mailto:")) != NULL)
-                  strcpy(p, p + 7);
+                  memmove(p, p + 7, strlen(p+7)+1);
 
                if ((int) strlen(mail_to) + (int) strlen(&mail_list[i * NAME_LENGTH]) + 10 >= mail_to_size) {
                   mail_to_size += 256;
@@ -25826,7 +25826,7 @@ void get_password(char *password)
    static char last_password[32];
 
    if (strncmp(password, "set=", 4) == 0)
-      strcpy(last_password, password + 4);
+      strlcpy(last_password, password + 4, sizeof(last_password));
    else
       strcpy(password, last_password);
 }
