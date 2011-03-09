@@ -1,6 +1,14 @@
-Version 2.9.0, released Januar xxxx
-==========================================
+Version 2.9.0, released March 9th 2011
+======================================
 
+- Fixed corrupted config file under Ubuntu
+- Automatically log in after self registration
+- Fixed XSS issue with mail0
+- Fixed problem if an attribute contains "?"
+- Fixed bug with SSL connection shutdown
+- Added 'Toggle all' for MOptions
+- Moved 'Search text also in attributes' to the right
+- Added find by time from Andreas Luedeke
 - Implemented Kerberos authentication
 - Implemented "Propagate attributes = ..."
 - fixed bug with importing CSV containing a text body

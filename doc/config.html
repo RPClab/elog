@@ -2184,7 +2184,17 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
     If both authentications <code><b>Kerberos, File</b></code> are enabled,
     the credentials are first authenticated via the Kerberos server, and - if
     not successful - via the password file. This allows combined elog 
-    installations with centralized and local elog accounts.  
+    installations with centralized and local elog accounts. If the Kerberos
+    authentication was successful, the password in the password
+    file is overwritten with the encrypted Kerberos password. This allows the
+    system to work even if the Kerberos server is temporarily not accessible. 
+    </p>
+    <p>
+    If the password is changed via the "Change Password" button on the config
+    page, the system tries to change the password in the Kerberos database. On
+    some installation it has been found that this does not work, in which case
+    you have to change your password by other means (such as via the Windows
+    login if you use a Windows Domain).
     </p>
     
     <p>

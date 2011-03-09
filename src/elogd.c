@@ -1076,9 +1076,9 @@ void strsubst(char *string, int size, char *pattern, char *subst)
          memcpy(p, subst, strlen(subst));
       } else if (strlen(pattern) > strlen(subst)) {
          memcpy(p, subst, strlen(subst));
-         memmove(p + strlen(subst), p + strlen(pattern), strlen(p+strlen(pattern))+1);
+         memmove(p + strlen(subst), p + strlen(pattern), strlen(p + strlen(pattern)) + 1);
       } else {
-         tail = (char *)xmalloc(strlen(p) - strlen(pattern) + 1);
+         tail = (char *) xmalloc(strlen(p) - strlen(pattern) + 1);
          strcpy(tail, p + strlen(pattern));
          s = size - (p - string);
          strlcpy(p, subst, s);
@@ -3409,9 +3409,9 @@ void retrieve_email_from(LOGBOOK * lbs, char *ret, char *ret_name, char attrib[M
 
       /* remove possible 'mailto:' */
       if ((p = strstr(email_from_name, "mailto:")) != NULL)
-         memmove(p, p + 7, strlen(p+7)+1);
+         memmove(p, p + 7, strlen(p + 7) + 1);
       if ((p = strstr(email_from, "mailto:")) != NULL)
-         memmove(p, p + 7, strlen(p+7)+1);
+         memmove(p, p + 7, strlen(p + 7) + 1);
    }
 
    /* if nothing available, figure out email from an administrator */
@@ -5480,7 +5480,7 @@ void strip_html(char *s)
 
    while ((p = strchr(s, '<')) != NULL) {
       if (strchr(p, '>'))
-         memmove(p, strchr(p, '>') + 1, strlen(strchr(p, '>') + 1)+1);
+         memmove(p, strchr(p, '>') + 1, strlen(strchr(p, '>') + 1) + 1);
       else
          *p = 0;
    }
@@ -5554,7 +5554,7 @@ void replace_inline_img(LOGBOOK * lbs, char *str)
                pn++;
             retrieve_domain(domain, sizeof(domain));
             sprintf(p, "<img border=\"0\" src=\"cid:att%d@%s\">", index, domain);
-            memmove(p + strlen(p), pn, strlen(pn)+1);
+            memmove(p + strlen(p), pn, strlen(pn) + 1);
 
             /* now change href to absolute link */
             pa = p - 1;
@@ -5687,7 +5687,7 @@ void rsputs2(LOGBOOK * lbs, int absolute_link, const char *str)
                while (*pd && *pd != '\002')
                   *p = *pd++;
 
-               memmove(p, pd + 1, strlen(pd+1)+1);
+               memmove(p, pd + 1, strlen(pd + 1) + 1);
 
                /* skip '</B>' */
                p = strchr(link, '\001');
@@ -5697,7 +5697,7 @@ void rsputs2(LOGBOOK * lbs, int absolute_link, const char *str)
                   while (*pd && *pd != '\002')
                      *p = *pd++;
 
-                  memmove(p, pd + 1, strlen(pd+1)+1);
+                  memmove(p, pd + 1, strlen(pd + 1) + 1);
                }
 
                /* correct link text */
@@ -6011,7 +6011,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                while (*pd && *pd != '\002')
                   *p = *pd++;
 
-               memmove(p, pd + 1, strlen(pd+1)+1);
+               memmove(p, pd + 1, strlen(pd + 1) + 1);
 
                /* skip '</B>' */
                p = strchr(link, '\001');
@@ -6021,7 +6021,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                   while (*pd && *pd != '\002')
                      *p = *pd++;
 
-                  memmove(p, pd + 1, strlen(pd+1)+1);
+                  memmove(p, pd + 1, strlen(pd + 1) + 1);
                }
             }
 
@@ -6136,7 +6136,7 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                      i += strlen(attrib);
 
                      if (attrib[0] == '\"')
-                        memmove(attrib, attrib + 1, strlen(attrib+1)+1);
+                        memmove(attrib, attrib + 1, strlen(attrib + 1) + 1);
                      if (attrib[strlen(attrib) - 1] == '\"')
                         attrib[strlen(attrib) - 1] = 0;
 
@@ -9809,9 +9809,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("  {\n");
    rsprintf("  for (var i = 0; i < document.form1.elements.length; i++)\n");
    rsprintf("    {\n");
-   rsprintf("    if (document.form1.elements[i].type == 'checkbox' && document.form1.elements[i].disabled == false) {\n");
+   rsprintf
+       ("    if (document.form1.elements[i].type == 'checkbox' && document.form1.elements[i].disabled == false) {\n");
    rsprintf("      a = document.form1.elements[i].name;\n");
-   rsprintf("      a = a.substring(0, attrib.length);\n"); 
+   rsprintf("      a = a.substring(0, attrib.length);\n");
    rsprintf("      if (a == attrib)\n");
    rsprintf("        document.form1.elements[i].checked = !(document.form1.elements[i].checked);\n");
    rsprintf("      }\n");
@@ -10540,7 +10541,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         rsprintf("<br>");
                   }
 
-                  rsprintf("<input type=button value=\"%s\" onClick=\"ToggleAll('%s');\">\n", loc("Toggle all"), ua);
+                  rsprintf("<input type=button value=\"%s\" onClick=\"ToggleAll('%s');\">\n",
+                           loc("Toggle all"), ua);
 
                   if (attr_flags[index] & AF_EXTENDABLE) {
                      sprintf(str, loc("Add %s"), attr_list[index]);
@@ -12151,7 +12153,7 @@ void remove_crlf(char *buffer)
    /* convert \r\n -> \n */
    p = buffer;
    while ((p = strstr(p, "\r\n")) != NULL) {
-      memmove(p, p + 1, strlen(p+1)+1);
+      memmove(p, p + 1, strlen(p + 1) + 1);
    }
 }
 
@@ -12167,7 +12169,7 @@ void adjust_crlf(char *buffer, int bufsize)
    bufsize = 0;                 // avoid compiler warning about unused bufsize
    p = buffer;
    while ((p = strstr(p, "\r\n")) != NULL) {
-      memmove(p, p + 1, strlen(p+1)+1); // strcpy() gives error under Ubuntu
+      memmove(p, p + 1, strlen(p + 1) + 1);     // strcpy() gives error under Ubuntu
    }
 #else
 
@@ -15065,7 +15067,7 @@ int retrieve_remote_md5(LOGBOOK * lbs, char *host, MD5_INDEX ** md5_index, char 
       if (isparam("debug"))
          rsputs(text);
       if (strstr(text, "Login")) {
-	strlcpy(error_str, loc("No user name supplied to access remote logbook"), 256);
+         strlcpy(error_str, loc("No user name supplied to access remote logbook"), 256);
          xfree(text);
          return -2;
       } else
@@ -19240,9 +19242,9 @@ time_t search_last_reply(LOGBOOK * lbs, int *message_id)
 
 void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL default_page, char *info)
 {
-   int i, j, n, index, size, status, d1, m1, y1, h1, n1, c1, d2, m2, y2, h2, n2, c2, n_line, flags, 
-       current_year, current_month, current_day, printable, n_logbook, n_display, reverse, numeric, 
-       n_attr_disp, total_n_msg, n_msg, search_all, message_id, n_page, i_start, i_stop, in_reply_to_id, 
+   int i, j, n, index, size, status, d1, m1, y1, h1, n1, c1, d2, m2, y2, h2, n2, c2, n_line, flags,
+       current_year, current_month, current_day, printable, n_logbook, n_display, reverse, numeric,
+       n_attr_disp, total_n_msg, n_msg, search_all, message_id, n_page, i_start, i_stop, in_reply_to_id,
        page_mid, page_mid_head, level;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], *list, *text,
        *text1, in_reply_to[80], reply_to[MAX_REPLY_TO * 10], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
@@ -19269,7 +19271,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          pt1++;
          strcpy(param, pt1);
          param[pt2 - pt1] = 0;
-         memmove(pt1, pt2 + 2, strlen(pt2+2)+1);
+         memmove(pt1, pt2 + 2, strlen(pt2 + 2) + 1);
 
          /* remove param from lastcmd if present */
          if ((pt1 = strstr(_cmdline, "lastcmd=")) != NULL) {
@@ -19280,7 +19282,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   pt2++;
                if (*pt2 == '%')
                   pt2 += 3;
-               memmove(pt1, pt2, strlen(pt2)+1);
+               memmove(pt1, pt2, strlen(pt2) + 1);
             }
          }
       }
@@ -19303,7 +19305,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   pt2++;
                if (*pt2 == '%')
                   pt2 += 3;
-               memmove(pt1, pt2, strlen(pt2)+1);
+               memmove(pt1, pt2, strlen(pt2) + 1);
             }
          }
       }
@@ -20207,7 +20209,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       else if (last_n)
          sprintf(str + strlen(str), loc("Last %d entries"), last_n);
       else if (page_n == -1)
-         strlcpy(str + strlen(str), loc("all entries"), sizeof(str)-strlen(str));
+         strlcpy(str + strlen(str), loc("all entries"), sizeof(str) - strlen(str));
       else if (page_n)
          sprintf(str + strlen(str), loc("Page %d of %d"), page_n, (n_msg - 1) / n_page + 1);
       if (strlen(str) == 2)
@@ -20398,7 +20400,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          rsprintf("<tr><td class=\"listframe\">\n");
          rsprintf("<table width=\"100%%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
 
-         if (isparam("ma") || isparam("ya") || isparam("da") || isparam("ha") || isparam("na") || isparam("ca")) {
+         if (isparam("ma") || isparam("ya") || isparam("da") || isparam("ha") || isparam("na")
+             || isparam("ca")) {
             memset(&tms, 0, sizeof(struct tm));
             tms.tm_year = y1 - 1900;
             tms.tm_mon = m1 - 1;
@@ -20410,14 +20413,15 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                tms.tm_year += 100;
             mktime(&tms);
             if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
-                strcpy(format, DEFAULT_TIME_FORMAT);
+               strcpy(format, DEFAULT_TIME_FORMAT);
             strftime(str, sizeof(str), format, &tms);
 
             rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Start date"));
             rsprintf("<td class=\"attribvalue\">%s</td></tr>", str);
          }
 
-         if (isparam("mb") || isparam("yb") || isparam("db") || isparam("hb") || isparam("nb") || isparam("cb")) {
+         if (isparam("mb") || isparam("yb") || isparam("db") || isparam("hb") || isparam("nb")
+             || isparam("cb")) {
             memset(&tms, 0, sizeof(struct tm));
             tms.tm_year = y2 - 1900;
             tms.tm_mon = m2 - 1;
@@ -20430,7 +20434,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             ltime = mktime(&tms);
             memcpy(&tms, localtime(&ltime), sizeof(struct tm));
             if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
-                strcpy(format, DEFAULT_TIME_FORMAT);
+               strcpy(format, DEFAULT_TIME_FORMAT);
             strftime(str, sizeof(str), format, &tms);
 
             rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("End date"));
@@ -21278,17 +21282,19 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH],
          i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
          strsubst_list(heading, sizeof(heading), slist, svalue, i);
 
-         strlcpy(mail_text + strlen(mail_text), heading, size-strlen(mail_text));
+         strlcpy(mail_text + strlen(mail_text), heading, size - strlen(mail_text));
 
       } else {
          if (old_mail)
-            strlcpy(mail_text + strlen(mail_text), loc("An old ELOG entry has been updated"), size-strlen(mail_text));
+            strlcpy(mail_text + strlen(mail_text), loc("An old ELOG entry has been updated"),
+                    size - strlen(mail_text));
          else
-            strlcpy(mail_text + strlen(mail_text), loc("A new ELOG entry has been submitted"), size-strlen(mail_text));
+            strlcpy(mail_text + strlen(mail_text), loc("A new ELOG entry has been submitted"),
+                    size - strlen(mail_text));
          strcat(mail_text, ":");
       }
 
-      strlcpy(mail_text + strlen(mail_text), "\r\n\r\n", size-strlen(mail_text));
+      strlcpy(mail_text + strlen(mail_text), "\r\n\r\n", size - strlen(mail_text));
    }
 
    if (flags & 32)
@@ -21449,7 +21455,7 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
          i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
          strsubst_list(heading, sizeof(heading), slist, svalue, i);
 
-         strlcpy(mail_text + strlen(mail_text), heading, size-strlen(mail_text));
+         strlcpy(mail_text + strlen(mail_text), heading, size - strlen(mail_text));
 
       } else {
          if (old_mail)
@@ -21459,10 +21465,11 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
          strcat(mail_text, ":");
       }
 
-      strlcpy(mail_text + strlen(mail_text), "</h3>\r\n", size-strlen(mail_text));
+      strlcpy(mail_text + strlen(mail_text), "</h3>\r\n", size - strlen(mail_text));
    }
 
-   strlcpy(mail_text + strlen(mail_text), "<table border=\"3\" cellpadding=\"4\">\r\n", size-strlen(mail_text));
+   strlcpy(mail_text + strlen(mail_text), "<table border=\"3\" cellpadding=\"4\">\r\n",
+           size - strlen(mail_text));
 
    if (flags & 32) {
       sprintf(mail_text + strlen(mail_text), "<tr><td bgcolor=\"#CCCCFF\">%s</td>", loc("Logbook"));
@@ -22747,7 +22754,7 @@ void submit_elog(LOGBOOK * lbs)
             for (i = 0; i < n; i++) {
                /* remove possible 'mailto:' */
                if ((p = strstr(&mail_list[i * NAME_LENGTH], "mailto:")) != NULL)
-                  memmove(p, p + 7, strlen(p+7)+1);
+                  memmove(p, p + 7, strlen(p + 7) + 1);
 
                if ((int) strlen(mail_to) + (int) strlen(&mail_list[i * NAME_LENGTH]) + 10 >= mail_to_size) {
                   mail_to_size += 256;
