@@ -1,6 +1,6 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.8.1+)
+# (for 2.9.0+)
 # A more recent version may be available at :
 # http://savannah.psi.ch/viewcvs/trunk/resources/eloglang.french?root=elog
 #
@@ -458,26 +458,22 @@ File system full, ELOG cannot continue to work = Le système de fichiers est plei
 3 Days = 3 jours
 Last 3 Days = Les 3 derniers jours
 Really submit this entry? = Voulez-vous vraiment soumettre cette entrée ?
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Are you sure to abandon any entered text? = 
-Account activation for ELOG logbook "%s" = 
-Account activation for ELOG on host "%s" = 
-Please click the URL below to activate following ELOG account = 
-Activation URL = 
-An email has been sent to &lt;%s&gt; = 
-Use that email to activate your account = 
-Registration request for ELOG logbook "%s" = 
-Registration request for ELOG on host "%s" = 
-Are you sure you want to deactivate your own account? = 
-Active = 
-Invalid activation code = 
-Error activating user = 
-A password recovery email for user <i>"%s"</i> has been sent to %s = 
-User "%s" has no access to this logbook = 
-Your account has been activated = 
-Please subscribe to logbooks if you want to receive automatic email notifications = 
-This is an automatically generated account recovery email for host %s = 
-Please click on following link to recover your account = 
+Are you sure to abandon any entered text? = Etes-vous sûr(e) de vouloir annuler toute la saisie ?
+Account activation for ELOG logbook "%s" = Activation de compte pour le registre ELOG "%s"
+Account activation for ELOG on host "%s" = Activation de compte ELOG sur le serveur "%s"
+Please click the URL below to activate following ELOG account = Veuillez cliquer sur l'URL ci-dessous pour activer le compte ELOG suivant
+Activation URL = URL d'activation
+An email has been sent to &lt;%s&gt; = Un message a été envoyé à &lt;%s&gt;
+Use that email to activate your account = Utilisez ce message pour activer votre compte
+Registration request for ELOG logbook "%s" = Demande d'inscription pour le registre ELOG "%s"
+Registration request for ELOG on host "%s" = Demande d'inscription ELOG sur le serveur "%s"
+Are you sure you want to deactivate your own account? = Etes-vous sûr(e) de vouloir désactiver votre propre compte ?
+Active = Actif
+Invalid activation code = Code d'activation invalide
+Error activating user = Erreur lors de l'activation du compte utilisateur
+A password recovery email for user <i>"%s"</i> has been sent to %s = Un message de récupération de mot de passe pour le compte <i>"%s"</i> a été envoyé à %s
+User "%s" has no access to this logbook = Le compte "%s" n'a pas accès à ce registre
+Your account has been activated = Votre compte a été activé
+Please subscribe to logbooks if you want to receive automatic email notifications = Vous devez vous abonner à des registres si vous voulez recevoir des messages de notification automatiques 
+This is an automatically generated account recovery email for host %s = Ceci est un message automatique de récupération de compte pour le serveur %s
+Please click on following link to recover your account = Veuillez cliquer sur le lien suivant pour récupérer votre compte
