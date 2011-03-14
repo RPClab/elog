@@ -1783,6 +1783,7 @@ int sid_new(LOGBOOK * lbs, const char *user, const char *host, char *sid)
    char str[256];
 
    time(&now);
+   new_i = 0;
 
    if (_sid == NULL) {
       _sid = (SESSION_ID *) malloc(sizeof(SESSION_ID));
@@ -3848,7 +3849,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
 int el_index_logbooks()
 {
    char str[256], data_dir[256], logbook[256], cwd[256], *p;
-   int i, j, n, status;
+   int i, j, n, status = 0;
 
    if (lb_list) {
       for (i = 0; lb_list[i].name[0]; i++) {
@@ -19254,7 +19255,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    char *p, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
    BOOL show_attachments, threaded, csv, xml, raw, mode_commands, expand, filtering, date_filtering,
        disp_filter, show_text, text_in_attr, searched, found, disp_attr_link[MAX_N_ATTR + 4],
-       sort_attributes, show_att_column;
+       sort_attributes, show_att_column = 0;
    time_t ltime, ltime_start, ltime_end, now, ltime1, ltime2, entry_ltime;
    struct tm tms, *ptms;
    MSG_LIST *msg_list;
@@ -28067,6 +28068,7 @@ void send_return(int _sock, const char *net_buffer)
          write_logfile(NULL, str);
       }
 
+      length = 0;
       if ((keep_alive && strstr(return_buffer, "Content-Length") == NULL) || strstr(return_buffer,
                                                                                     "Content-Length") >
           strstr(return_buffer, "\r\n\r\n")) {
@@ -28357,7 +28359,7 @@ void server_loop(void)
    char *net_buffer = NULL;
    int net_buffer_size;
 #ifdef HAVE_SSL
-   SSL_CTX *ssl_ctx;
+   SSL_CTX *ssl_ctx = NULL;
 #endif
 
 #ifdef OS_UNIX
