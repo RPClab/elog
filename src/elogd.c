@@ -18910,7 +18910,7 @@ time_t convert_date(char *date_string)
 time_t convert_datetime(char *date_string)
 {
    /* convert date string in MM/DD/YY h:m:s AM/PM or DD.MM.YY hh:m:s format into Unix time */
-   int year, month, day, hour, min, sec;
+   int year, month, day, hour, min=0, sec=0;
    char *p, str[256];
    struct tm tms;
    time_t ltime;
