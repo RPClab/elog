@@ -2019,7 +2019,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    struct sockaddr_in bind_addr;
    struct hostent *phe;
    int i, n, s, strsize;
-   char *str, *p;
+   char *str;
    char list[MAX_N_EMAIL][NAME_LENGTH], buffer[10000], decoded[256];
 
    memset(error, 0, error_size);
@@ -3375,8 +3375,8 @@ void retrieve_email_from(LOGBOOK * lbs, char *ret, char *ret_name, char attrib[M
       } else
          strlcpy(email_from, str, sizeof(email_from));
       strlcpy(email_from_name, str, sizeof(email_from));
-   } else if (isparam("uname")) {
-      get_user_line(lbs, getparam("uname"), NULL, full_name, user_email, NULL, NULL, NULL);
+   } else if (isparam("unm")) {
+      get_user_line(lbs, getparam("unm"), NULL, full_name, user_email, NULL, NULL, NULL);
       strlcpy(email_from_name, full_name, sizeof(email_from_name));
       strlcat(email_from_name, " <", sizeof(email_from_name));
       strlcat(email_from_name, user_email, sizeof(email_from_name));
