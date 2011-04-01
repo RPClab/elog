@@ -2214,16 +2214,10 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    if (!check_smtp_error(str, 354, error, error_size))
       goto smtp_error;
 
-   /* analyze text for "." at beginning of line */
-   p = text;
-   str[0] = 0;
-   while (strstr(p, "\r\n.\r\n")) {
-      i = strstr(p, "\r\n.\r\n") - p + 1;
-      strlcat(str, p, i);
-      p += i + 4;
-      strlcat(str, "\r\n..\r\n", strsize);
-   }
-   strlcat(str, p, strsize);
+   /* replace "." at beginning of line by ".." */
+   strlcpy(str, text, strsize);
+   strsubst(str, strsize, "\r\n.\r\n", "\r\n..\r\n");
+
    /* add ".<CR>" to signal end of message */
    strlcat(str, ".\r\n", strsize);
 
