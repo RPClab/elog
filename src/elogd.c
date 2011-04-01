@@ -21786,7 +21786,7 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
 
          if (n < 10) {
             for (i = 0; i < n && i < MAX_PARAM; i++) {
-               strencode2(str, list[i], sizeof(str));
+               strlcpy(str, list[i], sizeof(str));
                url_encode(str, sizeof(str));
                sprintf(mail_param + strlen(mail_param), "mail%d=%s", i, str);
                if (i < n - 1)
