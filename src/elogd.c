@@ -123,6 +123,7 @@ struct {
    ".RPM", "application/x-rpm"}, {
    ".RTF", "application/rtf"}, {
    ".SH", "application/x-sh"}, {
+   ".SVG", "image/svg+xml"}, {
    ".TAR", "application/x-tar"}, {
    ".TCL", "application/x-tcl"}, {
    ".TEX", "application/x-tex"}, {
@@ -5464,7 +5465,7 @@ int is_ascii(char *file_name)
 int is_image(char *att)
 {
    return (stristr(att, ".GIF") != NULL) || (stristr(att, ".JPG") != NULL) || (stristr(att, ".JPEG") != NULL)
-       || (stristr(att, ".PNG") != NULL);
+       || (stristr(att, ".PNG") != NULL) || (stristr(att, ".SVG") != NULL);
 }
 
 /*------------------------------------------------------------------*/
@@ -11299,7 +11300,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   strlcat(file_name, att[index], sizeof(file_name));
 
                   display_inline = is_image(file_name) || is_ascii(file_name);
-                  if (chkext(file_name, ".ps") || chkext(file_name, ".pdf") || chkext(file_name, ".eps"))
+                  if (chkext(file_name, ".ps") || chkext(file_name, ".pdf") || chkext(file_name, ".eps") 
+                     || chkext(file_name, ".svg"))
                      display_inline = 0;
                   if ((chkext(file_name, ".htm") || chkext(file_name, ".html")) && is_full_html(file_name))
                      display_inline = 0;
@@ -17707,6 +17709,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
 
                      if (is_ascii(file_name) && !chkext(attachment[index], ".PS")
                          && !chkext(attachment[index], ".PDF") && !chkext(attachment[index], ".EPS")
+                         && !chkext(attachment[index], ".SVG")
                          && !chkext(attachment[index], ".HTM") && !chkext(attachment[index], ".HTML")
                          && show_attachments) {
 
@@ -23291,7 +23294,8 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
 
    if (!chkext(file_name, ".ps") && !chkext(file_name, ".pdf") && !chkext(file_name, ".eps")
        && !chkext(file_name, ".gif") && !chkext(file_name, ".jpg") && !chkext(file_name, ".jpeg")
-       && !chkext(file_name, ".png") && !chkext(file_name, ".ico") && !chkext(file_name, ".tif"))
+       && !chkext(file_name, ".png") && !chkext(file_name, ".ico") && !chkext(file_name, ".tif")
+       && !chkext(file_name, ".svg"))
       return 0;
 
    i = get_thumb_name(file_name, str, sizeof(str), 0);
@@ -24367,7 +24371,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
                /* determine if displayed inline */
                display_inline = is_image(file_name) || is_ascii(file_name);
-               if (chkext(att, ".PS") || chkext(att, ".PDF") || chkext(att, ".EPS"))
+               if (chkext(att, ".PS") || chkext(att, ".PDF"))
                   display_inline = 0;
                if ((chkext(att, ".HTM") || chkext(att, ".HTML")) && is_full_html(file_name))
                   display_inline = 0;
