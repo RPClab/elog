@@ -12740,7 +12740,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
    first_user = !enum_user_line(lbs, 0, str, sizeof(str));
 
    /* check if user exists */
-   if (new_user && self_register == 3) {
+   if (new_user) {
       if (get_user_line(lbs, user_enc, NULL, NULL, NULL, NULL, NULL, NULL) == 1) {
          sprintf(str, "%s \"%s\" %s", loc("Login name"), user_enc, loc("exists already"));
          show_error(str);
@@ -13571,9 +13571,9 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
       }
 
       if (strchr(name, '@'))
-         sprintf(str, loc("Email address <i>\"%s\"</i> not registered"), name);
+         sprintf(str, loc("Email address \"%s\" not registered"), name);
       else
-         sprintf(str, loc("User name <i>\"%s\"</i> not registered"), name);
+         sprintf(str, loc("User name \"%s\" not registered"), name);
 
       strencode2(str2, str, sizeof(str2));
       show_error(str2);
