@@ -24,7 +24,7 @@ RCDIR      = $(ROOT)/etc/rc.d/init.d
 # flag for SSL support
 USE_SSL    = 1
 
-# flag for Kerberos support
+# flag for Kerberos support, please turn on if you need Kerberos
 USE_KRB5   = 0
 
 #############################################################
