@@ -26,6 +26,10 @@ case "$1" in
 	     exit 1
 	   fi
 	fi
+        if [ -f /var/run/elogd.pid ] ; then
+           rm -f /var/lock/subsys/elogd
+	   rm -f /var/run/elogd.pid
+        fi
 	echo -n "Starting elogd: "
 	@PREFIX@/sbin/elogd -D -c @PREFIX@/elog/elogd.cfg  > /dev/null 2>&1 
 	RETVAL=$?
