@@ -28832,6 +28832,12 @@ void server_loop(void)
                         else if (strstr(net_buffer, "Content-length:"))
                            content_length = atoi(strstr(net_buffer, "Content-length:") + 15);
 
+                        /* check for valid content-length */
+                        if (content_length < 0) {
+                           broken = TRUE;
+                           break;
+                        }
+
                         /* extract header length */
                         if (strstr(net_buffer, "\r\n\r\n"))
                            header_length = strstr(net_buffer, "\r\n\r\n") - net_buffer + 4;
