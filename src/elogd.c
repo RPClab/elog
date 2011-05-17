@@ -26160,7 +26160,7 @@ void interprete(char *lbook, char *path)
 
  \********************************************************************/
 {
-   int status, i, j, n, index, lb_index, message_id;
+   int status, i, j, n, index, lb_index, message_id, inactive;
    char list[1000], section[256], str[NAME_LENGTH], str1[NAME_LENGTH], str2[NAME_LENGTH],
        edit_id[80], file_name[256], command[256], enc_path[256], dec_path[256], uname[80],
        full_name[256], user_email[256], logbook[256], logbook_enc[256], *experiment,
@@ -26420,12 +26420,18 @@ void interprete(char *lbook, char *path)
       }
 
       /* check if user in password file */
-      if (get_user_line(lbs, uname, NULL, NULL, NULL, NULL, NULL, NULL) == 2) {
+      if (get_user_line(lbs, uname, NULL, NULL, NULL, NULL, NULL, &inactive) == 2) {
          /* if self registering not allowed, go back to login screen */
          if (!getcfg(lbs->name, "Self register", str, sizeof(str)) || atoi(str) == 0) {
             show_login_page(lbs, str, 1);
             return;
          }
+      }
+
+      /* show error for inactive account */
+      if (inactive) {
+         show_error("This account is currently deactivated");
+         return;
       }
 
       /* put encoded password into password file */
