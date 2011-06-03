@@ -477,7 +477,7 @@ static int debug = 0;
   if (debug) print_double_string (w, s1, sz1, s2, sz2)
 
 
-extern void printchar();
+extern int putchar(int c);
 
 /* Print the fastmap in human-readable form.  */
 
@@ -490,14 +490,14 @@ char *fastmap;
    while (i < (1 << BYTEWIDTH)) {
       if (fastmap[i++]) {
          was_a_range = 0;
-         printchar(i - 1);
+         putchar(i - 1);
          while (i < (1 << BYTEWIDTH) && fastmap[i]) {
             was_a_range = 1;
             i++;
          }
          if (was_a_range) {
             printf("-");
-            printchar(i - 1);
+            putchar(i - 1);
          }
       }
    }
@@ -533,7 +533,7 @@ unsigned char *end;
          printf("/exactn/%d", mcnt);
          do {
             putchar('/');
-            printchar(*p++);
+            putchar(*p++);
          }
          while (--mcnt);
          break;
@@ -573,7 +573,7 @@ unsigned char *end;
 
                for (bit = 0; bit < BYTEWIDTH; bit++)
                   if (map_byte & (1 << bit))
-                     printchar(c * BYTEWIDTH + bit);
+                     putchar(c * BYTEWIDTH + bit);
             }
             p += 1 + *p;
             break;
@@ -748,13 +748,13 @@ int size2;
    else {
       if (FIRST_STRING_P(where)) {
          for (this_char = where - string1; this_char < size1; this_char++)
-            printchar(string1[this_char]);
+            putchar(string1[this_char]);
 
          where = string2;
       }
 
       for (this_char = where - string2; this_char < size2; this_char++)
-         printchar(string2[this_char]);
+         putchar(string2[this_char]);
    }
 }
 
@@ -1097,7 +1097,7 @@ struct re_pattern_buffer *bufp;
       unsigned debug_count;
 
       for (debug_count = 0; debug_count < size; debug_count++)
-         printchar(pattern[debug_count]);
+         putchar(pattern[debug_count]);
       putchar('\n');
    }
 #endif                          /* DEBUG */
