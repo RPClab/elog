@@ -8007,7 +8007,7 @@ void show_query(LOGBOOK * lbs, char *title, char *query_string, char *button1, c
 
 /*------------------------------------------------------------------*/
 
-void set_sid_cookie(LOGBOOK * lbs, char *sid)
+void set_sid_cookie(LOGBOOK * lbs, char *sid, char *full_name)
 {
    char str[256], lb_name[256], exp[80];
    BOOL global;
@@ -8035,8 +8035,11 @@ void set_sid_cookie(LOGBOOK * lbs, char *sid)
    /* check if cookies should be global */
    global = getcfg("global", "Password file", str, sizeof(str));
 
-   /* set the cookie */
+   /* set the session ID cookie */
    set_cookie(lbs, "sid", sid, global, exp);
+
+   /* set the use full name cookie */
+   set_cookie(lbs, "ufnm", full_name, global, exp);
 
    /* set "remember me" cookie on login */
    if (isparam("remember"))
@@ -13057,7 +13060,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
          setparam("redir", str);
 
          /* set SID cookie */
-         set_sid_cookie(lbs, sid);
+         set_sid_cookie(lbs, sid, getparam("new_user_name"));
 
          return 0;
       }
@@ -26326,7 +26329,7 @@ void interprete(char *lbook, char *path)
          sid_new(NULL, uname, (char *) inet_ntoa(rem_addr), sid);
 
          /* set SID cookie */
-         set_sid_cookie(NULL, sid);
+         set_sid_cookie(NULL, sid, getparam("uname"));
          return;
       }
 
@@ -26422,7 +26425,7 @@ void interprete(char *lbook, char *path)
       }
 
       /* check if user in password file */
-      if (get_user_line(lbs, uname, NULL, NULL, NULL, NULL, NULL, &inactive) == 2) {
+      if (get_user_line(lbs, uname, NULL, full_name, NULL, NULL, NULL, &inactive) == 2) {
          /* if self registering not allowed, go back to login screen */
          if (!getcfg(lbs->name, "Self register", str, sizeof(str)) || atoi(str) == 0) {
             show_login_page(lbs, str, 1);
@@ -26446,7 +26449,7 @@ void interprete(char *lbook, char *path)
       sid_new(lbs, uname, (char *) inet_ntoa(rem_addr), sid);
 
       /* set SID cookie */
-      set_sid_cookie(lbs, sid);
+      set_sid_cookie(lbs, sid, full_name);
       return;
    }
 
@@ -26502,7 +26505,7 @@ void interprete(char *lbook, char *path)
       setparam("redir", str);
 
       /* set SID cookie */
-      set_sid_cookie(lbs, sid);
+      set_sid_cookie(lbs, sid, uname);
       return;
    }
 
@@ -27110,7 +27113,7 @@ void interprete(char *lbook, char *path)
          write_logfile(lbs, "LOGOUT");
          /* set cookies */
          sid_remove(getparam("sid"));
-         set_sid_cookie(lbs, "");
+         set_sid_cookie(lbs, "", "");
       }
 
       /* continue configuration as administrator */
@@ -27183,7 +27186,7 @@ void interprete(char *lbook, char *path)
          sprintf(str, "../");
          setparam("redir", str);
       }
-      set_sid_cookie(lbs, "");
+      set_sid_cookie(lbs, "", "");
       sid_remove(getparam("sid"));
       return;
    }
