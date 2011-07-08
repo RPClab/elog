@@ -28444,7 +28444,7 @@ void server_loop(void)
    setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR, (char *) &flag, sizeof(int));
    status = bind(lsock, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
    if (status < 0) {
-      eprintf("Cannot bind to port %d.\nPlease use the \"-p\" flag to specify a different port.\n",
+      eprintf("Cannot bind to port %d.\nProbably another instance of this program is already running.\n",
               elog_tcp_port);
       exit(EXIT_FAILURE);
    }
