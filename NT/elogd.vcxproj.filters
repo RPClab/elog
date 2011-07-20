@@ -1,97 +1,96 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\src\auth.c">
-      <Filter>Soure Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\crypt.c">
-      <Filter>Soure Files</Filter>
-    </ClCompile>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{ad5e3970-54d2-4d19-8942-2ccbd6d4cf64}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{b1cef06b-777e-496e-84ed-ae6597e6bd3c}</UniqueIdentifier>
+      <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;css</Extensions>
+    </Filter>
+    <Filter Include="Documentation">
+      <UniqueIdentifier>{d0f69847-a3e4-4b11-ad7c-b6ec1305db77}</UniqueIdentifier>
+      <Extensions>txt;htm;html</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{f61d8ff6-47d2-4a74-9ee5-287870f8f9e6}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl</Extensions>
+    </Filter>
+    <Filter Include="FCKedit">
+      <UniqueIdentifier>{f1a62f8d-a52e-459b-9dae-727ade5fa0eb}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\src\elogd.c">
-      <Filter>Soure Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\mxml\mxml.c">
-      <Filter>Soure Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\regex.c">
-      <Filter>Soure Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\mxml\strlcpy.c">
-      <Filter>Soure Files</Filter>
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\auth.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\crypt.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\elogd.h">
-      <Filter>Include Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\mxml\mxml.h">
-      <Filter>Include Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\regex.h">
-      <Filter>Include Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\doc\ChangeLog">
-      <Filter>Documents</Filter>
-    </None>
-    <None Include="..\checklist.txt">
-      <Filter>Documents</Filter>
-    </None>
-    <None Include="..\doc\config.html">
-      <Filter>Documents</Filter>
-    </None>
     <None Include="..\themes\default\default.css">
-      <Filter>ResourceFiles</Filter>
+      <Filter>Resource Files</Filter>
     </None>
     <None Include="..\scripts\elcode.js">
-      <Filter>ResourceFiles</Filter>
+      <Filter>Resource Files</Filter>
     </None>
     <None Include="..\..\elogdemo\elogd.cfg">
-      <Filter>ResourceFiles</Filter>
+      <Filter>Resource Files</Filter>
     </None>
     <None Include="..\resources\eloglang.german">
-      <Filter>ResourceFiles</Filter>
+      <Filter>Resource Files</Filter>
     </None>
-    <None Include="..\scripts\fckeditor\fckelog.js">
-      <Filter>ResourceFiles</Filter>
+    <None Include="..\doc\ChangeLog">
+      <Filter>Documentation</Filter>
     </None>
-    <None Include="..\scripts\fckeditor\editor\plugins\elog\fckplugin.js">
-      <Filter>ResourceFiles</Filter>
+    <None Include="..\checklist.txt">
+      <Filter>Documentation</Filter>
     </None>
-    <None Include="..\scripts\im.js">
-      <Filter>ResourceFiles</Filter>
+    <None Include="..\doc\config.html">
+      <Filter>Documentation</Filter>
     </None>
     <None Include="..\doc\index.html">
-      <Filter>Documents</Filter>
+      <Filter>Documentation</Filter>
     </None>
+    <None Include="..\scripts\fckeditor\fckelog.js">
+      <Filter>FCKedit</Filter>
+    </None>
+    <None Include="..\scripts\fckeditor\editor\plugins\elog\fckplugin.js">
+      <Filter>FCKedit</Filter>
+    </None>
+    <None Include="..\scripts\im.js" />
     <None Include="..\doc\index_nd.html">
-      <Filter>Documents</Filter>
+      <Filter>Documentation</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\OpenSSL\lib\VC\libeay32MD.lib">
-      <Filter>Libraries</Filter>
-    </Library>
-    <Library Include="..\..\OpenSSL\lib\VC\ssleay32MD.lib">
-      <Filter>Libraries</Filter>
-    </Library>
+    <ClInclude Include="..\..\mxml\mxml.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\regex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\elogd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="Soure Files">
-      <UniqueIdentifier>{c44cc741-88dd-4749-a5c3-203b506ee005}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Include Files">
-      <UniqueIdentifier>{0bd65de6-4aed-4b30-96c7-2cddfd8ada18}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ResourceFiles">
-      <UniqueIdentifier>{29e57f30-92a6-4986-8025-3329410619a1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Documents">
-      <UniqueIdentifier>{0364998a-1ac8-4a2d-8d29-73599186159f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Libraries">
-      <UniqueIdentifier>{2416d8ae-1da8-4c95-94c9-35ca2fed5df8}</UniqueIdentifier>
-    </Filter>
+    <Library Include="..\..\krb5\lib\i386\krb5_32.lib" />
+    <Library Include="..\..\OpenSSL\lib\VC\libeay32MD.lib" />
+    <Library Include="..\..\OpenSSL\lib\VC\ssleay32MD.lib" />
   </ItemGroup>
 </Project>

@@ -17020,7 +17020,10 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
 
    /* check attributes for row style */
    for (i = 0; i < n_attr; i++) {
-      sprintf(str, "Style %s %s", attr_list[i], attrib[i]);
+      if (attrib[i][0] == 0)
+         sprintf(str, "Style %s \"\"", attr_list[i]);
+      else
+         sprintf(str, "Style %s %s", attr_list[i], attrib[i]);
       if (getcfg(lbs->name, str, display, sizeof(display))) {
          sprintf(str, "%s\" style=\"%s\"", rowstyle, display);
          strlcpy(rowstyle, str, sizeof(rowstyle));
