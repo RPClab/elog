@@ -19,11 +19,11 @@
 elogd \- web server program for Electronic Logbook ELOG
 .SH SYNOPSIS
 .sp
-\fBelog\fR [ \fB-a \fIpassword\fB\fR ] [ \fB-C \fIurl\fB\fR ] [ \fB-c \fIfile\fB\fR ]
+\fBelog\fR [ \fB-C \fIurl\fB\fR ] [ \fB-c \fIfile\fB\fR ]
 [ \fB-D\fR ] [ \fB-d \fIdirectory\fB\fR ] [ \fB-f \fIfile\fB\fR ] [ \fB-k\fR ]
 [ \fB-l \fIlogbook\fB\fR ] [ \fB-M\fR ] [ \fB-m\fR ] [ \fB-n \fIhostname\fB\fR ] 
-[ \fB-p \fIport\fB\fR ] [ \fB-r \fIpassword\fB\fR ] [ \fB-S\fR ] 
-[ \fB-s \fIdirectory\fB\fR ] [ \fB-v\fR ] [ \fB-w \fIpassword\fB\fR ] [ \fB-x\fR ]
+[ \fB-p \fIport\fB\fR ] [ \fB-S\fR ] 
+[ \fB-s \fIdirectory\fB\fR ] [ \fB-v\fR ] [ \fB-x\fR ]
 
 .SH DESCRIPTION
 .PP
@@ -40,9 +40,6 @@ is the daemon program serving as a simple web server for the
 system. 
 .SH OPTIONS
 \fBelogd\fP accepts the following options:
-.TP
-.BI -a " password"
-create/overwrite admin password in config file
 .TP
 .BI -C " url"
 clone remote elogd configuration
@@ -81,9 +78,6 @@ port where
 .B elogd
 will run
 .TP
-.BI -r " password"
-create/overwrite read password in config file
-.TP
 .BR -S
 be silent
 .TP
@@ -92,9 +86,6 @@ specify resource directory (eg. themes, icons)
 .TP
 .BR -v
 debugging output
-.TP
-.BI -w " password"
-create/overwrite write password in config file
 .TP
 .BR -x
 enable execution of shell commands (unless compiled with this feature)
@@ -118,12 +109,9 @@ options in configuration file. The configuration and stylesheet files should
 be readable by that user.
 .PP
 Passwords are transferred over the network in plain text and therefore, are not
-secure. Although the
+secure. So if passwords are used
 .B elogd
-program does not support secure connections over SSL directly, an SSL
-encryption wrapper like
-.I stunnel
-might be used for this purpose.
+should be started with the SSL option in the configuration file for secure connections.
 .SH AUTHOR
 Written by Stefan Ritt <stefan.ritt@psi.ch>.
 .PP

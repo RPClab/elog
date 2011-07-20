@@ -29676,9 +29676,9 @@ int main(int argc, char *argv[])
 #endif
          else {
           usage:printf("%s\n", ELOGID);
-            printf("usage: elogd [-a <pwd>] [-C <url>] [-c <file>] [-D] [-d <dir>] ");
+            printf("usage: elogd [-C <url>] [-c <file>] [-D] [-d <dir>] ");
             printf("[-f <file>] [-h] [-k] [-l <logbook>] [-M] [-m] [-n <hostname>] ");
-            printf("[-p <port>] [-r <pwd>] [-S] [-s <dir>] [-t <pwd>] [-v] [-w <pwd>] [-x]\n\n");
+            printf("[-p <port>] [-S] [-s <dir>] [-t <pwd>] [-v] [-x]\n\n");
             printf("       -C <url> clone remote elogd configuration\n");
             printf("       -c <file> specify configuration file\n");
             printf("       -M synchronize with removing deleted entries\n");
