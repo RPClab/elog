@@ -455,34 +455,27 @@ Last %d hours = Ultimas %d horas
 Invalid URL = URL inválido
 Attribute "%s" is not allowed in config file = El atributo "%s" no está permitido en el archivo de configuración
 Only user <b>%s</b> can delete this entry = Sólo el usuario <b>%s</b> puede borrar esta entrada
+File system full, ELOG cannot continue to work = Sistema de archivos lleno, ELOG no puede continuar trabajando
+3 Days = 3 Días
+Last 3 Days = Ultimos 3 Días
+Really submit this entry? = Realmente desea publicar esta entrada?
+Are you sure to abandon any entered text? = Está seguro de abandonar el texto ingresado?
+Account activation for ELOG logbook "%s" = Activación de cuenta para libro "%s" de
+Account activation for ELOG on host "%s" = Activación de cuenta para ELOG en el host "%s"
+Please click the URL below to activate following ELOG account = Por favor haga click en el URL abajo para activar la siguiente cuenta de ELOG
+Activation URL = URL de activación 
+An email has been sent to &lt;%s&gt; = Se ha enviado un email a &lt;%s&gt;
+Use that email to activate your account = Use ese email para activar su cuenta
+Registration request for ELOG logbook "%s" = Pedido de registración para el libro "%s" de ELOG
+Registration request for ELOG on host "%s" = Pedido de registración para ELOG en el host "%s"
+Are you sure you want to deactivate your own account? = Está seguro de querer desactivar su propia cuenta?
+Active = Activa
+Invalid activation code = Código de activación no válido
+Error activating user = Error al activar usuario
+A password recovery email for user <i>"%s"</i> has been sent to %s = Un email para recuperar la clave del usuario <i>"%s"</i> ha sido enviado a %s
+User "%s" has no access to this logbook = El usuario "%s" no tiene acceso a este libro
+Your account has been activated = Su cuenta ha sido activada
+Please subscribe to logbooks if you want to receive automatic email notifications = Por favor suscríbase a los libros si desea recibir notificaciones automáticas por email
+This is an automatically generated account recovery email for host %s = Este es un email de recuperación de cuenta generado automaticamente para el host %s
+Please click on following link to recover your account = Por favor haga click en el siguiente link para recuperar su cuenta
 
-
-
-
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-File system full, ELOG cannot continue to work = 
-3 Days = 
-Last 3 Days = 
-Really submit this entry? = 
-Are you sure to abandon any entered text? = 
-Account activation for ELOG logbook "%s" = 
-Account activation for ELOG on host "%s" = 
-Please click the URL below to activate following ELOG account = 
-Activation URL = 
-An email has been sent to &lt;%s&gt; = 
-Use that email to activate your account = 
-Registration request for ELOG logbook "%s" = 
-Registration request for ELOG on host "%s" = 
-Are you sure you want to deactivate your own account? = 
-Active = 
-Invalid activation code = 
-Error activating user = 
-A password recovery email for user <i>"%s"</i> has been sent to %s = 
-User "%s" has no access to this logbook = 
-Your account has been activated = 
-Please subscribe to logbooks if you want to receive automatic email notifications = 
-This is an automatically generated account recovery email for host %s = 
-Please click on following link to recover your account = 
