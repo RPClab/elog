@@ -26535,6 +26535,14 @@ void interprete(char *lbook, char *path)
             setparam("unm", uname);
       }
 
+      /* set access time for user */
+      if (uname[0] && !isparam("new_user_name")) {
+         if (!set_user_login_time(lbs, uname)) {
+            show_error(loc("File system full, ELOG cannot continue to work"));
+            return;
+         }
+      }
+      
       if (!(getcfg(lbs->name, "Guest menu commands", str, sizeof(str)) && !isparam("fail"))) {
          if (strcmp(path, css) != 0) {
             /* if no guest menu commands but self register, evaluate new user commands */
