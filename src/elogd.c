@@ -9062,7 +9062,7 @@ void compare_attributes(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][N
    }
 
    if (*n == 0)
-      memcpy(attrib, attr, sizeof(attr));
+      memcpy(attrib, attr, sizeof(MAX_N_ATTR * NAME_LENGTH));
    else {
       for (i = 0; i < lbs->n_attr; i++)
          if (!strieq(attrib[i], attr + i * NAME_LENGTH))
