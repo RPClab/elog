@@ -9559,7 +9559,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("  }\n");
 
    for (i = 0; i < n_attr; i++) {
-      if ((attr_flags[i] & AF_REQUIRED)) {
+      if ((attr_flags[i] & AF_REQUIRED) && !(attr_flags[i] & AF_LOCKED)) {
 
          /* convert blanks etc. to underscores */
          strcpy(ua, attr_list[i]);
@@ -9660,7 +9660,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          }
       }
 
-      if (attr_flags[i] & AF_NUMERIC) {
+      if ((attr_flags[i] & AF_NUMERIC) && !(attr_flags[i] & AF_LOCKED)) {
          /* convert blanks etc. to underscores */
          strcpy(ua, attr_list[i]);
          stou(ua);
@@ -9681,7 +9681,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("  }\n");
       }
 
-      if (attr_flags[i] & (AF_DATE | AF_DATETIME)) {
+      if ((attr_flags[i] & (AF_DATE | AF_DATETIME)) && !(attr_flags[i] & AF_LOCKED)) {
          rsprintf("  for (var i=0 ; i<document.form1.y%d.value.length ; i++)\n", i);
          rsprintf("    if ((document.form1.y%d.value.charAt(i) < \"0\" ||\n", i);
          rsprintf("         document.form1.y%d.value.charAt(i) > \"9\")) { break }\n", i);
