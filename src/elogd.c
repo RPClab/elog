@@ -22472,18 +22472,23 @@ void submit_elog(LOGBOOK * lbs)
 
    /* substitute attributes */
    if (!bedit && !isparam("reply_to")) {
-      for (i = 0; i < n_attr; i++) {
-         sprintf(str, "Subst %s", attr_list[i]);
+      for (index = 0; index < n_attr; index++) {
+         sprintf(str, "Subst %s", attr_list[index]);
          if (getcfg(lbs->name, str, subst_str, sizeof(subst_str))) {
-            strsubst_list(subst_str, sizeof(subst_str), slist, svalue, n);
+            
+            /* do not format date for date attributes */
+            i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & (AF_DATE | AF_DATETIME))
+                                 == 0);
+            
+            strsubst_list(subst_str, sizeof(subst_str), slist, svalue, i);
 
             /* check for index substitution if not in edit mode */
             if (!bedit && strchr(subst_str, '#')) {
                /* get index */
-               get_auto_index(lbs, i, subst_str, str, sizeof(str));
+               get_auto_index(lbs, index, subst_str, str, sizeof(str));
                strcpy(subst_str, str);
             }
-            strcpy(attrib[i], subst_str);
+            strcpy(attrib[index], subst_str);
          }
       }
    }
