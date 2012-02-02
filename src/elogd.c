@@ -19255,13 +19255,13 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    int i, j, n, index, size, status, d1, m1, y1, h1, n1, c1, d2, m2, y2, h2, n2, c2, n_line, flags,
        current_year, current_month, current_day, printable, n_logbook, n_display, reverse, numeric,
        n_attr_disp, total_n_msg, n_msg, search_all, message_id, n_page, i_start, i_stop, in_reply_to_id,
-       page_mid, page_mid_head, level, refresh;
+       page_mid, page_mid_head, level, refresh, disp_attr_flags[MAX_N_ATTR + 4];
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], *list, *text,
        *text1, in_reply_to[80], reply_to[MAX_REPLY_TO * 10], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
        encoding[80], locked_by[256], str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH], mode[80],
        mid[80], menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH], format[80],
        sort_attr[MAX_N_ATTR + 4][NAME_LENGTH], mode_cookie[80], charset[25], sort_item[NAME_LENGTH],
-       refr[80];
+       refr[80], str2[80];
    char *p, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
    BOOL show_attachments, threaded, csv, xml, raw, mode_commands, expand, filtering, date_filtering,
        disp_filter, show_text, text_in_attr, searched, found, disp_attr_link[MAX_N_ATTR + 4],
@@ -20700,6 +20700,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             text_in_attr = TRUE;
       }
 
+      memset(disp_attr_flags, 0, sizeof(disp_attr_flags));
       if (list[0]) {
          n_attr_disp = strbreak(list, disp_attr, MAX_N_ATTR, ",", FALSE);
 
@@ -20721,12 +20722,14 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             strcpy(disp_attr[1], loc("ID"));
             strcpy(disp_attr[2], loc("Date"));
             memcpy(disp_attr + 3, attr_list, sizeof(attr_list));
+            memcpy(disp_attr_flags + 3, attr_flags, sizeof(attr_flags));
          } else {
             n_attr_disp = lbs->n_attr + 2;
 
             strcpy(disp_attr[0], loc("ID"));
             strcpy(disp_attr[1], loc("Date"));
             memcpy(disp_attr + 2, attr_list, sizeof(attr_list));
+            memcpy(disp_attr_flags + 2, attr_flags, sizeof(attr_flags));
          }
       }
 
@@ -20767,8 +20770,17 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                subst_param(ref, sizeof(ref), "sort", "");
                subst_param(ref, sizeof(ref), "rsort", str);
             } else {
-               subst_param(ref, sizeof(ref), "rsort", "");
-               subst_param(ref, sizeof(ref), "sort", str);
+               if (ref[0] == 0) {
+                  if (getcfg(lbs->name, "Reverse sort", str2, sizeof(str2)) &&
+                      atoi(str2) == 1 &&
+                      (disp_attr_flags[i] & AF_DATETIME))
+                     sprintf(ref, "?rsort=%s", str);
+                  else
+                     sprintf(ref, "?sort=%s", str);
+               } else{
+                  subst_param(ref, sizeof(ref), "rsort", "");
+                  subst_param(ref, sizeof(ref), "sort", str);
+               }
             }
 
             img[0] = 0;
