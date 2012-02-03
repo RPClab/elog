@@ -14622,7 +14622,7 @@ void xml_import(LOGBOOK * lbs, const char *xml, const char *xmlfile)
 
    n_attr = lbs->n_attr;
 
-   root = mxml_parse_buffer(xml, error, sizeof(error));
+   root = mxml_parse_buffer(xml, error, sizeof(error), NULL);
    if (root == NULL) {
       strencode2(str, error, sizeof(str));
       show_error(str);
@@ -24789,7 +24789,7 @@ PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size)
       }
    }
 
-   if ((xml_tree = mxml_parse_file(file_name, str, sizeof(str))) == NULL) {
+   if ((xml_tree = mxml_parse_file(file_name, str, sizeof(str), NULL)) == NULL) {
       show_error(str);
       strlcpy(error, str, error_size);
       eprintf("Cannot load password file \"%s\": %s", file_name, error);
