@@ -28798,60 +28798,63 @@ void server_loop(void)
                do {
 
                   if (!more_requests) {
-                     FD_ZERO(&readfds);
-                     FD_SET(_sock, &readfds);
-                     timeout.tv_sec = 6;
-                     timeout.tv_usec = 0;
-                     status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
-                     if (FD_ISSET(_sock, &readfds)) {
+                     do {
+                        FD_ZERO(&readfds);
+                        FD_SET(_sock, &readfds);
+                        timeout.tv_sec = 6;
+                        timeout.tv_usec = 0;
+                        status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+                        if (FD_ISSET(_sock, &readfds)) {
 #ifdef HAVE_SSL
-                        if (_ssl_flag)
-                           i = SSL_read(_ssl_con, net_buffer + len, net_buffer_size - len);
-                        else
+                           if (_ssl_flag)
+                              i = SSL_read(_ssl_con, net_buffer + len, net_buffer_size - len);
+                           else
 #endif
-                           i = recv(_sock, net_buffer + len, net_buffer_size - len, 0);
-
-                     } else
-                        break;
-
-                     /* abort if connection got broken */
-                     if (i < 0) {
-                        broken = TRUE;
-                        break;
-                     }
-                     if (i > 0)
-                        len += i;
-
-                     /* check if net_buffer needs to be increased */
-                     if (len == net_buffer_size) {
-                        net_buffer = xrealloc(net_buffer, net_buffer_size + 100000);
-                        if (net_buffer == NULL) {
-                           sprintf(str,
-                                   "Error: Cannot increase net_buffer, out of memory, net_buffer_size = %d",
-                                   net_buffer_size);
-                           show_error(str);
+                              i = recv(_sock, net_buffer + len, net_buffer_size - len, 0);
+                           
+                        } else
                            break;
-                        }
-
-                        memset(net_buffer + net_buffer_size, 0, 100000);
-                        net_buffer_size += 100000;
-                     }
-
-                     /* abort if 100x received zero bytes */
-                     if (i == 0) {
-                        n_error++;
-                        if (n_error == 100) {
+                        
+                        /* abort if connection got broken */
+                        if (i < 0) {
                            broken = TRUE;
                            break;
                         }
-                     }
+                        if (i > 0)
+                           len += i;
+                        
+                        /* check if net_buffer needs to be increased */
+                        if (len == net_buffer_size) {
+                           net_buffer = xrealloc(net_buffer, net_buffer_size + 100000);
+                           if (net_buffer == NULL) {
+                              sprintf(str,
+                                      "Error: Cannot increase net_buffer, out of memory, net_buffer_size = %d",
+                                      net_buffer_size);
+                              show_error(str);
+                              break;
+                           }
+                           
+                           memset(net_buffer + net_buffer_size, 0, 100000);
+                           net_buffer_size += 100000;
+                        }
+                        
+                        /* abort if 100x received zero bytes */
+                        if (i == 0) {
+                           n_error++;
+                           if (n_error == 100) {
+                              broken = TRUE;
+                              break;
+                           }
+                           continue;
+                        }
+                        /* repeat until empty line received (fragmented TCP packets!) */
+                     } while (strstr(net_buffer, "\r\n\r\n") == 0);
                   }
 
                   /* if we are in pipelining mode, clear this flag now to force a new
                      recv if the request is not complete */
                   more_requests = 0;
 
-                  /* finish when empty line received */
                   pend = NULL;
                   if (strncmp(net_buffer, "GET", 3) == 0 && strncmp(net_buffer, "POST", 4) != 0) {
                      if (len > 4 && strstr(net_buffer, "\r\n\r\n") != NULL) {
