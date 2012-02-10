@@ -12,7 +12,7 @@
 		D54515921399A23B0037D7FB /* auth.c in Sources */ = {isa = PBXBuildFile; fileRef = D545158C1399A23B0037D7FB /* auth.c */; };
 		D54515931399A23B0037D7FB /* crypt.c in Sources */ = {isa = PBXBuildFile; fileRef = D545158D1399A23B0037D7FB /* crypt.c */; };
 		D54515941399A23B0037D7FB /* elogd.c in Sources */ = {isa = PBXBuildFile; fileRef = D545158E1399A23B0037D7FB /* elogd.c */; };
-		D54515951399A23B0037D7FB /* regex.c in Sources */ = {isa = PBXBuildFile; fileRef = D54515901399A23B0037D7FB /* regex.c */; };
+		D54515951399A23B0037D7FB /* regex.c in Sources */ = {isa = PBXBuildFile; fileRef = D54515901399A23B0037D7FB /* regex.c */; settings = {COMPILER_FLAGS = "-w"; }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -197,7 +197,12 @@
 				COPY_PHASE_STRIP = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					HAVE_SSL,
+					DEBUG,
+				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				OTHER_LDFLAGS = "-lssl";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -210,6 +215,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				OTHER_LDFLAGS = "-lssl";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
