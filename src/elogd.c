@@ -28847,10 +28847,14 @@ void server_loop(void)
                            }
                            continue;
                         }
-                        /* repeat until empty line received (fragmented TCP packets!) */
+                        
+                     /* repeat until empty line received (fragmented TCP packets!) */
                      } while (strstr(net_buffer, "\r\n\r\n") == 0);
                   }
 
+                  if (broken)
+                     break;
+                  
                   /* if we are in pipelining mode, clear this flag now to force a new
                      recv if the request is not complete */
                   more_requests = 0;
