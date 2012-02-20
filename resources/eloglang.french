@@ -138,7 +138,6 @@ Search text also in attributes = Rechercher également le texte dans les attribut
 Date = Date
 ID = ID
 Forgot password? = Mot de passe oublié ?
-Email address <i>"%s"</i> not registered = L'adresse mél. <i>"%s"</i> n'est pas enregistrée sur ce serveur
 ELOG password recovery = Récupération de mot de passe ELOG
 No Email address registered with user name <i>"%s"</i> = Il n'y a pas d'adresse mél. enregistrée pour le nom d'utilisateur <i>"%s"</i>
 Forgot = Oublié
@@ -158,7 +157,6 @@ Add new option here = Ajouter une nouvelle option ici
 Suppress shell execution = Empêcher l'exécution de commandes
 Change %s = Modifier %s
 Error sending Email via <i>"%s"</i> = Erreur lors de l'envoi d'un mél. via <i>"%s"</i>
-User name <i>"%s"</i> not registered = Le nom d'utilisateur <i>"%s"</i> n'est pas enregistré
 Synchronization = Synchronisation
 recipients = destinataires
 Error: Value <b>%s</b> not allowed for boolean attributes = Erreur : la valeur <b>%s</b> n'est pas valide pour les attributs booléens
@@ -477,3 +475,9 @@ Your account has been activated = Votre compte a été activé
 Please subscribe to logbooks if you want to receive automatic email notifications = Vous devez vous abonner à des registres si vous voulez recevoir des messages de notification automatiques 
 This is an automatically generated account recovery email for host %s = Ceci est un message automatique de récupération de compte pour le serveur %s
 Please click on following link to recover your account = Veuillez cliquer sur le lien suivant pour récupérer votre compte
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Email address "%s" not registered = 
+User name "%s" not registered = 

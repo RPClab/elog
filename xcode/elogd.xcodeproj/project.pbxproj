@@ -28,6 +28,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D51F4A9214F27F3C00CB29E9 /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index.html; path = /elog/doc/index.html; sourceTree = "<absolute>"; };
+		D51F4A9414F27F4400CB29E9 /* index_nd.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index_nd.html; path = /elog/doc/index_nd.html; sourceTree = "<absolute>"; };
+		D528A7C314F278C800D33974 /* ChangeLog */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChangeLog; path = /elog/doc/ChangeLog; sourceTree = "<absolute>"; };
+		D528A7C514F278DA00D33974 /* checklist.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = checklist.txt; path = /elog/checklist.txt; sourceTree = "<absolute>"; };
 		D52BA2FA13999DB0000458E3 /* elogd */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = elogd; sourceTree = BUILT_PRODUCTS_DIR; };
 		D52BA31013999DE4000458E3 /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = /mxml/mxml.c; sourceTree = "<absolute>"; };
 		D52BA31113999DE4000458E3 /* mxml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mxml.h; path = /mxml/mxml.h; sourceTree = "<absolute>"; };
@@ -90,6 +94,10 @@
 		D5F11B9013AFA146002CE8BF /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				D51F4A9414F27F4400CB29E9 /* index_nd.html */,
+				D51F4A9214F27F3C00CB29E9 /* index.html */,
+				D528A7C514F278DA00D33974 /* checklist.txt */,
+				D528A7C314F278C800D33974 /* ChangeLog */,
 				D5F11B9113AFA164002CE8BF /* elogd.cfg */,
 			);
 			name = Resources;
@@ -122,6 +130,7 @@
 		D52BA2F113999DB0000458E3 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastUpgradeCheck = 0420;
 				ORGANIZATIONNAME = PSI;
 			};
 			buildConfigurationList = D52BA2F413999DB0000458E3 /* Build configuration list for PBXProject "elogd" */;

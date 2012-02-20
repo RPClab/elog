@@ -80,7 +80,7 @@ int scan_file(char *infile, char *outfile)
          p2++;
       }
 
-      size = (int) p2 - (int) p;
+      size = (int) (p2 - p);
       if (size >= (int) sizeof(str)) {
          printf("Error: string too long\n");
          free(buf);

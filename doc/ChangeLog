@@ -1,3 +1,30 @@
+Version 2.9.1, released February 20th 2012
+==========================================
+
+- Improved broken link handling
+- Fixed problem with record splitting introduced in FF 10
+- Added Xcode project file
+- Added extra parameter to mxml_parse_buffer
+- Do a "rsort" on date attributes if "Reverse sort = 1"
+- Fixed date substitution
+- Check for locked attributes on chkform()
+- Fixed missing user login time
+- Removed old -a -r -w password options from documentation
+- Set 'ufnm' cookie with full name, needed for shift check list
+- Fixed crash reported in elog forum entry #67084
+- Changed printchar() to putchar(), since the first is not available under native OSX
+- Check for inactive account during login
+- Added check for content-length to be non-negative
+- Print warning if "preset text" file cannot be found
+- Implemented SVG previews through ImageMagick
+- Show Kerberos error number
+- added rmoval of pid file
+- Switched off Kerberos support by default
+- Use logged in user's email address for From: in email notifications
+- Fixed bug with "." replacements in emails
+- Fixed mangeling of <> in email notification
+- Fixed missing error if user name exists already
+
 Version 2.9.0, released March 9th 2011
 ======================================
 
