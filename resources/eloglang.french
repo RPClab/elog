@@ -1,6 +1,6 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.9.0+)
+# (for 2.9.1+)
 # A more recent version may be available at :
 # http://savannah.psi.ch/viewcvs/trunk/resources/eloglang.french?root=elog
 #
@@ -475,9 +475,5 @@ Your account has been activated = Votre compte a été activé
 Please subscribe to logbooks if you want to receive automatic email notifications = Vous devez vous abonner à des registres si vous voulez recevoir des messages de notification automatiques 
 This is an automatically generated account recovery email for host %s = Ceci est un message automatique de récupération de compte pour le serveur %s
 Please click on following link to recover your account = Veuillez cliquer sur le lien suivant pour récupérer votre compte
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Email address "%s" not registered = 
-User name "%s" not registered = 
+Email address "%s" not registered = L'adresse mail "%s" n'est pas enregistrée
+User name "%s" not registered = Le nom d'utilisateur "%s" n'est pas enregistré
