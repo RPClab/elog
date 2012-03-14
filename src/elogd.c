@@ -17367,9 +17367,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                         my_strftime(str, sizeof(str), format, pts);
 
                      if (disp_attr_link == NULL || disp_attr_link[index])
-                        rsprintf("\n<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", tdstyle, ref, str);
+                        rsprintf("\n<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", tdstyle, nowrap, ref, str);
                      else
-                        rsprintf("\n<td class=\"%s\">%s</td>\n", tdstyle, str);
+                        rsprintf("\n<td class=\"%s\" %s>%s</td>\n", tdstyle, nowrap, str);
                   }
 
                   else if (attr_flags[i] & AF_DATETIME) {
@@ -17386,9 +17386,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                         my_strftime(str, sizeof(str), format, pts);
 
                      if (disp_attr_link == NULL || disp_attr_link[index])
-                        rsprintf("\n<td class=\"%s\"><a href=\"%s\">%s</a></td>\n", tdstyle, ref, str);
+                        rsprintf("\n<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", tdstyle, nowrap, ref, str);
                      else
-                        rsprintf("\n<td class=\"%s\">%s</td>\n", tdstyle, str);
+                        rsprintf("\n<td class=\"%s\" %s>%s</td>\n", tdstyle, nowrap, str);
                   }
 
                   else if (attr_flags[i] & AF_ICON) {
