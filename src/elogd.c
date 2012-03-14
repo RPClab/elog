@@ -17514,7 +17514,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
 
          /* only show text, not to rip apart HTML documents,
             e.g. only the start of a table */
-         strip_html(str);
+         if (strieq(encoding, "HTML"))
+            strip_html(str);
          if (str[0])
             strencode_nouml(str);
          else
@@ -17565,7 +17566,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
 
       /* only show text, not to rip apart HTML documents,
          e.g. only the start of a table */
-      strip_html(str);
+      if (strieq(encoding, "HTML"))
+         strip_html(str);
       if (str[0])
          strencode_nouml(str);
       else
