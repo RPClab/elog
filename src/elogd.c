@@ -20778,8 +20778,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             } else {
                if (ref[0] == 0) {
                   if (getcfg(lbs->name, "Reverse sort", str2, sizeof(str2)) &&
-                      atoi(str2) == 1 &&
-                      (disp_attr_flags[i] & AF_DATETIME))
+                      atoi(str2) == 1)
                      sprintf(ref, "?rsort=%s", str);
                   else
                      sprintf(ref, "?sort=%s", str);
