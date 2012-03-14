@@ -19562,6 +19562,12 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       xfree(list);
       return;
    }
+   
+   /*---- if user present but not allowed, remove it (required when several logbooks are
+          used with different access rights and global passwords ----*/
+   if (isparam("unm") && !check_login_user(lbs, getparam("unm"))) {
+      unsetparam("unm");
+   }
 
    /*---- apply last login cut ----*/
 
@@ -26466,6 +26472,12 @@ void interprete(char *lbook, char *path)
          return;
       }
 
+      /* check if user has access to logbook */
+      if (!check_login_user(lbs, getparam("uname"))) {
+         show_error("Use has no access to this logbook");
+         return;
+      }
+      
       /* put encoded password into password file */
       set_user_password(lbs, uname, getparam("upassword"));
 
