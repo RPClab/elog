@@ -13701,10 +13701,7 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
       if (strcmp(getparam("confirm"), loc("Yes")) == 0) {
          if (message_id) {
             /* delete message */
-            if (strieq(mode, "threaded"))
-               status = el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
-            else
-               status = el_delete_message(lbs, message_id, TRUE, NULL, TRUE, FALSE);
+            status = el_delete_message(lbs, message_id, TRUE, NULL, TRUE, TRUE);
             if (status != EL_SUCCESS) {
                sprintf(str, "%s = %d", loc("Error deleting message: status"), status);
                show_error(str);
