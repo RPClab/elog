@@ -19562,10 +19562,12 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       return;
    }
    
-   /*---- if user present but not allowed, remove it (required when several logbooks are
+   /*---- if user present but not allowed, log it out (required when several logbooks are
           used with different access rights and global passwords ----*/
    if (isparam("unm") && !check_login_user(lbs, getparam("unm"))) {
       unsetparam("unm");
+      sid_remove(getparam("sid"));
+      set_sid_cookie(lbs, "", "");
    }
 
    /*---- apply last login cut ----*/
