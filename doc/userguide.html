@@ -255,7 +255,7 @@ elog -h &lt;hostname&gt; [-p port] [-d subdir]
      [-x]                     Suppress email notification
      [-n 0|1|2]               Encoding: 0:ELcode,1:plain,2:HTML
      -m &lt;textfile&gt;] | &lt;text&gt;
-</pre><ul>     
+</pre></ul>     
 Arguments with blanks must be enclosed in quotes. The elog message can either 
 be submitted on the command line, piped in like 
 
@@ -275,6 +275,28 @@ this feature is used to enter alarm messages automatically into the logbook.
 
 </ul>
 <p>
+<hr><a name="rss">
+<div class=section>&nbsp;RSS Feed</div>
+<p>
+RSS (RDF Site Summrary or Really Simple Syntication) is a web feed format to publish frequently new or updated ELOG entries. This is a bit like the email notifications present in ELOG, but the RSS system does not go through an email reader, but through a dedicated RSS reader. This helps to seperate ELOG updates form other email or spam. An RSS "channel" can be subscribed to, so one gets notified whenever a new or updated entry exists. One can either use a dedicated RSS reader or aggregator, or use the RSS functionality of a web browser, such as Firefox or Google Reader.</p>
+
+<p>
+To obtain the RSS feed, one simply has to request the file <b><code>elog.rdf</code></b> from a logbook. For the ELOG forum, one can enter the URL</p>
+<code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="https://midas.psi.ch/elogs/Forum/elog.rdf">https://midas.psi.ch/elogs/Forum/elog.rdf</a>
+</code>
+<p>The browser then offers the possiblity to subscribe to that logbook:<p>
+<img src="rss.png"></p>
+
+<p>In case of "Live Bookmarks" in Firefox, new logbook entries automatically appear in the bookmark list:</p>
+<img src="live_bookmarks.png">>
+
+<p>Standalone RSS reader can also notify the user of new entries with dialog boxes and sounds. For a list of availabel RSS aggregators, see <a href="http://en.wikipedia.org/wiki/Comparison_of_feed_aggregators">here</a>.</p>
+
+
+</body>
+</html>
+
 <HR>
 <div class=footer>&nbsp;
 Content by <a class=nav href="mailto:Stefan.Ritt&#64;psi.ch">Stefan Ritt</a>,
@@ -282,5 +304,3 @@ Web pages by <a class=nav href="mailto:fredp&#64;mygale.org">Fred Pacquier</a>
  - last modified on 19/12/2001
 &nbsp;</div>
 
-</body>
-</html>
