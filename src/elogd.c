@@ -14389,7 +14389,9 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
    }
 
    p = csv;
-
+   datecol = -1;
+   attr_offset = 0;
+   
    do {
       for (i = 0; i < 10000 && *p; i++) {
          if (!in_quotes && (*p == '\r' || *p == '\n'))
@@ -14448,18 +14450,20 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
          }
       }
 
-      /* derive attributes from first line */
-      if (first && isparam("head")) {
-
+      if (first) {
          /* check for date column */
          for (i = attr_offset = 0; i < n; i++)
             if (strieq(list + i * NAME_LENGTH, "Date"))
                datecol = i;
-
+         
          /* skip message ID */
          for (i = attr_offset = 0; i < n; i++)
             if (strieq(list + i * NAME_LENGTH, "Message ID") || strieq(list + i * NAME_LENGTH, "Date"))
                attr_offset++;
+      }
+      
+      /* derive attributes from first line */
+      if (first && isparam("head")) {
 
          if (isparam("preview")) {
             rsprintf("<tr>\n");
@@ -14491,6 +14495,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
                   return;
                lbs->n_attr = n - attr_offset;
             }
+            n_attr = lbs->n_attr;
          }
 
       } else {
@@ -14500,9 +14505,6 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
             first = FALSE;
             continue;
          }
-
-         datecol = 1;
-         attr_offset = 2;
 
          if (isparam("preview")) {
             rsprintf("<tr>\n");
@@ -14540,24 +14542,27 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
          } else {
 
             /* get date and check it */
-            strlcpy(date, list + datecol * NAME_LENGTH, sizeof(date));
-            ltime = date_to_ltime(date);
-            if (ltime <= 0) {
-               /* try other date formats */
-               ltime = convert_datetime(date);
-               if (ltime <= 0)
-                  ltime = convert_date(date);
+            if (datecol != -1) {
+               strlcpy(date, list + datecol * NAME_LENGTH, sizeof(date));
+               ltime = date_to_ltime(date);
                if (ltime <= 0) {
-                  strcpy(str, loc("Invalid date format"));
-                  strlcat(str, ": \"", sizeof(str));
-                  strlcat(str, date, sizeof(str));
-                  strlcat(str, "\"", sizeof(str));
-                  show_error(str);
-                  return;
+                  /* try other date formats */
+                  ltime = convert_datetime(date);
+                  if (ltime <= 0)
+                     ltime = convert_date(date);
+                  if (ltime <= 0) {
+                     strcpy(str, loc("Invalid date format"));
+                     strlcat(str, ": \"", sizeof(str));
+                     strlcat(str, date, sizeof(str));
+                     strlcat(str, "\"", sizeof(str));
+                     show_error(str);
+                     return;
+                  }
+                  /* convert back ltime to date */
+                  get_rfc2822_date(date, sizeof(date), ltime);
                }
-               /* convert back ltime to date */
-               get_rfc2822_date(date, sizeof(date), ltime);
-            }
+            } else
+               date[0] = 0;
 
             if (!filltext) {
                /* submit entry */
