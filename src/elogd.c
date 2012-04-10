@@ -8650,7 +8650,7 @@ void get_auto_index(LOGBOOK * lbs, int index, char *format, char *retstr, int si
  auto-increment tags */
 {
    int i, message_id, loc, len, old_index;
-   char str[NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH], att[MAX_ATTACHMENTS][256];
+   char *p, str[NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH], att[MAX_ATTACHMENTS][256];
    time_t now;
 
    if (strchr(format, '%') == NULL && strchr(format, '#') == NULL) {
@@ -8661,8 +8661,14 @@ void get_auto_index(LOGBOOK * lbs, int index, char *format, char *retstr, int si
    time(&now);
    my_strftime(retstr, size, format, localtime(&now));
 
-   if (strchr(retstr, '#') == NULL)
+   p = strchr(retstr, '#');
+   if (p == NULL)
       return;
+   
+   if (p > retstr && *(p-1) == '\\') {  // escape
+      memmove(p-1, p, strlen(p)+1);
+      return;
+   }
 
    /* record location and length of ###'s */
    for (i = loc = 0, len = 1; i < (int) strlen(retstr); i++) {
