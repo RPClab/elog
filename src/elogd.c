@@ -12786,6 +12786,10 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
 
    if (new_user) {
       node = mxml_find_node(lbs->pwd_xml_tree, "/list");
+      if (!node) {
+         show_error(loc("Error accessing password file"));
+         return 0;
+      }
       node = mxml_add_node(node, "user", NULL);
 
       if (isparam("new_user_name")) {
@@ -24600,7 +24604,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 BOOL convert_password_file(char *file_name)
 {
    char name[256], password[256], full_name[256], email[256], email_notify[256];
-   int i, len, fh;
+   int i, len, fh, status;
    char *buf, *p;
    PMXML_NODE root, list, node, npwd;
 
@@ -24698,12 +24702,17 @@ BOOL convert_password_file(char *file_name)
          p++;
    }
 
-   mxml_write_tree(file_name, root);
+   status = mxml_write_tree(file_name, root);
    mxml_free_tree(root);
-
-   printf("Ok\n");
-
    xfree(buf);
+
+   if (status)
+      printf("Ok\n");
+   else {
+      printf("Error writing to password file\n");
+      return FALSE;
+   }
+
    return TRUE;
 }
 
@@ -24763,6 +24772,7 @@ PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size)
    PMXML_NODE root, list, xml_tree;
    char str[256], line[256], file_name[256];
    int fh;
+   struct stat st;
 
    if (error)
       error[0] = 0;
@@ -24776,7 +24786,7 @@ PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size)
    if (fh < 0) {
       fh = open(file_name, O_CREAT | O_RDWR, 0600);
       if (fh < 0) {
-         sprintf(str, loc("Cannot open file \"%s\""), file_name);
+         sprintf(str, "Cannot open file \"%s\"", file_name);
          strcat(str, ": ");
          strlcat(str, strerror(errno), sizeof(str));
          show_error(str);
@@ -24794,6 +24804,19 @@ PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size)
       mxml_free_tree(root);
    } else {
 
+      /* check for write access to password file */
+      if (stat(file_name, &st) < 0) {
+         sprintf(str, "Cannot access password file \"%s\"", file_name);
+         strlcpy(error, str, error_size);
+         return NULL;
+      }
+      
+      if ((st.st_mode & S_IWUSR) == 0) {
+         sprintf(str, "Cannot access write protected password file \"%s\"", file_name);
+         strlcpy(error, str, error_size);
+         return NULL;
+      }
+      
       /* check if in XML format, otherwise convert it */
       line[0] = 0;
       read(fh, line, sizeof(line));
@@ -24830,8 +24853,10 @@ int load_password_files()
          if (lb_list[i].top_group[0])
             setcfg_topgroup(lb_list[i].top_group);
          xml_tree = load_password_file(&lb_list[i], error, sizeof(error));
-         if (error[0])
+         if (error[0]) {
+            puts(error);
             return 0;
+         }
          if (xml_tree) {
             lb_list[i].pwd_xml_tree = xml_tree;
 
