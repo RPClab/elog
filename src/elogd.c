@@ -11132,9 +11132,16 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                strsubst_list(str, sizeof(str), slist, svalue, j);
                while (strstr(str, "\\n"))
                   memcpy(strstr(str, "\\n"), "\r\n", 2);
-               rsputs("File <i>");
-               rsputs3(str);
-               rsputs("</i> cannot be found");
+               
+               if (strchr(str, ' ')) {
+                  /* name contains blanks -> must be text */
+                  rsputs3(str);
+               } else {
+                  /* name is probably a file -> show error */
+                  rsputs("File <i>");
+                  rsputs3(str);
+                  rsputs("</i> cannot be found");
+               }
             }
          }
 
