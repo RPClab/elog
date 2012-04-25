@@ -24817,7 +24817,11 @@ PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size)
          return NULL;
       }
       
-      if ((st.st_mode & S_IWUSR) == 0) {
+#ifdef OS_WINNT
+      if ((st.st_mode & _S_IWRITE) == 0) {
+#else
+	   if ((st.st_mode & S_IWUSR) == 0) {
+#endif
          sprintf(str, "Cannot access write protected password file \"%s\"", file_name);
          strlcpy(error, str, error_size);
          return NULL;
