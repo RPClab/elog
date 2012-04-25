@@ -89,7 +89,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\krb5\lib\i386\krb5_32.lib" />
     <Library Include="..\..\OpenSSL\lib\VC\libeay32MD.lib" />
     <Library Include="..\..\OpenSSL\lib\VC\ssleay32MD.lib" />
   </ItemGroup>

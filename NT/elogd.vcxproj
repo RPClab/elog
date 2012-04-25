@@ -54,7 +54,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>\openssl\include;\mxml;\krb5\inc\krb5;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;HAVE_SSL;HAVE_KRB5;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;HAVE_SSL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>
@@ -79,7 +79,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>.\Debug/elogd.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
-      <StackReserveSize>4000000</StackReserveSize>
+      <StackReserveSize>5000000</StackReserveSize>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
@@ -124,7 +124,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>.\Release/elogd.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
-      <StackReserveSize>4000000</StackReserveSize>
+      <StackReserveSize>5000000</StackReserveSize>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
@@ -172,7 +172,6 @@
     <ClInclude Include="..\src\regex.h" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\krb5\lib\i386\krb5_32.lib" />
     <Library Include="..\..\OpenSSL\lib\VC\libeay32MD.lib" />
     <Library Include="..\..\OpenSSL\lib\VC\ssleay32MD.lib" />
   </ItemGroup>
