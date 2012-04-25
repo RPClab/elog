@@ -163,7 +163,7 @@ long _timezone;
 #define EL_PREV        4
 
 #define MAX_GROUPS       32
-#define MAX_PARAM       120
+#define MAX_PARAM       200
 #define MAX_ATTACHMENTS  50
 #define MAX_N_LIST      100
 #define MAX_N_ATTR      100
