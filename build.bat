@@ -24,3 +24,6 @@ scp elog%version%.exe ritt@llc:html/elog/download/windows/
 scp elog%version%.exe ritt@llc:html/elog/download/windows/elog-latest.exe
 scp doc/*.html ritt@llc:html/elog/
 scp doc/index_nd.html ritt@llc:html/elog/index.html
+ssh ritt@llc chmod 666 html/elog/download/windows/elog%version%.exe
+ssh ritt@llc chmod 666 html/elog/download/windows/elog-latest.exe
+
