@@ -1,3 +1,21 @@
+Version 2.9.2, released April 27th 2012
+=======================================
+
+- Implemented "Preset on edit"
+- Increased stack size under Windows
+- Increased MAX_PARAM
+- Added escape char possibility to "\#" for substitutions
+- Abort program start if password file is write protected
+- Show error "File not found" on "Preset text" only if text is a file
+- Fixed problem with CSV import and first two lines disappearing
+- Added RSS description
+- Remove cookies when user is logged out
+- Delete always messages together with their replies
+- Strip html only for html encoded entries
+- Added nowrap to all date/time attributes
+- Apply reverse sorting to all attribute types
+- Added "login user" check (needed for global password files)
+
 Version 2.9.1, released February 20th 2012
 ==========================================
 

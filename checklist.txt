@@ -1,23 +1,38 @@
 Checklist for new ELOG version
 ==============================
 
-On PC6562:
+On RS32:
 
 - Put all new options in doc/config.html
-- Increse version in elogd.c and elog.c
+- Increase version in elogd.h
 - Do the same in doc/index.html and index_nd.html
 - Modify ChangeLog
 - Add release date to ChangeLog
-- Do a "make indent"
-- Do a "make loc"
+
+On VPC6562-1:
+
+- svn update
+- make loc
 - Translate new strings in eloglang.german
+- make indent
+- svn -m "Run indent" commit
+
+On RS32:
+
+- svn update
 - c:\elog> svn ci -m "Release x.x.x-y"
+
+On VPC6562-1:
+
 - open VS 2008 command window, build xxx-1 in c:\elog
 - copy index_nd.html to index.html on web server
+
 
 On midas.psi.ch:
 
 - svn update
+- Do a "make indent"
+- Commit formatted C files
 - Increase version in elog.spec
 - klog ritt
 - ./build x.x.x 1

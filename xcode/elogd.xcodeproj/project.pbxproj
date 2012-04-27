@@ -43,6 +43,7 @@
 		D545158F1399A23B0037D7FB /* elogd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = elogd.h; path = /elog/src/elogd.h; sourceTree = "<absolute>"; };
 		D54515901399A23B0037D7FB /* regex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = regex.c; path = /elog/src/regex.c; sourceTree = "<absolute>"; };
 		D54515911399A23B0037D7FB /* regex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = regex.h; path = /elog/src/regex.h; sourceTree = "<absolute>"; };
+		D5AC5BF9154AC7200018DD90 /* config.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = config.html; path = /elog/doc/config.html; sourceTree = "<absolute>"; };
 		D5F11B9113AFA164002CE8BF /* elogd.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = elogd.cfg; path = /elogdemo/elogd.cfg; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
@@ -94,6 +95,7 @@
 		D5F11B9013AFA146002CE8BF /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				D5AC5BF9154AC7200018DD90 /* config.html */,
 				D51F4A9414F27F4400CB29E9 /* index_nd.html */,
 				D51F4A9214F27F3C00CB29E9 /* index.html */,
 				D528A7C514F278DA00D33974 /* checklist.txt */,
