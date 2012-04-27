@@ -8664,9 +8664,9 @@ void get_auto_index(LOGBOOK * lbs, int index, char *format, char *retstr, int si
    p = strchr(retstr, '#');
    if (p == NULL)
       return;
-   
-   if (p > retstr && *(p-1) == '\\') {  // escape
-      memmove(p-1, p, strlen(p)+1);
+
+   if (p > retstr && *(p - 1) == '\\') {        // escape
+      memmove(p - 1, p, strlen(p) + 1);
       return;
    }
 
@@ -9345,16 +9345,16 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       sprintf(str, "Preset on edit %s", attr_list[index]);
       if ((i = getcfg(lbs->name, str, preset, sizeof(preset))) > 0 && bedit) {
-         
+
          if (!breedit || (breedit && i == 2)) { /* subst on reedit only if preset is under condition */
-            
+
             /* check for index substitution */
             if (!bedit && (strchr(preset, '%') || strchr(preset, '#'))) {
                /* get index */
                get_auto_index(lbs, index, preset, str, sizeof(str));
                strcpy(preset, str);
             }
-            
+
             /* do not format date for date attributes */
             i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & (AF_DATE | AF_DATETIME))
                                  == 0);
@@ -11158,7 +11158,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                strsubst_list(str, sizeof(str), slist, svalue, j);
                while (strstr(str, "\\n"))
                   memcpy(strstr(str, "\\n"), "\r\n", 2);
-               
+
                if (strchr(str, ' ')) {
                   /* name contains blanks -> must be text */
                   rsputs3(str);
@@ -11342,8 +11342,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   strlcat(file_name, att[index], sizeof(file_name));
 
                   display_inline = is_image(file_name) || is_ascii(file_name);
-                  if (chkext(file_name, ".ps") || chkext(file_name, ".pdf") || chkext(file_name, ".eps") 
-                     || chkext(file_name, ".svg"))
+                  if (chkext(file_name, ".ps") || chkext(file_name, ".pdf") || chkext(file_name, ".eps")
+                      || chkext(file_name, ".svg"))
                      display_inline = 0;
                   if ((chkext(file_name, ".htm") || chkext(file_name, ".html")) && is_full_html(file_name))
                      display_inline = 0;
@@ -14428,7 +14428,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
    p = csv;
    datecol = -1;
    attr_offset = 0;
-   
+
    do {
       for (i = 0; i < 10000 && *p; i++) {
          if (!in_quotes && (*p == '\r' || *p == '\n'))
@@ -14492,13 +14492,13 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
          for (i = attr_offset = 0; i < n; i++)
             if (strieq(list + i * NAME_LENGTH, "Date"))
                datecol = i;
-         
+
          /* skip message ID */
          for (i = attr_offset = 0; i < n; i++)
             if (strieq(list + i * NAME_LENGTH, "Message ID") || strieq(list + i * NAME_LENGTH, "Date"))
                attr_offset++;
       }
-      
+
       /* derive attributes from first line */
       if (first && isparam("head")) {
 
@@ -17406,7 +17406,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                         my_strftime(str, sizeof(str), format, pts);
 
                      if (disp_attr_link == NULL || disp_attr_link[index])
-                        rsprintf("\n<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", tdstyle, nowrap, ref, str);
+                        rsprintf("\n<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", tdstyle, nowrap, ref,
+                                 str);
                      else
                         rsprintf("\n<td class=\"%s\" %s>%s</td>\n", tdstyle, nowrap, str);
                   }
@@ -17425,7 +17426,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                         my_strftime(str, sizeof(str), format, pts);
 
                      if (disp_attr_link == NULL || disp_attr_link[index])
-                        rsprintf("\n<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", tdstyle, nowrap, ref, str);
+                        rsprintf("\n<td class=\"%s\" %s><a href=\"%s\">%s</a></td>\n", tdstyle, nowrap, ref,
+                                 str);
                      else
                         rsprintf("\n<td class=\"%s\" %s>%s</td>\n", tdstyle, nowrap, str);
                   }
@@ -18960,7 +18962,7 @@ time_t convert_date(char *date_string)
 time_t convert_datetime(char *date_string)
 {
    /* convert date string in MM/DD/YY h:m:s AM/PM or DD.MM.YY hh:m:s format into Unix time */
-   int year, month, day, hour, min=0, sec=0;
+   int year, month, day, hour, min = 0, sec = 0;
    char *p, str[256];
    struct tm tms;
    time_t ltime;
@@ -19603,7 +19605,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       xfree(list);
       return;
    }
-   
+
    /*---- if user present but not allowed, log it out (required when several logbooks are
           used with different access rights and global passwords ----*/
    if (isparam("unm") && !check_login_user(lbs, getparam("unm"))) {
@@ -20820,12 +20822,11 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                subst_param(ref, sizeof(ref), "rsort", str);
             } else {
                if (ref[0] == 0) {
-                  if (getcfg(lbs->name, "Reverse sort", str2, sizeof(str2)) &&
-                      atoi(str2) == 1)
+                  if (getcfg(lbs->name, "Reverse sort", str2, sizeof(str2)) && atoi(str2) == 1)
                      sprintf(ref, "?rsort=%s", str);
                   else
                      sprintf(ref, "?sort=%s", str);
-               } else{
+               } else {
                   subst_param(ref, sizeof(ref), "rsort", "");
                   subst_param(ref, sizeof(ref), "sort", str);
                }
@@ -22535,11 +22536,11 @@ void submit_elog(LOGBOOK * lbs)
       for (index = 0; index < n_attr; index++) {
          sprintf(str, "Subst %s", attr_list[index]);
          if (getcfg(lbs->name, str, subst_str, sizeof(subst_str))) {
-            
+
             /* do not format date for date attributes */
             i = build_subst_list(lbs, slist, svalue, attrib, (attr_flags[index] & (AF_DATE | AF_DATETIME))
                                  == 0);
-            
+
             strsubst_list(subst_str, sizeof(subst_str), slist, svalue, i);
 
             /* check for index substitution if not in edit mode */
@@ -24836,17 +24837,16 @@ PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size)
          strlcpy(error, str, error_size);
          return NULL;
       }
-      
 #ifdef OS_WINNT
       if ((st.st_mode & _S_IWRITE) == 0) {
 #else
-	   if ((st.st_mode & S_IWUSR) == 0) {
+      if ((st.st_mode & S_IWUSR) == 0) {
 #endif
          sprintf(str, "Cannot access write protected password file \"%s\"", file_name);
          strlcpy(error, str, error_size);
          return NULL;
       }
-      
+
       /* check if in XML format, otherwise convert it */
       line[0] = 0;
       read(fh, line, sizeof(line));
@@ -26544,7 +26544,7 @@ void interprete(char *lbook, char *path)
          show_error("Use has no access to this logbook");
          return;
       }
-      
+
       /* put encoded password into password file */
       set_user_password(lbs, uname, getparam("upassword"));
 
@@ -26638,7 +26638,7 @@ void interprete(char *lbook, char *path)
             return;
          }
       }
-      
+
       if (!(getcfg(lbs->name, "Guest menu commands", str, sizeof(str)) && !isparam("fail"))) {
          if (strcmp(path, css) != 0) {
             /* if no guest menu commands but self register, evaluate new user commands */
@@ -28890,10 +28890,10 @@ void server_loop(void)
                            else
 #endif
                               i = recv(_sock, net_buffer + len, net_buffer_size - len, 0);
-                           
+
                         } else
                            break;
-                        
+
                         /* abort if connection got broken */
                         if (i < 0) {
                            broken = TRUE;
@@ -28901,7 +28901,7 @@ void server_loop(void)
                         }
                         if (i > 0)
                            len += i;
-                        
+
                         /* check if net_buffer needs to be increased */
                         if (len == net_buffer_size) {
                            net_buffer = xrealloc(net_buffer, net_buffer_size + 100000);
@@ -28912,11 +28912,11 @@ void server_loop(void)
                               show_error(str);
                               break;
                            }
-                           
+
                            memset(net_buffer + net_buffer_size, 0, 100000);
                            net_buffer_size += 100000;
                         }
-                        
+
                         /* abort if 100x received zero bytes */
                         if (i == 0) {
                            n_error++;
@@ -28926,14 +28926,14 @@ void server_loop(void)
                            }
                            continue;
                         }
-                        
-                     /* repeat until empty line received (fragmented TCP packets!) */
+
+                        /* repeat until empty line received (fragmented TCP packets!) */
                      } while (strstr(net_buffer, "\r\n\r\n") == 0);
                   }
 
                   if (broken)
                      break;
-                  
+
                   /* if we are in pipelining mode, clear this flag now to force a new
                      recv if the request is not complete */
                   more_requests = 0;
