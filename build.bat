@@ -18,8 +18,9 @@ link "/OUT:.\NT\Release/elog.exe" /INCREMENTAL:NO /DEBUG /SUBSYSTEM:CONSOLE /MAC
 cl /O2 /Ob2 /Oi /Ot /I "\mxml" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_CRT_SECURE_NO_DEPRECATE" /D "_CRT_NONSTDC_NO_DEPRECATE" /D "_VC80_UPGRADE=0x0710" /D "_MBCS" /GF /FD /EHsc /MT /Gy /Fo".\NT\Release/" /W3 /nologo /c /Zi /TC src\elconv.c
 link "/OUT:.\NT\Release/elconv.exe" /INCREMENTAL:NO /DEBUG /SUBSYSTEM:CONSOLE /MACHINE:X86 wsock32.lib ".\NT\Release\elconv.obj"
 
-"\program files\NSIS\makensis" /DVERSION=%version% elog.nsi
+"\program files (x86)\NSIS\makensis" /DVERSION=%version% elog.nsi
 
-copy /Y elog%version%.exe x:\html\elog\download\windows\
-copy /Y elog%version%.exe x:\html\elog\download\windows\elog-latest.exe
-copy /Y doc\*.html x:\html\elog\
+scp elog%version%.exe ritt@llc:html/elog/download/windows/
+scp elog%version%.exe ritt@llc:html/elog/download/windows/elog-latest.exe
+scp doc/*.html ritt@llc:html/elog/
+scp doc/index_nd.html ritt@llc:html/elog/index.html
