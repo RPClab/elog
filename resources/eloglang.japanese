@@ -351,7 +351,6 @@ Show all entries =
 New entries since = 
 An old ELOG entry has been updated = 
 A new ELOG entry has been submitted = 
-Cannot open file "%s" = 
 Invalid user name or password = 
 Upload image = 
 Please enter filename or URL = 
@@ -479,4 +478,4 @@ Please subscribe to logbooks if you want to receive automatic email notification
 This is an automatically generated account recovery email for host %s = 
 Please click on following link to recover your account = 
 Email address "%s" not registered = 
-User name "%s" not registered = 
+User name "%s" not registered = Error accessing password file = 

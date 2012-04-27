@@ -347,7 +347,6 @@ Show all entries = Toon alle berichten
 New entries since = Nieuwe berichten sinds
 An old ELOG entry has been updated = Een oud ELOG bericht is ververst
 A new ELOG entry has been submitted =  Een nieuw ELOG bericht is bezorgd
-Cannot open file "%s" = Kan bestand "%s" niet openen
 Invalid user name or password = Ongeldige gebruikersnaam of wachtwoord
 Upload image = Afbeelding uploaden
 Please enter filename or URL = Geef een bestandsnaam of URL
@@ -481,4 +480,4 @@ Please click on following link to recover your account = Klik op de volgende lin
 #---- please translate following items and then remove this comment ----#
 #
 Email address "%s" not registered = 
-User name "%s" not registered = 
+User name "%s" not registered = Error accessing password file = 

@@ -351,7 +351,6 @@ Show all entries = Mostrar todas las entradas
 New entries since = Nuevas entradas desde
 An old ELOG entry has been updated = Una entrada de ELOG ha sido actualizada
 A new ELOG entry has been submitted = Una nueva entrada de ELOG se ha enviado
-Cannot open file "%s" = No puedo abrir el archivo "%s"
 Invalid user name or password = Nombre de usuario o clave incorrecto
 Upload image = Subir imagen
 Please enter filename or URL = Por favor ingrese nombre de archivo o URL
@@ -481,4 +480,4 @@ Please click on following link to recover your account = Por favor haga click en
 #---- please translate following items and then remove this comment ----#
 #
 Email address "%s" not registered = 
-User name "%s" not registered = 
+User name "%s" not registered = Error accessing password file = 

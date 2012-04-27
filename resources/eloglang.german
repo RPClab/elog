@@ -347,7 +347,6 @@ Show all entries = Alle Einträge zeigen
 New entries since = Neue Einträge seit
 An old ELOG entry has been updated = Ein alter ELOG Eintrag wurde erneuert
 A new ELOG entry has been submitted = Ein neuer ELOG Eintrag wurde eingegeben
-Cannot open file "%s" = Kann Datei "%s" nicht öffnen
 Invalid user name or password = Ungültiger Benutzername oder Passwort 
 Upload image = Bild hochladen
 Please enter filename or URL = Bitte Dateiname oder URL eingeben
@@ -476,3 +475,5 @@ This is an automatically generated account recovery email for host %s = Dies ist
 Please click on following link to recover your account = Bitte klicken Sie auf folgenden Link, um Ihren Zugang zurückzusetzen
 Email address "%s" not registered = Email Adressed "%s" ist nicht registriert
 User name "%s" not registered = Benutzername "%s" ist nicht registriert
+Error accessing password file = Fehler beim Zugriff auf Passwort Datei
+
