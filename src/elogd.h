@@ -304,6 +304,7 @@ int ascii_compare(const void *s1, const void *s2);
 int ascii_compare2(const void *s1, const void *s2);
 void do_crypt(const char *s, char *d, int size);
 BOOL get_password_file(LOGBOOK * lbs, char *file_name, int size);
+LOGBOOK *get_first_lbs_with_global_passwd();
 
 /* functions from auth.c */
 int auth_verify_password(LOGBOOK *lbs, const char *user, const char *password, char *error_str, int error_size);

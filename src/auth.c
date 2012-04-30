@@ -190,7 +190,7 @@ int auth_change_password_file(LOGBOOK * lbs, const char *user, const char *old_p
    PMXML_NODE node;
 
    if (lbs == NULL)
-      lbs = &lb_list[0];
+      lbs = get_first_lbs_with_global_passwd();
 
    if (!lbs->pwd_xml_tree)
       return FALSE;

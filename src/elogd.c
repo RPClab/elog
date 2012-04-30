@@ -8519,7 +8519,11 @@ void show_change_pwd_page(LOGBOOK * lbs)
    if (isparam("newpwd2"))
       strlcpy(new_pwd2, getparam("newpwd2"), sizeof(new_pwd2));
 
-   strlcpy(user, isparam("unm") ? getparam("unm") : "", sizeof(user));
+   if (isparam("unm"))
+      strlcpy(user, getparam("unm"), sizeof(user));
+   else
+      user[0] = 0;
+      
    if (isparam("config")) {
       strlcpy(str, getparam("config"), sizeof(str));
       strencode2(user, str, sizeof(user));
@@ -24918,12 +24922,44 @@ int load_password_files()
 
 /*------------------------------------------------------------------*/
 
+LOGBOOK *get_first_lbs_with_global_passwd()
+{
+   int i;
+   LOGBOOK *lbs;
+   char str[256], global[256], orig_topgroup[256];
+   
+   orig_topgroup[0] = 0;
+   getcfg("global", "Password file", global, sizeof(global));
+   if (getcfg_topgroup() && *getcfg_topgroup())
+      strcpy(orig_topgroup, getcfg_topgroup());
+   
+   for (i = 0; lb_list[i].name[0]; i++) {
+      if (lb_list[i].top_group[0])
+         setcfg_topgroup(lb_list[i].top_group);
+      getcfg(lb_list[i].name, "Password file", str, sizeof(str));
+      if (str[0] && strieq(str, global)) {
+         lbs = lb_list + i;
+         break;
+      }
+   }
+   
+   if (!lb_list[i].name[0])
+      return NULL;
+   
+   if (orig_topgroup[0])
+      setcfg_topgroup(orig_topgroup);
+
+   return lbs;
+}
+   
+/*------------------------------------------------------------------*/
+
 int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name, char *email,
                   BOOL email_notify[1000], time_t * last_logout, int *inactive)
 /* return value: 0:cannot access password file, 1: OK, 2: user not found */
 {
    int i, j;
-   char str[256], global[256], orig_topgroup[256];
+   char str[256];
    PMXML_NODE user_node, node, subnode;
 
    if (password)
@@ -24941,29 +24977,9 @@ int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name, ch
 
    /* if global password file is requested, search for first
       logbook with same password file than global section */
-   orig_topgroup[0] = 0;
-   if (lbs == NULL) {
-      getcfg("global", "Password file", global, sizeof(global));
-      if (getcfg_topgroup() && *getcfg_topgroup())
-         strcpy(orig_topgroup, getcfg_topgroup());
-
-      for (i = 0; lb_list[i].name[0]; i++) {
-         if (lb_list[i].top_group[0])
-            setcfg_topgroup(lb_list[i].top_group);
-         getcfg(lb_list[i].name, "Password file", str, sizeof(str));
-         if (str[0] && strieq(str, global)) {
-            lbs = lb_list + i;
-            break;
-         }
-      }
-
-      if (!lb_list[i].name[0])
-         return 0;
-
-      if (orig_topgroup[0])
-         setcfg_topgroup(orig_topgroup);
-   }
-
+   if (lbs == NULL)
+      lbs = get_first_lbs_with_global_passwd();
+   
    getcfg(lbs->name, "Password file", str, sizeof(str));
 
    if (!str[0] || !user[0])
@@ -26385,6 +26401,10 @@ void interprete(char *lbook, char *path)
       /* check for password recovery */
       if (isparam("cmd") || isparam("newpwd")) {
          if (isparam("newpwd") || strieq(command, loc("Change password"))) {
+            /* if logged in via SID, set user name */
+            if (sid_check(getparam("sid"), uname))
+               setparam("unm", uname);
+
             show_change_pwd_page(NULL);
             return;
          }
@@ -26411,7 +26431,7 @@ void interprete(char *lbook, char *path)
          }
 
          /* check if user in password file */
-         if (get_user_line(NULL, uname, NULL, NULL, NULL, NULL, NULL, NULL) == 2) {
+         if (get_user_line(NULL, uname, NULL, full_name, NULL, NULL, NULL, NULL) == 2) {
             /* if self registering not allowed, go back to login screen */
             if (!getcfg(group, "Self register", str, sizeof(str)) || atoi(str) == 0) {
                show_login_page(NULL, str, 1);
@@ -26429,7 +26449,7 @@ void interprete(char *lbook, char *path)
          sid_new(NULL, uname, (char *) inet_ntoa(rem_addr), sid);
 
          /* set SID cookie */
-         set_sid_cookie(NULL, sid, getparam("uname"));
+         set_sid_cookie(NULL, sid, full_name);
          return;
       }
 
@@ -26626,7 +26646,7 @@ void interprete(char *lbook, char *path)
 
       /* check if guest access */
       if (getcfg(lbs->name, "Guest menu commands", str, sizeof(str))) {
-         /* if logged int via SID, set user name */
+         /* if logged in via SID, set user name */
          if (sid_check(getparam("sid"), uname))
             setparam("unm", uname);
       }
