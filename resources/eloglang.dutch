@@ -231,7 +231,7 @@ Are you sure to delete this entry? = Weet je zeker dat je dit bericht wilt wisse
 CSV import preview of %s = CSV import voorbeeld van %s
 Import = Importeer
 CSV filename = CSV bestandsnaam
-Field separator = Veldscheidingsteken
+Field separator = Veldscheidingssteken
 Edit entry = Wijzig bericht
 Delete entry = Wis bericht
 CSV Import = CSV Import
@@ -257,7 +257,7 @@ No attachment file specified = Geen bijlage opgegeven
 Submit modified ELOG entry? = Gewijzigd ELOG bericht opslaan?
 Delete this logbook = Wis dit logboek
 Rename this logbook = Hernoem dit logboek
-Create new logbook = Maak nieuw logbook
+Create new logbook = Maak nieuw logboek
 Syntax error in config file = Syntax fout in configuratiebestand
 Email notification = Email berichtgeving
 Are you sure to delete logbook "%s"? = Weet je zeker dat je logboek "%s" wilt wissen?
@@ -475,9 +475,6 @@ Your account has been activated = Je account is geactiveerd
 Please subscribe to logbooks if you want to receive automatic email notifications = Abonneer je op logboeken als je automatisch meldingen wilt ontvangen
 This is an automatically generated account recovery email for host %s = Dit is een automatisch gegenereerd bericht voor het herstellen van het account voor server %s
 Please click on following link to recover your account = Klik op de volgende link om je account te herstellen
+Email address "%s" not registered = Email adres "%s" is niet geregistreerd
+User name "%s" not registered = Gebruikersnaam "%s" is niet geregistreerd
 
-#
-#---- please translate following items and then remove this comment ----#
-#
-Email address "%s" not registered = 
-User name "%s" not registered = Error accessing password file = 
