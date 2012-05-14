@@ -481,7 +481,7 @@ static char *sha256_crypt_r(const char *key, const char *salt, char *buffer, int
 
    if (rounds_custom) {
 #ifdef _MSC_VER
-      int n = _snprintf(cp, MAX(0, buflen), "%s%zu$",
+      int n = _snprintf(cp, MAX(0, buflen), "%s%Iu$",
                         sha256_rounds_prefix, rounds);
 #else
       int n = snprintf(cp, MAX(0, buflen), "%s%zu$",
