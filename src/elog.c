@@ -9,11 +9,8 @@
 
 \********************************************************************/
 
-#define VERSION "2.9.1"
+#include "elog-version.h"
 char svn_revision[] = "$Id$";
-
-/* ELOG identification */
-static const char ELOGID[] = "elog " VERSION " built " __DATE__ ", " __TIME__;
 
 #include <stdio.h>
 #include <sys/types.h>
