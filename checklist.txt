@@ -4,7 +4,7 @@ Checklist for new ELOG version
 On RS32:
 
 - Put all new options in doc/config.html
-- Increase version in elogd.h
+- Increase version in elog-version.h
 - Do the same in doc/index.html and index_nd.html
 - Modify ChangeLog
 - Add release date to ChangeLog
