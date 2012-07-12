@@ -1,19 +1,17 @@
 /********************************************************************
- Name:         elogd.c
- Created by:   Stefan Ritt
+ 
+   Name:         elogd.c
+   Created by:   Stefan Ritt
 
- Contents:     Web server program for Electronic Logbook ELOG
+   Contents:     Web server program for Electronic Logbook ELOG
 
- $Id$
+   $Id$
 
 \********************************************************************/
 
 #include "elogd.h"
 
 char svn_revision[] = "$Id$";
-
-/* ELOG identification */
-static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
 
 BOOL running_as_daemon;         /* Running as a daemon/service? */
 int elog_tcp_port;              /* Server's TCP port            */

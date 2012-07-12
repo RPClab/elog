@@ -1,15 +1,16 @@
 /********************************************************************
- Name:         elogd.h
- Created by:   Stefan Ritt
+ 
+   Name:         elogd.h
+   Created by:   Stefan Ritt
 
- Contents:     Header file for ELOG program
+   Contents:     Header file for ELOG program
 
- $Id: elogd.c 2354 2011-01-10 11:53:11Z ritt $
+   $Id: elogd.c 2354 2011-01-10 11:53:11Z ritt $
 
 \********************************************************************/
 
-/* Version of ELOG */
-#define VERSION "2.9.2"
+/* Include version from central version file */
+#include "elog-version.h"
 
 #define _GNU_SOURCE
 #include <stdio.h>
