@@ -23486,6 +23486,11 @@ int get_thumb_name(const char *file_name, char *thumb_name, int size, int index)
          strlcpy(thumb_name, str, size);
          return 1;
       }
+      strlcpy(str, file_name, sizeof(str));
+      if (file_exist(str)) {
+         strlcpy(thumb_name, str, size);
+         return 1;
+      }
    }
 
    return 0;
