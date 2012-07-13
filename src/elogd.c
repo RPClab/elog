@@ -35,6 +35,7 @@ char logbook_dir[256];
 char listen_interface[256];
 char theme_name[80];
 char http_host[256];
+char http_user[256];
 
 char _param[MAX_PARAM][NAME_LENGTH];
 char _value[MAX_PARAM][NAME_LENGTH];
@@ -8381,6 +8382,10 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
    strcpy(list[i], "host");
    strlcpy(value[i++], host_name, NAME_LENGTH);
 
+   /* add forwarded user */
+   strcpy(list[i], "http_user");
+   strlcpy(value[i++], http_user, NAME_LENGTH);
+
    /* add user names */
    strcpy(list[i], "short_name");
    if (isparam("unm")) {
@@ -8541,7 +8546,7 @@ void show_change_pwd_page(LOGBOOK * lbs)
    if (old_pwd[0] || new_pwd[0]) {
       if (user[0]) {
 
-         if (stristr(auth, "Kerberos")) {
+         if (stristr(auth, "Kerberos") || stristr(auth, "Webserver")) {
             if (strcmp(new_pwd, new_pwd2) != 0)
                wrong_pwd = 2;
          } else {
@@ -12711,6 +12716,12 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
    int i, self_register, code, first_user;
    PMXML_NODE node, subnode, npwd;
 
+   /* if we outsourced the authentication, use external username */
+   getcfg(lbs->name, "Authentication", str, sizeof(str));
+   if ( stristr(str, "Webserver")) {
+      strncpy(user, http_user, sizeof(user));
+   }
+
    /* do not allow HTML in user name */
    strencode2(user_enc, user, sizeof(user_enc));
 
@@ -13295,7 +13306,7 @@ void show_config_page(LOGBOOK * lbs)
    rsprintf("<tr><td nowrap width=\"15%%\">%s:</td>\n", loc("Login name"));
 
    getcfg(lbs->name, "Authentication", auth, sizeof(auth));
-   if (stristr(auth, "Kerberos"))
+   if (stristr(auth, "Kerberos") || stristr(auth, "Webserver"))
       rsprintf("<td><input type=text size=40 name=new_user_name value=\"%s\" readonly></td></tr>\n", str);
    else
       rsprintf("<td><input type=text size=40 name=new_user_name value=\"%s\"></td></tr>\n", str);
@@ -13627,7 +13638,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
       /*---- header ----*/
 
       getcfg(lbs->name, "Authentication", str, sizeof(str));
-      if (stristr(str, "Kerberos")) {
+      if (stristr(str, "Kerberos")|| stristr(str, "Webserver")) {
          show_error
              ("This installation of ELOG uses site authentification\nwhere password recovery is not possible");
          return;
@@ -13657,6 +13668,8 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
 
 void show_new_user_page(LOGBOOK * lbs, char *user)
 {
+   char str[256];
+   
    /*---- header ----*/
 
    show_html_header(lbs, TRUE, loc("ELOG new user"), TRUE, FALSE, NULL, FALSE, 0);
@@ -13692,13 +13705,14 @@ void show_new_user_page(LOGBOOK * lbs, char *user)
 
    rsprintf("<tr><td nowrap>Email:</td>\n");
    rsprintf("<td colspan=2><input type=text size=40 name=new_user_email></tr>\n");
+   getcfg(lbs->name, "Authentication", str, sizeof(str));
+   if (!stristr(str, "Kerberos") && !stristr(str, "Webserver")) {
+       rsprintf("<tr><td nowrap>%s:</td>\n", loc("Password"));
+       rsprintf("<td colspan=2><input type=password size=40 name=newpwd>\n");
 
-   rsprintf("<tr><td nowrap>%s:</td>\n", loc("Password"));
-   rsprintf("<td colspan=2><input type=password size=40 name=newpwd>\n");
-
-   rsprintf("<tr><td nowrap>%s:</td>\n", loc("Retype password"));
-   rsprintf("<td colspan=2><input type=password size=40 name=newpwd2>\n");
-
+       rsprintf("<tr><td nowrap>%s:</td>\n", loc("Retype password"));
+       rsprintf("<td colspan=2><input type=password size=40 name=newpwd2>\n");
+   }
    rsprintf("</td></tr></table>\n");
 
    /*---- menu buttons ----*/
@@ -25512,7 +25526,12 @@ BOOL check_login(LOGBOOK * lbs, char *sid)
    if (!enum_user_line(lbs, 0, str, sizeof(str))) {
       if (isparam("new_user_name"))
          return TRUE;
-      show_new_user_page(lbs, NULL);
+      getcfg(lbs->name, "Authentication", str, sizeof(str));
+      if (stristr(str, "Webserver")) {
+         show_new_user_page(lbs, http_user);
+      } else {
+         show_new_user_page(lbs, NULL);
+      }
       return FALSE;
    }
 
@@ -25538,7 +25557,9 @@ BOOL check_login(LOGBOOK * lbs, char *sid)
       }
    }
 
-   /* if invalid or no session ID, show login page */
+   /* if invalid or no session ID, show login page, 
+      unless we outsourced the authentication to webserver
+   */
    if (!skip_sid_check && !sid_check(sid, user_name)) {
       if (isparam("redir"))
          strlcpy(str, getparam("redir"), sizeof(str));
@@ -26521,6 +26542,23 @@ void interprete(char *lbook, char *path)
    /* check for error during attribute scan */
    if (lbs->n_attr < 0)
       return;
+
+   /* if we outsource the authentication to Webserver and have no sid, just set a new sid  */
+   getcfg(lbs->name, "Authentication", str, sizeof(str));
+   if (stristr(str, "Webserver")) {
+      if (http_user[0]) {
+         if (!sid_check(getparam("sid"), http_user)) { /*  if we don't have a sid yet, set it */
+            /* get a new session ID */
+            sid_new(lbs, http_user, (char *) inet_ntoa(rem_addr), sid);
+            /* set SID cookie */
+            set_sid_cookie(lbs, sid, http_user);
+         }
+     } else {
+        sprintf(str, "Error: Misconfigured webserver, did not get X-Forwarded-User from it.");
+        show_error(str);
+        return;
+     }
+   }
 
    /* check for new login */
    if (isparam("uname") && isparam("upassword")) {
@@ -27793,6 +27831,17 @@ int process_http_request(const char *request, int i_conn)
       strlcpy(http_host, p, sizeof(http_host));
       if (strchr(http_host, '\r'))
          *strchr(http_host, '\r') = 0;
+   }
+
+   /* extract X-Forwarded-User into http_user if Authentication==Webserver */
+   http_user[0] = 0;
+   if ((p = strstr(request, "X-Forwarded-User:")) != NULL) {
+      p += 17;
+      while (*p && *p == ' ')
+         p++;
+      strlcpy(http_user, p, sizeof(http_user));
+      if (strchr(http_user, '\r'))
+         *strchr(http_user, '\r') = 0;
    }
 
    /* extract "X-Forwarded-For:" */
