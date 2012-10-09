@@ -11368,7 +11368,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                         strlcpy(str, strrchr(thumb_name, DIR_SEPARATOR) + 1, sizeof(str));
                      else
                         strlcpy(str, thumb_name, sizeof(str));
-                     strlcpy(thumb_name, str, sizeof(str));
+                     strlcpy(thumb_name, str, sizeof(thumb_name));
                      if (thumb_status == 2)
                         strsubst(thumb_name, sizeof(thumb_name), "-0.png", "");
 
@@ -12460,9 +12460,10 @@ int delete_logbook(LOGBOOK * lbs, char *error)
    p1 = (char *) find_section(buf, lbs->name);
    p2 = (char *) find_next_section(p1 + 1);
 
-   if (p2)
-      strlcpy(p1, p2, strlen(p2) + 1);
-   else
+   if (p2) {
+      i = strlen(p2)+1;
+      strlcpy(p1, p2, i);
+   } else
       *p1 = 0;
 
    lseek(fh, 0, SEEK_SET);
@@ -12719,7 +12720,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
    /* if we outsourced the authentication, use external username */
    getcfg(lbs->name, "Authentication", str, sizeof(str));
    if ( stristr(str, "Webserver")) {
-      strncpy(user, http_user, sizeof(user));
+      strlcpy(user, http_user, sizeof(user));
    }
 
    /* do not allow HTML in user name */
