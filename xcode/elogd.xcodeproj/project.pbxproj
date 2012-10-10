@@ -134,7 +134,7 @@
 		D52BA2F113999DB0000458E3 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0420;
+				LastUpgradeCheck = 0450;
 				ORGANIZATIONNAME = PSI;
 			};
 			buildConfigurationList = D52BA2F413999DB0000458E3 /* Build configuration list for PBXProject "elogd" */;
