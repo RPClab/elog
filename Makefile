@@ -122,7 +122,7 @@ elog: src/elog.c crypt.o
 	$(CC) $(CFLAGS) -o elog src/elog.c crypt.o $(LIBS)
 
 debug: src/elogd.c regex.o crypt.o auth.o mxml.o strlcpy.o
-	$(CC) -g -I$(MXMLDIR) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o strlcpy.o $(LIBS)
+	$(CC) -g $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o strlcpy.o $(LIBS)
 
 %: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
