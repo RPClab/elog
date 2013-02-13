@@ -7,12 +7,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <malloc.h> 
 
 #define __alignof__(x) sizeof(x)
-#define alloca(x) malloc(x)
 #define ERANGE 34
 
 typedef unsigned int uint32_t;
+
+#pragma warning(disable:4996)
 #else
 #include <errno.h>
 #include <limits.h>
