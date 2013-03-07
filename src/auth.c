@@ -237,7 +237,7 @@ int auth_verify_password(LOGBOOK * lbs, const char *user, const char *password, 
 int auth_change_password(LOGBOOK * lbs, const char *user, const char *old_pwd, const char *new_pwd,
                          char *error_str, int error_size)
 {
-   int status;
+   int status = 0;
    char str[256];
 
    error_str[0] = 0;
