@@ -29867,12 +29867,13 @@ int main(int argc, char *argv[])
          else {
           usage:printf("%s\n", ELOGID);
             printf("usage: elogd [-C <url>] [-c <file>] [-D] [-d <dir>] ");
-            printf("[-f <file>] [-h] [-k] [-l <logbook>] [-M] [-m] [-n <hostname>] ");
+            printf("[-f <file>] [-h] [-k] [-l <logbook>] [-M] [-m] [-n <interface>] ");
             printf("[-p <port>] [-S] [-s <dir>] [-t <pwd>] [-v] [-x]\n\n");
             printf("       -C <url> clone remote elogd configuration\n");
             printf("       -c <file> specify configuration file\n");
             printf("       -M synchronize with removing deleted entries\n");
             printf("       -m synchronize logbook(s) with remote server\n");
+            printf("       -n specify interface to listen at\n");
             printf("       -D become a daemon\n");
             printf("       -d <dir> specify logbook root directory\n");
 #ifdef OS_UNIX
@@ -30124,6 +30125,12 @@ int main(int argc, char *argv[])
       exit(EXIT_SUCCESS);
    }
 
+   /* get listen interface */
+   if (listen_interface[0] == 0)
+      if (getcfg("global", "interface", str, sizeof(str))) {
+         strlcpy(listen_interface, str, sizeof(listen_interface));
+      }
+   
    /* get default port */
    if (getcfg("global", "SSL", str, sizeof(str)) && atoi(str) == 1)
       elog_tcp_port = 443;
