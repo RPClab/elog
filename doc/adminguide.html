@@ -282,11 +282,11 @@ option in <code>elogd.cfg</code> to <code><b>port=80</code></B> and restarting e
 <div class=section>&nbsp; Server Configuration &nbsp;</div>
 <p>
 <a name="config">The <b>ELOG</b> daemon <b><code>elogd</code></b> can be executed with the following options :
-<ul><code><pre>elogd [-p port] [-h hostname/IP] [-C] [-m] [-M] [-D] [-c file] [-s dir] [-d dir] [-v] [-k] [-f file] [-x]</code></PRE></ul>
+<ul><code><pre>elogd [-p port] [-n hostname/IP] [-C] [-m] [-M] [-D] [-c file] [-s dir] [-d dir] [-v] [-k] [-f file] [-x]</code></PRE></ul>
 <p>with :
 <ul>
 <li><code>-p &lt;port&gt;</code>&nbsp; TCP port number to use for the http server (if other than 80)
-<li><code>-h &lt;hostname or IP address&gt;</code> in the case of a "multihomed" server, host name or IP
+<li><code>-n &lt;hostname or IP address&gt;</code> in the case of a "multihomed" server, host name or IP
   address of the interface ELOG should run on
 <LI><code>-C &lt;url&gt;</code>&nbsp; clone remote elogd configuration&nbsp;
 <LI><code>-m</code>&nbsp; synchronize logbook(s) with remote server
