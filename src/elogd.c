@@ -19493,6 +19493,10 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    strlcpy(mode, "Summary", sizeof(mode));
    show_attachments = FALSE;
 
+   /* check for valid page_n */
+   if (page_n < -1)
+      page_n = 0;
+   
    if (past_n || last_n || page_n || page_mid || default_page) {
       /* for page display, get mode from config file */
       if (getcfg(lbs->name, "Display Mode", str, sizeof(str)))
