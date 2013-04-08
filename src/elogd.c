@@ -29873,7 +29873,6 @@ int main(int argc, char *argv[])
             printf("       -c <file> specify configuration file\n");
             printf("       -M synchronize with removing deleted entries\n");
             printf("       -m synchronize logbook(s) with remote server\n");
-            printf("       -n specify interface to listen at\n");
             printf("       -D become a daemon\n");
             printf("       -d <dir> specify logbook root directory\n");
 #ifdef OS_UNIX
@@ -29882,7 +29881,7 @@ int main(int argc, char *argv[])
             printf("       -h this help\n");
             printf("       -k do not use keep-alive\n");
             printf("       -l <logbook> specify logbook for -r, -w and -m commands\n");
-            printf("       -n <interface> interface to listen on\n");
+            printf("       -n hostname/IP interface to listen on\n");
             printf("       -p <port> TCP/IP port\n");
             printf("       -S be silent\n");
             printf("       -s <dir> specify resource directory (themes, icons, ...)\n");
