@@ -586,6 +586,7 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
                 int reply,
                 int quote_on_reply,
                 int edit,
+                int download,
                 int suppress,
                 int encoding,
                 char attrib_name[MAX_N_ATTR][NAME_LENGTH],
@@ -608,6 +609,7 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
     char   *upwd            User password
     int    reply            Reply to existing message
     int    edit             Edit existing message
+    int    download         Download existing message
     int    suppress         Suppress Email notification
     int    encoding         0:ELCode,1:plain,2:HTML
     char   *attrib_name     Attribute names
@@ -649,10 +651,13 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
    if (strchr(host_name, '.') == NULL)
       strcpy(host_name, phe->h_name);
 
-   if (edit) {
-      status =
-          retrieve_elog(host, port, subdir, ssl, experiment, uname, upwd, edit,
-                        old_attrib_name, old_attrib, old_text);
+   if (edit || download) {
+      if (edit)
+         status = retrieve_elog(host, port, subdir, ssl, experiment, uname, upwd, edit,
+                                old_attrib_name, old_attrib, old_text);
+      else
+         status = retrieve_elog(host, port, subdir, ssl, experiment, uname, upwd, download,
+                                old_attrib_name, old_attrib, old_text);
 
       if (status != 1)
          return status;
@@ -677,6 +682,11 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
 
       if (text[0] == 0)
          strlcpy(text, old_text, TEXT_SIZE);
+   }
+   
+   if (download) {
+      puts(response);
+      return 1;
    }
 
    if (reply) {
@@ -1014,12 +1024,12 @@ int main(int argc, char *argv[])
    char host_name[256], logbook[32], textfile[256], subdir[256];
    char *buffer[MAX_ATTACHMENTS], attachment[MAX_ATTACHMENTS][256];
    INT att_size[MAX_ATTACHMENTS];
-   INT i, n, fh, n_att, n_attr, port, reply, quote_on_reply, edit, encoding, suppress, size, ssl;
+   INT i, n, fh, n_att, n_attr, port, reply, quote_on_reply, edit, download, encoding, suppress, size, ssl;
    char attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 
    text[0] = textfile[0] = uname[0] = upwd[0] = suppress = quote_on_reply = 0;
    host_name[0] = logbook[0] = subdir[0] = 0;
-   n_att = n_attr = reply = edit = encoding = 0;
+   n_att = n_attr = reply = edit = download = encoding = 0;
    port = 80;
    ssl = 0;
 
@@ -1071,6 +1081,8 @@ int main(int argc, char *argv[])
                reply = atoi(argv[++i]);
             else if (argv[i][1] == 'e')
                edit = atoi(argv[++i]);
+            else if (argv[i][1] == 'w')
+               download = atoi(argv[++i]);
             else if (argv[i][1] == 'n')
                encoding = atoi(argv[++i]);
             else if (argv[i][1] == 'm')
@@ -1094,6 +1106,7 @@ int main(int argc, char *argv[])
                printf("     [-r <id>]                Reply to existing message\n");
                printf("     [-q]                     Quote original text on reply\n");
                printf("     [-e <id>]                Edit existing message\n");
+               printf("     [-w <id>]                Download existing message\n");
                printf("     [-x]                     Suppress email notification\n");
                printf("     [-n 0|1|2]               Encoding: 0:ELcode,1:plain,2:HTML\n");
                printf("     -m <textfile>] | <text>\n");
@@ -1137,7 +1150,7 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   if (n_attr == 0 && !edit && !reply) {
+   if (n_attr == 0 && !edit && !reply && !download) {
       printf("Please specify attribute(s) with the \"-a\" flag.\n");
       return 1;
    }
@@ -1169,7 +1182,7 @@ int main(int argc, char *argv[])
       close(fh);
    }
 
-   if (text[0] == 0 && textfile[0] == 0 && !edit) {
+   if (text[0] == 0 && textfile[0] == 0 && !edit && !download) {
       /* read from stdin */
 
       n = 0;
@@ -1217,7 +1230,7 @@ int main(int argc, char *argv[])
 
    /* now submit message */
    submit_elog(host_name, port, ssl, subdir, logbook,
-               uname, upwd, reply, quote_on_reply, edit, suppress, encoding, attr_name, attrib, n_attr, text,
+               uname, upwd, reply, quote_on_reply, edit, download, suppress, encoding, attr_name, attrib, n_attr, text,
                attachment, buffer, att_size);
 
    for (i = 0; i < MAX_ATTACHMENTS; i++)
