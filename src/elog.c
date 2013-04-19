@@ -685,7 +685,10 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
    }
    
    if (download) {
-      puts(response);
+      if (strstr(response, "$@MID@$:"))
+         printf("%s", strstr(response, "$@MID@$:"));
+      else
+         printf("%s", response);
       return 1;
    }
 
@@ -1081,9 +1084,12 @@ int main(int argc, char *argv[])
                reply = atoi(argv[++i]);
             else if (argv[i][1] == 'e')
                edit = atoi(argv[++i]);
-            else if (argv[i][1] == 'w')
-               download = atoi(argv[++i]);
-            else if (argv[i][1] == 'n')
+            else if (argv[i][1] == 'w') {
+               if (argv[i+1][0] == 'l')
+                  download = -1;
+               else
+                  download = atoi(argv[++i]);
+            } else if (argv[i][1] == 'n')
                encoding = atoi(argv[++i]);
             else if (argv[i][1] == 'm')
                strcpy(textfile, argv[++i]);
@@ -1106,7 +1112,7 @@ int main(int argc, char *argv[])
                printf("     [-r <id>]                Reply to existing message\n");
                printf("     [-q]                     Quote original text on reply\n");
                printf("     [-e <id>]                Edit existing message\n");
-               printf("     [-w <id>]                Download existing message\n");
+               printf("     [-w <id>|last]           Download existing message (last message)\n");
                printf("     [-x]                     Suppress email notification\n");
                printf("     [-n 0|1|2]               Encoding: 0:ELcode,1:plain,2:HTML\n");
                printf("     -m <textfile>] | <text>\n");
