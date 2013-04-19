@@ -14108,9 +14108,13 @@ int show_download_page(LOGBOOK * lbs, char *path)
 
          /* return entry */
 
-         for (index = 0; index < *lbs->n_el_index; index++)
-            if (lbs->el_index[index].message_id == message_id)
-               break;
+         if (message_id == -1)
+            index = *lbs->n_el_index - 1;  // last entry
+         else {
+            for (index = 0; index < *lbs->n_el_index; index++)
+               if (lbs->el_index[index].message_id == message_id)
+                  break;
+         }
 
          if (index == *lbs->n_el_index)
             return EL_NO_MSG;
