@@ -68,12 +68,10 @@ int auth_verify_password_krb5(LOGBOOK * lbs, const char *user, const char *passw
    error = krb5_get_init_creds_password(context, &creds, princ,
                                         (char *) password, NULL, NULL, 0, NULL, &options);
 
-   krb5_free_cred_contents(context, &creds);
-   krb5_get_init_creds_opt_free(context, &options);
    krb5_free_context(context);
 
    if (error && error != KRB5KDC_ERR_PREAUTH_FAILED && error != KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN) {
-      sprintf(error_str, "<b>Kerberos error %d:</b><br>", error_size, error);
+      sprintf(error_str, "<b>Kerberos error %d:</b><br>", error);
       strlcat(error_str, krb5_get_error_message(context, error), error_size);
       strlcat(error_str, ".<br>Please check your Kerberos configuration.", error_size);
       return FALSE;
