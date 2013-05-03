@@ -28806,6 +28806,15 @@ void server_loop(void)
    if (!is_verbose() && !running_as_daemon)
       eputs("done");
 
+#ifndef HAVE_KRB5
+   /* check for Kerberos authentication */
+   getcfg("gloabl", "Authentication", str, sizeof(str));
+   if (stristr(str, "Kerberos")) {
+      eprintf("Kerberos authentication not compiled into this version of elogd.\n");
+      exit(EXIT_FAILURE);
+   }
+#endif
+   
    /* listen for connection */
    status = listen(lsock, SOMAXCONN);
    if (status < 0) {
