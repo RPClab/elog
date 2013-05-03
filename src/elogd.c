@@ -21313,7 +21313,7 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
       /* encode file */
       strlcpy(file_name, lbs->data_dir, sizeof(file_name));
       strlcat(file_name, att_file[index], sizeof(file_name));
-      if (is_image(file_name)) {
+      if (is_image(file_name) && image_magick_exist) {
          get_thumb_name(file_name, str, sizeof(str), 0);
          strlcpy(file_name, str, sizeof(file_name));
       }
@@ -28782,12 +28782,16 @@ void server_loop(void)
    fckedit_exist = exist_file(str);
    if (fckedit_exist)
       eprintf("FCKedit detected\n");
+   else
+      eprintf("FCKedit NOT detected\n");
 
    /* check for ImageMagick */
    my_shell("convert -version", str, sizeof(str));
    image_magick_exist = (strstr(str, "ImageMagick") != NULL);
    if (image_magick_exist)
       eprintf("ImageMagick detected\n");
+   else
+      eprintf("ImageMagick NOT detected. Image scaling will not work.\n");
 
    /* check for keepalive */
    if (!use_keepalive)
