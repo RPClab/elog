@@ -890,7 +890,11 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
    strcat(request, " HTTP/1.0\r\n");
 
    sprintf(request + strlen(request), "Content-Type: multipart/form-data; boundary=%s\r\n", boundary);
-   sprintf(request + strlen(request), "Host: %s\r\n", host_name);
+   if (port != 80)
+      sprintf(str, "%s:%d", host, port);
+   else
+      sprintf(str, "%s", host);
+   sprintf(request + strlen(request), "Host: %s\r\n", str);
    sprintf(request + strlen(request), "User-Agent: ELOG\r\n");
    sprintf(request + strlen(request), "Content-Length: %d\r\n", content_length);
 
