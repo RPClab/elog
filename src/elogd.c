@@ -14033,7 +14033,7 @@ void show_logbook_new(LOGBOOK * lbs)
       return;
    }
 
-   show_standard_header(lbs, TRUE, "Delete Logbook", "", FALSE, NULL, NULL, 0);
+   show_standard_header(lbs, TRUE, loc("Create new logbook"), "", FALSE, NULL, NULL, 0);
 
    rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
    rsprintf("<tr><td class=\"dlgtitle\">\n");
