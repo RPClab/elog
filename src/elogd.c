@@ -5,8 +5,6 @@
 
    Contents:     Web server program for Electronic Logbook ELOG
 
-   $Id$
-
 \********************************************************************/
 
 #include "elogd.h"
