@@ -28492,6 +28492,12 @@ void hup_handler(int sig)
       _hup = TRUE;
 }
 
+void alarm_handler(int sig)
+{
+   if (sig)
+      alarm(3);
+}
+
 /*------------------------------------------------------------------*/
 
 #ifdef HAVE_SSL
@@ -28567,6 +28573,7 @@ void server_loop(void)
    struct sigaction ctrlc_handle;
    struct sigaction ignore_handle;
    struct sigaction hup_handle;
+   struct sigaction alarm_handle;
 #endif
 
    i_conn = content_length = 0;
@@ -28739,7 +28746,14 @@ void server_loop(void)
    sigemptyset(&hup_handle.sa_mask);
    hup_handle.sa_flags = 0;
    sigaction(SIGHUP, &hup_handle, NULL);
-
+   
+   alarm_handle.sa_handler = alarm_handler;
+   sigemptyset(&alarm_handle.sa_mask);
+   alarm_handle.sa_flags = 0;
+   sigaction(SIGALRM, &alarm_handle, NULL);
+   
+   alarm(3); // prevents blocking send() operations
+   
    /* give up root privilege */
    if (geteuid() == 0) {
       if (!getcfg("global", "Grp", str, sizeof(str)) || setegroup(str) < 0) {
