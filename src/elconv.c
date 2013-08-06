@@ -865,7 +865,7 @@ INT el_get_v1(char *tag, char *message, int *bufsize)
    }
 
    /* read message */
-   memset(message, 0, sizeof(message));
+   memset(message, 0, *bufsize);
    read(fh, message, size);
    close(fh);
 
