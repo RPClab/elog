@@ -28780,7 +28780,7 @@ void server_loop(void)
             }
          }
       } else if (is_verbose())
-         eprintf("Falling back to user \"%s\"\n", str);
+         eprintf("Falling back to user \"%s\".\n", str);
    }
 #endif
 
