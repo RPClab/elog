@@ -13733,6 +13733,19 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
    char str[256], str2[256], in_reply_to[80], reply_to[MAX_REPLY_TO * 10], owner[256];
    char attrib[MAX_N_ATTR][NAME_LENGTH], mode[80];
 
+   /* check for editing interval */
+   if (getcfg(lbs->name, "Restrict edit time", str, sizeof(str))) {
+      for (i = 0; i < *lbs->n_el_index; i++)
+         if (lbs->el_index[i].message_id == message_id)
+            break;
+      
+      if (i < *lbs->n_el_index && time(NULL) > lbs->el_index[i].file_time + atof(str) * 3600) {
+         sprintf(str, loc("Entry can only be deleted %1.2lg hours after creation"), atof(str));
+         show_error(str);
+         return;
+      }
+   }
+
    /* redirect if confirm = NO */
    if (isparam("confirm") && strcmp(getparam("confirm"), loc("No")) == 0) {
       if (message_id) {
