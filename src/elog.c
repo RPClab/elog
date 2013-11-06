@@ -631,7 +631,7 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
 {
    int status, sock, i, n, header_length, content_length, index;
    char host_name[256], boundary[80], str[80], encrypted_passwd[256], *p, *old_encoding;
-   char old_attrib_name[MAX_N_ATTR][NAME_LENGTH], old_attrib[MAX_N_ATTR][NAME_LENGTH];
+   char old_attrib_name[MAX_N_ATTR+1][NAME_LENGTH], old_attrib[MAX_N_ATTR+1][NAME_LENGTH];
    struct hostent *phe;
 #ifdef HAVE_SSL
    SSL *ssl_con;
