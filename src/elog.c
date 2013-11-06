@@ -115,6 +115,10 @@ int equal_ustring(char *str1, char *str2)
 
 /*---- strlcpy and strlcat to avoid buffer overflow ----------------*/
 
+#ifdef strlcpy
+#define STRLCPY_DEFINED
+#endif
+
 #ifndef STRLCPY_DEFINED
 
 /*

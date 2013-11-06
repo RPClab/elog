@@ -8,8 +8,9 @@
 \********************************************************************/
 
 #include "elogd.h"
+#include "git-revision.h"
 
-char svn_revision[] = "$Id$";
+const char *git_revision = GIT_REVISION;
 
 BOOL running_as_daemon;         /* Running as a daemon/service? */
 int elog_tcp_port;              /* Server's TCP port            */
@@ -6940,7 +6941,7 @@ void redirect(LOGBOOK * lbs, char *rel_path)
 {
    /* redirect */
    rsprintf("HTTP/1.1 302 Found\r\n");
-   rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
    if (keep_alive) {
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
@@ -7176,7 +7177,7 @@ void show_http_header(LOGBOOK * lbs, BOOL expires, char *cookie)
    char str[256];
 
    rsprintf("HTTP/1.1 200 Document follows\r\n");
-   rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
 
    if (getcfg("global", "charset", str, sizeof(str)))
       rsprintf("Content-Type: text/html;charset=%s\r\n", str);
@@ -7203,7 +7204,7 @@ void show_plain_header(int size, char *file_name)
 {
    /* header */
    rsprintf("HTTP/1.1 200 Document follows\r\n");
-   rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
    rsprintf("Accept-Ranges: bytes\r\n");
 
    if (keep_alive) {
@@ -7878,8 +7879,8 @@ void show_bottom_text(LOGBOOK * lbs)
    } else
       /* add little logo */
       rsprintf
-          ("<center><a class=\"bottomlink\" title=\"%s\" href=\"https://midas.psi.ch/elog/\">ELOG V%s-%d</a></center>",
-           loc("Goto ELOG home page"), VERSION, atoi(svn_revision + 13));
+          ("<center><a class=\"bottomlink\" title=\"%s\" href=\"https://midas.psi.ch/elog/\">ELOG V%s-%s</a></center>",
+           loc("Goto ELOG home page"), VERSION, git_revision + 33);
 }
 
 /*------------------------------------------------------------------*/
@@ -7932,8 +7933,8 @@ void show_bottom_text_login(LOGBOOK * lbs)
    } else
       /* add little logo */
       rsprintf
-          ("<center><a class=\"bottomlink\" title=\"%s\" href=\"https://midas.psi.ch/elog/\">ELOG V%s-%d</a></center>",
-           loc("Goto ELOG home page"), VERSION, atoi(svn_revision + 13));
+          ("<center><a class=\"bottomlink\" title=\"%s\" href=\"https://midas.psi.ch/elog/\">ELOG V%s-%s</a></center>",
+           loc("Goto ELOG home page"), VERSION, git_revision + 33);
 }
 
 /*------------------------------------------------------------------*/
@@ -7944,7 +7945,7 @@ void show_error(char *error)
 
    /* header */
    rsprintf("HTTP/1.1 404 Not Found\r\n");
-   rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
    if (getcfg("global", "charset", str, sizeof(str)))
       rsprintf("Content-Type: text/html;charset=%s\r\n", str);
    else
@@ -8012,7 +8013,7 @@ void set_sid_cookie(LOGBOOK * lbs, char *sid, char *full_name)
    BOOL global;
 
    rsprintf("HTTP/1.1 302 Found\r\n");
-   rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
    if (keep_alive) {
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
@@ -8056,7 +8057,7 @@ void remove_all_login_cookies(LOGBOOK * lbs)
    int i;
 
    rsprintf("HTTP/1.1 302 Found\r\n");
-   rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
    if (keep_alive) {
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
@@ -8102,7 +8103,7 @@ void send_file_direct(char *file_name)
       lseek(fh, 0, SEEK_SET);
 
       rsprintf("HTTP/1.1 200 Document follows\r\n");
-      rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
+      rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
       rsprintf("Accept-Ranges: bytes\r\n");
 
       /* set expiration time to one day if no thumbnail */
@@ -8445,7 +8446,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
    strcpy(value[i++], VERSION);
 
    strcpy(list[i], "revision");
-   sprintf(value[i++], "%d", atoi(svn_revision + 13));
+   sprintf(value[i++], "%s", git_revision + 33);
 
    return i;
 }
@@ -14983,7 +14984,7 @@ int show_md5_page(LOGBOOK * lbs)
 
    /* header */
    rsprintf("HTTP/1.1 200 Document follows\r\n");
-   rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
    rsprintf("Accept-Ranges: bytes\r\n");
    rsprintf("Connection: close\r\n");
    rsprintf("Content-Type: text/plain;charset=%s\r\n", DEFAULT_HTTP_CHARSET);
@@ -19085,7 +19086,7 @@ void show_rss_feed(LOGBOOK * lbs)
    struct tm *ts;
 
    rsprintf("HTTP/1.1 200 Document follows\r\n");
-   rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
 
    if (!getcfg("global", "charset", charset, sizeof(charset)))
       strcpy(charset, DEFAULT_HTTP_CHARSET);
@@ -28688,7 +28689,7 @@ void server_loop(void)
 
    /* about to entering the server loop, welcome user with a brief info */
    eprintf("%s ", ELOGID);
-   strcpy(str, svn_revision + 13);
+   strcpy(str, git_revision + 33);
    if (strchr(str, ' '))
       *strchr(str, ' ') = 0;
    eprintf("revision %s\n", str);
@@ -29143,7 +29144,7 @@ void server_loop(void)
                   } else if (strstr(net_buffer, "HEAD") != NULL) {
                      /* just return header */
                      rsprintf("HTTP/1.1 200 OK\r\n");
-                     rsprintf("Server: ELOG HTTP %s-%d\r\n", VERSION, atoi(svn_revision + 13));
+                     rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
                      rsprintf("Connection: close\r\n");
                      rsprintf("Content-Type: text/html\r\n\r\n");
                      keep_alive = FALSE;

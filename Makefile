@@ -36,6 +36,7 @@ CFLAGS += -O3 -funroll-loops -fomit-frame-pointer -W -Wall -Wno-deprecated-decla
 CC = gcc
 IFLAGS = -kr -nut -i3 -l110
 EXECS = elog elogd elconv
+GIT_REVISION = src/git-revision.h
 MXMLDIR = ../mxml
 BINOWNER = bin
 BINGROUP = bin
@@ -98,7 +99,11 @@ ifeq ($(WHOAMI),root)
 BINFLAGS = -o ${BINOWNER} -g ${BINGROUP}
 endif
 
-all: $(EXECS)
+all: $(EXECS) $(GIT_REVISION)
+
+# put current GIT revision into header file to be included by programs
+$(GIT_REVISION): src/elogd.c
+	echo \#define GIT_REVISION \"`git log -n 1 --pretty=format:"%ad - %h"`\" > $(GIT_REVISION)
 
 regex.o: src/regex.c src/regex.h
 	$(CC) $(CFLAGS) -w -c -o regex.o src/regex.c
