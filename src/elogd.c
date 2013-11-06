@@ -28901,10 +28901,10 @@ void server_loop(void)
                if (SSL_accept(_ssl_con) < 0) {
                   if (is_verbose())
                      eprintf("SSL_accept failed\n");
-                  SSL_shutdown(ka_ssl_con[i_conn]);
-                  SSL_free(ka_ssl_con[i_conn]);
+                  closesocket(_sock);
                   ka_sock[i_conn] = 0;
                   ka_ssl_con[i_conn] = NULL;
+                  _ssl_con = NULL;
                   continue;
                }
             }
