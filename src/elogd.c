@@ -11593,9 +11593,9 @@ void show_find_form(LOGBOOK * lbs)
 
    /*---- entry form ----*/
 
-   rsprintf("<tr><td class=\"form1\">\n");
+   rsprintf("<tr><td class=\"form1\"><table><tr><td valign=\"top\" class=\"form1\">\n");
 
-   rsprintf("<b>%s:</b>&nbsp;&nbsp;", loc("Mode"));
+   rsprintf("<b>%s:</b><br>", loc("Mode"));
 
    if (!getcfg(lbs->name, "Display mode", mode, sizeof(mode)))
       strcpy(mode, "Full");
@@ -11605,20 +11605,20 @@ void show_find_form(LOGBOOK * lbs)
          rsprintf("<input type=radio id=\"full\" name=\"mode\" value=\"full\" checked>");
       else
          rsprintf("<input type=radio id=\"full\" name=\"mode\" value=\"full\">");
-      rsprintf("<label for=\"full\">%s&nbsp;&nbsp;</label>\n", loc("Display full entries"));
+      rsprintf("<label for=\"full\">%s&nbsp;&nbsp;</label><br>\n", loc("Display full entries"));
 
       if (strieq(mode, "Summary"))
          rsprintf("<input type=radio id=\"summary\" name=\"mode\" value=\"summary\" checked>");
       else
          rsprintf("<input type=radio id=\"summary\" name=\"mode\" value=\"summary\">");
-      rsprintf("<label for=\"summary\">%s&nbsp;&nbsp;</label>\n", loc("Summary only"));
+      rsprintf("<label for=\"summary\">%s&nbsp;&nbsp;</label><br>\n", loc("Summary only"));
 
    } else {
       if (strieq(mode, "Full") || strieq(mode, "Summary"))
          rsprintf("<input type=radio id=\"summary\" name=\"mode\" value=\"summary\" checked>");
       else
          rsprintf("<input type=radio id=\"summary\" name=\"mode\" value=\"summary\">");
-      rsprintf("<label for=\"summary\">%s&nbsp;&nbsp;</label>\n", loc("Summary"));
+      rsprintf("<label for=\"summary\">%s&nbsp;&nbsp;</label><br>\n", loc("Summary"));
    }
 
    if (strieq(mode, "Threaded"))
@@ -11627,35 +11627,41 @@ void show_find_form(LOGBOOK * lbs)
       rsprintf("<input type=radio id=\"threaded\" name=\"mode\" value=\"threaded\">");
    rsprintf("<label for=\"threaded\">%s&nbsp;&nbsp;</label>\n", loc("Display threads"));
 
-   rsprintf("<b>%s:</b>&nbsp;&nbsp;", loc("Export to"));
+   rsprintf("</td><td valign=\"top\" class=\"form1\"><b>%s:</b><br>", loc("Export to"));
 
    if (strieq(mode, "CSV1"))
       rsprintf("<input type=radio id=\"CSV1\" name=\"mode\" value=\"CSV1\" checked>");
    else
       rsprintf("<input type=radio id=\"CSV1\" name=\"mode\" value=\"CSV1\">");
-   rsprintf("<label for=\"CSV1\">%s&nbsp;&nbsp;</label>\n", loc("CSV (\",\" separated)"));
+   rsprintf("<label for=\"CSV1\">%s&nbsp;&nbsp;</label><br>\n", loc("CSV (\",\" separated)"));
 
    if (strieq(mode, "CSV2"))
       rsprintf("<input type=radio id=\"CSV2\" name=\"mode\" value=\"CSV2\" checked>");
    else
       rsprintf("<input type=radio id=\"CSV2\" name=\"mode\" value=\"CSV2\">");
-   rsprintf("<label for=\"CSV2\">%s&nbsp;&nbsp;</label>\n", loc("CSV (\";\" separated)"));
+   rsprintf("<label for=\"CSV2\">%s&nbsp;&nbsp;</label><br>\n", loc("CSV (\";\" separated)"));
+
+   if (strieq(mode, "CSV3"))
+      rsprintf("<input type=radio id=\"CSV3\" name=\"mode\" value=\"CSV3\" checked>");
+   else
+      rsprintf("<input type=radio id=\"CSV3\" name=\"mode\" value=\"CSV3\">");
+   rsprintf("<label for=\"CSV3\">%s&nbsp;&nbsp;</label><br>\n", loc("CSV (\";\" separated) + Text"));
 
    if (strieq(mode, "XML"))
       rsprintf("<input type=radio id=\"XML\" name=\"mode\" value=\"XML\" checked>");
    else
       rsprintf("<input type=radio id=\"XML\" name=\"mode\" value=\"XML\">");
-   rsprintf("<label for=\"XML\">XML&nbsp;&nbsp;</label>\n");
+   rsprintf("<label for=\"XML\">XML&nbsp;&nbsp;</label><br>\n");
 
    if (strieq(mode, "Raw"))
       rsprintf("<input type=radio id=\"Raw\" name=\"mode\" value=\"Raw\" checked>");
    else
       rsprintf("<input type=radio id=\"Raw\" name=\"mode\" value=\"Raw\">");
-   rsprintf("<label for=\"Raw\">Raw&nbsp;&nbsp;</label>\n");
+   rsprintf("<label for=\"Raw\">Raw&nbsp;&nbsp;</label><br>\n");
 
-   rsprintf("</td></tr>\n");
+   rsprintf("</td>\n");
 
-   rsprintf("<tr><td class=\"form2\"><b>%s:</b><br>", loc("Options"));
+   rsprintf("<td valign=\"top\" class=\"form2\"><b>%s:</b><br>", loc("Options"));
 
    rsprintf("<input type=checkbox id=\"attach\" name=\"attach\" value=1>");
    rsprintf("<label for=\"attach\">%s<br></label>\n", loc("Show attachments"));
@@ -11697,7 +11703,7 @@ void show_find_form(LOGBOOK * lbs)
    rsprintf(" <input type=text name=npp size=3 value=%s> ", str);
    rsprintf(loc("entries per page"));
 
-   rsprintf("</td></tr>\n");
+   rsprintf("</td></tr></table></td></tr>\n");
 
    rsprintf("<tr><td class=\"form2\"><b>%s:</b>", loc("Filters"));
    sprintf(str, "<a href=\"http://dmoz.org/Computers/Programming/Languages/Regular_Expressions/\">");
@@ -19542,7 +19548,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    }
 
    threaded = strieq(mode, "threaded");
-   csv = strieq(mode, "CSV1") || strieq(mode, "CSV2");
+   csv = strieq(mode, "CSV1") || strieq(mode, "CSV2") || strieq(mode, "CSV3");
    xml = strieq(mode, "XML");
    raw = strieq(mode, "Raw");
 
@@ -20273,8 +20279,11 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                rsprintf(",");
             else
                rsprintf(";");
-         } else
+         } else {
+            if (strieq(mode, "CSV3"))
+                rsprintf(";\"Text\"");
             rsprintf("\r\n");
+      }
       }
 
    } else if (xml) {
@@ -20977,8 +20986,23 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   rsprintf(",");
                else
                   rsprintf(";");
-            } else
+            } else {
+               if (strlen(text)>0 && strieq(mode, "CSV3")) {
+                  rsprintf(";");
+                  strlcpy(str, text, sizeof(str));
+                  rsputs("\"");
+                  pt1 = str;
+                  while ((pt2 = strchr(pt1, '"')) != NULL) {
+                     *pt2 = 0;
+                     rsputs(pt1);
+                     rsputs("\"\"");
+                     pt1 = pt2 + 1;
+                  }
+                  rsputs(pt1);
+                  rsputs("\"");
+               }
                rsprintf("\r\n");
+         }
          }
 
       } else if (xml) {
