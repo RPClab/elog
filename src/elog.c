@@ -256,7 +256,7 @@ void add_crlf(char *buffer, int bufsize)
    char *p;
    char *tmpbuf;
 
-   tmpbuf = malloc(bufsize);
+   tmpbuf = (char *)malloc(bufsize);
 
    /* convert \n -> \r\n */
    p = buffer;
@@ -797,7 +797,7 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
    for (i = 0; i < MAX_ATTACHMENTS; i++)
       if (afilename[i][0])
          content_length += buffer_size[i];
-   content = malloc(content_length);
+   content = (char *)malloc(content_length);
    if (content == NULL) {
       printf("Not enough memory\n");
       return -1;
@@ -1230,7 +1230,7 @@ int main(int argc, char *argv[])
       att_size[i] = lseek(fh, 0, SEEK_END);
       lseek(fh, 0, SEEK_SET);
 
-      buffer[i] = malloc(att_size[i] + 1);
+      buffer[i] = (char *)malloc(att_size[i] + 1);
 
       n = read(fh, buffer[i], att_size[i]);
       if (n < att_size[i]) {
