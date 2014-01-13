@@ -28530,11 +28530,15 @@ void hup_handler(int sig)
       _hup = TRUE;
 }
 
+#ifndef OS_WINNT
+
 void alarm_handler(int sig)
 {
    if (sig)
       alarm(3);
 }
+
+#endif
 
 /*------------------------------------------------------------------*/
 
@@ -28790,8 +28794,10 @@ void server_loop(void)
    alarm_handle.sa_flags = 0;
    sigaction(SIGALRM, &alarm_handle, NULL);
    
+#ifndef OS_WINNT
    alarm(3); // prevents blocking send() operations
-   
+#endif
+
    /* give up root privilege */
    if (geteuid() == 0) {
       if (!getcfg("global", "Grp", str, sizeof(str)) || setegroup(str) < 0) {
