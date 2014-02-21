@@ -865,7 +865,7 @@ int my_shell(char *cmd, char *result, int size)
 #ifdef OS_UNIX
    pid_t child_pid;
    int fh, status, i;
-   char str[256];
+   char str[1024];
 
    if ((child_pid = fork()) < 0)
       return 0;
@@ -877,7 +877,7 @@ int my_shell(char *cmd, char *result, int size)
       memset(result, 0, size);
       fh = open("/tmp/elog-shell", O_RDONLY);
       if (fh > 0) {
-         i = read(fh, result, size);
+         i = read(fh, result, size-1);
          close(fh);
       }
 
