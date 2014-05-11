@@ -13674,7 +13674,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
       getcfg(lbs->name, "Authentication", str, sizeof(str));
       if (stristr(str, "Kerberos")|| stristr(str, "Webserver")) {
          show_error
-             ("This installation of ELOG uses site authentification\nwhere password recovery is not possible");
+             ("This installation of ELOG uses site authentication\nwhere password recovery is not possible");
          return;
       }
 
