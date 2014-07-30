@@ -409,7 +409,7 @@ INT retrieve_elog(char *host, int port, char *subdir, int ssl, char *experiment,
    int i, n, first, index, sock;
    char str[256], encrypted_passwd[256], *ph, *ps;
 #ifdef HAVE_SSL
-   SSL *ssl_con;
+   SSL *ssl_con = NULL;
 #endif
 
    if (ssl)                     /* avoid compiler warning */
@@ -649,7 +649,7 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
    char old_attrib_name[MAX_N_ATTR+1][NAME_LENGTH], old_attrib[MAX_N_ATTR+1][NAME_LENGTH];
    struct hostent *phe;
 #ifdef HAVE_SSL
-   SSL *ssl_con;
+   SSL *ssl_con = NULL;
 #endif
 
    /* get local host name */
