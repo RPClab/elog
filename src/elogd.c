@@ -12245,7 +12245,7 @@ void adjust_crlf(char *buffer, int bufsize)
 #ifdef OS_UNIX
 
    /* convert \r\n -> \n */
-   bufsize = 0;                 // avoid compiler warning about unused bufsize
+   assert(bufsize);                 // avoid compiler warning about unused bufsize
    p = buffer;
    while ((p = strstr(p, "\r\n")) != NULL) {
       memmove(p, p + 1, strlen(p + 1) + 1);     // strcpy() gives error under Ubuntu
@@ -15241,7 +15241,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256], *buffer;
    char *content, *p, boundary[80], request[10000], response[10000];
 #ifdef HAVE_SSL
-   SSL *ssl_con;
+   SSL *ssl_con = NULL;
 #endif
 
    text = (char *) xmalloc(TEXT_SIZE);
@@ -15630,7 +15630,7 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
    char subdir[256], param[256], remote_host_name[256];
    char *content, *p, boundary[80], request[10000], response[10000];
 #ifdef HAVE_SSL
-   SSL *ssl_con;
+   SSL *ssl_con = NULL;
 #endif
 
    error_str[0] = 0;
@@ -29882,7 +29882,8 @@ int main(int argc, char *argv[])
 
    /* initialize variables */
    smtp_pwd[0] = 0;
-   logbook[0] = clone_url[0] = logbook_dir[0] = resource_dir[0] = logbook_dir[0] = 0;
+   logbook_dir[0] = 0;
+   logbook[0] = clone_url[0] = resource_dir[0] = logbook_dir[0] = 0;
    silent = tcp_port_cl = sync_flag = 0;
    use_keepalive = TRUE;
    running_as_daemon = FALSE;

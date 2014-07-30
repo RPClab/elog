@@ -30,7 +30,7 @@ USE_KRB5   = 0
 #############################################################
 
 # Default compilation flags unless stated otherwise.
-CFLAGS += -O3 -funroll-loops -fomit-frame-pointer -W -Wall -Wno-deprecated-declarations
+CFLAGS += -O3 -funroll-loops -fomit-frame-pointer -W -Wall -Wno-deprecated-declarations -Wno-unused-result -Wno-unused-but-set-variable
 #CFLAGS += -g -funroll-loops -fomit-frame-pointer -W -Wall
 
 CC = gcc
