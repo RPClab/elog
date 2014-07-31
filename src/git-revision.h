@@ -1,1 +1,1 @@
-#define GIT_REVISION "Sun May 11 20:33:11 2014 +0200 - 44800a7"
+#define GIT_REVISION "Wed Jul 30 13:07:42 2014 +0200 - 1f6bbde"
