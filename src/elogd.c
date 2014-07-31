@@ -26371,6 +26371,65 @@ void show_uploader_finished(LOGBOOK * lbs)
 
 /*------------------------------------------------------------------*/
 
+void show_uploader_json(LOGBOOK *lbs)
+{
+   char charset[256];
+   char filename[256], thumbname[256];
+   int i;
+   
+   rsprintf("HTTP/1.1 200 Document follows\r\n");
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
+   rsprintf("Accept-Ranges: bytes\r\n");
+   rsprintf("Pragma: no-cache\r\n");
+   rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+   if (keep_alive) {
+      rsprintf("Connection: Keep-Alive\r\n");
+      rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+   }
+   if (!getcfg("global", "charset", charset, sizeof(charset)))
+      strcpy(charset, DEFAULT_HTTP_CHARSET);
+   rsprintf("Content-Type: text/plain;charset=%s\r\n\r\n", charset);
+
+   rsprintf("{\r\n");
+   rsprintf("  \"attachments\" : [\r\n");
+
+   rsprintf("    {\r\n");
+   
+   rsprintf("      \"fullName\": \"%s\",\r\n", getparam("attachment0"));
+
+   strlcpy(filename, lbs->data_dir, sizeof(filename));
+   strlcat(filename, getparam("attachment0"), sizeof(filename));
+   
+   if (create_thumbnail(lbs, filename)) {
+      get_thumb_name(filename, thumbname, sizeof(thumbname), 0);
+      if (strrchr(thumbname, '/'))
+         rsprintf("      \"thumbName\": \"%s\",\r\n", strrchr(thumbname, '/')+1);
+      else
+         rsprintf("      \"thumbName\": \"%s\",\r\n", thumbname);
+   }
+
+   rsprintf("      \"contentType\": ");
+
+   for (i = 0; filetype[i].ext[0]; i++)
+      if (chkext(filename, filetype[i].ext))
+         break;
+   
+   if (filetype[i].ext[0])
+      rsprintf("\"%s\",\r\n", filetype[i].type);
+   else if (is_ascii(filename))
+      rsprintf("\"%s\",\r\n", "text/plain");
+   else
+      rsprintf("\"%s\",\r\n", "application/octet-stream\r\n");
+
+   rsprintf("    }\r\n");
+   rsprintf("  ]\r\n");
+   rsprintf("}\r\n");
+
+   return;
+}
+   
+/*------------------------------------------------------------------*/
+
 void interprete(char *lbook, char *path)
 /********************************************************************
  Routine: interprete
@@ -26627,6 +26686,13 @@ void interprete(char *lbook, char *path)
    /* check for error during attribute scan */
    if (lbs->n_attr < 0)
       return;
+
+   /* evaluate AJAX xommand */
+   if (isparam("acmd") && *getparam("acmd")) {
+      if (strieq(getparam("acmd"), "Upload"))
+         show_uploader_json(lbs);
+      return;
+   }
 
    /* if we outsource the authentication to Webserver and have no sid, just set a new sid  */
    getcfg(lbs->name, "Authentication", str, sizeof(str));
