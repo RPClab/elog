@@ -12080,7 +12080,7 @@ void load_config_section(char *section, char **buffer, char *error)
          while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r')
             p++;
       }
-      strlcpy(*buffer, p, length);
+      memmove(*buffer, p, length);
       if ((p = (char *) find_next_section(*buffer + 1)) != NULL) {
          *p = 0;
 
