@@ -2,3 +2,9 @@ elogd
 elconv
 elog
 *.o
+
+# Mac
+.DS_Store
+
+# Logbook generated files
+logbooks/*

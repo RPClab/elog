@@ -33,17 +33,17 @@
 		D528A7C314F278C800D33974 /* ChangeLog */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChangeLog; path = /elog/doc/ChangeLog; sourceTree = "<absolute>"; };
 		D528A7C514F278DA00D33974 /* checklist.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = checklist.txt; path = /elog/checklist.txt; sourceTree = "<absolute>"; };
 		D52BA2FA13999DB0000458E3 /* elogd */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = elogd; sourceTree = BUILT_PRODUCTS_DIR; };
-		D52BA31013999DE4000458E3 /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = /mxml/mxml.c; sourceTree = "<absolute>"; };
-		D52BA31113999DE4000458E3 /* mxml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mxml.h; path = /mxml/mxml.h; sourceTree = "<absolute>"; };
-		D52BA31213999DE4000458E3 /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = /mxml/strlcpy.c; sourceTree = "<absolute>"; };
-		D52BA31313999DE4000458E3 /* strlcpy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = strlcpy.h; path = /mxml/strlcpy.h; sourceTree = "<absolute>"; };
-		D545158C1399A23B0037D7FB /* auth.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = auth.c; path = /elog/src/auth.c; sourceTree = "<absolute>"; };
-		D545158D1399A23B0037D7FB /* crypt.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = crypt.c; path = /elog/src/crypt.c; sourceTree = "<absolute>"; };
-		D545158E1399A23B0037D7FB /* elogd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = elogd.c; path = /elog/src/elogd.c; sourceTree = "<absolute>"; };
-		D545158F1399A23B0037D7FB /* elogd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = elogd.h; path = /elog/src/elogd.h; sourceTree = "<absolute>"; };
-		D54515901399A23B0037D7FB /* regex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = regex.c; path = /elog/src/regex.c; sourceTree = "<absolute>"; };
-		D54515911399A23B0037D7FB /* regex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = regex.h; path = /elog/src/regex.h; sourceTree = "<absolute>"; };
-		D58A366615AF103300682DC0 /* elog-version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "elog-version.h"; path = "/elog/src/elog-version.h"; sourceTree = "<absolute>"; };
+		D52BA31013999DE4000458E3 /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = "/Users/dmilicic/Desktop/elog-latest/mxml/mxml.c"; sourceTree = "<absolute>"; };
+		D52BA31113999DE4000458E3 /* mxml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mxml.h; path = "/Users/dmilicic/Desktop/elog-latest/mxml/mxml.h"; sourceTree = "<absolute>"; };
+		D52BA31213999DE4000458E3 /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = "/Users/dmilicic/Desktop/elog-latest/mxml/strlcpy.c"; sourceTree = "<absolute>"; };
+		D52BA31313999DE4000458E3 /* strlcpy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = strlcpy.h; path = "/Users/dmilicic/Desktop/elog-latest/mxml/strlcpy.h"; sourceTree = "<absolute>"; };
+		D545158C1399A23B0037D7FB /* auth.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = auth.c; path = "/Users/dmilicic/Desktop/elog-latest/elog/src/auth.c"; sourceTree = "<absolute>"; };
+		D545158D1399A23B0037D7FB /* crypt.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = crypt.c; path = "/Users/dmilicic/Desktop/elog-latest/elog/src/crypt.c"; sourceTree = "<absolute>"; };
+		D545158E1399A23B0037D7FB /* elogd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = elogd.c; path = "/Users/dmilicic/Desktop/elog-latest/elog/src/elogd.c"; sourceTree = "<absolute>"; };
+		D545158F1399A23B0037D7FB /* elogd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = elogd.h; path = "/Users/dmilicic/Desktop/elog-latest/elog/src/elogd.h"; sourceTree = "<absolute>"; };
+		D54515901399A23B0037D7FB /* regex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = regex.c; path = "/Users/dmilicic/Desktop/elog-latest/elog/src/regex.c"; sourceTree = "<absolute>"; };
+		D54515911399A23B0037D7FB /* regex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = regex.h; path = "/Users/dmilicic/Desktop/elog-latest/elog/src/regex.h"; sourceTree = "<absolute>"; };
+		D58A366615AF103300682DC0 /* elog-version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "elog-version.h"; path = "/Users/dmilicic/Desktop/elog-latest/elog/src/elog-version.h"; sourceTree = "<absolute>"; };
 		D5AC5BF9154AC7200018DD90 /* config.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = config.html; path = /elog/doc/config.html; sourceTree = "<absolute>"; };
 		D5F11B9113AFA164002CE8BF /* elogd.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = elogd.cfg; path = /elogdemo/elogd.cfg; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */

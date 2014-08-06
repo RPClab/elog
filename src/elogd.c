@@ -1,5 +1,5 @@
 /********************************************************************
- 
+
    Name:         elogd.c
    Created by:   Stefan Ritt
    Copyright 2000 + Stefan Ritt
@@ -7208,7 +7208,7 @@ void show_http_header(LOGBOOK * lbs, BOOL expires, char *cookie)
    rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
 
    if (getcfg("global", "charset", str, sizeof(str)))
-      rsprintf("Content-Type: text/html;charset=%s\r\n", str);
+      rsprintf(": text/html;charset=%s\r\n", str);
    else
       rsprintf("Content-Type: text/html;charset=%s\r\n", DEFAULT_HTTP_CHARSET);
 
@@ -7258,7 +7258,7 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
    show_http_header(lbs, expires, cookie);
 
    /* DOCTYPE */
-   rsprintf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n");
+   rsprintf("<!DOCTYPE html>\n");
 
    /* this code would be for XML files...
       rsprintf("<?xml-stylesheet type=\"text/xsl\" href=\"http://www.w3.org/Math/XSL/mathml.xsl\"?>\n");
@@ -7980,7 +7980,7 @@ void show_error(char *error)
       rsprintf("Content-Type: text/html;charset=%s\r\n", DEFAULT_HTTP_CHARSET);
    rsprintf("\r\n");
 
-   rsprintf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n");
+   rsprintf("<!DOCTYPE html>\n");
    rsprintf("<html><head>\n");
    rsprintf("<META NAME=\"ROBOTS\" CONTENT=\"NOINDEX, NOFOLLOW\">\n");
    rsprintf("<title>%s</title>\n", loc("ELOG error"));
@@ -8553,7 +8553,7 @@ void show_change_pwd_page(LOGBOOK * lbs)
       strlcpy(user, getparam("unm"), sizeof(user));
    else
       user[0] = 0;
-      
+
    if (isparam("config")) {
       strlcpy(str, getparam("config"), sizeof(str));
       strencode2(user, str, sizeof(user));
@@ -9913,51 +9913,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    fixed_text = getcfg(lbs->name, "Fix text", str, sizeof(str)) && atoi(str) == 1 && bedit && message_id;
 
    if (enc_selected == 2 && fckedit_exist && show_text && !fixed_text) {
-      rsprintf("<script type=\"text/javascript\" src=\"../fckeditor/fckeditor.js\"></script>\n");
-      rsprintf("<script type=\"text/javascript\">\n");
-
-      /* cannot detect real modifications, so assume text will get changed */
-      rsprintf("entry_modified = true;\n");
-
-      /* define strings for current language */
-      rsprintf("var ELOGSubmitEntry = \"%s\";\n", loc("Submit entry"));
-      rsprintf("var ELOGInsertImage = \"%s\";\n", loc("Insert image"));
-      rsprintf("var ELOGInsertDateTime = \"%s\";\n", loc("Insert Date/Time"));
-      rsprintf("var ELOGLinkTextPrompt = \"%s\";\n", loc("Enter name of hyperlink"));
-      rsprintf("var ELOGLinkURLPrompt = \"%s\";\n", loc("Enter URL of hyperlink"));
-      rsprintf("var ELOGSource = \"%s\";\n\n", loc("Show HTML source code"));
-      rsprintf("function initFCKedit()\n");
-      rsprintf("{\n");
-      rsprintf("   var oFCKeditor = new FCKeditor('Text', '100%%', '500');\n");
-      rsprintf("   oFCKeditor.BasePath = '../fckeditor/';\n");
-      rsprintf("   oFCKeditor.Config['CustomConfigurationsPath'] = '../fckelog.js';\n");
-      rsprintf("   oFCKeditor.Config['AutoDetectLanguage'] = false;\n");
-      getcfg("global", "Language", str, sizeof(str));
-      if (!str[0])
-         strcpy(str, "en");
-      else if (stricmp(str, "german") == 0)
-         strcpy(str, "de");
-      else if (stricmp(str, "brazilian") == 0)
-         strcpy(str, "pt-br");
-      else if (stricmp(str, "czech") == 0)
-         strcpy(str, "cs");
-      else if (stricmp(str, "dutch") == 0)
-         strcpy(str, "nl");
-      else if (stricmp(str, "spanish") == 0)
-         strcpy(str, "es");
-      else if (stricmp(str, "swedish") == 0)
-         strcpy(str, "sv");
-      else if (stricmp(str, "turkish") == 0)
-         strcpy(str, "tr");
-      else if (stricmp(str, "zh_CN-GB2312") == 0)
-         strcpy(str, "zh-cn");
-      else
-         str[2] = 0;
-      rsprintf("   oFCKeditor.Config['DefaultLanguage'] = \"%s\";\n", str);
-      rsprintf("   oFCKeditor.ReplaceTextarea();\n");
-      rsprintf("   document.getElementById('HTML').checked = true;\n");
-      rsprintf("}\n");
-      rsprintf("</script>\n\n");
+       rsprintf("<script type=\"text/javascript\" src=\"../ckeditor/ckeditor.js\"></script>\n");
+       rsprintf("<script type=\"text/javascript\" src=\"../jquery-1.11.1.min.js\"></script>\n");
+      // rsprintf("<script type=\"text/javascript\" src=\"../fckeditor/fckeditor.js\"></script>\n");
    }
 
    /* external script if requested */
@@ -9984,7 +9942,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          strcat(script_onload, "elKeyInit();");
       strcat(script_onfocus, "elKeyInit();");
    } else if (enc_selected == 2 && fckedit_exist && show_text && !fixed_text) {
-      strcat(script_onload, "initFCKedit();");
+      rsprintf("<script type=\"text/javascript\" src=\"../load-ckeditor.js\"></script>\n");
    } else if (enc_selected == 1) {
       if (!getcfg(lbs->name, "Message height", str, sizeof(str)) &&
           !getcfg(lbs->name, "Message width", str, sizeof(str)))
@@ -13703,7 +13661,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
 void show_new_user_page(LOGBOOK * lbs, char *user)
 {
    char str[256];
-   
+
    /*---- header ----*/
 
    show_html_header(lbs, TRUE, loc("ELOG new user"), TRUE, FALSE, NULL, FALSE, 0);
@@ -13773,7 +13731,7 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
       for (i = 0; i < *lbs->n_el_index; i++)
          if (lbs->el_index[i].message_id == message_id)
             break;
-      
+
       if (i < *lbs->n_el_index && time(NULL) > lbs->el_index[i].file_time + atof(str) * 3600) {
          sprintf(str, loc("Entry can only be deleted %1.2lg hours after creation"), atof(str));
          show_error(str);
@@ -19546,7 +19504,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    /* check for valid page_n */
    if (page_n < -1)
       page_n = 0;
-   
+
    if (past_n || last_n || page_n || page_mid || default_page) {
       /* for page display, get mode from config file */
       if (getcfg(lbs->name, "Display Mode", str, sizeof(str)))
@@ -21607,7 +21565,7 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
       flags = atoi(str);
 
    strcpy(mail_text + strlen(mail_text),
-          "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\r\n");
+          "<!DOCTYPE html>\r\n");
    strcpy(mail_text + strlen(mail_text), "<html>\r\n<head>\r\n  <title></title>\r\n</head>\r\n<body>\r\n");
 
    if (flags & 1) {
@@ -22203,7 +22161,7 @@ int propagate_attrib(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME
 
    list = (char *)xmalloc(MAX_N_ATTR*NAME_LENGTH);
    attr = (char *)xmalloc(MAX_N_ATTR*NAME_LENGTH);
-   
+
    status = el_retrieve(lbs, message_id, NULL, attr_list, (char (*)[NAME_LENGTH]) attr, lbs->n_attr,
                         NULL, NULL, NULL, reply_to, att_file, NULL, NULL);
    if (status != EL_SUCCESS) {
@@ -22237,7 +22195,7 @@ int propagate_attrib(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME
 
    xfree(list);
    xfree(attr);
-   
+
    return EL_SUCCESS;
 }
 
@@ -25024,12 +24982,12 @@ LOGBOOK *get_first_lbs_with_global_passwd()
    int i;
    LOGBOOK *lbs;
    char str[256], global[256], orig_topgroup[256];
-   
+
    orig_topgroup[0] = 0;
    getcfg("global", "Password file", global, sizeof(global));
    if (getcfg_topgroup() && *getcfg_topgroup())
       strcpy(orig_topgroup, getcfg_topgroup());
-   
+
    for (i = 0; lb_list[i].name[0]; i++) {
       if (lb_list[i].top_group[0])
          setcfg_topgroup(lb_list[i].top_group);
@@ -25039,16 +24997,16 @@ LOGBOOK *get_first_lbs_with_global_passwd()
          break;
       }
    }
-   
+
    if (!lb_list[i].name[0])
       return NULL;
-   
+
    if (orig_topgroup[0])
       setcfg_topgroup(orig_topgroup);
 
    return lbs;
 }
-   
+
 /*------------------------------------------------------------------*/
 
 int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name, char *email,
@@ -25076,7 +25034,7 @@ int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name, ch
       logbook with same password file than global section */
    if (lbs == NULL)
       lbs = get_first_lbs_with_global_passwd();
-   
+
    getcfg(lbs->name, "Password file", str, sizeof(str));
 
    if (!str[0] || !user[0])
@@ -25642,7 +25600,7 @@ BOOL check_login(LOGBOOK * lbs, char *sid)
       }
    }
 
-   /* if invalid or no session ID, show login page, 
+   /* if invalid or no session ID, show login page,
       unless we outsourced the authentication to webserver
    */
    if (!skip_sid_check && !sid_check(sid, user_name)) {
@@ -26374,9 +26332,12 @@ void show_uploader_finished(LOGBOOK * lbs)
 void show_uploader_json(LOGBOOK *lbs)
 {
    char charset[256];
-   char filename[256], thumbname[256];
-   int i;
-   
+   char filename[256], thumbname[256], attchname[256];
+   int i, j;
+
+   // maximum number of files that can be uploaded this way (drag and drop into the editor)
+   const long MAX_FILE_COUNT = 100;
+
    rsprintf("HTTP/1.1 200 Document follows\r\n");
    rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
    rsprintf("Accept-Ranges: bytes\r\n");
@@ -26390,44 +26351,65 @@ void show_uploader_json(LOGBOOK *lbs)
       strcpy(charset, DEFAULT_HTTP_CHARSET);
    rsprintf("Content-Type: text/plain;charset=%s\r\n\r\n", charset);
 
+   long attch_count = strtol(getparam("drop-count"), NULL, 10);
+    
+   // limit the number of files that can be uploaded
+   if(attch_count > MAX_FILE_COUNT) {
+      attch_count = MAX_FILE_COUNT;
+   }
+
+   printf("Uploading %ld attachments\n", attch_count);
+
    rsprintf("{\r\n");
    rsprintf("  \"attachments\" : [\r\n");
 
-   rsprintf("    {\r\n");
-   
-   rsprintf("      \"fullName\": \"%s\",\r\n", getparam("attachment0"));
 
-   strlcpy(filename, lbs->data_dir, sizeof(filename));
-   strlcat(filename, getparam("attachment0"), sizeof(filename));
-   
-   if (create_thumbnail(lbs, filename)) {
-      get_thumb_name(filename, thumbname, sizeof(thumbname), 0);
-      if (strrchr(thumbname, '/'))
-         rsprintf("      \"thumbName\": \"%s\",\r\n", strrchr(thumbname, '/')+1);
+   for(i = 0; i < attch_count; i++) {
+      sprintf(attchname, "attachment%d", i);
+       
+      printf("%d %s\n", i, attchname);
+
+      rsprintf("    {\r\n");
+      rsprintf("      \"fullName\": \"%s\",\r\n", getparam(attchname));
+
+      strlcpy(filename, lbs->data_dir, sizeof(filename));
+      strlcat(filename, getparam(attchname), sizeof(filename));
+
+
+      if (create_thumbnail(lbs, filename)) {
+         get_thumb_name(filename, thumbname, sizeof(thumbname), 0);
+         if (strrchr(thumbname, '/'))
+            rsprintf("      \"thumbName\": \"%s\",\r\n", strrchr(thumbname, '/')+1);
+         else
+            rsprintf("      \"thumbName\": \"%s\",\r\n", thumbname);
+      }
+
+      rsprintf("      \"contentType\": ");
+
+       
+       for (j = 0; filetype[j].ext[0]; j++)
+         if (chkext(filename, filetype[j].ext))
+            break;
+
+           if (filetype[j].ext[0])
+               rsprintf("\"%s\"\r\n", filetype[j].type);
+           else if (is_ascii(filename))
+               rsprintf("\"%s\"\r\n", "text/plain");
+           else
+               rsprintf("\"%s\"\r\n", "application/octet-stream\r\n");
+
+      if(i == attch_count - 1)
+         rsprintf("    }\r\n");
       else
-         rsprintf("      \"thumbName\": \"%s\",\r\n", thumbname);
+         rsprintf("    },\r\n");
    }
 
-   rsprintf("      \"contentType\": ");
-
-   for (i = 0; filetype[i].ext[0]; i++)
-      if (chkext(filename, filetype[i].ext))
-         break;
-   
-   if (filetype[i].ext[0])
-      rsprintf("\"%s\",\r\n", filetype[i].type);
-   else if (is_ascii(filename))
-      rsprintf("\"%s\",\r\n", "text/plain");
-   else
-      rsprintf("\"%s\",\r\n", "application/octet-stream\r\n");
-
-   rsprintf("    }\r\n");
    rsprintf("  ]\r\n");
    rsprintf("}\r\n");
 
    return;
 }
-   
+
 /*------------------------------------------------------------------*/
 
 void interprete(char *lbook, char *path)
@@ -28893,12 +28875,12 @@ void server_loop(void)
    sigemptyset(&hup_handle.sa_mask);
    hup_handle.sa_flags = 0;
    sigaction(SIGHUP, &hup_handle, NULL);
-   
+
    alarm_handle.sa_handler = alarm_handler;
    sigemptyset(&alarm_handle.sa_mask);
    alarm_handle.sa_flags = 0;
    sigaction(SIGALRM, &alarm_handle, NULL);
-   
+
 #ifndef OS_WINNT
    alarm(3); // prevents blocking send() operations
 #endif
@@ -28940,12 +28922,12 @@ void server_loop(void)
    strlcpy(str, resource_dir, sizeof(str));
    strlcat(str, "scripts", sizeof(str));
    strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
-   strlcat(str, "fckeditor/fckeditor.js", sizeof(str));
+   strlcat(str, "ckeditor/ckeditor.js", sizeof(str));
    fckedit_exist = exist_file(str);
    if (fckedit_exist)
-      eprintf("FCKedit detected\n");
+      eprintf("CKeditor detected\n");
    else
-      eprintf("FCKedit NOT detected\n");
+      eprintf("CKeditor NOT detected\n");
 
    /* check for ImageMagick */
    my_shell("convert -version", str, sizeof(str));
@@ -28975,7 +28957,7 @@ void server_loop(void)
       exit(EXIT_FAILURE);
    }
 #endif
-   
+
    /* listen for connection */
    status = listen(lsock, SOMAXCONN);
    if (status < 0) {
@@ -30310,7 +30292,7 @@ int main(int argc, char *argv[])
       if (getcfg("global", "interface", str, sizeof(str))) {
          strlcpy(listen_interface, str, sizeof(listen_interface));
       }
-   
+
    /* get default port */
    if (getcfg("global", "SSL", str, sizeof(str)) && atoi(str) == 1)
       elog_tcp_port = 443;
