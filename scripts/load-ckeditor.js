@@ -22,5 +22,26 @@ $(document).ready(function() {
         ev.editor.commands.save.exec = overridecmd.exec;
     });
 
+    // There is a default listener on the submit button that we
+    // need to get rid off in order to get custom upload working
+    CKEDITOR.on('dialogDefinition', function (ev) {
+        // Take the dialog name and its definition from the event data.
+        var dialogName = ev.data.name;
+        var dialogDefinition = ev.data.definition;
+
+        // Check if the definition is from the dialog we're
+        // interested in (the 'image2' dialog).
+        if ( dialogName == 'image2' ) {
+
+            var dialogObj = dialogDefinition.dialog;
+            dialogObj.on("show", function() {
+                // replace the submit function with something useless
+                dialogObj.getContentElement( 'Upload', 'upload' ).submit = function() {
+                    return false;
+                };
+            });
+        }
+    });
+
     CKEDITOR.replace('Text');
 });

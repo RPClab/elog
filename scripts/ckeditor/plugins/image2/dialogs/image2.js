@@ -9,6 +9,7 @@
 
 'use strict';
 
+
 CKEDITOR.dialog.add( 'image2', function( editor ) {
 
 	// RegExp: 123, 123px, empty string ""
@@ -526,7 +527,6 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
 			},
 			{
 				id: 'Upload',
-				hidden: true,
 				filebrowser: 'uploadButton',
 				label: lang.uploadTab,
 				elements: [
@@ -539,8 +539,57 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
 					{
 						type: 'fileButton',
 						id: 'uploadButton',
-						filebrowser: 'info:src',
-						label: "uploadaj ovde",
+					    onLoad: function( a ) {
+					        CKEDITOR.document.getById( this.domId ).on( 'click', function() {
+
+					        	// grab the file(s) from the file input tag and upload it using AJAX
+				            	var dialog = this.getDialog();
+            					var files = dialog.getContentElement("Upload", "upload").getInputElement().$.files;
+            					var formData = new FormData();
+            					formData.append('drop-count', files.length);		// number of files being uploaded
+							    for (var i = 0; i < files.length; i++) {
+						    		formData.append('next_attachment', parent.next_attachment);
+						    		formData.append('encoding', "HTML");
+						    		formData.append('attfile', files[i]);
+						    		formData.append('acmd', "Upload");			// Command for the server to recognize this as an ajax upload
+				    			}
+
+				    			var URL = '/' + parent.logbook + '/upload.html?next_attachment=' + parent.next_attachment;
+
+								$.ajax({
+								  xhr: function()
+								  {
+								    var xhr = new window.XMLHttpRequest();
+
+								    //Upload progress
+								    xhr.upload.addEventListener("progress", function(evt){
+								      if (evt.lengthComputable) {
+								        var percentComplete = evt.loaded / evt.total;
+								        //Do something with upload progress
+								        // console.log(percentComplete);
+								      }
+								    }, false);
+
+								    return xhr;
+								  },
+								  contentType: false,
+								  processData: false,
+								  type: 'POST',
+								  url: URL,
+								  data: formData,
+								  success: function(data) {
+            						dialog.getContentElement( 'info', 'src' ).setValue( data.attachments[0].fullName );
+								  },
+								  fail: function() {
+								  	console.log("error");
+								  }
+								});
+
+								// Do not call the built-in click command
+								return false;
+					        }, this );
+					    },
+						label: lang.btnUpload,
 						'for': [ 'Upload', 'upload' ]
 					}
 				]

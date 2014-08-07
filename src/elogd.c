@@ -26349,7 +26349,7 @@ void show_uploader_json(LOGBOOK *lbs)
    }
    if (!getcfg("global", "charset", charset, sizeof(charset)))
       strcpy(charset, DEFAULT_HTTP_CHARSET);
-   rsprintf("Content-Type: text/plain;charset=%s\r\n\r\n", charset);
+   rsprintf("Content-Type: application/json;charset=%s\r\n\r\n", charset);
 
    long attch_count = strtol(getparam("drop-count"), NULL, 10);
     
