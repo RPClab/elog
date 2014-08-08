@@ -6,32 +6,32 @@
  */
 
 // Register the plugin within the editor.
-CKEDITOR.plugins.add( 'abbr', {
+CKEDITOR.plugins.add( 'fileupload', {
 
 	// Register the icons.
-	icons: 'abbr',
+	icons: 'fileupload',
 
 	// The plugin initialization logic goes inside this method.
 	init: function( editor ) {
 
 		// Define an editor command that opens our dialog.
-		editor.addCommand( 'abbr', new CKEDITOR.dialogCommand( 'abbrDialog' ) );
+		editor.addCommand( 'fileupload', new CKEDITOR.dialogCommand( 'fileuploadDialog' ) );
 
 		// Create a toolbar button that executes the above command.
-		editor.ui.addButton( 'Abbr', {
+		editor.ui.addButton( 'FileUpload', {
 
 			// The text part of the button (if available) and tooptip.
-			label: 'Insert Abbreviation',
+			label: 'Upload a file',
 
 			// The command to execute on click.
-			command: 'abbr',
+			command: 'fileupload',
 
 			// The button placement in the toolbar (toolbar group name).
 			toolbar: 'insert'
 		});
 
 		// Register our dialog file. this.path is the plugin folder path.
-		CKEDITOR.dialog.add( 'abbrDialog', this.path + 'dialogs/abbr.js' );
+		CKEDITOR.dialog.add( 'fileuploadDialog', this.path + 'dialogs/fileupload.js' );
 	}
 });
 

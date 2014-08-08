@@ -26358,16 +26358,12 @@ void show_uploader_json(LOGBOOK *lbs)
       attch_count = MAX_FILE_COUNT;
    }
 
-   printf("Uploading %ld attachments\n", attch_count);
-
    rsprintf("{\r\n");
    rsprintf("  \"attachments\" : [\r\n");
 
 
    for(i = 0; i < attch_count; i++) {
       sprintf(attchname, "attachment%d", i);
-       
-      printf("%d %s\n", i, attchname);
 
       rsprintf("    {\r\n");
       rsprintf("      \"fullName\": \"%s\",\r\n", getparam(attchname));

@@ -10,11 +10,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../src/elogd.c"
-            timestampString = "428941756.918921"
+            timestampString = "429197800.364771"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "26378"
-            endingLineNumber = "26378"
+            startingLineNumber = "26374"
+            endingLineNumber = "26374"
             landmarkName = "load_password_file()"
             landmarkType = "7">
          </BreakpointContent>
@@ -26,11 +26,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../src/elogd.c"
-            timestampString = "429029143.140329"
+            timestampString = "429197800.364771"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "26437"
-            endingLineNumber = "26437"
+            startingLineNumber = "26433"
+            endingLineNumber = "26433"
             landmarkName = "load_password_file()"
             landmarkType = "7">
          </BreakpointContent>
