@@ -30,8 +30,8 @@ $(document).ready(function() {
         var dialogDefinition = ev.data.definition;
 
         // Check if the definition is from the dialog we're
-        // interested in (the 'image2' and 'fileupload' dialog).
-        if ( dialogName == 'image2' || dialogName == 'fileupload') {
+        // interested in (the 'image2' and 'fileuploadDialog' dialog).
+        if ( dialogName == 'image2' || dialogName == 'fileuploadDialog') {
 
             var dialogObj = dialogDefinition.dialog;
             dialogObj.on("show", function() {

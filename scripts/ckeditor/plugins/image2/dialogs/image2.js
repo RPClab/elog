@@ -545,6 +545,13 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
 					        	// grab the file(s) from the file input tag and upload it using AJAX
 				            	var dialog = this.getDialog();
             					var files = dialog.getContentElement("Upload", "upload").getInputElement().$.files;
+
+            					// no files were selected
+            					if(files.length == 0) {
+            						alert("Please select a file!");
+            						return false;
+            					}
+
             					var formData = new FormData();
             					formData.append('drop-count', files.length);		// number of files being uploaded
 							    for (var i = 0; i < files.length; i++) {
@@ -578,7 +585,11 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
 								  url: URL,
 								  data: formData,
 								  success: function(data) {
-            						dialog.getContentElement( 'info', 'src' ).setValue( data.attachments[0].fullName );
+								  	if(data.attachments) {	// check if we have the correct response
+            							dialog.getContentElement( 'info', 'src' ).setValue( data.attachments[0].fullName );
+            						} else {
+            							console.log("Data returned is not json...");
+            						}
 								  },
 								  fail: function() {
 								  	console.log("error");

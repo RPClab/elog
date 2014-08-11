@@ -9,9 +9,7 @@
 CKEDITOR.dialog.add( 'fileuploadDialog', function( editor ) {
 
 	var lang = editor.lang.image2;
-	console.log(editor.lang);
-	console.log(lang.btnUpload);
-
+4
 	return {
 
 		// Basic properties of the dialog window: title, minimum size.
@@ -46,6 +44,13 @@ CKEDITOR.dialog.add( 'fileuploadDialog', function( editor ) {
 					        	// grab the file(s) from the file input tag and upload it using AJAX
 				            	var dialog = this.getDialog();
             					var files = dialog.getContentElement("Upload", "upload").getInputElement().$.files;
+
+            					// no files were selected
+            					if(files.length == 0) {
+            						alert("Please select a file!");
+            						return false;
+            					}
+
             					var formData = new FormData();
             					formData.append('drop-count', files.length);		// number of files being uploaded
             					formData.append('acmd', "Upload");			// Command for the server to recognize this as an ajax upload
@@ -70,7 +75,7 @@ CKEDITOR.dialog.add( 'fileuploadDialog', function( editor ) {
 								      if (evt.lengthComputable) {
 								        var percentComplete = evt.loaded / evt.total;
 								        //Do something with upload progress
-								        // console.log(percentComplete);
+								        console.log(percentComplete);
 								      }
 								    }, false);
 
@@ -82,7 +87,11 @@ CKEDITOR.dialog.add( 'fileuploadDialog', function( editor ) {
 								  url: URL,
 								  data: formData,
 								  success: function(data) {
-            						dialog.getContentElement( 'Upload', 'src' ).setValue( data.attachments[0].fullName );
+								  	if(data.attachments[0]) {	// check if we have the correct response
+								  		dialog.getContentElement( 'Upload', 'src' ).setValue( data.attachments[0].fullName );
+								  	} else {
+								  		console.log("Data returned is not json...");
+								  	}
 								  },
 								  fail: function() {
 								  	console.log("error");
@@ -118,9 +127,6 @@ CKEDITOR.dialog.add( 'fileuploadDialog', function( editor ) {
 		// This method is invoked once a user clicks the OK button, confirming the dialog.
 		onOk: function() {
             var dialog = this;
-
-            console.log(dialog.getValueOf( 'Upload', 'src' ));
-            console.log(dialog.getValueOf( 'Upload', 'name' ));
 
             var file = editor.document.createElement( 'a' );
             file.setAttribute( 'href', dialog.getValueOf( 'Upload', 'src' ) );
