@@ -11321,7 +11321,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          /* show existing attachments */
          for (index = 0; index < MAX_ATTACHMENTS; index++)
             if (att[index][0]) {
-               rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), index + 1);
+               rsprintf("<tr class=\"attachment\"><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), index + 1);
                sprintf(str, "attachment%d", index);
                rsprintf("<td class=\"attribvalue\">\n");
                rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", str, att[index]);
@@ -11507,13 +11507,20 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   loc("Maximum number of attachments reached"));
          rsprintf("</td></tr>\n");
       } else {
-         rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), index + 1);
+         rsprintf("<tr id=\"attachment_upload\"><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), index + 1);
          rsprintf
-             ("<td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile\" accept=\"filetype/*\">\n");
+             ("<td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile\" accept=\"filetype/*\" multiple>\n");
          rsprintf
-             ("&nbsp;&nbsp;<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkupload();\">\n",
+             ("&nbsp;&nbsp;<input type=\"submit\" name=\"cmd\" value=\"%s\">\n",
               loc("Upload"));
          rsprintf("</td></tr>\n");
+
+         // print the holder for dropping attachments
+         rsprintf("<tr>\n");
+         rsprintf("<td style=\"background: white;\" colspan=2>\n");
+         rsprintf("<div id=\"holder\" style=\"background: white; border: 10px dashed #ccc; min-height: 200px; margin: 10px\" >");
+         rsprintf("<p class=\"info\" style=\"color: #999; font-size: 2em; text-align: center; margin-top: 40px;\">Drop attachments here...</p></div>");
+         rsprintf("</td></tr>");
       }
    }
 

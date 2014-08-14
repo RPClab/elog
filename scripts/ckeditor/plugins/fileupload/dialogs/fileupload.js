@@ -9,11 +9,14 @@
 CKEDITOR.dialog.add( 'fileuploadDialog', function( editor ) {
 
 	var lang = editor.lang.image2;
-4
+	var	commonLang = editor.lang.common
+
+	console.log(commonLang);
+
 	return {
 
 		// Basic properties of the dialog window: title, minimum size.
-		title: 'Upload file',
+		title: commonLang.upload + ' file',
 		minWidth: 200,
 		minHeight: 150,
 
@@ -108,17 +111,17 @@ CKEDITOR.dialog.add( 'fileuploadDialog', function( editor ) {
 						// URL of the file
 						type: 'text',
 						id: 'src',
-						label: "URL",
+						label: commonLang.url,
 
 						// Validation checking whether the field is not empty.
 						validate: CKEDITOR.dialog.validate.notEmpty( "URL cannot be empty!" )
 					},
 					{
-						// Original name of the file, this field is hidden and only used to
-						// capture and display the original filename in the editor
+						// Original name of the file
 						type: 'text',
 						id: 'name',
-						hidden: true
+						label: commonLang.name,
+						validate: CKEDITOR.dialog.validate.notEmpty( "Name cannot be empty!" )
 					}
 				]
 			}
