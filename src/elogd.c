@@ -9915,7 +9915,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (enc_selected == 2 && fckedit_exist && show_text && !fixed_text) {
        rsprintf("<script type=\"text/javascript\" src=\"../ckeditor/ckeditor.js\"></script>\n");
        rsprintf("<script type=\"text/javascript\" src=\"../jquery-1.11.1.min.js\"></script>\n");
-      // rsprintf("<script type=\"text/javascript\" src=\"../fckeditor/fckeditor.js\"></script>\n");
+       rsprintf("<script type=\"text/javascript\" src=\"../progress/progress.min.js\"></script>\n");
+       rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"../progress/progressjs.min.css\">\n");
    }
 
    /* external script if requested */

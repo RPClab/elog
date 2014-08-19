@@ -1,4 +1,5 @@
 $(document).ready(function() {
+
 	$('textarea').addClass("ckeditor");
 
 	// Need to wait for the ckeditor instance to finish initialization
@@ -78,10 +79,10 @@ $(document).ready(function() {
                 }, 1);
             });
 
-            // self.on('drop', function(event) {
-            //     collection = $();
-            //     self.trigger('dndHoverEnd');
-            // });
+            self.on('drop', function(event) {
+                collection = $();
+                self.trigger('dndHoverEnd');
+            });
         });
     };
 
@@ -148,23 +149,17 @@ $(document).ready(function() {
               {
                 var xhr = new window.XMLHttpRequest();
 
+                // Start the progress bar
+                progressJs().start();
+
                 //Upload progress
                 xhr.upload.addEventListener("progress", function(evt){
                   if (evt.lengthComputable) {
                     var percentComplete = evt.loaded / evt.total;
-                    //Do something with upload progress
-                    console.log(percentComplete);
+                    //Update the progress bar
+                    progressJs().set(percentComplete);
                   }
                 }, false);
-
-                //Download progress
-                // xhr.addEventListener("progress", function(evt){
-                //   if (evt.lengthComputable) {
-                //     var percentComplete = evt.loaded / evt.total;
-                //     //Do something with download progress
-                //     console.log(percentComplete);
-                //   }
-                // }, false);
 
                 return xhr;
               },
@@ -174,21 +169,21 @@ $(document).ready(function() {
               url: URL,
               data: formData,
               success: function(data) {
-                console.log(data);
+                // End the progress bar
+                progressJs().end();
+
                 var attch = $(".attachment", $(data));
                 var attch_upload = $("#attachment_upload", $(data));
-                // attch.each(function(idx, element) {
-                //     $("#attachment_upload").before(element);
-                //     console.log(element);
-                // });
 
                 // add the new attachments to the current page
                 $("#attachment_upload").before(attch.slice(-files.length));
+
                 // replace the attachment upload section
                 $("#attachment_upload").replaceWith(attch_upload);
-                // console.log(attch.last());
               },
               fail: function() {
+                // End the progress bar
+                progressJs().end();
                 console.log("Error uploading files...");
               }
             });

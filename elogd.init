@@ -3,14 +3,14 @@
 # chkconfig: 3 90 10
 # description: ELOG is a weblog with integrated database
 # processname: elogd
-# config: @PREFIX@/elog/elogd.cfg
+# config: /usr/local/elog/elogd.cfg
 # pidfile: /var/run/elogd.pid
 
 # Source function library.
 # . /etc/rc.d/init.d/functions
 
 # Check for the config file
-if [ ! -f @PREFIX@/elog/elogd.cfg ]; then
+if [ ! -f /usr/local/elog/elogd.cfg ]; then
     exit 0
 fi
 
@@ -31,7 +31,7 @@ case "$1" in
 	   rm -f /var/run/elogd.pid
         fi
 	echo -n "Starting elogd: "
-	@PREFIX@/sbin/elogd -D -c @PREFIX@/elog/elogd.cfg  > /dev/null 2>&1 
+	/usr/local/sbin/elogd -D -c /usr/local/elog/elogd.cfg  > /dev/null 2>&1 
 	RETVAL=$?
         if [ $RETVAL -eq 0  ] ; then 
           touch /var/lock/subsys/elogd

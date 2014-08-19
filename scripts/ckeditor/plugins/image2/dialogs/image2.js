@@ -568,12 +568,15 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
 								  {
 								    var xhr = new window.XMLHttpRequest();
 
+					                // Start the progress bar
+					                progressJs().start();
+
 								    //Upload progress
 								    xhr.upload.addEventListener("progress", function(evt){
 								      if (evt.lengthComputable) {
 								        var percentComplete = evt.loaded / evt.total;
-								        //Do something with upload progress
-								        // console.log(percentComplete);
+					                    //Update the progress bar
+					                    progressJs().set(percentComplete);
 								      }
 								    }, false);
 
@@ -585,6 +588,10 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
 								  url: URL,
 								  data: formData,
 								  success: function(data) {
+
+								  	// End the progress bar
+		                			progressJs().end();
+
 								  	if(data.attachments) {	// check if we have the correct response
             							dialog.getContentElement( 'info', 'src' ).setValue( data.attachments[0].fullName );
             						} else {
@@ -592,6 +599,8 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
             						}
 								  },
 								  fail: function() {
+								  	// End the progress bar
+		                			progressJs().end();
 								  	console.log("error");
 								  }
 								});

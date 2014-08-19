@@ -165,12 +165,12 @@ install: $(EXECS)
 	@$(INSTALL) -v -m 0644 man/elogd.8 $(MANDIR)/man8/
 	@$(INSTALL) -v -m 0644 scripts/*.js $(ELOGDIR)/scripts/
 
-	@echo "Installing FCKeditor to $(ELOGDIR)/scripts/fckeditor"
-	@unzip -q -o scripts/fckeditor.zip -d $(ELOGDIR)/scripts/
-	@$(INSTALL) -v -m 0644 scripts/fckeditor/fckelog.js $(ELOGDIR)/scripts/fckeditor/fckelog.js
-	@mkdir -p -m 0755 $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog
-	@$(INSTALL) -v -m 0644 scripts/fckeditor/editor/plugins/elog/fckplugin.js $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/fckplugin.js
-	@$(INSTALL) -v -m 0644 scripts/fckeditor/editor/plugins/elog/inserttime.gif $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/inserttime.gif
+	# @echo "Installing CKeditor to $(ELOGDIR)/scripts/ckeditor"
+	# @unzip -q -o scripts/fckeditor.zip -d $(ELOGDIR)/scripts/
+	# @$(INSTALL) -v -m 0644 scripts/fckeditor/fckelog.js $(ELOGDIR)/scripts/fckeditor/fckelog.js
+	# @mkdir -p -m 0755 $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog
+	# @$(INSTALL) -v -m 0644 scripts/fckeditor/editor/plugins/elog/fckplugin.js $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/fckplugin.js
+	# @$(INSTALL) -v -m 0644 scripts/fckeditor/editor/plugins/elog/inserttime.gif $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/inserttime.gif
 
 	@echo "Installing resources to $(ELOGDIR)/resources"	
 	@$(INSTALL) -m 0644 resources/* $(ELOGDIR)/resources/
