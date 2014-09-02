@@ -11,6 +11,7 @@ Vendor:     Stefan Ritt <stefan.ritt@psi.ch>
 URL:        http://midas.psi.ch/elog
 BuildRoot:  /tmp/%{name}-root
 Prefix:     /usr/local
+BuildRequires: openssl-devel >= 0.9.8e
 
 %description
 ELOG is part of a family of applications known as weblogs. 
@@ -40,6 +41,8 @@ access control, etc. Moreover, a single server can host several weblogs, and
 each weblog can be totally different from the rest. 
 
 %changelog
+* Fri Aug 29 2014 Stefan Ritt <stefan.ritt@psi.ch>
+- Added BuildRequires, thanks to Stefan Roiser from CERN
 * Fri Oct 24 2005 Stefan Ritt <stefan.ritt@psi.ch>
 - Added resources/ directory
 * Fri Mar 14 2003 Stefan Ritt <stefan.ritt@psi.ch>
