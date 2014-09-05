@@ -11,8 +11,6 @@ CKEDITOR.dialog.add( 'fileuploadDialog', function( editor ) {
 	var lang = editor.lang.image2;
 	var	commonLang = editor.lang.common
 
-	console.log(commonLang);
-
 	return {
 
 		// Basic properties of the dialog window: title, minimum size.
@@ -107,7 +105,7 @@ CKEDITOR.dialog.add( 'fileuploadDialog', function( editor ) {
 								  fail: function() {
 					                // End the progress bar
 					                progressJs().end();
-								  	console.log("error");
+								  	console.log("Error while uploading file...");
 								  }
 								});
 

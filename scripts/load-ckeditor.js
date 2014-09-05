@@ -7,8 +7,12 @@ $(document).ready(function() {
     // if you try to use it immediately after CKEDITOR.replace('editor');
     CKEDITOR.on('instanceReady', function (ev) {
 
-        // Create a new command with the desired exec function
         var editor = ev.editor;
+
+        // Make the editor bigger
+        editor.resize("100%", "500");
+
+        // Create a new command with the desired exec function
         var overridecmd = new CKEDITOR.command(editor, {
             exec: function(editor){
 	        	// Replace this with your desired save button code
@@ -37,6 +41,8 @@ $(document).ready(function() {
 
             var dialogObj = dialogDefinition.dialog;
             dialogObj.on("show", function() {
+                // This code will open the Upload tab.
+                this.selectPage('Upload');
                 // replace the submit function with something useless
                 dialogObj.getContentElement( 'Upload', 'upload' ).submit = function() {
                     return false;
@@ -104,7 +110,6 @@ $(document).ready(function() {
         // add all the other attachments that were previously added
         $( "input[name^='attachment']" ).each(function(idx, el) {
             formData.append($(el).attr('name'), $(el).attr('value'));
-            // console.log(el);
         });
 
         formData.append('drop-count', files.length);        // number of files dropped that should be sent

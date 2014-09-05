@@ -80,8 +80,6 @@ CKEDITOR.plugins.add( 'dndfiles', {
 					// End the progress bar
                 	progressJs().end();
 
-                	console.log(data);
-
 				    var html = '';
 				    for(var idx = 0; idx < data.attachments.length; idx++) {
 				    	var att = data.attachments[idx];
