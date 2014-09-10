@@ -7306,6 +7306,11 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
       rsprintf("href=\"elog.rdf\" />\n");
    }
 
+   rsprintf("<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js\"></script>\n");
+   rsprintf("<script src=\"../bootstrap/js/bootstrap.min.js\"></script>");
+   rsprintf("<script type=\"text/javascript\" src=\"../full-parser.js\"></script>\n");
+   // rsprintf("<script type=\"text/javascript\" src=\"../full-parser.js\"></script>\n");
+
    if (close_head)
       rsprintf("</head>\n");
 }

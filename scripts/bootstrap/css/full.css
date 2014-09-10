@@ -1,0 +1,90 @@
+/*
+ * Base structure
+ */
+
+/* Move down content because we have a fixed navbar that is 50px tall */
+body {
+  padding-top: 50px;
+  font-size: 17px;
+}
+
+
+/*
+ * Global add-ons
+ */
+
+.sub-header {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+/*
+ * Top navigation
+ * Hide default border to remove 1px line.
+ */
+.navbar-fixed-top {
+  border: 0;
+  font-size: 18px;
+}
+
+.dropdown-menu li {
+  font-size: 20px;
+  display: block;
+}
+
+.elog-tabs {
+  padding-top: 10px;
+}
+
+/*
+ * Main content
+ */
+
+.main {
+  padding: 20px;
+}
+@media (min-width: 768px) {
+  .main {
+    padding-right: 40px;
+    padding-left: 40px;
+  }
+}
+.main .page-header {
+  margin-top: 0;
+}
+
+
+span.arrow-nav {
+    font-size: 1.9em;
+    color: black;
+}
+
+span.arrow-nav:hover {
+    color: grey;
+}
+
+/*
+ * Table content
+ */
+
+/* Cell color for an odd child */
+.table-striped > tbody > tr:nth-child(2n+1) > td, .table-striped > tbody > tr:nth-child(2n+1) > th {
+   background-color: #d0e9c6;
+}
+
+/* Cell color for an even child */
+.table-striped > tbody > tr:nth-child(2n) > td, .table-striped > tbody > tr:nth-child(2n) > th {
+   background-color: white;
+}
+
+.table tbody > tr > td{
+   border-top: none;
+}
+
+#full-list td.list1 {
+   background-color: #dff0d8;
+}
+
+/*table > tbody > tr > td > a {
+  color: black;
+}*/
