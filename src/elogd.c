@@ -20058,7 +20058,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                if (strieq(sort_attr[i], attr_list[j])) {
                   strlcat(msg_list[index].string, " ", sizeof(msg_list[index].string));
                   strlcat(msg_list[index].string, attrib[j], sizeof(msg_list[index].string));
-                  if (attr_flags[i] & AF_NUMERIC) {
+                  if (attr_flags[i] & (AF_NUMERIC | AF_DATETIME | AF_DATE)) {
                      msg_list[index].number = atoi(attrib[j]);
                      numeric = TRUE;
                   } else
@@ -20086,7 +20086,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       if (sort_item[0]) {
          for (i = 0; i < lbs->n_attr; i++) {
             if (strieq(sort_item, attr_list[i])) {
-               if (attr_flags[i] & AF_NUMERIC) {
+               if (attr_flags[i] & (AF_NUMERIC | AF_DATETIME | AF_DATE)) {
                   numeric = TRUE;
                   msg_list[index].number = atoi(attrib[i]);
                } else {
