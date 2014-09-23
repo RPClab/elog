@@ -26458,6 +26458,20 @@ void interprete(char *lbook, char *path)
    if (isparam("jcmd") && *getparam("jcmd"))
       strlcpy(command, getparam("jcmd"), sizeof(command));
 
+   /* check for localization command */
+   if (stricmp(command, "loc") == 0) {
+      show_http_header(NULL, FALSE, NULL);
+      if (isparam("value") && *getparam("value"))
+         rsputs(loc(getparam("value")));
+      
+      /* dummy strings for JS-only translations */
+      char *s = loc("Drop attachments here...");
+      s = loc("Insert Timestamp");
+      if (s)
+         s = NULL; // avoid compiler warning
+      return;
+   }
+
    /* if experiment given, use it as logbook (for elog!) */
    if (experiment && experiment[0]) {
       strcpy(logbook_enc, experiment);
