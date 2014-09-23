@@ -408,9 +408,6 @@ for the next %d days = durante los proximos %d dias
 keep original values = mantener los valores originales
 Entry is locked = La entrada esta bloqueada
 Edit anyhow = Editar de cualquier manera
-Submit entry = Enviar entrada
-Insert image = Insertar imagen
-Insert Date/Time = Insertar fecha/hora
 Insert horizontal line = Insertar linea horizontal
 Insert anchor point = Insertar punto de anclaje
 keep original text = mantener texto original
@@ -433,7 +430,6 @@ Last entry, Ctrl-End = Ultima entrada, Ctrl-End
 ELOG import = ELOG importar
 Please choose format to import: = Por favor elegir formato a exportar
 Enter text = Ingresar texto
-Show HTML source code = Mostrar codigo HTML
 or until I log out = o hasta que salga
 Make smaller = Mas peque√±o
 Original size = Tama√±o original
@@ -479,3 +475,11 @@ Email address "%s" not registered = La direcciÛn de correo "%s" no est· registra
 User name "%s" not registered = El usuario "%s" no est· registrado
 Error accessing password file = Error al acceder al archivo de password
 
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+CSV (";" separated) + Text = 
+Entry can only be deleted %1.2lg hours after creation = 
+Drop attachments here... = 
+Insert Timestamp = 

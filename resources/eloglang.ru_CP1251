@@ -367,9 +367,6 @@ for the next %d days = в течение %d дней
 keep original values = сохранить оригинальные значения
 Entry is locked = Запись заблокирована
 Edit anyhow = Редактировать в любом случае
-Submit entry = Отправить
-Insert image = Вставить изображение
-Insert Date/Time = Вставить дату
 Insert horizontal line = Вставить горизонтальную линию
 Error in regular expression "%s" = Ошибка в регулярном выражении "%s"
 File not found at URL "%s" = Файл по адресу "%s" не найден
@@ -435,7 +432,6 @@ Insert anchor point = Вставить якорь
 Derive attributes from XML file = Извлечь атрибуты из XML файла
 XML import preview of %s = Предпросмотр XML импорта %s
 or until I log out = или пока я не выйду
-Show HTML source code = Показать исходный код HTML
 Cannot send email notification to "%s" = Не удается отправить уведомление для "%s"
 
 
@@ -485,3 +481,7 @@ Please click on following link to recover your account =
 Email address "%s" not registered = 
 User name "%s" not registered = 
 Error accessing password file = 
+CSV (";" separated) + Text = 
+Entry can only be deleted %1.2lg hours after creation = 
+Drop attachments here... = 
+Insert Timestamp = 
