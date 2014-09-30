@@ -46,7 +46,8 @@
 			command.modes = { wysiwyg: !!( editor.element.$.form ) };
 
 			editor.ui.addButton && editor.ui.addButton( 'Save', {
-				label: editor.lang.save.toolbar,
+				label: localize("Submit"),
+				// label: editor.lang.save.toolbar,
 				command: pluginName,
 				toolbar: 'document,10'
 			} );

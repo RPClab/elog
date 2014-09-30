@@ -78,7 +78,7 @@ ifeq ($(OSTYPE),Linux)
 CC = gcc
 endif
 
-CFLAGS += -I$(MXMLDIR) 
+CFLAGS += -I$(MXMLDIR)
 
 ifdef USE_SSL
 ifneq ($(USE_SSL),0)
@@ -157,7 +157,7 @@ update: $(EXECS)
 
 install: $(EXECS)
 	@$(INSTALL) -m 0755 -d $(DESTDIR) $(SDESTDIR) $(MANDIR)/man1/ $(MANDIR)/man8/
-	@$(INSTALL) -m 0755 -d $(ELOGDIR)/scripts/ $(ELOGDIR)/resources/ $(ELOGDIR)/ssl/ $(ELOGDIR)/themes/default/icons 
+	@$(INSTALL) -m 0755 -d $(ELOGDIR)/scripts/ $(ELOGDIR)/resources/ $(ELOGDIR)/ssl/ $(ELOGDIR)/themes/default/icons
 	@$(INSTALL) -m 0755 -d $(ELOGDIR)/logbooks/demo
 	@$(INSTALL) -v -m 0755 ${BINFLAGS} elog elconv $(DESTDIR)
 	@$(INSTALL) -v -m 0755 ${BINFLAGS} elogd $(SDESTDIR)
@@ -165,25 +165,21 @@ install: $(EXECS)
 	@$(INSTALL) -v -m 0644 man/elogd.8 $(MANDIR)/man8/
 	@$(INSTALL) -v -m 0644 scripts/*.js $(ELOGDIR)/scripts/
 
-	# @echo "Installing CKeditor to $(ELOGDIR)/scripts/ckeditor"
-	# @unzip -q -o scripts/fckeditor.zip -d $(ELOGDIR)/scripts/
-	# @$(INSTALL) -v -m 0644 scripts/fckeditor/fckelog.js $(ELOGDIR)/scripts/fckeditor/fckelog.js
-	# @mkdir -p -m 0755 $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog
-	# @$(INSTALL) -v -m 0644 scripts/fckeditor/editor/plugins/elog/fckplugin.js $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/fckplugin.js
-	# @$(INSTALL) -v -m 0644 scripts/fckeditor/editor/plugins/elog/inserttime.gif $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/inserttime.gif
+	@echo "Installing CKeditor to $(ELOGDIR)/scripts/ckeditor"
+	cp -r scripts/ $(ELOGDIR)/scripts
 
-	@echo "Installing resources to $(ELOGDIR)/resources"	
+	@echo "Installing resources to $(ELOGDIR)/resources"
 	@$(INSTALL) -m 0644 resources/* $(ELOGDIR)/resources/
 	@$(INSTALL) -m 0644 ssl/* $(ELOGDIR)/ssl/
 
-	@echo "Installing themes to $(ELOGDIR)/themes"	
+	@echo "Installing themes to $(ELOGDIR)/themes"
 	@$(INSTALL) -m 0644 themes/default/icons/* $(ELOGDIR)/themes/default/icons/
 	@for file in `find themes/default -type f | grep -v .svn` ; \
           do \
           $(INSTALL) -m 0644 $$file $(ELOGDIR)/themes/default/`basename $$file` ;\
           done
 
-	@echo "Installing example logbook to $(ELOGDIR)/logbooks/demo"	
+	@echo "Installing example logbook to $(ELOGDIR)/logbooks/demo"
 	@if [ ! -f $(ELOGDIR)/logbooks/demo ]; then  \
 	  $(INSTALL) -v -m 0644 logbooks/demo/* $(ELOGDIR)/logbooks/demo ; \
 	fi

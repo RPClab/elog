@@ -546,9 +546,11 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
 				            	var dialog = this.getDialog();
             					var files = dialog.getContentElement("Upload", "upload").getInputElement().$.files;
 
+            					var file_missing_msg = localize("Please select a fileadaw!");
+
             					// no files were selected
             					if(files.length == 0) {
-            						alert("Please select a file!");
+            						alert(file_missing_msg);
             						return false;
             					}
 

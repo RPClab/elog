@@ -1,3 +1,21 @@
+// This function takes a string that should be translated
+// and asks the server for the translation to the server's locale.
+// Translation of the string is returned.
+//
+// NOTE: This function works SYNCRHONOUSLY
+function localize(str) {
+    var URL = '/' + parent.logbook + "/?cmd=loc&value=" + str;
+
+    return $.ajax({
+        type: "GET",
+        url: URL,
+        async: false
+    }).responseText;
+}
+
+console.log(localize("Submit"));
+
+// After the page has loaded, load the Ckeditor and the attachment dropbox
 $(document).ready(function() {
 
 	$('textarea').addClass("ckeditor");
@@ -9,8 +27,10 @@ $(document).ready(function() {
 
         var editor = ev.editor;
 
-        // Make the editor bigger
-        editor.resize("100%", "500");
+        // Make the editor bigger (at least 500px high and 80% of the viewport otherwise)
+        var width = Math.max(500, 0.8 * $(window).height() );
+        console.log(width);
+        editor.resize("100%", new String(width));
 
         // Create a new command with the desired exec function
         var overridecmd = new CKEDITOR.command(editor, {

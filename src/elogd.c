@@ -11520,7 +11520,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("<tr>\n");
          rsprintf("<td style=\"background: white;\" colspan=2>\n");
          rsprintf("<div id=\"holder\" style=\"background: white; border: 10px dashed #ccc; min-height: 200px; margin: 10px\" >");
-         rsprintf("<p class=\"info\" style=\"color: #999; font-size: 2em; text-align: center; margin-top: 40px;\">Drop attachments here...</p></div>");
+         rsprintf("<p class=\"info\" style=\"color: #999; font-size: 2em; text-align: center; margin-top: 40px;\">%s</p></div>", loc("Drop attachments here..."));
          rsprintf("</td></tr>");
       }
    }
