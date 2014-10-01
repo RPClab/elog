@@ -166,7 +166,7 @@ install: $(EXECS)
 	@$(INSTALL) -v -m 0644 scripts/*.js $(ELOGDIR)/scripts/
 
 	@echo "Installing CKeditor to $(ELOGDIR)/scripts/ckeditor"
-	cp -r scripts/ $(ELOGDIR)/scripts
+	cp -r scripts/* $(ELOGDIR)/scripts
 
 	@echo "Installing resources to $(ELOGDIR)/resources"
 	@$(INSTALL) -m 0644 resources/* $(ELOGDIR)/resources/
