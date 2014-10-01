@@ -31,7 +31,6 @@ USE_KRB5   = 0
 
 # Default compilation flags unless stated otherwise.
 CFLAGS += -O3 -funroll-loops -fomit-frame-pointer -W -Wall -Wno-deprecated-declarations
-#CFLAGS += -g -funroll-loops -fomit-frame-pointer -W -Wall -Wno-deprecated-declarations
 
 CC = gcc
 IFLAGS = -kr -nut -i3 -l110
@@ -99,7 +98,7 @@ endif
 endif
 
 ifdef NEED_STRLCPY
-LIBS += strlcpy.o
+OBJS += strlcpy.o
 endif
 
 WHOAMI = $(shell whoami)
@@ -129,13 +128,13 @@ strlcpy.o: $(MXMLDIR)/strlcpy.c $(MXMLDIR)/strlcpy.h
 	$(CC) $(CFLAGS) -c -o strlcpy.o $(MXMLDIR)/strlcpy.c
 
 elogd: src/elogd.c regex.o crypt.o auth.o mxml.o
-	$(CC) $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(LIBS)
+	$(CC) $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(OBJS) $(LIBS)
 
-elog: src/elog.c crypt.o $(LIBS)
-	$(CC) $(CFLAGS) -o elog src/elog.c crypt.o $(LIBS)
+elog: src/elog.c crypt.o $(OBJS)
+	$(CC) $(CFLAGS) -o elog src/elog.c crypt.o $(OBJS) $(LIBS)
 
 debug: src/elogd.c regex.o crypt.o auth.o mxml.o
-	$(CC) -g $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(LIBS)
+	$(CC) -g $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(OBJS) $(LIBS)
 
 %: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
