@@ -106,7 +106,7 @@ ifeq ($(WHOAMI),root)
 BINFLAGS = -o ${BINOWNER} -g ${BINGROUP}
 endif
 
-all: $(EXECS) $(GIT_REVISION)
+all: $(EXECS)
 
 # put current GIT revision into header file to be included by programs
 $(GIT_REVISION): src/elogd.c
@@ -127,7 +127,7 @@ mxml.o: $(MXMLDIR)/mxml.c $(MXMLDIR)/mxml.h
 strlcpy.o: $(MXMLDIR)/strlcpy.c $(MXMLDIR)/strlcpy.h
 	$(CC) $(CFLAGS) -c -o strlcpy.o $(MXMLDIR)/strlcpy.c
 
-elogd: src/elogd.c regex.o crypt.o auth.o mxml.o
+elogd: src/elogd.c regex.o crypt.o auth.o mxml.o $(GIT_REVISION)
 	$(CC) $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(OBJS) $(LIBS)
 
 elog: src/elog.c crypt.o $(OBJS)

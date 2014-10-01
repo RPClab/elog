@@ -9,3 +9,4 @@ elog
 # Logbook generated files
 logbooks/*
 locext
+git-revision.h
