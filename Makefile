@@ -30,8 +30,8 @@ USE_KRB5   = 0
 #############################################################
 
 # Default compilation flags unless stated otherwise.
-CFLAGS += -O3 -funroll-loops -fomit-frame-pointer -W -Wall -Wno-deprecated-declarations -Wno-unused-result
-#CFLAGS += -g -funroll-loops -fomit-frame-pointer -W -Wall -Wno-deprecated-declarations -Wno-unused-result
+CFLAGS += -O3 -funroll-loops -fomit-frame-pointer -W -Wall -Wno-deprecated-declarations
+#CFLAGS += -g -funroll-loops -fomit-frame-pointer -W -Wall -Wno-deprecated-declarations
 
 CC = gcc
 IFLAGS = -kr -nut -i3 -l110
@@ -40,6 +40,9 @@ GIT_REVISION = src/git-revision.h
 MXMLDIR = ../mxml
 BINOWNER = bin
 BINGROUP = bin
+
+# Option to use our own implementation of strlcat, strlcpy
+NEED_STRLCPY = 1
 
 INSTALL = `which install`
 RM = /bin/rm -f
@@ -66,6 +69,7 @@ ifeq ($(OSTYPE),darwin)
 CC = cc
 BINOWNER = root
 BINGROUP = admin
+NEED_STRLCPY =
 endif
 
 ifeq ($(OSTYPE),FreeBSD)
@@ -94,6 +98,10 @@ LIBS += -lkrb5
 endif
 endif
 
+ifdef NEED_STRLCPY
+LIBS += strlcpy.o
+endif
+
 WHOAMI = $(shell whoami)
 ifeq ($(WHOAMI),root)
 BINFLAGS = -o ${BINOWNER} -g ${BINGROUP}
@@ -120,14 +128,14 @@ mxml.o: $(MXMLDIR)/mxml.c $(MXMLDIR)/mxml.h
 strlcpy.o: $(MXMLDIR)/strlcpy.c $(MXMLDIR)/strlcpy.h
 	$(CC) $(CFLAGS) -c -o strlcpy.o $(MXMLDIR)/strlcpy.c
 
-elogd: src/elogd.c regex.o crypt.o auth.o mxml.o strlcpy.o
-	$(CC) $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o strlcpy.o $(LIBS)
+elogd: src/elogd.c regex.o crypt.o auth.o mxml.o
+	$(CC) $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(LIBS)
 
 elog: src/elog.c crypt.o
 	$(CC) $(CFLAGS) -o elog src/elog.c crypt.o $(LIBS)
 
-debug: src/elogd.c regex.o crypt.o auth.o mxml.o strlcpy.o
-	$(CC) -g $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o strlcpy.o $(LIBS)
+debug: src/elogd.c regex.o crypt.o auth.o mxml.o
+	$(CC) -g $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(LIBS)
 
 %: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
