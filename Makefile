@@ -131,7 +131,7 @@ strlcpy.o: $(MXMLDIR)/strlcpy.c $(MXMLDIR)/strlcpy.h
 elogd: src/elogd.c regex.o crypt.o auth.o mxml.o
 	$(CC) $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(LIBS)
 
-elog: src/elog.c crypt.o
+elog: src/elog.c crypt.o $(LIBS)
 	$(CC) $(CFLAGS) -o elog src/elog.c crypt.o $(LIBS)
 
 debug: src/elogd.c regex.o crypt.o auth.o mxml.o
