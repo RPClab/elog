@@ -7208,7 +7208,7 @@ void show_http_header(LOGBOOK * lbs, BOOL expires, char *cookie)
    rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
 
    if (getcfg("global", "charset", str, sizeof(str)))
-      rsprintf(": text/html;charset=%s\r\n", str);
+      rsprintf("Content-Type: text/html;charset=%s\r\n", str);
    else
       rsprintf("Content-Type: text/html;charset=%s\r\n", DEFAULT_HTTP_CHARSET);
 
