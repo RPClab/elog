@@ -115,6 +115,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = D52BA30313999DB0000458E3 /* Build configuration list for PBXNativeTarget "elogd" */;
 			buildPhases = (
+				D5132F2C19DE9DE00005CE87 /* Run Script */,
 				D52BA2F613999DB0000458E3 /* Sources */,
 				D52BA2F713999DB0000458E3 /* Frameworks */,
 				D52BA2F813999DB0000458E3 /* CopyFiles */,
@@ -153,6 +154,23 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		D5132F2C19DE9DE00005CE87 /* Run Script */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Run Script";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "echo \\#define GIT_REVISION \\\"`git log -n 1 --pretty=format:\"%ad - %h\"`\\\" > /elog/src/git-revision.h";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		D52BA2F613999DB0000458E3 /* Sources */ = {
