@@ -3712,13 +3712,192 @@ int eli_compare(const void *e1, const void *e2)
 
 /*------------------------------------------------------------------*/
 
+void generate_new_file_name(char *file_name, char *path, int size)
+{
+   char fn[MAX_PATH_LENGTH], subdir[MAX_PATH_LENGTH];
+   int status, year, month;
+   static int first = TRUE;
+   
+   // extract path from file_name
+   strlcpy(path, file_name, size);
+   if (strrchr(path, DIR_SEPARATOR))
+      *(strrchr(path, DIR_SEPARATOR)+1) = 0;
+   
+   // extract file name
+   if (strrchr(file_name, DIR_SEPARATOR))
+      strlcpy(fn, strrchr(file_name, DIR_SEPARATOR)+1, sizeof(fn));
+   else
+      strlcpy(fn, file_name, sizeof(fn));
+   
+   // create subdir from name
+   year = (fn[0]-'0')*10+(fn[1]-'0');
+   month = (fn[2]-'0')*10+(fn[3]-'0');
+   if (year < 80)
+      sprintf(subdir, "20%02d", year);
+   else
+      sprintf(subdir, "19%02d", year);
+   
+   // create new subdir
+   strlcat(path, subdir, size);
+#ifdef OS_WINNT
+   status = mkdir(path);
+#else
+   status = mkdir(path, 0755);
+#endif
+   
+   if (status == 0) {
+      if (first) {
+         eprintf("\nFound old directory structure. Creating subdirectories and moving files...\n");
+         first = FALSE;
+      }
+      eprintf("Created directory \"%s\"\n", path);
+   } else {
+      if (errno != EEXIST) {
+         eprintf("generate_new_file_name: %s\n", strerror(errno));
+         eprintf("Cannot create directory \"%s\"\n", path);
+      }
+   }
+
+   // assemble new path
+   strlcat(path, DIR_SEPARATOR_STR, size);
+   strlcat(path, fn, size);
+}
+
+/*------------------------------------------------------------------*/
+
+int restructure_dir(char *dir)
+{
+   char *file_list;
+   int n1, n2, index;
+   char file_name[MAX_PATH_LENGTH], old_path[MAX_PATH_LENGTH], new_path[MAX_PATH_LENGTH];
+   
+   /* go through all entry files */
+   n1 = ss_file_find(dir, "??????a.log", &file_list);
+   for (index = 0; index < n1; index++) {
+      strlcpy(file_name, dir, sizeof(file_name));
+      strlcat(file_name, file_list + index * MAX_PATH_LENGTH, sizeof(file_name));
+      strlcpy(old_path, file_name, sizeof(old_path));
+      strlcpy(new_path, old_path, sizeof(new_path));
+      
+      generate_new_file_name(old_path, new_path, sizeof(new_path));
+      rename(old_path, new_path);
+   }
+   if (file_list)
+      xfree(file_list);
+   
+   /* go through all attachment files */
+   n2 = ss_file_find(dir, "??????_??????_*", &file_list);
+   for (index = 0; index < n2; index++) {
+      strlcpy(file_name, dir, sizeof(file_name));
+      strlcat(file_name, file_list + index * MAX_PATH_LENGTH, sizeof(file_name));
+      strlcpy(old_path, file_name, sizeof(old_path));
+      strlcpy(new_path, old_path, sizeof(new_path));
+      
+      generate_new_file_name(old_path, new_path, sizeof(new_path));
+      rename(old_path, new_path);
+   }
+   if (file_list)
+      xfree(file_list);
+
+   return n1+n2;
+}
+
+/*------------------------------------------------------------------*/
+
+int parse_file(LOGBOOK *lbs, char *file_name)
+{
+   char str[256], date[256], *buffer, *p, *pn, in_reply_to[80];
+   int length, i, fh, len;
+
+   fh = open(file_name, O_RDONLY | O_BINARY, 0644);
+   
+   if (fh < 0) {
+      sprintf(str, "Cannot open file \"%s\"", file_name);
+      eprintf("%s; %s\n", str, strerror(errno));
+      return EL_FILE_ERROR;
+   }
+   
+   /* read file into buffer */
+   length = lseek(fh, 0, SEEK_END);
+   
+   if (length > 0) {
+      buffer = xmalloc(length + 1);
+      lseek(fh, 0, SEEK_SET);
+      read(fh, buffer, length);
+      buffer[length] = 0;
+      close(fh);
+      
+      /* go through buffer */
+      p = buffer;
+      
+      do {
+         p = strstr(p, "$@MID@$:");
+         
+         if (p) {
+            lbs->el_index = xrealloc(lbs->el_index, sizeof(EL_INDEX) * (*lbs->n_el_index + 1));
+            if (lbs->el_index == NULL) {
+               eprintf("Not enough memory to allocate entry index\n");
+               return EL_MEM_ERROR;
+            }
+            
+            if (strrchr(file_name, DIR_SEPARATOR))
+               strlcpy(str, strrchr(file_name, DIR_SEPARATOR)+1, sizeof(str));
+            else
+               strlcpy(str, file_name, sizeof(str));
+            strcpy(lbs->el_index[*lbs->n_el_index].file_name, str);
+            
+            el_decode(p, "Date: ", date, sizeof(date));
+            el_decode_int(p, "In reply to: ", in_reply_to, sizeof(in_reply_to));
+            
+            lbs->el_index[*lbs->n_el_index].file_time = date_to_ltime(date);
+            
+            lbs->el_index[*lbs->n_el_index].message_id = atoi(p + 8);
+            lbs->el_index[*lbs->n_el_index].offset = p - buffer;
+            lbs->el_index[*lbs->n_el_index].in_reply_to = atoi(in_reply_to);
+            
+            pn = strstr(p + 8, "$@MID@$:");
+            if (pn)
+               len = pn - p;
+            else
+               len = strlen(p);
+            
+            MD5_checksum(p, len, lbs->el_index[*lbs->n_el_index].md5_digest);
+            
+            if (lbs->el_index[*lbs->n_el_index].message_id > 0) {
+               if (is_verbose() > 1) {
+                  eprintf("  ID %3d, %s, ofs %5d, %s, MD5=", lbs->el_index[*lbs->n_el_index].message_id,
+                          str, lbs->el_index[*lbs->n_el_index].offset,
+                          lbs->el_index[*lbs->n_el_index].in_reply_to ? "reply" : "thead");
+                  
+                  for (i = 0; i < 16; i++)
+                     eprintf("%02X", lbs->el_index[*lbs->n_el_index].md5_digest[i]);
+                  eprintf("\n");
+               }
+               
+               /* valid ID */
+               (*lbs->n_el_index)++;
+            }
+            
+            p += 8;
+         }
+         
+      } while (p);
+      
+      xfree(buffer);
+   }
+   
+   return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 int el_build_index(LOGBOOK * lbs, BOOL rebuild)
 /* scan all ??????a.log files and build an index table in eli[] */
 {
-   char *file_list, str[256], error_str[256], date[256], dir[256], file_name[MAX_PATH_LENGTH], *buffer, *p,
-       *pn, in_reply_to[80];
-   int index, n, length;
-   int i, fh, len;
+   char *file_list, *dir_list, error_str[256], base_dir[256], dir[256], str[256],
+       file_name[MAX_PATH_LENGTH], *buffer;
+   int dindex, index, n;
+   int i, status;
    unsigned char digest[16];
 
    if (rebuild) {
@@ -3731,7 +3910,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
    lbs->el_index = xmalloc(0);
 
    /* get data directory */
-   strcpy(dir, lbs->data_dir);
+   strcpy(base_dir, lbs->data_dir);
 
    if (is_verbose() > 1) {
       /* show MD5 from config file */
@@ -3752,105 +3931,78 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
          xfree(buffer);
    }
 
-   file_list = NULL;
-   n = ss_file_find(dir, "??????a.log", &file_list);
-   if (n == 0) {
+   // check for old format and upgrade if necessary
+   n = ss_file_find(base_dir, "??????.log", &file_list);
+   if (n > 0) {
       if (file_list)
          xfree(file_list);
-      file_list = NULL;
-
-      n = ss_file_find(dir, "??????.log", &file_list);
-      if (n > 0)
-         return EL_UPGRADE;
-
-      return EL_EMPTY;
+      return EL_UPGRADE;
    }
 
    if (is_verbose() > 1)
       eprintf("Entries:\n");
+   
+   // move files to directories if (new layout to reduce number of files per directory)
+   // ## restructure_dir(base_dir);
+
+   dir_list = NULL;
+   n = ss_file_find(base_dir, "????", &dir_list);
+   if (n == 0) {
+      if (dir_list)
+         xfree(dir_list);
+      dir_list = NULL;
+      //return EL_EMPTY;
+   }
+ 
+   /* go through all directories */
+   for (dindex = 0; dindex < n; dindex++) {
+      file_list = NULL;
+      strlcpy(dir, base_dir, sizeof(str));
+      strlcat(dir, dir_list + dindex * MAX_PATH_LENGTH, sizeof(str));
+      strlcat(dir, DIR_SEPARATOR_STR, sizeof(str));
+      n = ss_file_find(dir, "??????a.log", &file_list);
+      
+      /* go through all files */
+      for (index = 0; index < n; index++) {
+         strlcpy(file_name, dir, sizeof(file_name));
+         strlcat(file_name, file_list + index * MAX_PATH_LENGTH, sizeof(file_name));
+         
+         status = parse_file(lbs, file_name);
+         if (status != SUCCESS) {
+            if (file_list)
+               xfree(file_list);
+            return status;
+         }
+      }
+     
+      if (file_list)
+         xfree(file_list);
+   }
+   
+   file_list = NULL;
+   n = ss_file_find(base_dir, "??????a.log", &file_list);
+   if (n == 0) {
+      if (file_list)
+         xfree(file_list);
+      file_list = NULL;
+      return EL_EMPTY;
+   }
 
    /* go through all files */
    for (index = 0; index < n; index++) {
-      strlcpy(file_name, dir, sizeof(file_name));
+      strlcpy(file_name, base_dir, sizeof(file_name));
       strlcat(file_name, file_list + index * MAX_PATH_LENGTH, sizeof(file_name));
 
-      fh = open(file_name, O_RDONLY | O_BINARY, 0644);
-
-      if (fh < 0) {
-         sprintf(str, "Cannot open file \"%s\"", file_name);
-         eprintf("%s; %s\n", str, strerror(errno));
-         return EL_FILE_ERROR;
+      status = parse_file(lbs, file_name);
+      if (status != SUCCESS) {
+         if (file_list)
+            xfree(file_list);
+         return status;
       }
-
-      /* read file into buffer */
-      length = lseek(fh, 0, SEEK_END);
-
-      if (length > 0) {
-         buffer = xmalloc(length + 1);
-         lseek(fh, 0, SEEK_SET);
-         read(fh, buffer, length);
-         buffer[length] = 0;
-         close(fh);
-
-         /* go through buffer */
-         p = buffer;
-
-         do {
-            p = strstr(p, "$@MID@$:");
-
-            if (p) {
-               lbs->el_index = xrealloc(lbs->el_index, sizeof(EL_INDEX) * (*lbs->n_el_index + 1));
-               if (lbs->el_index == NULL) {
-                  eprintf("Not enough memory to allocate entry index\n");
-                  return EL_MEM_ERROR;
-               }
-
-               strcpy(str, file_list + index * MAX_PATH_LENGTH);
-               strcpy(lbs->el_index[*lbs->n_el_index].file_name, str);
-
-               el_decode(p, "Date: ", date, sizeof(date));
-               el_decode_int(p, "In reply to: ", in_reply_to, sizeof(in_reply_to));
-
-               lbs->el_index[*lbs->n_el_index].file_time = date_to_ltime(date);
-
-               lbs->el_index[*lbs->n_el_index].message_id = atoi(p + 8);
-               lbs->el_index[*lbs->n_el_index].offset = p - buffer;
-               lbs->el_index[*lbs->n_el_index].in_reply_to = atoi(in_reply_to);
-
-               pn = strstr(p + 8, "$@MID@$:");
-               if (pn)
-                  len = pn - p;
-               else
-                  len = strlen(p);
-
-               MD5_checksum(p, len, lbs->el_index[*lbs->n_el_index].md5_digest);
-
-               if (lbs->el_index[*lbs->n_el_index].message_id > 0) {
-                  if (is_verbose() > 1) {
-                     eprintf("  ID %3d, %s, ofs %5d, %s, MD5=", lbs->el_index[*lbs->n_el_index].message_id,
-                             str, lbs->el_index[*lbs->n_el_index].offset,
-                             lbs->el_index[*lbs->n_el_index].in_reply_to ? "reply" : "thead");
-
-                     for (i = 0; i < 16; i++)
-                        eprintf("%02X", lbs->el_index[*lbs->n_el_index].md5_digest[i]);
-                     eprintf("\n");
-                  }
-
-                  /* valid ID */
-                  (*lbs->n_el_index)++;
-               }
-
-               p += 8;
-            }
-
-         } while (p);
-
-         xfree(buffer);
-      }
-
    }
 
-   xfree(file_list);
+   if (file_list)
+      xfree(file_list);
 
    /* sort entries according to date */
    qsort(lbs->el_index, *lbs->n_el_index, sizeof(EL_INDEX), eli_compare);
