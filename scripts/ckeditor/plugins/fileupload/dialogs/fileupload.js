@@ -52,17 +52,26 @@ CKEDITOR.dialog.add( 'fileuploadDialog', function( editor ) {
             						return false;
             					}
 
+            					// Create the form data object for uploading with POST
             					var formData = new FormData();
+
+						        // add all the other attachments that were previously added
+						        $( "input[name^='attachment']" ).each(function(idx, el) {
+						            formData.append($(el).attr('name'), $(el).attr('value'));
+						        });
+
+
             					formData.append('drop-count', files.length);		// number of files being uploaded
-            					formData.append('acmd', "Upload");			// Command for the server to recognize this as an ajax upload
 							    for (var i = 0; i < files.length; i++) {
 						    		formData.append('next_attachment', parent.next_attachment);
 						    		formData.append('encoding', "HTML");
 						    		formData.append('attfile', files[i]);
+						    		parent.next_attachment += 1;
 
 						    		// Remember the original name of the file in a hidden text field
 						    		dialog.getContentElement( 'Upload', 'name' ).setValue( files[i].name );
 				    			}
+				    			formData.append('cmd', "Upload");          // Command for server to recognize this as an file upload
 
 				    			var URL = '/' + parent.logbook + '/upload.html?next_attachment=' + parent.next_attachment;
 
@@ -93,14 +102,29 @@ CKEDITOR.dialog.add( 'fileuploadDialog', function( editor ) {
 								  data: formData,
 								  success: function(data) {
 
-					                // End the progress bar
-					                progressJs().end();
+		                			// Extract the last attachment section of the returned page
+							        var attch = $(".attachment", $(data)).last();
 
-								  	if(data.attachments[0]) {	// check if we have the correct response
-								  		dialog.getContentElement( 'Upload', 'src' ).setValue( data.attachments[0].fullName );
+							        // Create a new attachment section that will replace the current one
+							        var attch_upload = $("#attachment_upload", $(data));
+
+							        // Extract the url
+							        var src = $("input", attch)[0].value;
+
+								  	if(src) {	// check if we have the correct response
+								  		dialog.getContentElement( 'Upload', 'src' ).setValue( src );
 								  	} else {
 								  		console.log("Data returned is not json...");
 								  	}
+
+					                // add the new attachments to the current page
+					                $("#attachment_upload").before(attch.slice(-files.length));
+
+					                // replace the attachment upload section
+					                $("#attachment_upload").replaceWith(attch_upload);
+
+					                // End the progress bar
+					                progressJs().end();
 								  },
 								  fail: function() {
 					                // End the progress bar

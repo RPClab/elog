@@ -74,40 +74,24 @@ CKEDITOR.plugins.add( 'dndfiles', {
 					}
 				}
 
-				// This function is called when the upload of files succedes. Displays uploaded images
-				// into img tags and everything else as an <a href> tag
-				function uploadSuccess(data) {
-					// End the progress bar
-                	progressJs().end();
-
-				    var html = '';
-				    for(var idx = 0; idx < data.attachments.length; idx++) {
-				    	var att = data.attachments[idx];
-				    	var name = att.fullName;
-
-				    	// this is an image and it has a thumbnail
-				    	if(att.thumbName) {
-				    		html += '<img src = "' + name + '">';
-				    	} else {	// this is not an image
-				    		html += "<a href = " + name + '>' + name + '</a>';
-				    	}
-				    }
-
-				    editor.insertHtml(html);
-				}
-
 				// Upload dropped files using FormData
 				function upload(files) {
 				    // debugger;
 
 				    var formData = tests.formdata ? new FormData() : null;
+
+			        // add all the other attachments that were previously added
+			        $( "input[name^='attachment']" ).each(function(idx, el) {
+			            formData.append($(el).attr('name'), $(el).attr('value'));
+			        });
+
 				    formData.append('drop-count', files.length);		// number of files dropped that should be sent
 				    for (var i = 0; i < files.length; i++) {
 				    	if (tests.formdata) {
 				    		formData.append('next_attachment', parent.next_attachment);
 				    		formData.append('encoding', "HTML");
 				    		formData.append('attfile', files[i]);
-				    		formData.append('acmd', "Upload");			// Command for server to recognize this as an ajax upload
+				    		formData.append('cmd', "Upload");			// Command for server to recognize this as an file upload
 				    		parent.next_attachment += 1;
 				    	}
 				    }
@@ -140,7 +124,48 @@ CKEDITOR.plugins.add( 'dndfiles', {
 						  type: 'POST',
 						  url: URL,
 						  data: formData,
-						  success: uploadSuccess,
+
+						// This function is called when the upload of files succedes. Displays uploaded images
+						// into img tags and everything else as an <a href> tag
+						  success: function(data) {
+	  					    var html = '';
+
+		        			// Extract the last attachment section of the returned page
+					        var attch = $(".attachment", $(data)).slice(-files.length);
+
+					        // Create a new attachment section that will replace the current one
+					        var attch_upload = $("#attachment_upload", $(data));
+
+					        $("input", attch).each(function() {
+
+					        	// Extract the url of the file
+					        	var src = $(this)[0].defaultValue;
+
+					        	// Ignore inputs that have this value as it is not needed
+					        	if(src === "Delete")
+					        		return;
+
+						    	if(src.indexOf(".png") >= 0 || src.indexOf(".jpg") >= 0 || src.indexOf(".jpeg") >= 0) { // This is an image
+						    		html += '<img src = "' + src + '">';
+						    	} else {	// this is not an image
+						    		// Server appends 14 characters in front of the name so we should remove them
+						    		var server_suffix = 14;
+						    		html += "<a href = " + src + '>' + src.slice(server_suffix) + '</a>';
+						    	}
+					        });
+
+						    // Insert files into the editor
+						    editor.insertHtml(html);
+
+			                // add the new attachments to the current page
+			                $("#attachment_upload").before(attch.slice(-files.length));
+
+			                // replace the attachment upload section
+			                $("#attachment_upload").replaceWith(attch_upload);
+
+							// End the progress bar
+		                	progressJs().end();
+						  },
 						  fail: function() {
 						  	// End the progress bar
                 			progressJs().end();

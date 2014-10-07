@@ -546,7 +546,7 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
 				            	var dialog = this.getDialog();
             					var files = dialog.getContentElement("Upload", "upload").getInputElement().$.files;
 
-            					var file_missing_msg = localize("Please select a fileadaw!");
+            					var file_missing_msg = localize("Please select a file!");
 
             					// no files were selected
             					if(files.length == 0) {
@@ -554,14 +554,23 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
             						return false;
             					}
 
+            					// Create the form data object for uploading with POST
             					var formData = new FormData();
+
+						        // add all the other attachments that were previously added
+						        $( "input[name^='attachment']" ).each(function(idx, el) {
+						            formData.append($(el).attr('name'), $(el).attr('value'));
+						        });
+
             					formData.append('drop-count', files.length);		// number of files being uploaded
 							    for (var i = 0; i < files.length; i++) {
 						    		formData.append('next_attachment', parent.next_attachment);
 						    		formData.append('encoding', "HTML");
 						    		formData.append('attfile', files[i]);
-						    		formData.append('acmd', "Upload");			// Command for the server to recognize this as an ajax upload
+
+						    		parent.next_attachment += 1;
 				    			}
+				    			formData.append('cmd', "Upload");          // Command for server to recognize this as an file upload
 
 				    			var URL = '/' + parent.logbook + '/upload.html?next_attachment=' + parent.next_attachment;
 
@@ -591,19 +600,46 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
 								  data: formData,
 								  success: function(data) {
 
+		                			// Extract the last attachment section of the returned page
+							        var attch = $(".attachment", $(data)).last();
+
+							        // Create a new attachment section that will replace the current one
+							        var attch_upload = $("#attachment_upload", $(data));
+
+							      	// The last img tag in this html snippet contains the source of the image which we need
+							      	// We first split the html based on img tags
+							        var arr = attch.html().split("<img");
+
+							        // Then extract the source from the last array element
+							        var tmp_str = arr[arr.length - 1];
+
+							        // These are the start and end locations of the source
+							        var start = tmp_str.indexOf("src=");
+							        var end = tmp_str.indexOf("?thumb");
+
+							        // Finally extract the img source
+							        var suffix = 'src="'.length;
+							        var src = tmp_str.substr(start + suffix, end - start - suffix);
+
+								  	if(src) {	// check if we have the correct response
+            							dialog.getContentElement( 'info', 'src' ).setValue( src );
+            						} else {
+            							console.log("Couldn't find img source...");
+            						}
+
+					                // add the new attachments to the current page
+					                $("#attachment_upload").before(attch.slice(-files.length));
+
+					                // replace the attachment upload section
+					                $("#attachment_upload").replaceWith(attch_upload);
+
 								  	// End the progress bar
 		                			progressJs().end();
-
-								  	if(data.attachments) {	// check if we have the correct response
-            							dialog.getContentElement( 'info', 'src' ).setValue( data.attachments[0].fullName );
-            						} else {
-            							console.log("Data returned is not json...");
-            						}
 								  },
 								  fail: function() {
 								  	// End the progress bar
 		                			progressJs().end();
-								  	console.log("error");
+								  	console.log("Error uploading image...");
 								  }
 								});
 
