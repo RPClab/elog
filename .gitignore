@@ -2,3 +2,7 @@ elogd
 elconv
 elog
 *.o
+NT/Debug/
+*.sdf
+*.suo
+*.user
