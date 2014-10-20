@@ -3712,11 +3712,10 @@ int eli_compare(const void *e1, const void *e2)
 
 /*------------------------------------------------------------------*/
 
-void generate_new_file_name(char *file_name, char *path, int size)
+void generate_subdir_name(char *file_name, char *subdir, int size)
 {
-   char fn[MAX_PATH_LENGTH], subdir[MAX_PATH_LENGTH];
-   int status, year, month;
-   static int first = TRUE;
+   char fn[MAX_PATH_LENGTH], path[MAX_PATH_LENGTH];
+   int year, month;
    
    // extract path from file_name
    strlcpy(path, file_name, size);
@@ -3737,30 +3736,7 @@ void generate_new_file_name(char *file_name, char *path, int size)
    else
       sprintf(subdir, "19%02d", year);
    
-   // create new subdir
-   strlcat(path, subdir, size);
-#ifdef OS_WINNT
-   status = mkdir(path);
-#else
-   status = mkdir(path, 0755);
-#endif
-   
-   if (status == 0) {
-      if (first) {
-         eprintf("\nFound old directory structure. Creating subdirectories and moving files...\n");
-         first = FALSE;
-      }
-      eprintf("Created directory \"%s\"\n", path);
-   } else {
-      if (errno != EEXIST) {
-         eprintf("generate_new_file_name: %s\n", strerror(errno));
-         eprintf("Cannot create directory \"%s\"\n", path);
-      }
-   }
-
-   // assemble new path
-   strlcat(path, DIR_SEPARATOR_STR, size);
-   strlcat(path, fn, size);
+   strlcat(subdir, DIR_SEPARATOR_STR, size);
 }
 
 /*------------------------------------------------------------------*/
@@ -3768,18 +3744,45 @@ void generate_new_file_name(char *file_name, char *path, int size)
 int restructure_dir(char *dir)
 {
    char *file_list;
-   int n1, n2, index;
-   char file_name[MAX_PATH_LENGTH], old_path[MAX_PATH_LENGTH], new_path[MAX_PATH_LENGTH];
+   int n1, n2, index, status;
+   char old_path[MAX_PATH_LENGTH], new_path[MAX_PATH_LENGTH],
+   subdir[MAX_PATH_LENGTH];
+   static int first = TRUE;
    
    /* go through all entry files */
    n1 = ss_file_find(dir, "??????a.log", &file_list);
    for (index = 0; index < n1; index++) {
-      strlcpy(file_name, dir, sizeof(file_name));
-      strlcat(file_name, file_list + index * MAX_PATH_LENGTH, sizeof(file_name));
-      strlcpy(old_path, file_name, sizeof(old_path));
-      strlcpy(new_path, old_path, sizeof(new_path));
+      generate_subdir_name(file_list + index * MAX_PATH_LENGTH, subdir, sizeof(subdir));
+
+      // create new subdir
+      strlcpy(new_path, dir, MAX_PATH_LENGTH);
+      strlcat(new_path, subdir, MAX_PATH_LENGTH);
       
-      generate_new_file_name(old_path, new_path, sizeof(new_path));
+#ifdef OS_WINNT
+      status = mkdir(new_path);
+#else
+      status = mkdir(new_path, 0755);
+#endif
+      
+      if (status == 0) {
+         if (first) {
+            eprintf("\nFound old directory structure. Creating subdirectories and moving files...\n");
+            first = FALSE;
+         }
+         eprintf("Created directory \"%s\"\n", new_path);
+      } else {
+         if (errno != EEXIST) {
+            eprintf("generate_subdir_name: %s\n", strerror(errno));
+            eprintf("Cannot create directory \"%s\"\n", new_path);
+         }
+      }
+      
+      strlcpy(old_path, dir, sizeof(old_path));
+      strlcat(old_path, file_list + index * MAX_PATH_LENGTH, sizeof(old_path));
+      strlcpy(new_path, dir, sizeof(new_path));
+      strlcat(new_path, subdir, sizeof(new_path));
+      strlcat(new_path, file_list + index * MAX_PATH_LENGTH, sizeof(new_path));
+      
       rename(old_path, new_path);
    }
    if (file_list)
@@ -3788,12 +3791,24 @@ int restructure_dir(char *dir)
    /* go through all attachment files */
    n2 = ss_file_find(dir, "??????_??????_*", &file_list);
    for (index = 0; index < n2; index++) {
-      strlcpy(file_name, dir, sizeof(file_name));
-      strlcat(file_name, file_list + index * MAX_PATH_LENGTH, sizeof(file_name));
-      strlcpy(old_path, file_name, sizeof(old_path));
-      strlcpy(new_path, old_path, sizeof(new_path));
+      generate_subdir_name(file_list + index * MAX_PATH_LENGTH, subdir, sizeof(subdir));
+
+      // create new subdir
+      strlcpy(new_path, dir, MAX_PATH_LENGTH);
+      strlcat(new_path, subdir, MAX_PATH_LENGTH);
       
-      generate_new_file_name(old_path, new_path, sizeof(new_path));
+#ifdef OS_WINNT
+      status = mkdir(new_path);
+#else
+      status = mkdir(new_path, 0755);
+#endif
+      
+      strlcpy(old_path, dir, sizeof(old_path));
+      strlcat(old_path, file_list + index * MAX_PATH_LENGTH, sizeof(old_path));
+      strlcpy(new_path, dir, sizeof(new_path));
+      strlcat(new_path, subdir, sizeof(new_path));
+      strlcat(new_path, file_list + index * MAX_PATH_LENGTH, sizeof(new_path));
+      
       rename(old_path, new_path);
    }
    if (file_list)
@@ -3839,6 +3854,10 @@ int parse_file(LOGBOOK *lbs, char *file_name)
                eprintf("Not enough memory to allocate entry index\n");
                return EL_MEM_ERROR;
             }
+            
+            strlcpy(lbs->el_index[*lbs->n_el_index].subdir, file_name+strlen(lbs->data_dir), 256);
+            if (strrchr(lbs->el_index[*lbs->n_el_index].subdir, DIR_SEPARATOR))
+               *(strrchr(lbs->el_index[*lbs->n_el_index].subdir, DIR_SEPARATOR)+1) = 0;
             
             if (strrchr(file_name, DIR_SEPARATOR))
                strlcpy(str, strrchr(file_name, DIR_SEPARATOR)+1, sizeof(str));
@@ -3893,25 +3912,26 @@ int parse_file(LOGBOOK *lbs, char *file_name)
 
 int scan_dir_tree(LOGBOOK *lbs, const char *dir, char **file_list, int *n)
 {
-   int  index, i;
+   int  index, n_files;
    char str[MAX_PATH_LENGTH];
    char *fl, *p;
    
    fl = NULL;
-   i = ss_file_find(dir, "*", &fl);
-   if (i == 0) {
+   n_files = ss_file_find(dir, "*", &fl);
+   if (n_files == 0) {
       if (fl)
          xfree(fl);
       return 0;
    }
    
+   if (*file_list == NULL)
+      *file_list = (char *)xmalloc(n_files*MAX_PATH_LENGTH);
+   else
+      *file_list = (char *)xrealloc(*file_list, ((*n)+n_files)*MAX_PATH_LENGTH);
+   
    /* go through all files */
-   for (index = 0; index < i; index++) {
+   for (index = 0; index < n_files; index++) {
       if (fnmatch1("??????a.log", &fl[index * MAX_PATH_LENGTH]) == 0) {
-         if (*file_list == NULL)
-            *file_list = (char *)xmalloc(MAX_PATH_LENGTH);
-         else
-            *file_list = (char *)xrealloc(file_list, (*n+1)*MAX_PATH_LENGTH);
          p = *file_list + ((*n) * MAX_PATH_LENGTH);
          strlcpy(p, dir, MAX_PATH_LENGTH);
          if (p[strlen(p)-1] != DIR_SEPARATOR)
@@ -3922,7 +3942,7 @@ int scan_dir_tree(LOGBOOK *lbs, const char *dir, char **file_list, int *n)
    }
    
    /* go through all sub-directories */
-   for (index = 0; index < i; index++) {
+   for (index = 0; index < n_files; index++) {
       if (fnmatch1("????", &fl[index * MAX_PATH_LENGTH]) == 0 ||
           fnmatch1("??", &fl[index * MAX_PATH_LENGTH]) == 0) {
          if (strieq(fl + index * MAX_PATH_LENGTH, ".."))
@@ -3946,8 +3966,7 @@ int scan_dir_tree(LOGBOOK *lbs, const char *dir, char **file_list, int *n)
 int el_build_index(LOGBOOK * lbs, BOOL rebuild)
 /* scan all ??????a.log files and build an index table in eli[] */
 {
-   char *file_list, error_str[256], base_dir[256],
-       file_name[MAX_PATH_LENGTH], *buffer;
+   char *file_list, error_str[256], base_dir[256], *buffer;
    int index, n;
    int i, status;
    unsigned char digest[16];
@@ -4371,7 +4390,7 @@ int el_retrieve(LOGBOOK * lbs, int message_id, char *date, char attr_list[MAX_N_
    if (index == *lbs->n_el_index)
       return EL_NO_MSG;
 
-   sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
+   sprintf(file_name, "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
    fh = open(file_name, O_RDONLY | O_BINARY, 0644);
    if (fh < 0) {
       /* file might have been deleted, rebuild index */
@@ -4613,7 +4632,7 @@ int el_retrieve_attachment(LOGBOOK * lbs, int message_id, int n, char name[MAX_P
    if (index == *lbs->n_el_index)
       return EL_NO_MSG;
 
-   sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
+   sprintf(file_name, "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
    fh = open(file_name, O_RDONLY | O_BINARY, 0644);
    if (fh < 0) {
       /* file might have been deleted, rebuild index */
@@ -4664,8 +4683,10 @@ int el_retrieve_attachment(LOGBOOK * lbs, int message_id, int n, char name[MAX_P
          break;
    }
 
-   if (p)
-      strlcpy(name, p, MAX_PATH_LENGTH);
+   if (p) {
+      strlcpy(name, lbs->el_index[index].subdir, MAX_PATH_LENGTH);
+      strlcat(name, p, MAX_PATH_LENGTH);
+   }
 
    return EL_SUCCESS;
 }
@@ -4710,7 +4731,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
    char file_name[256], dir[256], str[NAME_LENGTH], date1[256], attrib[MAX_N_ATTR][NAME_LENGTH],
        reply_to1[MAX_REPLY_TO * 10], in_reply_to1[MAX_REPLY_TO * 10], encoding1[80], *message, *p,
        *old_text, *buffer;
-   char attachment_all[64 * MAX_ATTACHMENTS];
+   char attachment_all[64 * MAX_ATTACHMENTS], subdir[MAX_PATH_LENGTH];
    time_t ltime;
 
    tail_size = orig_size = 0;
@@ -4738,7 +4759,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
          return -1;
       }
 
-      sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
+      sprintf(file_name, "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
       fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
       if (fh < 0) {
          xfree(message);
@@ -4840,7 +4861,9 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
 
       sprintf(file_name, "%c%c%02d%c%ca.log", date1[14], date1[15], i + 1, date1[5], date1[6]);
 
-      sprintf(str, "%s%s", dir, file_name);
+      generate_subdir_name(file_name, subdir, sizeof(subdir));
+                    
+      sprintf(str, "%s%s%s", dir, subdir, file_name);
       fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
       if (fh < 0) {
          xfree(message);
