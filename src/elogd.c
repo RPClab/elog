@@ -3627,7 +3627,7 @@ int fnmatch1(const char *pattern, const char *string)
 
 /*------------------------------------------------------------------*/
 
-int ss_file_find(char *path, char *pattern, char **plist)
+int ss_file_find(const char *path, char *pattern, char **plist)
 /********************************************************************
  Routine: ss_file_find
 
@@ -3808,7 +3808,7 @@ int parse_file(LOGBOOK *lbs, char *file_name)
 {
    char str[256], date[256], *buffer, *p, *pn, in_reply_to[80];
    int length, i, fh, len;
-
+   
    fh = open(file_name, O_RDONLY | O_BINARY, 0644);
    
    if (fh < 0) {
@@ -3891,12 +3891,64 @@ int parse_file(LOGBOOK *lbs, char *file_name)
 
 /*------------------------------------------------------------------*/
 
+int scan_dir_tree(LOGBOOK *lbs, const char *dir, char **file_list, int *n)
+{
+   int  index, i;
+   char str[MAX_PATH_LENGTH];
+   char *fl, *p;
+   
+   fl = NULL;
+   i = ss_file_find(dir, "*", &fl);
+   if (i == 0) {
+      if (fl)
+         xfree(fl);
+      return 0;
+   }
+   
+   /* go through all files */
+   for (index = 0; index < i; index++) {
+      if (fnmatch1("??????a.log", &fl[index * MAX_PATH_LENGTH]) == 0) {
+         if (*file_list == NULL)
+            *file_list = (char *)xmalloc(MAX_PATH_LENGTH);
+         else
+            *file_list = (char *)xrealloc(file_list, (*n+1)*MAX_PATH_LENGTH);
+         p = *file_list + ((*n) * MAX_PATH_LENGTH);
+         strlcpy(p, dir, MAX_PATH_LENGTH);
+         if (p[strlen(p)-1] != DIR_SEPARATOR)
+            strlcat(p, DIR_SEPARATOR_STR, MAX_PATH_LENGTH);
+         strlcat(p, fl + index * MAX_PATH_LENGTH, MAX_PATH_LENGTH);
+         (*n)++;
+      }
+   }
+   
+   /* go through all sub-directories */
+   for (index = 0; index < i; index++) {
+      if (fnmatch1("????", &fl[index * MAX_PATH_LENGTH]) == 0 ||
+          fnmatch1("??", &fl[index * MAX_PATH_LENGTH]) == 0) {
+         if (strieq(fl + index * MAX_PATH_LENGTH, ".."))
+            continue;
+         strlcpy(str, dir, sizeof(str));
+         if (str[strlen(str)-1] != DIR_SEPARATOR)
+            strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
+         strlcat(str, fl + index * MAX_PATH_LENGTH, sizeof(str));
+         scan_dir_tree(lbs, str, file_list, n);
+      }
+   }
+   
+   if (fl)
+      xfree(fl);
+   
+   return *n;
+}
+
+/*------------------------------------------------------------------*/
+
 int el_build_index(LOGBOOK * lbs, BOOL rebuild)
 /* scan all ??????a.log files and build an index table in eli[] */
 {
-   char *file_list, *dir_list, error_str[256], base_dir[256], dir[256], str[256],
+   char *file_list, error_str[256], base_dir[256],
        file_name[MAX_PATH_LENGTH], *buffer;
-   int dindex, index, n;
+   int index, n;
    int i, status;
    unsigned char digest[16];
 
@@ -3943,57 +3995,15 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
       eprintf("Entries:\n");
    
    // move files to directories if (new layout to reduce number of files per directory)
-   // ## restructure_dir(base_dir);
+   restructure_dir(base_dir);
 
-   dir_list = NULL;
-   n = ss_file_find(base_dir, "????", &dir_list);
-   if (n == 0) {
-      if (dir_list)
-         xfree(dir_list);
-      dir_list = NULL;
-      //return EL_EMPTY;
-   }
- 
-   /* go through all directories */
-   for (dindex = 0; dindex < n; dindex++) {
-      file_list = NULL;
-      strlcpy(dir, base_dir, sizeof(str));
-      strlcat(dir, dir_list + dindex * MAX_PATH_LENGTH, sizeof(str));
-      strlcat(dir, DIR_SEPARATOR_STR, sizeof(str));
-      n = ss_file_find(dir, "??????a.log", &file_list);
-      
-      /* go through all files */
-      for (index = 0; index < n; index++) {
-         strlcpy(file_name, dir, sizeof(file_name));
-         strlcat(file_name, file_list + index * MAX_PATH_LENGTH, sizeof(file_name));
-         
-         status = parse_file(lbs, file_name);
-         if (status != SUCCESS) {
-            if (file_list)
-               xfree(file_list);
-            return status;
-         }
-      }
-     
-      if (file_list)
-         xfree(file_list);
-   }
-   
    file_list = NULL;
-   n = ss_file_find(base_dir, "??????a.log", &file_list);
-   if (n == 0) {
-      if (file_list)
-         xfree(file_list);
-      file_list = NULL;
-      return EL_EMPTY;
-   }
-
+   n = 0;
+   scan_dir_tree(lbs, base_dir, &file_list, &n);
+   
    /* go through all files */
    for (index = 0; index < n; index++) {
-      strlcpy(file_name, base_dir, sizeof(file_name));
-      strlcat(file_name, file_list + index * MAX_PATH_LENGTH, sizeof(file_name));
-
-      status = parse_file(lbs, file_name);
+      status = parse_file(lbs, file_list+index*MAX_PATH_LENGTH);
       if (status != SUCCESS) {
          if (file_list)
             xfree(file_list);
