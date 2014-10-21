@@ -4683,10 +4683,8 @@ int el_retrieve_attachment(LOGBOOK * lbs, int message_id, int n, char name[MAX_P
          break;
    }
 
-   if (p) {
-      strlcpy(name, lbs->el_index[index].subdir, MAX_PATH_LENGTH);
-      strlcat(name, p, MAX_PATH_LENGTH);
-   }
+   if (p)
+      strlcpy(name, p, MAX_PATH_LENGTH);
 
    return EL_SUCCESS;
 }
@@ -26620,7 +26618,7 @@ void interprete(char *lbook, char *path)
        edit_id[80], file_name[256], command[256], enc_path[256], dec_path[256], uname[80],
        full_name[256], user_email[256], logbook[256], logbook_enc[256], *experiment,
        group[256], css[256], *pfile, attachment[MAX_PATH_LENGTH], str3[NAME_LENGTH],
-       thumb_name[256], sid[32], error_str[256];
+       thumb_name[256], sid[32], error_str[256], subdir[256];
    LOGBOOK *lbs;
    FILE *f;
 
@@ -27188,6 +27186,8 @@ void interprete(char *lbook, char *path)
             pfile[13] = '_';
          /* file from data directory requested */
          strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+         generate_subdir_name(pfile, subdir, sizeof(subdir));
+         strlcat(file_name, subdir, sizeof(file_name));
          strlcat(file_name, pfile, sizeof(file_name));
       } else {
          /* file from theme directory requested */
