@@ -179,6 +179,9 @@ struct {
 
 "", ""},};
 
+char _convert_cmd[256];
+char _identify_cmd[256];
+
 #ifdef OS_WINNT
 int run_service(void);
 #endif
@@ -11579,9 +11582,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      /* ImageMagick available, so get image size */
                      rsprintf("<b>%s</b>&nbsp;\n", att[index] + 14);
                      if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
-                        sprintf(cmd, "identify -format '%%wx%%h' '%s[0]'", file_name);
+                        sprintf(cmd, "%s -format '%%wx%%h' '%s[0]'", _identify_cmd, file_name);
                      else
-                        sprintf(cmd, "identify -format '%%wx%%h' '%s'", file_name);
+                        sprintf(cmd, "%s -format '%%wx%%h' '%s'", _identify_cmd, file_name);
 #ifdef OS_WINNT
                      for (i = 0; i < (int) strlen(cmd); i++)
                         if (cmd[i] == '\'')
@@ -23683,9 +23686,9 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
       strlcat(str, ".png", sizeof(str));
 
    if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
-      snprintf(cmd, sizeof(cmd), "convert %s '%s[0-7]'%s '%s'", thumb_options, file_name, thumb_size, str);
+      snprintf(cmd, sizeof(cmd), "%s %s '%s[0-7]'%s '%s'", _convert_cmd, thumb_options, file_name, thumb_size, str);
    else
-      snprintf(cmd, sizeof(cmd), "convert %s '%s'%s '%s'", thumb_options, file_name, thumb_size, str);
+      snprintf(cmd, sizeof(cmd), "%s %s '%s'%s '%s'", _convert_cmd, thumb_options, file_name, thumb_size, str);
 
 #ifdef OS_WINNT
    for (i = 0; i < (int) strlen(cmd); i++)
@@ -23780,7 +23783,7 @@ void call_image_magick(LOGBOOK * lbs)
    strlcat(file_name, getparam("img"), sizeof(file_name));
    thumb_status = get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
 
-   sprintf(cmd, "identify -format '%%wx%%h %%c' '%s'", thumb_name);
+   sprintf(cmd, "%s -format '%%wx%%h %%c' '%s'", _identify_cmd, thumb_name);
 #ifdef OS_WINNT
    for (i = 0; i < (int) strlen(cmd); i++)
       if (cmd[i] == '\'')
@@ -23810,30 +23813,30 @@ void call_image_magick(LOGBOOK * lbs)
    i = cmd[0] = 0;
    if (strieq(getparam("req"), "rotleft")) {
       new_rot = (cur_rot + 360 - 90) % 360;
-      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", file_name, new_rot,
+      sprintf(cmd, "%s '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", _convert_cmd, file_name, new_rot,
               cur_height, new_rot, thumb_name);
    }
 
    if (strieq(getparam("req"), "rotright")) {
       new_rot = (cur_rot + 90) % 360;
-      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", file_name, new_rot,
+      sprintf(cmd, "%s '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", _convert_cmd, file_name, new_rot,
               cur_height, new_rot, thumb_name);
    }
 
    if (strieq(getparam("req"), "original")) {
       new_size = (int) (cur_width / 1.5);
-      sprintf(cmd, "convert '%s' '%s'", file_name, thumb_name);
+      sprintf(cmd, "%s '%s' '%s'", _convert_cmd, file_name, thumb_name);
    }
 
    if (strieq(getparam("req"), "smaller")) {
       new_size = (int) (cur_width / 1.5);
-      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", file_name, cur_rot,
+      sprintf(cmd, "%s '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", _convert_cmd, file_name, cur_rot,
               new_size, cur_rot, thumb_name);
    }
 
    if (strieq(getparam("req"), "larger")) {
       new_size = (int) (cur_width * 1.5);
-      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", file_name, cur_rot,
+      sprintf(cmd, "%s '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", _convert_cmd, file_name, cur_rot,
               new_size, cur_rot, thumb_name);
    }
 
@@ -29178,8 +29181,33 @@ void server_loop(void)
       eprintf("CKeditor NOT detected\n");
 
    /* check for ImageMagick */
-   my_shell("convert -version", str, sizeof(str));
+   strlcpy(_convert_cmd, "convert", sizeof(_convert_cmd));
+   strlcpy(_identify_cmd, "identify", sizeof(_convert_cmd));
+   sprintf(str, "%s -version", _convert_cmd);
+   my_shell(str, str, sizeof(str));
    image_magick_exist = (strstr(str, "ImageMagick") != NULL);
+   if (!image_magick_exist) {
+      strlcpy(_convert_cmd, "/usr/bin/convert", sizeof(_convert_cmd));
+      strlcpy(_identify_cmd, "/usr/bin/identify", sizeof(_convert_cmd));
+      sprintf(str, "%s -version", _convert_cmd);
+      my_shell(str, str, sizeof(str));
+      image_magick_exist = (strstr(str, "ImageMagick") != NULL);
+   }
+   if (!image_magick_exist) {
+      strlcpy(_convert_cmd, "/usr/local/bin/convert", sizeof(_convert_cmd));
+      strlcpy(_identify_cmd, "/usr/local/bin/identify", sizeof(_convert_cmd));
+      sprintf(str, "%s -version", _convert_cmd);
+      my_shell(str, str, sizeof(str));
+      image_magick_exist = (strstr(str, "ImageMagick") != NULL);
+   }
+   if (!image_magick_exist) {
+      strlcpy(_convert_cmd, "/opt/local/bin/convert", sizeof(_convert_cmd));
+      strlcpy(_identify_cmd, "/opt/local/bin/identify", sizeof(_convert_cmd));
+      sprintf(str, "%s -version", _convert_cmd);
+      my_shell(str, str, sizeof(str));
+      image_magick_exist = (strstr(str, "ImageMagick") != NULL);
+   }
+   
    if (image_magick_exist)
       eprintf("ImageMagick detected\n");
    else
