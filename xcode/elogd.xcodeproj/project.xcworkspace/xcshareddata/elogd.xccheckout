@@ -13,10 +13,10 @@
 		<key>4A8AA611133AD3F7E07C7C33DCF50244FB7A1AB5</key>
 		<string>bitbucket.org:tmidas/mxml.git</string>
 		<key>FDBEF18BB209C3ECA837D3C38A566472CB958C8E</key>
-		<string>https://bitbucket.org/ritt/elog.git</string>
+		<string>bitbucket.org:ritt/elog.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>xcode/elogd.xcodeproj/project.xcworkspace</string>
+	<string>xcode/elogd.xcodeproj</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>4A8AA611133AD3F7E07C7C33DCF50244FB7A1AB5</key>
@@ -25,7 +25,7 @@
 		<string>../../..</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
-	<string>https://bitbucket.org/ritt/elog.git</string>
+	<string>bitbucket.org:ritt/elog.git</string>
 	<key>IDESourceControlProjectVersion</key>
 	<integer>111</integer>
 	<key>IDESourceControlProjectWCCIdentifier</key>

@@ -4529,7 +4529,7 @@ int el_retrieve(LOGBOOK * lbs, int message_id, char *date, char attr_list[MAX_N_
 int el_submit_attachment(LOGBOOK * lbs, const char *afilename, const char *buffer, int buffer_size,
                          char *full_name)
 {
-   char file_name[MAX_PATH_LENGTH], ext_file_name[MAX_PATH_LENGTH + 100], str[MAX_PATH_LENGTH], *p;
+   char file_name[MAX_PATH_LENGTH], ext_file_name[MAX_PATH_LENGTH + 100], str[MAX_PATH_LENGTH], *p, subdir[MAX_PATH_LENGTH];
    int fh;
    time_t now;
    struct tm tms;
@@ -4562,6 +4562,8 @@ int el_submit_attachment(LOGBOOK * lbs, const char *afilename, const char *buffe
          strlcpy(full_name, ext_file_name, MAX_PATH_LENGTH);
 
       strlcpy(str, lbs->data_dir, sizeof(str));
+      generate_subdir_name(ext_file_name, subdir, sizeof(subdir));
+      strlcat(str, subdir, sizeof(str));
       strlcat(str, ext_file_name, sizeof(str));
 
       /* save attachment */
@@ -4585,15 +4587,18 @@ int el_submit_attachment(LOGBOOK * lbs, const char *afilename, const char *buffe
 void el_delete_attachment(LOGBOOK * lbs, char *file_name)
 {
    int i;
-   char str[MAX_PATH_LENGTH];
+   char str[MAX_PATH_LENGTH], subdir[MAX_PATH_LENGTH];
 
    strlcpy(str, lbs->data_dir, sizeof(str));
+   generate_subdir_name(file_name, subdir, sizeof(subdir));
+   strlcat(str, subdir, sizeof(str));
    strlcat(str, file_name, sizeof(str));
    remove(str);
    strlcat(str, ".png", sizeof(str));
    remove(str);
    for (i = 0;; i++) {
       strlcpy(str, lbs->data_dir, sizeof(str));
+      strlcat(str, subdir, sizeof(str));
       strlcat(str, file_name, sizeof(str));
       sprintf(str + strlen(str), "-%d.png", i);
       if (file_exist(str)) {
@@ -4602,6 +4607,7 @@ void el_delete_attachment(LOGBOOK * lbs, char *file_name)
       }
 
       strlcpy(str, lbs->data_dir, sizeof(str));
+      strlcat(str, subdir, sizeof(str));
       strlcat(str, file_name, sizeof(str));
       if (strrchr(str, '.'))
          *strrchr(str, '.') = 0;
@@ -4725,7 +4731,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
 
  \********************************************************************/
 {
-   int n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id;
+   int n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id, status;
    char file_name[256], dir[256], str[NAME_LENGTH], date1[256], attrib[MAX_N_ATTR][NAME_LENGTH],
        reply_to1[MAX_REPLY_TO * 10], in_reply_to1[MAX_REPLY_TO * 10], encoding1[80], *message, *p,
        *old_text, *buffer;
@@ -4860,7 +4866,16 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
       sprintf(file_name, "%c%c%02d%c%ca.log", date1[14], date1[15], i + 1, date1[5], date1[6]);
 
       generate_subdir_name(file_name, subdir, sizeof(subdir));
-                    
+      sprintf(str, "%s%s", dir, subdir);
+      if (strlen(str) > 0 && str[strlen(str)-1] == DIR_SEPARATOR)
+         str[strlen(str)-1] = 0;
+      
+#ifdef OS_WINNT
+      status = mkdir(str);
+#else
+      status = mkdir(str, 0755);
+#endif
+      
       sprintf(str, "%s%s%s", dir, subdir, file_name);
       fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
       if (fh < 0) {
@@ -5091,7 +5106,7 @@ int el_delete_message(LOGBOOK * lbs, int message_id, BOOL delete_attachments,
    if (index == *lbs->n_el_index)
       return -1;
 
-   sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
+   sprintf(file_name, "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
    fh = open(file_name, O_RDWR | O_BINARY, 0644);
    if (fh < 0)
       return EL_FILE_ERROR;
@@ -9326,7 +9341,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
        ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256], cookie[256],
        orig_author[256], attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256], tooltip[10000],
-       enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256], **user_list, fid[20], upwd[80];
+       enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256], **user_list, fid[20], upwd[80],
+       subdir[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -11515,6 +11531,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                } else {
 
                   strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+                  generate_subdir_name(att[index], subdir, sizeof(subdir));
+                  strlcat(file_name, subdir, sizeof(file_name));
                   strlcat(file_name, att[index], sizeof(file_name));
 
                   display_inline = is_image(file_name) || is_ascii(file_name);
@@ -13358,7 +13376,7 @@ int ascii_compare2(const void *s1, const void *s2)
 
 void show_config_page(LOGBOOK * lbs)
 {
-   char str[256], user[80], password[80], full_name[80], user_email[80], logbook[256], auth[32], **user_list;
+   char str[256], user[80], password[80], full_name[256], user_email[256], logbook[256], auth[32], **user_list;
    int i, n, inactive;
    BOOL email_notify[1000];
 
@@ -13447,10 +13465,11 @@ void show_config_page(LOGBOOK * lbs)
       qsort(user_list, n, sizeof(char *), ascii_compare);
 
       for (i = 0; i < n; i++) {
+         get_user_line(lbs, user_list[i], NULL, full_name, user_email, NULL, NULL, NULL);
          if (strcmp(user_list[i], user) == 0)
-            rsprintf("<option selected value=\"%s\">%s\n", user_list[i], user_list[i]);
+            rsprintf("<option selected value=\"%s\">%s &lt;%s&gt;\n", user_list[i], user_list[i], user_email);
          else
-            rsprintf("<option value=\"%s\">%s\n", user_list[i], user_list[i]);
+            rsprintf("<option value=\"%s\">%s &lt;%s&gt;\n", user_list[i], user_list[i], user_email);
       }
 
       for (i = 0; i < n; i++)
@@ -14314,7 +14333,7 @@ int show_download_page(LOGBOOK * lbs, char *path)
          if (index == *lbs->n_el_index)
             return EL_NO_MSG;
 
-         sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
+         sprintf(file_name, "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
          fh = open(file_name, O_RDWR | O_BINARY, 0644);
          if (fh < 0)
             return EL_FILE_ERROR;
@@ -15430,6 +15449,8 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    for (i = 0; i < MAX_ATTACHMENTS; i++)
       if (attachment[i][0]) {
          strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+         generate_subdir_name(attachment[i], subdir, sizeof(subdir));
+         strlcat(file_name, subdir, sizeof(file_name));
          strlcat(file_name, attachment[i], sizeof(file_name));
 
          fh = open(file_name, O_RDONLY | O_BINARY);
@@ -15495,6 +15516,8 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    for (i = 0; i < MAX_ATTACHMENTS; i++)
       if (attachment[i][0]) {
          strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+         generate_subdir_name(attachment[i], subdir, sizeof(subdir));
+         strlcat(file_name, subdir, sizeof(file_name));
          strlcat(file_name, attachment[i], sizeof(file_name));
 
          fh = open(file_name, O_RDONLY | O_BINARY);
@@ -17217,7 +17240,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                   int absolute_link)
 {
    char str[NAME_LENGTH], ref[256], *nowrap, rowstyle[80], tdstyle[80], format[256],
-       file_name[MAX_PATH_LENGTH], *slist, *svalue, comment[256], param[80];
+       file_name[MAX_PATH_LENGTH], *slist, *svalue, comment[256], param[80], subdir[256];
    char display[NAME_LENGTH], attr_icon[80];
    int i, j, n, i_line, index, colspan, n_attachments, line_len, thumb_status, max_line_len, n_lines,
        max_n_lines;
@@ -17912,6 +17935,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
             url_encode(ref, sizeof(ref));       /* for file names with special characters like "+" */
 
             strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+            generate_subdir_name(attachment[index], subdir, sizeof(subdir));
+            strlcat(file_name, subdir, sizeof(file_name));
             strlcat(file_name, attachment[index], sizeof(file_name));
             thumb_status = create_thumbnail(lbs, file_name);
 
@@ -17976,6 +18001,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                           colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
 
                      strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+                     generate_subdir_name(attachment[index], subdir, sizeof(subdir));
+                     strlcat(file_name, subdir, sizeof(file_name));
                      strlcat(file_name, attachment[index], sizeof(file_name));
 
                      if (is_ascii(file_name) && !chkext(attachment[index], ".PS")
@@ -17998,6 +18025,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                            rsprintf("<pre class=\"messagepre\">");
 
                         strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+                        generate_subdir_name(attachment[index], subdir, sizeof(subdir));
+                        strlcat(file_name, subdir, sizeof(file_name));
                         strlcat(file_name, attachment[index], sizeof(file_name));
 
                         f = fopen(file_name, "rt");
@@ -21471,7 +21500,7 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
                               char *multipart_boundary, int content_id)
 {
    int i, index, n_att, fh, n, is_inline, length;
-   char str[256], file_name[256], buffer[256], domain[256];
+   char str[256], file_name[256], buffer[256], domain[256], subdir[256];
 
    /* count attachments */
    for (n_att = 0; att_file[n_att][0] && n_att < MAX_ATTACHMENTS; n_att++);
@@ -21525,6 +21554,8 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
 
       /* encode file */
       strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+      generate_subdir_name(att_file[index], subdir, sizeof(subdir));
+      strlcat(file_name, subdir, sizeof(file_name));
       strlcat(file_name, att_file[index], sizeof(file_name));
       if (is_image(file_name)) {
          get_thumb_name(file_name, str, sizeof(str), 0);
@@ -22125,7 +22156,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
 {
    int i;
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
-   char shell_cmd[10000], tail[1000], str[NAME_LENGTH], *p;
+   char shell_cmd[10000], tail[1000], str[NAME_LENGTH], *p, subdir[256];
 
    if (!enable_execute) {
       eprintf("Shell execution not enabled via -x flag.\n");
@@ -22146,10 +22177,12 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
       strlcpy(tail, p + strlen("$attachments"), sizeof(tail));
       *p = 0;
       for (i = 0; i < MAX_ATTACHMENTS; i++)
-         if (att_file[i][0] && strlen(shell_cmd) + strlen(lbs->data_dir) + strlen(att_file[i])
+         generate_subdir_name(att_file[i], subdir, sizeof(subdir));
+         if (att_file[i][0] && strlen(shell_cmd) + strlen(lbs->data_dir) + strlen(subdir) + strlen(att_file[i])
              < sizeof(shell_cmd) + 1) {
             strcpy(p, "\"");
             strcat(p, lbs->data_dir);
+            strlcat(str, subdir, sizeof(str));
             strlcpy(str, att_file[i], sizeof(str));
             str_escape(str, sizeof(str));
             strcat(p, str);
@@ -23313,7 +23346,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
    int size, i, j, n, n_done, n_done_reply, n_reply, index, status, fh, source_id, message_id,
        thumb_status, next_id = 0;
    char str[256], str2[256], file_name[MAX_PATH_LENGTH], thumb_name[MAX_PATH_LENGTH],
-       *attrib, date[80], *text, msg_str[32], in_reply_to[80],
+       *attrib, date[80], *text, msg_str[32], in_reply_to[80], subdir[256],
        reply_to[MAX_REPLY_TO * 10], *attachment, encoding[80], locked_by[256], *buffer, *list;
    LOGBOOK *lbs_dest;
    BOOL bedit;
@@ -23389,6 +23422,8 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
       for (i = 0; i < MAX_ATTACHMENTS; i++)
          if (attachment[i * MAX_PATH_LENGTH]) {
             strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+            generate_subdir_name(attachment + i * MAX_PATH_LENGTH, subdir, sizeof(subdir));
+            strlcat(file_name, subdir, sizeof(file_name));
             strlcat(file_name, attachment + i * MAX_PATH_LENGTH, sizeof(file_name));
 
             fh = open(file_name, O_RDONLY | O_BINARY);
@@ -23413,6 +23448,8 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
             /* check for thumbnail */
             strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+            generate_subdir_name(attachment + i * MAX_PATH_LENGTH, subdir, sizeof(subdir));
+            strlcat(file_name, subdir, sizeof(file_name));
             strlcat(file_name, attachment + i * MAX_PATH_LENGTH, sizeof(file_name));
             thumb_status = get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
 
@@ -23729,7 +23766,7 @@ int get_thumb_name(const char *file_name, char *thumb_name, int size, int index)
 
 void call_image_magick(LOGBOOK * lbs)
 {
-   char str[256], cmd[256], file_name[256], thumb_name[256];
+   char str[256], cmd[256], file_name[256], thumb_name[256], subdir[256];
    int cur_width, cur_height, new_size, cur_rot, new_rot, i, thumb_status;
 
    if (!isparam("req") || !isparam("img")) {
@@ -23738,6 +23775,8 @@ void call_image_magick(LOGBOOK * lbs)
    }
 
    strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+   generate_subdir_name(getparam("img"), subdir, sizeof(subdir));
+   strlcat(file_name, subdir, sizeof(file_name));
    strlcat(file_name, getparam("img"), sizeof(file_name));
    thumb_status = get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
 
@@ -23825,7 +23864,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
        format[80], slist[MAX_N_ATTR + 10][NAME_LENGTH], file_name[MAX_PATH_LENGTH],
        gattr[MAX_N_ATTR][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], *p,
        lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256], class_name[80], class_value[80],
-       fl[8][NAME_LENGTH], list[MAX_N_ATTR][NAME_LENGTH], domain[256];
+       fl[8][NAME_LENGTH], list[MAX_N_ATTR][NAME_LENGTH], domain[256], subdir[256];
    FILE *f;
    BOOL first, show_text, display_inline, subtable, email;
    struct tm *pts;
@@ -24632,6 +24671,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
                /* determine size of attachment */
                strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+               generate_subdir_name(attachment[index], subdir, sizeof(subdir));
+               strlcat(file_name, subdir, sizeof(file_name));
                strlcat(file_name, attachment[index], sizeof(file_name));
                thumb_status = create_thumbnail(lbs, file_name);
 
@@ -24764,6 +24805,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
                rsprintf("</td></tr></table></td></tr>\n");
                strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+               generate_subdir_name(attachment[index], subdir, sizeof(subdir));
+               strlcat(file_name, subdir, sizeof(file_name));
                strlcat(file_name, attachment[index], sizeof(file_name));
 
                if (!att_hide[index] && display_inline) {
@@ -26523,7 +26566,7 @@ void show_uploader_finished(LOGBOOK * lbs)
 void show_uploader_json(LOGBOOK *lbs)
 {
    char charset[256];
-   char filename[256], thumbname[256], attchname[256];
+   char filename[256], thumbname[256], attchname[256], subdir[256];
    int i, j;
 
    // maximum number of files that can be uploaded this way (drag and drop into the editor)
@@ -26560,6 +26603,8 @@ void show_uploader_json(LOGBOOK *lbs)
       rsprintf("      \"fullName\": \"%s\",\r\n", getparam(attchname));
 
       strlcpy(filename, lbs->data_dir, sizeof(filename));
+      generate_subdir_name(getparam(attchname), subdir, sizeof(subdir));
+      strlcat(filename, subdir, sizeof(filename));
       strlcat(filename, getparam(attchname), sizeof(filename));
 
 
