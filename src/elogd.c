@@ -28679,7 +28679,7 @@ void send_return(int _sock, const char *net_buffer)
                eputs(header_buffer);
                if (chkext(net_buffer, ".gif") || chkext(net_buffer, ".jpg") || chkext(net_buffer, ".png")
                    || chkext(net_buffer, ".ico") || chkext(net_buffer, ".pdf") || return_length > 10000)
-                  eprintf("\n<%d bytes of %s>\n\n", length, str);
+                  eprintf("\n<%d bytes of \"%s\">\n\n", length, str);
                else
                   eputs(p + 4);
                eprintf("\n");
@@ -28733,9 +28733,12 @@ void send_return(int _sock, const char *net_buffer)
                str[0] = 0;
             eprintf("==== Return ================================\n");
             if (chkext(net_buffer, ".gif") || chkext(net_buffer, ".jpg") || chkext(net_buffer, ".png")
-                || chkext(net_buffer, ".ico") || chkext(net_buffer, ".pdf") || return_length > 10000)
-               eprintf("\n<%d bytes of %s>\n\n", return_length, str);
-            else
+                || chkext(net_buffer, ".ico") || chkext(net_buffer, ".pdf") || return_length > 10000) {
+               if (str[0])
+                  eprintf("\n<%d bytes of \"%s\">\r\n", return_length, str);
+               else
+                  eprintf("\n<%d bytes>\r\n", return_length);
+            } else
                eputs(return_buffer);
             eprintf("\n\n");
          }
