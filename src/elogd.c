@@ -77,10 +77,14 @@ char rem_host_ip[256];
 int _sock;
 BOOL use_keepalive, enable_execute = FALSE;
 BOOL fckedit_exist, image_magick_exist;
-int _verbose, _current_message_id;
+int _verbose_level, _current_message_id;
 int _logging_level, _ssl_flag;
 
 LOGBOOK *lb_list = NULL;
+
+#define VERBOSE_URL     1
+#define VERBOSE_INFO    2
+#define VERBOSE_DEBUG   3
 
 #ifdef HAVE_SSL
 SSL *_ssl_con;
@@ -305,14 +309,14 @@ static BOOL chkext(const char *str, const char *ext)
    return TRUE;
 }
 
-int is_verbose(void)
+int get_verbose(void)
 {
-   return _verbose;
+   return _verbose_level;
 }
 
 void set_verbose(int v)
 {
-   _verbose = v;
+   _verbose_level = v;
 }
 
 /* workaround for some gcc versions bug for "%c" format (see strftime(3) */
@@ -938,7 +942,7 @@ int my_shell(char *cmd, char *result, int size)
                   exit(EXIT_FAILURE);
                }
             }
-         } else if (is_verbose())
+         } else if (get_verbose() >= VERBOSE_INFO)
             eprintf("Falling back to group \"%s\"\n", str);
 
          if (!getcfg("global", "Usr", str, sizeof(str)) || setuser(str) < 0) {
@@ -951,14 +955,14 @@ int my_shell(char *cmd, char *result, int size)
                   exit(EXIT_FAILURE);
                }
             }
-         } else if (is_verbose())
+         } else if (get_verbose() >= VERBOSE_INFO)
             eprintf("Falling back to user \"%s\"\n", str);
       }
 
       /* execute shell with redirection to /tmp/elog-shell */
       sprintf(str, "/bin/sh -c \"%s\" > /tmp/elog-shell 2>&1", cmd);
 
-      if (is_verbose()) {
+      if (get_verbose() >= VERBOSE_INFO) {
          efputs("Going to execute: ");
          efputs(str);
          efputs("\n");
@@ -1934,7 +1938,7 @@ void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to, ch
    offset = (-(int) my_timezone());
    if (ts->tm_isdst)
       offset += 3600;
-   if (is_verbose()) {
+   if (get_verbose() >= VERBOSE_INFO) {
       sprintf(str, "timezone: %d, offset: %d\n", (int) my_timezone(), (int) offset);
       efputs(str);
    }
@@ -2054,7 +2058,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
 
    memset(error, 0, error_size);
 
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       eprintf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
    sprintf(buffer, "Email from %s to ", from);
    strlcat(buffer, to, sizeof(buffer));
@@ -2092,7 +2096,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    str = xmalloc(strsize);
 
    recv_string(s, str, strsize, 10000);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
 
@@ -2100,7 +2104,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    do {
       str[0] = 0;
       recv_string(s, str, strsize, 300);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
    } while (str[0]);
@@ -2109,13 +2113,13 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
 
       snprintf(str, strsize - 1, "EHLO %s\r\n", host_name);
       send(s, str, strlen(str), 0);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
 
       do {
          recv_string(s, str, strsize, 3000);
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             efputs(str);
          write_logfile(lbs, str);
          if (!check_smtp_error(str, 250, error, error_size))
@@ -2127,11 +2131,11 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
       snprintf(str, strsize - 1, "HELO %s\r\n", host_name);
 
       send(s, str, strlen(str), 0);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
       recv_string(s, str, strsize, 3000);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
       if (!check_smtp_error(str, 250, error, error_size))
@@ -2143,7 +2147,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
 
       snprintf(str, strsize - 1, "AUTH LOGIN\r\n");
       send(s, str, strlen(str), 0);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
       recv_string(s, str, strsize, 3000);
@@ -2151,13 +2155,13 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
          *strchr(str, '\r') = 0;
       if (atoi(str) != 334) {
          strcat(str, "\n");
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             efputs(str);
          write_logfile(lbs, str);
       } else {
          base64_decode(str + 4, decoded);
          strcat(decoded, "\n");
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             efputs(decoded);
          write_logfile(lbs, decoded);
       }
@@ -2168,7 +2172,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
       base64_encode((unsigned char *) decoded, (unsigned char *) str, strsize);
       strcat(str, "\r\n");
       send(s, str, strlen(str), 0);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(decoded);
       write_logfile(lbs, decoded);
       recv_string(s, str, strsize, 3000);
@@ -2176,7 +2180,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
          *strchr(str, '\r') = 0;
       base64_decode(str + 4, decoded);
       strcat(decoded, "\n");
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(decoded);
       write_logfile(lbs, decoded);
       if (!check_smtp_error(str, 334, error, error_size))
@@ -2185,11 +2189,11 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
       getcfg(lbs->name, "SMTP password", str, strsize);
       strcat(str, "\r\n");
       send(s, str, strlen(str), 0);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
       recv_string(s, str, strsize, 3000);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
       if (!check_smtp_error(str, 235, error, error_size))
@@ -2198,11 +2202,11 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
 
    snprintf(str, strsize - 1, "MAIL FROM: %s\r\n", from);
    send(s, str, strlen(str), 0);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
    recv_string(s, str, strsize, 3000);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
 
@@ -2218,13 +2222,13 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
 
       snprintf(str, strsize - 1, "RCPT TO: <%s>\r\n", list[i]);
       send(s, str, strlen(str), 0);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
 
       /* increased timeout for SMTP servers with long alias lists */
       recv_string(s, str, strsize, 30000);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
 
@@ -2234,11 +2238,11 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
 
    snprintf(str, strsize - 1, "DATA\r\n");
    send(s, str, strlen(str), 0);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
    recv_string(s, str, strsize, 3000);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
    if (!check_smtp_error(str, 354, error, error_size))
@@ -2258,11 +2262,11 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    }
 
    send(s, str, strlen(str), 0);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
    recv_string(s, str, strsize, 10000);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
    if (!check_smtp_error(str, 250, error, error_size))
@@ -2270,11 +2274,11 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
 
    snprintf(str, strsize - 1, "QUIT\r\n");
    send(s, str, strlen(str), 0);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
    recv_string(s, str, strsize, 3000);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
    if (!check_smtp_error(str, 221, error, error_size))
@@ -3886,7 +3890,7 @@ int parse_file(LOGBOOK *lbs, char *file_name)
             MD5_checksum(p, len, lbs->el_index[*lbs->n_el_index].md5_digest);
             
             if (lbs->el_index[*lbs->n_el_index].message_id > 0) {
-               if (is_verbose() > 1) {
+               if (get_verbose() >= VERBOSE_INFO) {
                   eprintf("  ID %3d, %s, ofs %5d, %s, MD5=", lbs->el_index[*lbs->n_el_index].message_id,
                           str, lbs->el_index[*lbs->n_el_index].offset,
                           lbs->el_index[*lbs->n_el_index].in_reply_to ? "reply" : "thead");
@@ -3986,7 +3990,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
    /* get data directory */
    strcpy(base_dir, lbs->data_dir);
 
-   if (is_verbose() > 1) {
+   if (get_verbose() >= VERBOSE_DEBUG) {
       /* show MD5 from config file */
 
       load_config_section(lbs->name, &buffer, error_str);
@@ -4013,7 +4017,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
       return EL_UPGRADE;
    }
 
-   if (is_verbose() > 1)
+   if (get_verbose() >= VERBOSE_DEBUG)
       eprintf("Entries:\n");
    
    // move files to directories if (new layout to reduce number of files per directory)
@@ -4039,7 +4043,7 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
    /* sort entries according to date */
    qsort(lbs->el_index, *lbs->n_el_index, sizeof(EL_INDEX), eli_compare);
 
-   if (is_verbose() > 1) {
+   if (get_verbose() >= VERBOSE_DEBUG) {
       eprintf("After sort:\n");
       for (i = 0; i < *lbs->n_el_index; i++)
          eprintf("  ID %3d, %s, ofs %5d\n", lbs->el_index[i].message_id, lbs->el_index[i].file_name,
@@ -4171,7 +4175,7 @@ int el_index_logbooks()
 #endif
 
                if (j == 0) {
-                  if (is_verbose())
+                  if (get_verbose() >= VERBOSE_INFO)
                      eprintf("Created directory \"%s\"\n", str);
                } else {
                   eprintf("el_index_logbooks: %s\n", strerror(errno));
@@ -4191,7 +4195,7 @@ int el_index_logbooks()
       /* check if other logbook uses the same directory */
       for (j = 0; j < n; j++)
          if (strcmp(lb_list[j].data_dir, lb_list[n].data_dir) == 0) {
-            if (is_verbose())
+            if (get_verbose() >= VERBOSE_INFO)
                eprintf("Logbook \"%s\" uses same directory as logbook \"%s\"\n", logbook, lb_list[j].name);
             lb_list[n].el_index = lb_list[j].el_index;
             lb_list[n].n_el_index = lb_list[j].n_el_index;
@@ -4199,17 +4203,17 @@ int el_index_logbooks()
          }
 
       if (j == n) {
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             eprintf("Indexing logbook \"%s\" in \"%s\" ... ", logbook, lb_list[n].data_dir);
          eflush();
          status = el_build_index(&lb_list[n], FALSE);
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             if (status == EL_SUCCESS)
                eprintf("ok\n");
       }
 
       if (status == EL_EMPTY) {
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             eprintf("Found empty logbook \"%s\"\n", logbook);
       } else if (status == EL_UPGRADE) {
          eprintf("Please upgrade data files in \"%s\" with the elconv program.\n", data_dir);
@@ -7423,7 +7427,7 @@ void show_http_header(LOGBOOK * lbs, BOOL expires, char *cookie)
 
    if (expires) {
       rsprintf("Pragma: no-cache\r\n");
-      rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+      rsprintf("Cache-control: private, max-age=0, no-cache, no-store\r\n");
    }
 
    rsprintf("\r\n");
@@ -7440,8 +7444,8 @@ void show_plain_header(int size, char *file_name)
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
    }
-   // rsprintf("Pragma: no-cache\r\n");
-   rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+   rsprintf("Pragma: no-cache\r\n");
+   rsprintf("Cache-control: private, max-age=0, no-cache, no-store\r\n");
    rsprintf("Content-Type: text/plain\r\n");
    rsprintf("Content-disposition: attachment; filename=\"%s\"\r\n", file_name);
    if (size)
@@ -8320,9 +8324,7 @@ int exist_file(char *file_name)
 void send_file_direct(char *file_name)
 {
    int fh, i, length, delta;
-   char str[MAX_PATH_LENGTH], dir[MAX_PATH_LENGTH], charset[80], format[80];
-   time_t now;
-   struct tm *gmt;
+   char str[MAX_PATH_LENGTH], dir[MAX_PATH_LENGTH], charset[80];
 
    getcwd(dir, sizeof(dir));
    fh = open(file_name, O_RDONLY | O_BINARY);
@@ -8338,14 +8340,9 @@ void send_file_direct(char *file_name)
       /* set expiration time to one day if no thumbnail */
       if (isparam("thumb")) {
          rsprintf("Pragma: no-cache\r\n");
-         rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+         rsprintf("Cache-control: private, max-age=0, no-cache, no-store\r\n");
       } else {
-         time(&now);
-         now += (int) (3600 * 24);
-         gmt = gmtime(&now);
-         strcpy(format, "%A, %d-%b-%y %H:%M:%S GMT");
-         strftime(str, sizeof(str), format, gmt);
-         rsprintf("Expires: %s\r\n", str);
+         rsprintf("Cache-control: public, max-age=86400\r\n");
       }
 
       if (keep_alive) {
@@ -15194,7 +15191,7 @@ int show_md5_page(LOGBOOK * lbs)
    rsprintf("Connection: close\r\n");
    rsprintf("Content-Type: text/plain;charset=%s\r\n", DEFAULT_HTTP_CHARSET);
    rsprintf("Pragma: no-cache\r\n");
-   rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
+   rsprintf("Cache-control: private, max-age=0, no-cache, no-store\r\n\r\n");
 
    /* calculate MD5 for logbook section in config file */
    load_config_section(lbs->name, &buffer, error_str);
@@ -15971,7 +15968,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
       /* check version */
       p = strstr(buffer, "ELOG HTTP ");
       if (!p) {
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             puts(buffer);
          sprintf(error_str, "Remote server is not an ELOG server");
          xfree(buffer);
@@ -15979,7 +15976,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
       }
       version = atoi(p + 10) * 100 + atoi(p + 12) * 10 + atoi(p + 14);
       if (version < 254) {
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             puts(buffer);
 
          strlcpy(str, p + 10, 10);
@@ -15994,7 +15991,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
       /* evaluate status */
       p = strchr(buffer, ' ');
       if (p == NULL) {
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             puts(buffer);
          xfree(buffer);
          *strchr(str, '?') = 0;
@@ -16006,7 +16003,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
       p++;
       status = atoi(p);
       if (status == 401) {
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             puts(buffer);
          xfree(buffer);
          eprintf("Please enter password to access remote elogd server: ");
@@ -16014,7 +16011,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
          while (pwd[strlen(pwd) - 1] == '\n' || pwd[strlen(pwd) - 1] == '\r')
             pwd[strlen(pwd) - 1] = 0;
       } else if (status != 200) {
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             puts(buffer);
          xfree(buffer);
          *strchr(str, '?') = 0;
@@ -16027,7 +16024,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
 
    p = strstr(buffer, "\r\n\r\n");
    if (p == NULL) {
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          puts(buffer);
       xfree(buffer);
       sprintf(error_str, loc("Cannot receive \"%s\""), str);
@@ -16509,7 +16506,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
          }
 
          /* compare MD5s */
-         if (is_verbose()) {
+         if (get_verbose() >= VERBOSE_INFO) {
             eprintf("CONFIG : ");
             for (j = 0; j < 16; j++)
                eprintf("%02X", digest[j]);
@@ -16633,7 +16630,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
          if (exist_remote && exist_cache) {
 
             /* compare MD5s */
-            if (is_verbose()) {
+            if (get_verbose() >= VERBOSE_INFO) {
                eprintf("ID%-5d: ", message_id);
                for (j = 0; j < 16; j++)
                   eprintf("%02X", lbs->el_index[i_msg].md5_digest[j]);
@@ -16776,7 +16773,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
             if (!equal_md5(md5_cache[i_cache].md5_digest, lbs->el_index[i_msg].md5_digest)) {
 
                /* compare MD5s */
-               if (is_verbose()) {
+               if (get_verbose() >= VERBOSE_INFO) {
                   eprintf("ID%-5d: ", message_id);
                   for (j = 0; j < 16; j++)
                      eprintf("%02X", lbs->el_index[i_msg].md5_digest[j]);
@@ -16916,7 +16913,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                                                         lbs->el_index[i_msg].md5_digest)) {
 
             /* compare MD5s */
-            if (is_verbose()) {
+            if (get_verbose() >= VERBOSE_INFO) {
                eprintf("ID%-5d: ", message_id);
                for (j = 0; j < 16; j++)
                   eprintf("%02X", lbs->el_index[i_msg].md5_digest[j]);
@@ -17023,7 +17020,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                   if (!equal_md5(md5_cache[i_cache].md5_digest, md5_remote[i_remote].md5_digest)) {
 
                      /* compare MD5s */
-                     if (is_verbose()) {
+                     if (get_verbose() >= VERBOSE_INFO) {
                         eprintf("ID-%5: none", message_id);
                         eprintf("\nCache  : ");
                         for (j = 0; j < 16; j++)
@@ -23115,7 +23112,7 @@ void submit_elog(LOGBOOK * lbs)
 
             n = strbreak(list, (char (*)[1500]) mail_list, 200, ",", FALSE);
 
-            if (is_verbose())
+            if (get_verbose() >= VERBOSE_INFO)
                eprintf("\n%s to %s\n\n", str, list);
 
             for (i = 0; i < n; i++) {
@@ -23698,7 +23695,7 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
 
    snprintf(str, sizeof(str), "SHELL \"%s\"", cmd);
    write_logfile(lbs, str);
-   if (is_verbose()) {
+   if (get_verbose() >= VERBOSE_INFO) {
       eprintf(str);
       eprintf("\n");
    }
@@ -26579,7 +26576,7 @@ void show_uploader_json(LOGBOOK *lbs)
    rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
    rsprintf("Accept-Ranges: bytes\r\n");
    rsprintf("Pragma: no-cache\r\n");
-   rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+   rsprintf("Cache-control: private, max-age=0, no-cache, no-store\r\n");
    if (keep_alive) {
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
@@ -27871,7 +27868,7 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                /* set attachment filename */
                strlcpy(file_name, p, sizeof(file_name));
                if (file_name[0]) {
-                  if (is_verbose())
+                  if (get_verbose() >= VERBOSE_INFO)
                      eprintf("decode_post: Found CSV/XML import file\n");
                }
 
@@ -27932,7 +27929,7 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                /* remove spaces */
                btou(file_name);
                if (file_name[0]) {
-                  if (is_verbose())
+                  if (get_verbose() >= VERBOSE_INFO)
                      eprintf("decode_post: Found attachment %s\n", file_name);
                   /* check filename for invalid characters */
                   if (strpbrk(file_name, ",;+=")) {
@@ -28111,14 +28108,14 @@ int process_http_request(const char *request, int i_conn)
    if (!strchr(request, '\r'))
       return 0;
 
-   if (is_verbose() == 1) {
+   if (get_verbose() < VERBOSE_DEBUG) {
       strlcpy(str, request, sizeof(str));
       if (strchr(str, '\r'))
          *strchr(str, '\r') = 0;
       if (strchr(str, '\n'))
          *strchr(str, '\n') = 0;
       eputs(str);
-   } else if (is_verbose() > 1) {
+   } else if (get_verbose() >= VERBOSE_DEBUG) {
       eputs("\n");
       eputs(request);
    }
@@ -28472,7 +28469,7 @@ int process_http_request(const char *request, int i_conn)
       for (i = 0; i < n; i++) {
          if (strieq(rem_host, host_list[i]) || strieq(rem_host_ip, host_list[i]) || strieq(host_list[i],
                                                                                            "all")) {
-            if (is_verbose())
+            if (get_verbose() >= VERBOSE_INFO)
                eprintf("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n",
                        strieq(rem_host_ip, host_list[i]) ? rem_host_ip : rem_host, host_list[i]);
             authorized = 0;
@@ -28481,7 +28478,7 @@ int process_http_request(const char *request, int i_conn)
          if (host_list[i][0] == '.') {
             if (strlen(rem_host) > strlen(host_list[i]) && strieq(host_list[i], rem_host + strlen(rem_host)
                                                                   - strlen(host_list[i]))) {
-               if (is_verbose())
+               if (get_verbose() >= VERBOSE_INFO)
                   eprintf("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n", rem_host,
                           host_list[i]);
                authorized = 0;
@@ -28493,7 +28490,7 @@ int process_http_request(const char *request, int i_conn)
             if (strlen(str) > strlen(host_list[i]))
                str[strlen(host_list[i])] = 0;
             if (strieq(host_list[i], str)) {
-               if (is_verbose())
+               if (get_verbose() >= VERBOSE_INFO)
                   eprintf("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n",
                           rem_host_ip, host_list[i]);
                authorized = 0;
@@ -28512,7 +28509,7 @@ int process_http_request(const char *request, int i_conn)
       for (i = 0; i < n; i++) {
          if (strieq(rem_host, host_list[i]) || strieq(rem_host_ip, host_list[i]) || strieq(host_list[i],
                                                                                            "all")) {
-            if (is_verbose())
+            if (get_verbose() >= VERBOSE_INFO)
                eprintf("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
                        strieq(rem_host_ip, host_list[i]) ? rem_host_ip : rem_host, host_list[i]);
             authorized = 1;
@@ -28521,7 +28518,7 @@ int process_http_request(const char *request, int i_conn)
          if (host_list[i][0] == '.') {
             if (strlen(rem_host) > strlen(host_list[i]) && strieq(host_list[i], rem_host + strlen(rem_host)
                                                                   - strlen(host_list[i]))) {
-               if (is_verbose())
+               if (get_verbose() >= VERBOSE_INFO)
                   eprintf("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
                           rem_host, host_list[i]);
                authorized = 1;
@@ -28533,7 +28530,7 @@ int process_http_request(const char *request, int i_conn)
             if (strlen(str) > strlen(host_list[i]))
                str[strlen(host_list[i])] = 0;
             if (strieq(host_list[i], str)) {
-               if (is_verbose())
+               if (get_verbose() >= VERBOSE_INFO)
                   eprintf("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
                           rem_host_ip, host_list[i]);
                authorized = 1;
@@ -28671,9 +28668,9 @@ void send_return(int _sock, const char *net_buffer)
             send(_sock, header_buffer, strlen(header_buffer), 0);
             send(_sock, p + 4, length, 0);
 #endif
-            if (is_verbose() == 1) {
+            if (get_verbose() < VERBOSE_DEBUG) {
                eprintf("Returned %d bytes\n", length);
-            } else if (is_verbose() == 2) {
+            } else if (get_verbose() >= VERBOSE_DEBUG) {
                if (strrchr(net_buffer, '/'))
                   strlcpy(str, strrchr(net_buffer, '/') + 1, sizeof(str));
                else
@@ -28727,9 +28724,9 @@ void send_return(int _sock, const char *net_buffer)
 #endif
          }
 
-         if (is_verbose() == 1) {
+         if (get_verbose() < VERBOSE_DEBUG) {
             eprintf("Returned %d bytes\n", return_length);
-         } else if (is_verbose() == 2) {
+         } else if (get_verbose() == VERBOSE_DEBUG) {
             if (strrchr(net_buffer, '/'))
                strlcpy(str, strrchr(net_buffer, '/') + 1, sizeof(str));
             else
@@ -28934,7 +28931,7 @@ SSL_CTX *init_ssl(void)
 
 void server_loop(void)
 {
-   int status, i, n_error, broken, min, i_min, i_conn, more_requests;
+   int status, i, broken, min, i_min, i_conn, more_requests;
    char str[1000], logbook[256], logbook_enc[256];
    char *pend;
    int lsock, len, flag, content_length, header_length;
@@ -29059,7 +29056,7 @@ void server_loop(void)
    if (strchr(str, ' '))
       *strchr(str, ' ') = 0;
    eprintf("revision %s\n", str);
-   if (is_verbose()) {
+   if (get_verbose() >= VERBOSE_INFO) {
       getcwd(str, sizeof(str));
       if (strchr(config_file, DIR_SEPARATOR) == NULL)
          eprintf("Config file  : %s%c%s\n", str, DIR_SEPARATOR, config_file);
@@ -29148,7 +29145,7 @@ void server_loop(void)
                exit(EXIT_FAILURE);
             }
          }
-      } else if (is_verbose())
+      } else if (get_verbose() >= VERBOSE_INFO)
          eprintf("Falling back to group \"%s\"\n", str);
 
       if (!getcfg("global", "Usr", str, sizeof(str)) || seteuser(str) < 0) {
@@ -29161,7 +29158,7 @@ void server_loop(void)
                exit(EXIT_FAILURE);
             }
          }
-      } else if (is_verbose())
+      } else if (get_verbose() >= VERBOSE_INFO)
          eprintf("Falling back to user \"%s\".\n", str);
    }
 #endif
@@ -29218,11 +29215,11 @@ void server_loop(void)
       eprintf("Keep-alive disabled\n");
 
    /* build logbook indices */
-   if (!is_verbose() && !running_as_daemon)
+   if (get_verbose() == 0 && !running_as_daemon)
       eprintf("Indexing logbooks ... ");
    if (el_index_logbooks() != EL_SUCCESS)
       exit(EXIT_FAILURE);
-   if (!is_verbose() && !running_as_daemon)
+   if (get_verbose() == 0 && !running_as_daemon)
       eputs("done");
 
 #ifndef HAVE_KRB5
@@ -29292,7 +29289,7 @@ void server_loop(void)
                _ssl_con = SSL_new(ssl_ctx);
                SSL_set_fd(_ssl_con, _sock);
                if (SSL_accept(_ssl_con) < 0) {
-                  if (is_verbose())
+                  if (get_verbose() >= VERBOSE_INFO)
                      eprintf("SSL_accept failed\n");
                   closesocket(_sock);
                   ka_sock[i_conn] = 0;
@@ -29348,25 +29345,29 @@ void server_loop(void)
                strcpy(remote_host[i_conn], (char *) inet_ntoa(rem_addr));
 
             strcpy(rem_host, remote_host[i_conn]);
+
+            if (get_verbose() == VERBOSE_URL)
+               eprintf("Open connection #%d on socket %d\n", i, _sock);
+            
+            /* start over */
+            continue;
          }
 
-         else {
-            /* check if open connection received data */
-            for (i = 0; i < N_MAX_CONNECTION; i++)
-               if (ka_sock[i] > 0 && FD_ISSET(ka_sock[i], &readfds))
-                  break;
-            if (i == N_MAX_CONNECTION) {
-               _sock = 0;
-            } else {
-               i_conn = i;
-               _sock = ka_sock[i_conn];
+         /* check if open connection received data */
+         for (i = 0; i < N_MAX_CONNECTION; i++)
+            if (ka_sock[i] > 0 && FD_ISSET(ka_sock[i], &readfds))
+               break;
+         if (i == N_MAX_CONNECTION) {
+            _sock = 0;
+         } else {
+            i_conn = i;
+            _sock = ka_sock[i_conn];
 #ifdef HAVE_SSL
-               _ssl_con = ka_ssl_con[i_conn];
+            _ssl_con = ka_ssl_con[i_conn];
 #endif
-               ka_time[i_conn] = (int) time(NULL);
-               memcpy(&rem_addr, &remote_addr[i_conn], sizeof(rem_addr));
-               strcpy(rem_host, remote_host[i_conn]);
-            }
+            ka_time[i_conn] = (int) time(NULL);
+            memcpy(&rem_addr, &remote_addr[i_conn], sizeof(rem_addr));
+            strcpy(rem_host, remote_host[i_conn]);
          }
 
          /* turn off keep_alive by default */
@@ -29381,7 +29382,6 @@ void server_loop(void)
 
             do {                /* pipleline loop */
                header_length = 0;
-               n_error = 0;
                broken = FALSE;
                return_length = -1;
                do {
@@ -29401,6 +29401,9 @@ void server_loop(void)
 #endif
                               i = recv(_sock, net_buffer + len, net_buffer_size - len, 0);
 
+                           if (get_verbose() == VERBOSE_URL)
+                              eprintf("Connection #%d received %d bytes on socket %d\n", i_conn, i, _sock);
+
                         } else
                            break;
 
@@ -29409,6 +29412,12 @@ void server_loop(void)
                            broken = TRUE;
                            break;
                         }
+                        /* abort if connection has been closed */
+                        if (i == 0) {
+                           broken = TRUE;
+                           break;
+                        }
+
                         if (i > 0)
                            len += i;
 
@@ -29425,16 +29434,6 @@ void server_loop(void)
 
                            memset(net_buffer + net_buffer_size, 0, 100000);
                            net_buffer_size += 100000;
-                        }
-
-                        /* abort if 100x received zero bytes */
-                        if (i == 0) {
-                           n_error++;
-                           if (n_error == 100) {
-                              broken = TRUE;
-                              break;
-                           }
-                           continue;
                         }
 
                         /* repeat until empty line received (fragmented TCP packets!) */
@@ -29547,7 +29546,7 @@ void server_loop(void)
                      return_length = -1;
                      break;
                   } else {
-                     if (strlen(net_buffer) > 0 && is_verbose()) {
+                     if (strlen(net_buffer) > 0 && get_verbose() >= VERBOSE_INFO) {
                         strcpy(str, "Received unknown HTTP command: ");
                         strencode2(str, net_buffer, sizeof(str));
                         show_error(str);
@@ -29558,14 +29557,14 @@ void server_loop(void)
                } while (1);
 
                if (broken) {
-                  if (is_verbose())
-                     eprintf("TCP connection broken\n");
+                  if (get_verbose() >= VERBOSE_URL)
+                     eprintf("TCP connection #%d on socket %d closed\n", i_conn, _sock);
                   keep_alive = FALSE;
                   break;
                }
 
                if (strncmp(net_buffer, "POST", 4) == 0 && len < header_length + content_length) {
-                  if (is_verbose())
+                  if (get_verbose() >= VERBOSE_INFO)
                      eprintf("Incomplete POST request\n");
                   keep_alive = FALSE;
                   break;
@@ -30237,10 +30236,11 @@ int main(int argc, char *argv[])
       if (argv[i][0] == '-' && argv[i][1] == 'D')
          running_as_daemon = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'v') {
-         if (atoi(&argv[i][2]) > 0)
-            set_verbose(atoi(&argv[i][2]));
-         else
-            set_verbose(2);
+         if (i < argc-1 && atoi(argv[i+1]) > 0) {
+            set_verbose(atoi(argv[i+1]));
+            i++;
+         } else
+            set_verbose(VERBOSE_INFO);
       } else if (argv[i][0] == '-' && argv[i][1] == 'S')
          silent = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'k')
@@ -30325,7 +30325,7 @@ int main(int argc, char *argv[])
             printf("       -S be silent\n");
             printf("       -s <dir> specify resource directory (themes, icons, ...)\n");
             printf("       -t <pwd> create/overwrite SMTP password in config file\n");
-            printf("       -v debugging output\n");
+            printf("       -v verbose output (1:URL, 2:INFO, 3:DEBUG)\n");
             printf("       -x enable execution of shell commands\n\n");
 #ifdef OS_WINNT
             printf("Windows service funtions:\n");
