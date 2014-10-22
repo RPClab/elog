@@ -30325,7 +30325,7 @@ int main(int argc, char *argv[])
             printf("       -S be silent\n");
             printf("       -s <dir> specify resource directory (themes, icons, ...)\n");
             printf("       -t <pwd> create/overwrite SMTP password in config file\n");
-            printf("       -v verbose output (1:URL, 2:INFO, 3:DEBUG)\n");
+            printf("       -v <n> verbose output (1:URL, 2:INFO, 3:DEBUG)\n");
             printf("       -x enable execution of shell commands\n\n");
 #ifdef OS_WINNT
             printf("Windows service funtions:\n");
