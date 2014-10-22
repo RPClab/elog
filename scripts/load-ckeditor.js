@@ -4,7 +4,7 @@
 //
 // NOTE: This function works SYNCRHONOUSLY
 function localize(str) {
-    var URL = '/' + parent.logbook + "/?cmd=loc&value=" + str;
+    var URL = "?cmd=loc&value=" + str;
 
     return $.ajax({
         type: "GET",
