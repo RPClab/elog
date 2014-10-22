@@ -13,8 +13,6 @@ function localize(str) {
     }).responseText;
 }
 
-console.log(localize("Submit"));
-
 // After the page has loaded, load the Ckeditor and the attachment dropbox
 $(document).ready(function() {
 
@@ -29,7 +27,6 @@ $(document).ready(function() {
 
         // Make the editor bigger (at least 500px high and 80% of the viewport otherwise)
         var width = Math.max(500, 0.8 * $(window).height() );
-        console.log(width);
         editor.resize("100%", new String(width));
 
         // Create a new command with the desired exec function
