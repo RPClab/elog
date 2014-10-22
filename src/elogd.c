@@ -4571,6 +4571,16 @@ int el_submit_attachment(LOGBOOK * lbs, const char *afilename, const char *buffe
       strlcpy(str, lbs->data_dir, sizeof(str));
       generate_subdir_name(ext_file_name, subdir, sizeof(subdir));
       strlcat(str, subdir, sizeof(str));
+      if (strlen(str) > 0 && str[strlen(str)-1] == DIR_SEPARATOR)
+         str[strlen(str)-1] = 0;
+      
+#ifdef OS_WINNT
+      mkdir(str);
+#else
+      mkdir(str, 0755);
+#endif
+      
+      strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
       strlcat(str, ext_file_name, sizeof(str));
 
       /* save attachment */
@@ -28008,7 +28018,8 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                   }
                } else if (file_name[0]) {
                   /* save attachment */
-                  el_submit_attachment(lbs, file_name, string, (int) (p - string), full_name);
+                  if (el_submit_attachment(lbs, file_name, string, (int) (p - string), full_name) < 0)
+                     return;
                   sprintf(str, "attachment%d", n_att++);
                   setparam(str, full_name);
                }
