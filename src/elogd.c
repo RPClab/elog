@@ -26493,7 +26493,7 @@ void show_uploader_json(LOGBOOK *lbs)
 {
    char charset[256];
    char filename[256], thumbname[256], attchname[256];
-   int i, j;
+   int i, j, attch_count;
 
    // maximum number of files that can be uploaded this way (drag and drop into the editor)
    const long MAX_FILE_COUNT = 100;
@@ -26511,7 +26511,7 @@ void show_uploader_json(LOGBOOK *lbs)
       strcpy(charset, DEFAULT_HTTP_CHARSET);
    rsprintf("Content-Type: application/json;charset=%s\r\n\r\n", charset);
 
-   long attch_count = strtol(getparam("drop-count"), NULL, 10);
+   attch_count = strtol(getparam("drop-count"), NULL, 10);
     
    // limit the number of files that can be uploaded
    if(attch_count > MAX_FILE_COUNT) {
@@ -26587,7 +26587,7 @@ void interprete(char *lbook, char *path)
        edit_id[80], file_name[256], command[256], enc_path[256], dec_path[256], uname[80],
        full_name[256], user_email[256], logbook[256], logbook_enc[256], *experiment,
        group[256], css[256], *pfile, attachment[MAX_PATH_LENGTH], str3[NAME_LENGTH],
-       thumb_name[256], sid[32], error_str[256];
+       thumb_name[256], sid[32], error_str[256], *s;
    LOGBOOK *lbs;
    FILE *f;
 
@@ -26617,7 +26617,7 @@ void interprete(char *lbook, char *path)
          rsputs(loc(getparam("value")));
       
       /* dummy strings for JS-only translations */
-      char *s = loc("Drop attachments here...");
+      s = loc("Drop attachments here...");
       s = loc("Insert Timestamp");
       if (s)
          s = NULL; // avoid compiler warning

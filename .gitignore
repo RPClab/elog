@@ -10,3 +10,11 @@ elog
 logbooks/*
 locext
 git-revision.h
+*.tlog
+*.sbr
+*.pdb
+*.obj
+*.sdf
+*.suo
+NT/Debug/
+*.user

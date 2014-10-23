@@ -74,6 +74,7 @@
 #include <time.h>
 #include <direct.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 #else
 
