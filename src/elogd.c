@@ -28088,8 +28088,8 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
 
 /*------------------------------------------------------------------*/
 
-#define N_MAX_CONNECTION 10
-#define KEEP_ALIVE_TIME  60
+#define N_MAX_CONNECTION 100
+#define KEEP_ALIVE_TIME   60
 
 int ka_sock[N_MAX_CONNECTION];
 int ka_time[N_MAX_CONNECTION];
