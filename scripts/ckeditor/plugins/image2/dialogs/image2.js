@@ -572,7 +572,7 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
 				    			}
 				    			formData.append('cmd', "Upload");          // Command for server to recognize this as an file upload
 
-				    			var URL = '/' + parent.logbook + '/upload.html?next_attachment=' + parent.next_attachment;
+				    			var URL = 'upload.html?next_attachment=' + parent.next_attachment;
 
 								$.ajax({
 								  xhr: function()

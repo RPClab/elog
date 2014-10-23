@@ -4,7 +4,7 @@
 //
 // NOTE: This function works SYNCRHONOUSLY
 function localize(str) {
-    var URL = '/' + parent.logbook + "/?cmd=loc&value=" + str;
+    var URL = "?cmd=loc&value=" + str;
 
     return $.ajax({
         type: "GET",
@@ -12,8 +12,6 @@ function localize(str) {
         async: false
     }).responseText;
 }
-
-console.log(localize("Submit"));
 
 // After the page has loaded, load the Ckeditor and the attachment dropbox
 $(document).ready(function() {
@@ -29,7 +27,6 @@ $(document).ready(function() {
 
         // Make the editor bigger (at least 500px high and 80% of the viewport otherwise)
         var width = Math.max(500, 0.8 * $(window).height() );
-        console.log(width);
         editor.resize("100%", new String(width));
 
         // Create a new command with the desired exec function
@@ -147,7 +144,7 @@ $(document).ready(function() {
         formData.append('cmd', "Upload");          // Command for server to recognize this as an file upload
 
         if (tests.formdata) {
-            var URL = '/' + parent.logbook + '/upload.html?next_attachment=' + parent.next_attachment;
+            var URL = 'upload.html?next_attachment=' + parent.next_attachment;
 
             // set the flag so the chkupload validator doesn't trigger
             uploading_dropped_files = true;

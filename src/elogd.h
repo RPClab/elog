@@ -229,6 +229,7 @@ long _timezone;
 
 typedef struct {
    int message_id;
+   char subdir[256];
    char file_name[32];
    time_t file_time;
    int offset;

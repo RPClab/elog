@@ -173,18 +173,25 @@ install: $(EXECS)
 	@$(INSTALL) -v -m 0644 scripts/*.js $(ELOGDIR)/scripts/
 
 	@echo "Installing CKeditor to $(ELOGDIR)/scripts/ckeditor"
-	cp -r scripts/* $(ELOGDIR)/scripts
+	@cp -r scripts/* $(ELOGDIR)/scripts
 
 	@echo "Installing resources to $(ELOGDIR)/resources"
 	@$(INSTALL) -m 0644 resources/* $(ELOGDIR)/resources/
-	@$(INSTALL) -m 0644 ssl/* $(ELOGDIR)/ssl/
+	@if [ ! -f $(ELOGDIR)/ssl/server.crt ]; then  \
+	  $(INSTALL) -v -m 0644 ssl/server.crt $(ELOGDIR)/ssl/ ;\
+	fi
+	@if [ ! -f $(ELOGDIR)/ssl/server.key ]; then  \
+	  $(INSTALL) -v -m 0644 ssl/server.key $(ELOGDIR)/ssl/ ;\
+	fi
 
 	@echo "Installing themes to $(ELOGDIR)/themes"
 	@$(INSTALL) -m 0644 themes/default/icons/* $(ELOGDIR)/themes/default/icons/
-	@for file in `find themes/default -type f | grep -v .svn` ; \
+	@for file in `find themes/default -type f | grep -v .svn` ;\
           do \
-          $(INSTALL) -m 0644 $$file $(ELOGDIR)/themes/default/`basename $$file` ;\
-          done
+	    if [ ! -f $(ELOGDIR)/themes/default/`basename $$file` ]; then  \
+              $(INSTALL) -m 0644 $$file $(ELOGDIR)/themes/default/`basename $$file` ;\
+	    fi; \
+	  done
 
 	@echo "Installing example logbook to $(ELOGDIR)/logbooks/demo"
 	@if [ ! -f $(ELOGDIR)/logbooks/demo ]; then  \
@@ -193,7 +200,9 @@ install: $(EXECS)
 
 	@sed "s#\@PREFIX\@#$(PREFIX)#g" elogd.init_template > elogd.init
 	@mkdir -p -m 0755 $(RCDIR)
-	@$(INSTALL) -v -m 0755 elogd.init $(RCDIR)/elogd
+	@if [ ! -f $(RCDIR)/elogd ]; then  \
+	  @$(INSTALL) -v -m 0755 elogd.init $(RCDIR)/elogd ; \
+	fi
 
 	@if [ ! -f $(ELOGDIR)/elogd.cfg ]; then  \
 	  $(INSTALL) -v -m 644 elogd.cfg $(ELOGDIR)/elogd.cfg ; \
