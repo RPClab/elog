@@ -144,7 +144,7 @@ $(document).ready(function() {
         formData.append('cmd', "Upload");          // Command for server to recognize this as an file upload
 
         if (tests.formdata) {
-            var URL = '/' + parent.logbook + '/upload.html?next_attachment=' + parent.next_attachment;
+            var URL = 'upload.html?next_attachment=' + parent.next_attachment;
 
             // set the flag so the chkupload validator doesn't trigger
             uploading_dropped_files = true;
