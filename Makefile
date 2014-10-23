@@ -28,7 +28,7 @@ USE_SSL    = 1
 USE_KRB5   = 0
 
 # flag for LDAP support, please turn on if you need LDAP
-USE_LDSP   = 0
+USE_LDAP   = 0
 
 #############################################################
 

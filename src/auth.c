@@ -486,8 +486,7 @@ int auth_verify_password(LOGBOOK * lbs, const char *user, const char *password, 
       // if user not in password file (external authentication!) and "LDAP register" is allowed (>0),
       // obtain user info from LDAP and add locally
       if (verified) {
-         status = get_user_line(lbs, user, NULL, NULL, NULL, NULL, NULL, &inactive);
-         if (status == 2) {
+         if (get_user_line(lbs, user, NULL, NULL, NULL, NULL, NULL, NULL) == 2) {
             if (getcfg(lbs->name, "LDAP register", str, sizeof(str)) && atoi(str) > 0)
                ldap_adduser_file(lbs, user, password, error_str, error_size);
          }
