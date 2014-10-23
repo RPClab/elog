@@ -7,7 +7,7 @@ elog
 .DS_Store
 
 # Logbook generated files
-logbooks/*
+NT/Debug/
 locext
 git-revision.h
 *.tlog
@@ -16,5 +16,4 @@ git-revision.h
 *.obj
 *.sdf
 *.suo
-NT/Debug/
 *.user
