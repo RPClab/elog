@@ -176,6 +176,7 @@ install: $(EXECS)
 	@$(INSTALL) -m 0755 -d $(DESTDIR) $(SDESTDIR) $(MANDIR)/man1/ $(MANDIR)/man8/
 	@$(INSTALL) -m 0755 -d $(ELOGDIR)/scripts/ $(ELOGDIR)/resources/ $(ELOGDIR)/ssl/ $(ELOGDIR)/themes/default/icons
 	@$(INSTALL) -m 0755 -d $(ELOGDIR)/logbooks/demo
+	@$(INSTALL) -m 0755 -d $(ELOGDIR)/logbooks/demo/2001
 	@$(INSTALL) -v -m 0755 ${BINFLAGS} elog elconv $(DESTDIR)
 	@$(INSTALL) -v -m 0755 ${BINFLAGS} elogd $(SDESTDIR)
 	@$(INSTALL) -v -m 0644 man/elog.1 man/elconv.1 $(MANDIR)/man1/
@@ -204,22 +205,27 @@ install: $(EXECS)
 	  done
 
 	@echo "Installing example logbook to $(ELOGDIR)/logbooks/demo"
-	@if [ ! -f $(ELOGDIR)/logbooks/demo ]; then  \
-	  $(INSTALL) -v -m 0644 logbooks/demo/* $(ELOGDIR)/logbooks/demo ; \
-	fi
-
-	@sed "s#\@PREFIX\@#$(PREFIX)#g" elogd.init_template > elogd.init
-	@mkdir -p -m 0755 $(RCDIR)
-	@if [ ! -f $(RCDIR)/elogd ]; then  \
-	  @$(INSTALL) -v -m 0755 elogd.init $(RCDIR)/elogd ; \
+	@if [ ! -f $(ELOGDIR)/logbooks/demo/2001 ]; then  \
+	  $(INSTALL) -v -m 0644 logbooks/demo/2001/* $(ELOGDIR)/logbooks/demo/2001 ; \
 	fi
 
 	@if [ ! -f $(ELOGDIR)/elogd.cfg ]; then  \
 	  $(INSTALL) -v -m 644 elogd.cfg $(ELOGDIR)/elogd.cfg ; \
 	fi
 
+ifeq ($(OSTYPE),darwin)
+	@$(INSTALL) -v -m 0644 elogd.plist /Library/LaunchDaemons/ch.psi.elogd.plist
+	@echo The elogd service can now be started with 
+	@echo "  launchctl load /Library/LaunchDaemons/ch.psi.elogd.plist"
+else
+	@sed "s#\@PREFIX\@#$(PREFIX)#g" elogd.init_template > elogd.init
+	@mkdir -p -m 0755 $(RCDIR)
+	@if [ ! -f $(RCDIR)/elogd ]; then  \
+	  @$(INSTALL) -v -m 0755 elogd.init $(RCDIR)/elogd ; \
+	fi
+endif
+
 restart:
 	$(RCDIR)/elogd restart
 clean:
 	-$(RM) *~ $(EXECS) regex.o crypt.o auth.o mxml.o strlcpy.o locext
-
