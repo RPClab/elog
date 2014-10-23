@@ -27,6 +27,9 @@ USE_SSL    = 1
 # flag for Kerberos support, please turn on if you need Kerberos
 USE_KRB5   = 0
 
+# flag for LDAP support, please turn on if you need LDAP
+USE_LDSP   = 0
+
 #############################################################
 
 # Default compilation flags unless stated otherwise.
@@ -94,6 +97,13 @@ ifdef USE_KRB5
 ifneq ($(USE_KRB5),0)
 CFLAGS += -DHAVE_KRB5
 LIBS += -lkrb5
+endif
+endif
+
+ifdef USE_LDAP
+ifneq ($(USE_LDAP),0)
+CFLAGS += -DHAVE_LDAP
+LIBS += -lldap
 endif
 endif
 
