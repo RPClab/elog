@@ -28902,7 +28902,7 @@ SSL_CTX *init_ssl(void)
    SSL_library_init();
    SSL_load_error_strings();
 
-   meth = (SSL_METHOD *) SSLv23_method();
+   meth = (SSL_METHOD *) TLSv1_method();
    ctx = SSL_CTX_new(meth);
 
    if (getcfg("global", "SSL Passphrase", pwd, sizeof(pwd))) {
