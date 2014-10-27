@@ -40,8 +40,6 @@ CKEDITOR.plugins.add( 'dndfiles', {
 						        event.stopPropagation();
 						        event.preventDefault();
 
-						    	console.log("start");
-
 						        iframeHTML.css('box-shadow', 'inset 0px 0px 10px 1px #999998');
 
 						        return false;
@@ -52,13 +50,10 @@ CKEDITOR.plugins.add( 'dndfiles', {
 
 						        iframeHTML.css('box-shadow', '0px 0px 0px 0px #999999');
 
-						        console.log("end");
 						        return false;
 						    },
 						    'drop' : function(e) {
 						    	e.preventDefault();
-
-						    	console.log("drop");
 
 						    	iframeHTML.css('box-shadow', '0px 0px 0px 0px #999999');
 
@@ -98,7 +93,7 @@ CKEDITOR.plugins.add( 'dndfiles', {
 
 				    // now post a new XHR request
 				    if (tests.formdata) {
-				    	var URL = '/' + parent.logbook + '/upload.html?next_attachment=' + parent.next_attachment;
+				    	var URL = 'upload.html?next_attachment=' + parent.next_attachment;
 
 						$.ajax({
 						  xhr: function()
