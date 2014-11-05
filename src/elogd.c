@@ -17315,7 +17315,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
       else
          sprintf(str, "Style %s %s", attr_list[i], attrib[i]);
       if (getcfg(lbs->name, str, display, sizeof(display))) {
-         sprintf(str, "%s\" style=\"%s\"", rowstyle, display);
+         sprintf(str, "%s\" style=\"%s", rowstyle, display);
          strlcpy(rowstyle, str, sizeof(rowstyle));
          break;
       }
@@ -17544,7 +17544,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                strlcpy(tdstyle, rowstyle, sizeof(tdstyle));
                sprintf(str, "Cell Style %s %s", attr_list[i], attrib[i]);
                if (getcfg(lbs->name, str, display, sizeof(display))) {
-                  sprintf(str, "%s\" style=\"%s\"", rowstyle, display);
+                  sprintf(str, "%s\" style=\"%s", rowstyle, display);
                   strlcpy(tdstyle, str, sizeof(rowstyle));
                }
 
