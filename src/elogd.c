@@ -28120,12 +28120,14 @@ int process_http_request(const char *request, int i_conn)
       return 0;
 
    if (get_verbose() < VERBOSE_DEBUG) {
-      strlcpy(str, request, sizeof(str));
-      if (strchr(str, '\r'))
-         *strchr(str, '\r') = 0;
-      if (strchr(str, '\n'))
-         *strchr(str, '\n') = 0;
-      eputs(str);
+      if (get_verbose() > 0) {
+         strlcpy(str, request, sizeof(str));
+         if (strchr(str, '\r'))
+            *strchr(str, '\r') = 0;
+         if (strchr(str, '\n'))
+            *strchr(str, '\n') = 0;
+         eputs(str);
+      }
    } else if (get_verbose() >= VERBOSE_DEBUG) {
       eputs("\n");
       eputs(request);
@@ -28680,7 +28682,8 @@ void send_return(int _sock, const char *net_buffer)
             send(_sock, p + 4, length, 0);
 #endif
             if (get_verbose() < VERBOSE_DEBUG) {
-               eprintf("Returned %d bytes\n", length);
+               if (get_verbose() > 0)
+                  eprintf("Returned %d bytes\n", length);
             } else if (get_verbose() >= VERBOSE_DEBUG) {
                if (strrchr(net_buffer, '/'))
                   strlcpy(str, strrchr(net_buffer, '/') + 1, sizeof(str));
@@ -28736,7 +28739,8 @@ void send_return(int _sock, const char *net_buffer)
          }
 
          if (get_verbose() < VERBOSE_DEBUG) {
-            eprintf("Returned %d bytes\n", return_length);
+            if (get_verbose() > 0)
+               eprintf("Returned %d bytes\n", return_length);
          } else if (get_verbose() == VERBOSE_DEBUG) {
             if (strrchr(net_buffer, '/'))
                strlcpy(str, strrchr(net_buffer, '/') + 1, sizeof(str));
