@@ -899,15 +899,17 @@ int my_shell(char *cmd, char *result, int size)
 
 #ifdef OS_UNIX
    pid_t child_pid;
-   int fh, status, i;
+   int fh, status, i, wait_status;
    char str[1024];
 
    if ((child_pid = fork()) < 0)
       return 0;
    else if (child_pid > 0) {
       /* parent process waits for child */
-      waitpid(child_pid, &status, 0);
-
+      do {
+         wait_status = waitpid(child_pid, &status, 0);
+      } while (wait_status == -1 && errno == EINTR);
+      
       /* read back result */
       memset(result, 0, size);
       fh = open("/tmp/elog-shell", O_RDONLY);
