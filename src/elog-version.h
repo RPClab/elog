@@ -26,7 +26,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "2.9.2"
+#define VERSION "3.0.0"
 
 /* ELOG identification */
 static const char ELOGID[] = "elogd " VERSION " built " __DATE__ ", " __TIME__;
