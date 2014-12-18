@@ -3892,7 +3892,7 @@ int parse_file(LOGBOOK *lbs, char *file_name)
             MD5_checksum(p, len, lbs->el_index[*lbs->n_el_index].md5_digest);
             
             if (lbs->el_index[*lbs->n_el_index].message_id > 0) {
-               if (get_verbose() >= VERBOSE_INFO) {
+               if (get_verbose() == VERBOSE_DEBUG) {
                   eprintf("  ID %3d, %s, ofs %5d, %s, MD5=", lbs->el_index[*lbs->n_el_index].message_id,
                           str, lbs->el_index[*lbs->n_el_index].offset,
                           lbs->el_index[*lbs->n_el_index].in_reply_to ? "reply" : "thead");

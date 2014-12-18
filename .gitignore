@@ -2,6 +2,7 @@ elogd
 elconv
 elog
 *.o
+*~
 
 # Mac
 .DS_Store
