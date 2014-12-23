@@ -12,19 +12,27 @@ On Mac (MPC1865):
 - Translate new strings in eloglang.german
 - "git commit -a -m "Release x.x.x-y"
 
-On VPC6562-1:
+On VMPC1865 (VmWare):
 
-- open VS 2010 command window, build xxx-1 in c:\elog
+- open VS 2012 command window
+- cd c:\elog
+- git pull
+- build xxx-1 in c:\elog
+
+On llc.psi.ch:
+
+- log in as ritt
+- git pull in elog and mxml
 
 On midas.psi.ch:
 
-- git pull
-- Increase version in elog.spec
-- su
-- klog ritt
+- log in as root
+- cd ~ritt/elog
+- kinit ritt
+- aklog
 - ./build x.x.x 1
 
-Declare new version at freshmeat.
+Declare new version at forum.
 
 Checklist for new ELOG intermediate release
 ===========================================
