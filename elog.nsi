@@ -75,6 +75,7 @@ Section "ELOG system (required)" SecSystem
   File \windows\system32\ssleay32.dll
   File nt\msvcr90.dll
   File nt\msvcr100.dll
+  File nt\msvcr110.dll
 
   ; doc directory
   SetOutPath $INSTDIR\doc
@@ -82,9 +83,7 @@ Section "ELOG system (required)" SecSystem
 
   ; script directory
   SetOutPath $INSTDIR\scripts
-  File /r /x .svn /x fckeditor.zip /x fckeditor_dist scripts\*.*
-  SetOutPath $INSTDIR\scripts\fckeditor
-  File /r scripts\fckeditor_dist\*.*
+  File /r scripts\*.*
 
   ; resources directory
   SetOutPath $INSTDIR\resources
@@ -125,11 +124,11 @@ Section "ELOG system (required)" SecSystem
   themesNotOverwrite:
 
   ; demo logbook
-  IfFileExists $INSTDIR\logbooks\demo\011108a.log 0 logbNotExist
+  IfFileExists $INSTDIR\logbooks\demo\2001\011108a.log 0 logbNotExist
     MessageBox MB_YESNO|MB_ICONQUESTION "Would you like to overwrite your existing demo logbook?" IDNO logbNotOverwrite
   logbNotExist:
-    SetOutPath $INSTDIR\logbooks\demo
-    File logbooks\demo\*
+    SetOutPath $INSTDIR\logbooks\demo\2001
+    File logbooks\demo\2001\*
   logbNotOverwrite:
     
   SetOutPath $INSTDIR
