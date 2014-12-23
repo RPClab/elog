@@ -18,7 +18,7 @@ On VPC6562-1:
 
 On midas.psi.ch:
 
-- svn update
+- git pull
 - Increase version in elog.spec
 - su
 - klog ritt

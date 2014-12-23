@@ -35,10 +35,7 @@ mkdir $dir/src
 mkdir $dir/man
 mkdir $dir/contrib
 mkdir $dir/scripts
-mkdir $dir/scripts/fckeditor
-mkdir $dir/scripts/fckeditor/editor
-mkdir $dir/scripts/fckeditor/editor/plugins
-mkdir $dir/scripts/fckeditor/editor/plugins/elog
+mkdir $dir/scripts/ckeditor
 mkdir $dir/resources
 mkdir $dir/ssl
 mkdir $dir/themes
@@ -51,8 +48,8 @@ mkdir $dir/../mxml
 # make sure we have up-to-date files
 if ( ! $?noupdate ) then
   echo Updating files...
-  ( cd ../mxml ; svn update )
-  svn update
+  ( cd ../mxml ; git pull )
+  git pull
 endif
 
 # copy files to archive
@@ -71,14 +68,13 @@ cp -p doc/* $dir/doc
 cp -p man/* $dir/man
 cp -p contrib/* $dir/contrib
 cp -p scripts/* $dir/scripts
-cp -p scripts/fckeditor/* $dir/scripts/fckeditor
-cp -p scripts/fckeditor/editor/plugins/elog/* $dir/scripts/fckeditor/editor/plugins/elog
+cp -p scripts/ckeditor/* $dir/scripts/ckeditor
 cp -p resources/* $dir/resources
 cp -p ssl/* $dir/ssl
 
 cp -p themes/default/* $dir/themes/default
 cp -p themes/default/icons/* $dir/themes/default/icons
-cp -p logbooks/demo/* $dir/logbooks/demo
+cp -p logbooks/demo/011108a.log $dir/logbooks/demo/
 
 # create elog-x.xx.tar.gz file
 echo Creating archive...
