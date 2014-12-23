@@ -216,7 +216,7 @@ install: $(EXECS)
 ifeq ($(OSTYPE),darwin)
 	@$(INSTALL) -v -m 0644 elogd.plist /Library/LaunchDaemons/ch.psi.elogd.plist
 	@echo The elogd service can now be started with 
-	@echo "  launchctl load /Library/LaunchDaemons/ch.psi.elogd.plist"
+	@echo "  sudo launchctl load /Library/LaunchDaemons/ch.psi.elogd.plist"
 else
 	@sed "s#\@PREFIX\@#$(PREFIX)#g" elogd.init_template > elogd.init
 	@mkdir -p -m 0755 $(RCDIR)

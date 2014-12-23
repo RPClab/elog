@@ -46,6 +46,11 @@
   body {
     font-family: Verdana,Arial,Helvetica,Sans-Serif;
     }
+
+  code {
+    font-family: Courier,Fixed,monospace;
+    font-weight: bold;
+  }
   
   p {
     margin-left: 10px;

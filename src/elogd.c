@@ -1768,6 +1768,36 @@ int setuser(char *str)
 
 /*-------------------------------------------------------------------*/
 
+int send_with_timeout(void *p, int sock, char *buf, int size)
+{
+   int status;
+   time_t start, now;
+   
+   time(&start);
+   
+   do {
+#ifdef HAVE_SSL
+      SSL *ssl = (SSL *)p;
+      if (ssl)
+         status = SSL_write(ssl, buf, size);
+      else
+#endif
+         status = send(sock, buf, size, 0);
+
+      time(&now);
+      
+      // abort after 10 seconds
+      if (now > start+10)
+         break;
+      
+      // repeat if we were interrupted by alarm() signal
+   } while (status == -1 && errno == EINTR);
+   
+   return 0;
+}
+
+/*-------------------------------------------------------------------*/
+
 int recv_string(int sock, char *buffer, int buffer_size, int millisec)
 {
    int i, n;
@@ -2421,7 +2451,9 @@ int retrieve_url(LOGBOOK * lbs, const char *url, int ssl, char **buffer)
    fd_set readfds;
    struct timeval timeout;
 #ifdef HAVE_SSL
-   static SSL *ssl_con;
+   static SSL *ssl_con = NULL;
+#else
+   static void *ssl_con = NULL;
 #endif
    static int sock, last_port;
    static char last_host[256];
@@ -2491,13 +2523,8 @@ int retrieve_url(LOGBOOK * lbs, const char *url, int ssl, char **buffer)
 
    strcat(str, "\r\n");
 
-#ifdef HAVE_SSL
-   if (ssl)
-      SSL_write(ssl_con, str, strlen(str));
-   else
-#endif
-      send(sock, str, strlen(str), 0);
-
+   send_with_timeout(ssl_con, sock, (char *)str, strlen(str));
+   
    bufsize = TEXT_SIZE + 1000;
    *buffer = xmalloc(bufsize);
    memset(*buffer, 0, bufsize);
@@ -6675,12 +6702,10 @@ void rsprintf(const char *format, ...)
 void flush_return_buffer()
 {
 #ifdef HAVE_SSL
-   if (_ssl_flag) {
-      SSL_write(_ssl_con, return_buffer, strlen_retbuf);
-   } else
+   send_with_timeout(_ssl_con, _sock, return_buffer, strlen_retbuf);
+#else
+   send_with_timeout(NULL, _sock, return_buffer, strlen_retbuf);
 #endif
-      send(_sock, return_buffer, strlen_retbuf, 0);
-
    memset(return_buffer, 0, return_buffer_size);
    strlen_retbuf = 0;
 }
@@ -15432,6 +15457,8 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    char *content, *p, boundary[80], request[10000], response[10000];
 #ifdef HAVE_SSL
    SSL *ssl_con = NULL;
+#else
+   void *ssl_con = NULL;
 #endif
 
    text = (char *) xmalloc(TEXT_SIZE);
@@ -15593,29 +15620,19 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
 
    header_length = strlen(request);
 
+   send_with_timeout(ssl_con, sock, request, header_length);
+   send_with_timeout(ssl_con, sock, content, content_length);
+
+   
 #ifdef HAVE_SSL
-   if (ssl) {
-      /* send request */
-      SSL_write(ssl_con, request, header_length);
-
-      /* send content */
-      SSL_write(ssl_con, content, content_length);
-
+   if (ssl)
       /* receive response */
       i = SSL_read(ssl_con, response, 10000);
 
-   } else
+   else
 #endif
-   {
-      /* send request */
-      send(sock, request, header_length, 0);
-
-      /* send content */
-      send_tcp(sock, content, content_length, 0);
-
       /* receive response */
       i = recv(sock, response, 10000, 0);
-   }
 
    if (i < 0) {
       closesocket(sock);
@@ -15825,6 +15842,8 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
    char *content, *p, boundary[80], request[10000], response[10000];
 #ifdef HAVE_SSL
    SSL *ssl_con = NULL;
+#else
+   void *ssl_con = NULL;
 #endif
 
    error_str[0] = 0;
@@ -15895,29 +15914,18 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
 
    header_length = strlen(request);
 
+   send_with_timeout(ssl_con, sock, request, header_length);
+   send_with_timeout(ssl_con, sock, content, content_length);
+
+   
 #ifdef HAVE_SSL
-   if (ssl) {
-      /* send request */
-      SSL_write(ssl_con, request, header_length);
-
-      /* send content */
-      SSL_write(ssl_con, content, content_length);
-
+   if (ssl)
       /* receive response */
       i = SSL_read(ssl_con, response, 10000);
-
-   } else
+   else
 #endif
-   {
-      /* send request */
-      send(sock, request, header_length, 0);
-
-      /* send content */
-      send_tcp(sock, content, content_length, 0);
-
       /* receive response */
       i = recv(sock, response, 10000, 0);
-   }
 
    if (i < 0) {
       closesocket(sock);
@@ -28652,6 +28660,12 @@ void send_return(int _sock, const char *net_buffer)
    int length, header_length;
    char str[NAME_LENGTH];
    char *p;
+#ifndef HAVE_SSL
+   void *ssl_con = NULL;
+#endif
+   
+   if (!_ssl_flag)
+      ssl_con = NULL;
 
    if (return_length != -1) {
       if (return_length == 0)
@@ -28681,18 +28695,10 @@ void send_return(int _sock, const char *net_buffer)
                header_length = sizeof(header_buffer) - 100;
             memcpy(header_buffer, return_buffer, header_length);
             sprintf(header_buffer + header_length, "\r\nContent-Length: %d\r\n\r\n", length);
-#ifdef HAVE_SSL
-            if (_ssl_flag) {
-               SSL_write(ssl_con, header_buffer, strlen(header_buffer));
-               SSL_write(ssl_con, p + 4, length);
-            } else {
-               send(_sock, header_buffer, strlen(header_buffer), 0);
-               send(_sock, p + 4, length, 0);
-            }
-#else
-            send(_sock, header_buffer, strlen(header_buffer), 0);
-            send(_sock, p + 4, length, 0);
-#endif
+            
+            send_with_timeout(ssl_con, _sock, header_buffer, strlen(header_buffer));
+            send_with_timeout(ssl_con, _sock, p + 4, length);
+
             if (get_verbose() < VERBOSE_DEBUG) {
                if (get_verbose() > 0)
                   eprintf("Returned %d bytes\n", length);
@@ -28727,27 +28733,14 @@ void send_return(int _sock, const char *net_buffer)
                memcpy(header_buffer, return_buffer, header_length);
                sprintf(header_buffer + header_length, "\r\nConnection: Close\r\n\r\n");
             }
-#ifdef HAVE_SSL
-            if (_ssl_flag) {
-               SSL_write(ssl_con, header_buffer, strlen(header_buffer));
-               SSL_write(ssl_con, p + 4, length);
-            } else {
-               send(_sock, header_buffer, strlen(header_buffer), 0);
-               send(_sock, p + 4, length, 0);
-            }
-#else
-            send(_sock, header_buffer, strlen(header_buffer), 0);
-            send(_sock, p + 4, length, 0);
-#endif
+            
+            send_with_timeout(ssl_con, _sock, header_buffer, strlen(header_buffer));
+            send_with_timeout(ssl_con, _sock, p + 4, length);
+
          } else {
-#ifdef HAVE_SSL
-            if (_ssl_flag)
-               SSL_write(ssl_con, return_buffer, return_length);
-            else
-               send(_sock, return_buffer, return_length, 0);
-#else
-            send(_sock, return_buffer, return_length, 0);
-#endif
+            
+            send_with_timeout(ssl_con, _sock, return_buffer, return_length);
+
          }
 
          if (get_verbose() < VERBOSE_DEBUG) {
@@ -29327,7 +29320,9 @@ void server_loop(void)
                   _ssl_con = NULL;
                   continue;
                }
-            }
+            } else
+               _ssl_con = NULL;
+            
 #endif
 
             /* find new entry in socket table */

@@ -1,26 +1,16 @@
 Checklist for new ELOG version
 ==============================
 
-On RS32:
+On Mac (MPC1865):
 
 - Put all new options in doc/config.html
 - Increase version in elog-version.h
 - Do the same in doc/index.html and index_nd.html
 - Modify ChangeLog
 - Add release date to ChangeLog
-
-On VPC6562-1:
-
-- "svn update"
 - "make loc"
 - Translate new strings in eloglang.german
-- "make indent"
-- svn -m "Run indent" commit
-
-On RS32:
-
-- "svn update"
-- c:\elog> svn ci -m "Release x.x.x-y"
+- "git commit -a -m "Release x.x.x-y"
 
 On VPC6562-1:
 

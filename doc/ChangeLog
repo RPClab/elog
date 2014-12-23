@@ -1,3 +1,15 @@
+Version 3.0.0, released December 23th, 2014
+===========================================
+
+- Replaced insecure SSLv23 with TLSv1 method
+- Switched from SVN to GIT versioning
+- Implemented service under Mac OSC via launchd
+- Added LDAP support for authentication
+- Don’t overwrite certificated, themes and init scrip during ‘make install’
+- Create one logbook subdirectory pear year
+- Switched to CKEditor with Drag & Drop Upload (courtesy of Dario Milicic)
+
+
 Version 2.9.2, released April 27th 2012
 =======================================
 

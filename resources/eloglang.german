@@ -1,7 +1,7 @@
 #
 # German translation by stefan.ritt@psi.ch
-# A more recent version may be available at :
-# http://savannah.psi.ch/viewcvs/trunk/resources/eloglang.german?root=elog
+# A more recent version may be available at:
+# https://bitbucket.org/ritt/elog
 #
 
 New = Neu
@@ -476,4 +476,3 @@ CSV (";" separated) + Text = CSV (mit ";" getreent) + Text
 Entry can only be deleted %1.2lg hours after creation = Eintrag kann nur %1.2lg Stunden nach dem Anlegen gelöscht werden
 Drop attachments here... = Anhänge bitte hier ablegen...
 Insert Timestamp = Aktuelle Zeit einfügen
-
