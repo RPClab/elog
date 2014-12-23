@@ -2,7 +2,19 @@ elogd
 elconv
 elog
 *.o
+*~
+
+# Mac
+.DS_Store
+
+# Logbook generated files
 NT/Debug/
+locext
+git-revision.h
+*.tlog
+*.sbr
+*.pdb
+*.obj
 *.sdf
 *.suo
 *.user

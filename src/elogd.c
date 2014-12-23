@@ -1,5 +1,5 @@
 /********************************************************************
- 
+
    Name:         elogd.c
    Created by:   Stefan Ritt
    Copyright 2000 + Stefan Ritt
@@ -38,7 +38,7 @@
 #include "elogd.h"
 #include "git-revision.h"
 
-const char *git_revision = GIT_REVISION;
+const char *_git_revision = GIT_REVISION;
 
 BOOL running_as_daemon;         /* Running as a daemon/service? */
 int elog_tcp_port;              /* Server's TCP port            */
@@ -77,10 +77,14 @@ char rem_host_ip[256];
 int _sock;
 BOOL use_keepalive, enable_execute = FALSE;
 BOOL fckedit_exist, image_magick_exist;
-int _verbose, _current_message_id;
+int _verbose_level, _current_message_id;
 int _logging_level, _ssl_flag;
 
 LOGBOOK *lb_list = NULL;
+
+#define VERBOSE_URL     1
+#define VERBOSE_INFO    2
+#define VERBOSE_DEBUG   3
 
 #ifdef HAVE_SSL
 SSL *_ssl_con;
@@ -178,6 +182,9 @@ struct {
    ".XPS", "application/vnd.ms-xpsdocument"}, {
 
 "", ""},};
+
+char _convert_cmd[256];
+char _identify_cmd[256];
 
 #ifdef OS_WINNT
 int run_service(void);
@@ -302,14 +309,14 @@ static BOOL chkext(const char *str, const char *ext)
    return TRUE;
 }
 
-int is_verbose(void)
+int get_verbose(void)
 {
-   return _verbose;
+   return _verbose_level;
 }
 
 void set_verbose(int v)
 {
-   _verbose = v;
+   _verbose_level = v;
 }
 
 /* workaround for some gcc versions bug for "%c" format (see strftime(3) */
@@ -892,15 +899,17 @@ int my_shell(char *cmd, char *result, int size)
 
 #ifdef OS_UNIX
    pid_t child_pid;
-   int fh, status, i;
+   int fh, status, i, wait_status;
    char str[1024];
 
    if ((child_pid = fork()) < 0)
       return 0;
    else if (child_pid > 0) {
       /* parent process waits for child */
-      waitpid(child_pid, &status, 0);
-
+      do {
+         wait_status = waitpid(child_pid, &status, 0);
+      } while (wait_status == -1 && errno == EINTR);
+      
       /* read back result */
       memset(result, 0, size);
       fh = open("/tmp/elog-shell", O_RDONLY);
@@ -935,7 +944,7 @@ int my_shell(char *cmd, char *result, int size)
                   exit(EXIT_FAILURE);
                }
             }
-         } else if (is_verbose())
+         } else if (get_verbose() >= VERBOSE_INFO)
             eprintf("Falling back to group \"%s\"\n", str);
 
          if (!getcfg("global", "Usr", str, sizeof(str)) || setuser(str) < 0) {
@@ -948,14 +957,14 @@ int my_shell(char *cmd, char *result, int size)
                   exit(EXIT_FAILURE);
                }
             }
-         } else if (is_verbose())
+         } else if (get_verbose() >= VERBOSE_INFO)
             eprintf("Falling back to user \"%s\"\n", str);
       }
 
       /* execute shell with redirection to /tmp/elog-shell */
       sprintf(str, "/bin/sh -c \"%s\" > /tmp/elog-shell 2>&1", cmd);
 
-      if (is_verbose()) {
+      if (get_verbose() >= VERBOSE_INFO) {
          efputs("Going to execute: ");
          efputs(str);
          efputs("\n");
@@ -1931,7 +1940,7 @@ void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to, ch
    offset = (-(int) my_timezone());
    if (ts->tm_isdst)
       offset += 3600;
-   if (is_verbose()) {
+   if (get_verbose() >= VERBOSE_INFO) {
       sprintf(str, "timezone: %d, offset: %d\n", (int) my_timezone(), (int) offset);
       efputs(str);
    }
@@ -2051,7 +2060,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
 
    memset(error, 0, error_size);
 
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       eprintf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
    sprintf(buffer, "Email from %s to ", from);
    strlcat(buffer, to, sizeof(buffer));
@@ -2089,7 +2098,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    str = xmalloc(strsize);
 
    recv_string(s, str, strsize, 10000);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
 
@@ -2097,7 +2106,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    do {
       str[0] = 0;
       recv_string(s, str, strsize, 300);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
    } while (str[0]);
@@ -2106,13 +2115,13 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
 
       snprintf(str, strsize - 1, "EHLO %s\r\n", host_name);
       send(s, str, strlen(str), 0);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
 
       do {
          recv_string(s, str, strsize, 3000);
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             efputs(str);
          write_logfile(lbs, str);
          if (!check_smtp_error(str, 250, error, error_size))
@@ -2124,11 +2133,11 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
       snprintf(str, strsize - 1, "HELO %s\r\n", host_name);
 
       send(s, str, strlen(str), 0);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
       recv_string(s, str, strsize, 3000);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
       if (!check_smtp_error(str, 250, error, error_size))
@@ -2140,7 +2149,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
 
       snprintf(str, strsize - 1, "AUTH LOGIN\r\n");
       send(s, str, strlen(str), 0);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
       recv_string(s, str, strsize, 3000);
@@ -2148,13 +2157,13 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
          *strchr(str, '\r') = 0;
       if (atoi(str) != 334) {
          strcat(str, "\n");
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             efputs(str);
          write_logfile(lbs, str);
       } else {
          base64_decode(str + 4, decoded);
          strcat(decoded, "\n");
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             efputs(decoded);
          write_logfile(lbs, decoded);
       }
@@ -2165,7 +2174,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
       base64_encode((unsigned char *) decoded, (unsigned char *) str, strsize);
       strcat(str, "\r\n");
       send(s, str, strlen(str), 0);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(decoded);
       write_logfile(lbs, decoded);
       recv_string(s, str, strsize, 3000);
@@ -2173,7 +2182,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
          *strchr(str, '\r') = 0;
       base64_decode(str + 4, decoded);
       strcat(decoded, "\n");
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(decoded);
       write_logfile(lbs, decoded);
       if (!check_smtp_error(str, 334, error, error_size))
@@ -2182,11 +2191,11 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
       getcfg(lbs->name, "SMTP password", str, strsize);
       strcat(str, "\r\n");
       send(s, str, strlen(str), 0);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
       recv_string(s, str, strsize, 3000);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
       if (!check_smtp_error(str, 235, error, error_size))
@@ -2195,11 +2204,11 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
 
    snprintf(str, strsize - 1, "MAIL FROM: %s\r\n", from);
    send(s, str, strlen(str), 0);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
    recv_string(s, str, strsize, 3000);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
 
@@ -2215,13 +2224,13 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
 
       snprintf(str, strsize - 1, "RCPT TO: <%s>\r\n", list[i]);
       send(s, str, strlen(str), 0);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
 
       /* increased timeout for SMTP servers with long alias lists */
       recv_string(s, str, strsize, 30000);
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          efputs(str);
       write_logfile(lbs, str);
 
@@ -2231,11 +2240,11 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
 
    snprintf(str, strsize - 1, "DATA\r\n");
    send(s, str, strlen(str), 0);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
    recv_string(s, str, strsize, 3000);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
    if (!check_smtp_error(str, 354, error, error_size))
@@ -2255,11 +2264,11 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    }
 
    send(s, str, strlen(str), 0);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
    recv_string(s, str, strsize, 10000);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
    if (!check_smtp_error(str, 250, error, error_size))
@@ -2267,11 +2276,11 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
 
    snprintf(str, strsize - 1, "QUIT\r\n");
    send(s, str, strlen(str), 0);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
    recv_string(s, str, strsize, 3000);
-   if (is_verbose())
+   if (get_verbose() >= VERBOSE_INFO)
       efputs(str);
    write_logfile(lbs, str);
    if (!check_smtp_error(str, 221, error, error_size))
@@ -2335,7 +2344,7 @@ int ssl_connect(int sock, SSL ** ssl_con)
    SSL_library_init();
    SSL_load_error_strings();
 
-   meth = (SSL_METHOD *) SSLv23_method();
+   meth = (SSL_METHOD *) TLSv1_method();
    ctx = SSL_CTX_new(meth);
 
    *ssl_con = SSL_new(ctx);
@@ -3627,7 +3636,7 @@ int fnmatch1(const char *pattern, const char *string)
 
 /*------------------------------------------------------------------*/
 
-int ss_file_find(char *path, char *pattern, char **plist)
+int ss_file_find(const char *path, char *pattern, char **plist)
 /********************************************************************
  Routine: ss_file_find
 
@@ -3712,13 +3721,263 @@ int eli_compare(const void *e1, const void *e2)
 
 /*------------------------------------------------------------------*/
 
+void generate_subdir_name(char *file_name, char *subdir, int size)
+{
+   char fn[MAX_PATH_LENGTH], path[MAX_PATH_LENGTH];
+   int year, month;
+   
+   // extract path from file_name
+   strlcpy(path, file_name, size);
+   if (strrchr(path, DIR_SEPARATOR))
+      *(strrchr(path, DIR_SEPARATOR)+1) = 0;
+   
+   // extract file name
+   if (strrchr(file_name, DIR_SEPARATOR))
+      strlcpy(fn, strrchr(file_name, DIR_SEPARATOR)+1, sizeof(fn));
+   else
+      strlcpy(fn, file_name, sizeof(fn));
+   
+   // create subdir from name
+   year = (fn[0]-'0')*10+(fn[1]-'0');
+   month = (fn[2]-'0')*10+(fn[3]-'0');
+   if (year < 80)
+      sprintf(subdir, "20%02d", year);
+   else
+      sprintf(subdir, "19%02d", year);
+   
+   strlcat(subdir, DIR_SEPARATOR_STR, size);
+}
+
+/*------------------------------------------------------------------*/
+
+int restructure_dir(char *dir)
+{
+   char *file_list;
+   int n1, n2, index, status;
+   char old_path[MAX_PATH_LENGTH], new_path[MAX_PATH_LENGTH],
+   subdir[MAX_PATH_LENGTH];
+   static int first = TRUE;
+   
+   /* go through all entry files */
+   n1 = ss_file_find(dir, "??????a.log", &file_list);
+   for (index = 0; index < n1; index++) {
+      generate_subdir_name(file_list + index * MAX_PATH_LENGTH, subdir, sizeof(subdir));
+
+      // create new subdir
+      strlcpy(new_path, dir, MAX_PATH_LENGTH);
+      strlcat(new_path, subdir, MAX_PATH_LENGTH);
+      
+#ifdef OS_WINNT
+      status = mkdir(new_path);
+#else
+      status = mkdir(new_path, 0755);
+#endif
+      
+      if (status == 0) {
+         if (first) {
+            eprintf("\nFound old directory structure. Creating subdirectories and moving files...\n");
+            first = FALSE;
+         }
+         eprintf("Created directory \"%s\"\n", new_path);
+      } else {
+         if (errno != EEXIST) {
+            eprintf("generate_subdir_name: %s\n", strerror(errno));
+            eprintf("Cannot create directory \"%s\"\n", new_path);
+         }
+      }
+      
+      strlcpy(old_path, dir, sizeof(old_path));
+      strlcat(old_path, file_list + index * MAX_PATH_LENGTH, sizeof(old_path));
+      strlcpy(new_path, dir, sizeof(new_path));
+      strlcat(new_path, subdir, sizeof(new_path));
+      strlcat(new_path, file_list + index * MAX_PATH_LENGTH, sizeof(new_path));
+      
+      rename(old_path, new_path);
+   }
+   if (file_list)
+      xfree(file_list);
+   
+   /* go through all attachment files */
+   n2 = ss_file_find(dir, "??????_??????_*", &file_list);
+   for (index = 0; index < n2; index++) {
+      generate_subdir_name(file_list + index * MAX_PATH_LENGTH, subdir, sizeof(subdir));
+
+      // create new subdir
+      strlcpy(new_path, dir, MAX_PATH_LENGTH);
+      strlcat(new_path, subdir, MAX_PATH_LENGTH);
+      
+#ifdef OS_WINNT
+      status = mkdir(new_path);
+#else
+      status = mkdir(new_path, 0755);
+#endif
+      
+      strlcpy(old_path, dir, sizeof(old_path));
+      strlcat(old_path, file_list + index * MAX_PATH_LENGTH, sizeof(old_path));
+      strlcpy(new_path, dir, sizeof(new_path));
+      strlcat(new_path, subdir, sizeof(new_path));
+      strlcat(new_path, file_list + index * MAX_PATH_LENGTH, sizeof(new_path));
+      
+      rename(old_path, new_path);
+   }
+   if (file_list)
+      xfree(file_list);
+
+   return n1+n2;
+}
+
+/*------------------------------------------------------------------*/
+
+int parse_file(LOGBOOK *lbs, char *file_name)
+{
+   char str[256], date[256], *buffer, *p, *pn, in_reply_to[80];
+   int length, i, fh, len;
+   
+   fh = open(file_name, O_RDONLY | O_BINARY, 0644);
+   
+   if (fh < 0) {
+      sprintf(str, "Cannot open file \"%s\"", file_name);
+      eprintf("%s; %s\n", str, strerror(errno));
+      return EL_FILE_ERROR;
+   }
+   
+   /* read file into buffer */
+   length = lseek(fh, 0, SEEK_END);
+   
+   if (length > 0) {
+      buffer = xmalloc(length + 1);
+      lseek(fh, 0, SEEK_SET);
+      read(fh, buffer, length);
+      buffer[length] = 0;
+      close(fh);
+      
+      /* go through buffer */
+      p = buffer;
+      
+      do {
+         p = strstr(p, "$@MID@$:");
+         
+         if (p) {
+            lbs->el_index = xrealloc(lbs->el_index, sizeof(EL_INDEX) * (*lbs->n_el_index + 1));
+            if (lbs->el_index == NULL) {
+               eprintf("Not enough memory to allocate entry index\n");
+               return EL_MEM_ERROR;
+            }
+            
+            strlcpy(lbs->el_index[*lbs->n_el_index].subdir, file_name+strlen(lbs->data_dir), 256);
+            if (strrchr(lbs->el_index[*lbs->n_el_index].subdir, DIR_SEPARATOR))
+               *(strrchr(lbs->el_index[*lbs->n_el_index].subdir, DIR_SEPARATOR)+1) = 0;
+            
+            if (strrchr(file_name, DIR_SEPARATOR))
+               strlcpy(str, strrchr(file_name, DIR_SEPARATOR)+1, sizeof(str));
+            else
+               strlcpy(str, file_name, sizeof(str));
+            strcpy(lbs->el_index[*lbs->n_el_index].file_name, str);
+            
+            el_decode(p, "Date: ", date, sizeof(date));
+            el_decode_int(p, "In reply to: ", in_reply_to, sizeof(in_reply_to));
+            
+            lbs->el_index[*lbs->n_el_index].file_time = date_to_ltime(date);
+            
+            lbs->el_index[*lbs->n_el_index].message_id = atoi(p + 8);
+            lbs->el_index[*lbs->n_el_index].offset = p - buffer;
+            lbs->el_index[*lbs->n_el_index].in_reply_to = atoi(in_reply_to);
+            
+            pn = strstr(p + 8, "$@MID@$:");
+            if (pn)
+               len = pn - p;
+            else
+               len = strlen(p);
+            
+            MD5_checksum(p, len, lbs->el_index[*lbs->n_el_index].md5_digest);
+            
+            if (lbs->el_index[*lbs->n_el_index].message_id > 0) {
+               if (get_verbose() == VERBOSE_DEBUG) {
+                  eprintf("  ID %3d, %s, ofs %5d, %s, MD5=", lbs->el_index[*lbs->n_el_index].message_id,
+                          str, lbs->el_index[*lbs->n_el_index].offset,
+                          lbs->el_index[*lbs->n_el_index].in_reply_to ? "reply" : "thead");
+                  
+                  for (i = 0; i < 16; i++)
+                     eprintf("%02X", lbs->el_index[*lbs->n_el_index].md5_digest[i]);
+                  eprintf("\n");
+               }
+               
+               /* valid ID */
+               (*lbs->n_el_index)++;
+            }
+            
+            p += 8;
+         }
+         
+      } while (p);
+      
+      xfree(buffer);
+   }
+   
+   return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int scan_dir_tree(LOGBOOK *lbs, const char *dir, char **file_list, int *n)
+{
+   int  index, n_files;
+   char str[MAX_PATH_LENGTH];
+   char *fl, *p;
+   
+   fl = NULL;
+   n_files = ss_file_find(dir, "*", &fl);
+   if (n_files == 0) {
+      if (fl)
+         xfree(fl);
+      return 0;
+   }
+   
+   if (*file_list == NULL)
+      *file_list = (char *)xmalloc(n_files*MAX_PATH_LENGTH);
+   else
+      *file_list = (char *)xrealloc(*file_list, ((*n)+n_files)*MAX_PATH_LENGTH);
+   
+   /* go through all files */
+   for (index = 0; index < n_files; index++) {
+      if (fnmatch1("??????a.log", &fl[index * MAX_PATH_LENGTH]) == 0) {
+         p = *file_list + ((*n) * MAX_PATH_LENGTH);
+         strlcpy(p, dir, MAX_PATH_LENGTH);
+         if (p[strlen(p)-1] != DIR_SEPARATOR)
+            strlcat(p, DIR_SEPARATOR_STR, MAX_PATH_LENGTH);
+         strlcat(p, fl + index * MAX_PATH_LENGTH, MAX_PATH_LENGTH);
+         (*n)++;
+      }
+   }
+   
+   /* go through all sub-directories */
+   for (index = 0; index < n_files; index++) {
+      if (fnmatch1("????", &fl[index * MAX_PATH_LENGTH]) == 0 ||
+          fnmatch1("??", &fl[index * MAX_PATH_LENGTH]) == 0) {
+         if (strieq(fl + index * MAX_PATH_LENGTH, ".."))
+            continue;
+         strlcpy(str, dir, sizeof(str));
+         if (str[strlen(str)-1] != DIR_SEPARATOR)
+            strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
+         strlcat(str, fl + index * MAX_PATH_LENGTH, sizeof(str));
+         scan_dir_tree(lbs, str, file_list, n);
+      }
+   }
+   
+   if (fl)
+      xfree(fl);
+   
+   return *n;
+}
+
+/*------------------------------------------------------------------*/
+
 int el_build_index(LOGBOOK * lbs, BOOL rebuild)
 /* scan all ??????a.log files and build an index table in eli[] */
 {
-   char *file_list, str[256], error_str[256], date[256], dir[256], file_name[MAX_PATH_LENGTH], *buffer, *p,
-       *pn, in_reply_to[80];
-   int index, n, length;
-   int i, fh, len;
+   char *file_list, error_str[256], base_dir[256], *buffer;
+   int index, n;
+   int i, status;
    unsigned char digest[16];
 
    if (rebuild) {
@@ -3731,9 +3990,9 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
    lbs->el_index = xmalloc(0);
 
    /* get data directory */
-   strcpy(dir, lbs->data_dir);
+   strcpy(base_dir, lbs->data_dir);
 
-   if (is_verbose() > 1) {
+   if (get_verbose() >= VERBOSE_DEBUG) {
       /* show MD5 from config file */
 
       load_config_section(lbs->name, &buffer, error_str);
@@ -3752,110 +4011,41 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
          xfree(buffer);
    }
 
-   file_list = NULL;
-   n = ss_file_find(dir, "??????a.log", &file_list);
-   if (n == 0) {
+   // check for old format and upgrade if necessary
+   n = ss_file_find(base_dir, "??????.log", &file_list);
+   if (n > 0) {
       if (file_list)
          xfree(file_list);
-      file_list = NULL;
-
-      n = ss_file_find(dir, "??????.log", &file_list);
-      if (n > 0)
-         return EL_UPGRADE;
-
-      return EL_EMPTY;
+      return EL_UPGRADE;
    }
 
-   if (is_verbose() > 1)
+   if (get_verbose() >= VERBOSE_DEBUG)
       eprintf("Entries:\n");
+   
+   // move files to directories if (new layout to reduce number of files per directory)
+   restructure_dir(base_dir);
 
+   file_list = NULL;
+   n = 0;
+   scan_dir_tree(lbs, base_dir, &file_list, &n);
+   
    /* go through all files */
    for (index = 0; index < n; index++) {
-      strlcpy(file_name, dir, sizeof(file_name));
-      strlcat(file_name, file_list + index * MAX_PATH_LENGTH, sizeof(file_name));
-
-      fh = open(file_name, O_RDONLY | O_BINARY, 0644);
-
-      if (fh < 0) {
-         sprintf(str, "Cannot open file \"%s\"", file_name);
-         eprintf("%s; %s\n", str, strerror(errno));
-         return EL_FILE_ERROR;
+      status = parse_file(lbs, file_list+index*MAX_PATH_LENGTH);
+      if (status != SUCCESS) {
+         if (file_list)
+            xfree(file_list);
+         return status;
       }
-
-      /* read file into buffer */
-      length = lseek(fh, 0, SEEK_END);
-
-      if (length > 0) {
-         buffer = xmalloc(length + 1);
-         lseek(fh, 0, SEEK_SET);
-         read(fh, buffer, length);
-         buffer[length] = 0;
-         close(fh);
-
-         /* go through buffer */
-         p = buffer;
-
-         do {
-            p = strstr(p, "$@MID@$:");
-
-            if (p) {
-               lbs->el_index = xrealloc(lbs->el_index, sizeof(EL_INDEX) * (*lbs->n_el_index + 1));
-               if (lbs->el_index == NULL) {
-                  eprintf("Not enough memory to allocate entry index\n");
-                  return EL_MEM_ERROR;
-               }
-
-               strcpy(str, file_list + index * MAX_PATH_LENGTH);
-               strcpy(lbs->el_index[*lbs->n_el_index].file_name, str);
-
-               el_decode(p, "Date: ", date, sizeof(date));
-               el_decode_int(p, "In reply to: ", in_reply_to, sizeof(in_reply_to));
-
-               lbs->el_index[*lbs->n_el_index].file_time = date_to_ltime(date);
-
-               lbs->el_index[*lbs->n_el_index].message_id = atoi(p + 8);
-               lbs->el_index[*lbs->n_el_index].offset = p - buffer;
-               lbs->el_index[*lbs->n_el_index].in_reply_to = atoi(in_reply_to);
-
-               pn = strstr(p + 8, "$@MID@$:");
-               if (pn)
-                  len = pn - p;
-               else
-                  len = strlen(p);
-
-               MD5_checksum(p, len, lbs->el_index[*lbs->n_el_index].md5_digest);
-
-               if (lbs->el_index[*lbs->n_el_index].message_id > 0) {
-                  if (is_verbose() > 1) {
-                     eprintf("  ID %3d, %s, ofs %5d, %s, MD5=", lbs->el_index[*lbs->n_el_index].message_id,
-                             str, lbs->el_index[*lbs->n_el_index].offset,
-                             lbs->el_index[*lbs->n_el_index].in_reply_to ? "reply" : "thead");
-
-                     for (i = 0; i < 16; i++)
-                        eprintf("%02X", lbs->el_index[*lbs->n_el_index].md5_digest[i]);
-                     eprintf("\n");
-                  }
-
-                  /* valid ID */
-                  (*lbs->n_el_index)++;
-               }
-
-               p += 8;
-            }
-
-         } while (p);
-
-         xfree(buffer);
-      }
-
    }
 
-   xfree(file_list);
+   if (file_list)
+      xfree(file_list);
 
    /* sort entries according to date */
    qsort(lbs->el_index, *lbs->n_el_index, sizeof(EL_INDEX), eli_compare);
 
-   if (is_verbose() > 1) {
+   if (get_verbose() >= VERBOSE_DEBUG) {
       eprintf("After sort:\n");
       for (i = 0; i < *lbs->n_el_index; i++)
          eprintf("  ID %3d, %s, ofs %5d\n", lbs->el_index[i].message_id, lbs->el_index[i].file_name,
@@ -3987,7 +4177,7 @@ int el_index_logbooks()
 #endif
 
                if (j == 0) {
-                  if (is_verbose())
+                  if (get_verbose() >= VERBOSE_INFO)
                      eprintf("Created directory \"%s\"\n", str);
                } else {
                   eprintf("el_index_logbooks: %s\n", strerror(errno));
@@ -4007,7 +4197,7 @@ int el_index_logbooks()
       /* check if other logbook uses the same directory */
       for (j = 0; j < n; j++)
          if (strcmp(lb_list[j].data_dir, lb_list[n].data_dir) == 0) {
-            if (is_verbose())
+            if (get_verbose() >= VERBOSE_INFO)
                eprintf("Logbook \"%s\" uses same directory as logbook \"%s\"\n", logbook, lb_list[j].name);
             lb_list[n].el_index = lb_list[j].el_index;
             lb_list[n].n_el_index = lb_list[j].n_el_index;
@@ -4015,17 +4205,17 @@ int el_index_logbooks()
          }
 
       if (j == n) {
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             eprintf("Indexing logbook \"%s\" in \"%s\" ... ", logbook, lb_list[n].data_dir);
          eflush();
          status = el_build_index(&lb_list[n], FALSE);
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             if (status == EL_SUCCESS)
                eprintf("ok\n");
       }
 
       if (status == EL_EMPTY) {
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             eprintf("Found empty logbook \"%s\"\n", logbook);
       } else if (status == EL_UPGRADE) {
          eprintf("Please upgrade data files in \"%s\" with the elconv program.\n", data_dir);
@@ -4209,7 +4399,7 @@ int el_retrieve(LOGBOOK * lbs, int message_id, char *date, char attr_list[MAX_N_
    if (index == *lbs->n_el_index)
       return EL_NO_MSG;
 
-   sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
+   sprintf(file_name, "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
    fh = open(file_name, O_RDONLY | O_BINARY, 0644);
    if (fh < 0) {
       /* file might have been deleted, rebuild index */
@@ -4348,7 +4538,7 @@ int el_retrieve(LOGBOOK * lbs, int message_id, char *date, char attr_list[MAX_N_
 int el_submit_attachment(LOGBOOK * lbs, const char *afilename, const char *buffer, int buffer_size,
                          char *full_name)
 {
-   char file_name[MAX_PATH_LENGTH], ext_file_name[MAX_PATH_LENGTH + 100], str[MAX_PATH_LENGTH], *p;
+   char file_name[MAX_PATH_LENGTH], ext_file_name[MAX_PATH_LENGTH + 100], str[MAX_PATH_LENGTH], *p, subdir[MAX_PATH_LENGTH];
    int fh;
    time_t now;
    struct tm tms;
@@ -4381,6 +4571,18 @@ int el_submit_attachment(LOGBOOK * lbs, const char *afilename, const char *buffe
          strlcpy(full_name, ext_file_name, MAX_PATH_LENGTH);
 
       strlcpy(str, lbs->data_dir, sizeof(str));
+      generate_subdir_name(ext_file_name, subdir, sizeof(subdir));
+      strlcat(str, subdir, sizeof(str));
+      if (strlen(str) > 0 && str[strlen(str)-1] == DIR_SEPARATOR)
+         str[strlen(str)-1] = 0;
+      
+#ifdef OS_WINNT
+      mkdir(str);
+#else
+      mkdir(str, 0755);
+#endif
+      
+      strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
       strlcat(str, ext_file_name, sizeof(str));
 
       /* save attachment */
@@ -4404,15 +4606,18 @@ int el_submit_attachment(LOGBOOK * lbs, const char *afilename, const char *buffe
 void el_delete_attachment(LOGBOOK * lbs, char *file_name)
 {
    int i;
-   char str[MAX_PATH_LENGTH];
+   char str[MAX_PATH_LENGTH], subdir[MAX_PATH_LENGTH];
 
    strlcpy(str, lbs->data_dir, sizeof(str));
+   generate_subdir_name(file_name, subdir, sizeof(subdir));
+   strlcat(str, subdir, sizeof(str));
    strlcat(str, file_name, sizeof(str));
    remove(str);
    strlcat(str, ".png", sizeof(str));
    remove(str);
    for (i = 0;; i++) {
       strlcpy(str, lbs->data_dir, sizeof(str));
+      strlcat(str, subdir, sizeof(str));
       strlcat(str, file_name, sizeof(str));
       sprintf(str + strlen(str), "-%d.png", i);
       if (file_exist(str)) {
@@ -4421,6 +4626,7 @@ void el_delete_attachment(LOGBOOK * lbs, char *file_name)
       }
 
       strlcpy(str, lbs->data_dir, sizeof(str));
+      strlcat(str, subdir, sizeof(str));
       strlcat(str, file_name, sizeof(str));
       if (strrchr(str, '.'))
          *strrchr(str, '.') = 0;
@@ -4451,7 +4657,7 @@ int el_retrieve_attachment(LOGBOOK * lbs, int message_id, int n, char name[MAX_P
    if (index == *lbs->n_el_index)
       return EL_NO_MSG;
 
-   sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
+   sprintf(file_name, "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
    fh = open(file_name, O_RDONLY | O_BINARY, 0644);
    if (fh < 0) {
       /* file might have been deleted, rebuild index */
@@ -4544,11 +4750,11 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
 
  \********************************************************************/
 {
-   int n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id;
+   int n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id, status;
    char file_name[256], dir[256], str[NAME_LENGTH], date1[256], attrib[MAX_N_ATTR][NAME_LENGTH],
        reply_to1[MAX_REPLY_TO * 10], in_reply_to1[MAX_REPLY_TO * 10], encoding1[80], *message, *p,
        *old_text, *buffer;
-   char attachment_all[64 * MAX_ATTACHMENTS];
+   char attachment_all[64 * MAX_ATTACHMENTS], subdir[MAX_PATH_LENGTH];
    time_t ltime;
 
    tail_size = orig_size = 0;
@@ -4576,7 +4782,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
          return -1;
       }
 
-      sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
+      sprintf(file_name, "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
       fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
       if (fh < 0) {
          xfree(message);
@@ -4678,7 +4884,18 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
 
       sprintf(file_name, "%c%c%02d%c%ca.log", date1[14], date1[15], i + 1, date1[5], date1[6]);
 
-      sprintf(str, "%s%s", dir, file_name);
+      generate_subdir_name(file_name, subdir, sizeof(subdir));
+      sprintf(str, "%s%s", dir, subdir);
+      if (strlen(str) > 0 && str[strlen(str)-1] == DIR_SEPARATOR)
+         str[strlen(str)-1] = 0;
+      
+#ifdef OS_WINNT
+      status = mkdir(str);
+#else
+      status = mkdir(str, 0755);
+#endif
+      
+      sprintf(str, "%s%s%s", dir, subdir, file_name);
       fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
       if (fh < 0) {
          xfree(message);
@@ -4908,7 +5125,7 @@ int el_delete_message(LOGBOOK * lbs, int message_id, BOOL delete_attachments,
    if (index == *lbs->n_el_index)
       return -1;
 
-   sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
+   sprintf(file_name, "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
    fh = open(file_name, O_RDWR | O_BINARY, 0644);
    if (fh < 0)
       return EL_FILE_ERROR;
@@ -6965,11 +7182,21 @@ void set_cookie(LOGBOOK * lbs, char *name, char *value, BOOL global, char *expir
 
 /*------------------------------------------------------------------*/
 
+const char *git_revision()
+{
+   const char *p = _git_revision;
+   if (strchr(p, '-'))
+      p = strchr(p, '-')+2;
+   return p;
+}
+
+/*------------------------------------------------------------------*/
+
 void redirect(LOGBOOK * lbs, char *rel_path)
 {
    /* redirect */
    rsprintf("HTTP/1.1 302 Found\r\n");
-   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision());
    if (keep_alive) {
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
@@ -7205,7 +7432,7 @@ void show_http_header(LOGBOOK * lbs, BOOL expires, char *cookie)
    char str[256];
 
    rsprintf("HTTP/1.1 200 Document follows\r\n");
-   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision());
 
    if (getcfg("global", "charset", str, sizeof(str)))
       rsprintf("Content-Type: text/html;charset=%s\r\n", str);
@@ -7222,7 +7449,7 @@ void show_http_header(LOGBOOK * lbs, BOOL expires, char *cookie)
 
    if (expires) {
       rsprintf("Pragma: no-cache\r\n");
-      rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+      rsprintf("Cache-control: private, max-age=0, no-cache, no-store\r\n");
    }
 
    rsprintf("\r\n");
@@ -7232,15 +7459,15 @@ void show_plain_header(int size, char *file_name)
 {
    /* header */
    rsprintf("HTTP/1.1 200 Document follows\r\n");
-   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision());
    rsprintf("Accept-Ranges: bytes\r\n");
 
    if (keep_alive) {
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
    }
-   // rsprintf("Pragma: no-cache\r\n");
-   rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+   rsprintf("Pragma: no-cache\r\n");
+   rsprintf("Cache-control: private, max-age=0, no-cache, no-store\r\n");
    rsprintf("Content-Type: text/plain\r\n");
    rsprintf("Content-disposition: attachment; filename=\"%s\"\r\n", file_name);
    if (size)
@@ -7258,7 +7485,7 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
    show_http_header(lbs, expires, cookie);
 
    /* DOCTYPE */
-   rsprintf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n");
+   rsprintf("<!DOCTYPE html>\n");
 
    /* this code would be for XML files...
       rsprintf("<?xml-stylesheet type=\"text/xsl\" href=\"http://www.w3.org/Math/XSL/mathml.xsl\"?>\n");
@@ -7908,7 +8135,7 @@ void show_bottom_text(LOGBOOK * lbs)
       /* add little logo */
       rsprintf
           ("<center><a class=\"bottomlink\" title=\"%s\" href=\"https://midas.psi.ch/elog/\">ELOG V%s-%s</a></center>",
-           loc("Goto ELOG home page"), VERSION, git_revision + 33);
+           loc("Goto ELOG home page"), VERSION, git_revision());
 }
 
 /*------------------------------------------------------------------*/
@@ -7962,7 +8189,7 @@ void show_bottom_text_login(LOGBOOK * lbs)
       /* add little logo */
       rsprintf
           ("<center><a class=\"bottomlink\" title=\"%s\" href=\"https://midas.psi.ch/elog/\">ELOG V%s-%s</a></center>",
-           loc("Goto ELOG home page"), VERSION, git_revision + 33);
+           loc("Goto ELOG home page"), VERSION, git_revision());
 }
 
 /*------------------------------------------------------------------*/
@@ -7973,14 +8200,14 @@ void show_error(char *error)
 
    /* header */
    rsprintf("HTTP/1.1 404 Not Found\r\n");
-   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision());
    if (getcfg("global", "charset", str, sizeof(str)))
       rsprintf("Content-Type: text/html;charset=%s\r\n", str);
    else
       rsprintf("Content-Type: text/html;charset=%s\r\n", DEFAULT_HTTP_CHARSET);
    rsprintf("\r\n");
 
-   rsprintf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n");
+   rsprintf("<!DOCTYPE html>\n");
    rsprintf("<html><head>\n");
    rsprintf("<META NAME=\"ROBOTS\" CONTENT=\"NOINDEX, NOFOLLOW\">\n");
    rsprintf("<title>%s</title>\n", loc("ELOG error"));
@@ -8041,7 +8268,7 @@ void set_sid_cookie(LOGBOOK * lbs, char *sid, char *full_name)
    BOOL global;
 
    rsprintf("HTTP/1.1 302 Found\r\n");
-   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision());
    if (keep_alive) {
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
@@ -8085,7 +8312,7 @@ void remove_all_login_cookies(LOGBOOK * lbs)
    int i;
 
    rsprintf("HTTP/1.1 302 Found\r\n");
-   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision());
    if (keep_alive) {
       rsprintf("Connection: Keep-Alive\r\n");
       rsprintf("Keep-Alive: timeout=60, max=10\r\n");
@@ -8119,9 +8346,7 @@ int exist_file(char *file_name)
 void send_file_direct(char *file_name)
 {
    int fh, i, length, delta;
-   char str[MAX_PATH_LENGTH], dir[MAX_PATH_LENGTH], charset[80], format[80];
-   time_t now;
-   struct tm *gmt;
+   char str[MAX_PATH_LENGTH], dir[MAX_PATH_LENGTH], charset[80];
 
    getcwd(dir, sizeof(dir));
    fh = open(file_name, O_RDONLY | O_BINARY);
@@ -8131,20 +8356,15 @@ void send_file_direct(char *file_name)
       lseek(fh, 0, SEEK_SET);
 
       rsprintf("HTTP/1.1 200 Document follows\r\n");
-      rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
+      rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision());
       rsprintf("Accept-Ranges: bytes\r\n");
 
       /* set expiration time to one day if no thumbnail */
       if (isparam("thumb")) {
          rsprintf("Pragma: no-cache\r\n");
-         rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+         rsprintf("Cache-control: private, max-age=0, no-cache, no-store\r\n");
       } else {
-         time(&now);
-         now += (int) (3600 * 24);
-         gmt = gmtime(&now);
-         strcpy(format, "%A, %d-%b-%y %H:%M:%S GMT");
-         strftime(str, sizeof(str), format, gmt);
-         rsprintf("Expires: %s\r\n", str);
+         rsprintf("Cache-control: public, max-age=86400\r\n");
       }
 
       if (keep_alive) {
@@ -8474,7 +8694,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
    strcpy(value[i++], VERSION);
 
    strcpy(list[i], "revision");
-   sprintf(value[i++], "%s", git_revision + 33);
+   sprintf(value[i++], "%s", git_revision());
 
    return i;
 }
@@ -8553,7 +8773,7 @@ void show_change_pwd_page(LOGBOOK * lbs)
       strlcpy(user, getparam("unm"), sizeof(user));
    else
       user[0] = 0;
-      
+
    if (isparam("config")) {
       strlcpy(str, getparam("config"), sizeof(str));
       strencode2(user, str, sizeof(user));
@@ -9143,7 +9363,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
        ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256], cookie[256],
        orig_author[256], attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256], tooltip[10000],
-       enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256], **user_list, fid[20], upwd[80];
+       enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256], **user_list, fid[20], upwd[80],
+       subdir[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -9913,51 +10134,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    fixed_text = getcfg(lbs->name, "Fix text", str, sizeof(str)) && atoi(str) == 1 && bedit && message_id;
 
    if (enc_selected == 2 && fckedit_exist && show_text && !fixed_text) {
-      rsprintf("<script type=\"text/javascript\" src=\"../fckeditor/fckeditor.js\"></script>\n");
-      rsprintf("<script type=\"text/javascript\">\n");
-
-      /* cannot detect real modifications, so assume text will get changed */
-      rsprintf("entry_modified = true;\n");
-
-      /* define strings for current language */
-      rsprintf("var ELOGSubmitEntry = \"%s\";\n", loc("Submit entry"));
-      rsprintf("var ELOGInsertImage = \"%s\";\n", loc("Insert image"));
-      rsprintf("var ELOGInsertDateTime = \"%s\";\n", loc("Insert Date/Time"));
-      rsprintf("var ELOGLinkTextPrompt = \"%s\";\n", loc("Enter name of hyperlink"));
-      rsprintf("var ELOGLinkURLPrompt = \"%s\";\n", loc("Enter URL of hyperlink"));
-      rsprintf("var ELOGSource = \"%s\";\n\n", loc("Show HTML source code"));
-      rsprintf("function initFCKedit()\n");
-      rsprintf("{\n");
-      rsprintf("   var oFCKeditor = new FCKeditor('Text', '100%%', '500');\n");
-      rsprintf("   oFCKeditor.BasePath = '../fckeditor/';\n");
-      rsprintf("   oFCKeditor.Config['CustomConfigurationsPath'] = '../fckelog.js';\n");
-      rsprintf("   oFCKeditor.Config['AutoDetectLanguage'] = false;\n");
-      getcfg("global", "Language", str, sizeof(str));
-      if (!str[0])
-         strcpy(str, "en");
-      else if (stricmp(str, "german") == 0)
-         strcpy(str, "de");
-      else if (stricmp(str, "brazilian") == 0)
-         strcpy(str, "pt-br");
-      else if (stricmp(str, "czech") == 0)
-         strcpy(str, "cs");
-      else if (stricmp(str, "dutch") == 0)
-         strcpy(str, "nl");
-      else if (stricmp(str, "spanish") == 0)
-         strcpy(str, "es");
-      else if (stricmp(str, "swedish") == 0)
-         strcpy(str, "sv");
-      else if (stricmp(str, "turkish") == 0)
-         strcpy(str, "tr");
-      else if (stricmp(str, "zh_CN-GB2312") == 0)
-         strcpy(str, "zh-cn");
-      else
-         str[2] = 0;
-      rsprintf("   oFCKeditor.Config['DefaultLanguage'] = \"%s\";\n", str);
-      rsprintf("   oFCKeditor.ReplaceTextarea();\n");
-      rsprintf("   document.getElementById('HTML').checked = true;\n");
-      rsprintf("}\n");
-      rsprintf("</script>\n\n");
+       rsprintf("<script type=\"text/javascript\" src=\"../ckeditor/ckeditor.js\"></script>\n");
+       rsprintf("<script type=\"text/javascript\" src=\"../jquery-1.11.1.min.js\"></script>\n");
+       rsprintf("<script type=\"text/javascript\" src=\"../progress/progress.min.js\"></script>\n");
+       rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"../progress/progressjs.min.css\">\n");
    }
 
    /* external script if requested */
@@ -9984,7 +10164,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          strcat(script_onload, "elKeyInit();");
       strcat(script_onfocus, "elKeyInit();");
    } else if (enc_selected == 2 && fckedit_exist && show_text && !fixed_text) {
-      strcat(script_onload, "initFCKedit();");
+      rsprintf("<script type=\"text/javascript\" src=\"../load-ckeditor.js\"></script>\n");
    } else if (enc_selected == 1) {
       if (!getcfg(lbs->name, "Message height", str, sizeof(str)) &&
           !getcfg(lbs->name, "Message width", str, sizeof(str)))
@@ -11363,7 +11543,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          /* show existing attachments */
          for (index = 0; index < MAX_ATTACHMENTS; index++)
             if (att[index][0]) {
-               rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), index + 1);
+               rsprintf("<tr class=\"attachment\"><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), index + 1);
                sprintf(str, "attachment%d", index);
                rsprintf("<td class=\"attribvalue\">\n");
                rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", str, att[index]);
@@ -11373,6 +11553,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                } else {
 
                   strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+                  generate_subdir_name(att[index], subdir, sizeof(subdir));
+                  strlcat(file_name, subdir, sizeof(file_name));
                   strlcat(file_name, att[index], sizeof(file_name));
 
                   display_inline = is_image(file_name) || is_ascii(file_name);
@@ -11419,9 +11601,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      /* ImageMagick available, so get image size */
                      rsprintf("<b>%s</b>&nbsp;\n", att[index] + 14);
                      if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
-                        sprintf(cmd, "identify -format '%%wx%%h' '%s[0]'", file_name);
+                        sprintf(cmd, "%s -format '%%wx%%h' '%s[0]'", _identify_cmd, file_name);
                      else
-                        sprintf(cmd, "identify -format '%%wx%%h' '%s'", file_name);
+                        sprintf(cmd, "%s -format '%%wx%%h' '%s'", _identify_cmd, file_name);
 #ifdef OS_WINNT
                      for (i = 0; i < (int) strlen(cmd); i++)
                         if (cmd[i] == '\'')
@@ -11549,13 +11731,20 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   loc("Maximum number of attachments reached"));
          rsprintf("</td></tr>\n");
       } else {
-         rsprintf("<tr><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), index + 1);
+         rsprintf("<tr id=\"attachment_upload\"><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), index + 1);
          rsprintf
-             ("<td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile\" accept=\"filetype/*\">\n");
+             ("<td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile\" accept=\"filetype/*\" multiple>\n");
          rsprintf
-             ("&nbsp;&nbsp;<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkupload();\">\n",
+             ("&nbsp;&nbsp;<input type=\"submit\" name=\"cmd\" value=\"%s\">\n",
               loc("Upload"));
          rsprintf("</td></tr>\n");
+
+         // print the holder for dropping attachments
+         rsprintf("<tr>\n");
+         rsprintf("<td style=\"background: white;\" colspan=2>\n");
+         rsprintf("<div id=\"holder\" style=\"background: white; border: 10px dashed #ccc; min-height: 200px; margin: 10px\" >");
+         rsprintf("<p class=\"info\" style=\"color: #999; font-size: 2em; text-align: center; margin-top: 40px;\">%s</p></div>", loc("Drop attachments here..."));
+         rsprintf("</td></tr>");
       }
    }
 
@@ -13209,7 +13398,7 @@ int ascii_compare2(const void *s1, const void *s2)
 
 void show_config_page(LOGBOOK * lbs)
 {
-   char str[256], user[80], password[80], full_name[80], user_email[80], logbook[256], auth[32], **user_list;
+   char str[256], user[80], password[80], full_name[256], user_email[256], logbook[256], auth[32], **user_list;
    int i, n, inactive;
    BOOL email_notify[1000];
 
@@ -13298,10 +13487,11 @@ void show_config_page(LOGBOOK * lbs)
       qsort(user_list, n, sizeof(char *), ascii_compare);
 
       for (i = 0; i < n; i++) {
+         get_user_line(lbs, user_list[i], NULL, full_name, user_email, NULL, NULL, NULL);
          if (strcmp(user_list[i], user) == 0)
-            rsprintf("<option selected value=\"%s\">%s\n", user_list[i], user_list[i]);
+            rsprintf("<option selected value=\"%s\">%s &lt;%s&gt;\n", user_list[i], user_list[i], user_email);
          else
-            rsprintf("<option value=\"%s\">%s\n", user_list[i], user_list[i]);
+            rsprintf("<option value=\"%s\">%s &lt;%s&gt;\n", user_list[i], user_list[i], user_email);
       }
 
       for (i = 0; i < n; i++)
@@ -13703,7 +13893,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
 void show_new_user_page(LOGBOOK * lbs, char *user)
 {
    char str[256];
-   
+
    /*---- header ----*/
 
    show_html_header(lbs, TRUE, loc("ELOG new user"), TRUE, FALSE, NULL, FALSE, 0);
@@ -13773,7 +13963,7 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
       for (i = 0; i < *lbs->n_el_index; i++)
          if (lbs->el_index[i].message_id == message_id)
             break;
-      
+
       if (i < *lbs->n_el_index && time(NULL) > lbs->el_index[i].file_time + atof(str) * 3600) {
          sprintf(str, loc("Entry can only be deleted %1.2lg hours after creation"), atof(str));
          show_error(str);
@@ -14165,7 +14355,7 @@ int show_download_page(LOGBOOK * lbs, char *path)
          if (index == *lbs->n_el_index)
             return EL_NO_MSG;
 
-         sprintf(file_name, "%s%s", lbs->data_dir, lbs->el_index[index].file_name);
+         sprintf(file_name, "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
          fh = open(file_name, O_RDWR | O_BINARY, 0644);
          if (fh < 0)
             return EL_FILE_ERROR;
@@ -15018,12 +15208,12 @@ int show_md5_page(LOGBOOK * lbs)
 
    /* header */
    rsprintf("HTTP/1.1 200 Document follows\r\n");
-   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision());
    rsprintf("Accept-Ranges: bytes\r\n");
    rsprintf("Connection: close\r\n");
    rsprintf("Content-Type: text/plain;charset=%s\r\n", DEFAULT_HTTP_CHARSET);
    rsprintf("Pragma: no-cache\r\n");
-   rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
+   rsprintf("Cache-control: private, max-age=0, no-cache, no-store\r\n\r\n");
 
    /* calculate MD5 for logbook section in config file */
    load_config_section(lbs->name, &buffer, error_str);
@@ -15281,6 +15471,8 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    for (i = 0; i < MAX_ATTACHMENTS; i++)
       if (attachment[i][0]) {
          strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+         generate_subdir_name(attachment[i], subdir, sizeof(subdir));
+         strlcat(file_name, subdir, sizeof(file_name));
          strlcat(file_name, attachment[i], sizeof(file_name));
 
          fh = open(file_name, O_RDONLY | O_BINARY);
@@ -15346,6 +15538,8 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    for (i = 0; i < MAX_ATTACHMENTS; i++)
       if (attachment[i][0]) {
          strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+         generate_subdir_name(attachment[i], subdir, sizeof(subdir));
+         strlcat(file_name, subdir, sizeof(file_name));
          strlcat(file_name, attachment[i], sizeof(file_name));
 
          fh = open(file_name, O_RDONLY | O_BINARY);
@@ -15796,7 +15990,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
       /* check version */
       p = strstr(buffer, "ELOG HTTP ");
       if (!p) {
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             puts(buffer);
          sprintf(error_str, "Remote server is not an ELOG server");
          xfree(buffer);
@@ -15804,7 +15998,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
       }
       version = atoi(p + 10) * 100 + atoi(p + 12) * 10 + atoi(p + 14);
       if (version < 254) {
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             puts(buffer);
 
          strlcpy(str, p + 10, 10);
@@ -15819,7 +16013,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
       /* evaluate status */
       p = strchr(buffer, ' ');
       if (p == NULL) {
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             puts(buffer);
          xfree(buffer);
          *strchr(str, '?') = 0;
@@ -15831,7 +16025,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
       p++;
       status = atoi(p);
       if (status == 401) {
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             puts(buffer);
          xfree(buffer);
          eprintf("Please enter password to access remote elogd server: ");
@@ -15839,7 +16033,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
          while (pwd[strlen(pwd) - 1] == '\n' || pwd[strlen(pwd) - 1] == '\r')
             pwd[strlen(pwd) - 1] = 0;
       } else if (status != 200) {
-         if (is_verbose())
+         if (get_verbose() >= VERBOSE_INFO)
             puts(buffer);
          xfree(buffer);
          *strchr(str, '?') = 0;
@@ -15852,7 +16046,7 @@ void receive_config(LOGBOOK * lbs, char *server, char *error_str)
 
    p = strstr(buffer, "\r\n\r\n");
    if (p == NULL) {
-      if (is_verbose())
+      if (get_verbose() >= VERBOSE_INFO)
          puts(buffer);
       xfree(buffer);
       sprintf(error_str, loc("Cannot receive \"%s\""), str);
@@ -16334,7 +16528,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
          }
 
          /* compare MD5s */
-         if (is_verbose()) {
+         if (get_verbose() >= VERBOSE_INFO) {
             eprintf("CONFIG : ");
             for (j = 0; j < 16; j++)
                eprintf("%02X", digest[j]);
@@ -16458,7 +16652,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
          if (exist_remote && exist_cache) {
 
             /* compare MD5s */
-            if (is_verbose()) {
+            if (get_verbose() >= VERBOSE_INFO) {
                eprintf("ID%-5d: ", message_id);
                for (j = 0; j < 16; j++)
                   eprintf("%02X", lbs->el_index[i_msg].md5_digest[j]);
@@ -16601,7 +16795,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
             if (!equal_md5(md5_cache[i_cache].md5_digest, lbs->el_index[i_msg].md5_digest)) {
 
                /* compare MD5s */
-               if (is_verbose()) {
+               if (get_verbose() >= VERBOSE_INFO) {
                   eprintf("ID%-5d: ", message_id);
                   for (j = 0; j < 16; j++)
                      eprintf("%02X", lbs->el_index[i_msg].md5_digest[j]);
@@ -16741,7 +16935,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                                                         lbs->el_index[i_msg].md5_digest)) {
 
             /* compare MD5s */
-            if (is_verbose()) {
+            if (get_verbose() >= VERBOSE_INFO) {
                eprintf("ID%-5d: ", message_id);
                for (j = 0; j < 16; j++)
                   eprintf("%02X", lbs->el_index[i_msg].md5_digest[j]);
@@ -16848,7 +17042,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
                   if (!equal_md5(md5_cache[i_cache].md5_digest, md5_remote[i_remote].md5_digest)) {
 
                      /* compare MD5s */
-                     if (is_verbose()) {
+                     if (get_verbose() >= VERBOSE_INFO) {
                         eprintf("ID-%5: none", message_id);
                         eprintf("\nCache  : ");
                         for (j = 0; j < 16; j++)
@@ -17068,7 +17262,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                   int absolute_link)
 {
    char str[NAME_LENGTH], ref[256], *nowrap, rowstyle[80], tdstyle[80], format[256],
-       file_name[MAX_PATH_LENGTH], *slist, *svalue, comment[256], param[80];
+       file_name[MAX_PATH_LENGTH], *slist, *svalue, comment[256], param[80], subdir[256];
    char display[NAME_LENGTH], attr_icon[80];
    int i, j, n, i_line, index, colspan, n_attachments, line_len, thumb_status, max_line_len, n_lines,
        max_n_lines;
@@ -17133,7 +17327,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
       else
          sprintf(str, "Style %s %s", attr_list[i], attrib[i]);
       if (getcfg(lbs->name, str, display, sizeof(display))) {
-         sprintf(str, "%s\" style=\"%s\"", rowstyle, display);
+         sprintf(str, "%s\" style=\"%s", rowstyle, display);
          strlcpy(rowstyle, str, sizeof(rowstyle));
          break;
       }
@@ -17362,7 +17556,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                strlcpy(tdstyle, rowstyle, sizeof(tdstyle));
                sprintf(str, "Cell Style %s %s", attr_list[i], attrib[i]);
                if (getcfg(lbs->name, str, display, sizeof(display))) {
-                  sprintf(str, "%s\" style=\"%s\"", rowstyle, display);
+                  sprintf(str, "%s\" style=\"%s", rowstyle, display);
                   strlcpy(tdstyle, str, sizeof(rowstyle));
                }
 
@@ -17763,6 +17957,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
             url_encode(ref, sizeof(ref));       /* for file names with special characters like "+" */
 
             strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+            generate_subdir_name(attachment[index], subdir, sizeof(subdir));
+            strlcat(file_name, subdir, sizeof(file_name));
             strlcat(file_name, attachment[index], sizeof(file_name));
             thumb_status = create_thumbnail(lbs, file_name);
 
@@ -17827,6 +18023,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                           colspan, loc("Attachment"), index + 1, ref, attachment[index] + 14);
 
                      strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+                     generate_subdir_name(attachment[index], subdir, sizeof(subdir));
+                     strlcat(file_name, subdir, sizeof(file_name));
                      strlcat(file_name, attachment[index], sizeof(file_name));
 
                      if (is_ascii(file_name) && !chkext(attachment[index], ".PS")
@@ -17849,6 +18047,8 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                            rsprintf("<pre class=\"messagepre\">");
 
                         strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+                        generate_subdir_name(attachment[index], subdir, sizeof(subdir));
+                        strlcat(file_name, subdir, sizeof(file_name));
                         strlcat(file_name, attachment[index], sizeof(file_name));
 
                         f = fopen(file_name, "rt");
@@ -19120,7 +19320,7 @@ void show_rss_feed(LOGBOOK * lbs)
    struct tm *ts;
 
    rsprintf("HTTP/1.1 200 Document follows\r\n");
-   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision());
 
    if (!getcfg("global", "charset", charset, sizeof(charset)))
       strcpy(charset, DEFAULT_HTTP_CHARSET);
@@ -19546,7 +19746,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    /* check for valid page_n */
    if (page_n < -1)
       page_n = 0;
-   
+
    if (past_n || last_n || page_n || page_mid || default_page) {
       /* for page display, get mode from config file */
       if (getcfg(lbs->name, "Display Mode", str, sizeof(str)))
@@ -21322,7 +21522,7 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
                               char *multipart_boundary, int content_id)
 {
    int i, index, n_att, fh, n, is_inline, length;
-   char str[256], file_name[256], buffer[256], domain[256];
+   char str[256], file_name[256], buffer[256], domain[256], subdir[256];
 
    /* count attachments */
    for (n_att = 0; att_file[n_att][0] && n_att < MAX_ATTACHMENTS; n_att++);
@@ -21376,6 +21576,8 @@ void format_email_attachments(LOGBOOK * lbs, int message_id, int attachment_type
 
       /* encode file */
       strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+      generate_subdir_name(att_file[index], subdir, sizeof(subdir));
+      strlcat(file_name, subdir, sizeof(file_name));
       strlcat(file_name, att_file[index], sizeof(file_name));
       if (is_image(file_name)) {
          get_thumb_name(file_name, str, sizeof(str), 0);
@@ -21607,7 +21809,7 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
       flags = atoi(str);
 
    strcpy(mail_text + strlen(mail_text),
-          "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\r\n");
+          "<!DOCTYPE html>\r\n");
    strcpy(mail_text + strlen(mail_text), "<html>\r\n<head>\r\n  <title></title>\r\n</head>\r\n<body>\r\n");
 
    if (flags & 1) {
@@ -21976,7 +22178,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
 {
    int i;
    char slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
-   char shell_cmd[10000], tail[1000], str[NAME_LENGTH], *p;
+   char shell_cmd[10000], tail[1000], str[NAME_LENGTH], *p, subdir[256];
 
    if (!enable_execute) {
       eprintf("Shell execution not enabled via -x flag.\n");
@@ -21997,10 +22199,12 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
       strlcpy(tail, p + strlen("$attachments"), sizeof(tail));
       *p = 0;
       for (i = 0; i < MAX_ATTACHMENTS; i++)
-         if (att_file[i][0] && strlen(shell_cmd) + strlen(lbs->data_dir) + strlen(att_file[i])
+         generate_subdir_name(att_file[i], subdir, sizeof(subdir));
+         if (att_file[i][0] && strlen(shell_cmd) + strlen(lbs->data_dir) + strlen(subdir) + strlen(att_file[i])
              < sizeof(shell_cmd) + 1) {
             strcpy(p, "\"");
             strcat(p, lbs->data_dir);
+            strlcat(str, subdir, sizeof(str));
             strlcpy(str, att_file[i], sizeof(str));
             str_escape(str, sizeof(str));
             strcat(p, str);
@@ -22203,7 +22407,7 @@ int propagate_attrib(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME
 
    list = (char *)xmalloc(MAX_N_ATTR*NAME_LENGTH);
    attr = (char *)xmalloc(MAX_N_ATTR*NAME_LENGTH);
-   
+
    status = el_retrieve(lbs, message_id, NULL, attr_list, (char (*)[NAME_LENGTH]) attr, lbs->n_attr,
                         NULL, NULL, NULL, reply_to, att_file, NULL, NULL);
    if (status != EL_SUCCESS) {
@@ -22237,7 +22441,7 @@ int propagate_attrib(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME
 
    xfree(list);
    xfree(attr);
-   
+
    return EL_SUCCESS;
 }
 
@@ -22930,7 +23134,7 @@ void submit_elog(LOGBOOK * lbs)
 
             n = strbreak(list, (char (*)[1500]) mail_list, 200, ",", FALSE);
 
-            if (is_verbose())
+            if (get_verbose() >= VERBOSE_INFO)
                eprintf("\n%s to %s\n\n", str, list);
 
             for (i = 0; i < n; i++) {
@@ -23164,7 +23368,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
    int size, i, j, n, n_done, n_done_reply, n_reply, index, status, fh, source_id, message_id,
        thumb_status, next_id = 0;
    char str[256], str2[256], file_name[MAX_PATH_LENGTH], thumb_name[MAX_PATH_LENGTH],
-       *attrib, date[80], *text, msg_str[32], in_reply_to[80],
+       *attrib, date[80], *text, msg_str[32], in_reply_to[80], subdir[256],
        reply_to[MAX_REPLY_TO * 10], *attachment, encoding[80], locked_by[256], *buffer, *list;
    LOGBOOK *lbs_dest;
    BOOL bedit;
@@ -23240,6 +23444,8 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
       for (i = 0; i < MAX_ATTACHMENTS; i++)
          if (attachment[i * MAX_PATH_LENGTH]) {
             strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+            generate_subdir_name(attachment + i * MAX_PATH_LENGTH, subdir, sizeof(subdir));
+            strlcat(file_name, subdir, sizeof(file_name));
             strlcat(file_name, attachment + i * MAX_PATH_LENGTH, sizeof(file_name));
 
             fh = open(file_name, O_RDONLY | O_BINARY);
@@ -23264,6 +23470,8 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
             /* check for thumbnail */
             strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+            generate_subdir_name(attachment + i * MAX_PATH_LENGTH, subdir, sizeof(subdir));
+            strlcat(file_name, subdir, sizeof(file_name));
             strlcat(file_name, attachment + i * MAX_PATH_LENGTH, sizeof(file_name));
             thumb_status = get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
 
@@ -23497,9 +23705,9 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
       strlcat(str, ".png", sizeof(str));
 
    if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
-      snprintf(cmd, sizeof(cmd), "convert %s '%s[0-7]'%s '%s'", thumb_options, file_name, thumb_size, str);
+      snprintf(cmd, sizeof(cmd), "%s %s '%s[0-7]'%s '%s'", _convert_cmd, thumb_options, file_name, thumb_size, str);
    else
-      snprintf(cmd, sizeof(cmd), "convert %s '%s'%s '%s'", thumb_options, file_name, thumb_size, str);
+      snprintf(cmd, sizeof(cmd), "%s %s '%s'%s '%s'", _convert_cmd, thumb_options, file_name, thumb_size, str);
 
 #ifdef OS_WINNT
    for (i = 0; i < (int) strlen(cmd); i++)
@@ -23509,7 +23717,7 @@ int create_thumbnail(LOGBOOK * lbs, char *file_name)
 
    snprintf(str, sizeof(str), "SHELL \"%s\"", cmd);
    write_logfile(lbs, str);
-   if (is_verbose()) {
+   if (get_verbose() >= VERBOSE_INFO) {
       eprintf(str);
       eprintf("\n");
    }
@@ -23580,7 +23788,7 @@ int get_thumb_name(const char *file_name, char *thumb_name, int size, int index)
 
 void call_image_magick(LOGBOOK * lbs)
 {
-   char str[256], cmd[256], file_name[256], thumb_name[256];
+   char str[256], cmd[256], file_name[256], thumb_name[256], subdir[256];
    int cur_width, cur_height, new_size, cur_rot, new_rot, i, thumb_status;
 
    if (!isparam("req") || !isparam("img")) {
@@ -23589,10 +23797,12 @@ void call_image_magick(LOGBOOK * lbs)
    }
 
    strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+   generate_subdir_name(getparam("img"), subdir, sizeof(subdir));
+   strlcat(file_name, subdir, sizeof(file_name));
    strlcat(file_name, getparam("img"), sizeof(file_name));
    thumb_status = get_thumb_name(file_name, thumb_name, sizeof(thumb_name), 0);
 
-   sprintf(cmd, "identify -format '%%wx%%h %%c' '%s'", thumb_name);
+   sprintf(cmd, "%s -format '%%wx%%h %%c' '%s'", _identify_cmd, thumb_name);
 #ifdef OS_WINNT
    for (i = 0; i < (int) strlen(cmd); i++)
       if (cmd[i] == '\'')
@@ -23622,30 +23832,30 @@ void call_image_magick(LOGBOOK * lbs)
    i = cmd[0] = 0;
    if (strieq(getparam("req"), "rotleft")) {
       new_rot = (cur_rot + 360 - 90) % 360;
-      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", file_name, new_rot,
+      sprintf(cmd, "%s '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", _convert_cmd, file_name, new_rot,
               cur_height, new_rot, thumb_name);
    }
 
    if (strieq(getparam("req"), "rotright")) {
       new_rot = (cur_rot + 90) % 360;
-      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", file_name, new_rot,
+      sprintf(cmd, "%s '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", _convert_cmd, file_name, new_rot,
               cur_height, new_rot, thumb_name);
    }
 
    if (strieq(getparam("req"), "original")) {
       new_size = (int) (cur_width / 1.5);
-      sprintf(cmd, "convert '%s' '%s'", file_name, thumb_name);
+      sprintf(cmd, "%s '%s' '%s'", _convert_cmd, file_name, thumb_name);
    }
 
    if (strieq(getparam("req"), "smaller")) {
       new_size = (int) (cur_width / 1.5);
-      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", file_name, cur_rot,
+      sprintf(cmd, "%s '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", _convert_cmd, file_name, cur_rot,
               new_size, cur_rot, thumb_name);
    }
 
    if (strieq(getparam("req"), "larger")) {
       new_size = (int) (cur_width * 1.5);
-      sprintf(cmd, "convert '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", file_name, cur_rot,
+      sprintf(cmd, "%s '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", _convert_cmd, file_name, cur_rot,
               new_size, cur_rot, thumb_name);
    }
 
@@ -23676,7 +23886,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
        format[80], slist[MAX_N_ATTR + 10][NAME_LENGTH], file_name[MAX_PATH_LENGTH],
        gattr[MAX_N_ATTR][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], *p,
        lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256], class_name[80], class_value[80],
-       fl[8][NAME_LENGTH], list[MAX_N_ATTR][NAME_LENGTH], domain[256];
+       fl[8][NAME_LENGTH], list[MAX_N_ATTR][NAME_LENGTH], domain[256], subdir[256];
    FILE *f;
    BOOL first, show_text, display_inline, subtable, email;
    struct tm *pts;
@@ -24483,6 +24693,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
                /* determine size of attachment */
                strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+               generate_subdir_name(attachment[index], subdir, sizeof(subdir));
+               strlcat(file_name, subdir, sizeof(file_name));
                strlcat(file_name, attachment[index], sizeof(file_name));
                thumb_status = create_thumbnail(lbs, file_name);
 
@@ -24615,6 +24827,8 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
                rsprintf("</td></tr></table></td></tr>\n");
                strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+               generate_subdir_name(attachment[index], subdir, sizeof(subdir));
+               strlcat(file_name, subdir, sizeof(file_name));
                strlcat(file_name, attachment[index], sizeof(file_name));
 
                if (!att_hide[index] && display_inline) {
@@ -25024,12 +25238,12 @@ LOGBOOK *get_first_lbs_with_global_passwd()
    int i;
    LOGBOOK *lbs;
    char str[256], global[256], orig_topgroup[256];
-   
+
    orig_topgroup[0] = 0;
    getcfg("global", "Password file", global, sizeof(global));
    if (getcfg_topgroup() && *getcfg_topgroup())
       strcpy(orig_topgroup, getcfg_topgroup());
-   
+
    for (i = 0; lb_list[i].name[0]; i++) {
       if (lb_list[i].top_group[0])
          setcfg_topgroup(lb_list[i].top_group);
@@ -25039,16 +25253,16 @@ LOGBOOK *get_first_lbs_with_global_passwd()
          break;
       }
    }
-   
+
    if (!lb_list[i].name[0])
       return NULL;
-   
+
    if (orig_topgroup[0])
       setcfg_topgroup(orig_topgroup);
 
    return lbs;
 }
-   
+
 /*------------------------------------------------------------------*/
 
 int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name, char *email,
@@ -25076,7 +25290,7 @@ int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name, ch
       logbook with same password file than global section */
    if (lbs == NULL)
       lbs = get_first_lbs_with_global_passwd();
-   
+
    getcfg(lbs->name, "Password file", str, sizeof(str));
 
    if (!str[0] || !user[0])
@@ -25642,7 +25856,7 @@ BOOL check_login(LOGBOOK * lbs, char *sid)
       }
    }
 
-   /* if invalid or no session ID, show login page, 
+   /* if invalid or no session ID, show login page,
       unless we outsourced the authentication to webserver
    */
    if (!skip_sid_check && !sid_check(sid, user_name)) {
@@ -26371,6 +26585,87 @@ void show_uploader_finished(LOGBOOK * lbs)
 
 /*------------------------------------------------------------------*/
 
+void show_uploader_json(LOGBOOK *lbs)
+{
+   char charset[256];
+   char filename[256], thumbname[256], attchname[256], subdir[256];
+   int i, j, attch_count;
+
+   // maximum number of files that can be uploaded this way (drag and drop into the editor)
+   const long MAX_FILE_COUNT = 100;
+
+   rsprintf("HTTP/1.1 200 Document follows\r\n");
+   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision());
+   rsprintf("Accept-Ranges: bytes\r\n");
+   rsprintf("Pragma: no-cache\r\n");
+   rsprintf("Cache-control: private, max-age=0, no-cache, no-store\r\n");
+   if (keep_alive) {
+      rsprintf("Connection: Keep-Alive\r\n");
+      rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+   }
+   if (!getcfg("global", "charset", charset, sizeof(charset)))
+      strcpy(charset, DEFAULT_HTTP_CHARSET);
+   rsprintf("Content-Type: application/json;charset=%s\r\n\r\n", charset);
+
+   attch_count = strtol(getparam("drop-count"), NULL, 10);
+    
+   // limit the number of files that can be uploaded
+   if(attch_count > MAX_FILE_COUNT) {
+      attch_count = MAX_FILE_COUNT;
+   }
+
+   rsprintf("{\r\n");
+   rsprintf("  \"attachments\" : [\r\n");
+
+
+   for(i = 0; i < attch_count; i++) {
+      sprintf(attchname, "attachment%d", i);
+
+      rsprintf("    {\r\n");
+      rsprintf("      \"fullName\": \"%s\",\r\n", getparam(attchname));
+
+      strlcpy(filename, lbs->data_dir, sizeof(filename));
+      generate_subdir_name(getparam(attchname), subdir, sizeof(subdir));
+      strlcat(filename, subdir, sizeof(filename));
+      strlcat(filename, getparam(attchname), sizeof(filename));
+
+
+      if (create_thumbnail(lbs, filename)) {
+         get_thumb_name(filename, thumbname, sizeof(thumbname), 0);
+         if (strrchr(thumbname, '/'))
+            rsprintf("      \"thumbName\": \"%s\",\r\n", strrchr(thumbname, '/')+1);
+         else
+            rsprintf("      \"thumbName\": \"%s\",\r\n", thumbname);
+      }
+
+      rsprintf("      \"contentType\": ");
+
+       
+       for (j = 0; filetype[j].ext[0]; j++)
+         if (chkext(filename, filetype[j].ext))
+            break;
+
+           if (filetype[j].ext[0])
+               rsprintf("\"%s\"\r\n", filetype[j].type);
+           else if (is_ascii(filename))
+               rsprintf("\"%s\"\r\n", "text/plain");
+           else
+               rsprintf("\"%s\"\r\n", "application/octet-stream\r\n");
+
+      if(i == attch_count - 1)
+         rsprintf("    }\r\n");
+      else
+         rsprintf("    },\r\n");
+   }
+
+   rsprintf("  ]\r\n");
+   rsprintf("}\r\n");
+
+   return;
+}
+
+/*------------------------------------------------------------------*/
+
 void interprete(char *lbook, char *path)
 /********************************************************************
  Routine: interprete
@@ -26390,7 +26685,7 @@ void interprete(char *lbook, char *path)
        edit_id[80], file_name[256], command[256], enc_path[256], dec_path[256], uname[80],
        full_name[256], user_email[256], logbook[256], logbook_enc[256], *experiment,
        group[256], css[256], *pfile, attachment[MAX_PATH_LENGTH], str3[NAME_LENGTH],
-       thumb_name[256], sid[32], error_str[256];
+       thumb_name[256], sid[32], error_str[256], subdir[256], *s;
    LOGBOOK *lbs;
    FILE *f;
 
@@ -26412,6 +26707,20 @@ void interprete(char *lbook, char *path)
    /* evaluate "jcmd" */
    if (isparam("jcmd") && *getparam("jcmd"))
       strlcpy(command, getparam("jcmd"), sizeof(command));
+
+   /* check for localization command */
+   if (stricmp(command, "loc") == 0) {
+      show_http_header(NULL, FALSE, NULL);
+      if (isparam("value") && *getparam("value"))
+         rsputs(loc(getparam("value")));
+      
+      /* dummy strings for JS-only translations */
+      s = loc("Drop attachments here...");
+      s = loc("Insert Timestamp");
+      if (s)
+         s = NULL; // avoid compiler warning
+      return;
+   }
 
    /* if experiment given, use it as logbook (for elog!) */
    if (experiment && experiment[0]) {
@@ -26627,6 +26936,13 @@ void interprete(char *lbook, char *path)
    /* check for error during attribute scan */
    if (lbs->n_attr < 0)
       return;
+
+   /* evaluate AJAX xommand */
+   if (isparam("acmd") && *getparam("acmd")) {
+      if (strieq(getparam("acmd"), "Upload"))
+         show_uploader_json(lbs);
+      return;
+   }
 
    /* if we outsource the authentication to Webserver and have no sid, just set a new sid  */
    getcfg(lbs->name, "Authentication", str, sizeof(str));
@@ -26937,6 +27253,8 @@ void interprete(char *lbook, char *path)
             pfile[13] = '_';
          /* file from data directory requested */
          strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+         generate_subdir_name(pfile, subdir, sizeof(subdir));
+         strlcat(file_name, subdir, sizeof(file_name));
          strlcat(file_name, pfile, sizeof(file_name));
       } else {
          /* file from theme directory requested */
@@ -27572,7 +27890,7 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                /* set attachment filename */
                strlcpy(file_name, p, sizeof(file_name));
                if (file_name[0]) {
-                  if (is_verbose())
+                  if (get_verbose() >= VERBOSE_INFO)
                      eprintf("decode_post: Found CSV/XML import file\n");
                }
 
@@ -27633,7 +27951,7 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                /* remove spaces */
                btou(file_name);
                if (file_name[0]) {
-                  if (is_verbose())
+                  if (get_verbose() >= VERBOSE_INFO)
                      eprintf("decode_post: Found attachment %s\n", file_name);
                   /* check filename for invalid characters */
                   if (strpbrk(file_name, ",;+=")) {
@@ -27712,7 +28030,8 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
                   }
                } else if (file_name[0]) {
                   /* save attachment */
-                  el_submit_attachment(lbs, file_name, string, (int) (p - string), full_name);
+                  if (el_submit_attachment(lbs, file_name, string, (int) (p - string), full_name) < 0)
+                     return;
                   sprintf(str, "attachment%d", n_att++);
                   setparam(str, full_name);
                }
@@ -27781,8 +28100,8 @@ void decode_post(char *logbook, LOGBOOK * lbs, const char *string, const char *b
 
 /*------------------------------------------------------------------*/
 
-#define N_MAX_CONNECTION 10
-#define KEEP_ALIVE_TIME  60
+#define N_MAX_CONNECTION 100
+#define KEEP_ALIVE_TIME   60
 
 int ka_sock[N_MAX_CONNECTION];
 int ka_time[N_MAX_CONNECTION];
@@ -27812,14 +28131,16 @@ int process_http_request(const char *request, int i_conn)
    if (!strchr(request, '\r'))
       return 0;
 
-   if (is_verbose() == 1) {
-      strlcpy(str, request, sizeof(str));
-      if (strchr(str, '\r'))
-         *strchr(str, '\r') = 0;
-      if (strchr(str, '\n'))
-         *strchr(str, '\n') = 0;
-      eputs(str);
-   } else if (is_verbose() > 1) {
+   if (get_verbose() < VERBOSE_DEBUG) {
+      if (get_verbose() > 0) {
+         strlcpy(str, request, sizeof(str));
+         if (strchr(str, '\r'))
+            *strchr(str, '\r') = 0;
+         if (strchr(str, '\n'))
+            *strchr(str, '\n') = 0;
+         eputs(str);
+      }
+   } else if (get_verbose() >= VERBOSE_DEBUG) {
       eputs("\n");
       eputs(request);
    }
@@ -28173,7 +28494,7 @@ int process_http_request(const char *request, int i_conn)
       for (i = 0; i < n; i++) {
          if (strieq(rem_host, host_list[i]) || strieq(rem_host_ip, host_list[i]) || strieq(host_list[i],
                                                                                            "all")) {
-            if (is_verbose())
+            if (get_verbose() >= VERBOSE_INFO)
                eprintf("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n",
                        strieq(rem_host_ip, host_list[i]) ? rem_host_ip : rem_host, host_list[i]);
             authorized = 0;
@@ -28182,7 +28503,7 @@ int process_http_request(const char *request, int i_conn)
          if (host_list[i][0] == '.') {
             if (strlen(rem_host) > strlen(host_list[i]) && strieq(host_list[i], rem_host + strlen(rem_host)
                                                                   - strlen(host_list[i]))) {
-               if (is_verbose())
+               if (get_verbose() >= VERBOSE_INFO)
                   eprintf("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n", rem_host,
                           host_list[i]);
                authorized = 0;
@@ -28194,7 +28515,7 @@ int process_http_request(const char *request, int i_conn)
             if (strlen(str) > strlen(host_list[i]))
                str[strlen(host_list[i])] = 0;
             if (strieq(host_list[i], str)) {
-               if (is_verbose())
+               if (get_verbose() >= VERBOSE_INFO)
                   eprintf("Remote host \"%s\" matches \"%s\" in \"Hosts deny\". Access denied.\n",
                           rem_host_ip, host_list[i]);
                authorized = 0;
@@ -28213,7 +28534,7 @@ int process_http_request(const char *request, int i_conn)
       for (i = 0; i < n; i++) {
          if (strieq(rem_host, host_list[i]) || strieq(rem_host_ip, host_list[i]) || strieq(host_list[i],
                                                                                            "all")) {
-            if (is_verbose())
+            if (get_verbose() >= VERBOSE_INFO)
                eprintf("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
                        strieq(rem_host_ip, host_list[i]) ? rem_host_ip : rem_host, host_list[i]);
             authorized = 1;
@@ -28222,7 +28543,7 @@ int process_http_request(const char *request, int i_conn)
          if (host_list[i][0] == '.') {
             if (strlen(rem_host) > strlen(host_list[i]) && strieq(host_list[i], rem_host + strlen(rem_host)
                                                                   - strlen(host_list[i]))) {
-               if (is_verbose())
+               if (get_verbose() >= VERBOSE_INFO)
                   eprintf("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
                           rem_host, host_list[i]);
                authorized = 1;
@@ -28234,7 +28555,7 @@ int process_http_request(const char *request, int i_conn)
             if (strlen(str) > strlen(host_list[i]))
                str[strlen(host_list[i])] = 0;
             if (strieq(host_list[i], str)) {
-               if (is_verbose())
+               if (get_verbose() >= VERBOSE_INFO)
                   eprintf("Remote host \"%s\" matches \"%s\" in \"Hosts allow\". Access granted.\n",
                           rem_host_ip, host_list[i]);
                authorized = 1;
@@ -28372,9 +28693,10 @@ void send_return(int _sock, const char *net_buffer)
             send(_sock, header_buffer, strlen(header_buffer), 0);
             send(_sock, p + 4, length, 0);
 #endif
-            if (is_verbose() == 1) {
-               eprintf("Returned %d bytes\n", length);
-            } else if (is_verbose() == 2) {
+            if (get_verbose() < VERBOSE_DEBUG) {
+               if (get_verbose() > 0)
+                  eprintf("Returned %d bytes\n", length);
+            } else if (get_verbose() >= VERBOSE_DEBUG) {
                if (strrchr(net_buffer, '/'))
                   strlcpy(str, strrchr(net_buffer, '/') + 1, sizeof(str));
                else
@@ -28383,7 +28705,7 @@ void send_return(int _sock, const char *net_buffer)
                eputs(header_buffer);
                if (chkext(net_buffer, ".gif") || chkext(net_buffer, ".jpg") || chkext(net_buffer, ".png")
                    || chkext(net_buffer, ".ico") || chkext(net_buffer, ".pdf") || return_length > 10000)
-                  eprintf("\n<%d bytes of %s>\n\n", length, str);
+                  eprintf("\n<%d bytes of \"%s\">\n\n", length, str);
                else
                   eputs(p + 4);
                eprintf("\n");
@@ -28428,18 +28750,22 @@ void send_return(int _sock, const char *net_buffer)
 #endif
          }
 
-         if (is_verbose() == 1) {
-            eprintf("Returned %d bytes\n", return_length);
-         } else if (is_verbose() == 2) {
+         if (get_verbose() < VERBOSE_DEBUG) {
+            if (get_verbose() > 0)
+               eprintf("Returned %d bytes\n", return_length);
+         } else if (get_verbose() == VERBOSE_DEBUG) {
             if (strrchr(net_buffer, '/'))
                strlcpy(str, strrchr(net_buffer, '/') + 1, sizeof(str));
             else
                str[0] = 0;
             eprintf("==== Return ================================\n");
             if (chkext(net_buffer, ".gif") || chkext(net_buffer, ".jpg") || chkext(net_buffer, ".png")
-                || chkext(net_buffer, ".ico") || chkext(net_buffer, ".pdf") || return_length > 10000)
-               eprintf("\n<%d bytes of %s>\n\n", return_length, str);
-            else
+                || chkext(net_buffer, ".ico") || chkext(net_buffer, ".pdf") || return_length > 10000) {
+               if (str[0])
+                  eprintf("\n<%d bytes of \"%s\">\r\n", return_length, str);
+               else
+                  eprintf("\n<%d bytes>\r\n", return_length);
+            } else
                eputs(return_buffer);
             eprintf("\n\n");
          }
@@ -28592,7 +28918,7 @@ SSL_CTX *init_ssl(void)
    SSL_library_init();
    SSL_load_error_strings();
 
-   meth = (SSL_METHOD *) SSLv23_method();
+   meth = (SSL_METHOD *) TLSv1_method();
    ctx = SSL_CTX_new(meth);
 
    if (getcfg("global", "SSL Passphrase", pwd, sizeof(pwd))) {
@@ -28635,7 +28961,7 @@ SSL_CTX *init_ssl(void)
 
 void server_loop(void)
 {
-   int status, i, n_error, broken, min, i_min, i_conn, more_requests;
+   int status, i, broken, min, i_min, i_conn, more_requests;
    char str[1000], logbook[256], logbook_enc[256];
    char *pend;
    int lsock, len, flag, content_length, header_length;
@@ -28756,11 +29082,11 @@ void server_loop(void)
 
    /* about to entering the server loop, welcome user with a brief info */
    eprintf("%s ", ELOGID);
-   strcpy(str, git_revision + 33);
+   strcpy(str, git_revision());
    if (strchr(str, ' '))
       *strchr(str, ' ') = 0;
    eprintf("revision %s\n", str);
-   if (is_verbose()) {
+   if (get_verbose() >= VERBOSE_INFO) {
       getcwd(str, sizeof(str));
       if (strchr(config_file, DIR_SEPARATOR) == NULL)
          eprintf("Config file  : %s%c%s\n", str, DIR_SEPARATOR, config_file);
@@ -28827,12 +29153,12 @@ void server_loop(void)
    sigemptyset(&hup_handle.sa_mask);
    hup_handle.sa_flags = 0;
    sigaction(SIGHUP, &hup_handle, NULL);
-   
+
    alarm_handle.sa_handler = alarm_handler;
    sigemptyset(&alarm_handle.sa_mask);
    alarm_handle.sa_flags = 0;
    sigaction(SIGALRM, &alarm_handle, NULL);
-   
+
 #ifndef OS_WINNT
    alarm(3); // prevents blocking send() operations
 #endif
@@ -28849,7 +29175,7 @@ void server_loop(void)
                exit(EXIT_FAILURE);
             }
          }
-      } else if (is_verbose())
+      } else if (get_verbose() >= VERBOSE_INFO)
          eprintf("Falling back to group \"%s\"\n", str);
 
       if (!getcfg("global", "Usr", str, sizeof(str)) || seteuser(str) < 0) {
@@ -28862,7 +29188,7 @@ void server_loop(void)
                exit(EXIT_FAILURE);
             }
          }
-      } else if (is_verbose())
+      } else if (get_verbose() >= VERBOSE_INFO)
          eprintf("Falling back to user \"%s\".\n", str);
    }
 #endif
@@ -28874,16 +29200,41 @@ void server_loop(void)
    strlcpy(str, resource_dir, sizeof(str));
    strlcat(str, "scripts", sizeof(str));
    strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
-   strlcat(str, "fckeditor/fckeditor.js", sizeof(str));
+   strlcat(str, "ckeditor/ckeditor.js", sizeof(str));
    fckedit_exist = exist_file(str);
    if (fckedit_exist)
-      eprintf("FCKedit detected\n");
+      eprintf("CKeditor detected\n");
    else
-      eprintf("FCKedit NOT detected\n");
+      eprintf("CKeditor NOT detected\n");
 
    /* check for ImageMagick */
-   my_shell("convert -version", str, sizeof(str));
+   strlcpy(_convert_cmd, "convert", sizeof(_convert_cmd));
+   strlcpy(_identify_cmd, "identify", sizeof(_convert_cmd));
+   sprintf(str, "%s -version", _convert_cmd);
+   my_shell(str, str, sizeof(str));
    image_magick_exist = (strstr(str, "ImageMagick") != NULL);
+   if (!image_magick_exist) {
+      strlcpy(_convert_cmd, "/usr/bin/convert", sizeof(_convert_cmd));
+      strlcpy(_identify_cmd, "/usr/bin/identify", sizeof(_convert_cmd));
+      sprintf(str, "%s -version", _convert_cmd);
+      my_shell(str, str, sizeof(str));
+      image_magick_exist = (strstr(str, "ImageMagick") != NULL);
+   }
+   if (!image_magick_exist) {
+      strlcpy(_convert_cmd, "/usr/local/bin/convert", sizeof(_convert_cmd));
+      strlcpy(_identify_cmd, "/usr/local/bin/identify", sizeof(_convert_cmd));
+      sprintf(str, "%s -version", _convert_cmd);
+      my_shell(str, str, sizeof(str));
+      image_magick_exist = (strstr(str, "ImageMagick") != NULL);
+   }
+   if (!image_magick_exist) {
+      strlcpy(_convert_cmd, "/opt/local/bin/convert", sizeof(_convert_cmd));
+      strlcpy(_identify_cmd, "/opt/local/bin/identify", sizeof(_convert_cmd));
+      sprintf(str, "%s -version", _convert_cmd);
+      my_shell(str, str, sizeof(str));
+      image_magick_exist = (strstr(str, "ImageMagick") != NULL);
+   }
+   
    if (image_magick_exist)
       eprintf("ImageMagick detected\n");
    else
@@ -28894,11 +29245,11 @@ void server_loop(void)
       eprintf("Keep-alive disabled\n");
 
    /* build logbook indices */
-   if (!is_verbose() && !running_as_daemon)
+   if (get_verbose() == 0 && !running_as_daemon)
       eprintf("Indexing logbooks ... ");
    if (el_index_logbooks() != EL_SUCCESS)
       exit(EXIT_FAILURE);
-   if (!is_verbose() && !running_as_daemon)
+   if (get_verbose() == 0 && !running_as_daemon)
       eputs("done");
 
 #ifndef HAVE_KRB5
@@ -28909,7 +29260,7 @@ void server_loop(void)
       exit(EXIT_FAILURE);
    }
 #endif
-   
+
    /* listen for connection */
    status = listen(lsock, SOMAXCONN);
    if (status < 0) {
@@ -28968,7 +29319,7 @@ void server_loop(void)
                _ssl_con = SSL_new(ssl_ctx);
                SSL_set_fd(_ssl_con, _sock);
                if (SSL_accept(_ssl_con) < 0) {
-                  if (is_verbose())
+                  if (get_verbose() >= VERBOSE_INFO)
                      eprintf("SSL_accept failed\n");
                   closesocket(_sock);
                   ka_sock[i_conn] = 0;
@@ -29024,25 +29375,29 @@ void server_loop(void)
                strcpy(remote_host[i_conn], (char *) inet_ntoa(rem_addr));
 
             strcpy(rem_host, remote_host[i_conn]);
+
+            if (get_verbose() == VERBOSE_URL)
+               eprintf("Open connection #%d on socket %d\n", i, _sock);
+            
+            /* start over */
+            continue;
          }
 
-         else {
-            /* check if open connection received data */
-            for (i = 0; i < N_MAX_CONNECTION; i++)
-               if (ka_sock[i] > 0 && FD_ISSET(ka_sock[i], &readfds))
-                  break;
-            if (i == N_MAX_CONNECTION) {
-               _sock = 0;
-            } else {
-               i_conn = i;
-               _sock = ka_sock[i_conn];
+         /* check if open connection received data */
+         for (i = 0; i < N_MAX_CONNECTION; i++)
+            if (ka_sock[i] > 0 && FD_ISSET(ka_sock[i], &readfds))
+               break;
+         if (i == N_MAX_CONNECTION) {
+            _sock = 0;
+         } else {
+            i_conn = i;
+            _sock = ka_sock[i_conn];
 #ifdef HAVE_SSL
-               _ssl_con = ka_ssl_con[i_conn];
+            _ssl_con = ka_ssl_con[i_conn];
 #endif
-               ka_time[i_conn] = (int) time(NULL);
-               memcpy(&rem_addr, &remote_addr[i_conn], sizeof(rem_addr));
-               strcpy(rem_host, remote_host[i_conn]);
-            }
+            ka_time[i_conn] = (int) time(NULL);
+            memcpy(&rem_addr, &remote_addr[i_conn], sizeof(rem_addr));
+            strcpy(rem_host, remote_host[i_conn]);
          }
 
          /* turn off keep_alive by default */
@@ -29057,7 +29412,6 @@ void server_loop(void)
 
             do {                /* pipleline loop */
                header_length = 0;
-               n_error = 0;
                broken = FALSE;
                return_length = -1;
                do {
@@ -29077,6 +29431,9 @@ void server_loop(void)
 #endif
                               i = recv(_sock, net_buffer + len, net_buffer_size - len, 0);
 
+                           if (get_verbose() == VERBOSE_URL)
+                              eprintf("Connection #%d received %d bytes on socket %d\n", i_conn, i, _sock);
+
                         } else
                            break;
 
@@ -29085,6 +29442,12 @@ void server_loop(void)
                            broken = TRUE;
                            break;
                         }
+                        /* abort if connection has been closed */
+                        if (i == 0) {
+                           broken = TRUE;
+                           break;
+                        }
+
                         if (i > 0)
                            len += i;
 
@@ -29101,16 +29464,6 @@ void server_loop(void)
 
                            memset(net_buffer + net_buffer_size, 0, 100000);
                            net_buffer_size += 100000;
-                        }
-
-                        /* abort if 100x received zero bytes */
-                        if (i == 0) {
-                           n_error++;
-                           if (n_error == 100) {
-                              broken = TRUE;
-                              break;
-                           }
-                           continue;
                         }
 
                         /* repeat until empty line received (fragmented TCP packets!) */
@@ -29213,7 +29566,7 @@ void server_loop(void)
                   } else if (strstr(net_buffer, "HEAD") != NULL) {
                      /* just return header */
                      rsprintf("HTTP/1.1 200 OK\r\n");
-                     rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision + 33);
+                     rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision());
                      rsprintf("Connection: close\r\n");
                      rsprintf("Content-Type: text/html\r\n\r\n");
                      keep_alive = FALSE;
@@ -29223,7 +29576,7 @@ void server_loop(void)
                      return_length = -1;
                      break;
                   } else {
-                     if (strlen(net_buffer) > 0 && is_verbose()) {
+                     if (strlen(net_buffer) > 0 && get_verbose() >= VERBOSE_INFO) {
                         strcpy(str, "Received unknown HTTP command: ");
                         strencode2(str, net_buffer, sizeof(str));
                         show_error(str);
@@ -29234,14 +29587,14 @@ void server_loop(void)
                } while (1);
 
                if (broken) {
-                  if (is_verbose())
-                     eprintf("TCP connection broken\n");
+                  if (get_verbose() >= VERBOSE_URL)
+                     eprintf("TCP connection #%d on socket %d closed\n", i_conn, _sock);
                   keep_alive = FALSE;
                   break;
                }
 
                if (strncmp(net_buffer, "POST", 4) == 0 && len < header_length + content_length) {
-                  if (is_verbose())
+                  if (get_verbose() >= VERBOSE_INFO)
                      eprintf("Incomplete POST request\n");
                   keep_alive = FALSE;
                   break;
@@ -29913,10 +30266,11 @@ int main(int argc, char *argv[])
       if (argv[i][0] == '-' && argv[i][1] == 'D')
          running_as_daemon = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'v') {
-         if (atoi(&argv[i][2]) > 0)
-            set_verbose(atoi(&argv[i][2]));
-         else
-            set_verbose(2);
+         if (i < argc-1 && atoi(argv[i+1]) > 0) {
+            set_verbose(atoi(argv[i+1]));
+            i++;
+         } else
+            set_verbose(VERBOSE_INFO);
       } else if (argv[i][0] == '-' && argv[i][1] == 'S')
          silent = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'k')
@@ -30001,7 +30355,7 @@ int main(int argc, char *argv[])
             printf("       -S be silent\n");
             printf("       -s <dir> specify resource directory (themes, icons, ...)\n");
             printf("       -t <pwd> create/overwrite SMTP password in config file\n");
-            printf("       -v debugging output\n");
+            printf("       -v <n> verbose output (1:URL, 2:INFO, 3:DEBUG)\n");
             printf("       -x enable execution of shell commands\n\n");
 #ifdef OS_WINNT
             printf("Windows service funtions:\n");
@@ -30244,7 +30598,7 @@ int main(int argc, char *argv[])
       if (getcfg("global", "interface", str, sizeof(str))) {
          strlcpy(listen_interface, str, sizeof(listen_interface));
       }
-   
+
    /* get default port */
    if (getcfg("global", "SSL", str, sizeof(str)) && atoi(str) == 1)
       elog_tcp_port = 443;

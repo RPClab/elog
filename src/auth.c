@@ -33,9 +33,18 @@
 #include <krb5.h>
 #endif
 
+#ifdef HAVE_LDAP
+#include <ldap.h>
+
+LDAP *ldap_ld;
+char ldap_login_attr[64];
+char ldap_userbase[256];
+char ldap_bindDN[512];
+#endif  /* HAVE_LDAP */
+
 extern LOGBOOK *lb_list;
 
-/* ========================================================================== */
+/*==================================================================*/
 
 /*---- Kerberos5 routines ------------------------------------------*/
 
@@ -183,6 +192,235 @@ int auth_change_password_krb5(LOGBOOK * lbs, const char *user, const char *old_p
 }
 #endif
 
+/*---- LDAP routines ------------------------------------------*/
+
+#ifdef HAVE_LDAP
+
+int ldap_init(LOGBOOK *lbs, char *error_str, int error_size)
+{
+   char str[512], ldap_server[256];
+   int ii, version;
+   
+   // Read Config file
+   if (getcfg(lbs->name, "LDAP server", ldap_server, sizeof(ldap_server))) {
+      strlcpy(str, ldap_server, sizeof(str));
+   }
+   else   {
+      strlcpy(error_str, "<b>LDAP initialization error</b><br>", error_size);
+      strlcat(error_str, "<br>Please check your LDAP configuration.", error_size);
+      strlcat(str, "ERR: Cannot find LDAP server entry!", sizeof(str));
+      write_logfile(lbs, str);
+      return FALSE;
+   }
+   
+   if (!getcfg(lbs->name, "LDAP userbase", ldap_userbase, sizeof(ldap_userbase))) {
+      strlcpy(error_str, "<b>LDAP initialization error</b><br>", error_size);
+      strlcat(error_str, "<br>Please check your LDAP configuration.", error_size);
+      strlcat(str, ", ERR: Cannot find LDAP userbase (e.g. \'ou=People,dc=example,dc=org\')!", sizeof(str));
+      write_logfile(lbs, str);
+      return FALSE;
+   }
+   
+   if (!getcfg(lbs->name, "LDAP login attribute", ldap_login_attr, sizeof(ldap_login_attr))) {
+      strlcpy(error_str, "<b>LDAP initialization error</b><br>", error_size);
+      strlcat(error_str, "<br>Please check your LDAP configuration.", error_size);
+      strlcat(str, ", ERR: Cannot find LDAP login attribute (e.g. uid, cn, ...)!", sizeof(str));
+      write_logfile(lbs, str);
+      return FALSE;
+   }
+   
+   // Initialize/open LDAP connection
+   if(ldap_initialize( &ldap_ld, ldap_server )) {
+      perror("ldap_initialize");
+      strlcpy(error_str, "<b>LDAP initialization error</b><br>", error_size);
+      strlcat(error_str, "<br>Please check your LDAP configuration.", error_size);
+      return FALSE;
+   }
+   
+   // Use the LDAP_OPT_PROTOCOL_VERSION session preference to specify that the client is LDAPv3 client
+   version = LDAP_VERSION3;
+   ldap_set_option(ldap_ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+   
+   write_logfile(lbs, str);
+   
+   return TRUE;
+}
+
+int auth_verify_password_ldap(LOGBOOK *lbs, const char *user, const char *password, char *error_str,
+                              int error_size)
+{  LDAPMessage *result, *err;
+   int bind=0, ii;
+   char str[512];
+   
+   ldap_ld = NULL;
+   memset(&ldap_bindDN[0], 0, sizeof(ldap_bindDN));
+   
+   if(!ldap_init(lbs,error_str,error_size)) {
+      strlcpy(error_str, "<b>LDAP initialization error</b><br>", error_size);
+      strlcat(error_str, "<br>Please check your LDAP configuration.", error_size);
+      return FALSE;
+   }
+   
+   // Form LDAP bind DN (distinguished name):
+   // login_attr=user,ldap_userbase, e.g. uid=tuser,ou=People,dc=example,dc=org
+   sprintf(ldap_bindDN,"%s=%s,%s",ldap_login_attr,user,ldap_userbase);
+   
+   strlcat(str, "Connecting as: ", sizeof(str));
+   strlcat(str, ldap_bindDN, sizeof(str));
+   write_logfile(lbs, str);
+   
+   // User authentication (bind)
+   bind = ldap_simple_bind_s(ldap_ld, ldap_bindDN, password);
+   if( bind != LDAP_SUCCESS ) {
+      strlcpy(error_str, "<b>LDAP authentication error:</b><br>", error_size);
+      strlcat(error_str, ldap_err2string(bind), error_size);
+      strlcat(error_str, ".<br>Please check your user/password or LDAP configuration.", error_size);
+      strlcpy(str, "LDAP Authentication: FAILED!", sizeof(str));
+      write_logfile(lbs, str);
+      ldap_unbind(ldap_ld);
+      return FALSE;
+   }
+   
+   strlcpy(str, "LDAP Authentication: Success!", sizeof(str));
+   ldap_unbind(ldap_ld);
+   
+   write_logfile(lbs, str);
+   return TRUE;
+}
+
+
+int ldap_adduser_file(LOGBOOK *lbs, const char *user, const char *password, char *error_str,
+                      int error_size)
+{  LDAPMessage *result, *entry;
+   char *attribute, **values;
+   char str[512], filter[512];
+   BerElement *ber;
+   int bind=0, rc=0, i;
+   
+   char lbs_str[256], user_str[256], user_enc[256], fullname[256], usergn[128], usersn[128], useremail[256];
+   PMXML_NODE node, npwd;
+   
+   struct timeval timeOut = {3,0}; // 3 second connection/search timeout
+                                   // zerotime.tv_sec = zerotime.tv_usec = 0L;
+   
+   write_logfile(lbs, "New user: getting userdata from LDAP...");
+   
+   if(!ldap_init(lbs,error_str,error_size)) {
+      return FALSE;
+   }
+   
+   // User authentication (bind)
+   bind = ldap_simple_bind_s(ldap_ld, ldap_bindDN, password);
+   if( bind != LDAP_SUCCESS ) {
+      strlcpy(error_str, "<b>LDAP authentication error:</b><br>", error_size);
+      strlcat(error_str, ldap_err2string(bind), error_size);
+      strlcat(error_str, ".<br>Please check your user/password or LDAP configuration.", error_size);
+      strlcat(str, "LDAP Authentication: FAILED!", sizeof(str));
+      write_logfile(lbs, str);
+      ldap_unbind(ldap_ld);
+      return FALSE;
+   }
+   
+   // form LDAP filter to find the user;
+   sprintf(filter, "(%s=%s)", ldap_login_attr, user);
+   
+   // below based on: http://www.djack.com.pl/modules.php?name=FAQ&myfaq=yes&xmyfaq=yes&id_cat=7&id=183 (code errors!)
+   // AND on: http://www-archive.mozilla.org/directory/csdk-docs/example.htm
+   
+   // Get user's first name, surname and email from LDAP
+   rc = ldap_search_ext_s(
+                          ldap_ld,		         // LDAP session handle
+                          ldap_userbase,	      // Search Base
+                          LDAP_SCOPE_SUBTREE,	// Search Scope – everything below o=Acme
+                          filter,               // Search Filter – only inetOrgPerson objects
+                          NULL,	               // returnAllAttributes – NULL means Yes
+                          0,		               // attributesOnly – False means we want values
+                          NULL,	               // Server controls – There are none
+                          NULL,	               // Client controls – There are none
+                          &timeOut,	            // search Timeout
+                          LDAP_NO_LIMIT,	      // no size limit
+                          &result);
+   
+   if (rc != LDAP_SUCCESS) {
+      strlcat(str, "LDAP search returned error: ", sizeof(str));
+      strlcat(str, ldap_err2string(rc), sizeof(str));
+      write_logfile(lbs, str);
+      ldap_unbind(ldap_ld);
+      return FALSE;
+   }
+   
+   for(entry = ldap_first_entry(ldap_ld,result);
+       entry != NULL;
+       entry = ldap_next_entry(ldap_ld,entry) ) {
+      for(attribute = ldap_first_attribute(ldap_ld,entry,&ber);
+          attribute != NULL;
+          attribute = ldap_next_attribute(ldap_ld,entry,ber) ) {
+         // For each attribute, print the attribute name and values. //
+         if((values = ldap_get_values(ldap_ld,entry,attribute)) != NULL ) {
+            for(i=0; values[i] != NULL; i++) {
+               if(strcmp(attribute,"givenName")==0 || strcmp(attribute,"gn")==0)
+                  strlcpy(usergn, values[i], sizeof(usergn));
+               if(strcmp(attribute,"sn")==0 || strcmp(attribute,"surname")==0)
+                  strlcpy(usersn, values[i], sizeof(usersn));
+               if(strcmp(attribute,"mail")==0 || strcmp(attribute,"rfc822Mailbox")==0)
+                  strlcpy(useremail, values[i], sizeof(useremail));
+            }
+            ldap_value_free(values);
+         }
+         ldap_memfree(attribute);
+      }
+      if(ber != NULL) ber_free(ber,0);
+   }
+   
+   ldap_msgfree(result);
+   ldap_unbind(ldap_ld);
+   
+   sprintf(fullname, "%s %s", usergn, usersn);
+   
+   // Add user from LDAP in the local password file
+   // do not allow HTML in user name
+   strencode2(user_enc, user, sizeof(user_enc));
+   
+   sprintf(lbs_str, "/list/user[name=%s]", user_enc);
+   node = mxml_find_node(lbs->pwd_xml_tree, lbs_str);
+   node = mxml_find_node(lbs->pwd_xml_tree, "/list");
+   if (!node) {
+      show_error(loc("Error accessing password file"));
+      return 0;
+   }
+   node = mxml_add_node(node, "user", NULL);
+   mxml_add_node(node, "name", user_enc); // add user login from LDAP;
+   
+   do_crypt(password, user_str, sizeof(str));
+   npwd = mxml_add_node(node, "password", user_str); // add user password;
+   
+   if (npwd) mxml_add_attribute(npwd, "encoding", "SHA256"); // user password is encoded;
+   
+   strencode2(user_str, fullname, sizeof(str));  // add full user name from LDAP;
+   mxml_add_node(node, "full_name", user_str);
+   
+   mxml_add_node(node, "last_logout", "0");      // last logout;
+   mxml_add_node(node, "last_activity", "0");    // last activity;
+   
+   mxml_add_node(node, "email", useremail);      // add user email from LDAP;
+   mxml_add_node(node, "inactive", "0");
+   
+   sprintf(str,"New user: %s, %s added", user_enc, useremail);
+   write_logfile(lbs, str);
+   return TRUE;
+}
+
+/*---- clear ldap_ld and ldap_bindDN ----*/
+int ldap_clear () 
+{
+   ldap_ld = NULL;
+   memset(&ldap_bindDN[0], 0, sizeof(ldap_bindDN)); 
+   
+   return TRUE;
+}
+
+#endif  /* LDAP */
+
 /*---- local password file routines --------------------------------*/
 
 int auth_verify_password_file(LOGBOOK * lbs, const char *user, const char *password, char *error_str,
@@ -237,6 +475,25 @@ int auth_verify_password(LOGBOOK * lbs, const char *user, const char *password, 
 #ifdef HAVE_KRB5
    if (stristr(str, "Kerberos"))
       verified = auth_verify_password_krb5(lbs, user, password, error_str, error_size);
+   if (verified)
+      return TRUE;
+#endif
+
+#ifdef HAVE_LDAP
+   if (stristr(str, "LDAP")) {
+      verified = auth_verify_password_ldap(lbs, user, password, error_str, error_size);
+      
+      // if user not in password file (external authentication!) and "LDAP register" is allowed (>0),
+      // obtain user info from LDAP and add locally
+      if (verified) {
+         if (get_user_line(lbs, user, NULL, NULL, NULL, NULL, NULL, NULL) == 2) {
+            if (getcfg(lbs->name, "LDAP register", str, sizeof(str)) && atoi(str) > 0)
+               ldap_adduser_file(lbs, user, password, error_str, error_size);
+         }
+      }
+      
+      ldap_clear();
+   }
    if (verified)
       return TRUE;
 #endif

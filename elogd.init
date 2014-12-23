@@ -1,0 +1,71 @@
+#!/bin/sh
+
+# chkconfig: 3 90 10
+# description: ELOG is a weblog with integrated database
+# processname: elogd
+# config: /usr/local/elog/elogd.cfg
+# pidfile: /var/run/elogd.pid
+
+# Source function library.
+# . /etc/rc.d/init.d/functions
+
+# Check for the config file
+if [ ! -f /usr/local/elog/elogd.cfg ]; then
+    exit 0
+fi
+
+
+# See how we were called.
+case "$1" in
+  start)
+        if [ -f /var/run/elogd.pid ] ; then
+	   pid=`cat /var/run/elogd.pid`
+	   if [ -d /proc/$pid ] ; then
+	     echo "elogd already running"
+	     # echo_failure
+	     exit 1
+	   fi
+	fi
+        if [ -f /var/run/elogd.pid ] ; then
+           rm -f /var/lock/subsys/elogd
+	   rm -f /var/run/elogd.pid
+        fi
+	echo -n "Starting elogd: "
+	/usr/local/sbin/elogd -D -c /usr/local/elog/elogd.cfg  > /dev/null 2>&1 
+	RETVAL=$?
+        if [ $RETVAL -eq 0  ] ; then 
+          touch /var/lock/subsys/elogd
+        fi
+	echo
+	;;
+  stop)
+     echo ""
+      if [ -f /var/run/elogd.pid ] ; then
+        echo -n "Stoping elogd: "
+        /bin/kill `cat /var/run/elogd.pid`
+        rm -f /var/lock/subsys/elogd
+	rm -f /var/run/elogd.pid
+        echo_success
+        echo
+     else
+        echo -n "No elogd running?"
+	echo
+     fi
+     
+	;;
+  status)
+     status -p /var/run/elogd.pid /usr/local/sbin/elogd
+     RETVAL=$?
+        ;;
+  restart|reload)
+	$0 stop
+	sleep 1
+	$0 start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|status|restart}"
+	exit 1
+esac
+
+exit 0
+

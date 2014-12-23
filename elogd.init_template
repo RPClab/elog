@@ -7,7 +7,7 @@
 # pidfile: /var/run/elogd.pid
 
 # Source function library.
-. /etc/rc.d/init.d/functions
+# . /etc/rc.d/init.d/functions
 
 # Check for the config file
 if [ ! -f @PREFIX@/elog/elogd.cfg ]; then
@@ -22,7 +22,7 @@ case "$1" in
 	   pid=`cat /var/run/elogd.pid`
 	   if [ -d /proc/$pid ] ; then
 	     echo "elogd already running"
-	     echo_failure
+	     # echo_failure
 	     exit 1
 	   fi
 	fi
@@ -35,9 +35,6 @@ case "$1" in
 	RETVAL=$?
         if [ $RETVAL -eq 0  ] ; then 
           touch /var/lock/subsys/elogd
-          echo_success
-        else
-          echo_failure
         fi
 	echo
 	;;
@@ -52,7 +49,6 @@ case "$1" in
         echo
      else
         echo -n "No elogd running?"
-	echo_failure
 	echo
      fi
      

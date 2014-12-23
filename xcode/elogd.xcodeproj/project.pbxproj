@@ -28,24 +28,24 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		D51F4A9214F27F3C00CB29E9 /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index.html; path = /elog/doc/index.html; sourceTree = "<absolute>"; };
-		D51F4A9414F27F4400CB29E9 /* index_nd.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index_nd.html; path = /elog/doc/index_nd.html; sourceTree = "<absolute>"; };
-		D528A7C314F278C800D33974 /* ChangeLog */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChangeLog; path = /elog/doc/ChangeLog; sourceTree = "<absolute>"; };
-		D528A7C514F278DA00D33974 /* checklist.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = checklist.txt; path = /elog/checklist.txt; sourceTree = "<absolute>"; };
+		D51F4A9214F27F3C00CB29E9 /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index.html; path = ../doc/index.html; sourceTree = SOURCE_ROOT; };
+		D51F4A9414F27F4400CB29E9 /* index_nd.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index_nd.html; path = ../doc/index_nd.html; sourceTree = SOURCE_ROOT; };
+		D528A7C314F278C800D33974 /* ChangeLog */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChangeLog; path = ../doc/ChangeLog; sourceTree = SOURCE_ROOT; };
+		D528A7C514F278DA00D33974 /* checklist.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = checklist.txt; path = ../checklist.txt; sourceTree = SOURCE_ROOT; };
 		D52BA2FA13999DB0000458E3 /* elogd */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = elogd; sourceTree = BUILT_PRODUCTS_DIR; };
-		D52BA31013999DE4000458E3 /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = /mxml/mxml.c; sourceTree = "<absolute>"; };
-		D52BA31113999DE4000458E3 /* mxml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mxml.h; path = /mxml/mxml.h; sourceTree = "<absolute>"; };
-		D52BA31213999DE4000458E3 /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = /mxml/strlcpy.c; sourceTree = "<absolute>"; };
-		D52BA31313999DE4000458E3 /* strlcpy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = strlcpy.h; path = /mxml/strlcpy.h; sourceTree = "<absolute>"; };
-		D545158C1399A23B0037D7FB /* auth.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = auth.c; path = /elog/src/auth.c; sourceTree = "<absolute>"; };
-		D545158D1399A23B0037D7FB /* crypt.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = crypt.c; path = /elog/src/crypt.c; sourceTree = "<absolute>"; };
-		D545158E1399A23B0037D7FB /* elogd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = elogd.c; path = /elog/src/elogd.c; sourceTree = "<absolute>"; };
-		D545158F1399A23B0037D7FB /* elogd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = elogd.h; path = /elog/src/elogd.h; sourceTree = "<absolute>"; };
-		D54515901399A23B0037D7FB /* regex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = regex.c; path = /elog/src/regex.c; sourceTree = "<absolute>"; };
-		D54515911399A23B0037D7FB /* regex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = regex.h; path = /elog/src/regex.h; sourceTree = "<absolute>"; };
-		D58A366615AF103300682DC0 /* elog-version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "elog-version.h"; path = "/elog/src/elog-version.h"; sourceTree = "<absolute>"; };
-		D5AC5BF9154AC7200018DD90 /* config.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = config.html; path = /elog/doc/config.html; sourceTree = "<absolute>"; };
-		D5F11B9113AFA164002CE8BF /* elogd.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = elogd.cfg; path = /elogdemo/elogd.cfg; sourceTree = "<absolute>"; };
+		D52BA31013999DE4000458E3 /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = ../../mxml/mxml.c; sourceTree = SOURCE_ROOT; };
+		D52BA31113999DE4000458E3 /* mxml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mxml.h; path = ../../mxml/mxml.h; sourceTree = SOURCE_ROOT; };
+		D52BA31213999DE4000458E3 /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = ../../mxml/strlcpy.c; sourceTree = SOURCE_ROOT; };
+		D52BA31313999DE4000458E3 /* strlcpy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = strlcpy.h; path = ../../mxml/strlcpy.h; sourceTree = SOURCE_ROOT; };
+		D545158C1399A23B0037D7FB /* auth.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = auth.c; path = ../src/auth.c; sourceTree = SOURCE_ROOT; };
+		D545158D1399A23B0037D7FB /* crypt.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = crypt.c; path = ../src/crypt.c; sourceTree = SOURCE_ROOT; };
+		D545158E1399A23B0037D7FB /* elogd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = elogd.c; path = ../src/elogd.c; sourceTree = SOURCE_ROOT; };
+		D545158F1399A23B0037D7FB /* elogd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = elogd.h; path = ../src/elogd.h; sourceTree = SOURCE_ROOT; };
+		D54515901399A23B0037D7FB /* regex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = regex.c; path = ../src/regex.c; sourceTree = SOURCE_ROOT; };
+		D54515911399A23B0037D7FB /* regex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = regex.h; path = ../src/regex.h; sourceTree = SOURCE_ROOT; };
+		D58A366615AF103300682DC0 /* elog-version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "elog-version.h"; path = "../src/elog-version.h"; sourceTree = SOURCE_ROOT; };
+		D5AC5BF9154AC7200018DD90 /* config.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = config.html; path = ../doc/config.html; sourceTree = SOURCE_ROOT; };
+		D5F11B9113AFA164002CE8BF /* elogd.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = elogd.cfg; path = ../elogd.cfg; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,6 +115,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = D52BA30313999DB0000458E3 /* Build configuration list for PBXNativeTarget "elogd" */;
 			buildPhases = (
+				D5132F2C19DE9DE00005CE87 /* Run Script */,
 				D52BA2F613999DB0000458E3 /* Sources */,
 				D52BA2F713999DB0000458E3 /* Frameworks */,
 				D52BA2F813999DB0000458E3 /* CopyFiles */,
@@ -134,7 +135,7 @@
 		D52BA2F113999DB0000458E3 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0500;
+				LastUpgradeCheck = 0600;
 				ORGANIZATIONNAME = PSI;
 			};
 			buildConfigurationList = D52BA2F413999DB0000458E3 /* Build configuration list for PBXProject "elogd" */;
@@ -153,6 +154,23 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		D5132F2C19DE9DE00005CE87 /* Run Script */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Run Script";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "echo \\#define GIT_REVISION \\\"`git log -n 1 --pretty=format:\"%ad - %h\"`\\\" > /elog/src/git-revision.h";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		D52BA2F613999DB0000458E3 /* Sources */ = {
@@ -179,7 +197,9 @@
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = DEBUG;
@@ -206,7 +226,9 @@
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;

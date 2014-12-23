@@ -27,11 +27,13 @@ USE_SSL    = 1
 # flag for Kerberos support, please turn on if you need Kerberos
 USE_KRB5   = 0
 
+# flag for LDAP support, please turn on if you need LDAP
+USE_LDAP   = 0
+
 #############################################################
 
 # Default compilation flags unless stated otherwise.
-CFLAGS += -O3 -funroll-loops -fomit-frame-pointer -W -Wall -Wno-deprecated-declarations -Wno-unused-result
-#CFLAGS += -g -funroll-loops -fomit-frame-pointer -W -Wall -Wno-deprecated-declarations -Wno-unused-result
+CFLAGS += -O3 -funroll-loops -fomit-frame-pointer -W -Wall -Wno-deprecated-declarations
 
 CC = gcc
 IFLAGS = -kr -nut -i3 -l110
@@ -40,6 +42,9 @@ GIT_REVISION = src/git-revision.h
 MXMLDIR = ../mxml
 BINOWNER = bin
 BINGROUP = bin
+
+# Option to use our own implementation of strlcat, strlcpy
+NEED_STRLCPY = 1
 
 INSTALL = `which install`
 RM = /bin/rm -f
@@ -66,6 +71,7 @@ ifeq ($(OSTYPE),darwin)
 CC = cc
 BINOWNER = root
 BINGROUP = admin
+NEED_STRLCPY =
 endif
 
 ifeq ($(OSTYPE),FreeBSD)
@@ -78,7 +84,7 @@ ifeq ($(OSTYPE),Linux)
 CC = gcc
 endif
 
-CFLAGS += -I$(MXMLDIR) 
+CFLAGS += -I$(MXMLDIR)
 
 ifdef USE_SSL
 ifneq ($(USE_SSL),0)
@@ -94,12 +100,23 @@ LIBS += -lkrb5
 endif
 endif
 
+ifdef USE_LDAP
+ifneq ($(USE_LDAP),0)
+CFLAGS += -DHAVE_LDAP
+LIBS += -lldap
+endif
+endif
+
+ifdef NEED_STRLCPY
+OBJS += strlcpy.o
+endif
+
 WHOAMI = $(shell whoami)
 ifeq ($(WHOAMI),root)
 BINFLAGS = -o ${BINOWNER} -g ${BINGROUP}
 endif
 
-all: $(EXECS) $(GIT_REVISION)
+all: $(EXECS)
 
 # put current GIT revision into header file to be included by programs
 $(GIT_REVISION): src/elogd.c
@@ -120,14 +137,14 @@ mxml.o: $(MXMLDIR)/mxml.c $(MXMLDIR)/mxml.h
 strlcpy.o: $(MXMLDIR)/strlcpy.c $(MXMLDIR)/strlcpy.h
 	$(CC) $(CFLAGS) -c -o strlcpy.o $(MXMLDIR)/strlcpy.c
 
-elogd: src/elogd.c regex.o crypt.o auth.o mxml.o strlcpy.o
-	$(CC) $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o strlcpy.o $(LIBS)
+elogd: src/elogd.c regex.o crypt.o auth.o mxml.o $(GIT_REVISION)
+	$(CC) $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(OBJS) $(LIBS)
 
-elog: src/elog.c crypt.o
-	$(CC) $(CFLAGS) -o elog src/elog.c crypt.o $(LIBS)
+elog: src/elog.c crypt.o $(OBJS)
+	$(CC) $(CFLAGS) -o elog src/elog.c crypt.o $(OBJS) $(LIBS)
 
-debug: src/elogd.c regex.o crypt.o auth.o mxml.o strlcpy.o
-	$(CC) -g $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o strlcpy.o $(LIBS)
+debug: src/elogd.c regex.o crypt.o auth.o mxml.o
+	$(CC) -g $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(OBJS) $(LIBS)
 
 %: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
@@ -157,47 +174,58 @@ update: $(EXECS)
 
 install: $(EXECS)
 	@$(INSTALL) -m 0755 -d $(DESTDIR) $(SDESTDIR) $(MANDIR)/man1/ $(MANDIR)/man8/
-	@$(INSTALL) -m 0755 -d $(ELOGDIR)/scripts/ $(ELOGDIR)/resources/ $(ELOGDIR)/ssl/ $(ELOGDIR)/themes/default/icons 
+	@$(INSTALL) -m 0755 -d $(ELOGDIR)/scripts/ $(ELOGDIR)/resources/ $(ELOGDIR)/ssl/ $(ELOGDIR)/themes/default/icons
 	@$(INSTALL) -m 0755 -d $(ELOGDIR)/logbooks/demo
+	@$(INSTALL) -m 0755 -d $(ELOGDIR)/logbooks/demo/2001
 	@$(INSTALL) -v -m 0755 ${BINFLAGS} elog elconv $(DESTDIR)
 	@$(INSTALL) -v -m 0755 ${BINFLAGS} elogd $(SDESTDIR)
 	@$(INSTALL) -v -m 0644 man/elog.1 man/elconv.1 $(MANDIR)/man1/
 	@$(INSTALL) -v -m 0644 man/elogd.8 $(MANDIR)/man8/
 	@$(INSTALL) -v -m 0644 scripts/*.js $(ELOGDIR)/scripts/
 
-	@echo "Installing FCKeditor to $(ELOGDIR)/scripts/fckeditor"
-	@unzip -q -o scripts/fckeditor.zip -d $(ELOGDIR)/scripts/
-	@$(INSTALL) -v -m 0644 scripts/fckeditor/fckelog.js $(ELOGDIR)/scripts/fckeditor/fckelog.js
-	@mkdir -p -m 0755 $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog
-	@$(INSTALL) -v -m 0644 scripts/fckeditor/editor/plugins/elog/fckplugin.js $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/fckplugin.js
-	@$(INSTALL) -v -m 0644 scripts/fckeditor/editor/plugins/elog/inserttime.gif $(ELOGDIR)/scripts/fckeditor/editor/plugins/elog/inserttime.gif
+	@echo "Installing CKeditor to $(ELOGDIR)/scripts/ckeditor"
+	@cp -r scripts/* $(ELOGDIR)/scripts
 
-	@echo "Installing resources to $(ELOGDIR)/resources"	
+	@echo "Installing resources to $(ELOGDIR)/resources"
 	@$(INSTALL) -m 0644 resources/* $(ELOGDIR)/resources/
-	@$(INSTALL) -m 0644 ssl/* $(ELOGDIR)/ssl/
-
-	@echo "Installing themes to $(ELOGDIR)/themes"	
-	@$(INSTALL) -m 0644 themes/default/icons/* $(ELOGDIR)/themes/default/icons/
-	@for file in `find themes/default -type f | grep -v .svn` ; \
-          do \
-          $(INSTALL) -m 0644 $$file $(ELOGDIR)/themes/default/`basename $$file` ;\
-          done
-
-	@echo "Installing example logbook to $(ELOGDIR)/logbooks/demo"	
-	@if [ ! -f $(ELOGDIR)/logbooks/demo ]; then  \
-	  $(INSTALL) -v -m 0644 logbooks/demo/* $(ELOGDIR)/logbooks/demo ; \
+	@if [ ! -f $(ELOGDIR)/ssl/server.crt ]; then  \
+	  $(INSTALL) -v -m 0644 ssl/server.crt $(ELOGDIR)/ssl/ ;\
+	fi
+	@if [ ! -f $(ELOGDIR)/ssl/server.key ]; then  \
+	  $(INSTALL) -v -m 0644 ssl/server.key $(ELOGDIR)/ssl/ ;\
 	fi
 
-	@sed "s#\@PREFIX\@#$(PREFIX)#g" elogd.init_template > elogd.init
-	@mkdir -p -m 0755 $(RCDIR)
-	@$(INSTALL) -v -m 0755 elogd.init $(RCDIR)/elogd
+	@echo "Installing themes to $(ELOGDIR)/themes"
+	@$(INSTALL) -m 0644 themes/default/icons/* $(ELOGDIR)/themes/default/icons/
+	@for file in `find themes/default -type f | grep -v .svn` ;\
+          do \
+	    if [ ! -f $(ELOGDIR)/themes/default/`basename $$file` ]; then  \
+              $(INSTALL) -m 0644 $$file $(ELOGDIR)/themes/default/`basename $$file` ;\
+	    fi; \
+	  done
+
+	@echo "Installing example logbook to $(ELOGDIR)/logbooks/demo"
+	@if [ ! -f $(ELOGDIR)/logbooks/demo/2001 ]; then  \
+	  $(INSTALL) -v -m 0644 logbooks/demo/2001/* $(ELOGDIR)/logbooks/demo/2001 ; \
+	fi
 
 	@if [ ! -f $(ELOGDIR)/elogd.cfg ]; then  \
 	  $(INSTALL) -v -m 644 elogd.cfg $(ELOGDIR)/elogd.cfg ; \
 	fi
 
+ifeq ($(OSTYPE),darwin)
+	@$(INSTALL) -v -m 0644 elogd.plist /Library/LaunchDaemons/ch.psi.elogd.plist
+	@echo The elogd service can now be started with 
+	@echo "  launchctl load /Library/LaunchDaemons/ch.psi.elogd.plist"
+else
+	@sed "s#\@PREFIX\@#$(PREFIX)#g" elogd.init_template > elogd.init
+	@mkdir -p -m 0755 $(RCDIR)
+	@if [ ! -f $(RCDIR)/elogd ]; then  \
+	  @$(INSTALL) -v -m 0755 elogd.init $(RCDIR)/elogd ; \
+	fi
+endif
+
 restart:
 	$(RCDIR)/elogd restart
 clean:
 	-$(RM) *~ $(EXECS) regex.o crypt.o auth.o mxml.o strlcpy.o locext
-

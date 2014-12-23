@@ -408,9 +408,6 @@ for the next %d days = voor de komende %d dagen
 keep original values = behoud de originele waarden
 Entry is locked = bericht is geblokkeerd
 Edit anyhow = toch wijzigen
-Submit entry = bericht versturen
-Insert image = Afbeelding invoegen
-Insert Date/Time = Huidige tijd/datum invoegen
 Insert horizontal line = Horizontale lijn invoegen
 Insert anchor point = Ankerpunt invoegen
 keep original text = behoud originele tekst
@@ -433,7 +430,6 @@ Last entry, Ctrl-End = Laatste bericht, Ctrl-End
 ELOG import = ELOG import
 Please choose format to import: = Kies het formaat om te importeren
 Enter text = Voer tekst in
-Show HTML source code = Toon HTML broncode
 or until I log out =  of tot ik afmeld
 Make smaller = Verkleinen
 Original size = Oorspronkelijke grootte
@@ -478,3 +474,12 @@ Please click on following link to recover your account = Klik op de volgende lin
 Email address "%s" not registered = Email adres "%s" is niet geregistreerd
 User name "%s" not registered = Gebruikersnaam "%s" is niet geregistreerd
 
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+CSV (";" separated) + Text = 
+Error accessing password file = 
+Entry can only be deleted %1.2lg hours after creation = 
+Drop attachments here... = 
+Insert Timestamp = 
