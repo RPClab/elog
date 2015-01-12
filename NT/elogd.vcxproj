@@ -55,7 +55,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>\openssl\include;\mxml;\krb5\inc\krb5;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>\openssl\include;\mxml;\krb5\inc\krb5;\elog;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;HAVE_SSL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -165,8 +165,6 @@
     <None Include="..\doc\config.html" />
     <None Include="..\doc\index.html" />
     <None Include="..\doc\index_nd.html" />
-    <None Include="..\scripts\fckeditor\fckelog.js" />
-    <None Include="..\scripts\fckeditor\editor\plugins\elog\fckplugin.js" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\mxml\mxml.h" />

@@ -17,9 +17,6 @@
       <UniqueIdentifier>{f61d8ff6-47d2-4a74-9ee5-287870f8f9e6}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl</Extensions>
     </Filter>
-    <Filter Include="FCKedit">
-      <UniqueIdentifier>{f1a62f8d-a52e-459b-9dae-727ade5fa0eb}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\elogd.c">
@@ -65,12 +62,6 @@
     </None>
     <None Include="..\doc\index.html">
       <Filter>Documentation</Filter>
-    </None>
-    <None Include="..\scripts\fckeditor\fckelog.js">
-      <Filter>FCKedit</Filter>
-    </None>
-    <None Include="..\scripts\fckeditor\editor\plugins\elog\fckplugin.js">
-      <Filter>FCKedit</Filter>
     </None>
     <None Include="..\scripts\im.js" />
     <None Include="..\doc\index_nd.html">
