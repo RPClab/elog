@@ -1,0 +1,396 @@
+<!--
+$Revision: 1958 $
+-->
+
+<html><head>
+<title>ELCode Help</title>
+<style type="text/css">
+  td {
+     color:black;
+     font-family: Verdana, Arial, Helvetica, sans-serif;
+     font-size:12px;
+  }
+
+  h1 {
+     font-size=5;
+     color:white;
+  }
+
+  h2 {
+     font-size=2;
+     color:white;
+     align:left;
+  }
+</style>
+</head>
+
+<body>
+
+<table border=0 width=100%% bgcolor=#486090 cellpadding=1 cellspacing=0 align=center>
+
+<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=#486090>
+
+<tr><td align=center bgcolor=#486090><h1>ELCode Help</h1></td></tr>
+
+<tr><td bgcolor=#FFFFFF><br>
+ELCode adalah satu set khusus tag untuk memformat entri elog. Hal ini mirip dengan HMTL, tapi lebih sederhana. tag adalah
+diapit oleh kurung [dan], bukan & lt; dan & gt ;. Beberapa tag mengubah format teks seperti
+tebal, ukuran dan warna, sementara tag lain memungkinkan embedding URL dan gambar. Tag ELCode adalah
+mirip dengan <a href="http://www.phpbb.com/phpBB/faq.php?mode=bbcode">BBCode</a> tags, kadang-kadang juga
+disebut sebagai <i>vB code</i>.<br><br>
+<p></td></tr>
+
+<tr><td bgcolor=#486090><h2>format teks</h2></td></tr>
+
+<tr><td bgcolor=#FFFFFF><br>Tag berikut di ELCode memungkinkan format dasar teks:<p>
+
+<table border=0 width=100%% bgcolor=#808080 cellpadding=5 cellspacing=1 align=center>
+
+<tr><th bgcolor=#D0D0FF width=200>Tag</th><th bgcolor="#ffccff">papan ketik shortcut</th><th bgcolor=#FFFFFF>Meaning</th></tr>
+
+<tr><td bgcolor=#D0D0FF width=200><b>[b]</b>Hello<b>[/b]</b>
+<td bgcolor="#ffccff">CTRL+B</td>
+<td bgcolor=#FFFFFF>akan menjadi teks tebal seperti <b>Hello</b></tr>
+
+<tr><td bgcolor=#D0D0FF width=200><b>[u]</b>Hello<b>[/u]</b>
+<td bgcolor="#ffccff">CTRL+U</td>
+<td bgcolor=#FFFFFF>akan menjadi teks digarisbawahi seperti <u>Hello</u></tr>
+
+<tr><td bgcolor=#D0D0FF width=200><b>[i]</b>Hello<b>[/i]</b>
+<td bgcolor="#ffccff">CTRL+I</td>
+<td bgcolor=#FFFFFF>akan menjadi teks miring seperti <i>Hello</i></tr>
+
+<tr><td bgcolor=#D0D0FF width=200><b>[color=red]</b>Hello<b>[/color]</b> or <br>
+<b>[color=#FF0000]</b>Hello<b>[/color]</b>
+<td bgcolor="#ffccff"></td>
+<td bgcolor=#FFFFFF>akan keduanya menjadi <font color="red">Hello</font>. satu kaleng
+baik speciy baik tahu nama warna seperti putih, merah, hijau, hijau muda, atau nilai heksadesimal RGB, di mana dua yang pertama
+digit (00 - FF) adalah untuk komponen merah, yang kedua untuk hijau dan yang ketiga untuk bagian biru.</tr>
+
+<tr><td bgcolor=#D0D0FF width=200><b>[size=5]</b>Hello<b>[/size]</b>
+<td bgcolor="#ffccff"></td>
+<td bgcolor=#FFFFFF>akan menjadi teks seperti <font size=5>Hello</font>.
+Ukuran teks dalam pixel berkisar dari 1 sampai 29. Berikut adalah beberapa contoh:
+<font size=1>size=1</font>,
+<font size=2>size=2</font>,
+<font size=3>size=3</font>,
+<font size=4>size=4</font>,
+<font size=5>size=5</font>,
+<font size=6>size=6</font>.
+</tr>
+
+<tr><td bgcolor=#D0D0FF width=200><b>[font=comic]</b>Hello<b>[/font]</b>
+<td bgcolor="#ffccff"></td>
+<td bgcolor=#FFFFFF>akan mengubah font teks. Berikut adalah beberapa contoh:
+<font face="comic sans ms">comic</font>,
+<font face="courier">courier</font>,
+<font face="arial">arial</font>,
+<font face="tahoma">tahoma</font>,
+<font face="times">times</font>,
+<font face="verdana">verdana</font>
+</tr>
+
+<tr><td bgcolor=#D0D0FF width=200><b>[center]</b>Hello<b>[/center]</b>
+<td bgcolor="#ffccff"></td>
+<td bgcolor=#FFFFFF><center>akan menempatkan teks di tengah</center></tr>
+
+<tr><td bgcolor=#D0D0FF width=200>
+<b>[h1]</b>Hello<b>[/h1]</b><br>
+<b>[h2]</b>Hello<b>[/h2]</b><br>
+<b>[h3]</b>Hello<b>[/h3]</b>
+<td bgcolor="#ffccff">CTRL+H</td>
+<td bgcolor=#FFFFFF>akan menjadi judul <font size=6><b>level 1</b></font>, <font size=5><b>level 2</b></font> or <font size=4><b>level 3</b></font></tr>
+
+<tr><td bgcolor=#D0D0FF width=200>
+<b>[line]
+<td bgcolor="#ffccff"></td>
+<td bgcolor=#FFFFFF>akan menjadi garis horizontal seperti <hr /></td></tr>
+
+
+</table><p>
+
+Tags dapat diulang, seperti<p>
+
+<b>[size=5][color=red][b]</b>Hello<b>[/b][/color][/size]</b><p>
+
+yang akan menghasilkan
+<font size=5 color=red><b>Hello</b></font>. Perhatikan bahwa tag harus diulang dengan benar, hal-hal seperti<p>
+
+<b>[b][color=red]</b>Ini salah!<b>[/b][/color]</b><p>
+
+tidak benar, karena <b>[b]</b> tag dibuka pertama dan karena itu harus ditutup lalu, setelah
+penutupan <b> [/color] </ b> tag, seperti di<p>
+
+<b>[b][color=red]</b>Ini benar<b>[/color][/b]</b><br><br>
+
+</td></tr>
+
+<tr><td bgcolor=#486090><h2>karakter escape</h2></td></tr>
+
+<tr><td bgcolor=#FFFFFF><br> Kadang-kadang seseorang tidak ingin tag ELCode menjadi
+ditafsirkan, seperti di forum diskusi di mana seseorang ingin menjelaskan beberapa tag
+misalnya. Untuk menghindari interpretasi tag, satu menempatkan backslash "\"
+di depan tag, seperti \[b], bukan [b].<br><br> 
+</td></tr>
+
+<tr><td bgcolor=#486090><h2>jangkar</h2></td></tr>
+
+<tr><td bgcolor=#FFFFFF><br>Jangkar dapat dimasukkan ke dalam entri dengan
+<b> [jangkar] </b> <i> anchor_name </i> <b> [/anchor] </b>. Hal ini setara dengan jangkar HTML seperti
+<b> & lt; nama = "</b> <i>anchor_name </ i> <b>"&gt;&lt;/a&gt; </b>.
+Jangkar tersebut dapat dirujuk dalam entri dengan
+<b> elog: & lt; id & gt; # <i> anchor_name </i> </b> di mana <b> &lt;id&gt; </b> adalah nomor ID dari
+entri (jumlah dari kolom kiri di layar daftar). <br><br> 
+</td></tr>
+
+<tr><td bgcolor=#486090><h2>Smileys</h2></td></tr>
+
+<tr><td bgcolor=#FFFFFF><br>Smileys, atau Emoticon adalah gambar kecil yang dapat digunakan untuk
+menunjukkan perasaan dalam bentuk kode pendek, misalnya :) Berarti senang. Mereka dikonversi oleh elog secara otomatis ke
+gambar grafis kecil, seperti<br><br>
+
+<table align=center border=0 bgcolor=#202020 cellpadding=5 cellspacing=1>
+
+<tr><td bgcolor=#D0D0FF>:)<td bgcolor=#FFFFFF><img src="icons/smile.png"</td>
+    <td bgcolor=#D0D0FF>:(<td bgcolor=#FFFFFF><img src="icons/frown.png"</td>
+    <td bgcolor=#D0D0FF>;)<td bgcolor=#FFFFFF><img src="icons/wink.png"</tr>
+<tr><td bgcolor=#D0D0FF>:))<td bgcolor=#FFFFFF><img src="icons/happy.png"</td>
+    <td bgcolor=#D0D0FF>:D<td bgcolor=#FFFFFF><img src="icons/biggrin.png"</td>
+    <td bgcolor=#D0D0FF>?-)<td bgcolor=#FFFFFF><img src="icons/confused.png"</tr>
+<tr><td bgcolor=#D0D0FF>;(<td bgcolor=#FFFFFF><img src="icons/crying.png"</td>
+    <td bgcolor=#D0D0FF>:]<td bgcolor=#FFFFFF><img src="icons/pleased.png"</td>
+    <td bgcolor=#D0D0FF>:O<td bgcolor=#FFFFFF><img src="icons/yawn.png"</tr>
+<tr><td bgcolor=#D0D0FF>8-)<td bgcolor=#FFFFFF><img src="icons/cool.png"</td
+    <td bgcolor=#D0D0FF>8o<td bgcolor=#FFFFFF><img src="icons/astonished.png"</td>
+    <td bgcolor=#D0D0FF>X(<td bgcolor=#FFFFFF><img src="icons/mad.png"</td>
+<tr><td bgcolor=#D0D0FF>:P<td bgcolor=#FFFFFF><img src="icons/tongue.png"</td>
+<td colspan=4 bgcolor=#FFFFFF></tr><br><br>
+
+</table><p>
+
+<tr><td bgcolor=#486090><h2>mengutip</h2></td></tr>
+
+<tr><td bgcolor=#FFFFFF><br>Ada dua cara mengutip, dengan referensi dan
+tanpa:<br><br>
+
+<ul>
+
+<li>Melampirkan beberapa teks dengan <b> [quote] </ b> Teks Asli <b> [/quote] </b> menghasilkan kutipan tanpa referensi seperti:<p>
+
+<table border=0 width=98%% bgcolor=black cellpadding=5 cellspacing=1>
+<tr><td bgcolor=#486090><font color=white size=1>mengutip:</font></td></tr>
+<tr><td bgcolor=#FFFFB0>Teks Asli</td></tr>
+</table>
+
+<li> Melampirkan beberapa teks dengan <b> [quote = "Mr. Bean"] </b> Teks Asli <b> [/ quote] </b> menghasilkan kutipan dengan referensi seperti:<p>
+
+<table border=0 width=98%% bgcolor=black cellpadding=5 cellspacing=1>
+<tr><td bgcolor=#486090><font color=white size=1>Mr. Bean wrote:</font></td></tr>
+<tr><td bgcolor=#FFFFB0>Teks Asli</td></tr>
+</table><p>
+
+Perhatikan bahwa itu adalah wajib untuk menyertakan referensi "Mr Bean" dalam tanda kutip.<p>
+
+</ul>
+
+
+<tr><td bgcolor=#486090><h2>Tetap teks lebar [CTRL+O]</h2></td></tr>
+
+<tr><td bgcolor=#FFFFFF><br>Untuk menampilkan teks dengan lebar tetap menggunakan font jenis Courier, apit dengan<p>
+
+<b>[code]</b>Hello<b>[/code]</b><p><p>
+
+Ini mungkin berguna dalam daftar kode komputer atau meja untuk meningkatkan pembacaan, seperti<p>
+
+<b>
+<pre>
+Barang              Harga     Ketersediaan
+====                =====     ============
+
+apel               0.50     1000
+buah anggur          2.50     100
+Sun-kering Tomat   12.50     20
+</b></pre><p>
+lawan<p>
+<b>
+Barang              Harga     Ketersediaan<br>
+====                =====     ============<br>
+<br>
+apel               0.50     1000<br>
+buah anggur         2.50     100<br>
+Sun-kering Tomat   12.50     20<br>
+</b><p>
+
+Perhatikan bahwa semua tag ELCode lainnya dinonaktifkan dalam <b> [code] </b> tags. ini
+mungkin bisa membantu untuk menampilkan beberapa kode program atau serupa yang berisi karakter
+yang akan salah diartikan sebagai tag atau smiley. Jika perilaku ini tidak
+inginkan, seperti jika beberapa kode program harus dijelaskan dengan huruf tebal dll
+tag <b> [code1] </b> ... <b> [/code1] </b> dapat digunakan yang memungkinkan lainnya ELCode
+tag di dalamnya.<p>
+
+<tr><td bgcolor=#486090><h2>Daftar [CTRL+L]</h2></td></tr>
+
+<tr><td bgcolor=#FFFFFF><br>Daftar unordered dapat dibuat dengan tags <b>[list][/list]</b> menyukai <p>
+
+<b>[list]</b><br>
+<b>[*]</b>Ocean<br>
+<b>[*]</b>Forest<br>
+<b>[*]</b>Desert<br>
+<b>[/list]</b><br>
+<p>
+
+untuk menghasilkan<p>
+
+<ul>
+<li>Ocean
+<li>Forest
+<li>Desert
+</ul>
+<p>
+
+Daftar item baru dimulai dengan <b> [*] </ b>, yang dapat dimasukkan melalui keyboard
+shortcut<b>CTRL-N</b>.
+Dalam daftar memerintahkan seseorang dapat menentukan apa yang digunakan sebelum setiap item. Untuk membuat daftar satu nomor
+dapat menggunakan <b>[list=1][/list]</b>:<p>
+
+<b>[list=1]</b><br>
+<b>[*]</b>Ocean<br>
+<b>[*]</b>Forest<br>
+<b>[*]</b>Desert<br>
+<b>[/list]</b><br>
+<p>
+
+untuk menghasilkan<p>
+
+<ol type="1">
+<li>Ocean
+<li>Forest
+<li>Desert
+</ol>
+<p>
+
+untuk daftar abjad <b> [list = a] [/list] </b> menyukai <p>
+<b>[list=a]</b><br>
+<b>[*]</b>Ocean<br>
+<b>[*]</b>Forest<br>
+<b>[*]</b>Desert<br>
+<b>[/list]</b><br>
+<p>
+
+untuk menghasilkan<p>
+
+<ol type="a">
+<li>Ocean
+<li>Forest
+<li>Desert
+</ol>
+<p>
+
+Kemungkinan lain adalah <b> [list = A] </b> untuk huruf kapital dan <b> [list = I] </b> untuk penomoran Romawi.<p>
+
+
+<tr><td bgcolor=#486090><h2>Tabel</h2></td></tr>
+
+<tr><td bgcolor=#FFFFFF><br>Tabel dapat dibuat dengan tags <b> [table] [/table] </b> menyukai<p>
+
+<b>[table border="1"]</b><br>
+Satu<b>|</b>Dua<br>
+<b>|-</b><br>
+Tiga<b>|</b>Empat<br>
+<b>[/table]</b>
+<p>
+
+untuk menghasilkan<p>
+
+<table border="1">
+<tr><td>Satu</td><td>Dua</td></tr>
+<tr><td>Tiga</td><td>Empat</td></tr>
+</table>
+<p>
+
+Parameter setelah <b> [table ...] </b> secara langsung digunakan dalam HTML &lt;table&gt;
+tag. Untuk meningkatkan padding sel, pada dapat menambahkan misalnya<p>
+
+<b>[table border="1" cellpadding="20"]</b><br>
+Satu<b>|</b>Dua<br>
+<b>|-</b><br>
+Tiga<b>|</b>Empat<br>
+<b>[/table]</b>
+<p>
+
+Untuk Menghasilkan
+<table border="1" cellpadding="20">
+<tr><td>Satu</td><td>Dua</td></tr>
+<tr><td>Tiga</td><td>Empat</td></tr>
+</table>
+<p>
+
+Tabel judul tidak didukung, tetapi dapat disimulasikan dengan menanamkan sel
+Isi dengan <b>[B]...[/B]</b> tag.<p>
+
+<tr><td bgcolor=#486090><h2>membuat link</h2></td></tr>
+
+<tr><td bgcolor=#FFFFFF><br>Hyperlink atau Locators Resouce Uniform (URL) dapat dibuat dengan berbagai cara:<p>
+
+<ul>
+
+<li>Setiap URL sintaksis benar akan otomatis transformd menjadi link, bahkan tanpa terkemuka <b> http://</b>
+di depannya. Jadi <b> midas.psi.ch/elog </b> akan diubah menjadi <a href="http://midas.psi.ch/elog"> midas.psi.ch/elog </a> dan
+<b> http://www.cern.ch </b> akan dikonversi menjadi <a href="http://www.cern.ch"> http://www.cern.ch</a>.<p>
+
+<li>Untuk menentukan URL secara eksplisit, apit dengan <b>[url]</b>www.cern.ch<b>[/url]</b><p>
+
+<li>Jika link harus mengandung beberapa teks yang berbeda dari URL sebutkan dengan <b> [url = http://www.cern.ch] </b> Teks <b> [/ url] </b> menyukai
+di<p>
+
+pergi ke <b>[url=http://www.cern.ch]</b>CERN<b>[/url]</b> <p>
+
+yang akan menghasilkan:<p>
+
+pergi ke <a href="http://www.cern.ch">CERN</a><p>
+
+<li>Hal yang sama juga alamat email. Mereka dapat digunakan seperti di <b> [email] </b> john.doe@domain.org <b> [/ email] </b> atau hanya sebagai
+<b> john.dow@domain.org </b> yang akan berubah dengan sendirinya menjadi<a href="mailto:john.doe@domain.org">john.doe@domain.org</a>.<p>
+
+<tr><td bgcolor=#486090><h2> penyisipan gambar [CTRL+M]</h2></td></tr>
+
+<tr><td bgcolor=#FFFFFF><br>Ada dua cara untuk menyisipkan gambar dalam teks:<p>
+
+<ul>
+
+<li> Gambar dapat disisipkan dalam teks dengan <b> [img] </b> URL <b> [/img] </b> tag, di mana
+URL harus menunjuk ke sebuah availabe gambar di internet. Catatan bahwa ini hanya bekerja untuk gambar yang
+dapat diakses melalui browser web. Potret pada hard disk lokal Anda tidak dapat diakses dari luar
+kecuali jika Anda tidak menjalankan server web publik. Anda dapat misalnya menanamkan logo elog dengan: <p>
+
+<b> [img] </b> http://midas.psi.ch/elogs/elog.png <b> [/img] </b> <p>
+
+yang menghasilkan <img src = "http://midas.psi.ch/elogs/elog.png">
+
+<li> Anda dapat meng-upload gambar sebagai lampiran dalam entri elog Anda dan link untuk itu dengan <p>
+
+<b> [img] </b> elog:/1<b>[/img]</b> <p>
+
+di mana <b> elog:/1</ b> singkatan lampiran pertama, <b> elog:/2</b> untuk dll kedua Jika Anda referensi
+gambar terlampir dengan cara ini, mereka tidak ditampilkan lagi pada akhir entri. <p>
+
+</ul>
+
+<tr> <td bgcolor = # 486090> <h2> shortcut keyboard lain </h2> </td> </tr>
+
+<tr> <td bgcolor = # FFFFFF>
+<ul>
+<li> <b> CTRL + P </b>: Preview </li>
+<li> <b> CTRL + ENTER </b>: Kirim </li>
+</ul>
+Perlu dicatat bahwa cara pintas keyboard tidak bekerja dengan baik di semua browser. Mereka telah berhasil
+diuji di Firefox.
+</td></tr>
+
+</td></tr></table></td></tr></table>
+
+<center>
+<font size=1 face=sans-serif><a href="http://midas.psi.ch/elog">Halaman Elog</a></font>
+</center>
+
+</body></html>
