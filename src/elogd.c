@@ -5163,7 +5163,7 @@ int el_delete_message(LOGBOOK * lbs, int message_id, BOOL delete_attachments,
 
  \********************************************************************/
 {
-   int i, index, n, size, fh, tail_size, old_offset;
+   int i, index, size, fh, tail_size, old_offset;
    char str[MAX_PATH_LENGTH], file_name[MAX_PATH_LENGTH], reply_to[MAX_REPLY_TO * 10], in_reply_to[256];
    char *buffer, *p;
    char *message, attachment_all[64 * MAX_ATTACHMENTS];
@@ -5268,12 +5268,12 @@ int el_delete_message(LOGBOOK * lbs, int message_id, BOOL delete_attachments,
       buffer = xmalloc(tail_size);
 
       lseek(fh, lbs->el_index[index].offset + size, SEEK_SET);
-      n = my_read(fh, buffer, tail_size);
+      my_read(fh, buffer, tail_size);
    }
    lseek(fh, lbs->el_index[index].offset, SEEK_SET);
 
    if (tail_size > 0) {
-      n = write(fh, buffer, tail_size);
+      write(fh, buffer, tail_size);
       xfree(buffer);
    }
 

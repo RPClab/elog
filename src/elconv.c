@@ -159,10 +159,9 @@ void el_decode(char *message, char *key, char *result)
 
 int fnmatch1(const char *pattern, const char *string)
 {
-   const char *stringstart;
    char c, test;
 
-   for (stringstart = string;;)
+   for (;;)
       switch (c = *pattern++) {
       case EOS:
          return (*string == EOS ? 0 : 1);
@@ -276,7 +275,7 @@ INT ss_file_find(char *path, char *pattern, char **plist)
 
 INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
 {
-   int lfh, i, n, d, min, max, size, offset, direction, last, status, did_walk;
+   int lfh, i, n, d, min, max, size, offset, direction, status, did_walk;
    struct tm *tms, ltms;
    time_t lt, ltime, lact;
    char str[256], file_name[256], dir[256];
@@ -485,8 +484,6 @@ INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
       /* seek next message */
 
       /* read current message size */
-      last = TELL(lfh);
-
       i = read(lfh, str, 15);
       if (i <= 0) {
          close(lfh);
@@ -850,7 +847,7 @@ INT el_get_v1(char *tag, char *message, int *bufsize)
 
 \********************************************************************/
 {
-   int i, size, fh, offset, search_status;
+   int i, size, fh, search_status;
    char str[256];
 
    if (tag[0]) {
@@ -866,7 +863,6 @@ INT el_get_v1(char *tag, char *message, int *bufsize)
    }
 
    /* extract message size */
-   offset = TELL(fh);
    i = read(fh, str, 16);
    if (i <= 0) {
       close(fh);
