@@ -899,7 +899,7 @@ int my_shell(char *cmd, char *result, int size)
 
 #ifdef OS_UNIX
    pid_t child_pid;
-   int fh, status, i, wait_status;
+   int fh, status, wait_status;
    char str[1024];
 
    if ((child_pid = fork()) < 0)
@@ -914,7 +914,7 @@ int my_shell(char *cmd, char *result, int size)
       memset(result, 0, size);
       fh = open("/tmp/elog-shell", O_RDONLY);
       if (fh > 0) {
-         i = read(fh, result, size-1);
+         read(fh, result, size-1);
          close(fh);
       }
 
@@ -1145,7 +1145,7 @@ Decode the given string in-place by expanding %XX escapes
             str[0] = p[0];
             str[1] = p[1];
             str[2] = 0;
-            sscanf(p, "%02X", &i);
+            sscanf(str, "%02X", &i);
 
             *pD++ = (char) i;
             p += 2;
@@ -3648,10 +3648,9 @@ void el_enum_attr(char *message, int n, char *attr_name, char *attr_value)
 
 int fnmatch1(const char *pattern, const char *string)
 {
-   const char *stringstart;
    char c, test;
 
-   for (stringstart = string;;)
+   for (;;)
       switch (c = *pattern++) {
       case EOS:
          return (*string == EOS ? 0 : 1);
@@ -3776,7 +3775,7 @@ int eli_compare(const void *e1, const void *e2)
 void generate_subdir_name(char *file_name, char *subdir, int size)
 {
    char fn[MAX_PATH_LENGTH], path[MAX_PATH_LENGTH];
-   int year, month;
+   int year;
    
    // extract path from file_name
    strlcpy(path, file_name, size);
@@ -3791,7 +3790,7 @@ void generate_subdir_name(char *file_name, char *subdir, int size)
    
    // create subdir from name
    year = (fn[0]-'0')*10+(fn[1]-'0');
-   month = (fn[2]-'0')*10+(fn[3]-'0');
+   // month = (fn[2]-'0')*10+(fn[3]-'0');
    if (year < 80)
       sprintf(subdir, "20%02d", year);
    else
@@ -4802,7 +4801,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
 
  \********************************************************************/
 {
-   int n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id, status;
+   int n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id;
    char file_name[256], dir[256], str[NAME_LENGTH], date1[256], attrib[MAX_N_ATTR][NAME_LENGTH],
        reply_to1[MAX_REPLY_TO * 10], in_reply_to1[MAX_REPLY_TO * 10], encoding1[80], *message, *p,
        *old_text, *buffer;
@@ -4942,9 +4941,9 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
          str[strlen(str)-1] = 0;
       
 #ifdef OS_WINNT
-      status = mkdir(str);
+      mkdir(str);
 #else
-      status = mkdir(str, 0755);
+      mkdir(str, 0755);
 #endif
       
       sprintf(str, "%s%s%s", dir, subdir, file_name);
@@ -5164,7 +5163,7 @@ int el_delete_message(LOGBOOK * lbs, int message_id, BOOL delete_attachments,
 
  \********************************************************************/
 {
-   int i, index, n, size, fh, tail_size, old_offset, n_attr;
+   int i, index, n, size, fh, tail_size, old_offset;
    char str[MAX_PATH_LENGTH], file_name[MAX_PATH_LENGTH], reply_to[MAX_REPLY_TO * 10], in_reply_to[256];
    char *buffer, *p;
    char *message, attachment_all[64 * MAX_ATTACHMENTS];
@@ -5259,7 +5258,6 @@ int el_delete_message(LOGBOOK * lbs, int message_id, BOOL delete_attachments,
       if (!attr_list[i][0])
          break;
    }
-   n_attr = i;
 
    /* buffer tail of logfile */
    lseek(fh, 0, SEEK_END);
@@ -6236,7 +6234,7 @@ char
 
 void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
 {
-   int i, j, k, l, m, elcode_disabled, elcode_disabled1, escape_char, ordered_list, substituted, inside_table,
+   int i, j, k, l, m, elcode_disabled, elcode_disabled1, ordered_list, substituted, inside_table,
        smileys_enabled;
    char *p, *pd, link[1000], link_text[1000], tmp[1000], attrib[1000], hattrib[1000], value[1000],
        subst[1000], base_url[256], param[256], *lstr, domain[256];
@@ -6250,7 +6248,6 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
    elcode_disabled = FALSE;
    elcode_disabled1 = FALSE;
    ordered_list = FALSE;
-   escape_char = FALSE;
    smileys_enabled = TRUE;
    inside_table = 0;
    j = strlen_retbuf;
@@ -8954,7 +8951,7 @@ void get_auto_index(LOGBOOK * lbs, int index, char *format, char *retstr, int si
  auto-increment tags */
 {
    int i, message_id, loc, len, old_index;
-   char *p, str[NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH], att[MAX_ATTACHMENTS][256];
+   char *p, attrib[MAX_N_ATTR][NAME_LENGTH], att[MAX_ATTACHMENTS][256];
    time_t now;
 
    if (strchr(format, '%') == NULL && strchr(format, '#') == NULL) {
@@ -8985,7 +8982,6 @@ void get_auto_index(LOGBOOK * lbs, int index, char *format, char *retstr, int si
    }
 
    /* get attribute from last entry */
-   str[0] = 0;
    message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
 
    if (!message_id) {
@@ -13688,7 +13684,7 @@ void show_config_page(LOGBOOK * lbs)
 
 int activate_user(LOGBOOK * lbs, char *user_name, int code)
 {
-   int status, inactive, self_register;
+   int inactive, self_register;
    char str[256], str2[256], smtp_host[256], url[256], mail_text[2000],
        error[256], mail_from_name[256], mail_from[256], user_email[256], logbook[256];
 
@@ -13697,7 +13693,7 @@ int activate_user(LOGBOOK * lbs, char *user_name, int code)
    else
       strlcpy(logbook, lbs->name, sizeof(logbook));
 
-   status = get_user_line(lbs, user_name, NULL, NULL, user_email, NULL, NULL, &inactive);
+   get_user_line(lbs, user_name, NULL, NULL, user_email, NULL, NULL, &inactive);
    if (code != inactive) {
       show_error(loc("Invalid activation code"));
       return FALSE;
@@ -14959,12 +14955,11 @@ void xml_import(LOGBOOK * lbs, const char *xml, const char *xmlfile)
        reply_to[MAX_REPLY_TO * 10], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], attachment_all[64
                                                                                                  *
                                                                                                  MAX_ATTACHMENTS];
-   int i, j, index, n_attr, iline, n_imported, textcol, i_line, line_len, message_id, bedit;
+   int i, j, index, n_attr, iline, n_imported, i_line, line_len, message_id, bedit;
    time_t ltime;
    PMXML_NODE root, entry;
 
    iline = n_imported = 0;
-   textcol = -1;
 
    n_attr = lbs->n_attr;
 
@@ -15864,7 +15859,7 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
    int i, n, port, sock, content_length, header_length, ssl;
    char str[256], upwd[80];
    char subdir[256], param[256], remote_host_name[256];
-   char *content, *p, boundary[80], request[10000], response[10000];
+   char *content, boundary[80], request[10000], response[10000];
 #ifdef HAVE_SSL
    SSL *ssl_con = NULL;
 #else
@@ -15914,7 +15909,6 @@ void submit_config(LOGBOOK * lbs, char *server, char *buffer, char *error_str)
            boundary);
 
    content_length = strlen(content);
-   p = content + content_length;
 
    /* compose request */
    strcpy(request, "POST ");
@@ -19093,7 +19087,7 @@ void show_select_navigation(LOGBOOK * lbs)
 
 time_t retrieve_date(char *index, BOOL bstart)
 {
-   int year, month, day, hour, min, sec, current_year, current_month, current_day;
+   int year, month, day, hour, min, sec, current_year, current_month;
    char pm[10], py[10], pd[10], ph[10], pn[10], ps[10], str[NAME_LENGTH], str2[NAME_LENGTH];
    struct tm tms;
    time_t ltime;
@@ -19109,7 +19103,6 @@ time_t retrieve_date(char *index, BOOL bstart)
    memcpy(&tms, localtime(&ltime), sizeof(tms));
    current_year = tms.tm_year + 1900;
    current_month = tms.tm_mon + 1;
-   current_day = tms.tm_mday;
 
    if (!isparam(pm) && !isparam(py) && !isparam(pd))
       return 0;
@@ -19346,7 +19339,7 @@ time_t convert_datetime(char *date_string)
 
 void show_rss_feed(LOGBOOK * lbs)
 {
-   int i, n, size, index, status, message_id, offset;
+   int i, n, size, index, message_id, offset;
    char str[256], charset[256], url[256], attrib[MAX_N_ATTR][NAME_LENGTH], date[80], *text, title[2000],
        slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
    time_t ltime;
@@ -19427,7 +19420,7 @@ void show_rss_feed(LOGBOOK * lbs)
       rsprintf("<item>\n");
 
       size = TEXT_SIZE;
-      status = el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text, &size, NULL, NULL,
+      el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text, &size, NULL, NULL,
                            NULL, NULL, NULL);
 
       /* limit text size to 2k */
@@ -19596,8 +19589,8 @@ time_t search_last_reply(LOGBOOK * lbs, int *message_id)
 void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL default_page, char *info)
 {
    int i, j, n, index, size, status, d1, m1, y1, h1, n1, c1, d2, m2, y2, h2, n2, c2, n_line, flags,
-       current_year, current_month, current_day, printable, n_logbook, n_display, reverse, numeric,
-       n_attr_disp, total_n_msg, n_msg, search_all, message_id, n_page, i_start, i_stop, in_reply_to_id,
+       printable, n_logbook, n_display, reverse, numeric,
+       n_attr_disp, n_msg, search_all, message_id, n_page, i_start, i_stop, in_reply_to_id,
        page_mid, page_mid_head, level, refresh, disp_attr_flags[MAX_N_ATTR + 4];
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], *list, *text,
        *text1, in_reply_to[80], reply_to[MAX_REPLY_TO * 10], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
@@ -19841,9 +19834,6 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    time(&now);
    ptms = localtime(&now);
    assert(ptms);
-   current_year = ptms->tm_year + 1900;
-   current_month = ptms->tm_mon + 1;
-   current_day = ptms->tm_mday;
 
    ltime_end = ltime_start = 0;
 
@@ -20434,8 +20424,6 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
    }
 
    /*---- compact messasges ----*/
-
-   total_n_msg = n_msg;
 
    for (i = j = 0; i < n_msg; i++)
       if (msg_list[i].lbs)
@@ -21482,7 +21470,7 @@ int find_thread_head(LOGBOOK * lbs, int message_id)
 
 void show_elog_thread(LOGBOOK * lbs, int message_id, int absolute_links, int highlight_mid)
 {
-   int size, status, in_reply_to_id, head_id, n_display, n_attr_disp;
+   int size, head_id, n_display, n_attr_disp;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
        attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
        disp_attr[MAX_N_ATTR + 4][NAME_LENGTH];
@@ -21492,10 +21480,8 @@ void show_elog_thread(LOGBOOK * lbs, int message_id, int absolute_links, int hig
 
    /* retrieve message */
    size = TEXT_SIZE;
-   status = el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text, &size, in_reply_to,
+   el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text, &size, in_reply_to,
                         reply_to, attachment, encoding, locked_by);
-
-   in_reply_to_id = atoi(in_reply_to);
 
    /* find message head */
    if (atoi(in_reply_to))
@@ -21509,7 +21495,7 @@ void show_elog_thread(LOGBOOK * lbs, int message_id, int absolute_links, int hig
    memcpy(disp_attr + 2, attr_list, sizeof(attr_list));
 
    size = TEXT_SIZE;
-   status = el_retrieve(lbs, head_id, date, attr_list, attrib, lbs->n_attr, text, &size, in_reply_to,
+   el_retrieve(lbs, head_id, date, attr_list, attrib, lbs->n_attr, text, &size, in_reply_to,
                         reply_to, attachment, encoding, locked_by);
 
    rsprintf("<tr><td><table width=\"100%%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
@@ -23822,7 +23808,7 @@ int get_thumb_name(const char *file_name, char *thumb_name, int size, int index)
 void call_image_magick(LOGBOOK * lbs)
 {
    char str[256], cmd[256], file_name[256], thumb_name[256], subdir[256];
-   int cur_width, cur_height, new_size, cur_rot, new_rot, i, thumb_status;
+   int cur_width, cur_height, new_size, cur_rot, new_rot, thumb_status;
 
    if (!isparam("req") || !isparam("img")) {
       show_error("Unknown IM request received");
@@ -23837,9 +23823,12 @@ void call_image_magick(LOGBOOK * lbs)
 
    sprintf(cmd, "%s -format '%%wx%%h %%c' '%s'", _identify_cmd, thumb_name);
 #ifdef OS_WINNT
+   {
+   int i;
    for (i = 0; i < (int) strlen(cmd); i++)
       if (cmd[i] == '\'')
          cmd[i] = '\"';
+   }
 #endif
    my_shell(cmd, str, sizeof(str));
 
@@ -23862,7 +23851,7 @@ void call_image_magick(LOGBOOK * lbs)
    if (thumb_status == 2)
       strsubst(thumb_name, sizeof(thumb_name), "-0", "-%d");
 
-   i = cmd[0] = 0;
+   cmd[0] = 0;
    if (strieq(getparam("req"), "rotleft")) {
       new_rot = (cur_rot + 360 - 90) % 360;
       sprintf(cmd, "%s '%s' -rotate %d -thumbnail %d -set comment ' %d' '%s'", _convert_cmd, file_name, new_rot,
@@ -25144,7 +25133,7 @@ BOOL convert_password_encoding(LOGBOOK * lbs)
 
 PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size)
 {
-   PMXML_NODE root, list, xml_tree;
+   PMXML_NODE root, xml_tree;
    char str[256], line[256], file_name[256];
    int fh;
    struct stat st;
@@ -25174,7 +25163,7 @@ PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size)
       /* put empty XML tree into password file */
       printf("\nCreate empty password file \"%s\"\n", file_name);
       root = mxml_create_root_node();
-      list = mxml_add_node(root, "list", NULL);
+      mxml_add_node(root, "list", NULL);
       mxml_write_tree(file_name, root);
       mxml_free_tree(root);
    } else {
@@ -26374,7 +26363,7 @@ void show_day(char *css_class, char *day)
 
 void show_calendar(LOGBOOK * lbs)
 {
-   int i, j, cur_mon, cur_day, cur_year, today_day, today_mon, today_year;
+   int i, j, cur_mon, cur_year, today_day, today_mon, today_year;
    time_t now, stime;
    struct tm *ts;
    char str[256], index[10];
@@ -26389,14 +26378,12 @@ void show_calendar(LOGBOOK * lbs)
    if (isparam("m") && isparam("y")) {
       cur_mon = atoi(getparam("m"));
       cur_year = atoi(getparam("y"));
-      cur_day = -1;
       ts->tm_mday = 1;
       ts->tm_mon = cur_mon - 1;
       ts->tm_year = cur_year - 1900;
       mktime(ts);
    } else {
       cur_mon = ts->tm_mon + 1;
-      cur_day = ts->tm_mday;
       cur_year = ts->tm_year + 1900;
    }
    if (isparam("i"))
@@ -26713,7 +26700,7 @@ void interprete(char *lbook, char *path)
 
  \********************************************************************/
 {
-   int status, i, j, n, index, lb_index, message_id, inactive;
+   int status, i, j, n, message_id, inactive;
    char list[1000], section[256], str[NAME_LENGTH], str1[NAME_LENGTH], str2[NAME_LENGTH],
        edit_id[80], file_name[256], command[256], enc_path[256], dec_path[256], uname[80],
        full_name[256], user_email[256], logbook[256], logbook_enc[256], *experiment,
@@ -26729,7 +26716,6 @@ void interprete(char *lbook, char *path)
    url_encode(enc_path, sizeof(enc_path));
    strencode2(command, isparam("cmd") ? getparam("cmd") : "", sizeof(command));
    strencode2(group, isparam("group") ? getparam("group") : "", sizeof(group));
-   index = isparam("index") ? atoi(getparam("index")) : 0;
    experiment = getparam("exp");
    if (getcfg(lbook, "Logging Level", str, sizeof(str)))
       _logging_level = atoi(str);
@@ -26962,7 +26948,6 @@ void interprete(char *lbook, char *path)
       strlcpy(theme_name, str, sizeof(theme_name));
    else
       strlcpy(theme_name, "default", sizeof(theme_name));
-   lb_index = i;
    lbs = lb_list + i;
    lbs->n_attr = scan_attributes(lbs->name);
 
@@ -30235,7 +30220,7 @@ int run_service(void)
 
 int main(int argc, char *argv[])
 {
-   int i, j, n, fh, tcp_port_cl, silent, sync_flag;
+   int i, j, n, fh, tcp_port_cl, sync_flag;
    char smtp_pwd[80], str[256], logbook[256], clone_url[256], error_str[256], file_name[256];
    time_t now;
    struct tm *tms;
@@ -30257,7 +30242,7 @@ int main(int argc, char *argv[])
    smtp_pwd[0] = 0;
    logbook_dir[0] = 0;
    logbook[0] = clone_url[0] = resource_dir[0] = logbook_dir[0] = 0;
-   silent = tcp_port_cl = sync_flag = 0;
+   tcp_port_cl = sync_flag = 0;
    use_keepalive = TRUE;
    running_as_daemon = FALSE;
 
@@ -30291,9 +30276,7 @@ int main(int argc, char *argv[])
             i++;
          } else
             set_verbose(VERBOSE_INFO);
-      } else if (argv[i][0] == '-' && argv[i][1] == 'S')
-         silent = TRUE;
-      else if (argv[i][0] == '-' && argv[i][1] == 'k')
+      } else if (argv[i][0] == '-' && argv[i][1] == 'k')
          use_keepalive = FALSE;
       else if (argv[i][0] == '-' && argv[i][1] == 'x')
          enable_execute = TRUE;
@@ -30372,7 +30355,6 @@ int main(int argc, char *argv[])
             printf("       -l <logbook> specify logbook for -r, -w and -m commands\n");
             printf("       -n hostname/IP interface to listen on\n");
             printf("       -p <port> TCP/IP port\n");
-            printf("       -S be silent\n");
             printf("       -s <dir> specify resource directory (themes, icons, ...)\n");
             printf("       -t <pwd> create/overwrite SMTP password in config file\n");
             printf("       -v <n> verbose output (1:URL, 2:INFO, 3:DEBUG)\n");
