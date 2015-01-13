@@ -19,7 +19,8 @@ endif
 ELOGDIR    = $(ROOT)$(PREFIX)/elog
 DESTDIR    = $(ROOT)$(PREFIX)/bin
 SDESTDIR   = $(ROOT)$(PREFIX)/sbin
-RCDIR      = $(ROOT)/etc/rc.d/init.d
+#RCDIR      = $(ROOT)/etc/rc.d/init.d
+RCDIR      = $(ROOT)/etc/init.d
 
 # flag for SSL support
 USE_SSL    = 1
@@ -218,10 +219,14 @@ ifeq ($(OSTYPE),darwin)
 	@echo The elogd service can now be started with 
 	@echo "  sudo launchctl load /Library/LaunchDaemons/ch.psi.elogd.plist"
 else
+	@if [ ! -d $(RCDIR) ]; then \
+	  echo "Directory $(RCDIR) not found, no init script installed" ; \
+	  exit 1 ; \
+	fi
+
 	@sed "s#\@PREFIX\@#$(PREFIX)#g" elogd.init_template > elogd.init
-	@mkdir -p -m 0755 $(RCDIR)
 	@if [ ! -f $(RCDIR)/elogd ]; then  \
-	  @$(INSTALL) -v -m 0755 elogd.init $(RCDIR)/elogd ; \
+	  $(INSTALL) -v -m 0755 elogd.init $(RCDIR)/elogd ; \
 	fi
 endif
 
