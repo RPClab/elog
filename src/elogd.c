@@ -11999,15 +11999,20 @@ void show_find_form(LOGBOOK * lbs)
 
    rsprintf("&nbsp;&nbsp;/&nbsp;&nbsp;%s:&nbsp;", loc("Show last"));
 
+   if (getcfg(lbs->name, "Show last default", str, sizeof(str)))
+      i = atoi(str);
+   else
+      i = 0;
+
    rsprintf("<select name=last>\n");
    rsprintf("<option value=\"\">\n");
-   rsprintf("<option value=1>%s\n", loc("Day"));
-   rsprintf("<option value=3>%s\n", loc("3 Days"));
-   rsprintf("<option value=7>%s\n", loc("Week"));
-   rsprintf("<option value=31>%s\n", loc("Month"));
-   rsprintf("<option value=92>%s\n", loc("3 Months"));
-   rsprintf("<option value=182>%s\n", loc("6 Months"));
-   rsprintf("<option value=364>%s\n", loc("Year"));
+   rsprintf("<option %svalue=1>%s\n", i==1?"selected ":"", loc("Day"));
+   rsprintf("<option %svalue=3>%s\n", i==3?"selected ":"", loc("3 Days"));
+   rsprintf("<option %svalue=7>%s\n", i==7?"selected ":"", loc("Week"));
+   rsprintf("<option %svalue=31>%s\n", i==31?"selected ":"", loc("Month"));
+   rsprintf("<option %svalue=92>%s\n", i==92?"selected ":"", loc("3 Months"));
+   rsprintf("<option %svalue=182>%s\n", i==182?"selected ":"", loc("6 Months"));
+   rsprintf("<option %svalue=364>%s\n", i==364?"selected ":"", loc("Year"));
    rsprintf("</select> \n");
 
    rsprintf("</td></tr>\n");
@@ -20719,7 +20724,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       /*---- display filters ----*/
 
       disp_filter = isparam("ma") || isparam("ya") || isparam("da") || isparam("mb") || isparam("yb")
-          || isparam("db") || isparam("subtext");
+          || isparam("db") || isparam("subtext") || isparam("last");
 
       for (i = 0; i < lbs->n_attr; i++)
          if (isparam(attr_list[i]) && (attr_flags[i] & (AF_DATE | AF_DATETIME)) == 0)
@@ -20760,6 +20765,11 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       if (disp_filter) {
          rsprintf("<tr><td class=\"listframe\">\n");
          rsprintf("<table width=\"100%%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
+
+         if (isparam("last")) {
+            rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Restrict seach to last"));
+            rsprintf("<td class=\"attribvalue\">%s %s</td></tr>", getparam("last"), loc("days"));
+         }
 
          if (isparam("ma") || isparam("ya") || isparam("da") || isparam("ha") || isparam("na")
              || isparam("ca")) {
