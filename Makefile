@@ -40,7 +40,6 @@ CC = gcc
 IFLAGS = -kr -nut -i3 -l110
 EXECS = elog elogd elconv
 GIT_REVISION = src/git-revision.h
-MXMLDIR = ../mxml
 BINOWNER = bin
 BINGROUP = bin
 
@@ -84,8 +83,6 @@ endif
 ifeq ($(OSTYPE),Linux)
 CC = gcc
 endif
-
-CFLAGS += -I$(MXMLDIR)
 
 ifdef USE_SSL
 ifneq ($(USE_SSL),0)
@@ -132,11 +129,11 @@ crypt.o: src/crypt.c
 auth.o: src/auth.c
 	$(CC) $(CFLAGS) -w -c -o auth.o src/auth.c
 
-mxml.o: $(MXMLDIR)/mxml.c $(MXMLDIR)/mxml.h
-	$(CC) $(CFLAGS) -c -o mxml.o $(MXMLDIR)/mxml.c
+mxml.o: src/mxml.c src/mxml.h
+	$(CC) $(CFLAGS) -c -o mxml.o src/mxml.c
 
-strlcpy.o: $(MXMLDIR)/strlcpy.c $(MXMLDIR)/strlcpy.h
-	$(CC) $(CFLAGS) -c -o strlcpy.o $(MXMLDIR)/strlcpy.c
+strlcpy.o: src/strlcpy.c src/strlcpy.h
+	$(CC) $(CFLAGS) -c -o strlcpy.o src/strlcpy.c
 
 elogd: src/elogd.c regex.o crypt.o auth.o mxml.o $(GIT_REVISION)
 	$(CC) $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(OBJS) $(LIBS)
