@@ -29,7 +29,6 @@
 
 /* Begin PBXFileReference section */
 		D51F4A9214F27F3C00CB29E9 /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index.html; path = ../doc/index.html; sourceTree = SOURCE_ROOT; };
-		D51F4A9414F27F4400CB29E9 /* index_nd.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index_nd.html; path = ../doc/index_nd.html; sourceTree = SOURCE_ROOT; };
 		D528A7C314F278C800D33974 /* ChangeLog */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChangeLog; path = ../doc/ChangeLog; sourceTree = SOURCE_ROOT; };
 		D528A7C514F278DA00D33974 /* checklist.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = checklist.txt; path = ../checklist.txt; sourceTree = SOURCE_ROOT; };
 		D52BA2FA13999DB0000458E3 /* elogd */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = elogd; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -98,7 +97,6 @@
 			isa = PBXGroup;
 			children = (
 				D5AC5BF9154AC7200018DD90 /* config.html */,
-				D51F4A9414F27F4400CB29E9 /* index_nd.html */,
 				D51F4A9214F27F3C00CB29E9 /* index.html */,
 				D528A7C514F278DA00D33974 /* checklist.txt */,
 				D528A7C314F278C800D33974 /* ChangeLog */,
