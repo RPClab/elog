@@ -141,7 +141,7 @@ CKEDITOR.plugins.add( 'dndfiles', {
 					        		return;
 
 						    	if(src.indexOf(".png") >= 0 || src.indexOf(".jpg") >= 0 || src.indexOf(".jpeg") >= 0) { // This is an image
-						    		html += '<img src = "' + src + '">';
+						    		html += '<a href = ' + src + '><img src = "' + src + '">' + '</a>';
 						    	} else {	// this is not an image
 						    		// Server appends 14 characters in front of the name so we should remove them
 						    		var server_suffix = 14;
