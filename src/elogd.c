@@ -7931,9 +7931,10 @@ void add_logbook_to_group(LOGBOOK * lbs, char *new_name)
 
 void show_standard_title(LOGBOOK * lbs, char *text, int printable)
 {
-   char str[256], ref[256], sclass[32], comment[256], full_name[256], url[256], logbook[256];
+   char str[NAME_LENGTH], ref[256], sclass[32], comment[256], full_name[256], url[256], logbook[256];
    int i, j, level;
    LBLIST phier, pnode, pnext, flb;
+   char slist[20][NAME_LENGTH], svalue[20][NAME_LENGTH];
 
    if (lbs == NULL)
       strlcpy(logbook, "global", sizeof(logbook));
@@ -8084,11 +8085,15 @@ void show_standard_title(LOGBOOK * lbs, char *text, int printable)
    if (getcfg(logbook, "Title image URL", str, sizeof(str)))
       rsprintf("<a href=\"%s\">\n", str);
 
-   if (getcfg(logbook, "Title image", str, sizeof(str)))
-      rsprintf("%s", str);
-   else
-      rsprintf("<img border=0 src=\"elog.png\" alt=\"ELOG logo\" title=\"ELOG logo\">");
+   if (getcfg(logbook, "Title image", str, sizeof(str))) {
+      // allow $short_name for example to link to personal pictures
+      i = build_subst_list(lbs, slist, svalue, NULL, TRUE);
+      strsubst_list(str, sizeof(str), slist, svalue, i);
 
+      rsprintf("%s", str);
+   } else
+      rsprintf("<img border=0 src=\"elog.png\" alt=\"ELOG logo\" title=\"ELOG logo\">");
+   
    if (getcfg(logbook, "Title image URL", str, sizeof(str)))
       rsprintf("</a>\n");
 
