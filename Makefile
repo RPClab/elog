@@ -142,7 +142,7 @@ elog: src/elog.c crypt.o $(OBJS)
 	$(CC) $(CFLAGS) -o elog src/elog.c crypt.o $(OBJS) $(LIBS)
 
 debug: src/elogd.c regex.o crypt.o auth.o mxml.o
-	$(CC) -g $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(OBJS) $(LIBS)
+	$(CC) -g $(CFLAGS) -O0 -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(OBJS) $(LIBS)
 
 %: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)

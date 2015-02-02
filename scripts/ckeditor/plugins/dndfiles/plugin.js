@@ -134,14 +134,16 @@ CKEDITOR.plugins.add( 'dndfiles', {
 					        $("input", attch).each(function() {
 
 					        	// Extract the url of the file
-					        	var src = $(this)[0].defaultValue;
+                        var src = $(this)[0].defaultValue;
+                        var thumb = $(this)[0].alt;
 
 					        	// Ignore inputs that have this value as it is not needed
 					        	if(src === "Delete")
 					        		return;
 
-						    	if(src.indexOf(".png") >= 0 || src.indexOf(".jpg") >= 0 || src.indexOf(".jpeg") >= 0) { // This is an image
-						    		html += '<a href = ' + src + '><img src = "' + src + '">' + '</a>';
+						    	if(src.indexOf(".png") >= 0 || src.indexOf(".jpg") >= 0 || src.indexOf(".jpeg") >= 0
+                           || src.indexOf(".gif") >= 0 || src.indexOf(".svg") >= 0) { // This is an image
+						    		html += '<a href = ' + src + '><img src = "' + thumb + '">' + '</a>';
 						    	} else {	// this is not an image
 						    		// Server appends 14 characters in front of the name so we should remove them
 						    		var server_suffix = 14;

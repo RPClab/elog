@@ -9414,8 +9414,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
        ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256], cookie[256],
        orig_author[256], attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256], tooltip[10000],
-       enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256], **user_list, fid[20], upwd[80],
-       subdir[256];
+       enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256], thumb_ref[256], **user_list, fid[20],
+       upwd[80], subdir[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -11597,7 +11597,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                rsprintf("<tr class=\"attachment\"><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), index + 1);
                sprintf(str, "attachment%d", index);
                rsprintf("<td class=\"attribvalue\">\n");
-               rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", str, att[index]);
+               thumb_ref[0] = 0;
 
                if (strlen(att[index]) < 14 || att[index][6] != '_' || att[index][13] != '_') {
                   rsprintf("<b>Error: Invalid attachment \"%s\"</b><br>", att);
@@ -11691,6 +11691,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                            rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" name=\"att%d\">\n", ref,
                                     att[index] + 14, att[index] + 14, index);
+                           strlcpy(thumb_ref, ref, sizeof(thumb_ref));
                         } else if (thumb_status == 2) {
                            for (i = 0;; i++) {
                               get_thumb_name(file_name, thumb_name, sizeof(thumb_name), i);
@@ -11707,6 +11708,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                                  rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" name=\"att%d_%d\">\n",
                                           ref, att[index] + 14, att[index] + 14, index, i);
+                                 strlcpy(thumb_ref, ref, sizeof(thumb_ref));
                               } else
                                  break;
                            }
@@ -11720,6 +11722,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                            rsprintf("<img src=\"%s\" alt=\"%s\" title=\"%s\" name=\"att%d\">\n", ref,
                                     att[index] + 14, att[index] + 14, index);
+                           strlcpy(thumb_ref, ref, sizeof(thumb_ref));
                         }
                      } else {
                         if (is_ascii(file_name)) {
@@ -11763,6 +11766,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   if (thumb_status && display_inline)
                      rsprintf("</td></tr></table>\n");
                }
+
+               if (thumb_ref[0])
+                  rsprintf("<input type=hidden name=\"attachment%d\" alt=\"%s\" value=\"%s\">\n", index, thumb_ref, att[index]);
+               else
+                  rsprintf("<input type=hidden name=\"attachment%d\" value=\"%s\">\n", index, att[index]);
 
                rsprintf("</td></tr>\n");
             } else
