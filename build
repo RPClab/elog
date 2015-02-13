@@ -63,6 +63,7 @@ cp -p elogd.cfg $dir/elogd.cfg
 cp -p COPYING $dir
 cp -p README $dir
 cp -p elogd.init_template $dir
+cp -p elogd.plist $dir
 
 cp -p doc/* $dir/doc
 cp -p man/* $dir/man
