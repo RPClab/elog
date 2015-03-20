@@ -9407,6 +9407,74 @@ void compare_attributes(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][N
 
 /*------------------------------------------------------------------*/
 
+int check_drafts(LOGBOOK * lbs)
+{
+   time_t now;
+   char draft[256], title[256], datetime[256];
+   int i, n_draft, *draft_id;
+   
+   /* if we got here already and user clicked "Create new entry", ignore is set and we skip this */
+   if (isparam("ignore"))
+      return 0;
+   
+   time(&now);
+   /* check if any recent draft */
+   for (i=n_draft=0 ; i<*(lbs->n_el_index) ; i++)
+      if (lbs->el_index[i].file_time > now-3600*24) {
+         el_retrieve(lbs, lbs->el_index[i].message_id, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL,
+                     NULL, NULL, draft);
+         if (draft[0]) {
+            if (n_draft == 0)
+               draft_id = (int *)xmalloc(sizeof(int));
+            else
+               draft_id = (int *)xrealloc(draft_id, sizeof(int)*(n_draft+1));
+            draft_id[n_draft] = lbs->el_index[i].message_id;
+            n_draft++;
+         }
+      }
+   
+   if (n_draft == 0)
+      return 0;
+   
+   if (n_draft == 1)
+      sprintf(title, "%s", loc("Pending draft available"));
+   else
+      sprintf(title, loc("%d pending drafts available"), n_draft);
+   
+   show_standard_header(lbs, TRUE, "Draft query", NULL, FALSE, NULL, NULL, 0);
+   
+   rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>\n");
+   
+   rsprintf("<tr><td colspan=\"2\" class=\"dlgtitle\">");
+   rsprintf("%s</td></tr>\n", title);
+
+   for (i=0 ; i<n_draft ; i++) {
+      el_retrieve(lbs, draft_id[i], datetime, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL,
+                  NULL, NULL, draft);
+      
+      rsprintf("<tr><td class=\"dlgform\" align=\"center\">");
+      rsprintf("Draft entry created on %s</td>\n", datetime);
+      rsprintf("<td class=\"dlgform\">");
+      rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href='%d?cmd=Edit';\">",
+               loc("Edit"), draft_id[i]);
+      rsprintf("</td></tr>\n");
+   }
+   
+   rsprintf("<tr><td colspan=\"2\" align=center class=\"dlgform\">");
+   rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href='%s';\">\n", loc("Create new entry"),
+            "?cmd=New&ignore=1");
+   rsprintf("</td></tr>\n\n");
+   
+   rsprintf("</table>\n");
+   show_bottom_text(lbs);
+   rsprintf("</body></html>\r\n");
+   
+   xfree(draft_id);
+   return 1;
+}
+
+/*------------------------------------------------------------------*/
+
 void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL bupload, BOOL breedit,
                     BOOL bduplicate, BOOL bpreview)
 {
@@ -17325,7 +17393,7 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                   char attrib[MAX_N_ATTR][NAME_LENGTH], int n_attr, char *text, BOOL show_text,
                   char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], char *encoding, BOOL select,
                   int *n_display, char *locked_by, int highlight, regex_t * re_buf, int highlight_mid,
-                  int absolute_link)
+                  int absolute_link, char *draft)
 {
    char str[NAME_LENGTH], ref[256], *nowrap, rowstyle[80], tdstyle[80], format[256],
        file_name[MAX_PATH_LENGTH], *slist, *svalue, comment[256], param[80], subdir[256];
@@ -17347,7 +17415,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
    sprintf(ref + strlen(ref), "../%s/%d", lbs->name_enc, message_id);
 
    if (strieq(mode, "Summary")) {
-      if (highlight_mid == message_id) {
+      if (draft && draft[0])
+         strcpy(rowstyle, "listdraft");
+      else if (highlight_mid == message_id) {
          if (number % 2 == 1)
             strcpy(rowstyle, "list1h");
          else
@@ -17539,21 +17609,25 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                   sprintf(str, "%s %s", loc("Entry is currently edited by"), locked_by);
                   rsprintf("\n<img src=\"stop.png\" alt=\"%s\" title=\"%s\">&nbsp;", str, str);
                }
-
-               if (getcfg(lbs->name, "ID display", display, sizeof(display))) {
-                  j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
-                                       attrib, TRUE);
-                  sprintf(str, "%d", message_id);
-                  add_subst_list((char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "message id",
-                                 str, &j);
-                  add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
-                                 "entry time", date, &j, 0);
-
-                  strsubst_list(display, sizeof(display), (char (*)[NAME_LENGTH]) slist,
-                                (char (*)[NAME_LENGTH]) svalue, j);
-
-               } else
-                  sprintf(display, "%d", message_id);
+               
+               if (draft && draft[0]) {
+                  strlcpy(display, loc("Draft"), sizeof(display));
+               } else {
+                  if (getcfg(lbs->name, "ID display", display, sizeof(display))) {
+                     j = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
+                                          attrib, TRUE);
+                     sprintf(str, "%d", message_id);
+                     add_subst_list((char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, "message id",
+                                    str, &j);
+                     add_subst_time(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue,
+                                    "entry time", date, &j, 0);
+                     
+                     strsubst_list(display, sizeof(display), (char (*)[NAME_LENGTH]) slist,
+                                   (char (*)[NAME_LENGTH]) svalue, j);
+                     
+                  } else
+                     sprintf(display, "%d", message_id);
+               }
 
                rsprintf("\n<a href=\"%s\">&nbsp;&nbsp;%s&nbsp;&nbsp;</a>\n", ref, display);
                rsprintf("</td>\n");
@@ -18204,7 +18278,7 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable, int expand, int
    display_line(lbs, message_id, 0, "threaded", expand, level, printable, n_line, FALSE, FALSE, date,
                 in_reply_to, reply_to, n_attr_disp, disp_attr, NULL, (char (*)[1500]) attrib, lbs->n_attr,
                 text, show_text, (char (*)[256]) attachment, encoding, 0, NULL, locked_by, highlight,
-                &re_buf[0], highlight_mid, absolute_link);
+                &re_buf[0], highlight_mid, absolute_link, draft);
 
    if (reply_to[0]) {
       p = reply_to;
@@ -21439,7 +21513,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                       show_attachments, show_att_column, date, in_reply_to, reply_to, n_attr_disp, disp_attr,
                       disp_attr_link, attrib, lbs->n_attr, text, show_text, attachment, encoding,
                       isparam("select") ? atoi(getparam("select")) : 0, &n_display, locked_by, 0, re_buf,
-                      page_mid, FALSE);
+                      page_mid, FALSE, draft);
 
          if (threaded && !filtering && !date_filtering) {
             if (reply_to[0] && expand > 0) {
@@ -21550,7 +21624,7 @@ void show_elog_thread(LOGBOOK * lbs, int message_id, int absolute_links, int hig
    display_line(lbs, head_id, 0, "Threaded", 1, 0, FALSE, 0,
                 FALSE, FALSE, date, in_reply_to, reply_to, n_attr_disp, disp_attr, NULL, attrib, lbs->n_attr,
                 text, FALSE, attachment, encoding, 0, &n_display, locked_by, message_id, NULL, highlight_mid,
-                absolute_links);
+                absolute_links, draft);
 
    if (reply_to[0]) {
       p = reply_to;
@@ -27502,6 +27576,9 @@ void interprete(char *lbook, char *path)
    }
 
    if (strieq(command, loc("New"))) {
+      if (check_drafts(lbs))
+         return;
+      
       show_edit_form(lbs, 0, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE);
       return;
    }

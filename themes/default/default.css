@@ -332,6 +332,15 @@ td {
   font-weight:bold;
 }
 
+.listdraft {
+   border:1px solid #808040;
+   border-top:1px solid white;
+   border-left:1px solid white;
+   background-color:#FFD0D0;
+   text-align:center;
+   font-weight:bold;
+}
+
 .listatt {
   border:1px solid #808040;
   border-top:1px solid white;
