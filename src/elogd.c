@@ -4399,7 +4399,7 @@ int el_search_message(LOGBOOK * lbs, int mode, int message_id, BOOL head_only)
 int el_retrieve(LOGBOOK * lbs, int message_id, char *date, char attr_list[MAX_N_ATTR][NAME_LENGTH],
                 char attrib[MAX_N_ATTR][NAME_LENGTH], int n_attr, char *text, int *textsize,
                 char *in_reply_to, char *reply_to, char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH],
-                char *encoding, char *locked_by)
+                char *encoding, char *locked_by, char *draft)
 /********************************************************************
  Routine: el_retrieve
 
@@ -4422,6 +4422,7 @@ int el_retrieve(LOGBOOK * lbs, int message_id, char *date, char attr_list[MAX_N_
  char   *attachment[]    File attachments
  char   *encoding        Encoding of message
  char   *locked_by       User/Host if locked for editing
+ char   *draft           User who drafted that message
  int    *size            Actual message text size
 
  Function value:
@@ -4456,7 +4457,7 @@ int el_retrieve(LOGBOOK * lbs, int message_id, char *date, char attr_list[MAX_N_
       /* file might have been deleted, rebuild index */
       el_build_index(lbs, TRUE);
       return el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr, text, textsize, in_reply_to,
-                         reply_to, attachment, encoding, locked_by);
+                         reply_to, attachment, encoding, locked_by, draft);
    }
 
    message = xmalloc(TEXT_SIZE + 1000);
@@ -4477,7 +4478,7 @@ int el_retrieve(LOGBOOK * lbs, int message_id, char *date, char attr_list[MAX_N_
       /* file might have been edited, rebuild index */
       el_build_index(lbs, TRUE);
       return el_retrieve(lbs, message_id, date, attr_list, attrib, n_attr, text, textsize, in_reply_to,
-                         reply_to, attachment, encoding, locked_by);
+                         reply_to, attachment, encoding, locked_by, draft);
    }
 
    /* check for correct ID */
@@ -4547,6 +4548,9 @@ int el_retrieve(LOGBOOK * lbs, int message_id, char *date, char attr_list[MAX_N_
 
    if (locked_by)
       el_decode(message, "Locked by: ", locked_by, 80);
+
+   if (draft)
+      el_decode(message, "Draft: ", locked_by, 80);
 
    p = strstr(message, "========================================\n");
 
@@ -4770,7 +4774,7 @@ int el_retrieve_attachment(LOGBOOK * lbs, int message_id, int n, char name[MAX_P
 int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_name[MAX_N_ATTR][NAME_LENGTH],
               char attr_value[MAX_N_ATTR][NAME_LENGTH], int n_attr, char *text, char *in_reply_to,
               char *reply_to, char *encoding, char afilename[MAX_ATTACHMENTS][256], BOOL mark_original,
-              char *locked_by)
+              char *locked_by, char *draft)
 /********************************************************************
  Routine: el_submit
 
@@ -4795,7 +4799,8 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
  int    *tag_size        Maximum size of tag
  BOOL   mark_original    Tag original message for replies
  char   *locked_by       User/Host which locked message for edit
-
+ char   *draft           User which drafted message
+ 
  Function value:
  int                     New message ID
 
@@ -4855,7 +4860,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
          /* file might have been edited, rebuild index */
          el_build_index(lbs, TRUE);
          return el_submit(lbs, message_id, bedit, date, attr_name, attrib, n_attr, text, in_reply_to,
-                          reply_to, encoding, afilename, mark_original, locked_by);
+                          reply_to, encoding, afilename, mark_original, locked_by, draft);
       }
 
       /* check for correct ID */
@@ -5020,6 +5025,8 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
    sprintf(message + strlen(message), "Encoding: %s\n", encoding1);
    if (locked_by && locked_by[0])
       sprintf(message + strlen(message), "Locked by: %s\n", locked_by);
+   if (draft && draft[0])
+      sprintf(message + strlen(message), "Draft: %s\n", draft);
 
    sprintf(message + strlen(message), "========================================\n");
 
@@ -5071,12 +5078,12 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
 
    if (mark_original && in_reply_to[0] && !bedit && atoi(in_reply_to) > 0) {
       char date[80], attr[MAX_N_ATTR][NAME_LENGTH], enc[80], att[MAX_ATTACHMENTS][256],
-          reply_to[MAX_REPLY_TO * 10], in_reply_to[MAX_REPLY_TO * 10], lock[256];
+          reply_to[MAX_REPLY_TO * 10], in_reply_to[MAX_REPLY_TO * 10], lock[256], draft[256];
 
       /* retrieve original message */
       size = TEXT_SIZE + 100;
       el_retrieve(lbs, reply_id, date, attr_list, attr, n_attr, message, &size, in_reply_to, reply_to, att,
-                  enc, lock);
+                  enc, lock, draft);
 
       if (reply_to[0])
          strcat(reply_to, ", ");
@@ -5084,7 +5091,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
 
       /* write modified message */
       el_submit(lbs, reply_id, TRUE, date, attr_list, attr, n_attr, message, in_reply_to, reply_to, enc, att,
-                TRUE, lock);
+                TRUE, lock, draft);
    }
 
    xfree(message);
@@ -5096,14 +5103,14 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
 void remove_reference(LOGBOOK * lbs, int message_id, int remove_id, BOOL reply_to_flag)
 {
    char date[80], attr[MAX_N_ATTR][NAME_LENGTH], enc[80], in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
-       att[MAX_ATTACHMENTS][256], lock[256], *p, *ps, *message;
+       att[MAX_ATTACHMENTS][256], lock[256], draft[256], *p, *ps, *message;
    int size, status;
 
    /* retrieve original message */
    size = TEXT_SIZE + 1000;
    message = (char *) xmalloc(size);
    status = el_retrieve(lbs, message_id, date, attr_list, attr, lbs->n_attr, message, &size, in_reply_to,
-                        reply_to, att, enc, lock);
+                        reply_to, att, enc, lock, draft);
    if (status != EL_SUCCESS)
       return;
 
@@ -5132,7 +5139,7 @@ void remove_reference(LOGBOOK * lbs, int message_id, int remove_id, BOOL reply_t
 
    /* write modified message */
    el_submit(lbs, message_id, TRUE, date, attr_list, attr, lbs->n_attr, message, in_reply_to, reply_to, enc,
-             att, TRUE, lock);
+             att, TRUE, lock, NULL);
 
    xfree(message);
 }
@@ -5351,7 +5358,8 @@ int el_correct_links(LOGBOOK * lbs, int old_id, int new_id)
  This routine corrects that. */
 {
    int i, i1, n, n1, size;
-   char date[80], *attrib, *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10], encoding[80], locked_by[256];
+      char date[80], *attrib, *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10], encoding[80],
+   locked_by[256], draft[256];
    char list[MAX_N_ATTR][NAME_LENGTH], list1[MAX_N_ATTR][NAME_LENGTH];
    char *att_file;
 
@@ -5360,14 +5368,14 @@ int el_correct_links(LOGBOOK * lbs, int old_id, int new_id)
    att_file = (char *) xmalloc(MAX_ATTACHMENTS * 256);
 
    el_retrieve(lbs, new_id, date, attr_list, (char (*)[1500]) attrib, lbs->n_attr, NULL, 0, in_reply_to,
-               reply_to, (char (*)[256]) att_file, encoding, locked_by);
+               reply_to, (char (*)[256]) att_file, encoding, locked_by, draft);
 
    /* go through in_reply_to list */
    n = strbreak(in_reply_to, list, MAX_N_ATTR, ",", FALSE);
    for (i = 0; i < n; i++) {
       size = TEXT_SIZE;
       el_retrieve(lbs, atoi(list[i]), date, attr_list, (char (*)[1500]) attrib, lbs->n_attr, text, &size,
-                  in_reply_to, reply_to, (char (*)[256]) att_file, encoding, locked_by);
+                  in_reply_to, reply_to, (char (*)[256]) att_file, encoding, locked_by, draft);
 
       n1 = strbreak(reply_to, list1, MAX_N_ATTR, ",", FALSE);
       reply_to[0] = 0;
@@ -5383,18 +5391,18 @@ int el_correct_links(LOGBOOK * lbs, int old_id, int new_id)
       }
 
       el_submit(lbs, atoi(list[i]), TRUE, date, attr_list, (char (*)[1500]) attrib, lbs->n_attr, text,
-                in_reply_to, reply_to, encoding, (char (*)[256]) att_file, TRUE, locked_by);
+                in_reply_to, reply_to, encoding, (char (*)[256]) att_file, TRUE, locked_by, draft);
    }
 
    el_retrieve(lbs, new_id, date, attr_list, (char (*)[1500]) attrib, lbs->n_attr, NULL, 0, in_reply_to,
-               reply_to, (char (*)[256]) att_file, encoding, locked_by);
+               reply_to, (char (*)[256]) att_file, encoding, locked_by, draft);
 
    /* go through reply_to list */
    n = strbreak(reply_to, list, MAX_N_ATTR, ",", FALSE);
    for (i = 0; i < n; i++) {
       size = sizeof(text);
       el_retrieve(lbs, atoi(list[i]), date, attr_list, (char (*)[1500]) attrib, lbs->n_attr, text, &size,
-                  in_reply_to, reply_to, (char (*)[256]) att_file, encoding, locked_by);
+                  in_reply_to, reply_to, (char (*)[256]) att_file, encoding, locked_by, draft);
 
       n1 = strbreak(in_reply_to, list1, MAX_N_ATTR, ",", FALSE);
       in_reply_to[0] = 0;
@@ -5410,7 +5418,7 @@ int el_correct_links(LOGBOOK * lbs, int old_id, int new_id)
       }
 
       el_submit(lbs, atoi(list[i]), TRUE, date, attr_list, (char (*)[1500]) attrib, lbs->n_attr, text,
-                in_reply_to, reply_to, encoding, (char (*)[256]) att_file, TRUE, locked_by);
+                in_reply_to, reply_to, encoding, (char (*)[256]) att_file, TRUE, locked_by, draft);
    }
 
    xfree(text);
@@ -5426,7 +5434,7 @@ int el_move_message_thread(LOGBOOK * lbs, int message_id)
 {
    int i, n, size, new_id;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
-       encoding[80], locked_by[256];
+       encoding[80], locked_by[256], draft[256];
    char list[MAX_N_ATTR][NAME_LENGTH], str[256];
    char att_file[MAX_ATTACHMENTS][256];
 
@@ -5434,12 +5442,12 @@ int el_move_message_thread(LOGBOOK * lbs, int message_id)
    text = xmalloc(TEXT_SIZE);
    size = TEXT_SIZE;
    el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text, &size, in_reply_to, reply_to,
-               att_file, encoding, locked_by);
+               att_file, encoding, locked_by, draft);
 
    /* submit as new message */
    date[0] = 0;
    new_id = el_submit(lbs, 0, FALSE, date, attr_list, attrib, lbs->n_attr, text, in_reply_to, reply_to,
-                      encoding, att_file, FALSE, locked_by);
+                      encoding, att_file, FALSE, locked_by, draft);
 
    xfree(text);
 
@@ -5467,19 +5475,19 @@ int el_move_message(LOGBOOK * lbs, int old_id, int new_id)
 {
    int status, size;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
-       encoding[80], locked_by[256], att_file[MAX_ATTACHMENTS][256];
+       encoding[80], locked_by[256], draft[256], att_file[MAX_ATTACHMENTS][256];
 
    /* retrieve message */
    text = xmalloc(TEXT_SIZE);
    size = TEXT_SIZE;
    status = el_retrieve(lbs, old_id, date, attr_list, attrib, lbs->n_attr, text, &size, in_reply_to,
-                        reply_to, att_file, encoding, locked_by);
+                        reply_to, att_file, encoding, locked_by, draft);
    if (status != EL_SUCCESS)
       return 0;
 
    /* submit as new message */
    status = el_submit(lbs, new_id, FALSE, date, attr_list, attrib, lbs->n_attr, text, in_reply_to, reply_to,
-                      encoding, att_file, FALSE, locked_by);
+                      encoding, att_file, FALSE, locked_by, draft);
 
    xfree(text);
 
@@ -5502,17 +5510,17 @@ int el_lock_message(LOGBOOK * lbs, int message_id, char *user)
 {
    int size;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE], in_reply_to[80],
-       reply_to[MAX_REPLY_TO * 10], encoding[80], locked_by[256];
+       reply_to[MAX_REPLY_TO * 10], encoding[80], locked_by[256], draft[256];
    char att_file[MAX_ATTACHMENTS][256];
 
    /* retrieve message */
    size = sizeof(text);
    el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text, &size, in_reply_to, reply_to,
-               att_file, encoding, locked_by);
+               att_file, encoding, locked_by, draft);
 
    /* submit message, unlocked if user==NULL */
    el_submit(lbs, message_id, TRUE, date, attr_list, attrib, lbs->n_attr, text, in_reply_to, reply_to,
-             encoding, att_file, FALSE, user);
+             encoding, att_file, FALSE, user, draft);
 
    return EL_SUCCESS;
 }
@@ -8956,7 +8964,7 @@ void get_auto_index(LOGBOOK * lbs, int index, char *format, char *retstr, int si
  auto-increment tags */
 {
    int i, message_id, loc, len, old_index;
-   char *p, attrib[MAX_N_ATTR][NAME_LENGTH], att[MAX_ATTACHMENTS][256];
+   char *p, attrib[MAX_N_ATTR][NAME_LENGTH], att[MAX_ATTACHMENTS][256], draft[256];
    time_t now;
 
    if (strchr(format, '%') == NULL && strchr(format, '#') == NULL) {
@@ -8999,7 +9007,7 @@ void get_auto_index(LOGBOOK * lbs, int index, char *format, char *retstr, int si
    old_index = 0;
    do {
       el_retrieve(lbs, message_id, NULL, attr_list, attrib, lbs->n_attr, NULL, 0, NULL, NULL, att, NULL,
-                  NULL);
+                  NULL, draft);
 
       /* if same date found, obtain largest index */
       if (strlen(attrib[index]) > 0 && strncmp(attrib[index], retstr, loc) == 0)
@@ -9366,7 +9374,7 @@ void compare_attributes(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][N
    attr = xmalloc(MAX_N_ATTR * NAME_LENGTH);
    assert(attr);
    status = el_retrieve(lbs, message_id, NULL, attr_list, (char (*)[NAME_LENGTH]) attr, lbs->n_attr,
-                        NULL, NULL, NULL, reply_to, NULL, NULL, NULL);
+                        NULL, NULL, NULL, reply_to, NULL, NULL, NULL, NULL);
    if (status != EL_SUCCESS) {
       xfree(attr);
       return;
@@ -9415,7 +9423,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256], cookie[256],
        orig_author[256], attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256], tooltip[10000],
        enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256], thumb_ref[256], **user_list, fid[20],
-       upwd[80], subdir[256];
+       upwd[80], subdir[256], draft[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -9509,7 +9517,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
          size = TEXT_SIZE;
          el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text, &size, orig_tag, reply_tag,
-                     att, encoding, locked_by);
+                     att, encoding, locked_by, draft);
 
          get_author(lbs, attrib, orig_author);
 
@@ -11231,7 +11239,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
          if (strieq(text, "<keep>") && message_id) {
             size = TEXT_SIZE;
-            el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, text, &size, NULL, NULL, NULL, NULL, NULL);
+            el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, text, &size, NULL, NULL, NULL, NULL, NULL, NULL);
          }
 
          if (strieq(encoding, "plain")) {
@@ -14107,7 +14115,7 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
          /* get message for reply/edit */
 
          el_retrieve(lbs, message_id, NULL, attr_list, attrib, lbs->n_attr, NULL, NULL,
-                     NULL, NULL, NULL, NULL, NULL);
+                     NULL, NULL, NULL, NULL, NULL, NULL);
 
          if (!is_author(lbs, attrib, owner)) {
             strencode2(str2, owner, sizeof(str2));
@@ -14153,7 +14161,7 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
 
                if (!reply) {
                   el_retrieve(lbs, isparam(str) ? atoi(getparam(str)) : 0,
-                              NULL, attr_list, NULL, 0, NULL, NULL, in_reply_to, reply_to, NULL, NULL, NULL);
+                              NULL, attr_list, NULL, 0, NULL, NULL, in_reply_to, reply_to, NULL, NULL, NULL, NULL);
                   if (reply_to[0])
                      reply = TRUE;
                }
@@ -14172,7 +14180,7 @@ void show_elog_delete(LOGBOOK * lbs, int message_id)
 
          /* retrieve original message */
          el_retrieve(lbs, message_id, NULL, attr_list, NULL, 0, NULL, NULL, in_reply_to, reply_to, NULL,
-                     NULL, NULL);
+                     NULL, NULL, NULL);
 
          if (reply_to[0])
             rsprintf("<tr><td align=center class=\"dlgform\">#%d<br>%s</td></tr>\n", message_id,
@@ -14927,7 +14935,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
                if (el_submit
                    (lbs, 0, FALSE, date, attr_list,
                     (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH), n_attr, "", "", "", "plain",
-                    NULL, TRUE, NULL))
+                    NULL, TRUE, NULL, NULL))
                   n_imported++;
             } else {
                strlcpy(line, list + textcol * NAME_LENGTH, 10000);
@@ -14940,7 +14948,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
                if (el_submit
                    (lbs, 0, FALSE, date, attr_list,
                     (char (*)[NAME_LENGTH]) (list + attr_offset * NAME_LENGTH), n_attr, line, "", "", "plain",
-                    NULL, TRUE, NULL))
+                    NULL, TRUE, NULL, NULL))
                   n_imported++;
             }
          }
@@ -15242,7 +15250,7 @@ void xml_import(LOGBOOK * lbs, const char *xml, const char *xmlfile)
          /* submit entry */
          if (el_submit
              (lbs, message_id, bedit, date, attr_list, (char (*)[NAME_LENGTH]) list, n_attr, p, in_reply_to,
-              reply_to, encoding, attachment, FALSE, NULL))
+              reply_to, encoding, attachment, FALSE, NULL, NULL))
             n_imported++;
       }
    }
@@ -15491,7 +15499,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    char str[256], file_name[MAX_PATH_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
    char subdir[256], param[256], remote_host_name[256], url[256], upwd[80];
    char date[80], *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
-       attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256], *buffer;
+       attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256], draft[256], *buffer;
    char *content, *p, boundary[80], request[10000], response[10000];
 #ifdef HAVE_SSL
    SSL *ssl_con = NULL;
@@ -15505,7 +15513,7 @@ int submit_message(LOGBOOK * lbs, char *host, int message_id, char *error_str)
    /* get message with attribute list devied from database */
    size = TEXT_SIZE;
    status = el_retrieve(lbs, message_id, date, attr_list, attrib, -1, text, &size, in_reply_to, reply_to,
-                        attachment, encoding, locked_by);
+                        attachment, encoding, locked_by, draft);
 
    if (status != EL_SUCCESS) {
       xfree(text);
@@ -15831,7 +15839,7 @@ int receive_message(LOGBOOK * lbs, char *url, int message_id, char *error_str, B
          p[strlen(p) - 1] = 0;
 
       status = el_submit(lbs, message_id, !bnew, date, attr_list, attrib, n_attr, p, in_reply_to, reply_to,
-                         encoding, attachment, FALSE, "");
+                         encoding, attachment, FALSE, "", NULL);
 
       xfree(message);
 
@@ -16470,7 +16478,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
    int index, i, j, i_msg, i_remote, i_cache, n_remote, n_cache, nserver, remote_id, exist_remote,
        exist_cache, message_id, max_id, ssl;
    int all_identical, n_delete;
-   char str[2000], url[256], loc_ref[256], rem_ref[256], pwd[256], locked_by[256];
+   char str[2000], url[256], loc_ref[256], rem_ref[256], pwd[256], locked_by[256], draft[256];
    MD5_INDEX *md5_remote, *md5_cache;
    char list[MAX_N_LIST][NAME_LENGTH], error_str[256], *buffer;
    unsigned char digest[16];
@@ -16673,7 +16681,7 @@ void synchronize_logbook(LOGBOOK * lbs, int mode, BOOL sync_all)
          message_id = lbs->el_index[i_msg].message_id;
 
          /* check if message is locked */
-         el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, locked_by);
+         el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, locked_by, draft);
          if (locked_by[0]) {
             sprintf(str, "ID%d:\t%s", message_id,
                     loc("Entry is locked on local server and therefore skipped"));
@@ -18146,7 +18154,7 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable, int expand, int
                    char disp_attr[MAX_N_ATTR + 4][NAME_LENGTH], BOOL show_text, int level, int highlight,
                    regex_t * re_buf, int highlight_mid, int absolute_link)
 {
-   char *date, *text, *in_reply_to, *reply_to, *encoding, *attachment, *locked_by, *attrib, *p;
+   char *date, *text, *in_reply_to, *reply_to, *encoding, *attachment, *locked_by, *draft, *attrib, *p;
    int status, size;
 
    text = (char *) xmalloc(TEXT_SIZE);
@@ -18157,14 +18165,15 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable, int expand, int
    reply_to = (char *) xmalloc(256);
    encoding = (char *) xmalloc(80);
    locked_by = (char *) xmalloc(256);
+   draft = (char *) xmalloc(256);
 
-   if (locked_by == NULL)
+   if (draft == NULL)
       return;
 
    reply_to[0] = 0;
    size = TEXT_SIZE;
    status = el_retrieve(lbs, message_id, date, attr_list, (char (*)[1500]) attrib, lbs->n_attr, text, &size,
-                        in_reply_to, reply_to, (char (*)[256]) attachment, encoding, locked_by);
+                        in_reply_to, reply_to, (char (*)[256]) attachment, encoding, locked_by, draft);
 
    if (status != EL_SUCCESS) {
       xfree(text);
@@ -18175,6 +18184,7 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable, int expand, int
       xfree(reply_to);
       xfree(encoding);
       xfree(locked_by);
+      xfree(draft);
       return;
    }
 
@@ -18204,6 +18214,7 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable, int expand, int
    xfree(reply_to);
    xfree(encoding);
    xfree(locked_by);
+   xfree(draft);
 }
 
 /*------------------------------------------------------------------*/
@@ -19439,7 +19450,7 @@ void show_rss_feed(LOGBOOK * lbs)
 
       size = TEXT_SIZE;
       el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text, &size, NULL, NULL,
-                           NULL, NULL, NULL);
+                           NULL, NULL, NULL, NULL);
 
       /* limit text size to 2k */
       text[2048] = 0;
@@ -19577,7 +19588,7 @@ time_t search_last_reply(LOGBOOK * lbs, int *message_id)
 
    list = (char *) xmalloc(MAX_REPLY_TO * NAME_LENGTH);
 
-   el_retrieve(lbs, *message_id, date, NULL, NULL, 0, NULL, 0, NULL, reply_to, NULL, NULL, NULL);
+   el_retrieve(lbs, *message_id, date, NULL, NULL, 0, NULL, 0, NULL, reply_to, NULL, NULL, NULL, NULL);
    lt = date_to_ltime(date);
 
    /* if no reply, this is the last message in thread */
@@ -19615,7 +19626,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
        encoding[80], locked_by[256], str[NAME_LENGTH], ref[256], img[80], comment[NAME_LENGTH], mode[80],
        mid[80], menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH], param[NAME_LENGTH], format[80],
        sort_attr[MAX_N_ATTR + 4][NAME_LENGTH], mode_cookie[80], charset[25], sort_item[NAME_LENGTH],
-       refr[80], str2[80];
+       refr[80], str2[80], draft[256];
    char *p, *pt1, *pt2, *slist, *svalue, *gattr, line[1024], iattr[256];
    BOOL show_attachments, threaded, csv, xml, raw, mode_commands, expand, filtering, date_filtering,
        disp_filter, show_text, text_in_attr, searched, found, disp_attr_link[MAX_N_ATTR + 4],
@@ -20157,7 +20168,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
       if (filtering) {
          status = el_retrieve(msg_list[index].lbs, message_id, date, attr_list, attrib, lbs->n_attr, text,
-                              &size, in_reply_to, reply_to, attachment, encoding, locked_by);
+                              &size, in_reply_to, reply_to, attachment, encoding, locked_by, draft);
          if (status != EL_SUCCESS)
             break;
 
@@ -21190,7 +21201,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       message_id = msg_list[index].lbs->el_index[msg_list[index].index].message_id;
 
       status = el_retrieve(msg_list[index].lbs, message_id, date, attr_list, attrib, lbs->n_attr, text,
-                           &size, in_reply_to, reply_to, attachment, encoding, locked_by);
+                           &size, in_reply_to, reply_to, attachment, encoding, locked_by, draft);
       if (status != EL_SUCCESS)
          break;
 
@@ -21403,7 +21414,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   size = TEXT_SIZE;
                   status =
                       el_retrieve(msg_list[index].lbs, message_id, date, attr_list, attrib, lbs->n_attr, text,
-                                  &size, in_reply_to, reply_to, attachment, encoding, locked_by);
+                                  &size, in_reply_to, reply_to, attachment, encoding, locked_by, draft);
                   if (status == SUCCESS)
                      level = 1;
                }
@@ -21495,7 +21506,7 @@ void show_elog_thread(LOGBOOK * lbs, int message_id, int absolute_links, int hig
 {
    int size, head_id, n_display, n_attr_disp;
    char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], *text, in_reply_to[80], reply_to[MAX_REPLY_TO * 10],
-       attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256],
+       attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], encoding[80], locked_by[256], draft[256],
        disp_attr[MAX_N_ATTR + 4][NAME_LENGTH];
    char *p;
 
@@ -21504,7 +21515,7 @@ void show_elog_thread(LOGBOOK * lbs, int message_id, int absolute_links, int hig
    /* retrieve message */
    size = TEXT_SIZE;
    el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text, &size, in_reply_to,
-                        reply_to, attachment, encoding, locked_by);
+                        reply_to, attachment, encoding, locked_by, draft);
 
    /* find message head */
    if (atoi(in_reply_to))
@@ -21519,7 +21530,7 @@ void show_elog_thread(LOGBOOK * lbs, int message_id, int absolute_links, int hig
 
    size = TEXT_SIZE;
    el_retrieve(lbs, head_id, date, attr_list, attrib, lbs->n_attr, text, &size, in_reply_to,
-                        reply_to, attachment, encoding, locked_by);
+                        reply_to, attachment, encoding, locked_by, draft);
 
    rsprintf("<tr><td><table width=\"100%%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
 
@@ -21553,7 +21564,7 @@ int has_attachments(LOGBOOK * lbs, int message_id)
 {
    char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH];
 
-   el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, attachment, NULL, NULL);
+   el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, attachment, NULL, NULL, NULL);
    return attachment[0][0] > 0;
 }
 
@@ -22451,7 +22462,7 @@ int propagate_attrib(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME
    attr = (char *)xmalloc(MAX_N_ATTR*NAME_LENGTH);
 
    status = el_retrieve(lbs, message_id, NULL, attr_list, (char (*)[NAME_LENGTH]) attr, lbs->n_attr,
-                        NULL, NULL, NULL, reply_to, att_file, NULL, NULL);
+                        NULL, NULL, NULL, reply_to, att_file, NULL, NULL, NULL);
    if (status != EL_SUCCESS) {
       xfree(list);
       xfree(attr);
@@ -22469,7 +22480,7 @@ int propagate_attrib(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME
    }
 
    message_id = el_submit(lbs, message_id, TRUE, "<keep>", attr_list, (char (*)[1500])attr, lbs->n_attr, "<keep>",
-                          "<keep>", "<keep>", "<keep>", att_file, TRUE, NULL);
+                          "<keep>", "<keep>", "<keep>", att_file, TRUE, NULL, NULL);
    if (message_id < 0) {
       xfree(list);
       xfree(attr);
@@ -22496,7 +22507,7 @@ int submit_elog_reply(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAM
        list[MAX_N_ATTR][NAME_LENGTH];
 
    status = el_retrieve(lbs, message_id, NULL, attr_list, NULL, 0,
-                        NULL, NULL, NULL, reply_to, att_file, NULL, NULL);
+                        NULL, NULL, NULL, reply_to, att_file, NULL, NULL, NULL);
    if (status != EL_SUCCESS)
       return status;
 
@@ -22504,10 +22515,10 @@ int submit_elog_reply(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAM
    sprintf(str2, "<p>- %s -</p>", loc("keep original text"));
    if (strcmp(text, str1) == 0 || strcmp(text, str2) == 0)
       message_id = el_submit(lbs, message_id, TRUE, "<keep>", attr_list, attrib, lbs->n_attr, "<keep>",
-                             "<keep>", "<keep>", "<keep>", att_file, TRUE, NULL);
+                             "<keep>", "<keep>", "<keep>", att_file, TRUE, NULL, NULL);
    else
       message_id = el_submit(lbs, message_id, TRUE, "<keep>", attr_list, attrib, lbs->n_attr, text, "<keep>",
-                             "<keep>", "<keep>", att_file, TRUE, NULL);
+                             "<keep>", "<keep>", att_file, TRUE, NULL, NULL);
 
    if (message_id < 0)
       return 0;
@@ -22967,7 +22978,7 @@ void submit_elog(LOGBOOK * lbs)
       resubmit_orig = atoi(getparam("edit_id"));
 
       /* get old links */
-      el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0, NULL, 0, in_reply_to, reply_to, NULL, NULL, NULL);
+      el_retrieve(lbs, resubmit_orig, NULL, NULL, NULL, 0, NULL, 0, in_reply_to, reply_to, NULL, NULL, NULL, NULL);
 
       /* if not message head, move all preceeding messages */
       /* outcommented, users want only resubmitted message occur at end (see what's new)
@@ -23010,7 +23021,7 @@ void submit_elog(LOGBOOK * lbs)
    /* check if lock has been stolen */
    if (!isparam("skiplock")) {
       if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1 && message_id) {
-         el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, locked_by);
+         el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, locked_by, NULL);
 
          if (isparam("unm"))
             get_full_name(lbs, getparam("unm"), str);
@@ -23064,7 +23075,7 @@ void submit_elog(LOGBOOK * lbs)
       return;                   /* no email notifications etc */
    } else {
       message_id = el_submit(lbs, message_id, bedit, date, attr_list, attrib, n_attr, getparam("text"),
-                             in_reply_to, reply_to, encoding, att_file, TRUE, NULL);
+                             in_reply_to, reply_to, encoding, att_file, TRUE, NULL, NULL);
 
       if (message_id <= 0) {
          sprintf(str, loc("New entry cannot be written to directory \"%s\""), lbs->data_dir);
@@ -23085,7 +23096,7 @@ void submit_elog(LOGBOOK * lbs)
 
    /* retrieve submission date */
    if (date[0] == 0)
-      el_retrieve(lbs, message_id, date, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+      el_retrieve(lbs, message_id, date, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
    /*---- replace relative elog:/x link by elog:n/x link */
    if (stristr(getparam("text"), "elog:/")) {
@@ -23096,7 +23107,7 @@ void submit_elog(LOGBOOK * lbs)
          sprintf(str, "elog:%d/", message_id);
       strsubst(p, TEXT_SIZE, "elog:/", str);
       el_submit(lbs, message_id, TRUE, date, attr_list, attrib, n_attr, p, in_reply_to, reply_to, encoding,
-                att_file, TRUE, NULL);
+                att_file, TRUE, NULL, NULL);
    }
 
    /*---- replace elog: by HTML link ----*/
@@ -23112,7 +23123,7 @@ void submit_elog(LOGBOOK * lbs)
          p = stristr(p, "elog:");
       }
       el_submit(lbs, message_id, TRUE, date, attr_list, attrib, n_attr, getparam("text"), in_reply_to,
-                reply_to, encoding, att_file, TRUE, NULL);
+                reply_to, encoding, att_file, TRUE, NULL, NULL);
    }
 
    /*---- email notifications ----*/
@@ -23389,7 +23400,7 @@ void submit_elog_mirror(LOGBOOK * lbs)
       }
 
    message_id = el_submit(lbs, message_id, bedit, date, attrib_name, attrib_value, n_attr, getparam("text"),
-                          in_reply_to, reply_to, encoding, att_file, FALSE, NULL);
+                          in_reply_to, reply_to, encoding, att_file, FALSE, NULL, NULL);
 
    if (message_id <= 0) {
       sprintf(str, loc("New entry cannot be written to directory \"%s\""), lbs->data_dir);
@@ -23411,7 +23422,8 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
        thumb_status, next_id = 0;
    char str[256], str2[256], file_name[MAX_PATH_LENGTH], thumb_name[MAX_PATH_LENGTH],
        *attrib, date[80], *text, msg_str[32], in_reply_to[80], subdir[256],
-       reply_to[MAX_REPLY_TO * 10], *attachment, encoding[80], locked_by[256], *buffer, *list;
+       reply_to[MAX_REPLY_TO * 10], *attachment, encoding[80], locked_by[256], draft[256],
+       *buffer, *list;
    LOGBOOK *lbs_dest;
    BOOL bedit;
 
@@ -23448,7 +23460,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
       size = TEXT_SIZE;
       status =
           el_retrieve(lbs, source_id, date, attr_list, (void *) attrib, lbs->n_attr, text, &size, in_reply_to,
-                      reply_to, (void *) attachment, encoding, locked_by);
+                      reply_to, (void *) attachment, encoding, locked_by, draft);
 
       if (status != EL_SUCCESS) {
          sprintf(msg_str, "%d", source_id);
@@ -23467,7 +23479,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
             source_id = atoi(in_reply_to);
             size = TEXT_SIZE;
             status = el_retrieve(lbs, source_id, date, attr_list, (void *) attrib, lbs->n_attr, text, &size,
-                                 in_reply_to, reply_to, (void *) attachment, encoding, locked_by);
+                                 in_reply_to, reply_to, (void *) attachment, encoding, locked_by, draft);
 
             if (status != EL_SUCCESS) {
                sprintf(msg_str, "%d", source_id);
@@ -23593,7 +23605,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
          /* test if entry exists already */
          status =
-             el_retrieve(lbs_dest, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, NULL);
+             el_retrieve(lbs_dest, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL);
          bedit = (status == EL_SUCCESS);
       }
 
@@ -23603,7 +23615,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
       if (getcfg(lbs->name, "Preserve IDs", str, sizeof(str)) && atoi(str) == 1)
          message_id =
              el_submit(lbs_dest, message_id, bedit, date, attr_list, (void *) attrib, lbs->n_attr, text,
-                       in_reply_to, reply_to, encoding, (void *) attachment, FALSE, NULL);
+                       in_reply_to, reply_to, encoding, (void *) attachment, FALSE, NULL, NULL);
       else {
          /* if called recursively (for threads), put in correct in_reply_to */
          str[0] = 0;
@@ -23612,7 +23624,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
 
          message_id =
              el_submit(lbs_dest, message_id, bedit, date, attr_list, (void *) attrib, lbs->n_attr, text, str,
-                       "", encoding, (void *) attachment, TRUE, NULL);
+                       "", encoding, (void *) attachment, TRUE, NULL, NULL);
       }
 
       if (message_id <= 0) {
@@ -23931,7 +23943,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
        format[80], slist[MAX_N_ATTR + 10][NAME_LENGTH], file_name[MAX_PATH_LENGTH],
        gattr[MAX_N_ATTR][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], *p,
        lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256], class_name[80], class_value[80],
-       fl[8][NAME_LENGTH], list[MAX_N_ATTR][NAME_LENGTH], domain[256], subdir[256];
+       fl[8][NAME_LENGTH], list[MAX_N_ATTR][NAME_LENGTH], domain[256], subdir[256], draft[256];
    FILE *f;
    BOOL first, show_text, display_inline, subtable, email;
    struct tm *pts;
@@ -24032,7 +24044,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
          size = sizeof(text);
          el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text, &size, orig_tag, reply_tag,
-                     attachment, encoding, locked_by);
+                     attachment, encoding, locked_by, draft);
 
          /* check for locked attributes */
          for (i = 0; i < lbs->n_attr; i++) {
@@ -24092,7 +24104,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    if (message_id) {
       size = sizeof(text);
       status = el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text, &size, orig_tag,
-                           reply_tag, attachment, encoding, locked_by);
+                           reply_tag, attachment, encoding, locked_by, draft);
 
       if (status != EL_SUCCESS)
          message_error = status;
@@ -26098,7 +26110,7 @@ void show_logbook_node(LBLIST plb, LBLIST pparent, int level, int btop)
             lb_list[index].n_attr = scan_attributes(lb_list[index].name);
             message_id = el_search_message(&lb_list[index], EL_LAST, 0, FALSE);
             el_retrieve(&lb_list[index], message_id, date, attr_list, attrib, lb_list[index].n_attr, NULL, 0,
-                        NULL, NULL, NULL, NULL, NULL);
+                        NULL, NULL, NULL, NULL, NULL, NULL);
             if (!getcfg(lb_list[index].name, "Last submission", str, sizeof(str))) {
                sprintf(str, "$entry time");
                for (i = 0; i < lb_list[index].n_attr; i++)
