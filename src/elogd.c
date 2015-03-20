@@ -4550,7 +4550,7 @@ int el_retrieve(LOGBOOK * lbs, int message_id, char *date, char attr_list[MAX_N_
       el_decode(message, "Locked by: ", locked_by, 80);
 
    if (draft)
-      el_decode(message, "Draft: ", locked_by, 80);
+      el_decode(message, "Draft: ", draft, 80);
 
    p = strstr(message, "========================================\n");
 
@@ -10078,6 +10078,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("  document.form1.submit();\n");
    rsprintf("}\n\n");
 
+   /* save_draft() gets called via the "Save" button */
+   rsprintf("function save_draft()\n");
+   rsprintf("{\n");
+   rsprintf("  submitted = true;\n");
+   rsprintf("  document.form1.submit();\n");
+   rsprintf("}\n\n");
+
    /* abandon() gets called "onUnload" */
    rsprintf("function unload()\n");
    rsprintf("{\n");
@@ -10280,6 +10287,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n",
             loc("Submit"));
+   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return save_draft();\">\n",
+            loc("Save"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n",
             loc("Preview"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return go_back();\">\n", loc("Back"));
@@ -11823,6 +11832,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n",
             loc("Submit"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n",
+            loc("Save"));
+   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n",
             loc("Preview"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return go_back();\">\n", loc("Back"));
    rsprintf("</span></td></tr>\n\n");
@@ -12385,6 +12396,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
    rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
+   rsprintf("<input type=hidden name=cfgpage value=\"1\">\n");
 
    if (lbs->top_group[0] && (!top_group || strieq(top_group, "global"))) {
       if (is_admin_user("global", getparam("unm"))) {
@@ -13527,6 +13539,7 @@ void show_config_page(LOGBOOK * lbs)
    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
    rsprintf("<input type=hidden name=config value=\"%s\">\n", user);
+   rsprintf("<input type=hidden name=cfgpage value=\"1\">\n");                  // needed for "Save" command
 
    rsprintf("</span></td></tr>\n\n");
 
@@ -22544,15 +22557,16 @@ void submit_elog(LOGBOOK * lbs)
        subst_str[MAX_PATH_LENGTH], in_reply_to[80], reply_to[MAX_REPLY_TO * 10], user[256],
        user_email[256], mail_param[1000], *mail_to, *rcpt_to, full_name[256],
        att_file[MAX_ATTACHMENTS][256], slist[MAX_N_ATTR + 10][NAME_LENGTH],
-       svalue[MAX_N_ATTR + 10][NAME_LENGTH], ua[NAME_LENGTH];
+       svalue[MAX_N_ATTR + 10][NAME_LENGTH], ua[NAME_LENGTH], draft[256];
    int i, j, k, n, missing, first, index, mindex, suppress, message_id, resubmit_orig, mail_to_size,
        rcpt_to_size, ltime, year, month, day, hour, min, sec, n_attr, email_notify[1000], allowed_encoding,
-       status;
+       status, bdraft;
    BOOL bedit, bmultiedit;
    struct tm tms;
 
    bmultiedit = isparam("nsel");
    bedit = isparam("edit_id") && atoi(getparam("edit_id"));
+   bdraft = isparam("draft");
 
    /* check for condition */
    if (isparam("condition")) {
@@ -22622,7 +22636,7 @@ void submit_elog(LOGBOOK * lbs)
       }
    }
 
-   if (missing) {
+   if (missing && !bdraft) {
       sprintf(error, "<i>");
       sprintf(error + strlen(error), loc("Error: Attribute <b>%s</b> not supplied"), attr_list[i]);
       sprintf(error + strlen(error), ".</i><p>\n");
@@ -22634,23 +22648,25 @@ void submit_elog(LOGBOOK * lbs)
    }
 
    /* check for numeric attributes */
-   for (index = 0; index < lbs->n_attr; index++)
-      if (attr_flags[index] & AF_NUMERIC) {
-         strcpy(ua, attr_list[index]);
-         stou(ua);
-         strlcpy(str, isparam(ua) ? getparam(ua) : "", sizeof(str));
-
-         for (j = 0; i < (int) strlen(str); i++)
-            if (!isdigit(str[i]))
-               break;
-
-         sprintf(str2, "- %s -", loc("keep original values"));
-         if (i < (int) strlen(str) && strcmp(str, "<keep>") != 0 && strcmp(str, str2) != 0) {
-            sprintf(error, loc("Error: Attribute <b>%s</b> must be numeric"), attr_list[index]);
-            show_error(error);
-            return;
+   if (!bdraft) {
+      for (index = 0; index < lbs->n_attr; index++)
+         if (attr_flags[index] & AF_NUMERIC) {
+            strcpy(ua, attr_list[index]);
+            stou(ua);
+            strlcpy(str, isparam(ua) ? getparam(ua) : "", sizeof(str));
+            
+            for (j = 0; i < (int) strlen(str); i++)
+               if (!isdigit(str[i]))
+                  break;
+            
+            sprintf(str2, "- %s -", loc("keep original values"));
+            if (i < (int) strlen(str) && strcmp(str, "<keep>") != 0 && strcmp(str, str2) != 0) {
+               sprintf(error, loc("Error: Attribute <b>%s</b> must be numeric"), attr_list[index]);
+               show_error(error);
+               return;
+            }
          }
-      }
+   }
 
    for (i = 0; i < n_attr; i++) {
       strcpy(ua, attr_list[i]);
@@ -22660,7 +22676,7 @@ void submit_elog(LOGBOOK * lbs)
 
       if (isparam(ua) && *getparam(ua) && attr_options[i][0][0]) {
 
-         if (strieq(attr_options[i][0], "boolean")) {
+         if (strieq(attr_options[i][0], "boolean") && !bdraft) {
             if (atoi(getparam(ua)) != 0 && atoi(getparam(ua)) != 1 && strcmp(getparam(ua), "<keep>") != 0) {
                strencode2(str, getparam(ua), sizeof(str));
                sprintf(error, loc("Error: Value <b>%s</b> not allowed for boolean attributes"), str);
@@ -22973,6 +22989,9 @@ void submit_elog(LOGBOOK * lbs)
    date[0] = 0;
    resubmit_orig = 0;
    locked_by[0] = 0;
+   draft[0] = 0;
+   if (isparam("draft"))
+      strlcpy(draft, getparam("draft"), sizeof(draft));
 
    if (bedit && isparam("resubmit") && atoi(getparam("resubmit")) == 1) {
       resubmit_orig = atoi(getparam("edit_id"));
@@ -23012,6 +23031,8 @@ void submit_elog(LOGBOOK * lbs)
          sprintf(str, "EDIT multiple entries");
       else if (bedit)
          sprintf(str, "EDIT entry #%d", message_id);
+      else if (bdraft)
+         sprintf(str, "DRAFT entry #%d", message_id);
       else
          sprintf(str, "NEW entry #%d", message_id);
 
@@ -23075,13 +23096,19 @@ void submit_elog(LOGBOOK * lbs)
       return;                   /* no email notifications etc */
    } else {
       message_id = el_submit(lbs, message_id, bedit, date, attr_list, attrib, n_attr, getparam("text"),
-                             in_reply_to, reply_to, encoding, att_file, TRUE, NULL, NULL);
+                             in_reply_to, reply_to, encoding, att_file, TRUE, NULL, draft);
 
       if (message_id <= 0) {
          sprintf(str, loc("New entry cannot be written to directory \"%s\""), lbs->data_dir);
          strcat(str, "\n<p>");
          strcat(str, loc("Please check that it exists and elogd has write access and disk is not full"));
          show_error(str);
+         return;
+      }
+      
+      if (bdraft) {
+         sprintf(str, "%d?cmd=Edit", message_id);
+         redirect(lbs, str);
          return;
       }
    }
@@ -27534,6 +27561,20 @@ void interprete(char *lbook, char *path)
       return;
    }
 
+   if (strieq(command, loc("Save")) && !isparam("cfgpage")) {
+      /* save draft message */
+      if (isparam("unm"))
+         strlcpy(str, getparam("unm"), sizeof(str));
+      else
+         strlcpy(str, loc("user"), sizeof(str));
+      
+      setparam("draft", str);
+      submit_elog(lbs);
+      show_edit_form(lbs, isparam("edit_id") ? atoi(getparam("edit_id")) : 0,
+                     FALSE, TRUE, FALSE, TRUE, FALSE, FALSE);
+      return;
+   }
+
    if (strieq(command, loc("Duplicate"))) {
       if (message_id) {
          show_edit_form(lbs, message_id, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE);
@@ -27658,7 +27699,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (strieq(command, loc("Save"))) {
+   if (strieq(command, loc("Save")) && isparam("cfgpage")) {
       if (isparam("config") && isparam("new_user_name")) {
          if (!strieq(getparam("config"), getparam("new_user_name"))) {
             if (get_user_line(lbs, getparam("new_user_name"), NULL, NULL, NULL, NULL, NULL, NULL) == 1) {
