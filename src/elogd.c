@@ -12018,7 +12018,10 @@ void show_find_form(LOGBOOK * lbs)
       i = 0;
 
    rsprintf("<select name=last>\n");
-   rsprintf("<option value=\"\">\n");
+   if (i > 0)
+      rsprintf("<option value=\"\">%s\n", loc("All time"));
+   else
+      rsprintf("<option value=\"\">\n");
    rsprintf("<option %svalue=1>%s\n", i==1?"selected ":"", loc("Day"));
    rsprintf("<option %svalue=3>%s\n", i==3?"selected ":"", loc("3 Days"));
    rsprintf("<option %svalue=7>%s\n", i==7?"selected ":"", loc("Week"));
