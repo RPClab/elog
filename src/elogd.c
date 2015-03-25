@@ -9411,7 +9411,7 @@ int check_drafts(LOGBOOK * lbs)
 {
    time_t now;
    char draft[256], title[256], datetime[256];
-   int i, n_draft, *draft_id;
+   int i, n_draft, *draft_id = NULL;
    
    /* if we got here already and user clicked "Create new entry", ignore is set and we skip this */
    if (isparam("ignore"))
