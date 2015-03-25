@@ -2,18 +2,6 @@
 #Usage: build [-n] <version> <release>
 #Build ELOG distribution
 
-while( 1 )
-  switch( "$1" )
-  case -n:
-    set noupdate
-  case --:
-    shift
-  default:
-    break
-  endsw
-  shift
-end
-
 if ($#argv < 2) then
   echo "Usage: build <version> <release>"
   exit
@@ -43,14 +31,8 @@ mkdir $dir/themes/default
 mkdir $dir/themes/default/icons
 mkdir $dir/logbooks/
 mkdir $dir/logbooks/demo
+mkdir $dir/logbooks/demo/2001
 mkdir $dir/../mxml
-
-# make sure we have up-to-date files
-if ( ! $?noupdate ) then
-  echo Updating files...
-  ( cd ../mxml ; git pull )
-  git pull
-endif
 
 # copy files to archive
 unalias cp
@@ -68,14 +50,13 @@ cp -p elogd.plist $dir
 cp -p doc/* $dir/doc
 cp -p man/* $dir/man
 cp -p contrib/* $dir/contrib
-cp -p scripts/* $dir/scripts
-cp -p scripts/ckeditor/* $dir/scripts/ckeditor
+cp -p -r scripts/* $dir/scripts
 cp -p resources/* $dir/resources
 cp -p ssl/* $dir/ssl
 
 cp -p themes/default/* $dir/themes/default
 cp -p themes/default/icons/* $dir/themes/default/icons
-cp -p logbooks/demo/011108a.log $dir/logbooks/demo/
+cp -p logbooks/demo/2001/011108a.log $dir/logbooks/demo/2001/
 
 # create elog-x.xx.tar.gz file
 echo Creating archive...
