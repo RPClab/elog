@@ -9452,9 +9452,9 @@ int check_drafts(LOGBOOK * lbs)
       el_retrieve(lbs, draft_id[i], datetime, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL,
                   NULL, NULL, draft);
       
-      rsprintf("<tr><td class=\"dlgform\" align=\"center\">");
+      rsprintf("<tr><td class=\"draftsel\" align=\"center\">");
       rsprintf("Draft entry created on %s</td>\n", datetime);
-      rsprintf("<td class=\"dlgform\">");
+      rsprintf("<td class=\"draftsel\">");
       rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href='%d?cmd=Edit';\">",
                loc("Edit"), draft_id[i]);
       rsprintf("</td></tr>\n");
@@ -27641,7 +27641,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (strieq(command, loc("Save")) && !isparam("cfgpage")) {
+   if (strieq(command, loc("Save")) && !isparam("cfgpage") && !isparam("new_user_name")) {
       /* save draft message */
       if (isparam("unm"))
          strlcpy(str, getparam("unm"), sizeof(str));
@@ -27779,7 +27779,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (strieq(command, loc("Save")) && isparam("cfgpage")) {
+   if (strieq(command, loc("Save")) && (isparam("cfgpage") || isparam("new_user_name"))) {
       if (isparam("config") && isparam("new_user_name")) {
          if (!strieq(getparam("config"), getparam("new_user_name"))) {
             if (get_user_line(lbs, getparam("new_user_name"), NULL, NULL, NULL, NULL, NULL, NULL) == 1) {

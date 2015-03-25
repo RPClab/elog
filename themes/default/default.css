@@ -349,6 +349,11 @@ td {
   text-align:center;
 }
 
+.draftsel {
+   background-color:#DDEEBB;
+   padding:5px;
+   border-bottom:1px solid #486090;
+}
 /* attachment line */
 
 .attachment {
