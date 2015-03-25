@@ -195,10 +195,10 @@ install: $(EXECS)
 
 	@echo "Installing themes to $(ELOGDIR)/themes"
 	@$(INSTALL) -m 0644 themes/default/icons/* $(ELOGDIR)/themes/default/icons/
-	@for file in `find themes/default -type f | grep -v .svn` ;\
+	@for file in `find themes/default -type f` ;\
           do \
 	    if [ ! -f $(ELOGDIR)/themes/default/`basename $$file` ]; then  \
-              $(INSTALL) -m 0644 $$file $(ELOGDIR)/themes/default/`basename $$file` ;\
+              $(INSTALL) -m 0644 $$file $(ELOGDIR)/themes/default/`basename $$file` ; \
 	    fi; \
 	  done
 
