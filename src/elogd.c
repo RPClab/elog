@@ -1773,7 +1773,10 @@ int send_with_timeout(void *p, int sock, char *buf, int buf_size)
    int status, sent, send_size, send_packet;
    time_t start, now;
    char *pbuf;
-   
+#ifdef HAVE_SSL
+   SSL *ssl;
+#endif
+
    time(&start);
    sent = 0;
    send_size = buf_size;
@@ -1786,7 +1789,7 @@ int send_with_timeout(void *p, int sock, char *buf, int buf_size)
          send_packet = send_size;
       
 #ifdef HAVE_SSL
-      SSL *ssl = (SSL *)p;
+      ssl = (SSL *)p;
       if (ssl)
          status = SSL_write(ssl, pbuf, send_packet);
       else
@@ -4976,7 +4979,8 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
       (*lbs->n_el_index)++;
       lbs->el_index = xrealloc(lbs->el_index, sizeof(EL_INDEX) * (*lbs->n_el_index));
       lbs->el_index[index].message_id = message_id;
-      strcpy(lbs->el_index[index].file_name, file_name);
+      strlcpy(lbs->el_index[index].file_name, file_name, sizeof(lbs->el_index[index].file_name));
+      strlcpy(lbs->el_index[index].subdir, subdir, sizeof(lbs->el_index[index].subdir));
       lbs->el_index[index].file_time = ltime;
       lbs->el_index[index].offset = TELL(fh);
       lbs->el_index[index].in_reply_to = atoi(in_reply_to1);
@@ -10378,7 +10382,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    if (!isparam("nsel")) {
       time(&now);
-      if (bedit) {
+      if (bedit && date[0]) {
          if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
             strcpy(format, DEFAULT_TIME_FORMAT);
 
@@ -24022,6 +24026,7 @@ void call_image_magick(LOGBOOK * lbs)
 
    if (cmd[0]) {
 #ifdef OS_WINNT
+      int i;
       for (i = 0; i < (int) strlen(cmd); i++)
          if (cmd[i] == '\'')
             cmd[i] = '\"';
@@ -30376,7 +30381,7 @@ int run_service(void)
 
 int main(int argc, char *argv[])
 {
-   int i, j, n, fh, tcp_port_cl, sync_flag;
+   int i, j, n, fh, tcp_port_cl, sync_flag, silent;
    char smtp_pwd[80], str[256], logbook[256], clone_url[256], error_str[256], file_name[256];
    time_t now;
    struct tm *tms;
@@ -30398,7 +30403,7 @@ int main(int argc, char *argv[])
    smtp_pwd[0] = 0;
    logbook_dir[0] = 0;
    logbook[0] = clone_url[0] = resource_dir[0] = logbook_dir[0] = 0;
-   tcp_port_cl = sync_flag = 0;
+   silent = tcp_port_cl = sync_flag = 0;
    use_keepalive = TRUE;
    running_as_daemon = FALSE;
 
@@ -30434,6 +30439,8 @@ int main(int argc, char *argv[])
             set_verbose(VERBOSE_INFO);
       } else if (argv[i][0] == '-' && argv[i][1] == 'k')
          use_keepalive = FALSE;
+      else if (argv[i][0] == '-' && argv[i][1] == 'S')
+         silent = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'x')
          enable_execute = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'm')
@@ -30791,6 +30798,10 @@ int main(int argc, char *argv[])
    server_loop();
 
 #endif
+   
+   /* avoid compiler warning */
+   if (silent == 1)
+      silent = 0;
 
    exit(EXIT_SUCCESS);
 }
