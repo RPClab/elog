@@ -10157,23 +10157,44 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("  document.form1.submit();\n");
    rsprintf("}\n\n");
 
-   /* abandon() gets called "onUnload" */
-   rsprintf("function unload()\n");
+   /* beforeunload() gets called "onBeforeUnload" */
+   rsprintf("function beforeunload(e)\n");
    rsprintf("{\n");
-   rsprintf("  if (!submitted && entry_modified) {\n");
-   rsprintf("    var subm = confirm(\"%s\");\n", loc("Submit modified ELOG entry?"));
-   rsprintf("    if (subm) {\n");
-   rsprintf("      document.form1.jcmd.value = \"%s\";\n", loc("Submit"));
-   rsprintf("      document.form1.submit();\n");
-   rsprintf("    } else {\n");
-   rsprintf("      document.form1.jcmd.value = \"%s\";\n", loc("Back"));
-   rsprintf("      document.form1.submit();\n");
+   rsprintf("  if (!submitted)\n");
+   rsprintf("    e.returnValue = \"%s\";\n", loc("If you leave this page you will lose your unsaved changes"));
+   rsprintf("}\n\n");
+
+   rsprintf("function XMLHttpRequestGeneric()\n");
+   rsprintf("{\n");
+   rsprintf("  var request;\n");
+   rsprintf("  try {\n");
+   rsprintf("    request = new XMLHttpRequest(); // Firefox, Opera 8.0+, Safari\n");
+   rsprintf("  }\n");
+   rsprintf("  catch (e) {\n");
+   rsprintf("    try {\n");
+   rsprintf("      request = new ActiveXObject('Msxml2.XMLHTTP'); // Internet Explorer\n");
+   rsprintf("    }\n");
+   rsprintf("    catch (e) {\n");
+   rsprintf("      try {\n");
+   rsprintf("        request = new ActiveXObject('Microsoft.XMLHTTP');\n");
+   rsprintf("      }\n");
+   rsprintf("      catch (e) {\n");
+   rsprintf("        alert('Your browser does not support AJAX!');\n");
+   rsprintf("        return undefined;\n");
+   rsprintf("      }\n");
    rsprintf("    }\n");
    rsprintf("  }\n");
-   rsprintf("  if (!submitted && !entry_modified) {\n");
-   rsprintf("    document.form1.jcmd.value = \"%s\";\n", loc("Back"));
-   rsprintf("    document.form1.submit();\n");
-   rsprintf("    }\n");
+   rsprintf("  return request;\n");
+   rsprintf("}\n\n");
+
+   /* unload() gets called "onUnload", issues a "back" command to remove a possible lock */
+   rsprintf("function unload()\n");
+   rsprintf("{\n");
+   rsprintf("  if (!submitted) {\n");
+   rsprintf("    r = XMLHttpRequestGeneric();\n");
+   rsprintf("    r.open('GET', '?jcmd=%s&edit_id=%d', false);\n", loc("Back"), message_id);
+   rsprintf("    r.send(null);\n");
+   rsprintf("  }\n");
    rsprintf("}\n\n");
 
    /* mod() gets called via "onchange" event */
@@ -10256,6 +10277,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("var next_attachment = %d;\n", i + 1);
          break;
       }
+   
+   rsprintf("\n");
+   rsprintf("window.onbeforeunload = beforeunload;\n");
+   rsprintf("\n");
+   
    rsprintf("//-->\n");
    rsprintf("</script>\n");
 
