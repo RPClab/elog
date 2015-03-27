@@ -9485,7 +9485,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
        format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr, n_lines,
        attr_index[MAX_N_ATTR], enc_selected, show_smileys, show_text, n_moptions, display_inline,
-       allowed_encoding, thumb_status, max_n_lines, fixed_text;
+       allowed_encoding, thumb_status, max_n_lines, fixed_text, autosave;
    char str[2 * NAME_LENGTH], str2[NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80],
        comment[10000], reply_string[256], list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer,
        format[256], date[80], script_onload[256], script_onfocus[256], script_onunload[256],
@@ -9495,7 +9495,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256], cookie[256],
        orig_author[256], attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256], tooltip[10000],
        enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256], thumb_ref[256], **user_list, fid[20],
-       upwd[80], subdir[256], draft[256];
+       upwd[80], subdir[256], draft[256], page_title[256];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -9937,12 +9937,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    if (getcfg(lbs->name, "Edit Page Title", str, sizeof(str))) {
       i = build_subst_list(lbs, (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, NULL, TRUE);
-      strsubst_list(str, sizeof(str), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, i);
-      strip_html(str);
+      strsubst_list(page_title, sizeof(page_title), (char (*)[NAME_LENGTH]) slist, (char (*)[NAME_LENGTH]) svalue, i);
+      strip_html(page_title);
    } else
-      sprintf(str, "ELOG %s", lbs->name);
+      sprintf(page_title, "ELOG %s", lbs->name);
 
-   show_html_header(lbs, FALSE, str, FALSE, FALSE, cookie, FALSE, 0);
+   show_html_header(lbs, FALSE, page_title, FALSE, FALSE, cookie, FALSE, 0);
 
    /* java script for checking required attributes and to check for cancelled edits */
    rsprintf("<script type=\"text/javascript\">\n");
@@ -9957,8 +9957,31 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("var entry_modified = false;\n");
    } else
       rsprintf("var entry_modified = false;\n");
-   rsprintf("var last_key = 0;\n");
-   rsprintf("\n");
+   rsprintf("var last_key = 0;\n\n");
+
+   rsprintf("function XMLHttpRequestGeneric()\n");
+   rsprintf("{\n");
+   rsprintf("  var request;\n");
+   rsprintf("  try {\n");
+   rsprintf("    request = new XMLHttpRequest(); // Firefox, Opera 8.0+, Safari\n");
+   rsprintf("  }\n");
+   rsprintf("  catch (e) {\n");
+   rsprintf("    try {\n");
+   rsprintf("      request = new ActiveXObject('Msxml2.XMLHTTP'); // Internet Explorer\n");
+   rsprintf("    }\n");
+   rsprintf("    catch (e) {\n");
+   rsprintf("      try {\n");
+   rsprintf("        request = new ActiveXObject('Microsoft.XMLHTTP');\n");
+   rsprintf("      }\n");
+   rsprintf("      catch (e) {\n");
+   rsprintf("        alert('Your browser does not support AJAX!');\n");
+   rsprintf("        return undefined;\n");
+   rsprintf("      }\n");
+   rsprintf("    }\n");
+   rsprintf("  }\n");
+   rsprintf("  return request;\n");
+   rsprintf("}\n\n");
+   
    rsprintf("function chkform()\n");
    rsprintf("{\n");
 
@@ -10111,6 +10134,48 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("  return true;\n");
    rsprintf("}\n\n");
 
+   /* asend does an AJAX call to send current form data to server */
+   rsprintf("function asend() {\n");
+   rsprintf("  var multipart = \"\";\n");
+   rsprintf("  r = XMLHttpRequestGeneric();\n");
+   rsprintf("  r.onreadystatechange = function()\n");
+   rsprintf("    {\n");
+   rsprintf("    if (r.readyState==4 && r.status==200)\n");
+   rsprintf("      document.title = '%s';\n", page_title);
+   rsprintf("    }\n");
+   rsprintf("  r.open('POST', '.', true);\n", loc("Back"), message_id);
+   rsprintf("  var boundary = '----'+Math.random().toString().substr(2);\n");
+   rsprintf("  r.setRequestHeader(\"Content-type\", \"multipart/form-data; boundary=\"+boundary);\n");
+   
+   // Atttrib = value
+   rsprintf("  for (var i = 0; i < document.form1.elements.length; i++) {\n");
+   rsprintf("    e = document.form1.elements[i];\n");
+   rsprintf("    if (e.type == 'text'       || e.type == 'select-one' ||\n");
+   rsprintf("        e.type == 'hidden'     ||\n");
+   rsprintf("       (e.type == 'checkbox'   && e.checked == true)     ||\n");
+   rsprintf("       (e.type == 'radio'      && e.checked == true))\n");
+   rsprintf("      multipart += \"--\" + boundary\n");
+   rsprintf("                 + \"\\r\\nContent-Disposition: form-data; \"\n");
+   rsprintf("                 + \"name=\\\"\"+e.name+\"\\\"\\r\\n\\r\\n\"+e.value+\"\\r\\n\";\n");
+   rsprintf("    }\n");
+
+   // Add text
+   rsprintf("  if (typeof(CKEDITOR) != 'undefined')\n");
+   rsprintf("    t = CKEDITOR.instances.Text.getData();\n");
+   rsprintf("   else\n");
+   rsprintf("    t = document.form1.Text.value;\n");
+   rsprintf("  multipart += \"--\" + boundary\n");
+   rsprintf("             + \"\\r\\nContent-Disposition: form-data; \"\n");
+   rsprintf("             + \"name=\\\"Text\\\"\\r\\n\\r\\n\"+t+\"\\r\\n\";\n");
+   
+   // jcmd = Save
+   rsprintf("  multipart += \"--\" + boundary\n");
+   rsprintf("             + \"\\r\\nContent-Disposition: form-data; name=\\\"jcmd\\\"\\r\\n\\r\\nSave\\r\\n\";\n");
+
+   rsprintf("  multipart += \"--\" + boundary + \"--\\r\\n\"\n");
+   rsprintf("  r.send(multipart);\n");
+   rsprintf("}\n\n");
+   
    /* go_back() gets called via "Back" button */
    rsprintf("function go_back()\n");
    rsprintf("{\n");
@@ -10153,8 +10218,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* save_draft() gets called via the "Save" button */
    rsprintf("function save_draft()\n");
    rsprintf("{\n");
-   rsprintf("  submitted = true;\n");
-   rsprintf("  document.form1.submit();\n");
+   rsprintf("  asend();\n");
+   rsprintf("  return false;");
    rsprintf("}\n\n");
 
    /* beforeunload() gets called "onBeforeUnload" */
@@ -10164,50 +10229,63 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("    e.returnValue = \"%s\";\n", loc("If you leave this page you will lose your unsaved changes"));
    rsprintf("}\n\n");
 
-   rsprintf("function XMLHttpRequestGeneric()\n");
-   rsprintf("{\n");
-   rsprintf("  var request;\n");
-   rsprintf("  try {\n");
-   rsprintf("    request = new XMLHttpRequest(); // Firefox, Opera 8.0+, Safari\n");
-   rsprintf("  }\n");
-   rsprintf("  catch (e) {\n");
-   rsprintf("    try {\n");
-   rsprintf("      request = new ActiveXObject('Msxml2.XMLHTTP'); // Internet Explorer\n");
-   rsprintf("    }\n");
-   rsprintf("    catch (e) {\n");
-   rsprintf("      try {\n");
-   rsprintf("        request = new ActiveXObject('Microsoft.XMLHTTP');\n");
-   rsprintf("      }\n");
-   rsprintf("      catch (e) {\n");
-   rsprintf("        alert('Your browser does not support AJAX!');\n");
-   rsprintf("        return undefined;\n");
-   rsprintf("      }\n");
-   rsprintf("    }\n");
-   rsprintf("  }\n");
-   rsprintf("  return request;\n");
-   rsprintf("}\n\n");
-
    /* unload() gets called "onUnload", issues a "back" command to remove a possible lock */
    rsprintf("function unload()\n");
    rsprintf("{\n");
    rsprintf("  if (!submitted) {\n");
    rsprintf("    r = XMLHttpRequestGeneric();\n");
-   rsprintf("    r.open('GET', '?jcmd=%s&edit_id=%d', false);\n", loc("Back"), message_id);
-   rsprintf("    r.send(null);\n");
+   rsprintf("    r.open('GET', '?jcmd=%s&edit_id=%d', true);\n", loc("Back"), message_id);
+   rsprintf("    r.send();\n");
    rsprintf("  }\n");
    rsprintf("}\n\n");
 
    /* mod() gets called via "onchange" event */
+   rsprintf("var autoSaveTimer;\n\n");
+   rsprintf("var checkTextTimer;\n\n");
+   rsprintf("var oldText;\n\n");
+   
    rsprintf("function mod(e)\n");
    rsprintf("{\n");
    rsprintf("  entry_modified = true;\n");
    rsprintf("  window.status = \"%s\";\n", loc("Entry has been modified"));
    rsprintf("  document.form1.entry_modified.value = \"1\";\n");
+   rsprintf("  document.title = '%s - %s';\n", page_title, loc("Edited"));
+   
+   if (getcfg(lbs->name, "Autosave", str, sizeof(str)))
+      autosave = atoi(str);
+   else
+      autosave = 10;
+       
+   if (autosave) {
+      rsprintf("  if (autoSaveTimer != null)\n");
+      rsprintf("    clearTimeout(autoSaveTimer);\n");
+      rsprintf("  autoSaveTimer = setTimeout(save_draft, %d);\n", autosave*1000);
+   }
+   
    rsprintf("}\n\n");
 
+   rsprintf("function checkText()\n");
+   rsprintf("{\n");
+   if (autosave) {
+      rsprintf("  if (checkTextTimer != null)\n");
+      rsprintf("    clearTimeout(checkTextTimer);\n");
+      rsprintf("  if (typeof(CKEDITOR) != 'undefined')\n");
+      rsprintf("    t = CKEDITOR.instances.Text.getData();\n");
+      rsprintf("   else\n");
+      rsprintf("    t = document.form1.Text.value;\n");
+      rsprintf("  if (oldText == null)\n");
+      rsprintf("    oldText = t;\n");
+      rsprintf("  if (oldText != t)\n");
+      rsprintf("    mod();\n");
+      rsprintf("  oldText = t;\n");
+      rsprintf("  checkTextTimer = setTimeout(checkText, 1000);\n");
+   }
+   rsprintf("}\n\n");
+   
    rsprintf("function kp(e)\n");
    rsprintf("{\n");
    rsprintf("  last_key = (e.which) ? e.which : event.keyCode;\n");
+   rsprintf("  mod();\n");
    rsprintf("}\n\n");
 
    /* switch_smileys turn on/off the smiley bar by setting the smcmd, which in turn
@@ -10256,8 +10334,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("  {\n");
    rsprintf("  for (var i = 0; i < document.form1.elements.length; i++)\n");
    rsprintf("    {\n");
-   rsprintf
-       ("    if (document.form1.elements[i].type == 'checkbox' && document.form1.elements[i].disabled == false) {\n");
+   rsprintf("    if (document.form1.elements[i].type == 'checkbox' && document.form1.elements[i].disabled == false) {\n");
    rsprintf("      a = document.form1.elements[i].name;\n");
    rsprintf("      a = a.substring(0, attrib.length);\n");
    rsprintf("      if (a == attrib)\n");
@@ -10338,6 +10415,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
           !getcfg(lbs->name, "Message width", str, sizeof(str)))
          strcat(script_onload, "init_resize();");
    }
+   strcat(script_onload, "checkText();");
 
    script_onunload[0] = 0;
    if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1)
@@ -11363,12 +11441,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
          if (enc_selected == 1)
             /* use hard wrapping only for plain text */
-            rsprintf("<textarea rows=%d cols=%d wrap=hard name=\"Text\" onChange=\"mod();\">\n", height,
-                     width);
+            rsprintf("<textarea rows=%d cols=%d wrap=hard name=\"Text\">\n", height, width);
          else
             rsprintf
-                ("<textarea rows=%d cols=%d name=\"Text\" onChange=\"mod();\" style=\"width:100%%;\">\n",
-                 height, width);
+                ("<textarea rows=%d cols=%d name=\"Text\" style=\"width:100%%;\">\n", height, width);
 
          if (isparam("nsel")) {
             rsprintf("- %s -\n", loc("keep original text"));
@@ -23207,8 +23283,8 @@ void submit_elog(LOGBOOK * lbs)
       }
       
       if (bdraft) {
-         sprintf(str, "%d?cmd=Edit", message_id);
-         redirect(lbs, str);
+         show_http_header(lbs, FALSE, NULL);
+         rsprintf("OK\n");
          return;
       }
    }
@@ -24505,6 +24581,11 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
              ("<tr><td nowrap colspan=2 class=\"errormsg\"><img src=\"stop.png\" alt=\"%s\"  title=\"%s\">\n",
               loc("stop"), loc("stop"));
          rsprintf("%s<br>%s</td></tr>\n", str, loc("You can \"steal\" the lock by editing this entry"));
+      }
+      
+      if (draft[0]) {
+         rsprintf("<tr><td nowrap colspan=2 class=\"errormsg\">%s</td></tr>\n",
+                  loc("This is a draft message, edit and submit it to make it permament"));
       }
 
       rsprintf("<tr><td class=\"attribhead\">\n");
@@ -27674,8 +27755,6 @@ void interprete(char *lbook, char *path)
       
       setparam("draft", str);
       submit_elog(lbs);
-      show_edit_form(lbs, isparam("edit_id") ? atoi(getparam("edit_id")) : 0,
-                     FALSE, TRUE, FALSE, TRUE, FALSE, FALSE);
       return;
    }
 
