@@ -10186,8 +10186,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    rsprintf("function kp(e)\n");
    rsprintf("{\n");
-   rsprintf("  var e = e || window.event;\n");
-   rsprintf("  last_key = e.keyCode;\n");
+   rsprintf("  last_key = (e.which) ? e.which : event.keyCode;\n");
    rsprintf("}\n\n");
 
    /* switch_smileys turn on/off the smiley bar by setting the smcmd, which in turn
@@ -10361,8 +10360,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             loc("Submit"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return save_draft();\">\n",
             loc("Save"));
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n",
-            loc("Preview"));
+   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Preview"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return go_back();\">\n", loc("Back"));
    rsprintf("</span></td></tr>\n\n");
 
@@ -10803,7 +10801,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
                strencode2(str, attrib[index], sizeof(str));
                rsprintf
-                   ("<input type=\"text\" %ssize=%d maxlength=%d name=\"%s\" value=\"%s\" onKeyPress=\"kp()\" onChange=\"mod()\">\n",
+                   ("<input type=\"text\" %ssize=%d maxlength=%d name=\"%s\" value=\"%s\" onKeyPress=\"kp(event)\" onChange=\"mod()\">\n",
                     fid, input_size, input_maxlen, ua, str);
                fid[0] = 0;
 
@@ -11903,10 +11901,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n",
             loc("Submit"));
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n",
+   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return save_draft();\">\n",
             loc("Save"));
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n",
-            loc("Preview"));
+   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Preview"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return go_back();\">\n", loc("Back"));
    rsprintf("</span></td></tr>\n\n");
 
