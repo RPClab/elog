@@ -10237,12 +10237,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("   while (p = p.offsetParent)\n");
       rsprintf("      t += p.offsetTop;\n");
       rsprintf("   if (window.innerHeight) // netscape\n");
-      rsprintf("      height = window.innerHeight - t - 135;\n");
+      rsprintf("      height = window.innerHeight - t - 135 - 50 - 30;\n");
       rsprintf("   else // IE\n");
-      rsprintf("      height = document.body.offsetHeight - t - 135;\n");
+      rsprintf("      height = document.body.offsetHeight - t - 135 - 50 - 30;\n");
       rsprintf("   if (height < 300)\n");
       rsprintf("      height = 300;\n");
-      rsprintf("   document.form1.Text.style.height = height;\n");
+      rsprintf("   document.form1.Text.style.height = height+\"px\";\n");
+      rsprintf("   width = window.innerWidth;\n");
+      rsprintf("   if (width < 300)\n");
+      rsprintf("      width = 300;\n");
+      rsprintf("   width = width - 20;");
+      rsprintf("   document.form1.Text.style.width = width+\"px\";\n");
       rsprintf("}\n\n");
    }
 
@@ -11213,14 +11218,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("</td></tr>\n");
    }
 
-   /* main box for text box and icons */
-   rsprintf("<tr><td width=\"100%%\" colspan=2 class=\"attribvalue\">\n");
-   if (enc_selected == 0)
-      rsprintf("<table width=\"100%%\" border=\"0\"><tr>\n");
-
    if (enc_selected == 0 && show_smileys) {
 
-      rsprintf("<td class=\"menuframe\">\n");
+      rsprintf("<tr><td colspan=2 class=\"menuframe\">\n");
       rsicon("smile", loc("smiling"), ":)");
       rsprintf("<br />\n");
       rsicon("happy", loc("happy"), ":))");
@@ -11247,11 +11247,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<br />\n");
       rsicon("yawn", loc("yawn"), ":O");
 
-      rsprintf("</td>\n");
+      rsprintf("</td></tr>\n");
    }
 
-   if (enc_selected == 0 && !fixed_text)
-      rsprintf("<td width=\"100%%\" class=\"attribvalue\">\n");
+   rsprintf("<tr><td colspan=2 width=\"100%%\" class=\"attribvalue\" id=\"TextParent\">\n");
 
    /* set textarea width */
    width = 112;
@@ -11691,9 +11690,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    rsprintf("</tr>\n");
 
-   if (enc_selected == 0)
-      rsprintf("</table></td></tr>\n");
-
    for (i = 0; i < MAX_ATTACHMENTS; i++)
       if (!att[i][0]) {
          /* put first free attachment for show_uploader_finished() */
@@ -11914,8 +11910,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          // print the holder for dropping attachments
          rsprintf("<tr>\n");
          rsprintf("<td style=\"background: white;\" colspan=2>\n");
-         rsprintf("<div id=\"holder\" style=\"background: white; border: 10px dashed #ccc; min-height: 200px; margin: 10px\" >");
-         rsprintf("<p class=\"info\" style=\"color: #999; font-size: 2em; text-align: center; margin-top: 40px;\">%s</p></div>", loc("Drop attachments here..."));
+         rsprintf("<div id=\"holder\" style=\"background: white; border: 6px dashed #ccc; min-height: 50px; margin: 10px\" >");
+         rsprintf("<p class=\"info\" style=\"color: #999; font-size: 2em; text-align: center; margin-top: 20px;\">%s</p></div>", loc("Drop attachments here..."));
          rsprintf("</td></tr>");
       }
    }
