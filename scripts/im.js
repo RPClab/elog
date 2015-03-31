@@ -10,43 +10,26 @@
 \********************************************************************/
 
 var dummy = 0;
-var httpReq;
+var imReq;
 var elName;
 var thumbName;
 
 function im(name, thumb, image, cmd)
 {
-   try {
-      httpReq = new XMLHttpRequest(); // Firefox, Opera 8.0+, Safari
-   }
-   catch (e) {
-      try {
-         httpReq = new ActiveXObject("Msxml2.XMLHTTP"); // Internet Explorer
-      }
-      catch (e) {
-         try {
-            httpReq = new ActiveXObject("Microsoft.XMLHTTP");
-         } 
-         catch (e) {
-            alert("Your browser does not support AJAX!");
-            return false;
-         }
-      }
-   }
-  
+   imReq = XMLHttpRequestGeneric();
    elName = name;
    thumbName = thumb;
-   httpReq.onreadystatechange = onReady;
-   httpReq.open("GET","?cmd=im&req="+cmd+"&img="+image, true);
-   httpReq.send(null);
+   imReq.onreadystatechange = onReady;
+   imReq.open("GET","?cmd=im&req="+cmd+"&img="+image, true);
+   imReq.send(null);
 }
 
 function onReady()
 {
-   if (httpReq.readyState == 4) {
-      if (httpReq.responseText != "" &&
-          httpReq.responseText.search(/Fonts/) == -1)
-         alert(httpReq.responseText);
+   if (imReq.readyState == 4) {
+      if (imReq.responseText != "" &&
+          imReq.responseText.search(/Fonts/) == -1)
+         alert(imReq.responseText);
       o = document.getElementsByName(elName);
       if (o[0])
          o[0].src = thumbName+'?'+dummy;
@@ -61,11 +44,12 @@ function onReady()
       }
       dummy++;
    }
-   delete httpReq;
+   delete imReq;
 }
 
 function deleteAtt(idx)
 {
+   submitted = true;
    document.form1.smcmd.value='delatt'+idx;
    document.form1.submit();
 }

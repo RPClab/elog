@@ -42,6 +42,10 @@
 		D545158F1399A23B0037D7FB /* elogd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = elogd.h; path = ../src/elogd.h; sourceTree = SOURCE_ROOT; };
 		D54515901399A23B0037D7FB /* regex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = regex.c; path = ../src/regex.c; sourceTree = SOURCE_ROOT; };
 		D54515911399A23B0037D7FB /* regex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = regex.h; path = ../src/regex.h; sourceTree = SOURCE_ROOT; };
+		D54863091ACA9A7B00BA8C69 /* dnd.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; name = dnd.js; path = ../scripts/dnd.js; sourceTree = "<group>"; };
+		D548630A1ACA9A9F00BA8C69 /* im.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; name = im.js; path = ../scripts/im.js; sourceTree = "<group>"; };
+		D548630B1ACA9AAB00BA8C69 /* load-ckeditor.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; name = "load-ckeditor.js"; path = "../scripts/load-ckeditor.js"; sourceTree = "<group>"; };
+		D548630C1ACA9AC600BA8C69 /* elcode.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; name = elcode.js; path = ../scripts/elcode.js; sourceTree = "<group>"; };
 		D58A366615AF103300682DC0 /* elog-version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "elog-version.h"; path = "../src/elog-version.h"; sourceTree = SOURCE_ROOT; };
 		D5AC5BF9154AC7200018DD90 /* config.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = config.html; path = ../doc/config.html; sourceTree = SOURCE_ROOT; };
 		D5F11B9113AFA164002CE8BF /* elogd.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = elogd.cfg; path = ../elogd.cfg; sourceTree = SOURCE_ROOT; };
@@ -62,6 +66,7 @@
 			isa = PBXGroup;
 			children = (
 				D52BA2FD13999DB0000458E3 /* elogd */,
+				D54863081ACA9A5B00BA8C69 /* Scripts */,
 				D5F11B9013AFA146002CE8BF /* Resources */,
 				D52BA2FB13999DB0000458E3 /* Products */,
 			);
@@ -91,6 +96,17 @@
 				D52BA31313999DE4000458E3 /* strlcpy.h */,
 			);
 			path = elogd;
+			sourceTree = "<group>";
+		};
+		D54863081ACA9A5B00BA8C69 /* Scripts */ = {
+			isa = PBXGroup;
+			children = (
+				D548630C1ACA9AC600BA8C69 /* elcode.js */,
+				D548630B1ACA9AAB00BA8C69 /* load-ckeditor.js */,
+				D548630A1ACA9A9F00BA8C69 /* im.js */,
+				D54863091ACA9A7B00BA8C69 /* dnd.js */,
+			);
+			name = Scripts;
 			sourceTree = "<group>";
 		};
 		D5F11B9013AFA146002CE8BF /* Resources */ = {

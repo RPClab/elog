@@ -218,7 +218,7 @@ $(document).ready(function() {
             event.stopPropagation();
             event.preventDefault();
             console.log("holder-enter")
-            holder.css("border", "10px dashed #0c0");
+            holder.css("border", "6px dashed #0c0");
             return false;
         },
         'dragover' : function(event) {
@@ -230,7 +230,7 @@ $(document).ready(function() {
             event.stopPropagation();
             event.preventDefault();
             console.log("holder-leave");
-            holder.css("border", "10px dashed #ccc");
+            holder.css("border", "6px dashed #ccc");
             return false;
         },
         'drop' : function(e) {

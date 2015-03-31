@@ -9484,7 +9484,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 {
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
        format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr, n_lines,
-       attr_index[MAX_N_ATTR], enc_selected, show_smileys, show_text, n_moptions, display_inline,
+       attr_index[MAX_N_ATTR], enc_selected, show_text, n_moptions, display_inline,
        allowed_encoding, thumb_status, max_n_lines, fixed_text, autosave;
    char str[2 * NAME_LENGTH], str2[NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80],
        comment[10000], reply_string[256], list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer,
@@ -9492,7 +9492,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        attrib[MAX_N_ATTR][NAME_LENGTH], *text, orig_tag[80], reply_tag[MAX_REPLY_TO * 10],
        att[MAX_ATTACHMENTS][256], encoding[80], slist[MAX_N_ATTR + 10][NAME_LENGTH],
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], owner[256], locked_by[256], class_value[80], class_name[80],
-       ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256], cookie[256],
+       ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256],
        orig_author[256], attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256], tooltip[10000],
        enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256], thumb_ref[256], **user_list, fid[20],
        upwd[80], subdir[256], draft[256], page_title[256];
@@ -9635,20 +9635,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* Overwrite from config file */
    if (getcfg(lbs->name, "Default Encoding", str, sizeof(str)))
       enc_selected = atoi(str);
-
-   /* determine if smiley bar should be displayed */
-   show_smileys = 0;
-   cookie[0] = 0;
-   if (isparam("hsm") && atoi(getparam("hsm")) == 1)    /* cookie */
-      show_smileys = 0;
-   if (isparam("smcmd") && strieq(getparam("smcmd"), "hsm")) {  /* turn off */
-      show_smileys = 0;
-      strcpy(cookie, "hsm=1");
-   }
-   if (isparam("smcmd") && strieq(getparam("smcmd"), "ssm")) {  /* turn on */
-      show_smileys = 1;
-      strcpy(cookie, "hsm=0");
-   }
 
    /* Overwrite from current entry */
    if (encoding[0]) {
@@ -9942,7 +9928,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    } else
       sprintf(page_title, "ELOG %s", lbs->name);
 
-   show_html_header(lbs, FALSE, page_title, FALSE, FALSE, cookie, FALSE, 0);
+   show_html_header(lbs, FALSE, page_title, FALSE, FALSE, NULL, FALSE, 0);
 
    /* java script for checking required attributes and to check for cancelled edits */
    rsprintf("<script type=\"text/javascript\">\n");
@@ -9959,29 +9945,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("var entry_modified = false;\n");
    rsprintf("var last_key = 0;\n\n");
 
-   rsprintf("function XMLHttpRequestGeneric()\n");
-   rsprintf("{\n");
-   rsprintf("  var request;\n");
-   rsprintf("  try {\n");
-   rsprintf("    request = new XMLHttpRequest(); // Firefox, Opera 8.0+, Safari\n");
-   rsprintf("  }\n");
-   rsprintf("  catch (e) {\n");
-   rsprintf("    try {\n");
-   rsprintf("      request = new ActiveXObject('Msxml2.XMLHTTP'); // Internet Explorer\n");
-   rsprintf("    }\n");
-   rsprintf("    catch (e) {\n");
-   rsprintf("      try {\n");
-   rsprintf("        request = new ActiveXObject('Microsoft.XMLHTTP');\n");
-   rsprintf("      }\n");
-   rsprintf("      catch (e) {\n");
-   rsprintf("        alert('Your browser does not support AJAX!');\n");
-   rsprintf("        return undefined;\n");
-   rsprintf("      }\n");
-   rsprintf("    }\n");
-   rsprintf("  }\n");
-   rsprintf("  return request;\n");
-   rsprintf("}\n\n");
-   
    rsprintf("function chkform()\n");
    rsprintf("{\n");
 
@@ -10288,16 +10251,18 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("  mod();\n");
    rsprintf("}\n\n");
 
-   /* switch_smileys turn on/off the smiley bar by setting the smcmd, which in turn
-      sets the hsm=0/hsm=1 cookie */
+   /* switch_smileys turn on/off the smiley bar */
    rsprintf("function switch_smileys()\n");
    rsprintf("{\n");
-   if (show_smileys)
-      rsprintf("   document.form1.smcmd.value = 'hsm';\n");
-   else
-      rsprintf("   document.form1.smcmd.value = 'ssm';\n");
-   rsprintf("   submitted = true;\n");
-   rsprintf("   document.form1.submit();\n");
+   rsprintf("   s = document.getElementById('smileyRow');\n");
+   rsprintf("   i = document.getElementById('smileyIcon');\n");
+   rsprintf("   if (s.style.display == 'none') {\n");
+   rsprintf("     s.style.display = 'table-row';\n");
+   rsprintf("     i.src = 'icons/eld_smile.png';\n");
+   rsprintf("   } else {\n");
+   rsprintf("     s.style.display = 'none';\n");
+   rsprintf("     i.src = 'icons/elc_smile.png';\n");
+   rsprintf("   }\n");
    rsprintf("}\n\n");
 
    if (enc_selected != 2 && !getcfg(lbs->name, "Message height", str, sizeof(str)) &&
@@ -10384,7 +10349,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        rsprintf("<script type=\"text/javascript\" src=\"../progress/progress.min.js\"></script>\n");
        rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"../progress/progressjs.min.css\">\n");
    }
-
+   
+   /* drag-and-drip script */
+   rsprintf("<script type=\"text/javascript\" src=\"../dnd.js\"></script>\n\n");
+   
    /* external script if requested */
    if (isparam("js")) {
       rsprintf("<script src=\"%s\" type=\"text/javascript\">\n", getparam("js"));
@@ -11237,13 +11205,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf(" ");
       ricon("code", loc("Insert code CTRL+O"), "elcode(document.form1.Text, 'CODE','')");
 
-      if (show_smileys)
-         rsprintf
-             (" <img align=\"middle\" name=\"smileys\" src=\"icons/eld_smile.png\" alt=\"%s\" title=\"%s\" border=\"0\"",
-              loc("Hide the smiley bar"), loc("Hide the smiley bar"));
-      else
-         rsprintf
-             (" <img align=\"middle\" name=\"smileys\" src=\"icons/elc_smile.png\" alt=\"%s\" title=\"%s\" border=\"0\"",
+      rsprintf(" <img align=\"middle\" id=\"smileyIcon\" src=\"icons/elc_smile.png\" alt=\"%s\" title=\"%s\" border=\"0\"",
               loc("Show the smiley bar"), loc("Show the smiley bar"));
       rsprintf(" onclick=\"switch_smileys()\"");
       rsprintf(" onmouseover=\"this.style.cursor='pointer';\" />\n");
@@ -11296,33 +11258,21 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("</td></tr>\n");
    }
 
-   if (enc_selected == 0 && show_smileys) {
+   if (enc_selected == 0) {
 
-      rsprintf("<tr><td colspan=2 class=\"menuframe\">\n");
+      rsprintf("<tr id=\"smileyRow\" style=\"display:none\"><td colspan=2 class=\"toolframe\">\n");
       rsicon("smile", loc("smiling"), ":)");
-      rsprintf("<br />\n");
       rsicon("happy", loc("happy"), ":))");
-      rsprintf("<br />\n");
       rsicon("wink", loc("winking"), ";)");
-      rsprintf("<br />\n");
       rsicon("biggrin", loc("big grin"), ":D");
-      rsprintf("<br />\n");
       rsicon("crying", loc("crying"), ";(");
-      rsprintf("<br />\n");
       rsicon("cool", loc("cool"), "8-)");
-      rsprintf("<br />\n");
       rsicon("frown", loc("frowning"), ":(");
-      rsprintf("<br />\n");
       rsicon("confused", loc("confused"), "?-)");
-      rsprintf("<br />\n");
       rsicon("astonished", loc("astonished"), "8o");
-      rsprintf("<br />\n");
       rsicon("mad", loc("mad"), "X-(");
-      rsprintf("<br />\n");
       rsicon("pleased", loc("pleased"), ":]");
-      rsprintf("<br />\n");
       rsicon("tongue", loc("tongue"), ":P");
-      rsprintf("<br />\n");
       rsicon("yawn", loc("yawn"), ":O");
 
       rsprintf("</td></tr>\n");
