@@ -10383,7 +10383,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
           !getcfg(lbs->name, "Message width", str, sizeof(str)))
          strcat(script_onload, "init_resize();");
    }
-   strcat(script_onload, "checkText();");
+   strcat(script_onload, "checkText();dndInit();");
 
    script_onunload[0] = 0;
    if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1)
@@ -11936,8 +11936,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          // print the holder for dropping attachments
          rsprintf("<tr>\n");
          rsprintf("<td style=\"background: white;\" colspan=2>\n");
-         rsprintf("<div id=\"holder\" style=\"background: white; border: 6px dashed #ccc; min-height: 50px; margin: 10px\" >");
-         rsprintf("<p class=\"info\" style=\"color: #999; font-size: 2em; text-align: center; margin-top: 20px;\">%s</p></div>", loc("Drop attachments here..."));
+         rsprintf("<div id=\"holder\" class=\"holder\">%s</div>", loc("Drop attachments here..."));
          rsprintf("</td></tr>");
       }
    }

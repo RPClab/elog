@@ -688,6 +688,17 @@ td {
   padding:10px;
 }
 
+.holder {
+   background-color: white;
+   border:6px dashed #ccc;
+   height:50px;
+   line-height:50px;
+   margin:5px;
+   color:#999;
+   font-size:2em;
+   text-align:center;
+}
+
 /* ELOG home page link at bottom of page */
 .bottomlink {
   font-family:sans-serif; 
