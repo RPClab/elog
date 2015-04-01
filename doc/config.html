@@ -2707,8 +2707,17 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
         however to enter anyting in the <i>Show last</i> drop-down box, then the
         search again can take quite long. This option pre-selects an option in the
         <i>Show last</i> drop-down box, so that the user does not have to think about
-        selecting a certain time period. Following options are possible: <b>1, 3,
-        7, 31, 92, 182, 364</b>.
+        selecting a certain time period. Following options are possible: <b>0, 1, 3,
+        7, 31, 92, 182, 364</b>. "0" means an unrestricted search default.
+      </li>
+      <li>
+        <b><code>Autosave = &lt;seconds&gt;</code></b><br>
+        Starting with version 3.1, ELOG supports auto saving. When text for a new
+        entry is entered in the browser, it might get lost if the browser windows is 
+        closed before the entry has been submitted. In order to avoid this, the text
+        is sent the the server regularly (default is ten seconds after the last edit).
+        This time interval can be controlled with this setting. Setting Autosave to
+        zero disables the autosave functionality.
       </li>
     </ul>
     <p>
