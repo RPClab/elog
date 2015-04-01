@@ -1,3 +1,14 @@
+Version 3.1.0, released April 1st, 2015
+=======================================
+
+- No fools' day joke!
+- Added Indonesian help files
+- Implemented "Show last default" option
+- Allow subsitutions like $short_name in "Title image" option
+- Implemented draft messages and auto save feature
+- Reworked Drag & Drop to work also for ELCode and plain encoding
+- Resize editor window with browser window
+
 Version 3.0.0, released December 23th, 2014
 ===========================================
 

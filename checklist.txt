@@ -5,7 +5,7 @@ On Mac (MPC1865):
 
 - Put all new options in doc/config.html
 - Increase version in elog-version.h
-- Do the same in doc/index.html and index_nd.html
+- Do the same in doc/index.html
 - Modify ChangeLog
 - Add release date to ChangeLog
 - "make loc"

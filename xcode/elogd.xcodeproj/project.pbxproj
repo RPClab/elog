@@ -28,6 +28,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D504812F1ACC49DD002EDA66 /* git-revision.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "git-revision.h"; path = "../src/git-revision.h"; sourceTree = "<group>"; };
 		D51F4A9214F27F3C00CB29E9 /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index.html; path = ../doc/index.html; sourceTree = SOURCE_ROOT; };
 		D528A7C314F278C800D33974 /* ChangeLog */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChangeLog; path = ../doc/ChangeLog; sourceTree = SOURCE_ROOT; };
 		D528A7C514F278DA00D33974 /* checklist.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = checklist.txt; path = ../checklist.txt; sourceTree = SOURCE_ROOT; };
@@ -84,6 +85,7 @@
 		D52BA2FD13999DB0000458E3 /* elogd */ = {
 			isa = PBXGroup;
 			children = (
+				D504812F1ACC49DD002EDA66 /* git-revision.h */,
 				D545158C1399A23B0037D7FB /* auth.c */,
 				D545158D1399A23B0037D7FB /* crypt.c */,
 				D545158E1399A23B0037D7FB /* elogd.c */,
