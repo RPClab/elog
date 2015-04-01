@@ -24,8 +24,6 @@ link "/OUT:.\NT\Release/elconv.exe" /INCREMENTAL:NO /DEBUG /SUBSYSTEM:CONSOLE /M
 
 \cygwin\bin\scp elog%version%.exe ritt@llc:html/elog/download/windows/
 \cygwin\bin\scp elog%version%.exe ritt@llc:html/elog/download/windows/elog-latest.exe
-\cygwin\bin\scp doc/*.html ritt@llc:html/elog/
-\cygwin\bin\scp doc/index_nd.html ritt@llc:html/elog/index.html
 \cygwin\bin\ssh ritt@llc chmod 666 html/elog/download/windows/elog%version%.exe
 \cygwin\bin\ssh ritt@llc chmod 666 html/elog/download/windows/elog-latest.exe
 

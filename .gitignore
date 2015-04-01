@@ -19,3 +19,5 @@ git-revision.h
 *.suo
 *.user
 NT/elogd.opensdf
+vc110.idb
+elog*.exe
