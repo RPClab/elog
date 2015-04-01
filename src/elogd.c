@@ -7244,8 +7244,8 @@ void set_cookie(LOGBOOK * lbs, char *name, char *value, BOOL global, char *expir
 const char *git_revision()
 {
    const char *p = _git_revision;
-   if (strchr(p, '-'))
-      p = strchr(p, '-')+2;
+   if (strrchr(p, '-'))
+      p = strrchr(p, '-')+2;
    return p;
 }
 
