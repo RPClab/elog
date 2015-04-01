@@ -10234,9 +10234,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("function resize_textarea()\n");
       rsprintf("{\n");
       rsprintf("   p = $id('TextParent');\n");
-      rsprintf("   t = p.offsetTop;\n");
-      rsprintf("   while (p = p.offsetParent)\n");
-      rsprintf("      t += p.offsetTop;\n");
+      rsprintf("   t = p.getBoundingClientRect().top;\n");
       rsprintf("   if (window.innerHeight) // netscape\n");
       rsprintf("      height = window.innerHeight - t - 135 - 50 - 20;\n");
       rsprintf("   else // IE\n");
@@ -11243,6 +11241,14 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("</td></tr>\n");
    }
 
+   if (getcfg(lbs->name, "Message comment", comment, sizeof(comment)) && !message_id) {
+      rsprintf("<tr><td colspan=2 class=\"attribvalue\">%s</td></tr>\n", comment);
+   }
+   
+   if (getcfg(lbs->name, "Reply comment", comment, sizeof(comment)) && breply) {
+      rsprintf("<tr><td colspan=2 class=\"attribvalue\">%s</td></tr>\n", comment);
+   }
+   
    rsprintf("<tr><td colspan=2 width=\"100%%\" class=\"attribvalue\" id=\"TextParent\" style=\"padding:0\">\n");
 
    /* set textarea width */
@@ -11300,16 +11306,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             rsprintf("<input type=hidden name=\"s%d\" value=\"%s\">\n", i, getparam(str));
          }
       }
-   }
-
-   if (getcfg(lbs->name, "Message comment", comment, sizeof(comment)) && !message_id) {
-      rsputs(comment);
-      rsputs("<br>\n");
-   }
-
-   if (getcfg(lbs->name, "Reply comment", comment, sizeof(comment)) && breply) {
-      rsputs(comment);
-      rsputs("<br>\n");
    }
 
    preset_text = getcfg(lbs->name, "Preset text", str, sizeof(str));
