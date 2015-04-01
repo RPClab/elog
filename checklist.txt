@@ -11,6 +11,7 @@ On Mac (MPC1865):
 - "make loc"
 - Translate new strings in eloglang.german
 - "git commit -a -m "Release x.x.x-y"
+- Mege master into develop branch
 
 On VMPC1865 (VmWare):
 

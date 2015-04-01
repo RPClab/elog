@@ -253,7 +253,6 @@ Last x = Terakhir x
 Activate = Aktifkan
 Entry has been modified = Masuk telah dimodifikasi
 No attachment file specified = Tidak ada lampiran file yang ditentukan 
-Submit modified ELOG entry? = Kirim catatan elog dimodifikasi?
 Delete this logbook = Hapus buku catatan ini
 Rename this logbook = Ubah nama buku catatan ini
 Create new logbook = Buat buku catatan baru
@@ -395,7 +394,6 @@ Insert list CTRL+L = Masukkan daftar CTRL + L
 Insert table = Sisipkan tabel 
 Insert heading CTRL+H = Masukkan pos CTRL + H 
 Insert code CTRL+O = Masukkan kode CTRL + O
-Hide the smiley bar = Menyembunyikan tersenyum bar 
 Show the smiley bar = Tampilkan smiley bar
 Insert current time/date = Masukkan saat waktu / tanggal 
 Entry is locked on local server and therefore skipped = Catatan terkunci pada server lokal dan oleh karena dilewati
@@ -407,9 +405,6 @@ for the next %d days = untuk% d hari ke depan
 keep original values = menjaga nilai-nilai asli
 Entry is locked = Catatan terkunci
 Edit anyhow = Mengedit bagaimanapun 
-Submit entry = Kirim Masuk 
-Insert image = Menyisipkan gambar
-Insert Date/Time = Masukkan Tanggal / Waktu
 Insert horizontal line = Masukkan garis horizontal
 Insert anchor point = Masukkan jangkar point
 keep original text = menjaga teks asli
@@ -432,7 +427,6 @@ Last entry, Ctrl-End = Entri terakhir , Ctrl - End
 ELOG import = Elog impor 
 Please choose format to import: = Silakan memilih format untuk impor :
 Enter text = Masukkan text
-Show HTML source code = Tampilkan kode sumber HTML 
 or until I log out =  atau sampai aku log out dari tot
 Make smaller = Membuat lebih kecil 
 Original size = Ukuran asli
@@ -477,3 +471,23 @@ Please click on following link to recover your account = Silahkan klik pada link
 Email address "%s" not registered = Alamat Email "% s" tidak terdaftar
 User name "%s" not registered = Julukan "% s" tidak terdaftar
 
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Pick a date = 
+Pending draft available = 
+%d pending drafts available = 
+Create new entry = 
+If you leave this page you will lose your unsaved changes = 
+Edited = 
+Drop attachments here... = 
+CSV (";" separated) + Text = 
+All time = 
+Error accessing password file = 
+Entry can only be deleted %1.2lg hours after creation = 
+Draft = 
+Restrict seach to last = 
+days = 
+This is a draft message, edit and submit it to make it permament = 
+Insert Timestamp = 
