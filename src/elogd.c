@@ -10097,48 +10097,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("  return true;\n");
    rsprintf("}\n\n");
 
-   /* asend does an AJAX call to send current form data to server */
-   rsprintf("function asend() {\n");
-   rsprintf("  var multipart = \"\";\n");
-   rsprintf("  r = XMLHttpRequestGeneric();\n");
-   rsprintf("  r.onreadystatechange = function()\n");
-   rsprintf("    {\n");
-   rsprintf("    if (r.readyState==4 && r.status==200)\n");
-   rsprintf("      document.title = '%s';\n", page_title);
-   rsprintf("    }\n");
-   rsprintf("  r.open('POST', '.', true);\n", loc("Back"), message_id);
-   rsprintf("  var boundary = '----'+Math.random().toString().substr(2);\n");
-   rsprintf("  r.setRequestHeader(\"Content-type\", \"multipart/form-data; boundary=\"+boundary);\n");
-   
-   // Atttrib = value
-   rsprintf("  for (var i = 0; i < document.form1.elements.length; i++) {\n");
-   rsprintf("    e = document.form1.elements[i];\n");
-   rsprintf("    if (e.type == 'text'       || e.type == 'select-one' ||\n");
-   rsprintf("        e.type == 'hidden'     ||\n");
-   rsprintf("       (e.type == 'checkbox'   && e.checked == true)     ||\n");
-   rsprintf("       (e.type == 'radio'      && e.checked == true))\n");
-   rsprintf("      multipart += \"--\" + boundary\n");
-   rsprintf("                 + \"\\r\\nContent-Disposition: form-data; \"\n");
-   rsprintf("                 + \"name=\\\"\"+e.name+\"\\\"\\r\\n\\r\\n\"+e.value+\"\\r\\n\";\n");
-   rsprintf("    }\n");
-
-   // Add text
-   rsprintf("  if (typeof(CKEDITOR) != 'undefined')\n");
-   rsprintf("    t = CKEDITOR.instances.Text.getData();\n");
-   rsprintf("   else\n");
-   rsprintf("    t = document.form1.Text.value;\n");
-   rsprintf("  multipart += \"--\" + boundary\n");
-   rsprintf("             + \"\\r\\nContent-Disposition: form-data; \"\n");
-   rsprintf("             + \"name=\\\"Text\\\"\\r\\n\\r\\n\"+t+\"\\r\\n\";\n");
-   
-   // jcmd = Save
-   rsprintf("  multipart += \"--\" + boundary\n");
-   rsprintf("             + \"\\r\\nContent-Disposition: form-data; name=\\\"jcmd\\\"\\r\\n\\r\\nSave\\r\\n\";\n");
-
-   rsprintf("  multipart += \"--\" + boundary + \"--\\r\\n\"\n");
-   rsprintf("  r.send(multipart);\n");
-   rsprintf("}\n\n");
-   
    /* go_back() gets called via "Back" button */
    rsprintf("function go_back()\n");
    rsprintf("{\n");
@@ -10265,7 +10223,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("   }\n");
    rsprintf("}\n\n");
 
-   if (enc_selected != 2 && !getcfg(lbs->name, "Message height", str, sizeof(str)) &&
+   if (/*enc_selected != 2 && */ !getcfg(lbs->name, "Message height", str, sizeof(str)) &&
        !getcfg(lbs->name, "Message width", str, sizeof(str))) {
       /* javascript for resizing edit box */
       rsprintf("\nfunction init_resize()\n");
@@ -10275,22 +10233,26 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("}\n\n");
       rsprintf("function resize_textarea()\n");
       rsprintf("{\n");
-      rsprintf("   p = document.form1.Text;\n");
+      rsprintf("   p = $id('TextParent');\n");
       rsprintf("   t = p.offsetTop;\n");
       rsprintf("   while (p = p.offsetParent)\n");
       rsprintf("      t += p.offsetTop;\n");
       rsprintf("   if (window.innerHeight) // netscape\n");
-      rsprintf("      height = window.innerHeight - t - 135 - 50 - 30;\n");
+      rsprintf("      height = window.innerHeight - t - 135 - 50 - 20;\n");
       rsprintf("   else // IE\n");
-      rsprintf("      height = document.body.offsetHeight - t - 135 - 50 - 30;\n");
+      rsprintf("      height = document.body.offsetHeight - t - 135 - 50 - 20;\n");
       rsprintf("   if (height < 300)\n");
       rsprintf("      height = 300;\n");
-      rsprintf("   document.form1.Text.style.height = height+\"px\";\n");
       rsprintf("   width = window.innerWidth;\n");
       rsprintf("   if (width < 300)\n");
       rsprintf("      width = 300;\n");
-      rsprintf("   width = width - 20;");
-      rsprintf("   document.form1.Text.style.width = width+\"px\";\n");
+      rsprintf("   width = width - 6;\n");
+      rsprintf("   if (typeof(CKEDITOR) != 'undefined')\n");
+      rsprintf("      CKEDITOR.instances.Text.resize(width, height);\n");
+      rsprintf("   else {\n");
+      rsprintf("      document.form1.Text.style.height = height+6+\"px\";\n");
+      rsprintf("      document.form1.Text.style.width = width-6+\"px\";\n");
+      rsprintf("   }\n");
       rsprintf("}\n\n");
    }
 
@@ -10324,6 +10286,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("var next_attachment = %d;\n", i + 1);
          break;
       }
+   rsprintf("var page_title = '%s';\n", page_title);
+   rsprintf("var message_id = '%d';\n", message_id);
    
    rsprintf("\n");
    rsprintf("window.onbeforeunload = beforeunload;\n");
@@ -10345,11 +10309,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    if (enc_selected == 2 && fckedit_exist && show_text && !fixed_text) {
        rsprintf("<script type=\"text/javascript\" src=\"../ckeditor/ckeditor.js\"></script>\n");
-       rsprintf("<script type=\"text/javascript\" src=\"../jquery-1.11.1.min.js\"></script>\n");
-       rsprintf("<script type=\"text/javascript\" src=\"../progress/progress.min.js\"></script>\n");
-       rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"../progress/progressjs.min.css\">\n");
    }
-   
+
+   rsprintf("<script type=\"text/javascript\" src=\"../jquery-1.11.1.min.js\"></script>\n");
+   rsprintf("<script type=\"text/javascript\" src=\"../progress/progress.min.js\"></script>\n");
+   rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"../progress/progressjs.min.css\">\n");
+
    /* drag-and-drip script */
    rsprintf("<script type=\"text/javascript\" src=\"../dnd.js\"></script>\n\n");
    
@@ -11278,7 +11243,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("</td></tr>\n");
    }
 
-   rsprintf("<tr><td colspan=2 width=\"100%%\" class=\"attribvalue\" id=\"TextParent\">\n");
+   rsprintf("<tr><td colspan=2 width=\"100%%\" class=\"attribvalue\" id=\"TextParent\" style=\"padding:0\">\n");
 
    /* set textarea width */
    width = 112;
