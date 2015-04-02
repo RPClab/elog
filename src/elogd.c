@@ -76,7 +76,7 @@ char rem_host[256];
 char rem_host_ip[256];
 int _sock;
 BOOL use_keepalive, enable_execute = FALSE;
-BOOL fckedit_exist, image_magick_exist;
+BOOL ckedit_exist, image_magick_exist;
 int _verbose_level, _current_message_id;
 int _logging_level, _ssl_flag;
 
@@ -10245,7 +10245,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (/*enc_selected != 2 && */ !getcfg(lbs->name, "Message height", str, sizeof(str)) &&
        !getcfg(lbs->name, "Message width", str, sizeof(str))) {
       /* javascript for resizing edit box */
-      rsprintf("\nfunction init_resize()\n");
+      rsprintf("function init_resize()\n");
       rsprintf("{\n");
       rsprintf("   window.onresize = resize_textarea;\n");
       rsprintf("   resize_textarea();\n");
@@ -10323,7 +10323,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    show_text = !getcfg(lbs->name, "Show text", str, sizeof(str)) || atoi(str) == 1;
    fixed_text = getcfg(lbs->name, "Fix text", str, sizeof(str)) && atoi(str) == 1 && bedit && message_id;
 
-   if (enc_selected == 2 && fckedit_exist && show_text && !fixed_text) {
+   if (enc_selected == 2 && ckedit_exist && show_text && !fixed_text) {
        rsprintf("<script type=\"text/javascript\" src=\"../ckeditor/ckeditor.js\"></script>\n");
    }
 
@@ -10332,15 +10332,17 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"../progress/progressjs.min.css\">\n");
 
    /* drag-and-drip script */
-   rsprintf("<script type=\"text/javascript\" src=\"../dnd.js\"></script>\n\n");
+   rsprintf("<script type=\"text/javascript\" src=\"../dnd.js\"></script>\n");
    
+   /* CKEDITOR */
+   if (enc_selected == 2 && ckedit_exist && show_text && !fixed_text)
+      rsprintf("<script type=\"text/javascript\" src=\"../load-ckeditor.js\"></script>\n");
+
    /* external script if requested */
    if (isparam("js")) {
       rsprintf("<script src=\"%s\" type=\"text/javascript\">\n", getparam("js"));
       rsprintf("</script>\n\n");
    }
-
-   rsprintf("</head>\n");
 
    script_onload[0] = 0;
    script_onfocus[0] = 0;
@@ -10357,8 +10359,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       } else
          strcat(script_onload, "elKeyInit();");
       strcat(script_onfocus, "elKeyInit();");
-   } else if (enc_selected == 2 && fckedit_exist && show_text && !fixed_text) {
-      rsprintf("<script type=\"text/javascript\" src=\"../load-ckeditor.js\"></script>\n");
    } else if (enc_selected == 1) {
       if (!getcfg(lbs->name, "Message height", str, sizeof(str)) &&
           !getcfg(lbs->name, "Message width", str, sizeof(str)))
@@ -10370,7 +10370,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1)
       strcat(script_onunload, "unload();");
 
+   rsprintf("</head>\n\n");
    rsprintf("<body");
+
    if (script_onload[0])
       rsprintf(" OnLoad=\"%s\"", script_onload);
    if (script_onfocus[0])
@@ -24249,7 +24251,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          rsprintf("<body>\n");
       } else {
          sprintf(ref, "%d", message_id);
-         strlcpy(script, "OnLoad=\"document.onkeypress = browse\";", sizeof(script));
+         strlcpy(script, "OnLoad=\"document.onkeypress=browse;\"", sizeof(script));
          if (str[0])
             show_standard_header(lbs, TRUE, str, ref, FALSE, NULL, script, 0);
          else
@@ -28600,8 +28602,8 @@ int process_http_request(const char *request, int i_conn)
          *strchr(global_cmd, '\r') = 0;
    }
 
-   /* redirect image request from inside FCKeditor */
-   if (strieq(logbook, "fckeditor")) {
+   /* redirect image request from inside CKeditor */
+   if (strieq(logbook, "ckeditor")) {
       if (strstr(url, "?lb=")) {
          strlcpy(logbook, strstr(url, "?lb=") + 4, sizeof(logbook));
          if (strchr(logbook, '&'))
@@ -28796,7 +28798,7 @@ int process_http_request(const char *request, int i_conn)
       for (i = 0; *p && *p != '/' && *p != '?'; p++);
       while (*p && *p == '/')
          p++;
-      if (strncmp(p, "editor/", 7) == 0)        // fix for image request inside FCKeditor
+      if (strncmp(p, "editor/", 7) == 0)        // fix for image request inside CKeditor
          p += 7;
       /* decode command and return answer */
       decode_get(logbook, p);
@@ -29383,13 +29385,13 @@ void server_loop(void)
    /* load initial configuration */
    check_config();
 
-   /* check for FCKedit */
+   /* check for CKedit */
    strlcpy(str, resource_dir, sizeof(str));
    strlcat(str, "scripts", sizeof(str));
    strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
    strlcat(str, "ckeditor/ckeditor.js", sizeof(str));
-   fckedit_exist = exist_file(str);
-   if (fckedit_exist)
+   ckedit_exist = exist_file(str);
+   if (ckedit_exist)
       eprintf("CKeditor detected\n");
    else
       eprintf("CKeditor NOT detected\n");
