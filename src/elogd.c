@@ -5033,7 +5033,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
    sprintf(message + strlen(message), "\n");
 
    sprintf(message + strlen(message), "Encoding: %s\n", encoding1);
-   if (locked_by1 && locked_by1[0])
+   if (locked_by1[0])
       sprintf(message + strlen(message), "Locked by: %s\n", locked_by1);
    if (draft && draft[0])
       sprintf(message + strlen(message), "Draft: %s\n", draft);
