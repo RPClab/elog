@@ -399,6 +399,15 @@ td {
   font-weight:bold
 }
 
+.threaddraft {
+   border:1px solid #808040;
+   border-top:1px solid white;
+   border-left:1px solid white;
+   background-color:#FFD0D0;
+   text-align:left;
+   font-weight:bold
+}
+
 /* attribute names and values on single message page */
 .attribhead {
   background-color:#E0E0A0;

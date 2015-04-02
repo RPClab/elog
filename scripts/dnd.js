@@ -36,12 +36,38 @@ function asend() {
    var r = XMLHttpRequestGeneric();
    r.onreadystatechange = function()
      {
-     if (r.readyState==4 && r.status==200)
-        document.title = page_title;
+       // restore original title after successful sending form data
+       if (r.readyState==4 && r.status==200) {
+          document.title = page_title;
+          if (r.responseText.substring(0,2) == 'OK') {
+             if (document.getElementById('edit_id') == null) {
+                var id = r.responseText.substring(3);
+                var input = document.createElement('input');
+                input.type  = 'hidden';
+                input.name  = 'edit_id';
+                input.id    = 'edit_id';
+                input.value = parseInt(id);
+                document.form1.appendChild(input);
+             }
+          }
+       }
      }
 
    r.open("Post", ".");
+   
+   // get all form fields
    var f = new FormData(document.form1);
+
+   // append text for CKEDITOR and textarea, respectively
+   if (typeof f.delete == 'function') // not avalable in all browsers
+      f.delete("Text");
+   if (typeof(CKEDITOR) != 'undefined')
+      t = CKEDITOR.instances.Text.getData();
+   else
+      t = document.form1.Text.value;
+   f.append("Text", t);
+   
+   // add jcmd
    f.append("jcmd", "Save");
    r.send(f);
 }

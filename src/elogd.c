@@ -5509,7 +5509,7 @@ int el_move_message(LOGBOOK * lbs, int old_id, int new_id)
 
 /*------------------------------------------------------------------*/
 
-int el_lock_message(LOGBOOK * lbs, int message_id, char *user)
+int el_lock_message(LOGBOOK * lbs, int message_id, char *user, BOOL lock)
 /* lock message for editing */
 {
    int size;
@@ -5522,10 +5522,32 @@ int el_lock_message(LOGBOOK * lbs, int message_id, char *user)
    el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text, &size, in_reply_to, reply_to,
                att_file, encoding, locked_by, draft);
 
-   /* submit message, unlocked if user==NULL */
+   /* submit message, unlocked if block == FALSE */
    el_submit(lbs, message_id, TRUE, date, attr_list, attrib, lbs->n_attr, text, in_reply_to, reply_to,
-             encoding, att_file, FALSE, user, draft);
+             encoding, att_file, FALSE, lock ? user : NULL, draft);
 
+   return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int el_draft_message(LOGBOOK * lbs, int message_id, char *user, BOOL bdraft)
+/* lock message for editing */
+{
+   int size;
+   char date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE], in_reply_to[80],
+   reply_to[MAX_REPLY_TO * 10], encoding[80], locked_by[256], draft[256];
+   char att_file[MAX_ATTACHMENTS][256];
+   
+   /* retrieve message */
+   size = sizeof(text);
+   el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text, &size, in_reply_to, reply_to,
+               att_file, encoding, locked_by, draft);
+   
+   /* submit message, undraft if bdraft == FALSE */
+   el_submit(lbs, message_id, TRUE, date, attr_list, attrib, lbs->n_attr, text, in_reply_to, reply_to,
+             encoding, att_file, FALSE, locked_by, bdraft ? user : NULL);
+   
    return EL_SUCCESS;
 }
 
@@ -9904,7 +9926,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          strcat(str, " ");
          strcat(str, rem_host);
 
-         el_lock_message(lbs, message_id, str);
+         el_lock_message(lbs, message_id, str, TRUE);
       }
    }
 
@@ -10097,24 +10119,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("  return true;\n");
    rsprintf("}\n\n");
 
-   /* go_back() gets called via "Back" button */
-   rsprintf("function go_back()\n");
+   /* mark_submitted() gets called via "Back" and "Preview" buttons */
+   rsprintf("function mark_submitted()\n");
    rsprintf("{\n");
-   rsprintf("  if (!submitted && entry_modified) {\n");
-   rsprintf("    var subm = confirm(\"%s\");\n", loc("Are you sure to abandon any entered text?"));
-   rsprintf("    if (subm) {\n");
-   rsprintf("      mark_submit();\n");
-   rsprintf("      return true;\n");
-   rsprintf("    } else\n");
-   rsprintf("      return false;\n");
-   rsprintf("  }\n");
-   rsprintf("  return true;\n");
-   rsprintf("}\n\n");
-
-   /* mark_submit() gets called via "Back" button */
-   rsprintf("function mark_submit()\n");
-   rsprintf("{\n");
-   rsprintf("  submitted = true;\n");
+   rsprintf("  if (autoSaveTimer != null)\n");
+   rsprintf("    clearTimeout(autoSaveTimer);\n");
+   rsprintf("  submitted = true;\n"); // don't ask to leave that page
    rsprintf("  return true;\n");
    rsprintf("}\n\n");
 
@@ -10139,8 +10149,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* save_draft() gets called via the "Save" button */
    rsprintf("function save_draft()\n");
    rsprintf("{\n");
+   rsprintf("  if (autoSaveTimer != null)\n");
+   rsprintf("    clearTimeout(autoSaveTimer);\n");
    rsprintf("  asend();\n");
-   rsprintf("  return false;");
+   rsprintf("  return false;\n");
    rsprintf("}\n\n");
 
    /* beforeunload() gets called "onBeforeUnload" */
@@ -10150,19 +10162,19 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("    e.returnValue = \"%s\";\n", loc("If you leave this page you will lose your unsaved changes"));
    rsprintf("}\n\n");
 
-   /* unload() gets called "onUnload", issues a "back" command to remove a possible lock */
+   /* unload() gets called "onUnload", issues a "Unlock" command to remove a possible lock */
    rsprintf("function unload()\n");
    rsprintf("{\n");
    rsprintf("  if (!submitted) {\n");
    rsprintf("    r = XMLHttpRequestGeneric();\n");
-   rsprintf("    r.open('GET', '?jcmd=%s&edit_id=%d', true);\n", loc("Back"), message_id);
+   rsprintf("    r.open('GET', '?jcmd=Unlock&edit_id=%d', true);\n", message_id);
    rsprintf("    r.send();\n");
    rsprintf("  }\n");
    rsprintf("}\n\n");
 
    /* mod() gets called via "onchange" event */
-   rsprintf("var autoSaveTimer;\n\n");
-   rsprintf("var checkTextTimer;\n\n");
+   rsprintf("var autoSaveTimer;\n");
+   rsprintf("var checkTextTimer;\n");
    rsprintf("var oldText;\n\n");
    
    rsprintf("function mod(e)\n");
@@ -10188,6 +10200,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("function checkText()\n");
    rsprintf("{\n");
    if (autosave) {
+      // CKEDITOR cannot call mod(), so manually check if text has changed
       rsprintf("  if (checkTextTimer != null)\n");
       rsprintf("    clearTimeout(checkTextTimer);\n");
       rsprintf("  if (typeof(CKEDITOR) != 'undefined')\n");
@@ -10285,7 +10298,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          break;
       }
    rsprintf("var page_title = '%s';\n", page_title);
-   rsprintf("var message_id = '%d';\n", message_id);
    
    rsprintf("\n");
    rsprintf("window.onbeforeunload = beforeunload;\n");
@@ -10400,8 +10412,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             loc("Submit"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return save_draft();\">\n",
             loc("Save"));
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Preview"));
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return go_back();\">\n", loc("Back"));
+   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
+            loc("Preview"));
+   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
+            loc("Back"));
    rsprintf("</span></td></tr>\n\n");
 
    /*---- entry form ----*/
@@ -11288,22 +11302,22 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    if (breply)
       /* hidden text for original message */
-      rsprintf("<input type=hidden name=reply_to value=\"%d\">\n", message_id);
+      rsprintf("<input type=\"hidden\" name=\"reply_to\" value=\"%d\">\n", message_id);
 
    if (breedit || bupload)
       /* hidden text for original message */
       if (isparam("reply_to"))
-         rsprintf("<input type=hidden name=reply_to value=\"%s\">\n", getparam("reply_to"));
+         rsprintf("<input type=\"hidden\" name=\"reply_to\" value=\"%s\">\n", getparam("reply_to"));
 
    if (bedit && message_id)
-      rsprintf("<input type=hidden name=edit_id value=\"%d\">\n", message_id);
+      rsprintf("<input type=\"hidden\" id=\"edit_id\" name=\"edit_id\" value=\"%d\">\n", message_id);
 
    if (isparam("nsel")) {
-      rsprintf("<input type=hidden name=nsel value=\"%s\">\n", getparam("nsel"));
+      rsprintf("<input type=\"hidden\" name=\"nsel\" value=\"%s\">\n", getparam("nsel"));
       for (i = 0; i < atoi(getparam("nsel")); i++) {
          sprintf(str, "s%d", i);
          if (isparam(str)) {
-            rsprintf("<input type=hidden name=\"s%d\" value=\"%s\">\n", i, getparam(str));
+            rsprintf("<input type=\"hidden\" name=\"s%d\" value=\"%s\">\n", i, getparam(str));
          }
       }
    }
@@ -11911,8 +11925,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             loc("Submit"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return save_draft();\">\n",
             loc("Save"));
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\">\n", loc("Preview"));
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return go_back();\">\n", loc("Back"));
+   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
+            loc("Preview"));
+   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
+            loc("Back"));
    rsprintf("</span></td></tr>\n\n");
 
    rsprintf("</table><!-- show_standard_title -->\n");
@@ -17446,7 +17462,9 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
       else
          strcpy(rowstyle, "list1");
    } else if (strieq(mode, "Threaded")) {
-      if (highlight) {
+      if (draft && draft[0])
+         strcpy(rowstyle, "threaddraft");
+      else if (highlight) {
          if (highlight == message_id)
             strcpy(rowstyle, "thread");
          else
@@ -23108,6 +23126,8 @@ void submit_elog(LOGBOOK * lbs)
          strcpy(in_reply_to, "<keep>");
          strcpy(reply_to, "<keep>");
          strcpy(date, "<keep>");
+         if (bdraft)
+            strcpy(locked_by, "<keep>");
       } else
          strcpy(in_reply_to, isparam("reply_to") ? getparam("reply_to") : "");
    }
@@ -23123,40 +23143,6 @@ void submit_elog(LOGBOOK * lbs)
          sprintf(str, "NEW entry #%d", message_id);
 
       write_logfile(lbs, str);
-   }
-
-   /* check if lock has been stolen */
-   if (!isparam("skiplock")) {
-      if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1 && message_id) {
-         el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, NULL, locked_by, NULL);
-
-         if (isparam("unm"))
-            get_full_name(lbs, getparam("unm"), str);
-         else
-            strlcpy(str, loc("user"), sizeof(str));
-
-         strcat(str, " ");
-         strcat(str, loc("on"));
-         strcat(str, " ");
-         strcat(str, rem_host);
-
-         if (locked_by[0] == 0 || strcmp(locked_by, str) != 0) {
-            if (locked_by[0])
-               sprintf(str, loc("This entry has in meantime been locked by %s"), locked_by);
-            else
-               strlcpy(str, loc("This entry has in meantime been modified by someone else"), sizeof(str));
-            strlcat(str, ".<p>\n", sizeof(str));
-            strlcat(str,
-                    loc
-                    ("Submitting it now would overwrite the other modification and is therefore prohibited"),
-                    sizeof(str));
-            strlcat(str, ".", sizeof(str));
-
-            strencode2(str2, str, sizeof(str2));
-            show_error(str2);
-            return;
-         }
-      }
    }
 
    if (bmultiedit) {
@@ -23182,7 +23168,7 @@ void submit_elog(LOGBOOK * lbs)
       return;                   /* no email notifications etc */
    } else {
       message_id = el_submit(lbs, message_id, bedit, date, attr_list, attrib, n_attr, getparam("text"),
-                             in_reply_to, reply_to, encoding, att_file, TRUE, NULL, draft);
+                             in_reply_to, reply_to, encoding, att_file, TRUE, locked_by, draft);
 
       if (message_id <= 0) {
          sprintf(str, loc("New entry cannot be written to directory \"%s\""), lbs->data_dir);
@@ -23194,7 +23180,7 @@ void submit_elog(LOGBOOK * lbs)
       
       if (bdraft) {
          show_http_header(lbs, FALSE, NULL);
-         rsprintf("OK\n");
+         rsprintf("OK %d\n", message_id);
          return;
       }
    }
@@ -24490,12 +24476,13 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          rsprintf
              ("<tr><td nowrap colspan=2 class=\"errormsg\"><img src=\"stop.png\" alt=\"%s\"  title=\"%s\">\n",
               loc("stop"), loc("stop"));
-         rsprintf("%s<br>%s</td></tr>\n", str, loc("You can \"steal\" the lock by editing this entry"));
-      }
-      
-      if (draft[0]) {
-         rsprintf("<tr><td nowrap colspan=2 class=\"errormsg\">%s</td></tr>\n",
-                  loc("This is a draft message, edit and submit it to make it permament"));
+         rsprintf("%s.<br>%s.<br>%s.</td></tr>\n", str, loc("You can \"steal\" the lock by editing this entry"),
+                  loc("You might however then overwrite each other's modifications"));
+      } else {
+         if (draft[0]) {
+            rsprintf("<tr><td nowrap colspan=2 class=\"errormsg\">%s</td></tr>\n",
+                     loc("This is a draft message, edit and submit it to make it permament"));
+         }
       }
 
       rsprintf("<tr><td class=\"attribhead\">\n");
@@ -27305,8 +27292,10 @@ void interprete(char *lbook, char *path)
       if (isparam("edit_id")) {
 
          /* unlock message */
-         if (getcfg(lbs->name, "Use Lock", str, sizeof(str)) && atoi(str) == 1)
-            el_lock_message(lbs, atoi(getparam("edit_id")), NULL);
+         el_lock_message(lbs, atoi(getparam("edit_id")), NULL, FALSE);
+
+         /* remove draft */
+         el_draft_message(lbs, atoi(getparam("edit_id")), NULL, FALSE);
 
          /* redirect to message */
          strlcpy(edit_id, getparam("edit_id"), sizeof(edit_id));
@@ -27321,6 +27310,26 @@ void interprete(char *lbook, char *path)
       return;
    }
 
+   /* check for "Unlock" command */
+   if (strieq(command, "Unlock")) {
+      if (isparam("edit_id")) {
+         
+         /* unlock message and remove draft */
+         el_lock_message(lbs, atoi(getparam("edit_id")), NULL, FALSE);
+         
+         /* redirect to message */
+         strlcpy(edit_id, getparam("edit_id"), sizeof(edit_id));
+         sprintf(str, "../%s/%s", logbook_enc, edit_id);
+      } else
+         sprintf(str, "../%s/", logbook_enc);
+      
+      if (getcfg(lbs->name, "Back to main", str, sizeof(str)) && atoi(str) == 1)
+         strcpy(str, "../");
+      
+      redirect(lbs, str);
+      return;
+   }
+   
    /* check for "List" button */
    if (strieq(command, loc("List"))) {
 
