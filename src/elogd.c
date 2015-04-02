@@ -4812,7 +4812,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
    int n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id;
    char file_name[256], dir[256], str[NAME_LENGTH], date1[256], attrib[MAX_N_ATTR][NAME_LENGTH],
        reply_to1[MAX_REPLY_TO * 10], in_reply_to1[MAX_REPLY_TO * 10], encoding1[80], *message, *p,
-       *old_text, *buffer;
+       *old_text, *buffer, locked_by1[256];
    char attachment_all[64 * MAX_ATTACHMENTS], subdir[MAX_PATH_LENGTH];
    time_t ltime;
 
@@ -4826,6 +4826,10 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
    strlcpy(in_reply_to1, in_reply_to, sizeof(in_reply_to1));
    strlcpy(encoding1, encoding, sizeof(encoding1));
    strlcpy(date1, date, sizeof(date1));
+   if (locked_by)
+      strlcpy(locked_by1, locked_by, sizeof(locked_by1));
+   else
+      locked_by1[0] = 0;
 
    /* generate new file name YYMMDD.log in data directory */
    strcpy(dir, lbs->data_dir);
@@ -4901,6 +4905,8 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
          el_decode(message, "Date: ", date1, sizeof(date1));
       else
          strlcpy(date1, date, sizeof(date1));
+      if (strieq(locked_by1, "<keep>"))
+         el_decode_intlist(message, "Locked by: ", locked_by1, sizeof(locked_by1));
       if (strieq(reply_to1, "<keep>"))
          el_decode_intlist(message, "Reply to: ", reply_to1, sizeof(reply_to1));
       if (strieq(in_reply_to1, "<keep>"))
@@ -5027,8 +5033,8 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
    sprintf(message + strlen(message), "\n");
 
    sprintf(message + strlen(message), "Encoding: %s\n", encoding1);
-   if (locked_by && locked_by[0])
-      sprintf(message + strlen(message), "Locked by: %s\n", locked_by);
+   if (locked_by1 && locked_by1[0])
+      sprintf(message + strlen(message), "Locked by: %s\n", locked_by1);
    if (draft && draft[0])
       sprintf(message + strlen(message), "Draft: %s\n", draft);
 
