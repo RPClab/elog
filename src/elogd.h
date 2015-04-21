@@ -134,15 +134,7 @@ typedef int BOOL;
 #define stricmp(s1, s2) strcasecmp(s1, s2)
 #endif
 
-gid_t orig_gid;                 /* Original effective GID before dropping privilege */
-uid_t orig_uid;                 /* Original effective UID before dropping privilege */
-char pidfile[256];              /* Pidfile name                                     */
-
 #endif                          /* OS_UNIX */
-
-#ifdef __CYGWIN__               /* bug in cygwin, 'tmezone' not linked automatically */
-long _timezone;
-#endif
 
 /* SSL includes */
 #ifdef HAVE_SSL
@@ -255,7 +247,7 @@ typedef struct {
 
 typedef struct LBNODE *LBLIST;
 
-struct LBNODE {
+typedef struct LBNODE {
    char name[256];
    LBLIST *member;
    int n_members;

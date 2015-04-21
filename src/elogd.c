@@ -190,6 +190,16 @@ char _identify_cmd[256];
 int run_service(void);
 #endif
 
+#ifdef OS_UNIX
+gid_t orig_gid;                 /* Original effective GID before dropping privilege */
+uid_t orig_uid;                 /* Original effective UID before dropping privilege */
+char pidfile[256];              /* Pidfile name                                     */
+#endif
+
+#ifdef __CYGWIN__               /* bug in cygwin, 'timezone' not linked automatically */
+long _timezone;
+#endif
+
 /*---- Funcions from the MIDAS library -----------------------------*/
 
 #define my_toupper(_c)    ( ((_c)>='a' && (_c)<='z') ? ((_c)-'a'+'A') : (_c) )
