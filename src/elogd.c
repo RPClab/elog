@@ -10434,6 +10434,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             loc("Preview"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
             loc("Back"));
+   
+   rsprintf("&nbsp;&nbsp;<span id=\"saved1\" style=\"font-size:10px;font-style:italic;display:none\">%s 00:00:00</span>", loc("Draft saved at"));
+   
    rsprintf("</span></td></tr>\n\n");
 
    /*---- entry form ----*/
@@ -11947,6 +11950,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             loc("Preview"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
             loc("Back"));
+   
+   rsprintf("&nbsp;&nbsp;<span id=\"saved2\" style=\"font-size:10px;font-style:italic;display:none\">%s 00:00:00</span>", loc("Draft saved at"));
+
    rsprintf("</span></td></tr>\n\n");
 
    rsprintf("</table><!-- show_standard_title -->\n");

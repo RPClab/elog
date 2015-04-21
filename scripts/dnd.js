@@ -36,9 +36,22 @@ function asend() {
    var r = XMLHttpRequestGeneric();
    r.onreadystatechange = function()
      {
-       // restore original title after successful sending form data
+       // after successful completion ...
        if (r.readyState==4 && r.status==200) {
+          // restore original title
           document.title = page_title;
+       
+          // set "saved" message
+          d = new Date();
+          e1 = document.getElementById('saved1');
+          e1.style.display = 'inline';
+          s = e1.innerHTML.substring(0, e1.innerHTML.length-8);
+          e1.innerHTML = s+d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds();
+          e2 = document.getElementById('saved2');
+          e2.innerHTML = e1.innerHTML;
+          e2.style.display = 'inline';
+          
+          // append edit_id (to prevent creation of new messages)
           if (r.responseText.substring(0,2) == 'OK') {
              if (document.getElementById('edit_id') == null) {
                 var id = r.responseText.substring(3);
