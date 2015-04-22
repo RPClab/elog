@@ -11003,7 +11003,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   if (attr_flags[index] & AF_EXTENDABLE) {
                      sprintf(str, loc("Add %s"), attr_list[index]);
                      rsprintf
-                         ("<input type=submit name=\"extend_%d\" value=\"%s\" onClick=\"return mark_submit();\">\n",
+                         ("<input type=submit name=\"extend_%d\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
                           index, str);
                   }
 
@@ -11047,7 +11047,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   if (attr_flags[index] & AF_EXTENDABLE) {
                      sprintf(str, loc("Add %s"), attr_list[index]);
                      rsprintf
-                         ("<input type=submit name=\"extend_%d\" value=\"%s\" onClick=\"return mark_submit();\">\n",
+                         ("<input type=submit name=\"extend_%d\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
                           index, str);
                   }
 
@@ -11128,7 +11128,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                   if (attr_flags[index] & AF_EXTENDABLE) {
                      sprintf(str, loc("Add %s"), attr_list[index]);
                      rsprintf
-                         ("<input type=submit name=\"extend_%d\" value=\"%s\" onClick=\"return mark_submit();\">\n",
+                         ("<input type=submit name=\"extend_%d\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
                           index, str);
                   }
 
@@ -11801,7 +11801,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      rsprintf("%s\n", att[index] + 14);
                      rsprintf("&nbsp;&nbsp;<input type=\"submit\" name=\"delatt%d\" value=\"%s\" ", index,
                               loc("Delete"));
-                     rsprintf("onClick=\"return mark_submit();\">");
+                     rsprintf("onClick=\"return mark_submitted();\">");
                      rsprintf("<br>\n");
                   }
 
