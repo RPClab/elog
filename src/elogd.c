@@ -28333,11 +28333,11 @@ char remote_host[N_MAX_CONNECTION][256];
 
 int process_http_request(const char *request, int i_conn)
 {
-   int i, n, authorized, header_length, content_length;
-   char str[1000], str2[1000], url[2000], format[256], cookie[256], boundary[256],
+   int i, n, authorized, header_length, content_length, strsize;
+   char str2[1000], url[2000], format[256], cookie[256], boundary[256],
        list[1000], theme[256], host_list[MAX_N_LIST][NAME_LENGTH], logbook[256], logbook_enc[256],
        global_cmd[256];
-   char *p;
+   char *p, *str;
    struct hostent *phe;
    time_t now;
    struct tm *ts;
@@ -28350,10 +28350,13 @@ int process_http_request(const char *request, int i_conn)
 
    if (!strchr(request, '\r'))
       return 0;
+   
+   strsize = strlen(request)+1001;
+   str = xmalloc(strsize);
 
    if (get_verbose() < VERBOSE_DEBUG) {
       if (get_verbose() > 0) {
-         strlcpy(str, request, sizeof(str));
+         strlcpy(str, request, strsize);
          if (strchr(str, '\r'))
             *strchr(str, '\r') = 0;
          if (strchr(str, '\n'))
@@ -28378,7 +28381,7 @@ int process_http_request(const char *request, int i_conn)
             p++;
          if (*p == '\r' || *p == '\n')
             break;
-         strlcpy(str, p, sizeof(str));
+         strlcpy(str, p, strsize);
          for (i = 0; i < (int) strlen(str); i++)
             if (str[i] == '=' || str[i] == ';')
                break;
@@ -28475,7 +28478,7 @@ int process_http_request(const char *request, int i_conn)
       p += 16;
       while (*p && *p == ' ')
          p++;
-      strlcpy(str, p, sizeof(str));
+      strlcpy(str, p, strsize);
       if (strchr(str, '\r'))
          *strchr(str, '\r') = 0;
 #ifdef OS_WINNT
@@ -28484,7 +28487,7 @@ int process_http_request(const char *request, int i_conn)
       rem_addr.s_addr = inet_addr(str);
 #endif
 
-      if (getcfg("global", "Resolve host names", str, sizeof(str)) && atoi(str) == 1) {
+      if (getcfg("global", "Resolve host names", str, strsize) && atoi(str) == 1) {
          phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
          if (phe != NULL)
             strcpy(remote_host[i_conn], phe->h_name);
@@ -28497,7 +28500,7 @@ int process_http_request(const char *request, int i_conn)
    }
 
    if (_logging_level > 3) {
-      strlcpy(str, request, sizeof(str));
+      strlcpy(str, request, strsize);
       if (strchr(str, '\r'))
          *strchr(str, '\r') = 0;
       write_logfile(NULL, str);
@@ -28505,8 +28508,10 @@ int process_http_request(const char *request, int i_conn)
 
    memset(return_buffer, 0, return_buffer_size);
    strlen_retbuf = 0;
-   if (strncmp(request, "GET", 3) != 0 && strncmp(request, "POST", 4) != 0)
+   if (strncmp(request, "GET", 3) != 0 && strncmp(request, "POST", 4) != 0) {
+      xfree(str);
       return 0;
+   }
 
    return_length = 0;
 
@@ -28520,6 +28525,7 @@ int process_http_request(const char *request, int i_conn)
    if (strchr(request, '/') == NULL || strchr(request, '\r') == NULL || strstr(request, "HTTP") == NULL) {
       /* invalid request, make valid */
       strcpy(str, "GET / HTTP/1.0\r\n\r\n");
+      xfree(str);
       return process_http_request(str, i_conn);
    }
 
@@ -28537,6 +28543,7 @@ int process_http_request(const char *request, int i_conn)
       strencode2(str2, url, sizeof(str2));
       sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), str2);
       show_error(str);
+      xfree(str);
       return 1;
    }
 
@@ -28551,15 +28558,17 @@ int process_http_request(const char *request, int i_conn)
          strencode2(str2, url, sizeof(str2));
          sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), str2);
          show_error(str);
+         xfree(str);
          return 1;
       }
 
-      strlcpy(str, resource_dir, sizeof(str));
-      strlcat(str, "scripts", sizeof(str));
-      strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
-      strlcat(str, url, sizeof(str));
+      strlcpy(str, resource_dir, strsize);
+      strlcat(str, "scripts", strsize);
+      strlcat(str, DIR_SEPARATOR_STR, strsize);
+      strlcat(str, url, strsize);
       if (exist_file(str)) {
          send_file_direct(str);
+         xfree(str);
          return 1;
       }
    }
@@ -28577,6 +28586,7 @@ int process_http_request(const char *request, int i_conn)
              && !chkext(logbook, ".jpg") && !chkext(logbook, ".png") && !chkext(logbook, ".ico")) {
             sprintf(str, "%s/", logbook_enc);
             redirect(NULL, str);
+            xfree(str);
             return 1;
          }
       }
@@ -28592,6 +28602,7 @@ int process_http_request(const char *request, int i_conn)
          strencode2(str2, url, sizeof(str2));
          sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), str2);
          show_error(str);
+         xfree(str);
          return 1;
       }
    }
@@ -28604,6 +28615,7 @@ int process_http_request(const char *request, int i_conn)
       strencode2(str2, url, sizeof(str2));
       sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), str2);
       show_error(str);
+      xfree(str);
       return 1;
    }
 
@@ -28646,28 +28658,29 @@ int process_http_request(const char *request, int i_conn)
          strencode2(str2, logbook, sizeof(str2));
          sprintf(str, "%s: <b>%s</b>", loc("Invalid URL"), str2);
          show_error(str);
+         xfree(str);
          return 1;
       }
 
       /* check if file in resource directory */
-      strlcpy(str, resource_dir, sizeof(str));
-      strlcat(str, logbook, sizeof(str));
+      strlcpy(str, resource_dir, strsize);
+      strlcat(str, logbook, strsize);
       if (exist_file(str))
          send_file_direct(str);
       else {
          /* else search file in themes directory */
-         strlcpy(str, resource_dir, sizeof(str));
-         strlcat(str, "themes", sizeof(str));
-         strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
+         strlcpy(str, resource_dir, strsize);
+         strlcat(str, "themes", strsize);
+         strlcat(str, DIR_SEPARATOR_STR, strsize);
          if (getcfg("global", "theme", theme, sizeof(theme)))
-            strlcat(str, theme, sizeof(str));
+            strlcat(str, theme, strsize);
          else
-            strlcat(str, "default", sizeof(str));
-         strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
-         strlcat(str, logbook, sizeof(str));
+            strlcat(str, "default", strsize);
+         strlcat(str, DIR_SEPARATOR_STR, strsize);
+         strlcat(str, logbook, strsize);
          send_file_direct(str);
       }
-
+      xfree(str);
       return 1;
 
    } else {
@@ -28679,6 +28692,7 @@ int process_http_request(const char *request, int i_conn)
 
             sprintf(str, "Error: logbook \"%s\" not defined in %s", logbook_enc, CFGFILE);
             show_error(str);
+            xfree(str);
             return 1;
          }
       }
@@ -28700,6 +28714,7 @@ int process_http_request(const char *request, int i_conn)
          strlcat(logbook_enc, "/", sizeof(logbook_enc));
          /* redirect to logbook, necessary to get optional cookies for that logbook */
          redirect(NULL, logbook_enc);
+         xfree(str);
          return 1;
       }
    }
@@ -28787,6 +28802,7 @@ int process_http_request(const char *request, int i_conn)
 
    if (!authorized) {
       keep_alive = FALSE;
+      xfree(str);
       return 0;
    }
 
@@ -28805,11 +28821,13 @@ int process_http_request(const char *request, int i_conn)
       /* extract path and commands */
       if (strchr(request, '\r'))
          *strchr(request, '\r') = 0;
-      if (!strstr(request, "HTTP/1"))
+      if (!strstr(request, "HTTP/1")) {
+         xfree(str);
          return 0;
+      }
       *(strstr(request, "HTTP/1") - 1) = 0;
       /* strip logbook from path */
-      strlcpy(str, request + 5, sizeof(str));
+      strlcpy(str, request + 5, strsize);
       p = str;
       for (i = 0; *p && *p != '/' && *p != '?'; p++);
       while (*p && *p == '/')
@@ -28833,6 +28851,7 @@ int process_http_request(const char *request, int i_conn)
          header_length = strstr(request, "\r\r\n\r\r\n") - request + 6;
       else {
          show_error("Invalid POST header");
+         xfree(str);
          return 1;
       }
 
@@ -28858,6 +28877,7 @@ int process_http_request(const char *request, int i_conn)
       show_error(str);
    }
 
+   xfree(str);
    return 1;
 }
 
