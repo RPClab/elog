@@ -15107,7 +15107,7 @@ void csv_import(LOGBOOK * lbs, const char *csv, const char *csvfile)
 
 void xml_import(LOGBOOK * lbs, const char *xml, const char *xmlfile)
 {
-   char str[256], date[80], error[256], encoding[256], *list, *p, in_reply_to[80],
+   char str[NAME_LENGTH], date[80], error[256], encoding[256], *list, *p, in_reply_to[80],
        reply_to[MAX_REPLY_TO * 10], attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH], attachment_all[64
                                                                                                  *
                                                                                                  MAX_ATTACHMENTS];
@@ -23632,7 +23632,7 @@ void copy_to(LOGBOOK * lbs, int src_id, char *dest_logbook, int move, int orig_i
                close(fh);
 
                /* keep original file name for inline references */
-               strlcpy(file_name, attachment + i * MAX_PATH_LENGTH, NAME_LENGTH);
+               strlcpy(file_name, attachment + i * MAX_PATH_LENGTH, MAX_PATH_LENGTH);
 
                el_submit_attachment(lbs_dest, file_name, buffer, size, NULL);
 
