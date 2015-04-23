@@ -417,8 +417,6 @@ XML file does not contain %s element = XML Date beinhaltet kein %s Element
 XML import preview of %s = XML Import Vorschau von %s
 XML Import = XML Import
 A old entry has been updated on %s = Ein alter Eintrag wurde auf %s erneuert
-This entry has in meantime been locked by %s = Dieser Eintrag wurde in der Zwischenzeit von %s gesperrt
-This entry has in meantime been modified by someone else = Dieser Eintrag wurde in der Zwischenzeit von jemand anderem geändert
 First entry, Ctrl-Home = Erster Eintrag, Strg-Pos1
 Previous entry, Ctrl-PgUp = Vorheriger Eintrag, Strg-BildHoch
 Next entry, Ctrl-PgDn = Nächster Eintrag, Strg-BildRunter
@@ -448,7 +446,6 @@ File system full, ELOG cannot continue to work = Dateisystem voll, ELOG kann nic
 3 Days = 3 Tage
 Last 3 Days = Letzte 3 Tage
 Really submit this entry? = Diesen Entrag wirklich abschicken?
-Are you sure to abandon any entered text? = Den veränderten Text wirklich aufgeben?
 Account activation for ELOG logbook "%s" = Zugangsaktivierung für das ELOG Logbuch "%s"
 Account activation for ELOG on host "%s" = Zugangsaktivierung für ELOG auf dem Computer "%s"
 Please click the URL below to activate following ELOG account = Bitte auf den Link klicken, um folgenden ELOG Zugang zu aktivieren
@@ -484,4 +481,10 @@ Draft = Entwurf
 Restrict seach to last = Suche einschränken auf letzte
 days = Tage
 This is a draft message, edit and submit it to make it permament = Dies ist ein Entwurf, bitte ändern und abschicken um ihn permanent zu machen
+Draft saved at = Entwurf gespeichert um
+You might however then overwrite each other's modifications = Sie würde dann jedoch die Änderungen von jemand anderem überschreiben
 
+
+#
+#---- please translate following items and then remove this comment ----#
+#
