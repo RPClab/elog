@@ -9981,6 +9981,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("var entry_modified = false;\n");
    } else
       rsprintf("var entry_modified = false;\n");
+   rsprintf("var draft_modified = false;\n");
    rsprintf("var last_key = 0;\n\n");
 
    rsprintf("function chkform()\n");
@@ -10168,6 +10169,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("  if (autoSaveTimer != null)\n");
    rsprintf("    clearTimeout(autoSaveTimer);\n");
    rsprintf("  asend();\n");
+   rsprintf("  draft_modified = false;\n");
    rsprintf("  return false;\n");
    rsprintf("}\n\n");
 
@@ -10193,24 +10195,22 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("var checkTextTimer;\n");
    rsprintf("var oldText;\n\n");
    
-   rsprintf("function mod(e)\n");
-   rsprintf("{\n");
-   rsprintf("  entry_modified = true;\n");
-   rsprintf("  window.status = \"%s\";\n", loc("Entry has been modified"));
-   rsprintf("  document.form1.entry_modified.value = \"1\";\n");
-   rsprintf("  document.title = '%s - %s';\n", page_title, loc("Edited"));
-   
    if (getcfg(lbs->name, "Autosave", str, sizeof(str)))
       autosave = atoi(str);
    else
       autosave = 10;
-       
+
+   rsprintf("function mod(e)\n");
+   rsprintf("{\n");
    if (autosave) {
-      rsprintf("  if (autoSaveTimer != null)\n");
-      rsprintf("    clearTimeout(autoSaveTimer);\n");
-      rsprintf("  autoSaveTimer = setTimeout(save_draft, %d);\n", autosave*1000);
+      rsprintf("  if (!draft_modified)\n");
+      rsprintf("    autoSaveTimer = setTimeout(save_draft, %d);\n", autosave*1000);
    }
-   
+   rsprintf("  entry_modified = true;\n");
+   rsprintf("  draft_modified = true;\n");
+   rsprintf("  window.status = \"%s\";\n", loc("Entry has been modified"));
+   rsprintf("  document.form1.entry_modified.value = \"1\";\n");
+   rsprintf("  document.title = '%s - %s';\n", page_title, loc("Edited"));
    rsprintf("}\n\n");
 
    rsprintf("function checkText()\n");

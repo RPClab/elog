@@ -46,7 +46,7 @@ function asend() {
           e1 = document.getElementById('saved1');
           e1.style.display = 'inline';
           s = e1.innerHTML.substring(0, e1.innerHTML.length-8);
-          e1.innerHTML = s+d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds();
+          e1.innerHTML = s+d.toTimeString().substring(0, 8);
           e2 = document.getElementById('saved2');
           e2.innerHTML = e1.innerHTML;
           e2.style.display = 'inline';
