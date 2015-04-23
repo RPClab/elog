@@ -10151,7 +10151,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("    alert(\"%s\");\n", loc("No attachment file specified"));
    rsprintf("    return false;\n");
    rsprintf("  }\n");
-   rsprintf("  submitted = true;\n");
+   rsprintf("  mark_submitted();\n");
    rsprintf("  return true;\n");
    rsprintf("}\n\n");
 
@@ -11922,11 +11922,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("</td></tr>\n");
       } else {
          rsprintf("<tr id=\"attachment_upload\"><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), index + 1);
-         rsprintf
-             ("<td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile\" accept=\"filetype/*\" multiple>\n");
-         rsprintf
-             ("&nbsp;&nbsp;<input type=\"submit\" name=\"cmd\" value=\"%s\">\n",
-              loc("Upload"));
+         rsprintf("<td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile\" accept=\"filetype/*\" multiple>\n");
+         rsprintf("&nbsp;&nbsp;<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkupload();\">\n", loc("Upload"));
          rsprintf("</td></tr>\n");
 
          // print the holder for dropping attachments
