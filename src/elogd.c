@@ -4116,6 +4116,11 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
                  lbs->el_index[i].offset);
    }
 
+   if (rebuild && n == 0) {
+      eprintf("Logbook files seem to have disappeared, aborting program.\n");
+      assert(rebuild && n > 0);
+   }
+   
    return EL_SUCCESS;
 }
 
