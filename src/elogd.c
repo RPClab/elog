@@ -29369,6 +29369,7 @@ void server_loop(void)
    sigaction(SIGINT, &ctrlc_handle, NULL);
 
    ignore_handle.sa_handler = SIG_IGN;
+   ignore_handle.sa_flags = 0;
    sigaction(SIGPIPE, &ignore_handle, NULL);
 
    hup_handle.sa_handler = hup_handler;
