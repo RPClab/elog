@@ -70,15 +70,18 @@ function asend() {
    
    // get all form fields
    var f = new FormData(document.form1);
+   var t;
 
    // append text for CKEDITOR and textarea, respectively
    if (typeof f.delete == 'function') // not avalable in all browsers
       f.delete("Text");
    if (typeof(CKEDITOR) != 'undefined')
       t = CKEDITOR.instances.Text.getData();
-   else
+   else if (document.form1.Text != undefined)
       t = document.form1.Text.value;
-   f.append("Text", t);
+   
+   if (t != undefined)
+      f.append("Text", t);
    
    // add jcmd
    f.append("jcmd", "Save");

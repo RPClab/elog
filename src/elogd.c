@@ -10435,7 +10435,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             loc("Submit"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return save_draft();\">\n",
             loc("Save"));
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
+   
+   if (!getcfg(lbs->name, "Show text", str, sizeof(str)) || atoi(str) == 1)
+      rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
             loc("Preview"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
             loc("Back"));
@@ -11948,8 +11950,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             loc("Submit"));
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return save_draft();\">\n",
             loc("Save"));
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
+   
+   if (!getcfg(lbs->name, "Show text", str, sizeof(str)) || atoi(str) == 1)
+      rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
             loc("Preview"));
+   
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
             loc("Back"));
    
