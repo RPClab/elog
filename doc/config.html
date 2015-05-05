@@ -2711,12 +2711,20 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
         7, 31, 92, 182, 364</b>. "0" means an unrestricted search default.
       </li>
       <li>
+         <b><code>Save drafts = 0|1</code></b><br>
+         Starting with version 3.1, ELOG supports auto saving. When text for a new
+         entry is entered in the browser, it might get lost if the browser windows is
+         closed before the entry has been submitted. In order to avoid this, entries
+         can be saved as drafts, to be finished and submitted later. This can be
+         achieved by clicking on the <b><code>Save</code></b> button or by the
+         <i>autosave</i> feature (see next option). The <b><code>Save drafts</code></b>
+         option turns this feature on or off. Default is <b><code>1</code></b>.
+      </li>
+      <li>
         <b><code>Autosave = &lt;seconds&gt;</code></b><br>
-        Starting with version 3.1, ELOG supports auto saving. When text for a new
-        entry is entered in the browser, it might get lost if the browser windows is 
-        closed before the entry has been submitted. In order to avoid this, the text
-        is sent the the server regularly (default is ten seconds after the last edit).
-        This time interval can be controlled with this setting. Setting Autosave to
+        Drafts can be sent to the server regularly after some editing (see previous
+        option). This option determines the interval this is done. The default is
+        <b><code>10</code></b> seconds after the last edit. Setting Autosave to
         zero disables the autosave functionality.
       </li>
     </ul>
