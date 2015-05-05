@@ -18536,7 +18536,18 @@ BOOL is_user_allowed(LOGBOOK * lbs, char *command)
 
 /*------------------------------------------------------------------*/
 
-BOOL is_command_allowed(LOGBOOK * lbs, char *command)
+int is_draft(LOGBOOK * lbs, int message_id)
+{
+   char draft[256];
+   
+   el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL,
+               NULL, NULL, draft);
+   return draft[0];
+}
+
+/*------------------------------------------------------------------*/
+
+BOOL is_command_allowed(LOGBOOK * lbs, char *command, int message_id)
 {
    char str[1000], menu_str[1000], other_str[1000];
    char menu_item[MAX_N_LIST][NAME_LENGTH];
@@ -18651,7 +18662,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
          strlcat(menu_str, "Config, ", sizeof(menu_str));
    }
 
-   strcpy(other_str, "Preview, Back, Search, Download, Import, CSV Import, XML Import, ");
+   strlcpy(other_str, "Preview, Back, Search, Download, Import, CSV Import, XML Import, ", sizeof(other_str));
    strlcat(other_str, "Cancel, First, Last, Previous, Next, Requested, Forgot, ", sizeof(other_str));
 
    /* only allow Submit & Co if "New" is allowed */
@@ -18664,10 +18675,14 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command)
 
    /* admin commands */
    if (is_admin_user(lbs->name, getparam("unm"))) {
-      strcat(other_str, "Remove user, New user, Activate, ");
+      strlcat(other_str, "Remove user, New user, Activate, ", sizeof(other_str));
    } else if (getcfg(lbs->name, "Self register", str, sizeof(str)) && atoi(str) > 0) {
-      strcat(other_str, "Remove user, New user, ");
+      strlcat(other_str, "Remove user, New user, ", sizeof(other_str));
    }
+   
+   /* allow always edit of draft messages */
+   if (is_draft(lbs, message_id))
+      strlcat(other_str, "Edit, ", sizeof(other_str));
 
    /* allow change password if "config" possible */
    if (strieq(command, loc("Change password")) && stristr(menu_str, "Config")) {
@@ -24511,8 +24526,11 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                   loc("You might however then overwrite each other's modifications"));
       } else {
          if (draft[0]) {
-            rsprintf("<tr><td nowrap colspan=2 class=\"errormsg\">%s</td></tr>\n",
+            rsprintf("<tr><td nowrap colspan=2 class=\"errormsg\">%s\n",
                      loc("This is a draft message, edit and submit it to make it permament"));
+            rsprintf("&nbsp;<input type=button value=\"%s\" onClick=\"window.location.href='%d?cmd=Edit';\">",
+                     loc("Edit"), message_id);
+            rsprintf("</td></tr>\n");
          }
       }
 
@@ -25933,35 +25951,41 @@ void show_login_page(LOGBOOK * lbs, char *redir, int fail)
       url_encode(str, sizeof(str));
    rsprintf("<input type=hidden name=redir value=\"%s\">\n", str);
 
-   rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
+   rsprintf("<table class=\"login_frame\" cellspacing=0 align=center>");
 
    if (fail == 1) {
       strlcpy(str, loc("Invalid user name or password"), sizeof(str));
-      rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n", str);
+      rsprintf("<tr><td class=\"dlgerror\">%s!</td></tr>\n", str);
    }
 
    if (fail == 2) {
       sprintf(str, loc("User \"%s\" has no access to this logbook"), getparam("unm"));
-      rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n", str);
+      rsprintf("<tr><td class=\"dlgerror\">%s!</td></tr>\n", str);
    }
 
-   rsprintf("<tr><td colspan=2 class=\"dlgtitle\">%s</td></tr>\n", loc("Please login"));
+   rsprintf("<tr><td class=\"login_title\">%s</td></tr>\n", loc("Please login"));
 
-   rsprintf("<tr><td align=right class=\"dlgform\">%s:</td>\n", loc("Username"));
-   rsprintf("<td align=left class=\"dlgform\"><input type=text name=uname value=\"%s\"></td></tr>\n",
-            isparam("unm") ? getparam("unm") : "");
+   rsprintf("<tr><td class=\"login_form\">\n");
+   rsprintf("<span class=\"overlay_wrapper\">\n");
+   rsprintf("<label for=\"uname\" id=\"uname\" class=\"overlabel\">%s</label>\n", loc("Username"));
+   rsprintf("<input type=\"text\" class=\"login_input\" name=\"uname\" value=\"%s\" title=\"%s\" onInput=\"document.getElementById('uname').style.display='none';\">\n",
+            isparam("unm") ? getparam("unm") : "", loc("Username"));
+   rsprintf("</span></td></tr>\n");
 
-   rsprintf("<tr><td align=right class=\"dlgform\">%s:</td>\n", loc("Password"));
-   rsprintf("<td align=left class=\"dlgform\"><input type=password name=upassword></td></tr>\n");
+   rsprintf("<tr><td class=\"login_form\">\n");
+   rsprintf("<span class=\"overlay_wrapper\">\n");
+   rsprintf("<label for=\"upassword\" id=\"upassword\" class=\"overlabel\">%s</label>\n", loc("Password"));
+   rsprintf("<input type=\"password\" class=\"login_input\" name=\"upassword\" onInput=\"document.getElementById('upassword').style.display='none';\">\n");
+   rsprintf("</span></td></tr>\n");
 
    if (!getcfg(lbs->name, "Login expiration", str, sizeof(str)) || atof(str) > 0) {
-      rsprintf("<tr><td align=center colspan=2 class=\"dlgform\">");
+      rsprintf("<tr><td align=center class=\"login_form\">");
 
       if (isparam("urem") && atoi(getparam("urem")) == 0)
          rsprintf("<input type=checkbox name=remember value=1>\n");
       else
          rsprintf("<input type=checkbox checked name=remember value=1>\n");
-      rsprintf("%s<br>\n", loc("Keep me logged in on this computer"));
+      rsprintf("%s\n", loc("Keep me logged in on this computer"));
 
       if (str[0] == 0)
          rsprintf(loc("for the next %d days"), 31);
@@ -25982,7 +26006,7 @@ void show_login_page(LOGBOOK * lbs, char *redir, int fail)
    show_self_register = (getcfg(lbs->name, "Self register", str, sizeof(str)) && atoi(str) > 0);
 
    if (show_forgot_link || show_self_register)
-      rsprintf("<tr><td align=center colspan=2 class=\"dlgform\">\n");
+      rsprintf("<tr><td align=center class=\"login_form\">\n");
 
    if (show_forgot_link)
       rsprintf("<a href=\"?cmd=%s\">%s</a>", loc("Forgot"), loc("Forgot password?"));
@@ -25998,7 +26022,7 @@ void show_login_page(LOGBOOK * lbs, char *redir, int fail)
    if (show_forgot_link || show_self_register)
       rsprintf("</td></tr>\n");
 
-   rsprintf("<tr><td align=center colspan=2 class=\"dlgform\"><input type=submit value=\"%s\"></td></tr>",
+   rsprintf("<tr><td align=center style=\"padding-bottom:20px;\" class=\"login_form\"><input type=\"submit\" class=\"login_submit\" value=\"%s\"></td></tr>",
             loc("Submit"));
 
    rsprintf("</table>\n");
@@ -26894,6 +26918,7 @@ void interprete(char *lbook, char *path)
    else
       _logging_level = 2;
    set_condition("");
+   message_id = atoi(dec_path);
 
    /* evaluate "jcmd" */
    if (isparam("jcmd") && *getparam("jcmd"))
@@ -27548,7 +27573,7 @@ void interprete(char *lbook, char *path)
    }
 
    /* check if command in menu list */
-   if (!is_command_allowed(lbs, command)) {
+   if (!is_command_allowed(lbs, command, message_id)) {
       /* redirect to login page for new command */
       if (strieq(command, loc("New")) && !isparam("unm")) {
          show_login_page(lbs, _cmdline, 0);
@@ -27668,7 +27693,6 @@ void interprete(char *lbook, char *path)
       }
    }
 
-   message_id = atoi(dec_path);
    if (strieq(command, loc("Upload")) || strieq(command, "Upload")) {
       show_edit_form(lbs, isparam("edit_id") ? atoi(getparam("edit_id")) : 0,
                      FALSE, TRUE, TRUE, FALSE, FALSE, FALSE);

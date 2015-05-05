@@ -577,6 +577,70 @@ td {
 .dlgform {
   background-color:#DDEEBB;
   padding:5px;
+  text-align:center;
+}
+
+/* login page */
+.login_frame {
+   width:200px;
+   background-color:#486090;
+   border:1px solid #486090;
+   border-radius:25px;
+   overflow:hidden;
+   margin-top:2cm;
+   -webkit-box-shadow: 10px 10px 20px 0px rgba(128,128,128,1);
+   -moz-box-shadow: 10px 10px 20px 0px rgba(128,128,128,1);
+   box-shadow: 10px 10px 20px 0px rgba(128,128,128,1);
+}
+
+.login_form {
+   background-color:#DDEEBB;
+   padding:8px;
+   padding-left:25px;
+   padding-right:25px;
+   text-align:center;
+}
+
+.login_title {
+   background-color:#486090;
+   color:white;
+   font-size:18px;
+   text-align:center;
+   padding:10px;
+}
+
+.login_submit {
+   font-size:18px;
+   padding:10px;
+   padding-top:5px;
+   padding-bottom:5px;
+   background-color:rgb(69,181,69);
+   color:white;
+   border-radius:8px;
+}
+
+.overlay_wrapper {
+   position: relative;
+   top:0;
+   left:0;
+   z-index:10;
+   background:none;
+}
+
+.overlabel {
+   pointer-events: none;
+   position: absolute;
+   top: -5px;
+   left: 5px;
+   z-index: 1;
+   color: #999;
+   font-size: 18px;
+}
+
+.login_input {
+   font-size: 18px;
+   padding: 3px;
+   width:200px;
 }
 
 .calwindow {
