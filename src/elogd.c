@@ -26023,14 +26023,14 @@ void show_login_page(LOGBOOK * lbs, char *redir, int fail)
       strlcpy(str, loc("New user"), sizeof(str));
       url_encode(str, sizeof(str));
       if (show_forgot_link)
-         rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
+         rsprintf("<br>");
       rsprintf("<a href=\"?cmd=%s\">%s</a></td></tr>", str, loc("Register as new user"));
    }
 
    if (show_forgot_link || show_self_register)
       rsprintf("</td></tr>\n");
 
-   rsprintf("<tr><td align=center style=\"padding-bottom:20px;\" class=\"login_form\"><input type=\"submit\" class=\"login_submit\" value=\"%s\"></td></tr>",
+   rsprintf("<tr><td align=center class=\"login_form_bottom\"><input type=\"submit\" class=\"login_submit\" value=\"%s\"></td></tr>",
             loc("Submit"));
 
    rsprintf("</table>\n");

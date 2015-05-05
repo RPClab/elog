@@ -583,8 +583,7 @@ td {
 /* login page */
 .login_frame {
    width:200px;
-   background-color:#486090;
-   border:1px solid #486090;
+   border:1px solid #D0D0D0;
    border-radius:25px;
    overflow:hidden;
    margin-top:2cm;
@@ -601,7 +600,20 @@ td {
    text-align:center;
 }
 
+.login_form_bottom {
+   border-bottom-left-radius:24px;
+   border-bottom-right-radius:24px;
+   background-color:#DDEEBB;
+   padding:8px;
+   padding-bottom:20px;
+   padding-left:25px;
+   padding-right:25px;
+   text-align:center;
+}
+
 .login_title {
+   border-top-left-radius:24px;
+   border-top-right-radius:24px;
    background-color:#486090;
    color:white;
    font-size:18px;
