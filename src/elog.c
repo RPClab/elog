@@ -801,9 +801,10 @@ INT submit_elog(char *host, int port, int ssl, char *subdir, char *experiment,
       }
    }
 
-   sprintf(content + strlen(content),
-           "%s\r\nContent-Disposition: form-data; name=\"Text\"\r\n\r\n%s\r\n%s\r\n",
-           boundary, text, boundary);
+   if (text[0])
+      sprintf(content + strlen(content),
+              "%s\r\nContent-Disposition: form-data; name=\"Text\"\r\n\r\n%s\r\n%s\r\n",
+              boundary, text, boundary);
 
    content_length = strlen(content);
    p = content + content_length;
@@ -978,7 +979,8 @@ int main(int argc, char *argv[])
    char host_name[256], logbook[32], textfile[256], subdir[256];
    char *buffer[MAX_ATTACHMENTS], attachment[MAX_ATTACHMENTS][256];
    INT att_size[MAX_ATTACHMENTS];
-   INT i, n, fh, n_att, n_attr, port, reply, quote_on_reply, edit, download, encoding, suppress, size, ssl;
+   INT i, n, fh, n_att, n_attr, port, reply, quote_on_reply, edit, download, encoding, suppress, size, ssl,
+       text_flag;
    char attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 
    text[0] = textfile[0] = uname[0] = upwd[0] = suppress = quote_on_reply = 0;
@@ -986,6 +988,7 @@ int main(int argc, char *argv[])
    n_att = n_attr = reply = edit = download = encoding = 0;
    port = 80;
    ssl = 0;
+   text_flag = 0;
 
    for (i = 0; i < MAX_ATTACHMENTS; i++) {
       attachment[i][0] = 0;
@@ -1042,9 +1045,10 @@ int main(int argc, char *argv[])
                   download = atoi(argv[++i]);
             } else if (argv[i][1] == 'n')
                encoding = atoi(argv[++i]);
-            else if (argv[i][1] == 'm')
+            else if (argv[i][1] == 'm') {
                strcpy(textfile, argv[++i]);
-            else {
+               text_flag = 1;
+            } else {
              usage:
                printf("%s ", ELOGID);
                strcpy(str, svn_revision + 13);
@@ -1076,6 +1080,7 @@ int main(int argc, char *argv[])
          } else {
             strcpy(text, argv[i]);
             convert_crlf(text, sizeof(text));
+            text_flag = 1;
          }
       }
    }
@@ -1139,7 +1144,7 @@ int main(int argc, char *argv[])
       close(fh);
    }
 
-   if (text[0] == 0 && textfile[0] == 0 && !edit && !download) {
+   if (text_flag == 0 && !edit && !download) {
       /* read from stdin */
 
       n = 0;
