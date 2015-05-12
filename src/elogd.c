@@ -9998,7 +9998,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("      last_key = 0;\n");
    rsprintf("      return false;\n");
    rsprintf("    }\n");
-   rsprintf("  }\n");
+   rsprintf("  }\n\n");
 
    for (i = 0; i < n_attr; i++) {
       if ((attr_flags[i] & AF_REQUIRED) && !(attr_flags[i] & AF_LOCKED)) {
@@ -10007,20 +10007,22 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          strcpy(ua, attr_list[i]);
          stou(ua);
 
+         rsprintf("  try {\n"); // try-catch block in case attributes are not there (conditional)
+         
          if (attr_flags[i] & AF_MULTI) {
             rsprintf("  if (\n");
             for (j = 0; j < MAX_N_LIST && attr_options[i][j][0]; j++) {
                sprintf(str, "%s_%d", ua, j);
-               rsprintf("    !document.form1.%s.checked", str);
+               rsprintf("      !document.form1.%s.checked", str);
                if (attr_options[i][j + 1][0])
                   rsprintf(" &&\n");
             }
             rsprintf(") {\n");
             sprintf(str, loc("Please select at least one '%s'"), attr_list[i]);
-            rsprintf("    alert(\"%s\");\n", str);
-            rsprintf("    document.form1.%s_0.focus();\n", ua);
-            rsprintf("    return false;\n");
-            rsprintf("  }\n");
+            rsprintf("      alert(\"%s\");\n", str);
+            rsprintf("      document.form1.%s_0.focus();\n", ua);
+            rsprintf("      return false;\n");
+            rsprintf("    }\n");
 
          } else if (attr_flags[i] & (AF_MUSERLIST | AF_MUSEREMAIL)) {
             rsprintf("  if (\n");
@@ -10030,111 +10032,120 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                get_user_line(lbs, login_name, NULL, NULL, NULL, NULL, NULL, NULL);
 
                sprintf(str, "%s_%d", ua, j);
-               rsprintf("    !document.form1.%s.checked", str);
+               rsprintf("      !document.form1.%s.checked", str);
                if (enum_user_line(lbs, j + 1, login_name, sizeof(login_name)))
                   rsprintf(" &&\n");
             }
             rsprintf(") {\n");
             sprintf(str, loc("Please select at least one '%s'"), attr_list[i]);
-            rsprintf("    alert(\"%s\");\n", str);
-            rsprintf("    document.form1.%s_0.focus();\n", ua);
-            rsprintf("    return false;\n");
-            rsprintf("  }\n");
+            rsprintf("      alert(\"%s\");\n", str);
+            rsprintf("      document.form1.%s_0.focus();\n", ua);
+            rsprintf("      return false;\n");
+            rsprintf("    }\n");
 
          } else if (attr_flags[i] & AF_RADIO) {
-            rsprintf("  for (var i=0 ; i<document.form1.%s.length ; i++)\n", ua);
-            rsprintf("    if (document.form1.%s[i].checked) { break }\n", ua);
-            rsprintf("  if (i == document.form1.%s.length) {\n", ua);
+            rsprintf("    for (var i=0 ; i<document.form1.%s.length ; i++)\n", ua);
+            rsprintf("      if (document.form1.%s[i].checked) { break }\n", ua);
+            rsprintf("    if (i == document.form1.%s.length) {\n", ua);
             sprintf(str, loc("Please select a '%s'"), attr_list[i]);
-            rsprintf("    alert(\"%s\");\n", str);
-            rsprintf("    document.form1.%s[0].focus();\n", ua);
-            rsprintf("    return false;\n");
-            rsprintf("  }\n");
+            rsprintf("      alert(\"%s\");\n", str);
+            rsprintf("      document.form1.%s[0].focus();\n", ua);
+            rsprintf("      return false;\n");
+            rsprintf("    }\n");
 
          } else if (attr_flags[i] & (AF_DATE | AF_DATETIME)) {
-            rsprintf("  if (document.form1.m%d.value == \"\") {\n", i);
+            rsprintf("    if (document.form1.m%d.value == \"\") {\n", i);
             sprintf(str, loc("Please enter month for attribute '%s'"), attr_list[i]);
-            rsprintf("    alert(\"%s\");\n", str);
-            rsprintf("    document.form1.m%d.focus();\n", i);
-            rsprintf("    return false;\n");
-            rsprintf("  }\n");
-            rsprintf("  if (document.form1.d%d.value == \"\") {\n", i);
+            rsprintf("      alert(\"%s\");\n", str);
+            rsprintf("      document.form1.m%d.focus();\n", i);
+            rsprintf("      return false;\n");
+            rsprintf("    }\n");
+            rsprintf("    if (document.form1.d%d.value == \"\") {\n", i);
             sprintf(str, loc("Please enter day for attribute '%s'"), attr_list[i]);
-            rsprintf("    alert(\"%s\");\n", str);
-            rsprintf("    document.form1.d%d.focus();\n", i);
-            rsprintf("    return false;\n");
-            rsprintf("  }\n");
-            rsprintf("  if (document.form1.y%d.value == \"\") {\n", i);
+            rsprintf("      alert(\"%s\");\n", str);
+            rsprintf("      document.form1.d%d.focus();\n", i);
+            rsprintf("      return false;\n");
+            rsprintf("    }\n");
+            rsprintf("    if (document.form1.y%d.value == \"\") {\n", i);
             sprintf(str, loc("Please enter year for attribute '%s'"), attr_list[i]);
-            rsprintf("    alert(\"%s\");\n", str);
-            rsprintf("    document.form1.y%d.focus();\n", i);
-            rsprintf("    return false;\n");
-            rsprintf("  }\n");
+            rsprintf("      alert(\"%s\");\n", str);
+            rsprintf("      document.form1.y%d.focus();\n", i);
+            rsprintf("      return false;\n");
+            rsprintf("    }\n");
 
             if (attr_flags[i] & AF_DATETIME) {
-               rsprintf("  if (document.form1.h%d.value == \"\") {\n", i);
+               rsprintf("    if (document.form1.h%d.value == \"\") {\n", i);
                sprintf(str, loc("Please enter hour for attribute '%s'"), attr_list[i]);
-               rsprintf("    alert(\"%s\");\n", str);
-               rsprintf("    document.form1.h%d.focus();\n", i);
-               rsprintf("    return false;\n");
-               rsprintf("  }\n");
-               rsprintf("  if (document.form1.n%d.value == \"\") {\n", i);
+               rsprintf("      alert(\"%s\");\n", str);
+               rsprintf("      document.form1.h%d.focus();\n", i);
+               rsprintf("      return false;\n");
+               rsprintf("    }\n");
+               rsprintf("    if (document.form1.n%d.value == \"\") {\n", i);
                sprintf(str, loc("Please enter minute for attribute '%s'"), attr_list[i]);
-               rsprintf("    alert(\"%s\");\n", str);
-               rsprintf("    document.form1.n%d.focus();\n", i);
-               rsprintf("    return false;\n");
-               rsprintf("  }\n");
-               rsprintf("  if (document.form1.c%d.value == \"\") {\n", i);
+               rsprintf("      alert(\"%s\");\n", str);
+               rsprintf("      document.form1.n%d.focus();\n", i);
+               rsprintf("      return false;\n");
+               rsprintf("    }\n");
+               rsprintf("    if (document.form1.c%d.value == \"\") {\n", i);
                sprintf(str, loc("Please enter second for attribute '%s'"), attr_list[i]);
-               rsprintf("    alert(\"%s\");\n", str);
-               rsprintf("    document.form1.c%d.focus();\n", i);
-               rsprintf("    return false;\n");
-               rsprintf("  }\n");
+               rsprintf("      alert(\"%s\");\n", str);
+               rsprintf("      document.form1.c%d.focus();\n", i);
+               rsprintf("      return false;\n");
+               rsprintf("    }\n");
             }
 
          } else {
-            rsprintf("  if (document.form1.%s.value == \"\") {\n", ua);
+            rsprintf("    if (document.form1.%s.value == \"\") {\n", ua);
             sprintf(str, loc("Please enter attribute '%s'"), attr_list[i]);
-            rsprintf("    alert(\"%s\");\n", str);
-            rsprintf("    document.form1.%s.focus();\n", ua);
-            rsprintf("    return false;\n");
-            rsprintf("  }\n");
+            rsprintf("      alert(\"%s\");\n", str);
+            rsprintf("      document.form1.%s.focus();\n", ua);
+            rsprintf("      return false;\n");
+            rsprintf("    }\n");
          }
+         
+         rsprintf("  }\n");
+         rsprintf("  catch(err) {\n");
+         rsprintf("  }\n\n");
       }
+
+      rsprintf("  try {\n"); // try-catch block in case attributes are not there (conditional)
 
       if ((attr_flags[i] & AF_NUMERIC) && !(attr_flags[i] & AF_LOCKED)) {
          /* convert blanks etc. to underscores */
          strcpy(ua, attr_list[i]);
          stou(ua);
 
-         rsprintf("  if (document.form1.%s.value != \"- %s -\") {\n", ua, loc("keep original values"));
-         rsprintf("    for (var i=0 ; i<document.form1.%s.value.length ; i++)\n", ua);
-         rsprintf("      if (document.form1.%s.value.charAt(i) != \",\" &&\n", ua);
-         rsprintf("          document.form1.%s.value.charAt(i) != \".\" &&\n", ua);
-         rsprintf("          document.form1.%s.value.charAt(i) != \"-\" &&\n", ua);
-         rsprintf("          (document.form1.%s.value.charAt(i) < \"0\" ||\n", ua);
-         rsprintf("           document.form1.%s.value.charAt(i) > \"9\")) { break }\n", ua);
-         rsprintf("    if (i<document.form1.%s.value.length) {\n", ua);
+         rsprintf("    if (document.form1.%s.value != \"- %s -\") {\n", ua, loc("keep original values"));
+         rsprintf("      for (var i=0 ; i<document.form1.%s.value.length ; i++)\n", ua);
+         rsprintf("        if (document.form1.%s.value.charAt(i) != \",\" &&\n", ua);
+         rsprintf("            document.form1.%s.value.charAt(i) != \".\" &&\n", ua);
+         rsprintf("            document.form1.%s.value.charAt(i) != \"-\" &&\n", ua);
+         rsprintf("            (document.form1.%s.value.charAt(i) < \"0\" ||\n", ua);
+         rsprintf("             document.form1.%s.value.charAt(i) > \"9\")) { break }\n", ua);
+         rsprintf("      if (i<document.form1.%s.value.length) {\n", ua);
          sprintf(str, loc("Please enter numeric value for '%s'"), attr_list[i]);
-         rsprintf("      alert(\"%s\");\n", str);
-         rsprintf("      document.form1.%s.focus();\n", ua);
-         rsprintf("      return false;\n");
+         rsprintf("        alert(\"%s\");\n", str);
+         rsprintf("        document.form1.%s.focus();\n", ua);
+         rsprintf("        return false;\n");
+         rsprintf("      }\n");
          rsprintf("    }\n");
-         rsprintf("  }\n");
       }
 
       if ((attr_flags[i] & (AF_DATE | AF_DATETIME)) && !(attr_flags[i] & AF_LOCKED)) {
-         rsprintf("  for (var i=0 ; i<document.form1.y%d.value.length ; i++)\n", i);
-         rsprintf("    if ((document.form1.y%d.value.charAt(i) < \"0\" ||\n", i);
-         rsprintf("         document.form1.y%d.value.charAt(i) > \"9\")) { break }\n", i);
-         rsprintf("  if (i<document.form1.y%d.value.length) {\n", i);
+         rsprintf("    for (var i=0 ; i<document.form1.y%d.value.length ; i++)\n", i);
+         rsprintf("      if ((document.form1.y%d.value.charAt(i) < \"0\" ||\n", i);
+         rsprintf("           document.form1.y%d.value.charAt(i) > \"9\")) { break }\n", i);
+         rsprintf("    if (i<document.form1.y%d.value.length) {\n", i);
          sprintf(str, loc("Please enter numeric value for year of attribute '%s'"), attr_list[i]);
-         rsprintf("    alert(\"%s\");\n", str);
-         rsprintf("    document.form1.y%d.focus();\n", i);
-         rsprintf("    return false;\n");
-         rsprintf("  }\n");
+         rsprintf("      alert(\"%s\");\n", str);
+         rsprintf("      document.form1.y%d.focus();\n", i);
+         rsprintf("      return false;\n");
+         rsprintf("    }\n");
       }
 
+      rsprintf("  }\n");
+      rsprintf("  catch(err) {\n");
+      rsprintf("  }\n\n");
    }
 
    rsprintf("  submitted = true;\n");
