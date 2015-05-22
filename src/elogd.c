@@ -10108,13 +10108,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("  }\n\n");
       }
 
-      rsprintf("  try {\n"); // try-catch block in case attributes are not there (conditional)
-
       if ((attr_flags[i] & AF_NUMERIC) && !(attr_flags[i] & AF_LOCKED)) {
          /* convert blanks etc. to underscores */
          strcpy(ua, attr_list[i]);
          stou(ua);
 
+         rsprintf("  try {\n"); // try-catch block in case attributes are not there (conditional)
          rsprintf("    if (document.form1.%s.value != \"- %s -\") {\n", ua, loc("keep original values"));
          rsprintf("      for (var i=0 ; i<document.form1.%s.value.length ; i++)\n", ua);
          rsprintf("        if (document.form1.%s.value.charAt(i) != \",\" &&\n", ua);
@@ -10129,9 +10128,13 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("        return false;\n");
          rsprintf("      }\n");
          rsprintf("    }\n");
+         rsprintf("  }\n");
+         rsprintf("  catch(err) {\n");
+         rsprintf("  }\n\n");
       }
 
       if ((attr_flags[i] & (AF_DATE | AF_DATETIME)) && !(attr_flags[i] & AF_LOCKED)) {
+         rsprintf("  try {\n"); // try-catch block in case attributes are not there (conditional)
          rsprintf("    for (var i=0 ; i<document.form1.y%d.value.length ; i++)\n", i);
          rsprintf("      if ((document.form1.y%d.value.charAt(i) < \"0\" ||\n", i);
          rsprintf("           document.form1.y%d.value.charAt(i) > \"9\")) { break }\n", i);
@@ -10141,11 +10144,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("      document.form1.y%d.focus();\n", i);
          rsprintf("      return false;\n");
          rsprintf("    }\n");
+         rsprintf("  }\n");
+         rsprintf("  catch(err) {\n");
+         rsprintf("  }\n\n");
       }
-
-      rsprintf("  }\n");
-      rsprintf("  catch(err) {\n");
-      rsprintf("  }\n\n");
    }
 
    rsprintf("  submitted = true;\n");
@@ -10216,7 +10218,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    else
       autosave = 10;
    
-   if (getcfg(lbs->name, "Save drafts", str, sizeof(str)) || atoi(str) == 0)
+   if (getcfg(lbs->name, "Save drafts", str, sizeof(str)) && atoi(str) == 0)
       autosave = 0;
 
    rsprintf("function mod(e)\n");
