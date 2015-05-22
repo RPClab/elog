@@ -28459,8 +28459,8 @@ int process_http_request(const char *request, int i_conn)
             }
          }
 
-         if (cookie_list[i] == NULL)
-            printf("Received unknown cookie \"%s\"\n", str);
+         if (cookie_list[i] == NULL && get_verbose() >= VERBOSE_INFO)
+            eprintf("Received unknown cookie \"%s\"\n", str);
 
       } while (*p && *p == ';');
    }
