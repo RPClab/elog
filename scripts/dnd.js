@@ -36,6 +36,9 @@ function asend() {
    var r = XMLHttpRequestGeneric();
    r.onreadystatechange = function()
      {
+       if (r.readyState==4)
+          in_asend = false;
+     
        // after successful completion ...
        if (r.readyState==4 && r.status==200) {
           // restore original title
@@ -85,6 +88,7 @@ function asend() {
    
    // add jcmd
    f.append("jcmd", "Save");
+   in_asend = true;
    r.send(f);
 }
 

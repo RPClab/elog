@@ -9993,6 +9993,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("var entry_modified = false;\n");
    rsprintf("var draft_modified = false;\n");
    rsprintf("var last_key = 0;\n\n");
+   rsprintf("var in_asend = false;\n\n");
 
    rsprintf("function chkform()\n");
    rsprintf("{\n");
@@ -10155,6 +10156,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       }
    }
 
+   rsprintf("  if (autoSaveTimer != null)\n");
+   rsprintf("    clearTimeout(autoSaveTimer);\n");
+   rsprintf("  while (in_asend);\n"); // wait for any running asynchronous operation
    rsprintf("  submitted = true;\n");
    rsprintf("  return true;\n");
    rsprintf("}\n\n");
@@ -10164,6 +10168,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("{\n");
    rsprintf("  if (autoSaveTimer != null)\n");
    rsprintf("    clearTimeout(autoSaveTimer);\n");
+   rsprintf("  while (in_asend);\n"); // wait for any running asynchronous operation
    rsprintf("  submitted = true;\n"); // don't ask to leave that page
    rsprintf("  return true;\n");
    rsprintf("}\n\n");
