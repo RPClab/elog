@@ -193,13 +193,7 @@ install: $(EXECS)
 	fi
 
 	@echo "Installing themes to $(ELOGDIR)/themes"
-	@$(INSTALL) -m 0644 themes/default/icons/* $(ELOGDIR)/themes/default/icons/
-	@for file in `find themes/default -type f` ;\
-          do \
-	    if [ ! -f $(ELOGDIR)/themes/default/`basename $$file` ]; then  \
-              $(INSTALL) -m 0644 $$file $(ELOGDIR)/themes/default/`basename $$file` ; \
-	    fi; \
-	  done
+	@$(INSTALL) -m 0644 themes/default/* $(ELOGDIR)/themes/default/
 
 	@echo "Installing example logbook to $(ELOGDIR)/logbooks/demo"
 	@if [ ! -f $(ELOGDIR)/logbooks/demo/2001 ]; then  \

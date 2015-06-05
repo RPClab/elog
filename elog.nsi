@@ -111,17 +111,12 @@ Section "ELOG system (required)" SecSystem
 
   ; themes 
   SetOutPath $INSTDIR\themes\default
-
-  IfFileExists $INSTDIR\themes\default\default.css 0 themesNotExist
-    MessageBox MB_YESNO|MB_ICONQUESTION "Would you like to overwrite your existing theme files?" IDNO themesNotOverwrite
-  themesNotExist:
-    File themes\default\*.css
-    File themes\default\*.png
-    File themes\default\*.ico
-    File themes\default\*.png
-    SetOutPath $INSTDIR\themes\default\icons
-    File themes\default\icons\*.*
-  themesNotOverwrite:
+  File themes\default\*.css
+  File themes\default\*.png
+  File themes\default\*.ico
+  File themes\default\*.png
+  SetOutPath $INSTDIR\themes\default\icons
+  File themes\default\icons\*.*
 
   ; demo logbook
   IfFileExists $INSTDIR\logbooks\demo\2001\011108a.log 0 logbNotExist
