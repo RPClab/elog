@@ -47,7 +47,7 @@
 		D548630A1ACA9A9F00BA8C69 /* im.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; name = im.js; path = ../scripts/im.js; sourceTree = "<group>"; };
 		D548630B1ACA9AAB00BA8C69 /* load-ckeditor.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; name = "load-ckeditor.js"; path = "../scripts/load-ckeditor.js"; sourceTree = "<group>"; };
 		D548630C1ACA9AC600BA8C69 /* elcode.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; name = elcode.js; path = ../scripts/elcode.js; sourceTree = "<group>"; };
-		D548630D1ACAEF5400BA8C69 /* default.css */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.css; name = default.css; path = ../themes/default/default.css; sourceTree = "<group>"; };
+		D57031C51B21CAF900A7C6EE /* elog.css */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.css; name = elog.css; path = ../themes/default/elog.css; sourceTree = "<group>"; };
 		D58A366615AF103300682DC0 /* elog-version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "elog-version.h"; path = "../src/elog-version.h"; sourceTree = SOURCE_ROOT; };
 		D5AC5BF9154AC7200018DD90 /* config.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = config.html; path = ../doc/config.html; sourceTree = SOURCE_ROOT; };
 		D5C8CD7A1ACC02A0008B1201 /* elogd.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = elogd.cfg; path = ../../../elogdemo/elogd.cfg; sourceTree = "<group>"; };
@@ -115,8 +115,8 @@
 		D5F11B9013AFA146002CE8BF /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				D57031C51B21CAF900A7C6EE /* elog.css */,
 				D5C8CD7A1ACC02A0008B1201 /* elogd.cfg */,
-				D548630D1ACAEF5400BA8C69 /* default.css */,
 				D5AC5BF9154AC7200018DD90 /* config.html */,
 				D51F4A9214F27F3C00CB29E9 /* index.html */,
 				D528A7C514F278DA00D33974 /* checklist.txt */,

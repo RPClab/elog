@@ -7581,7 +7581,7 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
                       int absolute_link, int refresh)
 {
    int i, n;
-   char css[1000], str[1000], media[1000];
+   char css[1000], css_base[1000], str[1000], media[1000];
    char css_list[MAX_N_LIST][NAME_LENGTH];
 
    show_http_header(lbs, expires, cookie);
@@ -7603,29 +7603,34 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
 
    /* Cascading Style Sheet */
    if (absolute_link)
-      compose_base_url(lbs, css, sizeof(css), FALSE);
+      compose_base_url(lbs, css_base, sizeof(css_base), FALSE);
+   else
+      css_base[0] = 0;
+
+   rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%selog.css\">\n", css_base);
+
+   if (lbs != NULL && getcfg(lbs->name, "CSS", str, sizeof(str)))
+      strlcpy(css, str, sizeof(css));
+   else if (lbs == NULL && getcfg("global", "CSS", str, sizeof(str)))
+      strlcpy(css, str, sizeof(css));
    else
       css[0] = 0;
 
-   if (lbs != NULL && getcfg(lbs->name, "CSS", str, sizeof(str)))
-      strlcat(css, str, sizeof(css));
-   else if (lbs == NULL && getcfg("global", "CSS", str, sizeof(str)))
-      strlcat(css, str, sizeof(css));
-   else
-      strlcat(css, "default.css", sizeof(css));
-
-   if (strchr(css, ',')) {
-      n = strbreak(css, css_list, MAX_N_LIST, ",", FALSE);
-      for (i = 0; i < n; i++) {
-         strlcpy(str, css_list[i], sizeof(str));
-         if (strchr(str, '&')) {
-            strlcpy(media, strchr(str, '&') + 1, sizeof(media));
-            *strchr(str, '&') = 0;
-            rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\" media=\"%s\">\n", str, media);
+   if (css[0]) {
+      if (strchr(css, ',')) {
+         n = strbreak(css, css_list, MAX_N_LIST, ",", FALSE);
+         for (i = 0; i < n; i++) {
+            strlcpy(str, css_list[i], sizeof(str));
+            if (strchr(str, '&')) {
+               strlcpy(media, strchr(str, '&') + 1, sizeof(media));
+               *strchr(str, '&') = 0;
+               rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\" media=\"%s\">\n", str, media);
+            }
          }
-      }
-   } else
-      rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\">\n", css);
+      } else
+         rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s%s\">\n", css_base, css);
+   }
+   
    rsprintf("<link rel=\"shortcut icon\" href=\"favicon.ico\" />\n");
    rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
 
