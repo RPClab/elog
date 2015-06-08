@@ -28875,7 +28875,7 @@ int process_http_request(const char *request, int i_conn)
          strcpy(format, DEFAULT_TIME_FORMAT);
       time(&now);
       ts = localtime(&now);
-      my_strftime(str, sizeof(str), format, ts);
+      my_strftime(str, strsize, format, ts);
       show_http_header(NULL, FALSE, NULL);
       rsputs(str);
       rsputs(" ");

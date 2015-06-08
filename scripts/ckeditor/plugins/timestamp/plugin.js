@@ -19,7 +19,7 @@ CKEDITOR.plugins.add( 'timestamp', {
 
 			// Define the function that will be fired when the command is executed.
 			exec: function( editor ) {
-				var URL = "../../?cmd=gettimedate";
+				var URL = "./?cmd=gettimedate";
 
 				$.ajax({
 				    url: URL,
