@@ -243,6 +243,37 @@ URL = http://your.proxy.host/subdir/
 
 into elogd.cfg.<p>
 
+<h3><hr><i>Using apache authentication:</i></h3>
+It is also possible to login via an apache-auth module.<br>
+In elogd.cfg you should use the keyword "Webserver" for Authentication:
+  
+<ul><pre>
+Authentication = Webserver
+</pre></ul>
+This triggers elogd to use the environment variable "X-Forwarded-User" as the logged in user.<br>
+A simple example of a apache configuration (including the proxy) is :
+<ul><pre>
+# this required to pass on the generated env-variable X-Forwarded-User to the proxy 
+ProxyPassInterpolateEnv On
+
+ProxyPass /elog/ http://your.host.domain:8080/
+
+&lt;Location  "/elog"&gt;
+        Order allow,deny
+        Allow from all     
+        AuthType Basic
+        AuthName "elog-server"
+        AuthUserFile "/opt/elog/htpasswd"
+        require valid-user
+        RequestHeader unset  Authorization
+        RequestHeader add X-Forwarded-User %{REMOTE_USER}s
+        # elog doesn't like the '@', so we need to cut it
+        RequestHeader edit X-Forwarded-User "@(.*)$" ""
+&lt;/Location&gt;
+</pre></ul>
+
+
+
 <hr><a name="imagemagick"> <div class=section>&nbsp; Installing ImageMagick &nbsp;</div> <p> 
 When images are attached to ELOG entries, thumbnails can be created for quick preview.
 This works also for PDF and PostScript files. ELOG forwards any image operation
