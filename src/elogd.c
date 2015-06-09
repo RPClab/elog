@@ -13203,12 +13203,12 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
 
    /* if we outsourced the authentication, use external username */
    getcfg(lbs->name, "Authentication", str, sizeof(str));
-   if ( stristr(str, "Webserver")) {
-      strlcpy(user, http_user, sizeof(user));
+   if (stristr(str, "Webserver")) {
+      /* do not allow HTML in user name */
+      strencode2(user_enc, http_user, sizeof(user_enc));
+   } else {
+      strencode2(user_enc, user, sizeof(user_enc));
    }
-
-   /* do not allow HTML in user name */
-   strencode2(user_enc, user, sizeof(user_enc));
 
    /* check for user name */
    if (!isparam("new_user_name") || *getparam("new_user_name") == 0) {
