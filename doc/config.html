@@ -2150,7 +2150,7 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
     </p>
     
     <h2>
-      Site authentication
+      Kerberos authentication
     </h2>
     <p>
     Starting from version 2.9.0, site authentication has been implemented
@@ -2207,6 +2207,44 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
     some installation it has been found that this does not work, in which case
     you have to change your password by other means (such as via the Windows
     login if you use a Windows Domain).
+    </p>
+    
+    
+    <h2>
+       LDAP authentication
+    </h2>
+    <p>
+    LDAP (lightweight Directory Access Protocol) has been implemented by
+    vykozlov in a separate branch at <a href="https://github.com/vykozlov/elog-ldap">https://github.com/vykozlov/elog-ldap</a>. The code has been merged into this distribution on
+    an as-is basis. Following info has copied from the link above:</p>
+
+    <p>
+    To use LDAP authentication, do the following:
+    </p>
+    
+    <ul>
+       <li>
+          Enable LDAP authentication in the <b><code>Makefile</code></b> by setting
+          <b><code>USE_LDAP = 1</code></b>
+       </li>
+       <li>
+          Change elogd.cf to contain LDAP authentication:
+          <ul>
+            <li><b><code>Authentication = LDAP</code></b></li>
+            <li><b><code>LDAP server = ldap://example.org:389</code></b></li>
+            <li><b><code>LDAP userbase = ou=People;dc=example,dc=org</code></b></li>
+            <li><b><code>LDAP login attribute = uid</code></b></li>
+            <li><b><code>LDAP register = 1</code></b></li>
+          </ul>
+          The <code><b>login attribute</b></code> is from the DN (distinguished name), e.g.
+          uid=user,ou=People,dc=example,dc=org. The <code><b>register</b></code> flag determines
+          if LDAP users are automatically stored in the local password file, which is
+          necessary for email notifications.
+       </li>
+    </ul>
+
+    <p>
+    Please note that it is not possible to change a password in the LDAP database from within ELOG.
     </p>
     
     <p>
