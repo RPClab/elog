@@ -8717,7 +8717,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
       for (; i < lbs->n_attr; i++) {
          strcpy(list[i], attr_list[i]);
          if (attrib) {
-            if ((attr_flags[i] & (AF_DATE | AF_DATETIME)) && format_date) {
+            if ((attr_flags[i] & AF_DATE) && format_date) {
 
                t = (time_t) atoi(attrib[i]);
                ts = localtime(&t);
@@ -8727,6 +8727,16 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
 
                my_strftime(value[i], NAME_LENGTH, format, ts);
 
+            } else if ((attr_flags[i] & AF_DATETIME) && format_date) {
+               
+               t = (time_t) atoi(attrib[i]);
+               ts = localtime(&t);
+               assert(ts);
+               if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+                  strcpy(format, DEFAULT_TIME_FORMAT);
+               
+               my_strftime(value[i], NAME_LENGTH, format, ts);
+               
             } else
                strcpy(value[i], attrib[i]);
          } else
@@ -23227,7 +23237,7 @@ void submit_elog(LOGBOOK * lbs)
          sprintf(str, "EDIT multiple entries");
       else if (bdraft)
          sprintf(str, "DRAFT entry #%d", message_id);
-      else if (bedit)
+      else if (bedit && !resubmit_orig)
          sprintf(str, "EDIT entry #%d", message_id);
       else
          sprintf(str, "NEW entry #%d", message_id);
@@ -23481,6 +23491,8 @@ void submit_elog(LOGBOOK * lbs)
       /* fix for edited draft messages. new_entry is a hidden field persisting draft cycles */
       old_mail = bedit;
       if (isparam("new_entry"))
+         old_mail = 0;
+      if (resubmit_orig)
          old_mail = 0;
       
       if (compose_email(lbs, rcpt_to, mail_to, message_id, attrib, mail_param, old_mail, att_file,
