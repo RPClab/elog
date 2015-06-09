@@ -1,4 +1,14 @@
-/* default formatting */
+/* 
+   Standard CSS file for elog. 
+
+   Please do NOT MODIFY this file directly. Use the
+
+   CSS = <filename>
+
+   option in elogd.cfg instead and overwrite settings from this file.
+*/
+   
+
 body {
   margin:3px;
   color:black;
