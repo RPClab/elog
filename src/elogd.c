@@ -28071,6 +28071,9 @@ void interprete(char *lbook, char *path)
       if (getcfg(lbs->name, "Logout to main", str, sizeof(str)) && atoi(str) == 1) {
          sprintf(str, "../");
          setparam("redir", str);
+      } else {
+         if (getcfg(lbs->name, "Logout to URL", str, sizeof(str)))
+            setparam("redir", str);
       }
       set_sid_cookie(lbs, "", "");
       sid_remove(getparam("sid"));
