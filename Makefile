@@ -193,7 +193,7 @@ install: $(EXECS)
 	fi
 
 	@echo "Installing themes to $(ELOGDIR)/themes"
-	@$(INSTALL) -m 0644 themes/default/* $(ELOGDIR)/themes/default/
+	@cp -r themes/* $(ELOGDIR)/themes
 
 	@echo "Installing example logbook to $(ELOGDIR)/logbooks/demo"
 	@if [ ! -f $(ELOGDIR)/logbooks/demo/2001 ]; then  \
