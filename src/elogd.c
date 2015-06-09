@@ -8323,7 +8323,7 @@ void show_error(char *error)
    rsprintf("<html><head>\n");
    rsprintf("<META NAME=\"ROBOTS\" CONTENT=\"NOINDEX, NOFOLLOW\">\n");
    rsprintf("<title>%s</title>\n", loc("ELOG error"));
-   rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"default.css\">\n");
+   rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"elog.css\">\n");
    rsprintf("</head>\n");
 
    rsprintf("<body><center>\n");
@@ -9472,7 +9472,7 @@ void compare_attributes(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][N
 int check_drafts(LOGBOOK * lbs)
 {
    time_t now;
-   char draft[256], title[256], datetime[256];
+   char str[1000], draft[256], title[256], datetime[256], attrib[MAX_N_ATTR][NAME_LENGTH];
    int i, n_draft, *draft_id = NULL;
    
    /* if we got here already and user clicked "Create new entry", ignore is set and we skip this */
@@ -9482,10 +9482,10 @@ int check_drafts(LOGBOOK * lbs)
    time(&now);
    /* check if any recent draft */
    for (i=n_draft=0 ; i<*(lbs->n_el_index) ; i++)
-      if (lbs->el_index[i].file_time > now-3600*24) {
-         el_retrieve(lbs, lbs->el_index[i].message_id, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL,
-                     NULL, NULL, draft);
-         if (draft[0]) {
+      if (lbs->el_index[i].file_time > now-3600*24*7) { // only one week to reduce seek time
+         el_retrieve(lbs, lbs->el_index[i].message_id, NULL, attr_list, attrib, lbs->n_attr,
+                     NULL, NULL, NULL, NULL, NULL, NULL, NULL, draft);
+         if (draft[0] && is_author(lbs, attrib, draft)) {
             if (n_draft == 0)
                draft_id = (int *)xmalloc(sizeof(int));
             else
@@ -9515,7 +9515,8 @@ int check_drafts(LOGBOOK * lbs)
                   NULL, NULL, draft);
       
       rsprintf("<tr><td class=\"draftsel\" align=\"center\">");
-      rsprintf("Draft entry created on %s</td>\n", datetime);
+      sprintf(str, loc("Draft entry created on %s by %s"), datetime, draft);
+      rsprintf("%s</td>\n", str);
       rsprintf("<td class=\"draftsel\">");
       rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href='%d?cmd=Edit';\">",
                loc("Edit"), draft_id[i]);
@@ -26014,6 +26015,8 @@ void show_login_page(LOGBOOK * lbs, char *redir, int fail)
 
    rsprintf("<table class=\"login_frame\" cellspacing=0 align=center>");
 
+   rsprintf("<tr><td class=\"login_title\">%s</td></tr>\n", loc("Please login"));
+   
    if (fail == 1) {
       strlcpy(str, loc("Invalid user name or password"), sizeof(str));
       rsprintf("<tr><td class=\"dlgerror\">%s!</td></tr>\n", str);
@@ -26023,8 +26026,6 @@ void show_login_page(LOGBOOK * lbs, char *redir, int fail)
       sprintf(str, loc("User \"%s\" has no access to this logbook"), getparam("unm"));
       rsprintf("<tr><td class=\"dlgerror\">%s!</td></tr>\n", str);
    }
-
-   rsprintf("<tr><td class=\"login_title\">%s</td></tr>\n", loc("Please login"));
 
    rsprintf("<tr><td class=\"login_form\">\n");
    rsprintf("<span class=\"overlay_wrapper\">\n");
@@ -27351,7 +27352,7 @@ void interprete(char *lbook, char *path)
    /* if password file given, check session ID */
    if (getcfg(lbs->name, "Password file", str, sizeof(str))) {
       /* get current CSS */
-      strlcpy(css, "default.css", sizeof(css));
+      strlcpy(css, "elog.css", sizeof(css));
       if (lbs != NULL && getcfg(lbs->name, "CSS", str, sizeof(str)))
          strlcpy(css, str, sizeof(css));
       else if (lbs == NULL && getcfg("global", "CSS", str, sizeof(str)))
