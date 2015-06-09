@@ -9576,7 +9576,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    locked_by[0] = 0;
    new_entry = 0;
 
-   if (!message_id)
+   if (!message_id || breply)
       new_entry = 1;
    if (isparam("new_entry"))
       new_entry = 1;
