@@ -21398,6 +21398,10 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                            &size, in_reply_to, reply_to, attachment, encoding, locked_by, draft);
       if (status != EL_SUCCESS)
          break;
+      
+      /* skip drafts */
+      if (draft && draft[0])
+         continue;
 
       if (csv) {
 
