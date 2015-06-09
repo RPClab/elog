@@ -9533,7 +9533,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    int i, j, n, index, aindex, size, width, height, fh, length, input_size, input_maxlen,
        format_flags[MAX_N_ATTR], year, month, day, hour, min, sec, n_attr, n_disp_attr, n_lines,
        attr_index[MAX_N_ATTR], enc_selected, show_text, n_moptions, display_inline,
-       allowed_encoding, thumb_status, max_n_lines, fixed_text, autosave;
+       allowed_encoding, thumb_status, max_n_lines, fixed_text, autosave, new_entry;
    char str[2 * NAME_LENGTH], str2[NAME_LENGTH], preset[2 * NAME_LENGTH], *p, *pend, star[80],
        comment[10000], reply_string[256], list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer,
        format[256], date[80], script_onload[256], script_onfocus[256], script_onunload[256],
@@ -9563,6 +9563,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    encoding[0] = 0;
    date[0] = 0;
    locked_by[0] = 0;
+   new_entry = 0;
+
+   if (!message_id)
+      new_entry = 1;
+   if (isparam("new_entry"))
+      new_entry = 1;
 
    /* check for custom form for new entries */
    if (!bedit && getcfg(lbs->name, "Custom new form", str, sizeof(str))) {
@@ -10440,6 +10446,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("<input type=hidden name=\"jcmd\">\n");
    rsprintf("<input type=hidden name=\"smcmd\">\n");
    rsprintf("<input type=hidden name=\"inlineatt\">\n");
+   
+   if (new_entry)
+      rsprintf("<input type=hidden name=\"new_entry\" value=\"1\">\n");
 
    if (isparam("entry_modified") && atoi(getparam("entry_modified")) == 1)
       rsprintf("<input type=hidden name=\"entry_modified\" value=\"1\">\n");
@@ -22745,7 +22754,7 @@ void submit_elog(LOGBOOK * lbs)
        svalue[MAX_N_ATTR + 10][NAME_LENGTH], ua[NAME_LENGTH], draft[256];
    int i, j, k, n, missing, first, index, mindex, suppress, message_id, resubmit_orig, mail_to_size,
        rcpt_to_size, ltime, year, month, day, hour, min, sec, n_attr, email_notify[1000], allowed_encoding,
-       status, bdraft;
+       status, bdraft, old_mail;
    BOOL bedit, bmultiedit;
    struct tm tms;
 
@@ -23216,10 +23225,10 @@ void submit_elog(LOGBOOK * lbs)
    if (_logging_level > 1) {
       if (bmultiedit)
          sprintf(str, "EDIT multiple entries");
-      else if (bedit)
-         sprintf(str, "EDIT entry #%d", message_id);
       else if (bdraft)
          sprintf(str, "DRAFT entry #%d", message_id);
+      else if (bedit)
+         sprintf(str, "EDIT entry #%d", message_id);
       else
          sprintf(str, "NEW entry #%d", message_id);
 
@@ -23469,7 +23478,12 @@ void submit_elog(LOGBOOK * lbs)
          }
       }
 
-      if (compose_email(lbs, rcpt_to, mail_to, message_id, attrib, mail_param, bedit, att_file,
+      /* fix for edited draft messages. new_entry is a hidden field persisting draft cycles */
+      old_mail = bedit;
+      if (isparam("new_entry"))
+         old_mail = 0;
+      
+      if (compose_email(lbs, rcpt_to, mail_to, message_id, attrib, mail_param, old_mail, att_file,
                         isparam("encoding") ? getparam("encoding") : "plain", atoi(in_reply_to)) == 0) {
          xfree(mail_to);
          xfree(rcpt_to);
