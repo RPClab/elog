@@ -2208,6 +2208,22 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
     you have to change your password by other means (such as via the Windows
     login if you use a Windows Domain).
     </p>
+    <p>
+    Beside the Kerberos authentication, elogd version 3.0 and higher can be configured to accept a authentication done
+    by the webserver. 
+    <ul>
+      <li>
+        <b><code>Authentication = Webserver</code></b>
+      </li>
+    </ul>
+    </p>
+    <p>
+    You can also combine it with other authentication methods as shown for Kerberos.
+    </p>
+    <p>
+    Elogd is then accepting the username set in the Request-Header "X-Forwarded-User" as already logged in.<br/>
+    To make this work, you need to configure the webserver correctly, as describe in the adminguide.
+    </p>
     
     
     <h2>
