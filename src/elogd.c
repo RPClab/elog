@@ -8711,7 +8711,10 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
                t = (time_t) atoi(attrib[i]);
                ts = localtime(&t);
                assert(ts);
-               if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
+
+               sprintf(str, "Date format %s", attr_list[i]);
+               if (!getcfg(lbs->name, str, format, sizeof(format)))
+                  if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
                   strcpy(format, DEFAULT_DATE_FORMAT);
 
                my_strftime(value[i], NAME_LENGTH, format, ts);
@@ -8721,8 +8724,11 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
                t = (time_t) atoi(attrib[i]);
                ts = localtime(&t);
                assert(ts);
-               if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
-                  strcpy(format, DEFAULT_TIME_FORMAT);
+               
+               sprintf(str, "Time format %s", attr_list[i]);
+               if (!getcfg(lbs->name, str, format, sizeof(format)))
+                  if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+                     strcpy(format, DEFAULT_TIME_FORMAT);
                
                my_strftime(value[i], NAME_LENGTH, format, ts);
                
@@ -24821,8 +24827,10 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             rsprintf("</td>\n");
          } else if (attr_flags[i] & AF_DATE) {
 
-            if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
-               strcpy(format, DEFAULT_DATE_FORMAT);
+            sprintf(str, "Date format %s", attr_list[i]);
+            if (!getcfg(lbs->name, str, format, sizeof(format)))
+               if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
+                  strcpy(format, DEFAULT_DATE_FORMAT);
 
             ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
@@ -24836,8 +24844,10 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
          } else if (attr_flags[i] & AF_DATETIME) {
 
-            if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
-               strcpy(format, DEFAULT_TIME_FORMAT);
+            sprintf(str, "Time format %s", attr_list[i]);
+            if (!getcfg(lbs->name, str, format, sizeof(format)))
+               if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+                  strcpy(format, DEFAULT_TIME_FORMAT);
 
             ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
