@@ -11989,7 +11989,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          rsprintf("</td></tr>\n");
       } else {
          rsprintf("<tr id=\"attachment_upload\"><td nowrap class=\"attribname\">%s %d:</td>\n", loc("Attachment"), index + 1);
-         rsprintf("<td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile\" accept=\"filetype/*\" multiple>\n");
+         rsprintf("<td class=\"attribvalue\"><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile\">\n");
          rsprintf("&nbsp;&nbsp;<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkupload();\">\n", loc("Upload"));
          rsprintf("</td></tr>\n");
 
@@ -14808,7 +14808,7 @@ void show_import_page_csv(LOGBOOK * lbs)
    rsprintf("<input type=\"file\" size=\"60\" maxlength=\"200\" name=\"csvfile\" ");
    if (isparam("csvfile"))
       rsprintf(" value=\"%s\" ", getparam("csvfile"));
-   rsprintf("accept=\"filetype/*\"></td></tr>\n");
+   rsprintf("></td></tr>\n");
 
    rsprintf("</table></td></tr></table>\n\n");
    show_bottom_text(lbs);
@@ -14875,7 +14875,7 @@ void show_import_page_xml(LOGBOOK * lbs)
    rsprintf("<input type=\"file\" size=\"60\" maxlength=\"200\" name=\"xmlfile\" ");
    if (isparam("xmlfile"))
       rsprintf(" value=\"%s\" ", getparam("xmlfile"));
-   rsprintf("accept=\"filetype/*\"></td></tr>\n");
+   rsprintf("></td></tr>\n");
 
    rsprintf("</table></td></tr></table>\n\n");
    show_bottom_text(lbs);
@@ -26798,7 +26798,7 @@ void show_uploader(LOGBOOK * lbs)
    rsprintf("<tr><td nowrap class=\"uploadtext\"><b>%s:</b> <i>(%s)</i></td></tr>\n",
             loc("Enter filename or URL"), str);
    rsprintf("<tr><td class=\"uploadvalue\"><input type=\"file\" size=\"60\" ");
-   rsprintf("maxlength=\"200\" name=\"attfile\" accept=\"filetype/*\"></td></tr>\n");
+   rsprintf("maxlength=\"200\" name=\"attfile\"></td></tr>\n");
 
    rsprintf("<tr><td class=\"menuframe\" align=center><br>\n");
    rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return upload();\">\n",
