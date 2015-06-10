@@ -4075,14 +4075,6 @@ int el_build_index(LOGBOOK * lbs, BOOL rebuild)
          xfree(buffer);
    }
 
-   // check for old format and upgrade if necessary
-   n = ss_file_find(base_dir, "??????.log", &file_list);
-   if (n > 0) {
-      if (file_list)
-         xfree(file_list);
-      return EL_UPGRADE;
-   }
-
    if (get_verbose() >= VERBOSE_DEBUG)
       eprintf("Entries:\n");
    
@@ -4286,9 +4278,6 @@ int el_index_logbooks()
       if (status == EL_EMPTY) {
          if (get_verbose() >= VERBOSE_INFO)
             eprintf("Found empty logbook \"%s\"\n", logbook);
-      } else if (status == EL_UPGRADE) {
-         eprintf("Please upgrade data files in \"%s\" with the elconv program.\n", data_dir);
-         return EL_UPGRADE;
       } else if (status != EL_SUCCESS) {
          eprintf("Error generating index.\n");
          return status;
