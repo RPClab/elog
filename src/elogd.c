@@ -10190,6 +10190,18 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("  return true;\n");
    rsprintf("}\n\n");
 
+   /* check_delte() gets called via "Delete" button */
+   rsprintf("function check_delete()\n");
+   rsprintf("{\n");
+   rsprintf("  var ret = confirm('%s');\n", loc("Really delete this entry?"));
+   rsprintf("  if (ret) {\n");
+   rsprintf("    mark_submitted()\n");
+   rsprintf("    document.form1.jcmd.value='XDelete';\n");
+   rsprintf("    return true;\n");
+   rsprintf("  }\n");
+   rsprintf("  return false;\n");
+   rsprintf("}\n\n");
+
    /* chkupload() gets called via "Upload" button */
    rsprintf("function chkupload()\n");
    rsprintf("{\n");
@@ -10488,7 +10500,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
             loc("Preview"));
    
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
+   if (!getcfg(lbs->name, "Save drafts", str, sizeof(str)) || atoi(str) == 1)
+      rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return check_delete();\">\n",
+               loc("Delete"));
+   else
+      rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
             loc("Back"));
    
    rsprintf("&nbsp;&nbsp;<span id=\"saved1\" style=\"font-size:10px;font-style:italic;display:none\">%s 00:00:00</span>", loc("Draft saved at"));
@@ -12006,8 +12022,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
             loc("Preview"));
    
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
-            loc("Back"));
+   if (!getcfg(lbs->name, "Save drafts", str, sizeof(str)) || atoi(str) == 1)
+      rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return check_delete();\">\n",
+               loc("Delete"));
+   else
+      rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
+               loc("Back"));
    
    rsprintf("&nbsp;&nbsp;<span id=\"saved2\" style=\"font-size:10px;font-style:italic;display:none\">%s 00:00:00</span>", loc("Draft saved at"));
 
@@ -27428,6 +27448,20 @@ void interprete(char *lbook, char *path)
       return;
    }
 
+   /* check for "Detelte" button */
+   if (strieq(command, "XDelete")) {
+      if (getparam("edit_id")) {
+         status = el_delete_message(lbs, atoi(getparam("edit_id")), TRUE, NULL, TRUE, TRUE);
+         if (status != EL_SUCCESS) {
+            sprintf(str, "%s = %d", loc("Error deleting message: status"), status);
+            show_error(str);
+            return;
+         }
+      }
+      redirect(lbs, "");
+      return;
+   }
+   
    /* check for "Unlock" command */
    if (strieq(command, "Unlock")) {
       if (isparam("edit_id")) {
