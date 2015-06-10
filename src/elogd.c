@@ -18374,7 +18374,7 @@ void display_reply(LOGBOOK * lbs, int message_id, int printable, int expand, int
    status = el_retrieve(lbs, message_id, date, attr_list, (char (*)[1500]) attrib, lbs->n_attr, text, &size,
                         in_reply_to, reply_to, (char (*)[256]) attachment, encoding, locked_by, draft);
 
-   if (status != EL_SUCCESS) {
+   if (status != EL_SUCCESS || draft[0]) {
       xfree(text);
       xfree(attachment);
       xfree(attrib);
