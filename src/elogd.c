@@ -1790,6 +1790,7 @@ int send_with_timeout(void *p, int sock, char *buf, int buf_size)
    time(&start);
    sent = 0;
    send_size = buf_size;
+   pbuf = p; // fix compiler warning
    pbuf = buf;
    
    do {
@@ -2496,6 +2497,7 @@ int retrieve_url(LOGBOOK * lbs, const char *url, int ssl, char **buffer)
    static int sock, last_port;
    static char last_host[256];
 
+   i = ssl; // fix compiler warning
    *buffer = NULL;
    split_url(url, host, &port, subdir, param);
 
