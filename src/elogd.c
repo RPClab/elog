@@ -9513,8 +9513,8 @@ int check_drafts(LOGBOOK * lbs)
       sprintf(str, loc("Draft entry created on %s by %s"), datetime, draft);
       rsprintf("%s</td>\n", str);
       rsprintf("<td class=\"draftsel\">");
-      rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href='%d?cmd=Edit';\">",
-               loc("Edit"), draft_id[i]);
+      rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href='%d?cmd=%s';\">",
+               loc("Edit"), draft_id[i], loc("Edit"));
       rsprintf("</td></tr>\n");
    }
    
@@ -24611,9 +24611,9 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       } else {
          if (draft[0]) {
             rsprintf("<tr><td nowrap colspan=2 class=\"errormsg\">%s\n",
-                     loc("This is a draft message, edit and submit it to make it permament"));
-            rsprintf("&nbsp;<input type=button value=\"%s\" onClick=\"window.location.href='%d?cmd=Edit';\">",
-                     loc("Edit"), message_id);
+                     loc("This is a draft message, edit and submit it to make it permanent"));
+            rsprintf("&nbsp;<input type=button value=\"%s\" onClick=\"window.location.href='%d?cmd=%s';\">",
+                     loc("Edit"), message_id, loc("Edit"));
             rsprintf("</td></tr>\n");
          }
       }
@@ -27822,7 +27822,7 @@ void interprete(char *lbook, char *path)
       return;
    }
 
-   if (strieq(command, loc("Save")) && !isparam("cfgpage") && !isparam("new_user_name")) {
+   if ((strieq(command, loc("Save")) || strieq(command, "Save")) && !isparam("cfgpage") && !isparam("new_user_name")) {
       /* save draft message */
       if (isparam("unm"))
          strlcpy(str, getparam("unm"), sizeof(str));
