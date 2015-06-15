@@ -19599,7 +19599,7 @@ void show_rss_feed(LOGBOOK * lbs)
 {
    int i, n, size, index, message_id, offset;
    char str[256], charset[256], url[256], attrib[MAX_N_ATTR][NAME_LENGTH], date[80], *text, title[2000],
-       slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
+       slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH], draft[1000];
    time_t ltime;
    struct tm *ts;
 
@@ -19675,11 +19675,16 @@ void show_rss_feed(LOGBOOK * lbs)
    text = (char *) xmalloc(TEXT_SIZE);
    message_id = el_search_message(lbs, EL_LAST, 0, FALSE);
    for (index = 0; index < n && message_id; index++) {
-      rsprintf("<item>\n");
 
       size = TEXT_SIZE;
       el_retrieve(lbs, message_id, date, attr_list, attrib, lbs->n_attr, text, &size, NULL, NULL,
-                           NULL, NULL, NULL, NULL);
+                           NULL, NULL, NULL, draft);
+      
+      /* skip drafts */
+      if (draft[0]) {
+         message_id = el_search_message(lbs, EL_PREV, message_id, FALSE);
+         continue;
+      }
 
       /* limit text size to 2k */
       text[2048] = 0;
@@ -19706,6 +19711,8 @@ void show_rss_feed(LOGBOOK * lbs)
          }
 
       }
+
+      rsprintf("<item>\n");
 
       /* convert date to RFC-822 date */
       setlocale(LC_ALL, "C");
