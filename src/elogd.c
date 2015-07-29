@@ -10385,8 +10385,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
          if (stricmp(str, lang_table[i].language) == 0)
             break;
       if (lang_table[i].language[0])
-         rsprintf("var CKEditorLang = '%s';", lang_table[i].abbrev);
-   }
+         rsprintf("var CKEditorLang = '%s';\n", lang_table[i].abbrev);
+   } else
+      rsprintf("var CKEditorLang = 'en';\n");
    
    /* strings for elcode.js */
    if (enc_selected == 0) {
