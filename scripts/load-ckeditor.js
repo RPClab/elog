@@ -70,7 +70,7 @@ $(document).ready(function() {
     });
 
     // Replace the textarea with the CKeditor
-    CKEDITOR.replace('Text');
+    CKEDITOR.replace('Text', { language: CKEditorLang });
 
     // Workaround function for the drag and drop events, it disallows
     // dragstart and dragend events firing for each child elements of a specific elements.

@@ -183,6 +183,32 @@ struct {
 
 "", ""},};
 
+struct {
+   char language[32];
+   char abbrev[32];
+} lang_table[] = {
+   
+   { "brazilian",    "br"},
+   { "bulgarian",    "bg"},
+   { "czech",        "cz"},
+   { "danish",       "dk"},
+   { "dutch",        "nl"},
+   { "french",       "fr"},
+   { "german",       "de"},
+   { "indonesia",    "id"},
+   { "italian",      "it"},
+   { "japanese",     "jp"},
+   { "polish",       "pl"},
+   { "ru_CP1251",    "ru"},
+   { "slowak",       "sk"},
+   { "spanish",      "es"},
+   { "swedish",      "se"},
+   { "turkish",      "tr"},
+   { "zh_CN-GB2314", "zh"},
+   { "zh_CN-UTF8",   "zh"},
+   { "", "" }
+};
+
 char _convert_cmd[256];
 char _identify_cmd[256];
 
@@ -10342,23 +10368,31 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    /* ToggleAll() to toggle MOptions buttons */
    rsprintf("function ToggleAll(attrib)\n");
-   rsprintf("  {\n");
-   rsprintf("  for (var i = 0; i < document.form1.elements.length; i++)\n");
-   rsprintf("    {\n");
+   rsprintf("{\n");
+   rsprintf("  for (var i = 0; i < document.form1.elements.length; i++) {\n");
    rsprintf("    if (document.form1.elements[i].type == 'checkbox' && document.form1.elements[i].disabled == false) {\n");
    rsprintf("      a = document.form1.elements[i].name;\n");
    rsprintf("      a = a.substring(0, attrib.length);\n");
    rsprintf("      if (a == attrib)\n");
    rsprintf("        document.form1.elements[i].checked = !(document.form1.elements[i].checked);\n");
-   rsprintf("      }\n");
    rsprintf("    }\n");
-   rsprintf("  }\n\n");
+   rsprintf("  }\n");
+   rsprintf("}\n\n");
 
+   /* language for CKEDITOR */
+   if (getcfg("global", "language", str, sizeof(str))) {
+      for (i=0 ; lang_table[i].language[0] ; i++)
+         if (stricmp(str, lang_table[i].language) == 0)
+            break;
+      if (lang_table[i].language[0])
+         rsprintf("var CKEditorLang = '%s';", lang_table[i].abbrev);
+   }
+   
    /* strings for elcode.js */
    if (enc_selected == 0) {
-      rsprintf("linkText_prompt = \"%s\";\n", loc("Enter name of hyperlink"));
-      rsprintf("linkURL_prompt  = \"%s\";\n", loc("Enter URL of hyperlink"));
-      rsprintf("linkHeading_prompt  = \"%s\";\n", loc("Enter heading level (1, 2 or 3)"));
+      rsprintf("var linkText_prompt = \"%s\";\n", loc("Enter name of hyperlink"));
+      rsprintf("var linkURL_prompt  = \"%s\";\n", loc("Enter URL of hyperlink"));
+      rsprintf("var linkHeading_prompt  = \"%s\";\n", loc("Enter heading level (1, 2 or 3)"));
    }
 
    show_browser(browser);
