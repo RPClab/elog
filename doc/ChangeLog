@@ -1,3 +1,16 @@
+Version 3.1.1, released August 4th, 2015
+========================================
+
+- Updated CKEditor to version 4.5.1
+- Implemented "Date/Time format <attribute> = ..."
+- Implemented "Use Email Subject Edit = ..."
+- Replaced "Back" by "Delete" button
+- Fixed many issues with Draft Messages
+- CSS file is now in *addition* to the default file elog.css
+- Added LDAP documentation
+- Added "Logout to URL = ..." option
+- Added description of Apacher server authentication
+
 Version 3.1.0, released April 1st, 2015
 =======================================
 

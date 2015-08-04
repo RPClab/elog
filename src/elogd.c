@@ -22381,7 +22381,12 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
    retrieve_email_from(lbs, mail_from, mail_from_name, attrib);
 
    /* compose subject from attributes */
-   if (getcfg(lbs->name, "Use Email Subject", subject, sizeof(subject))) {
+   if (old_mail && getcfg(lbs->name, "Use Email Subject Edit", subject, sizeof(subject))) {
+      i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
+      sprintf(str, "%d", message_id);
+      add_subst_list(slist, svalue, "message id", str, &i);
+      strsubst_list(subject, sizeof(subject), slist, svalue, i);
+   } else if (getcfg(lbs->name, "Use Email Subject", subject, sizeof(subject))) {
       i = build_subst_list(lbs, slist, svalue, attrib, TRUE);
       sprintf(str, "%d", message_id);
       add_subst_list(slist, svalue, "message id", str, &i);
