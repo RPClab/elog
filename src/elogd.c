@@ -10679,8 +10679,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
          if (attr_flags[index] & AF_DATE) {
 
-            if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
-               strcpy(format, DEFAULT_DATE_FORMAT);
+            sprintf(str, "Date format %s", attr_list[i]);
+            if (!getcfg(lbs->name, str, format, sizeof(format)))
+               if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
+                  strcpy(format, DEFAULT_DATE_FORMAT);
 
             ltime = atoi(attrib[index]);
             pts = localtime(&ltime);
@@ -10692,8 +10694,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
          } else if (attr_flags[index] & AF_DATETIME) {
 
-            if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
-               strcpy(format, DEFAULT_TIME_FORMAT);
+            sprintf(str, "Time format %s", attr_list[i]);
+            if (!getcfg(lbs->name, str, format, sizeof(format)))
+               if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+                  strcpy(format, DEFAULT_TIME_FORMAT);
 
             ltime = atoi(attrib[index]);
             pts = localtime(&ltime);
@@ -17889,8 +17893,10 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                      } else
                         rsprintf(", ");
 
-                     if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
-                        strcpy(format, DEFAULT_DATE_FORMAT);
+                     sprintf(str, "Date format %s", attr_list[i]);
+                     if (!getcfg(lbs->name, str, format, sizeof(format)))
+                        if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
+                           strcpy(format, DEFAULT_DATE_FORMAT);
 
                      ltime = atoi(attrib[i]);
                      pts = localtime(&ltime);
@@ -17910,8 +17916,10 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
                      } else
                         rsprintf(", ");
 
-                     if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
-                        strcpy(format, DEFAULT_TIME_FORMAT);
+                     sprintf(str, "Time format %s", attr_list[i]);
+                     if (!getcfg(lbs->name, str, format, sizeof(format)))
+                        if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+                           strcpy(format, DEFAULT_TIME_FORMAT);
 
                      ltime = atoi(attrib[i]);
                      pts = localtime(&ltime);
@@ -17959,8 +17967,10 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
 
                   else if (attr_flags[i] & AF_DATE) {
 
-                     if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
-                        strcpy(format, DEFAULT_DATE_FORMAT);
+                     sprintf(str, "Date format %s", attr_list[i]);
+                     if (!getcfg(lbs->name, str, format, sizeof(format)))
+                        if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
+                           strcpy(format, DEFAULT_DATE_FORMAT);
 
                      ltime = atoi(attrib[i]);
                      pts = localtime(&ltime);
@@ -17979,8 +17989,10 @@ void display_line(LOGBOOK * lbs, int message_id, int number, char *mode, int exp
 
                   else if (attr_flags[i] & AF_DATETIME) {
 
-                     if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
-                        strcpy(format, DEFAULT_TIME_FORMAT);
+                     sprintf(str, "Time format %s", attr_list[i]);
+                     if (!getcfg(lbs->name, str, format, sizeof(format)))
+                        if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+                           strcpy(format, DEFAULT_TIME_FORMAT);
 
                      ltime = atoi(attrib[i]);
                      pts = localtime(&ltime);
@@ -21504,8 +21516,11 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             if (str[0]) {
 
                if (attr_flags[i] & AF_DATE) {
-                  if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
-                     strcpy(format, DEFAULT_DATE_FORMAT);
+                  
+                  sprintf(str, "Date format %s", attr_list[i]);
+                  if (!getcfg(lbs->name, str, format, sizeof(format)))
+                     if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
+                        strcpy(format, DEFAULT_DATE_FORMAT);
 
                   ltime = atoi(attrib[i]);
                   ptms = localtime(&ltime);
@@ -21517,8 +21532,10 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
                } else if (attr_flags[i] & AF_DATETIME) {
 
-                  if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
-                     strcpy(format, DEFAULT_TIME_FORMAT);
+                  sprintf(str, "Time format %s", attr_list[i]);
+                  if (!getcfg(lbs->name, str, format, sizeof(format)))
+                     if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+                        strcpy(format, DEFAULT_TIME_FORMAT);
 
                   ltime = atoi(attrib[i]);
                   ptms = localtime(&ltime);
@@ -21594,8 +21611,11 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
             strlcpy(str, attrib[i], sizeof(str));
             if (attr_flags[i] & AF_DATE) {
-               if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
-                  strcpy(format, DEFAULT_DATE_FORMAT);
+
+               sprintf(str, "Date format %s", attr_list[i]);
+               if (!getcfg(lbs->name, str, format, sizeof(format)))
+                  if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
+                     strcpy(format, DEFAULT_DATE_FORMAT);
 
                ltime = atoi(attrib[i]);
                ptms = localtime(&ltime);
@@ -21607,8 +21627,10 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
 
             } else if (attr_flags[i] & AF_DATETIME) {
 
-               if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
-                  strcpy(format, DEFAULT_TIME_FORMAT);
+               sprintf(str, "Time format %s", attr_list[i]);
+               if (!getcfg(lbs->name, str, format, sizeof(format)))
+                  if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+                     strcpy(format, DEFAULT_TIME_FORMAT);
 
                ltime = atoi(attrib[i]);
                ptms = localtime(&ltime);
@@ -22031,8 +22053,10 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH],
 
          } else if (attr_flags[i] & AF_DATE) {
 
-            if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
-               strcpy(format, DEFAULT_DATE_FORMAT);
+            sprintf(str, "Date format %s", attr_list[i]);
+            if (!getcfg(lbs->name, str, format, sizeof(format)))
+               if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
+                  strcpy(format, DEFAULT_DATE_FORMAT);
 
             ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
@@ -22043,8 +22067,10 @@ void format_email_text(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH],
                my_strftime(comment, sizeof(str), format, pts);
          } else if (attr_flags[i] & AF_DATETIME) {
 
-            if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
-               strcpy(format, DEFAULT_TIME_FORMAT);
+            sprintf(str, "Time format %s", attr_list[i]);
+            if (!getcfg(lbs->name, str, format, sizeof(format)))
+               if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+                  strcpy(format, DEFAULT_TIME_FORMAT);
 
             ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
@@ -22207,8 +22233,10 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
 
          } else if (attr_flags[i] & AF_DATE) {
 
-            if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
-               strcpy(format, DEFAULT_DATE_FORMAT);
+            sprintf(str, "Date format %s", attr_list[i]);
+            if (!getcfg(lbs->name, str, format, sizeof(format)))
+               if (!getcfg(lbs->name, "Date format", format, sizeof(format)))
+                  strcpy(format, DEFAULT_DATE_FORMAT);
 
             ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
@@ -22219,8 +22247,10 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
                my_strftime(comment, sizeof(str), format, pts);
          } else if (attr_flags[i] & AF_DATETIME) {
 
-            if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
-               strcpy(format, DEFAULT_TIME_FORMAT);
+            sprintf(str, "Time format %s", attr_list[i]);
+            if (!getcfg(lbs->name, str, format, sizeof(format)))
+               if (!getcfg(lbs->name, "Time format", format, sizeof(format)))
+                  strcpy(format, DEFAULT_TIME_FORMAT);
 
             ltime = atoi(attrib[i]);
             pts = localtime(&ltime);
