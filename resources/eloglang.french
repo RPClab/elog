@@ -1,9 +1,8 @@
 #
 # French translation by Fred Pacquier <fredp@dial.oleane.com>
-# (for 2.9.1+)
+# (for 3.1.1+)
 # A more recent version may be available at :
-# http://savannah.psi.ch/viewcvs/trunk/resources/eloglang.french?root=elog
-#
+# https://bitbucket.org/ritt/elog/src/b4d2a375a1c1991daa94427455f57665f7497df0/resources/eloglang.french?at=master&fileviewer=file-view-default
 
 New = Créer
 Edit = Modifier
@@ -324,19 +323,19 @@ Preview = Prévisualisation
 FONT = POLICE
 SIZE = TAILLE
 COLOR = COULEUR
-astonished = 
-smiling = 
-happy = 
-winking = 
-big grin = 
-crying = 
-cool = 
-frowning = 
-confused = 
-mad = 
-pleased = 
-tongue = 
-yawn = 
+astonished = surpris
+smiling = souriant
+happy = heureux
+winking = clin d'oeuil
+big grin = grand sourire
+crying = plure
+cool = tranquille
+frowning = fronce les sourcils
+confused = perdu
+mad = furieux
+pleased = content
+tongue = tire la langue
+yawn = baille
 Encoding = Encodage
 User "%s" not found in password file = Utilisateur "%s" non trouvé dans le fichier des comptes
 Cannot write to file <b>%s</b> = Impossible d'écrire dans le fichier <b>%s</b>
@@ -467,26 +466,22 @@ This is an automatically generated account recovery email for host %s = Ceci est
 Please click on following link to recover your account = Veuillez cliquer sur le lien suivant pour récupérer votre compte
 Email address "%s" not registered = L'adresse mail "%s" n'est pas enregistrée
 User name "%s" not registered = Le nom d'utilisateur "%s" n'est pas enregistré
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Error accessing password file = 
-CSV (";" separated) + Text = 
-Entry can only be deleted %1.2lg hours after creation = 
-Drop attachments here... = 
-Insert Timestamp = 
-Pending draft available = 
-%d pending drafts available = 
-Create new entry = 
-If you leave this page you will lose your unsaved changes = 
-Edited = 
-All time = 
-Draft = 
-Restrict seach to last = 
-days = 
-Draft saved at = 
-You might however then overwrite each other's modifications = 
-Draft entry created on %s by %s = 
-Really delete this entry? = 
-This is a draft message, edit and submit it to make it permanent = 
+Error accessing password file = Problème d'accès au fichier des mots de passe
+CSV (";" separated) + Text = CSV (séparateur ";") + Texte
+Entry can only be deleted %1.2lg hours after creation = Une entrée ne peut être supprimée que %1.2lg heures après sa création
+Drop attachments here... = Glisser les attachements ici...
+Insert Timestamp = Insérer horodatage
+Pending draft available = Brouillon en attente disponible
+%d pending drafts available = %d brouillons en attente disponibles
+Create new entry = Créer une nouvelle entrée
+If you leave this page you will lose your unsaved changes = Si vous quittez cette page vos modifications non enregistrées seront perdues
+Edited = Modifié
+All time = Tous temps
+Draft = Brouillon
+Restrict seach to last = Restreindre la recherche aux 
+days = derniers jours
+Draft saved at = Brouillon enregistré le
+You might however then overwrite each other's modifications = Vous pourriez toutefois écraser mutuellement vos modifications
+Draft entry created on %s by %s = Brouillon créé le %s par %s
+Really delete this entry? = Supprimer cette entrée, vraiment ?
+This is a draft message, edit and submit it to make it permanent = Ceci est un brouillon, modifiez-le et validez-le pour le rendre définitif
