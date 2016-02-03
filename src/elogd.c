@@ -24143,7 +24143,7 @@ int get_thumb_name(const char *file_name, char *thumb_name, int size, int index)
 
 void call_image_magick(LOGBOOK * lbs)
 {
-   char str[256], cmd[256], file_name[256], thumb_name[256], subdir[256];
+   char str[1024], cmd[1024], file_name[256], thumb_name[256], subdir[256];
    int cur_width, cur_height, new_size, cur_rot, new_rot, thumb_status;
 
    if (!isparam("req") || !isparam("img")) {
