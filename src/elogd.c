@@ -22563,7 +22563,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
       p = stristr(shell_cmd, "$attachments");
       strlcpy(tail, p + strlen("$attachments"), sizeof(tail));
       *p = 0;
-      for (i = 0; i < MAX_ATTACHMENTS; i++)
+      for (i = 0; i < MAX_ATTACHMENTS; i++) {
          generate_subdir_name(att_file[i], subdir, sizeof(subdir));
          if (att_file[i][0] && strlen(shell_cmd) + strlen(lbs->data_dir) + strlen(subdir) + strlen(att_file[i])
              < sizeof(shell_cmd) + 1) {
@@ -22576,6 +22576,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
             strcat(p, "\" ");
             p += strlen(p);
          }
+      }
       strlcat(shell_cmd, tail, sizeof(shell_cmd));
    }
 
