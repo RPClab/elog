@@ -10490,7 +10490,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /*---- add password in case cookie expires during edit ----*/
 
    if (getcfg(lbs->name, "Password file", str, sizeof(str)) && isparam("unm")) {
-      /* XSS fix: Jason Gochanour */
       strencode2(str, getparam("unm"), sizeof(str));
       rsprintf("<input type=hidden name=\"unm\" value=\"%s\">\n", str);
       if (isparam("upwd"))
@@ -10580,7 +10579,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Entry time"));
       rsprintf("<td class=\"attribvalue\">%s\n", str);
 
-      /* XSS fix: Jason Gochanour */
       strencode2(str, date, sizeof(str));
       rsprintf("<input type=hidden name=entry_date value=\"%s\"></td></tr>\n", str);
    }
@@ -11844,7 +11842,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                thumb_ref[0] = 0;
 
                if (strlen(att[index]) < 14 || att[index][6] != '_' || att[index][13] != '_') {
-                  /* XSS fix: Jason Gochanour */
                   strencode2(str, att[index], sizeof(str));
                   rsprintf("<b>Error: Invalid attachment \"%s\"</b><br>", str);
                } else {
@@ -11896,7 +11893,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      rsprintf("&nbsp;&nbsp;\n");
 
                      /* ImageMagick available, so get image size */
-                     /* XSS fix: Jason Gochanour */
                      strencode2(str, att[index], sizeof(str));
                      rsprintf("<b>%s</b>&nbsp;\n", str + 14);
                      if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
@@ -12015,7 +12011,6 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      rsprintf("</td></tr></table>\n");
                }
 
-               /* XSS fix: Jason Gochanour */
                strencode2(str, att[index], sizeof(str));
                if (thumb_ref[0])
                   rsprintf("<input type=hidden name=\"attachment%d\" alt=\"%s\" value=\"%s\">\n", index, thumb_ref, str);
@@ -13750,7 +13745,6 @@ void show_config_page(LOGBOOK * lbs)
    rsprintf("<!--\n\n");
    rsprintf("function chkrem()\n");
    rsprintf("{\n");
-   /* XSS fix: Jason Gochanour */
    strencode2(str, user, sizeof(str));
    sprintf(str, loc("Really remove user %s?"), str);
    rsprintf("    var subm = confirm(\"%s\");\n", str);
@@ -13785,7 +13779,6 @@ void show_config_page(LOGBOOK * lbs)
    rsprintf("<input type=hidden name=cmd value=\"%s\">\n", loc("Config"));      // for select javascript
    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
-   /* XSS fix: Jason Gochanour */
    strencode2(str, user, sizeof(str));
    rsprintf("<input type=hidden name=config value=\"%s\">\n", str);
    rsprintf("<input type=hidden name=cfgpage value=\"1\">\n");                  // needed for "Save" command
@@ -13823,12 +13816,10 @@ void show_config_page(LOGBOOK * lbs)
       for (i = 0; i < n; i++) {
          get_user_line(lbs, user_list[i], NULL, full_name, user_email, NULL, NULL, NULL);
          if (strcmp(user_list[i], user) == 0) {
-            /* XSS fix: Jason Gochanour */
             strencode2(str, user_list[i], sizeof(str));
             rsprintf("<option selected value=\"%s\">%s &lt;%s&gt;\n", str, str, user_email);
          }
          else {
-            /* XSS fix: Jason Gochanour */
             strencode2(str, user_list[i], sizeof(str));
             rsprintf("<option selected value=\"%s\">%s &lt;%s&gt;\n", str, str, user_email);
          }
@@ -13871,7 +13862,6 @@ void show_config_page(LOGBOOK * lbs)
 
    getcfg(lbs->name, "Authentication", auth, sizeof(auth));
 
-   /* XSS fix: Jason Gochanour */
    strencode2(str, user, sizeof(str));
    if (stristr(auth, "Kerberos") || stristr(auth, "Webserver"))
       rsprintf("<td><input type=text size=40 name=new_user_name value=\"%s\" readonly></td></tr>\n", str);
@@ -14139,7 +14129,6 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             sprintf(redir, "?cmd=%s&oldpwd=%s", loc("Change password"), pwd);
             url_encode(redir, sizeof(redir));
 
-            /* XSS fix: Jason Gochanour. */
             strencode2(str2, redir, sizeof(str2));
             sprintf(str, "?redir=%s&uname=%s&upassword=%s", str2, login_name, pwd);
             strlcat(url, str, sizeof(url));
@@ -14262,7 +14251,6 @@ void show_new_user_page(LOGBOOK * lbs, char *user)
 
    rsprintf("<tr><td nowrap>%s:</td>\n", loc("Login name"));
    if (user && user[0]) {
-      /* XSS fix: Jason Gochanour */
       strencode2(str, user, sizeof(str));
       rsprintf("<td><input type=text size=40 name=new_user_name value=\"%s\" readonly></td>\n", str);
       rsprintf("<td>&nbsp;</td>\n");
@@ -26138,7 +26126,6 @@ void show_login_page(LOGBOOK * lbs, char *redir, int fail)
    strlcpy(str, redir, sizeof(str));
    if (strchr(str, '<'))
       url_encode(str, sizeof(str));
-   /* XSS fix: Jason Gochanour */
    if (strchr(str, ' '))
       return;
 
@@ -26158,7 +26145,6 @@ void show_login_page(LOGBOOK * lbs, char *redir, int fail)
       rsprintf("<tr><td class=\"dlgerror\">%s!</td></tr>\n", str);
    }
    
-   /* XSS fix: Jason Gochanour */
    if (isparam("unm"))
       strencode2(str, getparam("unm"), sizeof(str));
 
