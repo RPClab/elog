@@ -116,8 +116,8 @@ endif
 all: $(EXECS)
 
 # put current GIT revision into header file to be included by programs
-$(GIT_REVISION): src/elogd.c
-	echo \#define GIT_REVISION \"`git log -n 1 --pretty=format:"%ad - %h"`\" > $(GIT_REVISION)
+$(GIT_REVISION): src/elogd.c src/elog.c
+	type git &> /dev/null; if [ $$? -eq 1 ]; then REV="unknown" ;else REV=`git log -n 1 --pretty=format:"%ad - %h"`; fi; echo \#define GIT_REVISION \"$$REV\" > $(GIT_REVISION)
 
 regex.o: src/regex.c src/regex.h
 	$(CC) $(CFLAGS) -w -c -o regex.o src/regex.c
@@ -137,7 +137,7 @@ strlcpy.o: src/strlcpy.c src/strlcpy.h
 elogd: src/elogd.c regex.o crypt.o auth.o mxml.o $(GIT_REVISION)
 	$(CC) $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(OBJS) $(LIBS)
 
-elog: src/elog.c crypt.o $(OBJS)
+elog: src/elog.c crypt.o $(OBJS) $(GIT_REVISION)
 	$(CC) $(CFLAGS) -o elog src/elog.c crypt.o $(OBJS) $(LIBS)
 
 debug: src/elogd.c regex.o crypt.o auth.o mxml.o

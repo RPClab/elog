@@ -470,6 +470,13 @@ int auth_verify_password(LOGBOOK * lbs, const char *user, const char *password, 
 
    error_str[0] = 0;
    verified = FALSE;
+
+   /* otherwise calls with null lbs which make this procedure crash */
+   if (lbs == NULL)
+      lbs = get_first_lbs_with_global_passwd();
+
+   if (lbs == NULL)
+      return FALSE;
    getcfg(lbs->name, "Authentication", str, sizeof(str));
 
 #ifdef HAVE_KRB5
