@@ -1718,12 +1718,14 @@ int setegroup(char *str)
 
    gr = getgrnam(str);
 
-   if (gr != NULL)
+   if (gr != NULL) {
+      chown(logbook_dir, -1, gr->gr_gid);
       if (setregid(-1, gr->gr_gid) >= 0 && initgroups(gr->gr_name, gr->gr_gid) >= 0)
          return 0;
       else {
          eprintf("Cannot set effective GID to group \"%s\"\n", gr->gr_name);
          eprintf("setgroup: %s\n", strerror(errno));
+      }
    } else
       eprintf("Group \"%s\" not found\n", str);
 
@@ -1741,12 +1743,14 @@ int seteuser(char *str)
 
    pw = getpwnam(str);
 
-   if (pw != NULL)
+   if (pw != NULL) {
+      chown(logbook_dir, pw->pw_uid, -1);
       if (setreuid(-1, pw->pw_uid) >= 0) {
          return 0;
       } else {
          eprintf("Cannot set effective UID to user \"%s\"\n", str);
          eprintf("setuser: %s\n", strerror(errno));
+      }
    } else
       eprintf("User \"%s\" not found\n", str);
 
@@ -8902,7 +8906,12 @@ void show_change_pwd_page(LOGBOOK * lbs)
 {
    char str[256], config[256], old_pwd[256], new_pwd[256], new_pwd2[256], user[256], auth[32], error_str[256];
    int wrong_pwd;
+   /* otherwise calls with null lbs which make this procedure crash */
+   if (lbs == NULL)
+      lbs = get_first_lbs_with_global_passwd();
 
+   if (lbs == NULL)
+      return;
    getcfg(lbs->name, "Authentication", auth, sizeof(auth));
 
    old_pwd[0] = new_pwd[0] = new_pwd2[0] = 0;
@@ -27397,7 +27406,7 @@ void interprete(char *lbook, char *path)
 
       /* check if user has access to logbook */
       if (!check_login_user(lbs, getparam("uname"))) {
-         show_error("Use has no access to this logbook");
+         show_error("User has no access to this logbook");
          return;
       }
 
@@ -29712,13 +29721,21 @@ void server_loop(void)
 
 #ifndef HAVE_KRB5
    /* check for Kerberos authentication */
-   getcfg("gloabl", "Authentication", str, sizeof(str));
+   getcfg("global", "Authentication", str, sizeof(str));
    if (stristr(str, "Kerberos")) {
       eprintf("Kerberos authentication not compiled into this version of elogd.\n");
       exit(EXIT_FAILURE);
    }
 #endif
-
+#ifndef HAVE_LDAP
+   /* check for Kerberos authentication */
+   /* NPA change */
+   getcfg("global", "Authentication", str, sizeof(str));
+   if (stristr(str, "LDAP")) {
+      eprintf("LDAP authentication not compiled into this version of elogd.\n");
+      exit(EXIT_FAILURE);
+   }
+#endif
    /* listen for connection */
    status = listen(lsock, SOMAXCONN);
    if (status < 0) {
