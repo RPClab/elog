@@ -20,12 +20,12 @@
 
   Contents:     Electronic logbook utility
 
-  $Id$
-
 \********************************************************************/
 
 #include "elog-version.h"
-char svn_revision[] = "$Id$";
+#include "git-revision.h"
+const char *_git_revision = GIT_REVISION;
+
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -70,6 +70,17 @@ typedef int INT;
 int verbose;
 
 char text[TEXT_SIZE], old_text[TEXT_SIZE], new_text[TEXT_SIZE];
+
+/*------------------------------------------------------------------*/
+
+
+const char *git_revision()
+{
+   const char *p = _git_revision;
+   if (strrchr(p, '-'))
+      p = strrchr(p, '-')+2;
+   return p;
+}
 
 /*------------------------------------------------------------------*/
 
@@ -1051,10 +1062,7 @@ int main(int argc, char *argv[])
             } else {
              usage:
                printf("%s ", ELOGID);
-               strcpy(str, svn_revision + 13);
-               if (strchr(str, ' '))
-                  *strchr(str, ' ') = 0;
-               printf("revision %s\n", str);
+               printf("revision %s\n", git_revision());
                printf("\nusage: elog\n");
                printf("elog -h <hostname> [-p port] [-d subdir]\n");
                printf("                              Location where elogd is running\n");

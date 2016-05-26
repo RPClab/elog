@@ -1718,12 +1718,14 @@ int setegroup(char *str)
 
    gr = getgrnam(str);
 
-   if (gr != NULL)
+   if (gr != NULL) {
+      chown(logbook_dir, -1, gr->gr_gid);
       if (setregid(-1, gr->gr_gid) >= 0 && initgroups(gr->gr_name, gr->gr_gid) >= 0)
          return 0;
       else {
          eprintf("Cannot set effective GID to group \"%s\"\n", gr->gr_name);
          eprintf("setgroup: %s\n", strerror(errno));
+      }
    } else
       eprintf("Group \"%s\" not found\n", str);
 
@@ -1741,12 +1743,14 @@ int seteuser(char *str)
 
    pw = getpwnam(str);
 
-   if (pw != NULL)
+   if (pw != NULL) {
+      chown(logbook_dir, pw->pw_uid, -1);
       if (setreuid(-1, pw->pw_uid) >= 0) {
          return 0;
       } else {
          eprintf("Cannot set effective UID to user \"%s\"\n", str);
          eprintf("setuser: %s\n", strerror(errno));
+      }
    } else
       eprintf("User \"%s\" not found\n", str);
 
@@ -8902,7 +8906,12 @@ void show_change_pwd_page(LOGBOOK * lbs)
 {
    char str[256], config[256], old_pwd[256], new_pwd[256], new_pwd2[256], user[256], auth[32], error_str[256];
    int wrong_pwd;
+   /* otherwise calls with null lbs which make this procedure crash */
+   if (lbs == NULL)
+      lbs = get_first_lbs_with_global_passwd();
 
+   if (lbs == NULL)
+      return;
    getcfg(lbs->name, "Authentication", auth, sizeof(auth));
 
    old_pwd[0] = new_pwd[0] = new_pwd2[0] = 0;
@@ -10490,7 +10499,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /*---- add password in case cookie expires during edit ----*/
 
    if (getcfg(lbs->name, "Password file", str, sizeof(str)) && isparam("unm")) {
-      rsprintf("<input type=hidden name=\"unm\" value=\"%s\">\n", getparam("unm"));
+      strencode2(str, getparam("unm"), sizeof(str));
+      rsprintf("<input type=hidden name=\"unm\" value=\"%s\">\n", str);
       if (isparam("upwd"))
          strlcpy(upwd, getparam("upwd"), sizeof(upwd));
       else
@@ -10577,7 +10587,9 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
       rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Entry time"));
       rsprintf("<td class=\"attribvalue\">%s\n", str);
-      rsprintf("<input type=hidden name=entry_date value=\"%s\"></td></tr>\n", date);
+
+      strencode2(str, date, sizeof(str));
+      rsprintf("<input type=hidden name=entry_date value=\"%s\"></td></tr>\n", str);
    }
 
    if (_condition[0])
@@ -11839,7 +11851,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                thumb_ref[0] = 0;
 
                if (strlen(att[index]) < 14 || att[index][6] != '_' || att[index][13] != '_') {
-                  rsprintf("<b>Error: Invalid attachment \"%s\"</b><br>", att);
+                  strencode2(str, att[index], sizeof(str));
+                  rsprintf("<b>Error: Invalid attachment \"%s\"</b><br>", str);
                } else {
 
                   strlcpy(file_name, lbs->data_dir, sizeof(file_name));
@@ -11889,7 +11902,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      rsprintf("&nbsp;&nbsp;\n");
 
                      /* ImageMagick available, so get image size */
-                     rsprintf("<b>%s</b>&nbsp;\n", att[index] + 14);
+                     strencode2(str, att[index], sizeof(str));
+                     rsprintf("<b>%s</b>&nbsp;\n", str + 14);
                      if (chkext(file_name, ".pdf") || chkext(file_name, ".ps"))
                         sprintf(cmd, "%s -format '%%wx%%h' '%s[0]'", _identify_cmd, file_name);
                      else
@@ -12006,10 +12020,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      rsprintf("</td></tr></table>\n");
                }
 
+               strencode2(str, att[index], sizeof(str));
                if (thumb_ref[0])
-                  rsprintf("<input type=hidden name=\"attachment%d\" alt=\"%s\" value=\"%s\">\n", index, thumb_ref, att[index]);
+                  rsprintf("<input type=hidden name=\"attachment%d\" alt=\"%s\" value=\"%s\">\n", index, thumb_ref, str);
                else
-                  rsprintf("<input type=hidden name=\"attachment%d\" value=\"%s\">\n", index, att[index]);
+                  rsprintf("<input type=hidden name=\"attachment%d\" value=\"%s\">\n", index, str);
 
                rsprintf("</td></tr>\n");
             } else
@@ -13739,7 +13754,8 @@ void show_config_page(LOGBOOK * lbs)
    rsprintf("<!--\n\n");
    rsprintf("function chkrem()\n");
    rsprintf("{\n");
-   sprintf(str, loc("Really remove user %s?"), user);
+   strencode2(str, user, sizeof(str));
+   sprintf(str, loc("Really remove user %s?"), str);
    rsprintf("    var subm = confirm(\"%s\");\n", str);
    rsprintf("    return subm;\n");
    rsprintf("}\n\n");
@@ -13772,7 +13788,8 @@ void show_config_page(LOGBOOK * lbs)
    rsprintf("<input type=hidden name=cmd value=\"%s\">\n", loc("Config"));      // for select javascript
    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
    rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
-   rsprintf("<input type=hidden name=config value=\"%s\">\n", user);
+   strencode2(str, user, sizeof(str));
+   rsprintf("<input type=hidden name=config value=\"%s\">\n", str);
    rsprintf("<input type=hidden name=cfgpage value=\"1\">\n");                  // needed for "Save" command
 
    rsprintf("</span></td></tr>\n\n");
@@ -13807,10 +13824,14 @@ void show_config_page(LOGBOOK * lbs)
 
       for (i = 0; i < n; i++) {
          get_user_line(lbs, user_list[i], NULL, full_name, user_email, NULL, NULL, NULL);
-         if (strcmp(user_list[i], user) == 0)
-            rsprintf("<option selected value=\"%s\">%s &lt;%s&gt;\n", user_list[i], user_list[i], user_email);
-         else
-            rsprintf("<option value=\"%s\">%s &lt;%s&gt;\n", user_list[i], user_list[i], user_email);
+         if (strcmp(user_list[i], user) == 0) {
+            strencode2(str, user_list[i], sizeof(str));
+            rsprintf("<option selected value=\"%s\">%s &lt;%s&gt;\n", str, str, user_email);
+         }
+         else {
+            strencode2(str, user_list[i], sizeof(str));
+            rsprintf("<option selected value=\"%s\">%s &lt;%s&gt;\n", str, str, user_email);
+         }
       }
 
       for (i = 0; i < n; i++)
@@ -13849,6 +13870,8 @@ void show_config_page(LOGBOOK * lbs)
    rsprintf("<tr><td nowrap width=\"15%%\">%s:</td>\n", loc("Login name"));
 
    getcfg(lbs->name, "Authentication", auth, sizeof(auth));
+
+   strencode2(str, user, sizeof(str));
    if (stristr(auth, "Kerberos") || stristr(auth, "Webserver"))
       rsprintf("<td><input type=text size=40 name=new_user_name value=\"%s\" readonly></td></tr>\n", str);
    else
@@ -14114,7 +14137,9 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
             url_slash_encode(pwd, sizeof(pwd));
             sprintf(redir, "?cmd=%s&oldpwd=%s", loc("Change password"), pwd);
             url_encode(redir, sizeof(redir));
-            sprintf(str, "?redir=%s&uname=%s&upassword=%s", redir, login_name, pwd);
+
+            strencode2(str2, redir, sizeof(str2));
+            sprintf(str, "?redir=%s&uname=%s&upassword=%s", str2, login_name, pwd);
             strlcat(url, str, sizeof(url));
 
             retrieve_email_from(lbs, mail_from, mail_from_name, NULL);
@@ -14235,7 +14260,8 @@ void show_new_user_page(LOGBOOK * lbs, char *user)
 
    rsprintf("<tr><td nowrap>%s:</td>\n", loc("Login name"));
    if (user && user[0]) {
-      rsprintf("<td><input type=text size=40 name=new_user_name value=\"%s\" readonly></td>\n", user);
+      strencode2(str, user, sizeof(str));
+      rsprintf("<td><input type=text size=40 name=new_user_name value=\"%s\" readonly></td>\n", str);
       rsprintf("<td>&nbsp;</td>\n");
    } else {
       rsprintf("<td><input type=text size=40 name=new_user_name></td>\n");
@@ -22563,7 +22589,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
       p = stristr(shell_cmd, "$attachments");
       strlcpy(tail, p + strlen("$attachments"), sizeof(tail));
       *p = 0;
-      for (i = 0; i < MAX_ATTACHMENTS; i++)
+      for (i = 0; i < MAX_ATTACHMENTS; i++) {
          generate_subdir_name(att_file[i], subdir, sizeof(subdir));
          if (att_file[i][0] && strlen(shell_cmd) + strlen(lbs->data_dir) + strlen(subdir) + strlen(att_file[i])
              < sizeof(shell_cmd) + 1) {
@@ -22576,6 +22602,7 @@ int execute_shell(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NAME_LE
             strcat(p, "\" ");
             p += strlen(p);
          }
+      }
       strlcat(shell_cmd, tail, sizeof(shell_cmd));
    }
 
@@ -24143,7 +24170,7 @@ int get_thumb_name(const char *file_name, char *thumb_name, int size, int index)
 
 void call_image_magick(LOGBOOK * lbs)
 {
-   char str[256], cmd[256], file_name[256], thumb_name[256], subdir[256];
+   char str[1024], cmd[1024], file_name[256], thumb_name[256], subdir[256];
    int cur_width, cur_height, new_size, cur_rot, new_rot, thumb_status;
 
    if (!isparam("req") || !isparam("img")) {
@@ -26109,6 +26136,9 @@ void show_login_page(LOGBOOK * lbs, char *redir, int fail)
    strlcpy(str, redir, sizeof(str));
    if (strchr(str, '<'))
       url_encode(str, sizeof(str));
+   if (strchr(str, ' '))
+      return;
+
    rsprintf("<input type=hidden name=redir value=\"%s\">\n", str);
 
    rsprintf("<table class=\"login_frame\" cellspacing=0 align=center>");
@@ -26124,12 +26154,15 @@ void show_login_page(LOGBOOK * lbs, char *redir, int fail)
       sprintf(str, loc("User \"%s\" has no access to this logbook"), getparam("unm"));
       rsprintf("<tr><td class=\"dlgerror\">%s!</td></tr>\n", str);
    }
+   
+   if (isparam("unm"))
+      strencode2(str, getparam("unm"), sizeof(str));
 
    rsprintf("<tr><td class=\"login_form\">\n");
    rsprintf("<span class=\"overlay_wrapper\">\n");
    rsprintf("<label for=\"uname\" id=\"uname\" class=\"overlabel\">%s</label>\n", loc("Username"));
    rsprintf("<input type=\"text\" class=\"login_input\" name=\"uname\" value=\"%s\" title=\"%s\" onInput=\"document.getElementById('uname').style.display='none';\">\n",
-            isparam("unm") ? getparam("unm") : "", loc("Username"));
+            isparam("unm") ? str : "", loc("Username"));
    rsprintf("</span></td></tr>\n");
 
    rsprintf("<tr><td class=\"login_form\">\n");
@@ -27373,7 +27406,7 @@ void interprete(char *lbook, char *path)
 
       /* check if user has access to logbook */
       if (!check_login_user(lbs, getparam("uname"))) {
-         show_error("Use has no access to this logbook");
+         show_error("User has no access to this logbook");
          return;
       }
 
@@ -29688,13 +29721,21 @@ void server_loop(void)
 
 #ifndef HAVE_KRB5
    /* check for Kerberos authentication */
-   getcfg("gloabl", "Authentication", str, sizeof(str));
+   getcfg("global", "Authentication", str, sizeof(str));
    if (stristr(str, "Kerberos")) {
       eprintf("Kerberos authentication not compiled into this version of elogd.\n");
       exit(EXIT_FAILURE);
    }
 #endif
-
+#ifndef HAVE_LDAP
+   /* check for Kerberos authentication */
+   /* NPA change */
+   getcfg("global", "Authentication", str, sizeof(str));
+   if (stristr(str, "LDAP")) {
+      eprintf("LDAP authentication not compiled into this version of elogd.\n");
+      exit(EXIT_FAILURE);
+   }
+#endif
    /* listen for connection */
    status = listen(lsock, SOMAXCONN);
    if (status < 0) {
