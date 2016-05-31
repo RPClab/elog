@@ -20737,7 +20737,8 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             if (i == *msg_list[index].lbs->n_el_index)
                break;
 
-            in_reply_to_id = msg_list[index].lbs->el_index[i].in_reply_to;
+            //in_reply_to_id = msg_list[index].lbs->el_index[i].in_reply_to;
+            in_reply_to_id = 0;
 
          } while (in_reply_to_id);
 
