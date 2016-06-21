@@ -9005,8 +9005,10 @@ void show_change_pwd_page(LOGBOOK * lbs)
    rsprintf("<table class=\"dlgframe\" cellspacing=0 align=center>");
 
    if (wrong_pwd == 1) {
-      if (error_str[0])
-         rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n", error_str);
+      if (error_str[0]) {
+         strencode2(str, error_str, sizeof(str));
+         rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n", str);
+      }
       else
          rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n", loc("Wrong password"));
    }
@@ -9015,8 +9017,10 @@ void show_change_pwd_page(LOGBOOK * lbs)
       rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n",
                loc("New passwords do not match, please retype"));
 
-   if (wrong_pwd == 3)
-      rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n", error_str);
+   if (wrong_pwd == 3) {
+      strencode2(str, error_str, sizeof(str));
+      rsprintf("<tr><td colspan=2 class=\"dlgerror\">%s!</td></tr>\n", str);
+   }
 
    rsprintf("<tr><td colspan=2 class=\"dlgtitle\">\n");
 
@@ -21102,8 +21106,9 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          rsprintf("<table width=\"100%%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
 
          if (isparam("last")) {
-            rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Restrict seach to last"));
-            rsprintf("<td class=\"attribvalue\">%s %s</td></tr>", getparam("last"), loc("days"));
+            rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s:</td>", loc("Restrict search to last"));
+            strencode2(str, getparam("last"), sizeof(str));
+            rsprintf("<td class=\"attribvalue\">%s %s</td></tr>", str, loc("days"));
          }
 
          if (isparam("ma") || isparam("ya") || isparam("da") || isparam("ha") || isparam("na")
