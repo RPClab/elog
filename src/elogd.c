@@ -3549,7 +3549,7 @@ void retrieve_email_from(LOGBOOK * lbs, char *ret, char *ret_name, char attrib[M
             break;
          get_user_line(lbs, login_name, NULL, NULL, email_from, NULL, NULL, NULL);
          sprintf(email_from_name, "%s <%s>", login_name, email_from);
-         if (is_admin_user(lbs->name, login_name) && strchr(email_from, '@'))
+         if (is_admin_user(lbs, login_name) && strchr(email_from, '@'))
             break;
       }
    }
@@ -8952,7 +8952,7 @@ void show_change_pwd_page(LOGBOOK * lbs)
                wrong_pwd = 2;
          } else {
             /* administrator does not have to supply old password if changing other user's password */
-            if (isparam("unm") && is_admin_user(lbs->name, getparam("unm"))
+            if (isparam("unm") && is_admin_user(lbs, getparam("unm"))
                 && stricmp(getparam("unm"), user) != 0)
                wrong_pwd = 0;
             else {
@@ -9030,7 +9030,7 @@ void show_change_pwd_page(LOGBOOK * lbs)
 
    /* do not ask for old pwasword if admin changes other user's password */
    if (isparam("unm")) {
-      if (!is_admin_user(lbs->name, getparam("unm")) || stricmp(getparam("unm"), user) == 0) {
+      if (!is_admin_user(lbs, getparam("unm")) || stricmp(getparam("unm"), user) == 0) {
          if (isparam("oldpwd") && !(wrong_pwd == 1))    // hidden password for password recovery
             rsprintf("<input type=hidden name=oldpwd value=\"%s\"", getparam("oldpwd"));
          else {
@@ -9128,7 +9128,7 @@ BOOL is_author(LOGBOOK * lbs, char attrib[MAX_N_ATTR][NAME_LENGTH], char *owner)
    int i;
 
    /* check if current user is admin */
-   if (is_admin_user(lbs->name, getparam("unm")))
+   if (is_admin_user(lbs, getparam("unm")))
       return TRUE;
 
    /* search attribute which contains short_name of author */
@@ -12652,7 +12652,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
    rsprintf("<input type=hidden name=cfgpage value=\"1\">\n");
 
    if (lbs->top_group[0] && (!top_group || strieq(top_group, "global"))) {
-      if (is_admin_user("global", getparam("unm"))) {
+      if (is_admin_user(NULL, getparam("unm"))) {
          if (lbs->top_group[0]) {
 
             sprintf(str, "global %s", lbs->top_group);
@@ -12685,7 +12685,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
    }
 
    if (is_group("global") && !strieq(top_group, "global")) {
-      if (is_admin_user("global", getparam("unm"))) {
+      if (is_admin_user(NULL, getparam("unm"))) {
          rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Delete this logbook"));
          rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Rename this logbook"));
          rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Create new logbook"));
@@ -13804,7 +13804,7 @@ void show_config_page(LOGBOOK * lbs)
 
    /*---- if admin user, show user list ----*/
 
-   if (is_admin_user(logbook, getparam("unm"))) {
+   if (is_admin_user(lbs, getparam("unm"))) {
       rsprintf("<input type=hidden name=admin value=1>\n");
       rsprintf("<tr><td nowrap width=\"10%%\">%s:</td>\n", loc("Select user"));
       rsprintf("<td><select name=cfg_user onChange=\"document.form1.submit()\">\n");
@@ -13857,7 +13857,7 @@ void show_config_page(LOGBOOK * lbs)
    else
       strlcpy(str, user, sizeof(str));
 
-   if (is_admin_user(logbook, getparam("unm"))) {
+   if (is_admin_user(lbs, getparam("unm"))) {
       rsprintf("<tr><td nowrap width=\"15%%\">%s:</td>\n", loc("Active"));
       if (stricmp(user, getparam("unm")) == 0)
          rsprintf
@@ -13963,13 +13963,13 @@ void show_config_page(LOGBOOK * lbs)
 
    rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
 
-   if (is_admin_user(logbook, getparam("unm")) || !getcfg(logbook, "allow password change", str, sizeof(str))
+   if (is_admin_user(lbs, getparam("unm")) || !getcfg(logbook, "allow password change", str, sizeof(str))
        || atoi(str) == 1)
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Change password"));
 
    rsprintf("<input type=submit name=cmd value=\"%s\" onClick=\"return chkrem();\">\n", loc("Remove user"));
 
-   if (is_admin_user(logbook, getparam("unm"))) {
+   if (is_admin_user(lbs, getparam("unm"))) {
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("New user"));
       strlcpy(str, loc("Change config file"), sizeof(str));
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", str);
@@ -18628,6 +18628,17 @@ BOOL subst_param(char *str, int size, char *param, char *value)
 
 /*------------------------------------------------------------------*/
 
+BOOL logged_in(LOGBOOK *lbs)
+{
+   if (isparam("unm")) {
+      if (check_login_user(lbs, getparam("unm")) && check_login(lbs, getparam("sid")))
+          return TRUE;
+   }
+   return FALSE;
+}
+
+/*------------------------------------------------------------------*/
+
 BOOL is_user_allowed(LOGBOOK * lbs, char *command)
 {
    char str[1000], users[2000];
@@ -18658,7 +18669,7 @@ BOOL is_user_allowed(LOGBOOK * lbs, char *command)
    /* check admin command */
    if (strieq(command, loc("Admin"))) {
       if (getcfg(lbs->name, "Admin user", str, sizeof(str))) {
-         return is_admin_user(lbs->name, getparam("unm"));
+         return is_admin_user(lbs, getparam("unm"));
       }
    }
 
@@ -18702,7 +18713,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command, int message_id)
       return TRUE;
 
    /* check for guest access */
-   if (!getcfg(lbs->name, "Guest Menu commands", menu_str, sizeof(menu_str)) || isparam("unm") != 0)
+   if (!getcfg(lbs->name, "Guest Menu commands", menu_str, sizeof(menu_str)) || logged_in(lbs))
       getcfg(lbs->name, "Menu commands", menu_str, sizeof(menu_str));
 
    /* default menu commands */
@@ -18711,7 +18722,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command, int message_id)
 
       if (getcfg(lbs->name, "Password file", str, sizeof(str))) {
 
-         if (is_admin_user(lbs->name, getparam("unm"))) {
+         if (is_admin_user(lbs, getparam("unm"))) {
 
             strcat(menu_str, "Admin, ");
             strcat(menu_str, "Change config file, ");
@@ -18720,7 +18731,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command, int message_id)
             strcat(menu_str, "Create new logbook, ");
             strcat(menu_str, "GetPwdFile, ");
 
-            if (is_admin_user("global", getparam("unm"))) {
+            if (is_admin_user(NULL, getparam("unm"))) {
 
                if (lbs->top_group[0]) {
                   sprintf(str, "Change [global %s]", lbs->top_group);
@@ -18728,7 +18739,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command, int message_id)
                   strcat(menu_str, ", ");
                }
 
-               if (!lbs->top_group[0] || (is_admin_user("global", getparam("unm")))) {
+               if (!lbs->top_group[0] || (is_admin_user(NULL, getparam("unm")))) {
 
                   strcat(menu_str, "Change [global]");
                   strcat(menu_str, ", ");
@@ -18752,7 +18763,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command, int message_id)
       menu_str[0] = 0;
       for (i = 0; i < n; i++) {
          if (strcmp(menu_item[i], "Admin") == 0) {
-            if (!is_admin_user(lbs->name, getparam("unm")))
+            if (!is_admin_user(lbs, getparam("unm")))
                continue;
          }
          strcat(menu_str, menu_item[i]);
@@ -18761,7 +18772,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command, int message_id)
 
       strcat(menu_str, "HelpELCode, Synchronize, ");
 
-      if (is_admin_user(lbs->name, getparam("unm"))) {
+      if (is_admin_user(lbs, getparam("unm"))) {
 
          strcat(menu_str, "Change config file, ");
          strcat(menu_str, "Delete this logbook, ");
@@ -18769,7 +18780,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command, int message_id)
          strcat(menu_str, "Create new logbook, ");
          strcat(menu_str, "GetPwdFile, ");
 
-         if (is_admin_user("global", getparam("unm"))) {
+         if (is_admin_user(NULL, getparam("unm"))) {
 
             if (lbs->top_group[0]) {
                sprintf(str, "Change [global %s]", lbs->top_group);
@@ -18777,7 +18788,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command, int message_id)
                strcat(menu_str, ", ");
             }
 
-            if (!lbs->top_group[0] || (is_admin_user("global", getparam("unm")))) {
+            if (!lbs->top_group[0] || (is_admin_user(NULL, getparam("unm")))) {
 
                strcat(menu_str, "Change [global]");
                strcat(menu_str, ", ");
@@ -18788,11 +18799,11 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command, int message_id)
 
    /* check list menu commands */
    str[0] = 0;
-   if (!getcfg(lbs->name, "Guest List Menu commands", str, sizeof(str)) || isparam("unm") != 0)
+   if (!getcfg(lbs->name, "Guest List Menu commands", str, sizeof(str)) || logged_in(lbs))
       getcfg(lbs->name, "list menu commands", str, sizeof(str));
 
    if (!str[0]) {
-      if (!getcfg(lbs->name, "Guest Find Menu commands", str, sizeof(str)) || isparam("unm") != 0)
+      if (!getcfg(lbs->name, "Guest Find Menu commands", str, sizeof(str)) || logged_in(lbs))
          getcfg(lbs->name, "Find Menu commands", str, sizeof(str));
    }
 
@@ -18819,7 +18830,7 @@ BOOL is_command_allowed(LOGBOOK * lbs, char *command, int message_id)
       strlcat(other_str, "Save, ", sizeof(other_str));
 
    /* admin commands */
-   if (is_admin_user(lbs->name, getparam("unm"))) {
+   if (is_admin_user(lbs, getparam("unm"))) {
       strlcat(other_str, "Remove user, New user, Activate, ", sizeof(other_str));
    } else if (getcfg(lbs->name, "Self register", str, sizeof(str)) && atoi(str) > 0) {
       strlcat(other_str, "Remove user, New user, ", sizeof(other_str));
@@ -20947,13 +20958,11 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             rsprintf("\">\n", str);
          }
 
-         if (!getcfg(lbs->name, "Guest Find menu commands", menu_str, sizeof(menu_str)) || isparam("unm")
-             != 0)
+         if (!getcfg(lbs->name, "Guest Find menu commands", menu_str, sizeof(menu_str)) || logged_in(lbs))
             getcfg(lbs->name, "Find menu commands", menu_str, sizeof(menu_str));
 
          if (!menu_str[0]) {
-            if (!getcfg(lbs->name, "Guest list menu commands", menu_str, sizeof(menu_str)) || isparam("unm")
-                != 0)
+            if (!getcfg(lbs->name, "Guest list menu commands", menu_str, sizeof(menu_str)) || logged_in(lbs))
                getcfg(lbs->name, "list menu commands", menu_str, sizeof(menu_str));
          }
 
@@ -24304,7 +24313,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    }
 
    /* check for guest access */
-   if (!getcfg(lbs->name, "Guest Menu commands", menu_str, sizeof(menu_str)) || isparam("unm") != 0)
+   if (!getcfg(lbs->name, "Guest Menu commands", menu_str, sizeof(menu_str)) || logged_in(lbs))
       getcfg(lbs->name, "Menu commands", menu_str, sizeof(menu_str));
 
    /* default menu commands */
@@ -24324,7 +24333,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       menu_str[0] = 0;
       for (i = 0; i < n; i++) {
          if (strcmp(menu_item[i], "Admin") == 0) {
-            if (!is_admin_user(lbs->name, getparam("unm")))
+            if (!is_admin_user(lbs, getparam("unm")))
                continue;
          }
          strcat(menu_str, menu_item[i]);
@@ -26061,11 +26070,17 @@ BOOL check_login_user(LOGBOOK * lbs, char *user)
 
 /*------------------------------------------------------------------*/
 
-BOOL is_admin_user(char *logbook, char *user)
+BOOL is_admin_user(LOGBOOK *lbs, char *user)
 {
    int i, n;
    char str[1000];
    char list[MAX_N_LIST][NAME_LENGTH];
+   char logbook[1000];
+   
+   if (lbs == NULL)
+      strlcpy(logbook, "global", sizeof(logbook));
+   else
+      strlcpy(logbook, lbs->name, sizeof(logbook));
 
    /* Removed user[0] for cloning, have to check implications, same below.
       if (getcfg(logbook, "Admin user", str, sizeof(str)) && user[0]) { */
@@ -26082,6 +26097,11 @@ BOOL is_admin_user(char *logbook, char *user)
       if (i == n)
          return FALSE;
    }
+   
+   /* make sure user is logged in */
+   if (!logged_in(lbs))
+      return FALSE;
+   
    return TRUE;
 }
 
@@ -26618,7 +26638,7 @@ void show_selection_page(void)
    if (getcfg("global", "mirror server", str, sizeof(str))) {
 
       /* only admin user sees synchronization link */
-      if (is_admin_user("global", getparam("unm"))) {
+      if (is_admin_user(NULL, getparam("unm"))) {
          rsprintf("<tr>\n");
          rsprintf("<td colspan=13 class=\"seltitle\">\n");
          rsprintf("<a href=\"?cmd=Synchronize\">%s</a></td>\n", loc("Synchronize all logbooks"));
