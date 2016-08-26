@@ -25653,7 +25653,9 @@ LOGBOOK *get_first_lbs_with_global_passwd()
    char str[256], global[256], orig_topgroup[256];
 
    orig_topgroup[0] = 0;
-   getcfg("global", "Password file", global, sizeof(global));
+   if (!getcfg("global", "Password file", global, sizeof(global)))
+      return NULL;
+   
    if (getcfg_topgroup() && *getcfg_topgroup())
       strcpy(orig_topgroup, getcfg_topgroup());
 
@@ -25703,6 +25705,8 @@ int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name, ch
       logbook with same password file than global section */
    if (lbs == NULL)
       lbs = get_first_lbs_with_global_passwd();
+   if (lbs == NULL)
+      return 0;
 
    getcfg(lbs->name, "Password file", str, sizeof(str));
 
@@ -26099,7 +26103,7 @@ BOOL is_admin_user(LOGBOOK *lbs, char *user)
    }
    
    /* make sure user is logged in */
-   if (!logged_in(lbs))
+   if (lbs && !logged_in(lbs))
       return FALSE;
    
    return TRUE;
