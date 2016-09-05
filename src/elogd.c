@@ -13844,11 +13844,18 @@ void show_config_page(LOGBOOK * lbs)
             get_user_line(lbs, user_list[i], NULL, full_name, user_email, NULL, NULL, NULL);
          if (strcmp(user_list[i], user) == 0) {
             strencode2(str, user_list[i], sizeof(str));
-            rsprintf("<option selected value=\"%s\">%s &lt;%s&gt;\n", str, str, user_email);
+            if (sort_email)
+               rsprintf("<option selected value=\"%s\">&lt;%s&gt; %s\n", str, user_email, str);
+            else
+               rsprintf("<option selected value=\"%s\">%s &lt;%s&gt;\n", str, str, user_email);
          }
          else {
             strencode2(str, user_list[i], sizeof(str));
-            rsprintf("<option value=\"%s\">%s &lt;%s&gt;\n", str, str, user_email);
+            if (sort_email)
+               rsprintf("<option value=\"%s\">&lt;%s&gt; %s\n", str, user_email, str);
+            else
+               rsprintf("<option value=\"%s\">%s &lt;%s&gt;\n", str, str, user_email);
+
          }
       }
 

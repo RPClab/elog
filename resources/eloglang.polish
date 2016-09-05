@@ -1,4 +1,3 @@
-﻿#
 # Polish translation by Daniel Sajdyk <daniel.sajdyk at gmail dot com>
 # A more recent version may be available at : http://www.sajdyk.pl/2015/06/polskie-tumaczenie-dla-aplikacji-elog.html
 # Charset = UTF-8
@@ -478,8 +477,14 @@ If you leave this page you will lose your unsaved changes = Jeżeli opuścisz t�
 Edited = Edytowany
 All time = Cały czas
 Draft = Projekt
-Restrict seach to last = Zawęź szukanie do
 days = dni
-This is a draft message, edit and submit it to make it permament = To jest projekt wpisu, edytuj i wyślij aby ją zapisać
 Draft saved at = Szkic zapisany o
 You might however then overwrite each other's modifications = Jednakże możesz nadpisać każdą inną modyfikację
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Draft entry created on %s by %s = 
+Really delete this entry? = 
+Restrict search to last = 
+This is a draft message, edit and submit it to make it permanent = 

@@ -51,6 +51,7 @@
 		D58A366615AF103300682DC0 /* elog-version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "elog-version.h"; path = "../src/elog-version.h"; sourceTree = SOURCE_ROOT; };
 		D5AC5BF9154AC7200018DD90 /* config.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = config.html; path = ../doc/config.html; sourceTree = SOURCE_ROOT; };
 		D5C8CD7A1ACC02A0008B1201 /* elogd.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = elogd.cfg; path = ../../../elogdemo/elogd.cfg; sourceTree = "<group>"; };
+		D5F8DE001D7D60E800E4D402 /* eloglang.german */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = eloglang.german; path = ../resources/eloglang.german; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,6 +116,7 @@
 		D5F11B9013AFA146002CE8BF /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				D5F8DE001D7D60E800E4D402 /* eloglang.german */,
 				D57031C51B21CAF900A7C6EE /* elog.css */,
 				D5C8CD7A1ACC02A0008B1201 /* elogd.cfg */,
 				D5AC5BF9154AC7200018DD90 /* config.html */,

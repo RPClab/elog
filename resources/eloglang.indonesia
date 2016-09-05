@@ -479,9 +479,7 @@ If you leave this page you will lose your unsaved changes = Jika anda meninggalk
 Edited = Teredit
 All time = Semua waktu
 Draft = Rancangan
-Restrict seach to last = Batasi pencarian di akhir
 days = Hari
-This is a draft message, edit and submit it to make it permament = Ini adalah rancangan pesan, ubah dan masukkan untuk membuatnya permanen
 Draft saved at = Rancangan disimpan pada
 You might however then overwrite each other's modifications = Anda mungkin saling menulis ulang modifikasi orang lain
 
@@ -489,3 +487,7 @@ You might however then overwrite each other's modifications = Anda mungkin salin
 #
 #---- please translate following items and then remove this comment ----#
 #
+Draft entry created on %s by %s = 
+Really delete this entry? = 
+Restrict search to last = 
+This is a draft message, edit and submit it to make it permanent = 
