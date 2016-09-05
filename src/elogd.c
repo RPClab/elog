@@ -13834,7 +13834,7 @@ void show_config_page(LOGBOOK * lbs)
          }
          else {
             strencode2(str, user_list[i], sizeof(str));
-            rsprintf("<option selected value=\"%s\">%s &lt;%s&gt;\n", str, str, user_email);
+            rsprintf("<option value=\"%s\">%s &lt;%s&gt;\n", str, str, user_email);
          }
       }
 
