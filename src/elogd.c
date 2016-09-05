@@ -13737,7 +13737,7 @@ void show_config_page(LOGBOOK * lbs)
 {
    char str[256], user[80], password[80], full_name[256], user_email[256], logbook[256], auth[32], **user_list;
    int i, n, inactive;
-   BOOL email_notify[1000];
+   BOOL email_notify[1000], sort_email;
 
    if (lbs)
       strcpy(logbook, lbs->name);
@@ -13749,6 +13749,11 @@ void show_config_page(LOGBOOK * lbs)
    if (isparam("cfg_user"))
       strcpy(user, getparam("cfg_user"));
 
+   /* get sort_email flag */
+   sort_email = FALSE;
+   if (isparam("sort_email") && atoi(getparam("sort_email")) > 0)
+      sort_email = TRUE;
+   
    /*---- header ----*/
 
    show_standard_header(lbs, TRUE, loc("ELOG user config"), ".", FALSE, NULL, NULL, 0);
@@ -13820,14 +13825,23 @@ void show_config_page(LOGBOOK * lbs)
       for (i = 0; i < n; i++)
          user_list[i] = (char *) xcalloc(NAME_LENGTH, 1);
 
-      for (i = 0; i < n; i++)
+      for (i = 0; i < n; i++) {
          enum_user_line(lbs, i, user_list[i], NAME_LENGTH);
+         get_user_line(lbs, user_list[i], NULL, full_name, user_email, NULL, NULL, NULL);
+         if (sort_email)
+            strlcpy(user_list[i], user_email, NAME_LENGTH);
+      }
 
       /* sort list */
       qsort(user_list, n, sizeof(char *), ascii_compare);
 
       for (i = 0; i < n; i++) {
-         get_user_line(lbs, user_list[i], NULL, full_name, user_email, NULL, NULL, NULL);
+         if (sort_email) {
+            strlcpy(user_email, user_list[i], NAME_LENGTH);
+            user_list[i][0] = 0;
+            get_user_line(lbs, user_list[i], NULL, full_name, user_email, NULL, NULL, NULL);
+         } else
+            get_user_line(lbs, user_list[i], NULL, full_name, user_email, NULL, NULL, NULL);
          if (strcmp(user_list[i], user) == 0) {
             strencode2(str, user_list[i], sizeof(str));
             rsprintf("<option selected value=\"%s\">%s &lt;%s&gt;\n", str, str, user_email);
@@ -13848,6 +13862,11 @@ void show_config_page(LOGBOOK * lbs)
       rsprintf("<noscript>\n");
       rsprintf("<input type=submit value=\"%s\">\n", loc("Update"));
       rsprintf("</noscript>\n");
+      
+      if (sort_email)
+         rsprintf("<input type=\"checkbox\" checked name=\"sort_email\" value=\"1\" onChange=\"document.form1.submit()\">Sort by email");
+      else
+         rsprintf("<input type=\"checkbox\" name=\"sort_email\" value=\"1\" onChange=\"document.form1.submit()\">Sort by email");
    }
 
    /*---- entry form ----*/
@@ -25692,7 +25711,7 @@ int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name, ch
       password[0] = 0;
    if (full_name)
       full_name[0] = 0;
-   if (email)
+   if (email && user[0])
       email[0] = 0;
    if (email_notify)
       email_notify[0] = 0;
@@ -25710,15 +25729,24 @@ int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name, ch
 
    getcfg(lbs->name, "Password file", str, sizeof(str));
 
-   if (!str[0] || !user[0])
+   if (!str[0])
       return 0;
 
    if (lbs->pwd_xml_tree) {
-      sprintf(str, "/list/user[name=%s]", user);
-      if ((user_node = mxml_find_node(lbs->pwd_xml_tree, str)) == NULL)
-         return 2;
+      if (user[0]) {
+         sprintf(str, "/list/user[name=%s]", user);
+         if ((user_node = mxml_find_node(lbs->pwd_xml_tree, str)) == NULL)
+            return 2;
+      } else if (email[0]) {
+         sprintf(str, "/list/user[email=%s]", email);
+         if ((user_node = mxml_find_node(lbs->pwd_xml_tree, str)) == NULL)
+            return 2;
+      } else
+         return 0;
 
       /* if user found, retrieve other info */
+      if ((node = mxml_find_node(user_node, "name")) != NULL && user && mxml_get_value(node))
+         strlcpy(user, mxml_get_value(node), 256);
       if ((node = mxml_find_node(user_node, "password")) != NULL && password && mxml_get_value(node))
          strlcpy(password, mxml_get_value(node), 256);
       if ((node = mxml_find_node(user_node, "full_name")) != NULL && full_name && mxml_get_value(node))
