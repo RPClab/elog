@@ -22,3 +22,4 @@ git-revision.h
 NT/elogd.opensdf
 vc110.idb
 elog*.exe
+NT/x64/Debug/
