@@ -6,9 +6,6 @@
 # config: @PREFIX@/elog/elogd.cfg
 # pidfile: /var/run/elogd.pid
 
-# Source function library.
-# . /etc/rc.d/init.d/functions
-
 # Check for the config file
 if [ ! -f @PREFIX@/elog/elogd.cfg ]; then
     exit 0
@@ -35,6 +32,9 @@ case "$1" in
 	RETVAL=$?
         if [ $RETVAL -eq 0  ] ; then 
           touch /var/lock/subsys/elogd
+	  echo_success
+	else
+	  echo_failure
         fi
 	echo
 	;;
