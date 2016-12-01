@@ -13837,7 +13837,7 @@ void show_config_page(LOGBOOK * lbs)
 
       for (i = 0; i < n; i++) {
          if (sort_email) {
-            strlcpy(user_email, user_list[i], NAME_LENGTH);
+            strlcpy(user_email, user_list[i], sizeof(user_email));
             user_list[i][0] = 0;
             get_user_line(lbs, user_list[i], NULL, full_name, user_email, NULL, NULL, NULL);
          } else

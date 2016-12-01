@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D52BA31413999DE4000458E3 /* mxml.c in Sources */ = {isa = PBXBuildFile; fileRef = D52BA31013999DE4000458E3 /* mxml.c */; };
-		D52BA31513999DE4000458E3 /* strlcpy.c in Sources */ = {isa = PBXBuildFile; fileRef = D52BA31213999DE4000458E3 /* strlcpy.c */; };
+		D52896561DF0221200E8F981 /* mxml.c in Sources */ = {isa = PBXBuildFile; fileRef = D52896541DF0221200E8F981 /* mxml.c */; };
+		D52896591DF0222200E8F981 /* strlcpy.c in Sources */ = {isa = PBXBuildFile; fileRef = D52896571DF0222200E8F981 /* strlcpy.c */; };
 		D54515921399A23B0037D7FB /* auth.c in Sources */ = {isa = PBXBuildFile; fileRef = D545158C1399A23B0037D7FB /* auth.c */; };
 		D54515931399A23B0037D7FB /* crypt.c in Sources */ = {isa = PBXBuildFile; fileRef = D545158D1399A23B0037D7FB /* crypt.c */; };
 		D54515941399A23B0037D7FB /* elogd.c in Sources */ = {isa = PBXBuildFile; fileRef = D545158E1399A23B0037D7FB /* elogd.c */; };
@@ -30,13 +30,13 @@
 /* Begin PBXFileReference section */
 		D504812F1ACC49DD002EDA66 /* git-revision.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "git-revision.h"; path = "../src/git-revision.h"; sourceTree = "<group>"; };
 		D51F4A9214F27F3C00CB29E9 /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index.html; path = ../doc/index.html; sourceTree = SOURCE_ROOT; };
+		D52896541DF0221200E8F981 /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = ../../mxml/mxml.c; sourceTree = "<group>"; };
+		D52896551DF0221200E8F981 /* mxml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mxml.h; path = ../../mxml/mxml.h; sourceTree = "<group>"; };
+		D52896571DF0222200E8F981 /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = ../../mxml/strlcpy.c; sourceTree = "<group>"; };
+		D52896581DF0222200E8F981 /* strlcpy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = strlcpy.h; path = ../../mxml/strlcpy.h; sourceTree = "<group>"; };
 		D528A7C314F278C800D33974 /* ChangeLog */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ChangeLog; path = ../doc/ChangeLog; sourceTree = SOURCE_ROOT; };
 		D528A7C514F278DA00D33974 /* checklist.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = checklist.txt; path = ../checklist.txt; sourceTree = SOURCE_ROOT; };
 		D52BA2FA13999DB0000458E3 /* elogd */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = elogd; sourceTree = BUILT_PRODUCTS_DIR; };
-		D52BA31013999DE4000458E3 /* mxml.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mxml.c; path = ../../mxml/mxml.c; sourceTree = SOURCE_ROOT; };
-		D52BA31113999DE4000458E3 /* mxml.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mxml.h; path = ../../mxml/mxml.h; sourceTree = SOURCE_ROOT; };
-		D52BA31213999DE4000458E3 /* strlcpy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = strlcpy.c; path = ../../mxml/strlcpy.c; sourceTree = SOURCE_ROOT; };
-		D52BA31313999DE4000458E3 /* strlcpy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = strlcpy.h; path = ../../mxml/strlcpy.h; sourceTree = SOURCE_ROOT; };
 		D545158C1399A23B0037D7FB /* auth.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = auth.c; path = ../src/auth.c; sourceTree = SOURCE_ROOT; };
 		D545158D1399A23B0037D7FB /* crypt.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = crypt.c; path = ../src/crypt.c; sourceTree = SOURCE_ROOT; };
 		D545158E1399A23B0037D7FB /* elogd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = elogd.c; path = ../src/elogd.c; sourceTree = SOURCE_ROOT; };
@@ -86,6 +86,10 @@
 		D52BA2FD13999DB0000458E3 /* elogd */ = {
 			isa = PBXGroup;
 			children = (
+				D52896571DF0222200E8F981 /* strlcpy.c */,
+				D52896581DF0222200E8F981 /* strlcpy.h */,
+				D52896541DF0221200E8F981 /* mxml.c */,
+				D52896551DF0221200E8F981 /* mxml.h */,
 				D504812F1ACC49DD002EDA66 /* git-revision.h */,
 				D545158C1399A23B0037D7FB /* auth.c */,
 				D545158D1399A23B0037D7FB /* crypt.c */,
@@ -94,10 +98,6 @@
 				D58A366615AF103300682DC0 /* elog-version.h */,
 				D54515901399A23B0037D7FB /* regex.c */,
 				D54515911399A23B0037D7FB /* regex.h */,
-				D52BA31013999DE4000458E3 /* mxml.c */,
-				D52BA31113999DE4000458E3 /* mxml.h */,
-				D52BA31213999DE4000458E3 /* strlcpy.c */,
-				D52BA31313999DE4000458E3 /* strlcpy.h */,
 			);
 			path = elogd;
 			sourceTree = "<group>";
@@ -155,7 +155,7 @@
 		D52BA2F113999DB0000458E3 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0720;
+				LastUpgradeCheck = 0810;
 				ORGANIZATIONNAME = PSI;
 			};
 			buildConfigurationList = D52BA2F413999DB0000458E3 /* Build configuration list for PBXProject "elogd" */;
@@ -197,10 +197,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D52BA31413999DE4000458E3 /* mxml.c in Sources */,
-				D52BA31513999DE4000458E3 /* strlcpy.c in Sources */,
 				D54515921399A23B0037D7FB /* auth.c in Sources */,
+				D52896591DF0222200E8F981 /* strlcpy.c in Sources */,
 				D54515931399A23B0037D7FB /* crypt.c in Sources */,
+				D52896561DF0221200E8F981 /* mxml.c in Sources */,
 				D54515941399A23B0037D7FB /* elogd.c in Sources */,
 				D54515951399A23B0037D7FB /* regex.c in Sources */,
 			);
@@ -216,7 +216,9 @@
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -247,7 +249,9 @@
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -282,6 +286,7 @@
 				OTHER_LDFLAGS = (
 					"-lssl",
 					"-lkrb5",
+					"-L/opt/local/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -298,6 +303,7 @@
 				OTHER_LDFLAGS = (
 					"-lssl",
 					"-lkrb5",
+					"-L/opt/local/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

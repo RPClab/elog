@@ -1,0 +1,3 @@
+[submodule "mxml"]
+	path = mxml
+	url = git@bitbucket.org:tmidas/mxml.git

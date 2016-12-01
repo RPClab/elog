@@ -128,11 +128,11 @@ crypt.o: src/crypt.c
 auth.o: src/auth.c
 	$(CC) $(CFLAGS) -w -c -o auth.o src/auth.c
 
-mxml.o: src/mxml.c src/mxml.h
-	$(CC) $(CFLAGS) -c -o mxml.o src/mxml.c
+mxml.o: mxml/mxml.c mxml/mxml.h
+	$(CC) $(CFLAGS) -c -o mxml.o mxml/mxml.c
 
-strlcpy.o: src/strlcpy.c src/strlcpy.h
-	$(CC) $(CFLAGS) -c -o strlcpy.o src/strlcpy.c
+strlcpy.o: mxml/strlcpy.c mxml/strlcpy.h
+	$(CC) $(CFLAGS) -c -o strlcpy.o mxml/strlcpy.c
 
 elogd: src/elogd.c regex.o crypt.o auth.o mxml.o $(GIT_REVISION)
 	$(CC) $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(OBJS) $(LIBS)
