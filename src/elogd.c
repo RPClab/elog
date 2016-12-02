@@ -13783,7 +13783,8 @@ void show_config_page(LOGBOOK * lbs)
    rsprintf("function chkrem()\n");
    rsprintf("{\n");
    strencode2(str, user, sizeof(str));
-   sprintf(str, loc("Really remove user %s?"), str);
+   strlcpy(user, str, sizeof(user));
+   sprintf(str, loc("Really remove user \\\"%s\\\"?"), user);
    rsprintf("    var subm = confirm(\"%s\");\n", str);
    rsprintf("    return subm;\n");
    rsprintf("}\n\n");
