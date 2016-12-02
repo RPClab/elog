@@ -21557,8 +21557,9 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
          break;
       
       /* skip drafts */
-      if (draft[0])
-         continue;
+      if (getcfg(lbs->name, "List drafts", str, sizeof(str)) && atoi(str) == 0)
+         if (draft[0])
+            continue;
 
       if (csv) {
 
