@@ -10287,6 +10287,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("var autoSaveTimer;\n");
    rsprintf("var checkTextTimer;\n");
    rsprintf("var oldText;\n\n");
+   rsprintf("var initialText;\n\n");
    
    if (getcfg(lbs->name, "Autosave", str, sizeof(str)))
       autosave = atoi(str);
@@ -10321,6 +10322,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("    t = document.form1.Text.value;\n");
       rsprintf("  if (oldText == null)\n");
       rsprintf("    oldText = t;\n");
+      rsprintf("  if (initialText == null)\n");
+      rsprintf("    initialText = t;\n");
       rsprintf("  if (oldText != t)\n");
       rsprintf("    mod();\n");
       rsprintf("  oldText = t;\n");
@@ -10328,6 +10331,18 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
    rsprintf("}\n\n");
    
+   rsprintf("function restoreText()\n");
+   rsprintf("{\n");
+   rsprintf("  if (initialText != null) {\n");
+   rsprintf("    if (confirm('%s'+'\\n'+'%s')) {\n", loc("Do you want to restore your original text?"), loc("This will overwrite your current modifications."));
+   rsprintf("      if (typeof(CKEDITOR) != 'undefined')\n");
+   rsprintf("        CKEDITOR.instances.Text.setData(initialText);\n");
+   rsprintf("      else\n");
+   rsprintf("        document.form1.Text.value = initialText;\n");
+   rsprintf("    }\n");
+   rsprintf("  }\n");
+   rsprintf("}\n\n");
+
    rsprintf("function kp(e)\n");
    rsprintf("{\n");
    rsprintf("  last_key = (e.which) ? e.which : event.keyCode;\n");
@@ -10546,6 +10561,10 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
             loc("Preview"));
    
+   if (!getcfg(lbs->name, "Show text", str, sizeof(str)) || atoi(str) == 1)
+      rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"restoreText();return false;\">\n",
+               loc("Restore"));
+
    if (!getcfg(lbs->name, "Save drafts", str, sizeof(str)) || atoi(str) == 1)
       rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return check_delete();\">\n",
                loc("Delete"));
