@@ -10308,14 +10308,19 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("  window.status = \"%s\";\n", loc("Entry has been modified"));
    rsprintf("  document.form1.entry_modified.value = \"1\";\n");
    rsprintf("  document.title = '%s - %s';\n", page_title, loc("Edited"));
+   rsprintf("  if (document.getElementById('restore') != undefined)\n");
+   rsprintf("     document.getElementById('restore').disabled = false;\n");
    rsprintf("}\n\n");
 
    rsprintf("function checkText()\n");
    rsprintf("{\n");
    if (autosave) {
       // CKEDITOR cannot call mod(), so manually check if text has changed
-      rsprintf("  if (checkTextTimer != null)\n");
-      rsprintf("    clearTimeout(checkTextTimer);\n");
+      rsprintf("  if (checkTextTimer == null) {\n");
+      rsprintf("    checkTextTimer = setTimeout(checkText, 1000);\n");
+      rsprintf("    return;\n");
+      rsprintf("  }\n");
+      rsprintf("  clearTimeout(checkTextTimer);\n");
       rsprintf("  if (typeof(CKEDITOR) != 'undefined')\n");
       rsprintf("    t = CKEDITOR.instances.Text.getData();\n");
       rsprintf("   else\n");
@@ -10561,8 +10566,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
       rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return mark_submitted();\">\n",
             loc("Preview"));
    
-   if (!getcfg(lbs->name, "Show text", str, sizeof(str)) || atoi(str) == 1)
-      rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"restoreText();return false;\">\n",
+   if (message_id && (!getcfg(lbs->name, "Show text", str, sizeof(str)) || atoi(str) == 1))
+      rsprintf("<input type=\"submit\" name=\"cmd\" id=\"restore\" value=\"%s\" disabled onClick=\"restoreText();return false;\">\n",
                loc("Restore"));
 
    if (!getcfg(lbs->name, "Save drafts", str, sizeof(str)) || atoi(str) == 1)
