@@ -18616,7 +18616,7 @@ char *param_in_str(char *str, char *param)
 BOOL subst_param(char *str, int size, char *param, char *value)
 {
    int len;
-   char *p1, *p2, *s, param_enc[256];
+   char *p1, *p2, *s, param_enc[256], str2[256];
 
    strlcpy(param_enc, param, sizeof(param_enc));
    url_slash_encode(param_enc, sizeof(param_enc));
@@ -18658,14 +18658,16 @@ BOOL subst_param(char *str, int size, char *param, char *value)
    len = p2 - p1;
    if (len > (int) strlen(value)) {
       /* new value is shorter than old one */
-      strlcpy(p1, value, size - (p1 - str));
-      strlcpy(p1 + strlen(value), p2, size - (p1 + strlen(value) - str));
+      strlcpy(str2, value, size - (p1 - str));
+      strlcpy(str2 + strlen(value), p2, size - (p1 + strlen(value) - str));
+      strlcpy(p1, str2, size - (p1 - str));
    } else {
       /* new value is longer than old one */
       s = (char *) xmalloc(size);
       strlcpy(s, p2, size);
-      strlcpy(p1, value, size - (p1 - str));
-      strlcat(p1, s, size - (p1 + strlen(value) - str));
+      strlcpy(str2, value, size - (p1 - str));
+      strlcat(str2, s, size - (p1 + strlen(value) - str));
+      strlcpy(p1, str2, size - (p1 - str));
       xfree(s);
    }
 
