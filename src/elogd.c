@@ -25772,7 +25772,7 @@ int get_user_line(LOGBOOK * lbs, char *user, char *password, char *full_name, ch
          sprintf(str, "/list/user[name=%s]", user);
          if ((user_node = mxml_find_node(lbs->pwd_xml_tree, str)) == NULL)
             return 2;
-      } else if (email[0]) {
+      } else if (email && email[0]) {
          sprintf(str, "/list/user[email=%s]", email);
          if ((user_node = mxml_find_node(lbs->pwd_xml_tree, str)) == NULL)
             return 2;
