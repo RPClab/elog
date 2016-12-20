@@ -38,6 +38,7 @@ CFLAGS += -O3 -funroll-loops -fomit-frame-pointer -W -Wall -Wno-deprecated-decla
 CC = gcc
 IFLAGS = -kr -nut -i3 -l110
 EXECS = elog elogd elconv
+OBJS = mxml.o crypt.o regex.o
 GIT_REVISION = src/git-revision.h
 BINOWNER = bin
 BINGROUP = bin
@@ -134,14 +135,14 @@ mxml.o: mxml/mxml.c mxml/mxml.h
 strlcpy.o: mxml/strlcpy.c mxml/strlcpy.h
 	$(CC) $(CFLAGS) -c -o strlcpy.o mxml/strlcpy.c
 
-elogd: src/elogd.c regex.o crypt.o auth.o mxml.o $(GIT_REVISION)
-	$(CC) $(CFLAGS) -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(OBJS) $(LIBS)
+elogd: src/elogd.c auth.o $(OBJS) $(GIT_REVISION)
+	$(CC) $(CFLAGS) -o elogd src/elogd.c auth.o $(OBJS) $(LIBS)
 
-elog: src/elog.c crypt.o $(OBJS) $(GIT_REVISION)
-	$(CC) $(CFLAGS) -o elog src/elog.c crypt.o $(OBJS) $(LIBS)
+elog: src/elog.c $(OBJS) $(GIT_REVISION)
+	$(CC) $(CFLAGS) -o elog src/elog.c $(OBJS) $(LIBS)
 
-debug: src/elogd.c regex.o crypt.o auth.o mxml.o
-	$(CC) -g $(CFLAGS) -O0 -o elogd src/elogd.c crypt.o auth.o regex.o mxml.o $(OBJS) $(LIBS)
+debug: src/elogd.c auth.o $(OBJS)
+	$(CC) -g $(CFLAGS) -O0 -o elogd src/elogd.c auth.o $(OBJS) $(LIBS)
 
 %: src/%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
