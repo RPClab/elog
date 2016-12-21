@@ -10419,6 +10419,8 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
             break;
       if (lang_table[i].language[0])
          rsprintf("var CKEditorLang = '%s';\n", lang_table[i].abbrev);
+      else
+         rsprintf("var CKEditorLang = 'en';\n");
    } else
       rsprintf("var CKEditorLang = 'en';\n");
    
