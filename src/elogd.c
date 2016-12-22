@@ -10414,9 +10414,12 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    /* language for CKEDITOR */
    if (getcfg("global", "language", str, sizeof(str))) {
-      for (i=0 ; lang_table[i].language[0] ; i++)
-         if (stricmp(str, lang_table[i].language) == 0)
+      for (i=0 ; lang_table[i].language[0] ; i++) {
+         strlcpy(str2, str, sizeof(str2));
+         str2[strlen(lang_table[i].language)] = 0;
+         if (stricmp(str2, lang_table[i].language) == 0)
             break;
+      }
       if (lang_table[i].language[0])
          rsprintf("var CKEditorLang = '%s';\n", lang_table[i].abbrev);
       else
