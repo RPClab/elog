@@ -72,6 +72,7 @@ CC = cc
 BINOWNER = root
 BINGROUP = admin
 NEED_STRLCPY =
+CFLAGS += -I/opt/local/include
 endif
 
 ifeq ($(OSTYPE),FreeBSD)
