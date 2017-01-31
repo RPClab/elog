@@ -8804,12 +8804,14 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
    }
 
    /* add logbook */
-   strcpy(list[i], "logbook");
-   strlcpy(value[i++], lbs->name, NAME_LENGTH);
-
-   /* add logbook */
-   strcpy(list[i], "elogbook");
-   strlcpy(value[i++], lbs->name_enc, NAME_LENGTH);
+   if (lbs) {
+      strcpy(list[i], "logbook");
+      strlcpy(value[i++], lbs->name, NAME_LENGTH);
+      
+      /* add logbook */
+      strcpy(list[i], "elogbook");
+      strlcpy(value[i++], lbs->name_enc, NAME_LENGTH);
+   }
 
    /* add date */
    strcpy(list[i], "date");

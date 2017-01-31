@@ -278,11 +278,12 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					HAVE_SSL1,
+					HAVE_SSL,
 					HAVE_KRB5,
 					DEBUG,
 				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				HEADER_SEARCH_PATHS = /opt/local/include;
 				OTHER_LDFLAGS = (
 					"-lssl",
 					"-lkrb5",
@@ -300,6 +301,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				HEADER_SEARCH_PATHS = /opt/local/include;
 				OTHER_LDFLAGS = (
 					"-lssl",
 					"-lkrb5",
