@@ -2009,7 +2009,7 @@ int sid_remove(char *sid)
 
 void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to, char *url, char *mail_text,
                           int size, int mail_encoding, int n_attachments, char *multipart_boundary,
-                          int message_id, int reply_id)
+                          int message_id)
 {
    char buffer[256], charset[256], subject_enc[5000];
    char buf[80], str[256];
@@ -2100,11 +2100,8 @@ void compose_email_header(LOGBOOK * lbs, char *subject, char *from, char *to, ch
       strlcpy(str, "elog.org", sizeof(str));
 
    if (message_id)
-      snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1, "Message-ID: <%s-%d@%s>\r\n",
-               lbs->name_enc, message_id, str);
-   if (reply_id)
-      snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1, "In-Reply-To: <%s-%d@%s>\r\n",
-               lbs->name_enc, reply_id, str);
+      snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1, "Message-ID: <%s-%d-%04X%04X%04X@%s>\r\n",
+               lbs->name_enc, message_id, rand(), rand(), rand(), str);
 
    if (url)
       snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1, "X-Elog-URL: %s\r\n", url);
@@ -13537,7 +13534,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
 
          mail_text[0] = 0;
          compose_email_header(lbs, subject, mail_from_name, email_addr,
-                              NULL, mail_text, sizeof(mail_text), 1, 0, NULL, 0, 0);
+                              NULL, mail_text, sizeof(mail_text), 1, 0, NULL, 0);
          sprintf(mail_text + strlen(mail_text), "\r\n%s:\r\n\r\n",
                  loc("Please click the URL below to activate following ELOG account"));
 
@@ -13616,7 +13613,7 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
 
                   mail_text[0] = 0;
                   compose_email_header(lbs, subject, mail_from_name, email_addr,
-                                       NULL, mail_text, sizeof(mail_text), 1, 0, NULL, 0, 0);
+                                       NULL, mail_text, sizeof(mail_text), 1, 0, NULL, 0);
                   sprintf(mail_text + strlen(mail_text), "\r\n%s:\r\n\r\n", str);
 
                   if (lbs)
@@ -14107,7 +14104,7 @@ int activate_user(LOGBOOK * lbs, char *user_name, int code)
 
       mail_text[0] = 0;
       compose_email_header(lbs, loc("Your ELOG account has been activated"), mail_from_name,
-                           user_email, NULL, mail_text, sizeof(mail_text), 1, 0, NULL, 0, 0);
+                           user_email, NULL, mail_text, sizeof(mail_text), 1, 0, NULL, 0);
 
       strlcat(mail_text, "\r\n", sizeof(mail_text));
       strlcat(mail_text, loc("Your ELOG account has been activated on host"), sizeof(mail_text));
@@ -14213,7 +14210,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
 
             mail_text[0] = 0;
             compose_email_header(lbs, subject, mail_from_name, user_email, NULL, mail_text,
-                                 sizeof(mail_text), 1, 0, NULL, 0, 0);
+                                 sizeof(mail_text), 1, 0, NULL, 0);
 
             strlcat(mail_text, "\r\n", sizeof(mail_text));
             sprintf(mail_text + strlen(mail_text),
@@ -22480,7 +22477,7 @@ void format_email_html2(LOGBOOK * lbs, int message_id, char att_file[MAX_ATTACHM
 
 int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
                   char attrib[MAX_N_ATTR][NAME_LENGTH], char *mail_param, int old_mail,
-                  char att_file[MAX_ATTACHMENTS][256], char *encoding, int reply_id)
+                  char att_file[MAX_ATTACHMENTS][256], char *encoding)
 {
    int i, n, flags, status, mail_encoding, mail_text_size, n_attachments;
    char str[NAME_LENGTH + 100], mail_from[256], mail_from_name[256], *mail_text, smtp_host[256],
@@ -22546,7 +22543,7 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
    mail_text[0] = 0;
 
    compose_email_header(lbs, subject, mail_from_name, mail_to, url, mail_text, mail_text_size, mail_encoding,
-                        n_attachments, multipart_boundary, message_id, reply_id);
+                        n_attachments, multipart_boundary, message_id);
 
    if (mail_encoding & 1)
       format_email_text(lbs, attrib, att_file, old_mail, url, multipart_boundary, mail_text, mail_text_size);
@@ -23693,7 +23690,7 @@ void submit_elog(LOGBOOK * lbs)
          old_mail = 0;
       
       if (compose_email(lbs, rcpt_to, mail_to, message_id, attrib, mail_param, old_mail, att_file,
-                        isparam("encoding") ? getparam("encoding") : "plain", atoi(in_reply_to)) == 0) {
+                        isparam("encoding") ? getparam("encoding") : "plain")) {
          xfree(mail_to);
          xfree(rcpt_to);
          xfree(mail_list);
