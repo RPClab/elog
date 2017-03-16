@@ -7,6 +7,7 @@
 New = Créer
 Edit = Modifier
 Delete = Supprimer
+Restore = Restaurer
 Reply = Répondre
 Find = Chercher
 Last day = Dernier jour
@@ -234,7 +235,7 @@ Edit entry = Modifier l'entrée
 Delete entry = Supprimer l'entrée
 CSV Import = Importation CSV
 ELOG CSV import = Importation CSV ELOG
-Derive attributes from CSV file = Créer les attributs à partir du fichier CSV 
+Derive attributes from CSV file = Créer les attributs à partir du fichier CSV
 Comma = virgule
 Semicolon = point-virgule
 Preview import = Aperçu avant importation
@@ -242,7 +243,7 @@ Too many attributes in CSV file = Trop d'attributs dans le fichier CSV
 %d entries successfully imported = %d entrées importées avec succès
 No 'Attributes' option present in %s = Il n'y a pas d'option 'Attributs' dans %s
 CSV ("," separated) = CSV (séparateur ",")
-CSV (";" separated) = CSV (séparateur ";") 
+CSV (";" separated) = CSV (séparateur ";")
 Auto detect = Détection automatique
 CSV import preview of %s = Prévisualiser l'importation CSV de %s
 text = texte
@@ -461,7 +462,7 @@ Error activating user = Erreur lors de l'activation du compte utilisateur
 A password recovery email for user <i>"%s"</i> has been sent to %s = Un message de récupération de mot de passe pour le compte <i>"%s"</i> a été envoyé à %s
 User "%s" has no access to this logbook = Le compte "%s" n'a pas accès à ce registre
 Your account has been activated = Votre compte a été activé
-Please subscribe to logbooks if you want to receive automatic email notifications = Vous devez vous abonner à des registres si vous voulez recevoir des messages de notification automatiques 
+Please subscribe to logbooks if you want to receive automatic email notifications = Vous devez vous abonner à des registres si vous voulez recevoir des messages de notification automatiques
 This is an automatically generated account recovery email for host %s = Ceci est un message automatique de récupération de compte pour le serveur %s
 Please click on following link to recover your account = Veuillez cliquer sur le lien suivant pour récupérer votre compte
 Email address "%s" not registered = L'adresse mail "%s" n'est pas enregistrée
@@ -484,8 +485,6 @@ You might however then overwrite each other's modifications = Vous pourriez tout
 Draft entry created on %s by %s = Brouillon créé le %s par %s
 Really delete this entry? = Supprimer cette entrée, vraiment ?
 This is a draft message, edit and submit it to make it permanent = Ceci est un brouillon, modifiez-le et validez-le pour le rendre définitif
-
-#
-#---- please translate following items and then remove this comment ----#
-#
-Restrict search to last = 
+Restrict search to last = Restreindre la recherche au dernier
+Do you want to restore your original text? = Voulez-vous restaurer votre texte original ?
+This will overwrite your current modifications. = Cela va écraser vos modifications en cours.
