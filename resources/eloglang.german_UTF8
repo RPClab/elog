@@ -338,7 +338,6 @@ yawn = gähnen
 Encoding = Kodierung
 User "%s" not found in password file = Benutzer "%s" kann nicht in der Passwort Datei gefunden werden
 Cannot write to file <b>%s</b> = Datei <b>%s</b> kann nicht geschrieben werden
-Really remove user %s? = Benutzer %s wirklich entfernen?
 Invalid user name "%s" or password for remote logbook = Ungültiger Benutzername "%s" oder Passwort für entferntes Logbuch
 Hide attachments = Anhänge verstecken
 Show only new entries = Nur neue Einträge zeigen
@@ -485,3 +484,10 @@ Draft entry created on %s by %s = Entwurf erstellt am %s von %s
 Really delete this entry? = Diesen Eintrag wirklich löschen?
 This is a draft message, edit and submit it to make it permanent = Dies ist ein Entwurf, bitte ändern und abschicken um ihn permanent zu machen
 Restrict search to last = Suche beschränken auf letzte
+
+#
+#---- please translate following items and then remove this comment ----#
+#
+Do you want to restore your original text? = 
+This will overwrite your current modifications. = 
+Restore = 

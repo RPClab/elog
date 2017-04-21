@@ -340,7 +340,6 @@ yawn = baille
 Encoding = Encodage
 User "%s" not found in password file = Utilisateur "%s" non trouvé dans le fichier des comptes
 Cannot write to file <b>%s</b> = Impossible d'écrire dans le fichier <b>%s</b>
-Really remove user %s? = Confirmer la suppression de l'utilisateur %s ?
 Invalid user name "%s" or password for remote logbook = Nom d'utilisateur "%s" ou mot de passe invalide pour l'accès au registre distant
 Hide attachments = Cacher les pièces jointes
 Show only new entries = Ne montrer que les nouvelles entrées
@@ -488,3 +487,7 @@ This is a draft message, edit and submit it to make it permanent = Ceci est un b
 Restrict search to last = Restreindre la recherche au dernier
 Do you want to restore your original text? = Voulez-vous restaurer votre texte original ?
 This will overwrite your current modifications. = Cela va écraser vos modifications en cours.
+
+#
+#---- please translate following items and then remove this comment ----#
+#

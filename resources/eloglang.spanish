@@ -341,7 +341,6 @@ yawn = bostezo
 Encoding = Codificando
 User "%s" not found in password file = El usuario "%s" no se encuentra en el archivo de claves
 Cannot write to file <b>%s</b> = No se puede escribir al archivo <b>%s</b>
-Really remove user %s? = Esta seguro de eliminar al usuario %s?
 Invalid user name "%s" or password for remote logbook = Usuario "%s" o clave incorrecta para el logbook remoto
 Delete entry = Borrar entrada
 Hide attachments = Esconder adjuntos
@@ -491,3 +490,6 @@ This is a draft message, edit and submit it to make it permanent = Este es un me
 #
 #---- please translate following items and then remove this comment ----#
 #
+Do you want to restore your original text? = 
+This will overwrite your current modifications. = 
+Restore = 
