@@ -30,12 +30,12 @@ case "$1" in
 	echo -n "Starting elogd: "
 	/usr/local/sbin/elogd -D -c /usr/local/elog/elogd.cfg  > /dev/null 2>&1 
 	RETVAL=$?
-	if [ $RETVAL -eq 0  ] ; then 
-	  touch /var/lock/subsys/elogd
+        if [ $RETVAL -eq 0  ] ; then 
+          touch /var/lock/subsys/elogd
 	  echo_success
 	else
 	  echo_failure
-	fi
+        fi
 	echo
 	;;
   stop)

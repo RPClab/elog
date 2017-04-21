@@ -2,7 +2,7 @@
 
 Name:       elog
 Summary:    elog is a standalone electronic web logbook
-Version:    3.1.0
+Version:    3.1.3
 Release:    1
 License:    GPL
 Group:      Applications/Networking

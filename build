@@ -15,11 +15,11 @@ set archive = elog-$version-$release.tar.gz
 perl -wapi.bak -e 's&^(Version:\s+).*$&${1}'"${version}"'&;s&^(Release:\s+).*$&${1}'"${release}"'&;' elog.spec
 
 # create temporary directory
-rm -Rf $dir/../mxml
 rm -Rf $dir
 mkdir $dir
 mkdir $dir/doc
 mkdir $dir/src
+mkdir $dir/mxml
 mkdir $dir/man
 mkdir $dir/contrib
 mkdir $dir/scripts
@@ -32,14 +32,13 @@ mkdir $dir/themes/default/icons
 mkdir $dir/logbooks/
 mkdir $dir/logbooks/demo
 mkdir $dir/logbooks/demo/2001
-mkdir $dir/../mxml
 
 # copy files to archive
 unalias cp
 cp -p src/*.c $dir/src
 cp -p src/*.h $dir/src
-cp -p ../mxml/*.c $dir/../mxml
-cp -p ../mxml/*.h $dir/../mxml
+cp -p mxml/*.c $dir/mxml
+cp -p mxml/*.h $dir/mxml
 cp -p Makefile $dir
 cp -p elogd.cfg $dir/elogd.cfg
 cp -p COPYING $dir
@@ -64,7 +63,6 @@ cd /tmp
 tar -cvzf $archive elog-$version/ mxml/
 
 # remove temporary files
-rm -Rf $dir/../mxml
 rm -Rf $dir
 
 # transfer archive
