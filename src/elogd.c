@@ -2445,7 +2445,7 @@ int ssl_connect(int sock, SSL ** ssl_con)
    SSL_library_init();
    SSL_load_error_strings();
    
-   meth = (SSL_METHOD *) TLSv1_method();
+   meth = (SSL_METHOD *) TLSv1_2_method();
    ctx = SSL_CTX_new(meth);
    
    *ssl_con = SSL_new(ctx);
@@ -29493,7 +29493,7 @@ SSL_CTX *init_ssl(void)
    SSL_library_init();
    SSL_load_error_strings();
 
-   meth = (SSL_METHOD *) TLSv1_method();
+   meth = (SSL_METHOD *) TLSv1_2_method();
    ctx = SSL_CTX_new(meth);
 
    if (getcfg("global", "SSL Passphrase", pwd, sizeof(pwd))) {
