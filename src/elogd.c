@@ -28723,7 +28723,7 @@ int process_http_request(const char *request, int i_conn)
    content_length = 0;
 
    /* extract cookies */
-   if ((p = strstr(request, "Cookie:")) != NULL) {
+   if ((p = strcasestr(request, "Cookie:")) != NULL) {
       p += 6;
       do {
          p++;
@@ -28765,7 +28765,7 @@ int process_http_request(const char *request, int i_conn)
 
    /* extract referer */
    referer[0] = 0;
-   if ((p = strstr(request, "Referer:")) != NULL) {
+   if ((p = strcasestr(request, "Referer:")) != NULL) {
       p += 9;
       while (*p && *p == ' ')
          p++;
@@ -28782,7 +28782,7 @@ int process_http_request(const char *request, int i_conn)
 
    /* extract browser */
    browser[0] = 0;
-   if ((p = strstr(request, "User-Agent:")) != NULL) {
+   if ((p = strcasestr(request, "User-Agent:")) != NULL) {
       p += 11;
       while (*p && *p == ' ')
          p++;
@@ -28793,7 +28793,7 @@ int process_http_request(const char *request, int i_conn)
 
    /* extract host */
    http_host[0] = 0;
-   if ((p = strstr(request, "Host:")) != NULL) {
+   if ((p = strcasestr(request, "Host:")) != NULL) {
       p += 5;
       while (*p && *p == ' ')
          p++;
@@ -28803,7 +28803,7 @@ int process_http_request(const char *request, int i_conn)
    }
 
    /* extract X-Forwarded-Host, overwrite "Host:" if found */
-   if ((p = strstr(request, "X-Forwarded-Host:")) != NULL) {
+   if ((p = strcasestr(request, "X-Forwarded-Host:")) != NULL) {
       p += 17;
       while (*p && *p == ' ')
          p++;
@@ -28814,7 +28814,7 @@ int process_http_request(const char *request, int i_conn)
 
    /* extract X-Forwarded-User into http_user if Authentication==Webserver */
    http_user[0] = 0;
-   if ((p = strstr(request, "X-Forwarded-User:")) != NULL) {
+   if ((p = strcasestr(request, "X-Forwarded-User:")) != NULL) {
       p += 17;
       while (*p && *p == ' ')
          p++;
@@ -28824,7 +28824,7 @@ int process_http_request(const char *request, int i_conn)
    }
 
    /* extract "X-Forwarded-For:" */
-   if ((p = strstr(request, "X-Forwarded-For:")) != NULL) {
+   if ((p = strcasestr(request, "X-Forwarded-For:")) != NULL) {
       p += 16;
       while (*p && *p == ' ')
          p++;
@@ -28866,9 +28866,7 @@ int process_http_request(const char *request, int i_conn)
    return_length = 0;
 
    /* check for Keep-alive */
-   if (strstr(request, "Keep-Alive") != NULL && use_keepalive)
-      keep_alive = TRUE;
-   if (strstr(request, "keep-alive") != NULL && use_keepalive)
+   if (strcasestr(request, "Keep-Alive") != NULL && use_keepalive)
       keep_alive = TRUE;
 
    /* extract logbook */
