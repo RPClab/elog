@@ -19169,6 +19169,11 @@ void show_page_filters(LOGBOOK * lbs, int n_msg, int page_n, BOOL mode_commands,
 
          if (strieq(list[index], "Date")) {
             i = isparam("last") ? atoi(getparam("last")) : 0;
+            
+            if (i == 0 && getcfg(lbs->name, "Last default", str, sizeof(str))) {
+               i = atoi(str);
+               setparam("last", str);
+            }
 
             rsprintf("<select title=\"%s\" name=last onChange=\"document.form1.submit()\">\n",
                      loc("Select period"));
@@ -20419,9 +20424,12 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
             msg_list[i].lbs = NULL;
    }
 
-   if (isparam("last")) {
+   if (isparam("last") || getcfg(lbs->name, "Last default", str, sizeof(str))) {
       date_filtering = TRUE;
-      n = atoi(getparam("last"));
+      if (isparam("last"))
+         n = atoi(getparam("last"));
+      else
+         n = atoi(str);
 
       if (n > 0) {
          for (i = 0; i < n_msg; i++)
