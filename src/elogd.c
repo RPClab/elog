@@ -11942,7 +11942,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
                      sprintf(str, "im('att'+'%d','%s','%s','rotright');", index, thumb_name, att[index]);
                      ricon("rotright", loc("Rotate right"), str);
                      rsprintf("&nbsp;\n");
-                     sprintf(str, "deleteAtt('%d')", index);
+                     sprintf(str, "deleteAtt('%d','%s')", index, loc("Are you sure to delete the attachment?"));
                      ricon("delatt", loc("Delete attachment"), str);
                      rsprintf("&nbsp;&nbsp;\n");
 

@@ -47,9 +47,11 @@ function onReady()
    delete imReq;
 }
 
-function deleteAtt(idx)
+function deleteAtt(idx, str)
 {
-   submitted = true;
-   document.form1.smcmd.value='delatt'+idx;
-   document.form1.submit();
+   if (confirm(str) == true) {
+      submitted = true;
+      document.form1.smcmd.value='delatt'+idx;
+      document.form1.submit();
+   }
 }
