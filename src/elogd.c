@@ -20876,8 +20876,13 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       n_page = atoi(str);
    else
       n_page = 20;
-   if (isparam("npp"))
+   if (isparam("npp")) {
       n_page = atoi(getparam("npp"));
+      if (n_page < 1)
+         n_page = 1;
+      if (n_page > 100000)
+         n_page = 100000;
+   }
 
    if (page_mid) {
       default_page = 0;
