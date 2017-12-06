@@ -26668,8 +26668,8 @@ void show_selection_page(void)
       rsprintf("</td></tr>\n");
 
       rsprintf("<tr><td align=center class=\"dlgform\">\n");
-      rsprintf("<a href=\"?cmd=%s\">%s</a>", loc("Create new logbook"), loc("Create new logbook")),
-          rsprintf("</td></tr></table>\n");
+      rsprintf("<a href=\"?cmd=%s\">%s</a>", loc("Create new logbook"), loc("Create new logbook"));
+      rsprintf("</td></tr></table>\n");
       rsprintf("</body></html>\n");
       return;
    }
