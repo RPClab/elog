@@ -29204,6 +29204,11 @@ int process_http_request(const char *request, int i_conn)
          content_length = atoi(strstr(request, "Content-Length:") + 15);
       else if (strstr(request, "Content-length:"))
          content_length = atoi(strstr(request, "Content-length:") + 15);
+      if (content_length <= 0) {
+         show_error("Invalid Content-Length in header");
+         xfree(str);
+         return 1;
+      }
 
       /* extract header length */
       if (strstr(request, "\r\n\r\n"))
