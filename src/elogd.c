@@ -7641,8 +7641,6 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
       if (css_base[0] == 0)
         compose_base_url(lbs, css_base, sizeof(css_base), FALSE);
    } else
-      compose_base_url(lbs, css_base, sizeof(css_base), FALSE);
-   else
       css_base[0] = 0;
 
    rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%selog.css\">\n", css_base);
