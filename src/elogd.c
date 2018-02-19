@@ -7633,7 +7633,14 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
    rsprintf("<title>%s</title>\n", title);
 
    /* Cascading Style Sheet */
-   if (absolute_link)
+   if (absolute_link) {
+      if (lbs != NULL && getcfg(lbs->name, "Email CSS URL", str, sizeof(str)))
+         strlcpy(css_base, str, sizeof(css_base));
+      else if (lbs == NULL && getcfg("global", "Email CSS URL", str, sizeof(str)))
+         strlcpy(css_base, str, sizeof(css_base));
+      if (css_base[0] == 0)
+        compose_base_url(lbs, css_base, sizeof(css_base), FALSE);
+   } else
       compose_base_url(lbs, css_base, sizeof(css_base), FALSE);
    else
       css_base[0] = 0;
@@ -9572,8 +9579,8 @@ int check_drafts(LOGBOOK * lbs)
    }
    
    rsprintf("<tr><td colspan=\"2\" align=center class=\"dlgform\">");
-   rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href='%s';\">\n", loc("Create new entry"),
-            "?cmd=New&ignore=1");
+   rsprintf("<input type=button value=\"%s\" onClick=\"window.location.href='?cmd=%s&ignore=1';\">\n", loc("Create new entry"),
+            loc("New"));
    rsprintf("</td></tr>\n\n");
    
    rsprintf("</table>\n");
@@ -13777,7 +13784,7 @@ int ascii_compare2(const void *s1, const void *s2)
 void show_config_page(LOGBOOK * lbs)
 {
    char str[256], user[80], password[80], full_name[256], user_email[256], logbook[256], auth[32], **user_list;
-   int i, n, inactive;
+   int i, j, n, cols, inactive;
    BOOL email_notify[1000], sort_email;
 
    if (lbs)
@@ -13970,6 +13977,10 @@ void show_config_page(LOGBOOK * lbs)
    }
 
    if (n > 0) {
+      if (getcfg(lbs->name, "Subscription columns", str, sizeof(str)))
+         cols = atoi(str);
+      else
+         cols = 1;
 
       rsprintf("<tr><td width=\"15%%\">%s:\n", loc("Subscribe to logbooks"));
 
@@ -13978,7 +13989,8 @@ void show_config_page(LOGBOOK * lbs)
 
       rsprintf("<td>\n");
 
-      for (i = 0; lb_list[i].name[0]; i++) {
+      for (j = i = 0; lb_list[i].name[0]; i++) {
+         if (j==0) rsprintf("<table><tr>");
 
          if (!getcfg_topgroup() || strieq(getcfg_topgroup(), lb_list[i].top_group)) {
 
@@ -13988,15 +14000,18 @@ void show_config_page(LOGBOOK * lbs)
                /* check if emails are enabled for this logbook */
                if (!getcfg(lb_list[i].name, "Suppress email to users", str, sizeof(str)) || atoi(str) == 0) {
                   if (email_notify[i])
-                     rsprintf("<input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i,
+                     rsprintf("<td><input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i,
                               i);
                   else
-                     rsprintf("<input type=checkbox id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
-                  rsprintf("<label for=\"lb%d\">%s</label><br>\n", i, lb_list[i].name);
+                     rsprintf("<td><input type=checkbox id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i, i);
+                  rsprintf("<label for=\"lb%d\">%s</label></td>\n", i, lb_list[i].name);
+                  j++;
                }
             }
          }
+         if ((j%cols)==0) rsprintf("</tr>\n<tr>");
       }
+      rsprintf("</tr></table>\n");
    }
 
    if (n > 2) {
