@@ -8724,11 +8724,6 @@ void strencode2(char *b, const char *text, int size)
             return;
          strcat(b, "&gt;");
          break;
-      case '&':
-         if (strlen(b) + 5 >= (unsigned int) size)
-            return;
-         strcat(b, "&amp;");
-         break;
       case '\"':
          if (strlen(b) + 6 >= (unsigned int) size)
             return;
