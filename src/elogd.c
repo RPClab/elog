@@ -5724,6 +5724,11 @@ int is_html(char *s)
       }
    }
 
+   if (strstr(str, "&#") && strchr(strstr(str, "&#"), ';')) {
+      xfree(str);
+      return TRUE;
+   }
+   
    xfree(str);
    return FALSE;
 }
