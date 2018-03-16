@@ -301,7 +301,7 @@ int build_subst_list(LOGBOOK * lbs, char list[][NAME_LENGTH], char value[][NAME_
 void highlight_searchtext(regex_t * re_buf, char *src, char *dst, BOOL hidden);
 int parse_config_file(char *config_file);
 PMXML_NODE load_password_file(LOGBOOK * lbs, char *error, int error_size);
-int load_password_files();
+int load_password_files(void);
 BOOL check_login(LOGBOOK * lbs, char *sid);
 void compose_base_url(LOGBOOK * lbs, char *base_url, int size, BOOL email_notify);
 void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command);
@@ -326,7 +326,7 @@ int ascii_compare(const void *s1, const void *s2);
 int ascii_compare2(const void *s1, const void *s2);
 void do_crypt(const char *s, char *d, int size);
 BOOL get_password_file(LOGBOOK * lbs, char *file_name, int size);
-LOGBOOK *get_first_lbs_with_global_passwd();
+LOGBOOK *get_first_lbs_with_global_passwd(void);
 
 /* functions from auth.c */
 int auth_verify_password(LOGBOOK *lbs, const char *user, const char *password, char *error_str, int error_size);

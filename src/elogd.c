@@ -5724,6 +5724,11 @@ int is_html(char *s)
       }
    }
 
+   if (strstr(str, "&#") && strchr(strstr(str, "&#"), ';')) {
+      xfree(str);
+      return TRUE;
+   }
+   
    xfree(str);
    return FALSE;
 }
@@ -20889,8 +20894,13 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
       n_page = atoi(str);
    else
       n_page = 20;
-   if (isparam("npp"))
+   if (isparam("npp")) {
       n_page = atoi(getparam("npp"));
+      if (n_page < 1)
+         n_page = 1;
+      if (n_page > 100000)
+         n_page = 100000;
+   }
 
    if (page_mid) {
       default_page = 0;
@@ -26681,8 +26691,8 @@ void show_selection_page(void)
       rsprintf("</td></tr>\n");
 
       rsprintf("<tr><td align=center class=\"dlgform\">\n");
-      rsprintf("<a href=\"?cmd=%s\">%s</a>", loc("Create new logbook"), loc("Create new logbook")),
-          rsprintf("</td></tr></table>\n");
+      rsprintf("<a href=\"?cmd=%s\">%s</a>", loc("Create new logbook"), loc("Create new logbook"));
+      rsprintf("</td></tr></table>\n");
       rsprintf("</body></html>\n");
       return;
    }
@@ -29212,6 +29222,11 @@ int process_http_request(const char *request, int i_conn)
          content_length = atoi(strstr(request, "Content-Length:") + 15);
       else if (strstr(request, "Content-length:"))
          content_length = atoi(strstr(request, "Content-length:") + 15);
+      if (content_length <= 0) {
+         show_error("Invalid Content-Length in header");
+         xfree(str);
+         return 1;
+      }
 
       /* extract header length */
       if (strstr(request, "\r\n\r\n"))
