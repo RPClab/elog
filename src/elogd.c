@@ -30077,6 +30077,13 @@ void server_loop(void)
                               break;
                            }
 
+                           if (net_buffer_size >= 100000000) {
+                              sprintf(str,
+                                      "Error: Request extends 100 MB, dropped");
+                              show_error(str);
+                              break;
+                           }
+
                            memset(net_buffer + net_buffer_size, 0, 100000);
                            net_buffer_size += 100000;
                         }
