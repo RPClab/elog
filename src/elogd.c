@@ -21996,12 +21996,38 @@ void show_elog_thread(LOGBOOK * lbs, int message_id, int absolute_links, int hig
 
 /*------------------------------------------------------------------*/
 
-int has_attachments(LOGBOOK * lbs, int message_id)
+int max_attachment_size(LOGBOOK * lbs, int message_id)
 {
-   char attachment[MAX_ATTACHMENTS][MAX_PATH_LENGTH];
+   char att_file[MAX_ATTACHMENTS][MAX_PATH_LENGTH];
+   int index, max_size, fh;
+   char str[256], subdir[256], file_name[256];
+   
+   el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, att_file, NULL, NULL, NULL);
 
-   el_retrieve(lbs, message_id, NULL, NULL, NULL, 0, NULL, 0, NULL, NULL, attachment, NULL, NULL, NULL);
-   return attachment[0][0] > 0;
+   max_size = 0;
+   for (index = 0; index < MAX_ATTACHMENTS; index++) {
+      
+      if (att_file[index][0] == 0)
+         continue;
+      
+      strlcpy(file_name, lbs->data_dir, sizeof(file_name));
+      generate_subdir_name(att_file[index], subdir, sizeof(subdir));
+      strlcat(file_name, subdir, sizeof(file_name));
+      strlcat(file_name, att_file[index], sizeof(file_name));
+      if (is_image(file_name)) {
+         get_thumb_name(file_name, str, sizeof(str), 0);
+         if (str[0])
+            strlcpy(file_name, str, sizeof(file_name));
+      }
+      
+      fh = open(file_name, O_RDONLY | O_BINARY);
+      if (fh > 0) {
+         off_t size = lseek(fh, 0L, SEEK_END);
+         max_size = size > max_size ? size : max_size;
+      }
+   }
+   
+   return max_size;
 }
 
 /*------------------------------------------------------------------*/
@@ -22262,7 +22288,7 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
                        char att_file[MAX_ATTACHMENTS][256], int old_mail, char *encoding, char *url,
                        char *multipart_boundary, char *mail_text, int size)
 {
-   int i, j, k, flags, n_email_attr, attr_index[MAX_N_ATTR], attachments_present;
+   int i, j, k, flags, n_email_attr, attr_index[MAX_N_ATTR], max_att_size, max_allowed_att_size;
    char str[NAME_LENGTH + 100], str2[256], mail_from[256], mail_from_name[256], format[256],
        list[MAX_N_ATTR][NAME_LENGTH], comment[256], charset[256], multipart_boundary_related[256],
        heading[256], slist[MAX_N_ATTR + 10][NAME_LENGTH], svalue[MAX_N_ATTR + 10][NAME_LENGTH];
@@ -22278,9 +22304,12 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
       strlcat(mail_text, "\r\n", size);
    }
 
-   attachments_present = has_attachments(lbs, message_id);
+   max_att_size = max_attachment_size(lbs, message_id);
+   max_allowed_att_size = 10E6;
+   if (getcfg(lbs->name, "Max email attachment size", str, sizeof(str)))
+      max_allowed_att_size = atoi(str);
 
-   if (attachments_present) {
+   if (max_att_size) {
       sprintf(multipart_boundary_related, "------------%04X%04X%04X", rand(), rand(), rand());
       snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1,
                "MIME-Version: 1.0\r\nContent-Type: multipart/related;\r\n boundary=\"%s\"\r\n\r\n",
@@ -22301,6 +22330,12 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
    if (getcfg(lbs->name, "Email format", str, sizeof(str)))
       flags = atoi(str);
 
+   // if attachments too large, include only links to attachments
+   if (max_att_size > max_allowed_att_size && (flags & 16) > 0) {
+      flags &= ~(16);
+      flags |= 64;
+   }
+   
    strcpy(mail_text + strlen(mail_text),
           "<!DOCTYPE html>\r\n");
    strcpy(mail_text + strlen(mail_text), "<html>\r\n<head>\r\n  <title></title>\r\n</head>\r\n<body>\r\n");
@@ -22448,7 +22483,7 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
 
    strcpy(mail_text + strlen(mail_text), "\r\n</html></body>\r\n\r\n");
 
-   if (attachments_present) {
+   if (max_att_size && (flags & 64)) {
       format_email_attachments(lbs, message_id, 2, att_file, mail_text, size, multipart_boundary_related,
                                TRUE);
       strlcat(mail_text, "--", size);
@@ -22460,10 +22495,10 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
 /*------------------------------------------------------------------*/
 
 void format_email_html2(LOGBOOK * lbs, int message_id, char att_file[MAX_ATTACHMENTS][256], int old_mail,
-                        char *multipart_boundary, char *mail_text, int size)
+                        char *multipart_boundary, char *mail_text, int size, int flags)
 {
-   char str[256], charset[256], multipart_boundary_related[256], *p;
-   int attachments_present;
+   char str[256], charset[256], multipart_boundary_related[256], command[256], *p;
+   int max_att_size;
 
    sprintf(str, "%d", message_id);
    if (!getcfg("global", "charset", charset, sizeof(charset)))
@@ -22475,9 +22510,9 @@ void format_email_html2(LOGBOOK * lbs, int message_id, char att_file[MAX_ATTACHM
       strlcat(mail_text, "\r\n", size);
    }
 
-   attachments_present = has_attachments(lbs, message_id);
+   max_att_size = max_attachment_size(lbs, message_id);
 
-   if (attachments_present) {
+   if (max_att_size && (flags & 16) > 0) {
       sprintf(multipart_boundary_related, "------------%04X%04X%04X", rand(), rand(), rand());
       snprintf(mail_text + strlen(mail_text), size - strlen(mail_text) - 1,
                "MIME-Version: 1.0\r\nContent-Type: multipart/related;\r\n boundary=\"%s\"\r\n\r\n",
@@ -22494,16 +22529,22 @@ void format_email_html2(LOGBOOK * lbs, int message_id, char att_file[MAX_ATTACHM
 
    strlen_retbuf = 0;
    if (old_mail)
-      show_elog_entry(lbs, str, "oldemail");
+      strcpy(command, "oldemail");
    else
-      show_elog_entry(lbs, str, "email");
+      strcpy(command, "email");
+
+   if ((flags & 64) > 0)
+      strlcat(command, "-att-links", sizeof(command));
+   
+   show_elog_entry(lbs, str, command);
+
    p = strstr(return_buffer, "\r\n\r\n");
    if (p)
       strlcpy(mail_text + strlen(mail_text), p + 4, size - strlen(mail_text));
    strlen_retbuf = 0;
    strlcat(mail_text, "\r\n", size);
 
-   if (attachments_present) {
+   if (max_att_size && (flags & 16) > 0) {
       format_email_attachments(lbs, message_id, 2, att_file, mail_text, size, multipart_boundary_related,
                                TRUE);
       strlcat(mail_text, "--", size);
@@ -22518,7 +22559,7 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
                   char attrib[MAX_N_ATTR][NAME_LENGTH], char *mail_param, int old_mail,
                   char att_file[MAX_ATTACHMENTS][256], char *encoding, int reply_id)
 {
-   int i, n, flags, status, mail_encoding, mail_text_size, n_attachments;
+   int i, n, flags, status, mail_encoding, mail_text_size, max_att_size, n_attachments, max_allowed_att_size;
    char str[NAME_LENGTH + 100], mail_from[256], mail_from_name[256], *mail_text, smtp_host[256],
        subject[256], error[256];
    char list[MAX_PARAM][NAME_LENGTH], url[256];
@@ -22545,6 +22586,10 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
    if (getcfg(lbs->name, "Email encoding", str, sizeof(str)))
       mail_encoding = atoi(str);
 
+   max_allowed_att_size = 10E6;
+   if (getcfg(lbs->name, "Max email attachment size", str, sizeof(str)))
+      max_allowed_att_size = atoi(str);
+
    retrieve_email_from(lbs, mail_from, mail_from_name, attrib);
 
    /* compose subject from attributes */
@@ -22565,14 +22610,23 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
          strcpy(subject, "New ELOG entry");
    }
 
-   /* count attachments */
+   /* count attachments and get maximum size */
    n_attachments = 0;
-   if (att_file)
+   max_att_size = 0;
+   if (att_file) {
       for (i = 0; att_file[i][0] && i < MAX_ATTACHMENTS; i++) {
          if ((mail_encoding & 6) == 0 || !is_inline_attachment(encoding, message_id,
                                                                getparam("text"), i, att_file[i]))
             n_attachments++;
       }
+      max_att_size = max_attachment_size(lbs, message_id);
+   }
+
+   // if attachments too large, include only links to attachments
+   if (max_att_size > max_allowed_att_size && (flags & 16) > 0) {
+      flags &= ~(16);
+      flags |= 64;
+   }
 
    compose_base_url(lbs, str, sizeof(str), TRUE);
    sprintf(url, "%s%d", str, message_id);
@@ -22590,7 +22644,7 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
       format_email_html(lbs, message_id, attrib, att_file, old_mail, encoding, url, multipart_boundary,
                         mail_text, mail_text_size);
    if (mail_encoding & 4)
-      format_email_html2(lbs, message_id, att_file, old_mail, multipart_boundary, mail_text, mail_text_size);
+      format_email_html2(lbs, message_id, att_file, old_mail, multipart_boundary, mail_text, mail_text_size, flags);
 
    if (n_attachments && (flags & 16)) {
       if ((mail_encoding & 6) > 0)
@@ -24385,7 +24439,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
        lbk_list[MAX_N_LIST][NAME_LENGTH], comment[256], class_name[80], class_value[80],
        fl[8][NAME_LENGTH], list[MAX_N_ATTR][NAME_LENGTH], domain[256], subdir[256], draft[256];
    FILE *f;
-   BOOL first, show_text, display_inline, subtable, email;
+   BOOL first, show_text, display_inline, subtable, email, att_links;
    struct tm *pts;
    struct tm ts;
    struct stat st;
@@ -24394,8 +24448,9 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
    message_id = atoi(dec_path);
    message_error = EL_SUCCESS;
    _current_message_id = message_id;
-   email = strieq(command, "email") || strieq(command, "oldemail");
-
+   email = (strstr(command, "email") != NULL);
+   att_links = (strstr(command, "att-links") != NULL);
+   
    /* check for custom form to display entry */
    if (getcfg(lbs->name, "Custom display form", str, sizeof(str))) {
       /* check if file starts with an absolute directory */
@@ -24804,7 +24859,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
       if (email) {
          rsprintf("<tr><td class=\"title1\">\n");
-         if (strieq(command, "oldemail"))
+         if (strstr(command, "oldemail") != NULL)
             rsprintf("%s:", loc("An old ELOG entry has been updated"));
          else
             rsprintf("%s:", loc("A new ELOG entry has been submitted"));
@@ -25220,11 +25275,16 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                str[13] = 0;
                strcpy(file_enc, attachment[index] + 14);
                url_encode(file_enc, sizeof(file_enc));  /* for file names with special characters like "+" */
-               if (email) {
+               if (email && !att_links) {
                   retrieve_domain(domain, sizeof(domain));
                   sprintf(ref, "cid:att%d@%s", index, domain);
-               } else
+               } else if (email) {
+                  compose_base_url(lbs, ref, sizeof(ref), TRUE);
+                  sprintf(ref + strlen(ref), "%s", str);
+                  sprintf(ref + strlen(ref), "/%s", file_enc);
+               } else {
                   sprintf(ref, "%s/%s", str, file_enc);
+               }
 
                /* overall table */
                rsprintf("<tr><td><table class=\"listframe\" width=\"100%%\" cellspacing=0>\n");
@@ -25232,7 +25292,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
                rsprintf("<tr><td nowrap width=\"10%%\" class=\"attribname\">%s %d:</td>\n",
                         loc("Attachment"), index + 1);
 
-               if (email)
+               if (email && !att_links)
                   rsprintf("<td class=\"attribvalue\">%s\n", attachment[index] + 14);
                else
                   rsprintf("<td class=\"attribvalue\"><a href=\"%s\" target=\"_blank\">%s</a>\n", ref,

@@ -2604,6 +2604,15 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
       one view to the other. Default is <b>2</b>.
    </li>
    <li>
+      <b><code>Max email attachment size = &lt;n&gt;</code></b><br>
+      This option specifies the maximum allowed email attachment size for
+      email notifications. Most mail delivery systems have a maximum attachment
+      size and refuse to accept emails with larger sizes. If the size of an
+      attachment exceeds this limit, it is not included in the email notificaiton
+      but rather a link to the attachment on the elog server is used.
+      The default value is <b>10000000</b> (ten million bytes).
+   </li>
+   <li>
       <b><code>Back to main = 0|1</code></b><br>
       If this flag is <b>1</b>, the "<i>List</i>" button takes you back to
       the logbook selection page instead to the last entry of the current
