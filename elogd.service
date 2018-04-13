@@ -1,0 +1,14 @@
+[Unit]
+Description=The ELOG Server
+After=network.target remote-fs.target nss-lookup.target
+Documentation=man:elogd(8)
+Documentation=man:elog(8)
+
+[Service]
+Type=forking
+ExecStart=/usr/local/sbin/elogd -D -c /usr/local/elog/elogd.cfg
+ExecReload=/bin/kill -HUP ${MAINPID}
+ExecStop=/bin/kill ${MAINPID}
+
+[Install]
+WantedBy=multi-user.target
