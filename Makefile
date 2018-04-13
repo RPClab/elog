@@ -206,15 +206,22 @@ install: $(EXECS)
 	  $(INSTALL) -v -m 644 elogd.cfg $(ELOGDIR)/elogd.cfg ; \
 	fi
 
-ifeq ($(OSTYPE),darwin)
+
+ifneq ("$(wildcard /usr/lib/systemd/system)", "")
+	@$(INSTALL) -v -m 0644 elogd.service /usr/lib/systemd/system
+	@echo The elogd service can now be started with 
+	@echo "  sudo systemctl start elogd"
+else
+  ifeq ($(OSTYPE),darwin)
 	@$(INSTALL) -v -m 0644 elogd.plist /Library/LaunchDaemons/ch.psi.elogd.plist
 	@echo The elogd service can now be started with 
 	@echo "  sudo launchctl load /Library/LaunchDaemons/ch.psi.elogd.plist"
-else
+  else
 	@sed "s#\@PREFIX\@#$(PREFIX)#g" elogd.init_template > elogd.init
 	@if [ ! -f $(RCDIR)/elogd ]; then  \
 	  $(INSTALL) -v -m 0755 -D elogd.init $(RCDIR)/elogd ; \
 	fi
+  endif
 endif
 
 restart:
