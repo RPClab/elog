@@ -26311,6 +26311,8 @@ void show_login_page(LOGBOOK * lbs, char *redir, int fail)
       strlcpy(str2, http_host, sizeof(str));
       if (strchr(str2, ':'))
          *strchr(str2, ':') = 0;
+      if (strchr(str2, ',')) // needed for more than one proxy in a row
+      *strchr(str2, ',') = 0;
       if (!strieq(str, str2)) {
          redirect(lbs, _cmdline);
          return;
