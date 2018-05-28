@@ -7766,14 +7766,14 @@ void show_upgrade_page(LOGBOOK * lbs)
 
    rsprintf("It is of course possible to change the attributes or add new ones. The new\n");
    rsprintf("options in the configuration file are described under <a href=\"\n");
-   rsprintf("https://midas.psi.ch/elog/config.html\">https://midas.psi.ch/elog/config.html\n");
+   rsprintf("https://elog.psi.ch/elog/config.html\">https://elog.psi.ch/elog/config.html\n");
    rsprintf("</a>.\n");
 
    rsprintf("</td></tr></table>\n\n");
 
    rsprintf("<hr>\n");
    rsprintf("<address>\n");
-   rsprintf("<a href=\"https://midas.psi.ch/~stefan\">S. Ritt</a>, 18 October 2001");
+   rsprintf("<a href=\"https://www.psi.ch/ltp-muon-physics/stefan-ritt\">S. Ritt</a>, 18 October 2001");
    rsprintf("</address>");
    show_bottom_text(lbs);
    rsprintf("</body></html>\r\n");
@@ -8287,7 +8287,7 @@ void show_bottom_text(LOGBOOK * lbs)
    } else
       /* add little logo */
       rsprintf
-          ("<center><a class=\"bottomlink\" title=\"%s\" href=\"https://midas.psi.ch/elog/\">ELOG V%s-%s</a></center>",
+          ("<center><a class=\"bottomlink\" title=\"%s\" href=\"https://elog.psi.ch/elog/\">ELOG V%s-%s</a></center>",
            loc("Goto ELOG home page"), VERSION, git_revision());
 }
 
@@ -8341,7 +8341,7 @@ void show_bottom_text_login(LOGBOOK * lbs)
    } else
       /* add little logo */
       rsprintf
-          ("<center><a class=\"bottomlink\" title=\"%s\" href=\"https://midas.psi.ch/elog/\">ELOG V%s-%s</a></center>",
+          ("<center><a class=\"bottomlink\" title=\"%s\" href=\"https://elog.psi.ch/elog/\">ELOG V%s-%s</a></center>",
            loc("Goto ELOG home page"), VERSION, git_revision());
 }
 
@@ -12776,7 +12776,7 @@ void show_admin_page(LOGBOOK * lbs, char *top_group)
    rsprintf("</textarea>\n");
 
    /* put link for config page */
-   rsprintf("<br><a target=\"_blank\" href=\"https://midas.psi.ch/elog/config.html\">Syntax Help</a>");
+   rsprintf("<br><a target=\"_blank\" href=\"https://elog.psi.ch/elog/config.html\">Syntax Help</a>");
 
    rsprintf("</td></tr>\n");
 
@@ -28029,7 +28029,7 @@ void interprete(char *lbook, char *path)
       strlcat(file_name, ".html", sizeof(file_name));
       f = fopen(file_name, "r");
       if (f == NULL)
-         redirect(lbs, "https://midas.psi.ch/elog/eloghelp_english.html");
+         redirect(lbs, "https://elog.psi.ch/elog/eloghelp_english.html");
       else {
          fclose(f);
          send_file_direct(file_name);
@@ -28052,7 +28052,7 @@ void interprete(char *lbook, char *path)
       strlcat(file_name, ".html", sizeof(file_name));
       f = fopen(file_name, "r");
       if (f == NULL)
-         redirect(lbs, "https://midas.psi.ch/elog/elcode_english.html");
+         redirect(lbs, "https://elog.psi.ch/elog/elcode_english.html");
       else {
          fclose(f);
          send_file_direct(file_name);

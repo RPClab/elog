@@ -77,14 +77,14 @@
 	</Program_Descriptions>
 	<Web_Info>
 		<Application_URLs>
-			<Application_Info_URL>http://midas.psi.ch/elog</Application_Info_URL>
+			<Application_Info_URL>http://elog.psi.ch/elog</Application_Info_URL>
 			<Application_Order_URL />
-			<Application_Screenshot_URL>http://midas.psi.ch/elog/elog.gif</Application_Screenshot_URL>
-			<Application_Icon_URL>http://midas.psi.ch/elogs/forum/elog.png</Application_Icon_URL>
-			<Application_XML_File_URL>http://midas.psi.ch/elog/elog_pad_file.xml</Application_XML_File_URL>
+			<Application_Screenshot_URL>http://elog.psi.ch/elog/elog.gif</Application_Screenshot_URL>
+			<Application_Icon_URL>http://elog.psi.ch/elogs/forum/elog.png</Application_Icon_URL>
+			<Application_XML_File_URL>http://elog.psi.ch/elog/elog_pad_file.xml</Application_XML_File_URL>
 		</Application_URLs>
 		<Download_URLs>
-			<Primary_Download_URL>http://midas.psi.ch/elog/download/</Primary_Download_URL>
+			<Primary_Download_URL>http://elog.psi.ch/elog/download/</Primary_Download_URL>
 			<Secondary_Download_URL />
 			<Additional_Download_URL_1 />
 			<Additional_Download_URL_2 />

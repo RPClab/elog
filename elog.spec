@@ -6,9 +6,9 @@ Version:    3.1.3
 Release:    1
 License:    GPL
 Group:      Applications/Networking
-Source:     http://midas.psi.ch/elog/download/elog-%{version}.tar.gz
+Source:     http://elog.psi.ch/elog/download/elog-%{version}.tar.gz
 Vendor:     Stefan Ritt <stefan.ritt@psi.ch>
-URL:        http://midas.psi.ch/elog
+URL:        http://elog.psi.ch/elog
 BuildRoot:  /tmp/%{name}-root
 Prefix:     /usr/local
 BuildRequires: openssl-devel >= 0.9.8e
