@@ -4500,7 +4500,7 @@ int el_retrieve(LOGBOOK * lbs, int message_id, char *date, char attr_list[MAX_N_
    if (index == *lbs->n_el_index)
       return EL_NO_MSG;
 
-   sprintf(file_name, "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
+   snprintf(file_name, sizeof(file_name), "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
    fh = open(file_name, O_RDONLY | O_BINARY, 0644);
    if (fh < 0) {
       /* file might have been deleted, rebuild index */
@@ -4761,7 +4761,7 @@ int el_retrieve_attachment(LOGBOOK * lbs, int message_id, int n, char name[MAX_P
    if (index == *lbs->n_el_index)
       return EL_NO_MSG;
 
-   sprintf(file_name, "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
+   snprintf(file_name, sizeof(file_name), "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
    fh = open(file_name, O_RDONLY | O_BINARY, 0644);
    if (fh < 0) {
       /* file might have been deleted, rebuild index */
@@ -4891,7 +4891,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
          return -1;
       }
 
-      sprintf(file_name, "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
+      snprintf(file_name, sizeof(file_name), "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
       fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
       if (fh < 0) {
          xfree(message);
@@ -4993,7 +4993,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
          if (strncmp(date1 + 8, mname[i], 3) == 0)
             break;
 
-      sprintf(file_name, "%c%c%02d%c%ca.log", date1[14], date1[15], i + 1, date1[5], date1[6]);
+      snprintf(file_name, sizeof(file_name), "%c%c%02d%c%ca.log", date1[14], date1[15], i + 1, date1[5], date1[6]);
 
       generate_subdir_name(file_name, subdir, sizeof(subdir));
       sprintf(str, "%s%s", dir, subdir);
@@ -5239,7 +5239,7 @@ int el_delete_message(LOGBOOK * lbs, int message_id, BOOL delete_attachments,
    if (index == *lbs->n_el_index)
       return -1;
 
-   sprintf(file_name, "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
+   snprintf(file_name, sizeof(file_name), "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
    fh = open(file_name, O_RDWR | O_BINARY, 0644);
    if (fh < 0)
       return EL_FILE_ERROR;
@@ -6613,9 +6613,9 @@ void rsputs_elcode(LOGBOOK * lbs, BOOL email_notify, const char *str)
                               strstr(pattern_list[l].subst, "img") == NULL &&
                               strncmp(pattern_list[l].subst, "<a", 2) != 0) {
                         if (_ssl_flag)
-                           sprintf(hattrib, "https://%s", attrib);
+                           snprintf(hattrib, sizeof(hattrib), "https://%s", attrib);
                         else
-                           sprintf(hattrib, "http://%s", attrib);
+                           snprintf(hattrib, sizeof(hattrib), "http://%s", attrib);
                      }
 
                      strlcpy(subst, pattern_list[l].subst, sizeof(subst));
@@ -7136,21 +7136,21 @@ void set_location(LOGBOOK * lbs, char *rp)
                   }
 
                /* if last subdir equals any group, strip it */
-               sprintf(group, "Group %s", p);
+               snprintf(group, sizeof(group), "Group %s", p);
                if (getcfg("global", group, list, sizeof(list)))
                   *p = 0;
 
                /* if last subdir equals any top group, strip it */
-               sprintf(group, "Top group %s", p);
+               snprintf(group, sizeof(group), "Top group %s", p);
                if (getcfg("global", group, list, sizeof(list)))
                   *p = 0;
 
             } else {
                /* assemble absolute path from host name and port */
                if (_ssl_flag)
-                  sprintf(str, "https://%s", http_host);
+                  snprintf(str, sizeof(str), "https://%s", http_host);
                else
-                  sprintf(str, "http://%s", http_host);
+                  snprintf(str, sizeof(str), "http://%s", http_host);
                if (elog_tcp_port != 80 && strchr(str, ':') == NULL)
                   sprintf(str + strlen(str), ":%d", elog_tcp_port);
                strlcat(str, "/", sizeof(str));
@@ -7249,7 +7249,7 @@ void set_redir(LOGBOOK * lbs, char *redir)
       strlcpy(str, redir, sizeof(str));
    else {
       if (lbs)
-         sprintf(str, "../%s/", lbs->name_enc);
+         snprintf(str, sizeof(str), "../%s/", lbs->name_enc);
       else if (getcfg_topgroup())
          sprintf(str, ".");
    }
@@ -7447,7 +7447,7 @@ int scan_attributes(char *logbook)
              strieq(attr_list[i], "reply to") ||
              strieq(attr_list[i], "locked by") ||
              strieq(attr_list[i], "in reply to") || strieq(attr_list[i], "attachment")) {
-            sprintf(str, loc("Attribute \"%s\" is not allowed in config file"), attr_list[i]);
+            snprintf(str, sizeof(str), loc("Attribute \"%s\" is not allowed in config file"), attr_list[i]);
             show_error(str);
             return -1;
          }
@@ -7458,29 +7458,29 @@ int scan_attributes(char *logbook)
       for (i = 0; i < n; i++) {
          n_options = 0;
 
-         sprintf(str, "Options %s", attr_list[i]);
+         snprintf(str, sizeof(str), "Options %s", attr_list[i]);
          if (getcfg(logbook, str, list, sizeof(list)))
             n_options = strbreak(list, attr_options[i], MAX_N_LIST, ",", FALSE);
 
-         sprintf(str, "MOptions %s", attr_list[i]);
+         snprintf(str, sizeof(str), "MOptions %s", attr_list[i]);
          if (getcfg(logbook, str, list, sizeof(list))) {
             n_options = strbreak(list, attr_options[i], MAX_N_LIST, ",", FALSE);
             attr_flags[i] |= AF_MULTI;
          }
 
-         sprintf(str, "ROptions %s", attr_list[i]);
+         snprintf(str, sizeof(str), "ROptions %s", attr_list[i]);
          if (getcfg(logbook, str, list, sizeof(list))) {
             n_options = strbreak(list, attr_options[i], MAX_N_LIST, ",", FALSE);
             attr_flags[i] |= AF_RADIO;
          }
 
-         sprintf(str, "IOptions %s", attr_list[i]);
+         snprintf(str, sizeof(str), "IOptions %s", attr_list[i]);
          if (getcfg(logbook, str, list, sizeof(list))) {
             n_options = strbreak(list, attr_options[i], MAX_N_LIST, ",", FALSE);
             attr_flags[i] |= AF_ICON;
          }
 
-         sprintf(str2, "Sort Attribute Options %s", attr_list[i]);
+         snprintf(str2, sizeof(str2), "Sort Attribute Options %s", attr_list[i]);
          if (n_options && getcfg(logbook, str2, str, sizeof(str)) && atoi(str) == 1) {
             qsort(attr_options[i], n_options, NAME_LENGTH, ascii_compare2);
          }
@@ -7532,7 +7532,7 @@ int scan_attributes(char *logbook)
       }
 
       for (i = 0; i < n; i++) {
-         sprintf(str, "Type %s", attr_list[i]);
+         snprintf(str, sizeof(str), "Type %s", attr_list[i]);
          if (getcfg(logbook, str, type, sizeof(type))) {
             if (strieq(type, "date"))
                attr_flags[i] |= AF_DATE;
@@ -14783,7 +14783,7 @@ int show_download_page(LOGBOOK * lbs, char *path)
          if (index == *lbs->n_el_index)
             return EL_NO_MSG;
 
-         sprintf(file_name, "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
+         snprintf(file_name, sizeof(file_name), "%s%s%s", lbs->data_dir, lbs->el_index[index].subdir, lbs->el_index[index].file_name);
          fh = open(file_name, O_RDWR | O_BINARY, 0644);
          if (fh < 0)
             return EL_FILE_ERROR;
