@@ -14267,7 +14267,7 @@ void show_forgot_pwd_page(LOGBOOK * lbs)
                rsprintf("</body></html>\n");
                return;
             } else {
-               sprintf(str, loc("Error sending Email via <i>\"%s\"</i>"), smtp_host);
+               sprintf(str, loc("Error sending Email via \"%s\""), smtp_host);
                strlcat(str, ": ", sizeof(str));
                strlcat(str, error, sizeof(str));
                show_error(str);
