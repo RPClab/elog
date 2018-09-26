@@ -22303,7 +22303,7 @@ void format_email_html(LOGBOOK * lbs, int message_id, char attrib[MAX_N_ATTR][NA
    }
 
    max_att_size = max_attachment_size(lbs, message_id);
-   max_allowed_att_size = 10E6;
+   max_allowed_att_size = (int)10E6;
    if (getcfg(lbs->name, "Max email attachment size", str, sizeof(str)))
       max_allowed_att_size = atoi(str);
 
@@ -22584,7 +22584,7 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
    if (getcfg(lbs->name, "Email encoding", str, sizeof(str)))
       mail_encoding = atoi(str);
 
-   max_allowed_att_size = 10E6;
+   max_allowed_att_size = (int)10E6;
    if (getcfg(lbs->name, "Max email attachment size", str, sizeof(str)))
       max_allowed_att_size = atoi(str);
 

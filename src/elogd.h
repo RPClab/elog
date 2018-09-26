@@ -67,6 +67,7 @@
 #define DIR_SEPARATOR_STR "\\"
 
 #define snprintf _snprintf
+#define strcasestr StrStrIA
 
 #include <windows.h>
 #include <io.h>
@@ -75,6 +76,8 @@
 #include <direct.h>
 #include <sys/stat.h>
 #include <errno.h>
+
+#include <Shlwapi.h>
 
 #else
 
