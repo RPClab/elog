@@ -22,15 +22,11 @@ On VMPC1865 (VmWare):
 
 On llc.psi.ch:
 
-- log in as ritt
 - git pull in elog and mxml
 
 On elog.psi.ch:
 
-- log in as root
 - cd ~ritt/elog
-- kinit ritt
-- aklog
 - ./build x.x.x 1
 
 Declare new version at forum.
@@ -44,9 +40,11 @@ On VPC6562-1:
 - c:\elog> svn ci -m "Version x.x.x-y" 
 - open VS 2010 command window, build xxx-y
 
+On llc.psi.ch:
+
+- log in as ritt
+- git pull in elog and mxml
+
 On elog.psi.ch:
 
-- svn update
-- su
-- klog ritt
 - build x.x.x y
