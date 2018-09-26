@@ -2,7 +2,7 @@
 
 Name:       elog
 Summary:    elog is a standalone electronic web logbook
-Version:    3.1.3
+Version:    3.1.4
 Release:    1
 License:    GPL
 Group:      Applications/Networking
@@ -41,9 +41,11 @@ access control, etc. Moreover, a single server can host several weblogs, and
 each weblog can be totally different from the rest. 
 
 %changelog
+* Wed Sep 26 2018 Stefan Ritt <stefan.ritt@psi.ch>
+- Made adjustments for new elog server and RH7
 * Fri Aug 29 2014 Stefan Ritt <stefan.ritt@psi.ch>
 - Added BuildRequires, thanks to Stefan Roiser from CERN
-* Fri Oct 24 2005 Stefan Ritt <stefan.ritt@psi.ch>
+* Fri Oct 21 2005 Stefan Ritt <stefan.ritt@psi.ch>
 - Added resources/ directory
 * Fri Mar 14 2003 Stefan Ritt <stefan.ritt@psi.ch>
 - Added %post to change ownership of elog files
