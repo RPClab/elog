@@ -491,3 +491,5 @@ This will overwrite your current modifications. = Cela va écraser vos modificati
 #
 #---- please translate following items and then remove this comment ----#
 #
+Are you sure to delete the attachment? = 
+Error sending Email via "%s" = 

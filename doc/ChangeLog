@@ -1,3 +1,26 @@
+Version 3.1.4, released September 26th, 2018
+============================================
+
+- Replaced sprintf by snprintf
+- Changed midas.psi.ch to elog.psi.ch
+- Fixed bug for redirect under two daisy-chained proxies
+- Removed while(in_asend) which caused some browsers to block
+- Implemented elogd.service for systemd daemon
+- Implemented "max email attachment size"
+- Limit max request size to 100 MB
+- Allow ampersand in user names
+- Added code to detect Unicode characters as HTML
+- add "Email CSS URL" : use public copy of CSS for emails
+- bugfix: replace hard-coded reference of "New" to loc("New")
+- add "Subscription columns" : format list of logbooks for subscriptions in columns
+- Added "interface" option
+- Fixed crash on negative Content-Length in header
+- Fixed "?npp=0" crash
+- Added confirmation dialog before deleting an attachment
+- Implemented "last default" to restrict quick filter display by default on the last n days
+- Made header parsing case insensitive
+- Switched to TLSv1_2
+
 Version 3.1.3, released April 21st, 2017
 ========================================
 

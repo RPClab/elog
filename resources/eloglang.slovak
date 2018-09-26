@@ -470,3 +470,5 @@ Error: Content length (%d) larger than maximum content length (%d) =
 Do you want to restore your original text? = 
 This will overwrite your current modifications. = 
 Restore = 
+Are you sure to delete the attachment? = 
+Error sending Email via "%s" = 
