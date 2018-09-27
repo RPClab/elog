@@ -13973,11 +13973,9 @@ void show_config_page(LOGBOOK * lbs)
    }
 
    if (n > 0) {
-      if (getcfg(lbs->name, "Subscription columns", str, sizeof(str)))
-         cols = atoi(str);
-      else
-         cols = 1;
-
+      for (i = 0; lb_list[i].name[0]; i++) {}
+      j = (int) (i / 16) + 1;
+      cols =  ((j>5)?5:j);
       rsprintf("<tr><td width=\"15%%\">%s:\n", loc("Subscribe to logbooks"));
 
       rsprintf("<br><span class=\"selcomment\"><b>(%s)</b></span>\n",
