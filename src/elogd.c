@@ -2173,10 +2173,17 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    if (s == -1)
       return -1;
 
-   /* connect to remote node port 25 */
+   strsize = MAX_CONTENT_LENGTH + 1000;
+   str = xmalloc(strsize);
+   
+   /* connect to remote node port on SMTP port */
+   int smtp_port = 25;
+   if (getcfg(lbs->name, "SMTP port", str, strsize))
+      smtp_port = atoi(str);
+   
    memset(&bind_addr, 0, sizeof(bind_addr));
    bind_addr.sin_family = AF_INET;
-   bind_addr.sin_port = htons((short) 25);
+   bind_addr.sin_port = htons((short) smtp_port);
 
    phe = gethostbyname(smtp_host);
    if (phe == NULL) {
@@ -2192,9 +2199,6 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
          strlcpy(error, loc("Cannot connect to server"), error_size);
       return -1;
    }
-
-   strsize = MAX_CONTENT_LENGTH + 1000;
-   str = xmalloc(strsize);
 
    recv_string(s, str, strsize, 10000);
    if (get_verbose() >= VERBOSE_INFO)
@@ -22671,7 +22675,7 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
     */
 
    if (status < 0) {
-      sprintf(str, loc("Error sending Email via <i>\"%s\"</i>"), smtp_host);
+      sprintf(str, loc("Error sending Email via \"%s\""), smtp_host);
       if (error[0]) {
          strlcat(str, ": ", sizeof(str));
          strlcat(str, error, sizeof(str));
@@ -22679,7 +22683,7 @@ int compose_email(LOGBOOK * lbs, char *rcpt_to, char *mail_to, int message_id,
       url_encode(str, sizeof(str));
       sprintf(mail_param, "?error=%s", str);
    } else if (error[0]) {
-      sprintf(str, loc("Error sending Email via <i>\"%s\"</i>"), smtp_host);
+      sprintf(str, loc("Error sending Email via \"%s\""), smtp_host);
       strlcat(str, ": ", sizeof(str));
       strlcat(str, error, sizeof(str));
       url_encode(str, sizeof(str));
