@@ -937,7 +937,13 @@ int my_shell(char *cmd, char *result, int size)
    pid_t child_pid;
    int fh, status, wait_status;
    char str[1024];
+   char tmp_filename[1024];
 
+   if (tmpnam(tmp_filename)==NULL) {
+      eprintf("Error getting TMP file name.\n");
+      return 0;
+   }
+   
    if ((child_pid = fork()) < 0)
       return 0;
    else if (child_pid > 0) {
@@ -948,14 +954,14 @@ int my_shell(char *cmd, char *result, int size)
       
       /* read back result */
       memset(result, 0, size);
-      fh = open("/tmp/elog-shell", O_RDONLY);
+      fh = open(tmp_filename, O_RDONLY);
       if (fh > 0) {
          read(fh, result, size-1);
          close(fh);
       }
 
       /* remove temporary file */
-      remove("/tmp/elog-shell");
+      remove(tmp_filename);
 
       /* strip trailing CR/LF */
       while (strlen(result) > 0 && (result[strlen(result) - 1] == '\r' || result[strlen(result) - 1] == '\n'))
@@ -998,7 +1004,7 @@ int my_shell(char *cmd, char *result, int size)
       }
 
       /* execute shell with redirection to /tmp/elog-shell */
-      sprintf(str, "/bin/sh -c \"%s\" > /tmp/elog-shell 2>&1", cmd);
+      sprintf(str, "/bin/sh -c \"%s\" > %s 2>&1", cmd, tmp_filename);
 
       if (get_verbose() >= VERBOSE_INFO) {
          efputs("Going to execute: ");
