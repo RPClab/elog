@@ -939,10 +939,13 @@ int my_shell(char *cmd, char *result, int size)
    char str[1024];
    char tmp_filename[1024];
 
-   if (tmpnam(tmp_filename)==NULL) {
+   strlcpy(tmp_filename, "/tmp/elog_XXXXXX", sizeof(tmp_filename));
+   fh = mkstemp(tmp_filename);
+   if (fh == 0) {
       eprintf("Error getting TMP file name.\n");
       return 0;
    }
+   close(fh);
    
    if ((child_pid = fork()) < 0)
       return 0;
