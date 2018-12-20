@@ -2164,7 +2164,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
    char list[MAX_N_EMAIL][NAME_LENGTH], buffer[10000], decoded[256];
 
    memset(error, 0, error_size);
-
+   
    if (get_verbose() >= VERBOSE_INFO)
       eprintf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
    sprintf(buffer, "Email from %s to ", from);
@@ -2361,7 +2361,7 @@ int sendmail(LOGBOOK * lbs, char *smtp_host, char *from, char *to, char *text, c
 
    /* replace "." at beginning of line by ".." */
    strlcpy(str, text, strsize);
-   strsubst(str, strsize, "\r\n.\r\n", "\r\n..\r\n");
+   strsubst(str, strsize, "\n.", "\n..");
 
    /* add ".<CR>" to signal end of message */
    strlcat(str, ".\r\n", strsize);
@@ -7624,10 +7624,10 @@ void show_plain_header(int size, char *file_name)
 }
 
 void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head, BOOL rss_feed, char *cookie,
-                      int absolute_link, int refresh)
+                      int embed_css, int refresh)
 {
    int i, n;
-   char css[1000], css_base[1000], str[1000], media[1000];
+   char css[1000], css_base[1000], str[1000], media[1000], file_name[256];
    char css_list[MAX_N_LIST][NAME_LENGTH];
 
    show_http_header(lbs, expires, cookie);
@@ -7648,17 +7648,40 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
    rsprintf("<title>%s</title>\n", title);
 
    /* Cascading Style Sheet */
-   if (absolute_link) {
-      if (lbs != NULL && getcfg(lbs->name, "Email CSS URL", str, sizeof(str)))
-         strlcpy(css_base, str, sizeof(css_base));
-      else if (lbs == NULL && getcfg("global", "Email CSS URL", str, sizeof(str)))
-         strlcpy(css_base, str, sizeof(css_base));
-      if (css_base[0] == 0)
-        compose_base_url(lbs, css_base, sizeof(css_base), FALSE);
-   } else
-      css_base[0] = 0;
+   if (embed_css) {
+      strlcpy(css, "elog.css", sizeof(css));
+      if (lbs != NULL && getcfg(lbs->name, "CSS", str, sizeof(str)))
+         strlcpy(css, str, sizeof(css));
+      else if (lbs == NULL && getcfg("global", "CSS", str, sizeof(str)))
+         strlcpy(css, str, sizeof(css));
 
-   rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%selog.css\">\n", css_base);
+      strlcpy(file_name, resource_dir, sizeof(str));
+      strlcat(file_name, "themes", sizeof(str));
+      strlcat(file_name, DIR_SEPARATOR_STR, sizeof(str));
+      strlcat(file_name, theme_name, sizeof(str));
+      strlcat(file_name, DIR_SEPARATOR_STR, sizeof(str));
+      strlcat(file_name, css, sizeof(str));
+
+      FILE *f = fopen(file_name, "rb");
+      if (f != NULL) {
+         fseek(f, 0, SEEK_END);
+         int size = TELL(fileno(f));
+         fseek(f, 0, SEEK_SET);
+         
+         char *buf = xmalloc(size + 100);
+         fread(buf, 1, size, f);
+         buf[size] = 0;
+         fclose(f);
+         
+         rsprintf("<style>\n");
+         rsputs(buf);
+         rsprintf("</style>\n");
+         
+         xfree(buf);
+      }
+   } else {
+      rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"elog.css\">\n");
+   }
 
    if (lbs != NULL && getcfg(lbs->name, "CSS", str, sizeof(str)))
       strlcpy(css, str, sizeof(css));
@@ -7682,10 +7705,12 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
          rsprintf("<link rel=\"stylesheet\" type=\"text/css\" href=\"%s%s\">\n", css_base, css);
    }
    
-   rsprintf("<link rel=\"shortcut icon\" href=\"favicon.ico\" />\n");
-   rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+   if (!embed_css) {
+      rsprintf("<link rel=\"shortcut icon\" href=\"favicon.ico\" />\n");
+      rsprintf("<link rel=\"icon\" href=\"favicon.png\" type=\"image/png\" />\n");
+   }
 
-   if (rss_feed) {
+   if (rss_feed && !embed_css) {
       rsprintf("<link rel=\"alternate\" type=\"application/rss+xml\" ");
       rsprintf("title=\"ELOG %s\" ", lbs->name);
       rsprintf("href=\"elog.rdf\" />\n");
@@ -24639,7 +24664,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
          strcpy(str, "ELOG");
 
       if (email) {
-         /* show absolute link for CSS */
+         /* embed CSS */
          show_html_header(lbs, FALSE, str, TRUE, FALSE, NULL, TRUE, 0);
          rsprintf("<body>\n");
       } else {
