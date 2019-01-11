@@ -484,12 +484,9 @@ Draft entry created on %s by %s = Entwurf erstellt am %s von %s
 Really delete this entry? = Diesen Eintrag wirklich löschen?
 This is a draft message, edit and submit it to make it permanent = Dies ist ein Entwurf, bitte ändern und abschicken um ihn permanent zu machen
 Restrict search to last = Suche beschränken auf letzte
+Do you want to restore your original text? = Wollen Sie den ursprünglichen Text wiederherstellen?
+This will overwrite your current modifications. = Hiermit werden Ihre aktuellen Änderungen verworfen.
+Restore = Wiederherstellen
+Are you sure to delete the attachment? = Soll der Anhang wirklich gelöscht werden?
+Error sending Email via "%s" = Fehler beim Senden der Email via "%s"
 
-#
-#---- please translate following items and then remove this comment ----#
-#
-Do you want to restore your original text? = 
-This will overwrite your current modifications. = 
-Restore = 
-Are you sure to delete the attachment? = 
-Error sending Email via "%s" = 
