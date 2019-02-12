@@ -42,6 +42,10 @@ char ldap_userbase[256];
 char ldap_bindDN[512];
 #endif  /* HAVE_LDAP */
 
+#ifdef HAVE_PAM
+#include <security/pam_appl.h>
+#endif HAVE_PAM /* HAVE_PAM */
+
 extern LOGBOOK *lb_list;
 
 /*==================================================================*/
@@ -421,6 +425,77 @@ int ldap_clear ()
 
 #endif  /* LDAP */
 
+/* PAM authentication routines */
+
+#ifdef HAVE_PAM
+/* we need a custom PAM conversation function to handle acquiring the auth
+ * token (password) from the web formular, and hand it to PAM */
+int elog_conv(int num_msg, const struct pam_message **mess, struct pam_response **resp, void *my_data)
+{
+   char *resptok;
+
+   /* no PAM message received, this is an error */
+   if(num_msg <= 0 || num_msg >= PAM_MAX_NUM_MSG) {
+      *resp = NULL;
+      return (PAM_CONV_ERR);
+   }
+
+   /* if we do not have enough space to allocate the response, we have an error
+    * */
+   if((*resp = calloc(num_msg, sizeof(struct pam_response))) == NULL)
+      return (PAM_BUF_ERR);
+
+   /* this is the password we got through the UI, copy it to the heap, since
+    * pam_authenticate will free() the response, give error if calloc fails */
+   if((resptok = calloc(strlen(my_data)+1, sizeof(char))) == NULL)
+      return (PAM_BUF_ERR);
+   memcpy(resptok, my_data, strlen(my_data)+1);
+
+   /* set the response to our auth token (password) */
+   (*resp)->resp = resptok;
+
+   return (PAM_SUCCESS);
+}
+
+int auth_verify_password_pam(LOGBOOK *lbs, const char *user, const char *password, char *error_str, int error_size)
+{
+   pam_handle_t *pamh;
+   int retval;
+   
+   int verified = 0;
+   /* use our custom conversation function */
+   static struct pam_conv elog_pam_conv = {
+      elog_conv,
+      NULL
+   };
+
+   /* set conversation application data to our password */
+   elog_pam_conv.appdata_ptr = password;
+
+   /* start PAM auth procedure */
+   retval = pam_start("elogd", user, &elog_pam_conv, &pamh);
+
+   /* if we can use PAM, try to authenticate using our conversation method */
+   if(retval == PAM_SUCCESS) {
+      retval = pam_authenticate(pamh, 0);
+   }
+
+   /* if the user authenticated, see if the acc is valid */
+   if(retval == PAM_SUCCESS) {
+      retval = pam_acct_mgmt(pamh, 0);
+   }
+
+   verified = (retval == PAM_SUCCESS);
+
+   if(pam_end(pamh, retval) != PAM_SUCCESS) {
+      pamh = NULL;
+      strlcpy(error_str, "PAM: Error releasing authenticator", error_size);
+   }
+
+   return verified;
+}
+#endif /* PAM */
+
 /*---- local password file routines --------------------------------*/
 
 int auth_verify_password_file(LOGBOOK * lbs, const char *user, const char *password, char *error_str,
@@ -502,6 +577,13 @@ int auth_verify_password(LOGBOOK * lbs, const char *user, const char *password, 
       ldap_clear();
    }
    if (verified)
+      return TRUE;
+#endif
+
+#ifdef HAVE_PAM
+   if(stristr(str, "PAM"))
+      verified = auth_verify_password_pam(lbs, user, password, error_str, error_size);
+   if(verified)
       return TRUE;
 #endif
 

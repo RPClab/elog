@@ -31,6 +31,9 @@ USE_KRB5   = 0
 # flag for LDAP support, please turn on if you need LDAP
 USE_LDAP   = 0
 
+# flag for PAM support, please turn on if you need PAM
+USE_PAM    = 0
+
 #############################################################
 
 # Default compilation flags unless stated otherwise.
@@ -104,6 +107,13 @@ ifdef USE_LDAP
 ifneq ($(USE_LDAP),0)
 CFLAGS += -DHAVE_LDAP
 LIBS += -lldap
+endif
+endif
+
+ifdef USE_PAM
+ifneq ($(USE_PAM),0)
+CFLAGS += -DHAVE_PAM
+LIBS += -lpam
 endif
 endif
 
