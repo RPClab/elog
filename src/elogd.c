@@ -27479,6 +27479,12 @@ void interprete(char *lbook, char *path)
 
          /* check if user in password file */
          if (get_user_line(NULL, uname, NULL, full_name, NULL, NULL, NULL, NULL) == 2) {
+            /* show new user page if username is not in password file */
+            getcfg(NULL, "Authentication", str, sizeof(str));
+            if (stristr(str, "PAM")) {
+               show_new_user_page(NULL, uname);
+               return;
+            }
             /* if self registering not allowed, go back to login screen */
             if (!getcfg(group, "Self register", str, sizeof(str)) || atoi(str) == 0) {
                show_login_page(NULL, str, 1);
@@ -27616,6 +27622,12 @@ void interprete(char *lbook, char *path)
 
       /* check if user in password file */
       if (get_user_line(lbs, uname, NULL, full_name, NULL, NULL, NULL, &inactive) == 2) {
+         /* show new user page if username is not in password file */
+         getcfg(lbs->name, "Authentication", str, sizeof(str));
+         if (stristr(str, "PAM")) {
+            show_new_user_page(lbs, uname);
+            return;
+         }
          /* if self registering not allowed, go back to login screen */
          if (!getcfg(lbs->name, "Self register", str, sizeof(str)) || atoi(str) == 0) {
             show_login_page(lbs, str, 1);
