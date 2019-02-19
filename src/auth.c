@@ -44,7 +44,7 @@ char ldap_bindDN[512];
 
 #ifdef HAVE_PAM
 #include <security/pam_appl.h>
-#endif HAVE_PAM /* HAVE_PAM */
+#endif /* HAVE_PAM */
 
 extern LOGBOOK *lb_list;
 
@@ -494,7 +494,7 @@ int auth_verify_password_pam(LOGBOOK *lbs, const char *user, const char *passwor
 
    return verified;
 }
-#endif /* PAM */
+#endif /* HAVE_PAM */
 
 /*---- local password file routines --------------------------------*/
 
@@ -585,7 +585,7 @@ int auth_verify_password(LOGBOOK * lbs, const char *user, const char *password, 
       verified = auth_verify_password_pam(lbs, user, password, error_str, error_size);
    if(verified)
       return TRUE;
-#endif
+#endif /* HAVE_PAM */
 
    if (str[0] == 0 || stristr(str, "File"))
       verified = auth_verify_password_file(lbs, user, password, error_str, error_size);
