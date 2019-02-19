@@ -26457,6 +26457,10 @@ BOOL check_login(LOGBOOK * lbs, char *sid)
    char str[1000], pwd_file[256], user_name[256], upwd[256];
    int status, inactive, skip_sid_check;
 
+#ifdef HAVE_PAM
+   getcfg(lbs->name, "Authentication", str, sizeof(str));
+   if (!stristr(str, "PAM")) {
+#endif /* HAVE_PAM */
    /* show new user screen if password file is empty */
    if (!enum_user_line(lbs, 0, str, sizeof(str))) {
       if (isparam("new_user_name"))
@@ -26469,6 +26473,9 @@ BOOL check_login(LOGBOOK * lbs, char *sid)
       }
       return FALSE;
    }
+#ifdef HAVE_PAM
+   }
+#endif /* HAVE_PAM */
 
    /* check for "forgot password" */
    if (isparam("cmd") && strcmp(getparam("cmd"), loc("Forgot")) == 0) {
