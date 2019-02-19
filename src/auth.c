@@ -461,6 +461,7 @@ int auth_verify_password_pam(LOGBOOK *lbs, const char *user, const char *passwor
 {
    pam_handle_t *pamh;
    int retval;
+   char str[256];
    
    int verified = 0;
    /* use our custom conversation function */
@@ -473,6 +474,8 @@ int auth_verify_password_pam(LOGBOOK *lbs, const char *user, const char *passwor
    elog_pam_conv.appdata_ptr = password;
 
    /* start PAM auth procedure */
+   sprintf(str, "[PAM] Starting authentication for user %s", user);
+   write_logfile(lbs, str);
    retval = pam_start("elogd", user, &elog_pam_conv, &pamh);
 
    /* if we can use PAM, try to authenticate using our conversation method */
@@ -486,6 +489,12 @@ int auth_verify_password_pam(LOGBOOK *lbs, const char *user, const char *passwor
    }
 
    verified = (retval == PAM_SUCCESS);
+  
+   if(verified) 
+      sprintf(str, "[PAM] Authentication successful for user %s", user);
+   else
+      sprintf(str, "[PAM] Authentication not successful for user %s", user);
+   write_logfile(lbs, str);
 
    if(pam_end(pamh, retval) != PAM_SUCCESS) {
       pamh = NULL;
