@@ -13477,10 +13477,17 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
          strencode2(str, getparam("new_user_name"), sizeof(str));
          mxml_add_node(node, "name", str);
       }
+#ifdef HAVE_PAM
+      getcfg(lbs->name, "Authentication", str, sizeof(str));
+      if (!stristr(str, "PAM")) {
+#endif /* HAVE_PAM */
       do_crypt(new_pwd, str, sizeof(str));
       npwd = mxml_add_node(node, "password", str);
       if (npwd)
          mxml_add_attribute(npwd, "encoding", "SHA256");
+#ifdef HAVE_PAM
+      }
+#endif /* HAVE_PAM */
 
       if (isparam("new_full_name")) {
          strencode2(str, getparam("new_full_name"), sizeof(str));
@@ -26174,6 +26181,10 @@ int set_user_password(LOGBOOK * lbs, char *user, char *password)
       if ((user_node = mxml_find_node(lbs->pwd_xml_tree, str)) == NULL)
          return 0;
 
+#ifdef HAVE_PAM
+      getcfg(lbs->name, "Authentication", str, sizeof(str));
+      if (!stristr(str, "PAM")) {
+#endif /* HAVE_PAM */
       do_crypt(password, pwd_enc, sizeof(pwd_enc));
       if ((node = mxml_find_node(user_node, "password")) != NULL)
          mxml_replace_node_value(node, pwd_enc);
@@ -26181,6 +26192,9 @@ int set_user_password(LOGBOOK * lbs, char *user, char *password)
          npwd = mxml_add_node(user_node, "password", pwd_enc);
          mxml_add_attribute(npwd, "encoding", "SHA256");
       }
+#ifdef HAVE_PAM
+      }
+#endif /* HAVE_PAM */
 
       /* flush to password file */
       if (get_password_file(lbs, file_name, sizeof(file_name))) {
