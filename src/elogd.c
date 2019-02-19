@@ -27717,6 +27717,16 @@ void interprete(char *lbook, char *path)
       return;
    }
 
+#ifdef HAVE_PAM
+   /* save new user */
+   if (strieq(command, loc("Save")) && isparam("new_user_name") && !isparam("config")) {
+      save_user_config(NULL, getparam("new_user_name"), 1);
+      redirect(lbs, "");
+      check_login(lbs, NULL);
+      return;
+   }
+#endif /* USE_PAM */
+
    /* if password file given, check session ID */
    if (getcfg(lbs->name, "Password file", str, sizeof(str))) {
       /* get current CSS */
