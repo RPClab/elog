@@ -445,11 +445,12 @@ int elog_conv(int num_msg, const struct pam_message **mess, struct pam_response 
    if((*resp = calloc(num_msg, sizeof(struct pam_response))) == NULL)
       return (PAM_BUF_ERR);
 
-   /* this is the password we got through the UI, copy it to the heap, since
-    * pam_authenticate will free() the response, give error if calloc fails */
-   if((resptok = calloc(strlen(my_data)+1, sizeof(char))) == NULL)
+   /* this is the password we got through the UI, this is put into the 
+    * response, and given to pam_authenticate */
+   if(!(resptok = strdup(my_data))) {
+      free(resp);
       return (PAM_BUF_ERR);
-   memcpy(resptok, my_data, strlen(my_data)+1);
+   }
 
    /* set the response to our auth token (password) */
    (*resp)->resp = resptok;
