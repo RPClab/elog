@@ -14026,7 +14026,6 @@ void show_config_page(LOGBOOK * lbs)
       rsprintf("<td>\n");
 
       for (j = i = 0; lb_list[i].name[0]; i++) {
-         if (j==0) rsprintf("<table><tr>");
 
          if (!getcfg_topgroup() || strieq(getcfg_topgroup(), lb_list[i].top_group)) {
 
@@ -14035,6 +14034,7 @@ void show_config_page(LOGBOOK * lbs)
 
                /* check if emails are enabled for this logbook */
                if (!getcfg(lb_list[i].name, "Suppress email to users", str, sizeof(str)) || atoi(str) == 0) {
+                  if (j==0) rsprintf("<table><tr>");
                   if (email_notify[i])
                      rsprintf("<td><input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i,
                               i);
