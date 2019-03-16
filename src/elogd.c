@@ -26435,6 +26435,10 @@ void show_login_page(LOGBOOK * lbs, char *redir, int fail)
    }
 
    show_forgot_link = (!getcfg(lbs->name, "allow password change", str, sizeof(str)) || atoi(str) == 1);
+#ifdef HAVE_PAM
+   getcfg(lbs->name, "Authentication", str, sizeof(str));
+   if (!stristr(str, "PAM"))
+#endif /* HAVE_PAM */
    show_self_register = (getcfg(lbs->name, "Self register", str, sizeof(str)) && atoi(str) > 0);
 
    if (show_forgot_link || show_self_register)
