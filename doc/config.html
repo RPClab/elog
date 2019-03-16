@@ -2289,6 +2289,40 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
    Please note that it is not possible to change a password in the LDAP database from within ELOG.
 </p>
 
+<h2>
+   PAM authentication
+</h2>
+<p>
+PAM (Pluggable authentication modules) support has been implemented by Jan Christoph Terasa as a separate branch at <a href="https://bitbucket.org/ritt/elog/branch/pam">https://bitbucket.org/ritt/elog/branch/pam</a>.
+
+<p>
+   To use PAM in elogd, do the following:
+</p>
+
+<ul>
+   <li>
+      Compile <b><code>elogd</code></b> with PAM support, by either setting <b><code>USE_PAM = 1</code></b> in the <b><code>Makefile</code></b>, or by specifying it when invoking <b><code>make</code></b>
+   </li>
+   <li>
+      Enable PAM authentication in <b><code>elogd.cfg</code></b>:
+      <ul>
+         <li><b><code>Authentication = PAM</code></b></li>
+         <li><b><code>Password file = elogd.passwd</code></b></li>
+         <li><b><code>Self register = 3</code></b></li>
+      </ul>
+      The <b><code>Password file</code></b> is used to store the user names and email addresses of PAM authenticated users, since this information can not be (universally) requested via PAM. For security reasons the password file does <b>not</b> store a hash of the user password.
+      Self registration has to be enabled (<b><code>Self register &ge; 1</code></b>) to use PAM authentication.
+   </li>
+   <li>
+      To be able to use PAM, the PAM module in <b><code>elogd</code></b> needs to be able to access the authentication facilities on the system (e.g. be able to read <code>/etc/shadow</code>). This can be achieved by either running <b><code>elogd</code></b> as <code>root</code>, or by specifying the appropriate SUID/GUID values for the binary.</br>
+      <font color="red"><b>WARNING:</font> When running elogd as root, be careful when using the <code>-x</code> option to enable execution of commands via <code>$shell</code>, since the commands will be executed using the access rights of the user running <code>elogd</code>!</b>
+</ul>
+
+<p>
+   Please note that it is not possible to change the PAM password within ELOG. Instead, please use the available methods on the system
+</p>
+
+
 <p>
    <a name="email" id="email"></a>
 </p>
