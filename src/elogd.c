@@ -7658,12 +7658,12 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
       else if (lbs == NULL && getcfg("global", "CSS", str, sizeof(str)))
          strlcpy(css, str, sizeof(css));
 
-      strlcpy(file_name, resource_dir, sizeof(str));
-      strlcat(file_name, "themes", sizeof(str));
-      strlcat(file_name, DIR_SEPARATOR_STR, sizeof(str));
-      strlcat(file_name, theme_name, sizeof(str));
-      strlcat(file_name, DIR_SEPARATOR_STR, sizeof(str));
-      strlcat(file_name, css, sizeof(str));
+      strlcpy(file_name, resource_dir, sizeof(file_name));
+      strlcat(file_name, "themes", sizeof(file_name));
+      strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+      strlcat(file_name, theme_name, sizeof(file_name));
+      strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+      strlcat(file_name, css, sizeof(file_name));
 
       FILE *f = fopen(file_name, "rb");
       if (f != NULL) {
@@ -10103,7 +10103,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf("var last_key = 0;\n\n");
    rsprintf("var in_asend = false;\n\n");
 
-   rsprintf("function chkform()\n");
+   rsprintf("function chkform(button)\n");
    rsprintf("{\n");
 
    rsprintf("  if (last_key == 13) {\n");
@@ -10266,7 +10266,11 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
 
    rsprintf("  if (autoSaveTimer != null)\n");
    rsprintf("    clearTimeout(autoSaveTimer);\n");
+   rsprintf("  button.disabled = true;\n");
+   rsprintf("  button.value = \"%s...\";\n", loc("Please wait"));
    rsprintf("  submitted = true;\n");
+   rsprintf("  document.getElementById(\"form1\").elements['cmd'][0].value = \"%s\";\n", loc("Submit"));
+   rsprintf("  document.getElementById(\"form1\").submit();\n");
    rsprintf("  return true;\n");
    rsprintf("}\n\n");
 
@@ -10575,7 +10579,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    rsprintf(">\n");
 
    show_top_text(lbs);
-   rsprintf("<form name=form1 method=\"POST\" action=\"./\" ");
+   rsprintf("<form name=\"form1\" id=\"form1\" method=\"POST\" action=\"./\" ");
    rsprintf("enctype=\"multipart/form-data\">\n");
 
    /*---- add password in case cookie expires during edit ----*/
@@ -10613,7 +10617,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /* default cmd */
    rsprintf("<input type=hidden name=cmd value=\"%s\">\n", loc("Update"));
 
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n",
+   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform(this);\">\n",
             loc("Submit"));
    
    if (!getcfg(lbs->name, "Save drafts", str, sizeof(str)) || atoi(str) == 1)
@@ -12148,7 +12152,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    /*---- menu buttons again ----*/
 
    rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
-   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform();\">\n",
+   rsprintf("<input type=\"submit\" name=\"cmd\" value=\"%s\" onClick=\"return chkform(this);\">\n",
             loc("Submit"));
 
    if (!getcfg(lbs->name, "Save drafts", str, sizeof(str)) || atoi(str) == 1)
@@ -14029,7 +14033,6 @@ void show_config_page(LOGBOOK * lbs)
       rsprintf("<td>\n");
 
       for (j = i = 0; lb_list[i].name[0]; i++) {
-         if (j==0) rsprintf("<table><tr>");
 
          if (!getcfg_topgroup() || strieq(getcfg_topgroup(), lb_list[i].top_group)) {
 
@@ -14038,6 +14041,7 @@ void show_config_page(LOGBOOK * lbs)
 
                /* check if emails are enabled for this logbook */
                if (!getcfg(lb_list[i].name, "Suppress email to users", str, sizeof(str)) || atoi(str) == 0) {
+                  if (j==0) rsprintf("<table><tr>");
                   if (email_notify[i])
                      rsprintf("<td><input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i,
                               i);
@@ -14363,7 +14367,7 @@ void show_new_user_page(LOGBOOK * lbs, char *user)
    show_html_header(lbs, TRUE, loc("ELOG new user"), TRUE, FALSE, NULL, FALSE, 0);
    rsprintf("<body><center><br><br>\n");
    show_top_text(lbs);
-   rsprintf("<form name=form1 method=\"GET\" action=\".\">\n\n");
+   rsprintf("<form name=\"form1\" id=\"form1\" method=\"GET\" action=\".\">\n\n");
 
    /*---- title ----*/
 
@@ -26369,7 +26373,7 @@ void show_login_page(LOGBOOK * lbs, char *redir, int fail)
    /* set focus on name field */
    rsprintf("<body OnLoad=\"document.form1.uname.focus();\">\n");
 
-   rsprintf("<form name=form1 method=\"POST\" action=\"./\" enctype=\"multipart/form-data\">\n\n");
+   rsprintf("<form name=\"form1\" id=\"form1\" method=\"POST\" action=\"./\" enctype=\"multipart/form-data\">\n\n");
 
    /* define hidden fields for current destination */
    strlcpy(str, redir, sizeof(str));
@@ -27031,7 +27035,7 @@ void show_calendar(LOGBOOK * lbs)
       strcpy(index, "1");
 
    show_html_header(lbs, FALSE, loc("Calendar"), TRUE, FALSE, NULL, FALSE, 0);
-   rsprintf("<body class=\"calwindow\"><form name=form1 method=\"GET\" action=\"cal.html\">\n");
+   rsprintf("<body class=\"calwindow\"><form name=\"form1\" method=\"GET\" action=\"cal.html\">\n");
    rsprintf("<input type=hidden name=\"i\" value=\"%s\">\n", index);
    rsprintf("<input type=hidden name=\"y\" value=\"%d\">\n", cur_year);
 
@@ -27134,7 +27138,7 @@ void show_uploader(LOGBOOK * lbs)
    char str[256];
 
    show_html_header(lbs, FALSE, loc("Upload image"), TRUE, FALSE, NULL, FALSE, 0);
-   rsprintf("<body class=\"uploadwindow\"><form name=form1 method=\"POST\" action=\".\" ");
+   rsprintf("<body class=\"uploadwindow\"><form name=\"form1\" method=\"POST\" action=\".\" ");
    rsprintf("enctype=\"multipart/form-data\">\n");
    rsprintf("<input type=hidden name=\"jcmd\" value=\"JUpload\">\n");
 

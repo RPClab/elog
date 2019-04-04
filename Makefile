@@ -77,6 +77,7 @@ BINOWNER = root
 BINGROUP = admin
 NEED_STRLCPY =
 CFLAGS += -I/opt/local/include
+LIBS += -L/opt/local/lib
 endif
 
 ifeq ($(OSTYPE),FreeBSD)
