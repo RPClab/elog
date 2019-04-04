@@ -7658,12 +7658,12 @@ void show_html_header(LOGBOOK * lbs, BOOL expires, char *title, BOOL close_head,
       else if (lbs == NULL && getcfg("global", "CSS", str, sizeof(str)))
          strlcpy(css, str, sizeof(css));
 
-      strlcpy(file_name, resource_dir, sizeof(str));
-      strlcat(file_name, "themes", sizeof(str));
-      strlcat(file_name, DIR_SEPARATOR_STR, sizeof(str));
-      strlcat(file_name, theme_name, sizeof(str));
-      strlcat(file_name, DIR_SEPARATOR_STR, sizeof(str));
-      strlcat(file_name, css, sizeof(str));
+      strlcpy(file_name, resource_dir, sizeof(file_name));
+      strlcat(file_name, "themes", sizeof(file_name));
+      strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+      strlcat(file_name, theme_name, sizeof(file_name));
+      strlcat(file_name, DIR_SEPARATOR_STR, sizeof(file_name));
+      strlcat(file_name, css, sizeof(file_name));
 
       FILE *f = fopen(file_name, "rb");
       if (f != NULL) {
