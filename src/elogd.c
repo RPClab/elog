@@ -14024,14 +14024,16 @@ void show_config_page(LOGBOOK * lbs)
    if (n > 0) {
       for (i = 0; lb_list[i].name[0]; i++) {}
       j = (int) (i / 16) + 1;
-      cols =  ((j>5)?5:j);
-      rsprintf("<tr><td width=\"15%%\">%s:\n", loc("Subscribe to logbooks"));
+      cols =  ((j>5) ? 5 : j);
+      rsprintf("<tr><td colspan=\"2\"><br />%s:\n", loc("Subscribe to logbooks"));
 
       rsprintf("<br><span class=\"selcomment\"><b>(%s)</b></span>\n",
                loc("enable automatic email notifications"));
 
-      rsprintf("<td>\n");
+      rsprintf("<td></tr>\n");
 
+      rsprintf("<tr><td colspan=\"2\"><table><tr>\n");
+      
       for (j = i = 0; lb_list[i].name[0]; i++) {
 
          if (!getcfg_topgroup() || strieq(getcfg_topgroup(), lb_list[i].top_group)) {
@@ -14041,7 +14043,6 @@ void show_config_page(LOGBOOK * lbs)
 
                /* check if emails are enabled for this logbook */
                if (!getcfg(lb_list[i].name, "Suppress email to users", str, sizeof(str)) || atoi(str) == 0) {
-                  if (j==0) rsprintf("<table><tr>");
                   if (email_notify[i])
                      rsprintf("<td><input type=checkbox checked id=\"lb%d\" name=\"sub_lb%d\" value=\"1\">\n", i,
                               i);
@@ -14052,9 +14053,10 @@ void show_config_page(LOGBOOK * lbs)
                }
             }
          }
-         if ((j%cols)==0) rsprintf("</tr>\n<tr>");
+         if (j>0 && (j%cols) == 0)
+            rsprintf("</tr>\n<tr>");
       }
-      rsprintf("</tr></table>\n");
+      rsprintf("</tr></table><br />\n");
    }
 
    if (n > 2) {
