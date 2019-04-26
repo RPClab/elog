@@ -23109,6 +23109,20 @@ void submit_elog(LOGBOOK * lbs)
    } else
       n_attr = lbs->n_attr;
 
+   
+   /* check for editing interval */
+   if (bedit && getcfg(lbs->name, "Restrict edit time", str, sizeof(str))) {
+      for (i = 0; i < *lbs->n_el_index; i++)
+         if (lbs->el_index[i].message_id == atoi(getparam("edit_id")))
+            break;
+      
+      if (i < *lbs->n_el_index && time(NULL) > lbs->el_index[i].file_time + atof(str) * 3600) {
+         sprintf(str, loc("Entry can only be edited %1.2lg hours after creation"), atof(str));
+         show_error(str);
+         return;
+      }
+   }
+   
    /* check for required attributs */
    missing = 0;
    for (i = 0; i < lbs->n_attr; i++) {
