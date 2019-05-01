@@ -18709,7 +18709,8 @@ BOOL subst_param(char *str, int size, char *param, char *value)
       p1 = s - 1;
 
       for (p2 = p1 + strlen(param_enc) + 1; *p2 && *p2 != '&'; p2++);
-      strlcpy(p1, p2, size - (p1 - str));
+      strlcpy(str2, p2, sizeof(str2));
+      strlcpy(p1, str2, size - (p1 - str));
 
       if (!strchr(str, '?') && strchr(str, '&'))
          *strchr(str, '&') = '?';
@@ -19010,15 +19011,19 @@ void build_ref(char *ref, int size, char *mode, char *expand, char *attach, char
       strlcat(ref, strchr(getparam("cmdline"), '?'), size);
 
    /* eliminate old search */
-   if (strstr(ref, "cmd=Search&"))
-      strlcpy(strstr(ref, "cmd=Search&"), strstr(ref, "cmd=Search&") + 11, sizeof(str));
+   if (strstr(ref, "cmd=Search&")) {
+      strlcpy(str, strstr(ref, "cmd=Search&") + 11, sizeof(str));
+      p = strstr(ref, "cmd=Search&");
+      strlcpy(p, str, size - (p - ref));
+   }
 
    /* eliminate id=xxx */
    if (strstr(ref, "id=")) {
-      p = strstr(ref, "id=") + 3;
+      strlcpy(str, ref, sizeof(str));
+      p = strstr(str, "id=") + 3;
       while (*p && isdigit(*p))
          p++;
-      strlcpy(strstr(ref, "id="), p, sizeof(str));
+      strlcpy(strstr(ref, "id="), p, size);
       if (strlen(ref) > 0 && ref[strlen(ref) - 1] == '?')
          ref[strlen(ref) - 1] = 0;
    }
