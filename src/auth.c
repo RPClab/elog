@@ -472,7 +472,7 @@ int auth_verify_password_pam(LOGBOOK *lbs, const char *user, const char *passwor
    };
 
    /* set conversation application data to our password */
-   elog_pam_conv.appdata_ptr = password;
+   elog_pam_conv.appdata_ptr = (char *)password;
 
    /* start PAM auth procedure */
    sprintf(str, "[PAM] Starting authentication for user %s", user);
