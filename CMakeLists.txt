@@ -24,7 +24,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 # optional SSL library
 if (USE_SSL)
   add_compile_definitions(HAVE_SSL)
-  find_package(OPENSSL REQUIRED)
+  find_package(OpenSSL REQUIRED)
   include_directories(${OPENSSL_INCLUDE_DIR})
 endif (USE_SSL)
 
