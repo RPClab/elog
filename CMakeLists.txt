@@ -53,6 +53,7 @@ add_executable(elogd
   ${CMAKE_SOURCE_DIR}/src/elogd.c
   ${CMAKE_SOURCE_DIR}/src/auth.c
   ${CMAKE_SOURCE_DIR}/mxml/mxml.c
+  ${CMAKE_SOURCE_DIR}/mxml/strlcpy.c
   ${CMAKE_SOURCE_DIR}/src/crypt.c
   ${CMAKE_SOURCE_DIR}/src/regex.c
 )
@@ -60,6 +61,7 @@ add_executable(elogd
 add_executable(elog
   ${CMAKE_SOURCE_DIR}/src/elog.c
   ${CMAKE_SOURCE_DIR}/src/crypt.c
+  ${CMAKE_SOURCE_DIR}/mxml/strlcpy.c
 )
 
 if(USE_SSL)
