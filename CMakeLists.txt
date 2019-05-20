@@ -1,6 +1,6 @@
 # CMakeLists.txt for ELOG project
 project(ELOG)
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 2.8)
 
 # compile options
 option(USE_SSL  "Use OpenSSL library for https" ON)
@@ -13,7 +13,7 @@ option(USE_PAM  "Use PAM library for authentication" OFF)
 include_directories(${CMAKE_SOURCE_DIR}/mxml)
 
 # default compiler flags
-add_compile_options(-Wall -Wno-deprecated-declarations)
+set(CMAKE_CXX_FLAGS "-W -Wall -Wno-drprecated-declarations ${CMAKE_CXX_FLAGS}")
 
 # disable warnings for regex.c
 set_source_files_properties(${CMAKE_SOURCE_DIR}/src/regex.c PROPERTIES COMPILE_FLAGS -w)
@@ -23,21 +23,21 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
 # optional SSL library
 if (USE_SSL)
-  add_compile_definitions(HAVE_SSL)
+  add_definitions(-DHAVE_SSL)
   find_package(OpenSSL REQUIRED)
   include_directories(${OPENSSL_INCLUDE_DIR})
 endif (USE_SSL)
 
 # optional KRB5 library
 if (USE_KRB5)
-  add_compile_definitions(HAVE_KRB5)
+  add_definitions(-DHAVE_KRB5)
   find_package(KRB5 REQUIRED)
   include_directories(${KERBROS5_INCLUDE_DIR})
 endif (USE_KRB5)
 
 # optional LDAP library
 if (USE_LDAP)
-  add_compile_definitions(HAVE_LDAP)
+  add_definitions(-DHAVE_LDAP)
   find_package(LDAP REQUIRED)
   include_directories(${LDAP_INCLUDE_DIR})
 endif (USE_LDAP)
