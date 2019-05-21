@@ -113,7 +113,7 @@ static void sha256_process_block(const void *buffer, size_t len, struct sha256_c
       length of the file up to 2^64 bits.  Here we only compute the
       number of bytes.  Do a double word increment.  */
    ctx->total[0] += len;
-   if (ctx->total[0] < (int) len)
+   if (ctx->total[0] < len)
       ++ctx->total[1];
 
    /* Process all bytes in the buffer with 64 bytes in each round of

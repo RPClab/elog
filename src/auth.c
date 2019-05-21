@@ -513,17 +513,23 @@ int auth_verify_password_file(LOGBOOK * lbs, const char *user, const char *passw
 {
    char upwd[256], enc_pwd[256];
 
+   if (error_size)
+      *error_str = 0;
+
    get_user_line(lbs, (char *) user, upwd, NULL, NULL, NULL, NULL, NULL);
    do_crypt(password, enc_pwd, sizeof(enc_pwd));
 
    return strcmp(enc_pwd, upwd) == 0;
 }
 
-int auth_change_password_file(LOGBOOK * lbs, const char *user, const char *old_pwd, const char *new_pwd,
+int auth_change_password_file(LOGBOOK * lbs, const char *user, const char *new_pwd,
                               char *error_str, int error_size)
 {
    char str[256], file_name[256], enc_pwd[256];
    PMXML_NODE node;
+
+   if (error_size)
+      *error_str = 0;
 
    if (lbs == NULL)
       lbs = get_first_lbs_with_global_passwd();
@@ -613,7 +619,9 @@ int auth_change_password(LOGBOOK * lbs, const char *user, const char *old_pwd, c
    getcfg(lbs->name, "Authentication", str, sizeof(str));
 
    if (str[0] == 0 || stristr(str, "File"))
-      status = auth_change_password_file(lbs, user, old_pwd, new_pwd, error_str, error_size);
+      status = auth_change_password_file(lbs, user, new_pwd, error_str, error_size);
+
+   if (old_pwd) {} // avoid compiler warning
 
 #ifdef HAVE_KRB5
    if (stristr(str, "Kerberos"))
