@@ -31183,7 +31183,7 @@ int main(int argc, char *argv[])
    if (clone_url[0]) {
 
       /* check if local config file exists */
-      fh = open(config_file, O_RDONLY | O_BINARY);
+      fh = open(config_file, (O_RDONLY | O_BINARY));
       if (fh > 0) {
          close(fh);
          eprintf("Overwrite local \"%s\"? [y]/n:  ", CFGFILE);
@@ -31208,7 +31208,7 @@ int main(int argc, char *argv[])
    }
 
    /* check for configuration file */
-   fh = open(config_file, O_RDONLY | O_BINARY);
+   fh = open(config_file, (O_RDONLY | O_BINARY));
    if (fh < 0) {
       eprintf("Cannot open \"%s\": %s\n", config_file, strerror(errno));
       exit(EXIT_FAILURE);
@@ -31299,7 +31299,7 @@ int main(int argc, char *argv[])
 
       if (logbook[0]) {
          for (i = 0; lb_list[i].name[0]; i++)
-            if (stricmp(lb_list[i].name, logbook))
+            if (stricmp(lb_list[i].name, logbook) != 0)
                break;
          if (!lb_list[i].name[0]) {
             eprintf("Logbook \"%s\" not defined in configuration file\n", logbook);
