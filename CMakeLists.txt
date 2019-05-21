@@ -1,6 +1,6 @@
 # CMakeLists.txt for ELOG project
 project(ELOG)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 
 # compile options
 option(USE_SSL  "Use OpenSSL library for https" ON)
@@ -13,7 +13,13 @@ option(USE_PAM  "Use PAM library for authentication" OFF)
 include_directories(${CMAKE_SOURCE_DIR}/mxml)
 
 # default compiler flags
-set(CMAKE_CXX_FLAGS "-W -Wall -Wno-drprecated-declarations ${CMAKE_CXX_FLAGS}")
+add_compile_options(-W -Wall -Wno-deprecated-declarations)
+
+# find git
+find_package(Git)
+
+# git revision file
+set(GIT_REVISION ${CMAKE_SOURCE_DIR}/src/git-revision.h)
 
 # disable warnings for regex.c
 set_source_files_properties(${CMAKE_SOURCE_DIR}/src/regex.c PROPERTIES COMPILE_FLAGS -w)
@@ -49,6 +55,23 @@ if (USE_PAM)
   include_directories(${PAM_INCLUDE_DIR})
 endif (USE_PAM)
 
+# execute_process(COMMAND git log -n 1 --pretty=format:"%ad - %h" OUTPUT_VARIABLE GIT_REV)
+# configure_file( ${GIT_REVISION}.in ${GIT_REVISION} )
+
+set(GIT_REVISION_TMP ${GIT_REVISION}.tmp)
+
+add_custom_command(OUTPUT ${GIT_REVISION_TMP}
+  COMMAND ${CMAKE_COMMAND} -E echo_append "\\#define GIT_REVISION \\\"" > ${GIT_REVISION_TMP}
+  COMMAND ${GIT_EXECUTABLE} log -n 1 --pretty=format:"%ad" >> ${GIT_REVISION_TMP}
+  COMMAND ${CMAKE_COMMAND} -E echo_append " - " >> ${GIT_REVISION_TMP}
+  COMMAND ${GIT_EXECUTABLE} log -n 1 --pretty=format:"%h" >> ${GIT_REVISION_TMP}
+  COMMAND ${CMAKE_COMMAND} -E echo \\\" >> ${GIT_REVISION_TMP}
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GIT_REVISION_TMP} ${GIT_REVISION}
+  COMMAND ${CMAKE_COMMAND} -E remove ${GIT_REVISION_TMP}
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/
+  COMMENT ""
+)
+
 add_executable(elogd 
   ${CMAKE_SOURCE_DIR}/src/elogd.c
   ${CMAKE_SOURCE_DIR}/src/auth.c
@@ -56,13 +79,19 @@ add_executable(elogd
   ${CMAKE_SOURCE_DIR}/mxml/strlcpy.c
   ${CMAKE_SOURCE_DIR}/src/crypt.c
   ${CMAKE_SOURCE_DIR}/src/regex.c
+  ${GIT_REVISION_TMP}
 )
 
 add_executable(elog
   ${CMAKE_SOURCE_DIR}/src/elog.c
   ${CMAKE_SOURCE_DIR}/src/crypt.c
   ${CMAKE_SOURCE_DIR}/mxml/strlcpy.c
+  ${GIT_REVISION_TMP}
 )
+
+if (${CMAKE_SYSTEM_NAME} MATCHES Darwin)
+  message("On DARWIN")
+endif()
 
 if(USE_SSL)
   target_link_libraries(elogd ${OPENSSL_LIBRARIES})
