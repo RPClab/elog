@@ -90,7 +90,7 @@ add_executable(elog
 )
 
 if (${CMAKE_SYSTEM_NAME} MATCHES Darwin)
-  message("On DARWIN")
+#  message("On DARWIN")
 endif()
 
 if(USE_SSL)

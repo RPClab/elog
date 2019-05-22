@@ -4488,7 +4488,7 @@ int el_retrieve(LOGBOOK * lbs, int message_id, char *date, char attr_list[MAX_N_
  \********************************************************************/
 {
    int i, index, size, fh;
-   char str[NAME_LENGTH], file_name[256], *p;
+   char str[NAME_LENGTH], file_name[MAX_PATH_LENGTH*3], *p;
    char *message, attachment_all[64 * MAX_ATTACHMENTS];
 
    if (message_id == 0)
@@ -4753,7 +4753,7 @@ void el_delete_attachment(LOGBOOK * lbs, char *file_name)
 int el_retrieve_attachment(LOGBOOK * lbs, int message_id, int n, char name[MAX_PATH_LENGTH])
 {
    int i, index, size, fh;
-   char file_name[256], *p;
+   char file_name[MAX_PATH_LENGTH*3], *p;
    char message[TEXT_SIZE + 1000], attachment_all[64 * MAX_ATTACHMENTS];
 
    if (message_id == 0)
@@ -4861,7 +4861,7 @@ int el_submit(LOGBOOK * lbs, int message_id, BOOL bedit, char *date, char attr_n
  \********************************************************************/
 {
    int n, i, j, size, fh, index, tail_size, orig_size, delta, reply_id;
-   char file_name[256], dir[256], str[NAME_LENGTH], date1[256], attrib[MAX_N_ATTR][NAME_LENGTH],
+   char file_name[MAX_PATH_LENGTH*3], dir[256], str[NAME_LENGTH], date1[256], attrib[MAX_N_ATTR][NAME_LENGTH],
        reply_to1[MAX_REPLY_TO * 10], in_reply_to1[MAX_REPLY_TO * 10], encoding1[80], *message, *p,
        *old_text, *buffer, locked_by1[256];
    char attachment_all[64 * MAX_ATTACHMENTS], subdir[MAX_PATH_LENGTH];
@@ -5232,7 +5232,7 @@ int el_delete_message(LOGBOOK * lbs, int message_id, BOOL delete_attachments,
  \********************************************************************/
 {
    int i, index, size, fh, tail_size, old_offset;
-   char str[MAX_PATH_LENGTH], file_name[MAX_PATH_LENGTH], reply_to[MAX_REPLY_TO * 10], in_reply_to[256];
+   char str[MAX_PATH_LENGTH], file_name[MAX_PATH_LENGTH*3], reply_to[MAX_REPLY_TO * 10], in_reply_to[256];
    char *buffer, *p;
    char *message, attachment_all[64 * MAX_ATTACHMENTS];
    char attrib[MAX_N_ATTR][NAME_LENGTH];
@@ -9637,7 +9637,7 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
        ua[NAME_LENGTH], mid[80], title[256], login_name[256], full_name[256],
        orig_author[256], attr_moptions[MAX_N_LIST][NAME_LENGTH], ref[256], file_enc[256], tooltip[10000],
        enc_attr[NAME_LENGTH], user_email[256], cmd[256], thumb_name[256], thumb_ref[256], **user_list, fid[20],
-       upwd[80], subdir[256], draft[256], page_title[256];
+       upwd[80], subdir[256], draft[256], page_title[300];
    time_t now, ltime;
    char fl[8][NAME_LENGTH];
    struct tm *pts;
@@ -13347,7 +13347,7 @@ int save_config(char *buffer, char *error)
 
 int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
 {
-   char file_name[256], str[256], *pl, user_enc[256], new_pwd[80], new_pwd2[80], smtp_host[256],
+   char file_name[256], str[1000], *pl, user_enc[256], new_pwd[80], new_pwd2[80], smtp_host[256],
        email_addr[256], mail_from[256], mail_from_name[256], subject[256], mail_text[2000], str2[256],
        admin_user[80], url[256], error[2000], sid[32];
    int i, self_register, code, first_user;
@@ -13740,9 +13740,8 @@ int save_user_config(LOGBOOK * lbs, char *user, BOOL new_user)
          /* get a new session ID */
          sid_new(lbs, getparam("new_user_name"), (char *) inet_ntoa(rem_addr), sid);
 
-
          if (lbs)
-            sprintf(str, "../%s/", lbs->name_enc);
+            snprintf(str, sizeof(str), "../%s/", lbs->name_enc);
          else
             sprintf(str, ".");
          if (isparam("new_user_name")) {
@@ -24817,19 +24816,19 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
 
       if (getcfg(lbs->name, "menu text", str, sizeof(str))) {
          FILE *file;
-         char file_name[256], *buf;
+         char filename[256], *buf;
 
          rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
 
          /* check if file starts with an absolute directory */
          if (str[0] == DIR_SEPARATOR || str[1] == ':')
-            strcpy(file_name, str);
+            strcpy(filename, str);
          else {
-            strlcpy(file_name, logbook_dir, sizeof(file_name));
-            strlcat(file_name, str, sizeof(file_name));
+            strlcpy(filename, logbook_dir, sizeof(filename));
+            strlcat(filename, str, sizeof(filename));
          }
 
-         file = fopen(file_name, "rb");
+         file = fopen(filename, "rb");
          if (file != NULL) {
             fseek(file, 0, SEEK_END);
             size = TELL(fileno(file));
@@ -24843,7 +24842,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             rsputs(buf);
 
          } else
-            rsprintf("<center><b>Error: file <i>\"%s\"</i> not found</b></center>", file_name);
+            rsprintf("<center><b>Error: file <i>\"%s\"</i> not found</b></center>", filename);
 
          rsprintf("</span></td></tr>");
       }
