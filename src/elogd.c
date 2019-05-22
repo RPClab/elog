@@ -94,13 +94,6 @@ char *mname[] = { "January", "February", "March", "April", "May", "June", "July"
    "October", "November", "December"
 };
 
-char type_list[MAX_N_LIST][NAME_LENGTH] = { "Routine", "Other" };
-
-char category_list[MAX_N_LIST][NAME_LENGTH] = { "General", "Other",
-};
-
-char author_list[MAX_N_LIST][NAME_LENGTH] = { "" };
-
 char attr_list[MAX_N_ATTR][NAME_LENGTH];
 char attr_options[MAX_N_ATTR][MAX_N_LIST][NAME_LENGTH];
 int attr_flags[MAX_N_ATTR];
@@ -2535,7 +2528,7 @@ void split_url(const char *url, char *host, int *port, char *subdir, char *param
 
 /*-------------------------------------------------------------------*/
 
-int retrieve_url(LOGBOOK * lbs, const char *url, int ssl, char **buffer)
+int retrieve_url(LOGBOOK * lbs, const char *url, UNUSED(int ssl), char **buffer)
 {
    char str[1000], unm[256], upwd[256], host[256], subdir[256], param[256];
    int port, bufsize;
@@ -2550,7 +2543,6 @@ int retrieve_url(LOGBOOK * lbs, const char *url, int ssl, char **buffer)
    static int sock, last_port;
    static char last_host[256];
 
-   i = ssl; // fix compiler warning
    *buffer = NULL;
    split_url(url, host, &port, subdir, param);
 
@@ -12850,14 +12842,13 @@ void remove_crlf(char *buffer)
 
 /*------------------------------------------------------------------*/
 
-void adjust_crlf(char *buffer, int bufsize)
+void adjust_crlf(char *buffer, UNUSED(int bufsize))
 {
    char *p;
 
 #ifdef OS_UNIX
 
    /* convert \r\n -> \n */
-   assert(bufsize);                 // avoid compiler warning about unused bufsize
    p = buffer;
    while ((p = strstr(p, "\r\n")) != NULL) {
       memmove(p, p + 1, strlen(p + 1) + 1);     // strcpy() gives error under Ubuntu
@@ -24825,7 +24816,7 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
       /*---- menu text ----*/
 
       if (getcfg(lbs->name, "menu text", str, sizeof(str))) {
-         FILE *f;
+         FILE *file;
          char file_name[256], *buf;
 
          rsprintf("<tr><td class=\"menuframe\"><span class=\"menu1\">\n");
@@ -24838,16 +24829,16 @@ void show_elog_entry(LOGBOOK * lbs, char *dec_path, char *command)
             strlcat(file_name, str, sizeof(file_name));
          }
 
-         f = fopen(file_name, "rb");
-         if (f != NULL) {
-            fseek(f, 0, SEEK_END);
-            size = TELL(fileno(f));
-            fseek(f, 0, SEEK_SET);
+         file = fopen(file_name, "rb");
+         if (file != NULL) {
+            fseek(file, 0, SEEK_END);
+            size = TELL(fileno(file));
+            fseek(file, 0, SEEK_SET);
 
             buf = xmalloc(size + 1);
-            fread(buf, 1, size, f);
+            fread(buf, 1, size, file);
             buf[size] = 0;
-            fclose(f);
+            fclose(file);
 
             rsputs(buf);
 
