@@ -59,6 +59,9 @@
 #define DEFAULT_PORT 80
 #endif
 
+/* unused function parameters */
+#define UNUSED(x) __attribute__((unused)) x
+
 #ifdef _MSC_VER
 
 #define OS_WINNT
