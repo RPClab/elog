@@ -215,7 +215,7 @@ install: $(EXECS)
 	fi
 
 	@if [ ! -f $(ELOGDIR)/elogd.cfg ]; then  \
-	  $(INSTALL) -v -m 644 elogd.cfg $(ELOGDIR)/elogd.cfg ; \
+	  $(INSTALL) -v -m 644 elogd.cfg.example $(ELOGDIR)/elogd.cfg ; \
 	fi
 
 
