@@ -491,5 +491,5 @@ This will overwrite your current modifications. = Cela va écraser vos modificati
 #
 #---- please translate following items and then remove this comment ----#
 #
-Are you sure to delete the attachment? = 
-Error sending Email via "%s" = 
+Are you sure to delete the attachment? = Etes-vous sûr de vouloir supprimer cette pièce jointe ?
+Error sending Email via "%s" = Erreur d'envoi de mail via "%s"
