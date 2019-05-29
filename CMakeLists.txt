@@ -66,7 +66,7 @@ endif (USE_PAM)
 
 set(GIT_REVISION_TMP ${GIT_REVISION}.tmp)
 
-add_custom_command(OUTPUT ${GIT_REVISION_TMP}
+add_custom_target(git_revision_h
   COMMAND ${CMAKE_COMMAND} -E echo_append "\\#define GIT_REVISION \\\"" > ${GIT_REVISION_TMP}
   COMMAND ${GIT_EXECUTABLE} log -n 1 --pretty=format:"%ad" >> ${GIT_REVISION_TMP}
   COMMAND ${CMAKE_COMMAND} -E echo_append " - " >> ${GIT_REVISION_TMP}
@@ -75,7 +75,6 @@ add_custom_command(OUTPUT ${GIT_REVISION_TMP}
   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GIT_REVISION_TMP} ${GIT_REVISION}
   COMMAND ${CMAKE_COMMAND} -E remove ${GIT_REVISION_TMP}
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/
-  COMMENT ""
 )
 
 add_executable(elogd 
@@ -85,15 +84,16 @@ add_executable(elogd
   ${CMAKE_SOURCE_DIR}/mxml/strlcpy.c
   ${CMAKE_SOURCE_DIR}/src/crypt.c
   ${CMAKE_SOURCE_DIR}/src/regex.c
-  ${GIT_REVISION_TMP}
 )
 
 add_executable(elog
   ${CMAKE_SOURCE_DIR}/src/elog.c
   ${CMAKE_SOURCE_DIR}/src/crypt.c
   ${CMAKE_SOURCE_DIR}/mxml/strlcpy.c
-  ${GIT_REVISION_TMP}
 )
+
+add_dependencies(elogd git_revision_h)
+add_dependencies(elog git_revision_h)
 
 if(USE_SSL)
   target_link_libraries(elogd ${OPENSSL_LIBRARIES})
