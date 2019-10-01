@@ -132,12 +132,12 @@ install(FILES ${CMAKE_SOURCE_DIR}/elogd.cfg.example
 
 if (${CMAKE_SYSTEM_NAME} MATCHES Darwin)
 install(FILES ${CMAKE_SOURCE_DIR}/elogd.plist
-        DESTINATION /Library/LaunchDaemons/ch.psi.chelogd.plist)
+        DESTINATION /Library/LaunchDaemons/ch.psi.elogd.plist)
 
 install(CODE "message(\"\nThe elogd servie can be started with:\")")
-install(CODE "message(\"$ sudo launchctl load /Library/LaunchDaemons/ch.psi.ch.elogd.plist\n\")")
+install(CODE "message(\"$ sudo launchctl load /Library/LaunchDaemons/ch.psi.elogd.plist\n\")")
 
 #install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan 
-#  \"$ sudo launchctl load /Library/LaunchDaemons/ch.psi.ch.elogd.plist\")")
+#  \"$ sudo launchctl load /Library/LaunchDaemons/ch.psi.elogd.plist\")")
 endif()
 
