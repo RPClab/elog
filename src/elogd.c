@@ -19673,7 +19673,10 @@ time_t convert_date(char *date_string)
    strlcpy(str, date_string, sizeof(str));
    month = day = year = 0;
 
-   if (strchr(str, '/')) {
+   if (strchr (str, '[')) {
+      ltime = atoi(strchr (str, '[')+1);
+      return ltime;
+   } else if (strchr(str, '/')) {
       /* MM/DD/YY format */
       p = strtok(str, "/");
       if (p) {
@@ -19735,7 +19738,10 @@ time_t convert_datetime(char *date_string)
    strlcpy(str, date_string, sizeof(str));
    month = day = year = 0;
 
-   if (strchr(str, '/')) {
+   if (strchr (str, '[')) {
+      ltime = atoi(strchr (str, '[')+1);
+      return ltime;
+   } else if (strchr(str, '/')) {
       /* MM/DD/YY format */
       p = strtok(str, "/");
       if (p) {
@@ -21797,6 +21803,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   strcpy(str, "-");
                else
                   my_strftime(str, sizeof(str), format, ptms);
+               sprintf(str+strlen(str), " [%ld]", ltime);
 
             } else if (attr_flags[i] & AF_DATETIME) {
 
@@ -21812,7 +21819,7 @@ void show_elog_list(LOGBOOK * lbs, int past_n, int last_n, int page_n, BOOL defa
                   strcpy(str, "-");
                else
                   my_strftime(str, sizeof(str), format, ptms);
-
+               sprintf(str+strlen(str), " [%ld]", ltime);
             }
 
             xmlencode(str);
