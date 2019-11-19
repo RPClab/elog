@@ -10026,16 +10026,31 @@ void show_edit_form(LOGBOOK * lbs, int message_id, BOOL breply, BOOL bedit, BOOL
    }
 
    /* check for editing interval */
-   if (bedit && getcfg(lbs->name, "Restrict edit time", str, sizeof(str))) {
-      for (i = 0; i < *lbs->n_el_index; i++)
-         if (lbs->el_index[i].message_id == message_id)
-            break;
+   if (is_admin_user(lbs, getparam("unm"))) {
+      if (bedit && getcfg(lbs->name, "Admin Restrict edit time", str, sizeof(str))) {
+         for (i = 0; i < *lbs->n_el_index; i++)
+            if (lbs->el_index[i].message_id == message_id)
+               break;
 
-      if (i < *lbs->n_el_index && time(NULL) > lbs->el_index[i].file_time + atof(str) * 3600) {
-         sprintf(str, loc("Entry can only be edited %1.2lg hours after creation"), atof(str));
-         show_error(str);
-         xfree(text);
-         return;
+         if (i < *lbs->n_el_index && time(NULL) > lbs->el_index[i].file_time + atof(str) * 3600 && atof(str) > 0) {
+            sprintf(str, loc("Entry can only be edited %1.2lg hours after creation"), atof(str));
+            show_error(str);
+            xfree(text);
+            return;
+         }
+      }
+   } else {
+      if (bedit && getcfg(lbs->name, "Restrict edit time", str, sizeof(str))) {
+         for (i = 0; i < *lbs->n_el_index; i++)
+            if (lbs->el_index[i].message_id == message_id)
+               break;
+
+         if (i < *lbs->n_el_index && time(NULL) > lbs->el_index[i].file_time + atof(str) * 3600) {
+            sprintf(str, loc("Entry can only be edited %1.2lg hours after creation"), atof(str));
+            show_error(str);
+            xfree(text);
+            return;
+         }
       }
    }
 
@@ -23113,15 +23128,29 @@ void submit_elog(LOGBOOK * lbs)
 
    
    /* check for editing interval */
-   if (bedit && getcfg(lbs->name, "Restrict edit time", str, sizeof(str))) {
-      for (i = 0; i < *lbs->n_el_index; i++)
-         if (lbs->el_index[i].message_id == atoi(getparam("edit_id")))
-            break;
-      
-      if (i < *lbs->n_el_index && time(NULL) > lbs->el_index[i].file_time + atof(str) * 3600) {
-         sprintf(str, loc("Entry can only be edited %1.2lg hours after creation"), atof(str));
-         show_error(str);
-         return;
+   if (is_admin_user(lbs, getparam("unm"))) {
+      if (bedit && getcfg(lbs->name, "Admin Restrict edit time", str, sizeof(str))) {
+         for (i = 0; i < *lbs->n_el_index; i++)
+            if (lbs->el_index[i].message_id == atoi(getparam("edit_id")))
+               break;
+
+         if (i < *lbs->n_el_index && time(NULL) > lbs->el_index[i].file_time + atof(str) * 3600 && atof(str) > 0) {
+            sprintf(str, loc("Entry can only be edited %1.2lg hours after creation"), atof(str));
+            show_error(str);
+            return;
+         }
+      }
+   } else {
+      if (bedit && getcfg(lbs->name, "Restrict edit time", str, sizeof(str))) {
+         for (i = 0; i < *lbs->n_el_index; i++)
+            if (lbs->el_index[i].message_id == atoi(getparam("edit_id")))
+               break;
+
+         if (i < *lbs->n_el_index && time(NULL) > lbs->el_index[i].file_time + atof(str) * 3600) {
+            sprintf(str, loc("Entry can only be edited %1.2lg hours after creation"), atof(str));
+            show_error(str);
+            return;
+         }
       }
    }
    

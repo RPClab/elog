@@ -16,11 +16,13 @@
 <body bgcolor="white" text="black" link="blue" vlink="purple" alink="red">
 <div class="title">
    ELOG - Syntax of elogd.cfg
-</div><br>
+</div>
+<br>
 <div class="menu">
    [<a class="nav" href="adminguide.html">back to Administrator's
    Guide</a>]
-</div><br>
+</div>
+<br>
 <div class="menu">
    * Server : [<a class="nav" href="#global">Global</a>] - Logbooks :
    [<a class="nav" href="#general">General</a>] [<a class="nav" href=
@@ -31,7 +33,8 @@
    Control</a>] [<a class="nav" href="#flags">Flags</a>] [<a class="nav"
                                                              href="#themes">Themes</a>] [<a class="nav" href=
         "#mirroring">Mirroring</a>] *
-</div><br>
+</div>
+<br>
 <div class="Sub">
    <i>Global and individual logbook options for an ELOG server</i>
 </div>
@@ -106,7 +109,7 @@ Use Mail Subject = Location
       Turn on Secure Socket Layer transport. If SSL is on, one can connect
       via <code><b>https://...</b></code> to the elogd daemon. If the
       <code><b>URL =</b></code> directive is used, make sure to use
-      <code><b>https://...</code></b> instead of <code><b>http://...</code></b>
+      <code><b>https://...</b></code> instead of <code><b>http://...</b></code>
       there. The ELOG distribution contains a simple self-signed certificate
       in the <code><b>ssl</b></code> subdirectory. One can replace this
       certificate and key with a real ceritficate to avoid browser pop-up
@@ -199,7 +202,8 @@ Use Mail Subject = Location
       <br>
       <pre>
 Welcome title = &lt;img src="welcome.jpg"&gt;&lt;p&gt;&lt;font size=5 color=white&gt;Welcome to our Elog&lt;/font&gt;
-</pre><br>
+</pre>
+      <br>
       This displays an image and a text below.
    </li>
    <li>
@@ -272,7 +276,7 @@ Welcome title = &lt;img src="welcome.jpg"&gt;&lt;p&gt;&lt;font size=5 color=whit
       <code><b>-t</b></code> switch when starting elogd. This is necessary
       since the password is encrypted. To set your SMPT password, enter on
       the command line:
-<pre>
+      <pre>
 elogd -t &lt;your password&gt;
 </pre>
    </li>
@@ -432,7 +436,8 @@ Group Windows PCs = 98, ME, NT, XP, CE
 Group CE = 1.0, 2.0
 </pre>
    </li>
-</ul>The logbook tabs would then look like this:
+</ul>
+The logbook tabs would then look like this:
 <p>
    <img src="tabs.gif">
 </p>
@@ -476,7 +481,8 @@ Password file = admin.pwd
 Admin user = bill
 </pre>
    </li>
-</ul>Note that there can be a <b><code>[global]</code></b> section for each
+</ul>
+Note that there can be a <b><code>[global]</code></b> section for each
 top level group of logbooks. The rule is that a configuration setting in an
 individual logbook section overrides a setting in the <b><code>[global
    &lt;top group&gt;]</code></b> setting, which by itsel overrides a setting
@@ -566,7 +572,8 @@ not wanted, it can be disabled by setting <code><b>Show top groups =
       <i>elog.css</i>. If different CSS'es should be used
       for different output media, this can be accomplished with a comma-
       separated list in the form
-      <code><b>CSS = &lt;file1&gt;&amp;&lt;media1&gt;,&lt;file2&gt;&amp;&lt;media2&gt;</b></code>. This will then be translated into separate style sheet
+      <code><b>CSS = &lt;file1&gt;&amp;&lt;media1&gt;,&lt;file2&gt;&amp;&lt;media2&gt;</b></code>. This will then be
+      translated into separate style sheet
       statements for the different media. For example a statement
 
       <code><b>CSS = default.css&amp;screen,print.css&amp;print</b></code>
@@ -617,7 +624,7 @@ not wanted, it can be disabled by setting <code><b>Show top groups =
       <b><code>Date format = &lt;string&gt;</code></b><br>
       This option determines how the date is displayed from attributes which
       are of type "date". The format of the string is the same as the C
-      function <a href="strftime">strftime</a>, so a string of <b>%A, %B %d,
+      function <a href="strftime.txt">strftime</a>, so a string of <b>%A, %B %d,
       %Y</b> yields in a display of <b>Thursday, November 15, 2001</b> for
       example.
    </li>
@@ -639,7 +646,8 @@ not wanted, it can be disabled by setting <code><b>Show top groups =
 &lt;li&gt;&lt;a href="?cmd=new"&gt;Enter&lt;/a&gt; a new message
 &lt;li&gt;&lt;a href="?cmd=find"&gt;Search&lt;/a&gt; the logbook
 &lt;/ul&gt;
-</pre>The file must be present in the resource directory. Alternatively, an
+</pre>
+      The file must be present in the resource directory. Alternatively, an
       absolute path can be used if the file name starts with a
       <b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or
       <b><code>"x:"</code></b> (Windows).
@@ -652,7 +660,8 @@ not wanted, it can be disabled by setting <code><b>Show top groups =
       <b><code>?cmd=xxx</code></b>. To start with the search page, one uses
       <pre>
 Start page = ?cmd=Find
-</pre>Please note that if another language than English is selected via the <b>
+</pre>
+      Please note that if another language than English is selected via the <b>
       Language = xxx</b> option, the commands have to be in that language as
       well (like <i>"Start page = 0?cmd=Letzter"</i> for German).
    </li>
@@ -664,7 +673,8 @@ Start page = ?cmd=Find
 &lt;h1&gt;You successfully submitted a message&lt;/h1&gt;
 &lt;a href="?cmd=Back"&gt;Back&lt;/a&gt; to the logbook&lt;p&gt;
 &lt;a href="?cmd=New"&gt;Enter&lt;/a&gt; another message
-</pre>The file must be present in the logbook directory. Alternatively, an
+</pre>
+      The file must be present in the logbook directory. Alternatively, an
       absolute path can be used if the file name starts with a
       <b><code>"/"</code></b> (Unix) or <b><code>"\"</code></b> or
       <b><code>"x:"</code></b> (Windows).
@@ -749,7 +759,8 @@ Start page = ?cmd=Find
          <li>
             <b>Help</b> - General help
          </li>
-      </ul><br>
+      </ul>
+      <br>
       <br>
       The commands are always in English, independent of the
       <code><b>language = ...</b></code> setting, and are automatically
@@ -758,7 +769,8 @@ Start page = ?cmd=Find
       If this option is not present, following default is used:<br>
       <pre>
 Menu commands = List, New, Edit, Delete, Reply, Duplicate, Find, Config, Help
-</pre><br>
+</pre>
+      <br>
    </li>
    <li>
       <b><code>Copy to = &lt;logbook list&gt;</code></b>
@@ -878,7 +890,8 @@ Guest menu commands = List, Find, Login, Help
       selection page like:
       <pre>
 &lt;center&gt;&lt;a href="/"&gt;Main page&lt;/a&gt;&lt;/center&gt;
-</pre>Or it can contain other useful links. If a file is specified, it must be
+</pre>
+      Or it can contain other useful links. If a file is specified, it must be
       present in the logbook directory. Alternatively, an absolute path can be used
       if the file name starts with a <b><code>"/"</code></b> (Unix) or <b><code>
       "\"</code></b> or <b><code>"x:"</code></b> (Windows).
@@ -943,6 +956,13 @@ Guest menu commands = List, Find, Login, Help
       fractional, like 0.5 for 30 min.
    </li>
    <li>
+      <b><code>Admin restrict edit time = &lt;hours&gt;</code></b><br>
+      Same option for admin users. This can be useful if normal users are
+      not allowed to change entries after "restrict edit time", but an admin
+      user should be allowed to do so. Setting this to zero disables any
+      restriction for admin users and they can edit entries forever.
+   </li>
+   <li>
       <b><code>Max content length = &lt;bytes&gt;</code></b><br>
       This option restricts the size of attachments. When very large
       (&gt;100MB) attachments are uploaded, the elogd server can be busy with
@@ -994,10 +1014,12 @@ Guest menu commands = List, Find, Login, Help
       with the original image size, and can then be resized and rotated
       interactively with the image manipulation buttons:<p>
 
-      <img src="thumbnail.png"><p>
+      <img src="thumbnail.png">
+      <p>
 
-      Setting <b><code>Thumbnail size = 0</code></b> turns off the thumbnail
-      creation.<p>
+         Setting <b><code>Thumbnail size = 0</code></b> turns off the thumbnail
+         creation.
+      <p>
    </li>
    <li>
       <b><code>Thumbnail options = &lt;options&gt;</code></b><br>
@@ -1006,7 +1028,8 @@ Guest menu commands = List, Find, Login, Help
       used is the <b>-density</b> option to increase the image quality when
       converting from PDF or EPS files.<p>
    </li>
-</ul><a name="attrib" id="attrib"></a>
+</ul>
+<a name="attrib" id="attrib"></a>
 <hr>
 <div class="section">
    Attributes
@@ -1027,8 +1050,9 @@ Guest menu commands = List, Find, Login, Help
          <li>Locked by
          <li>Attachment
          <li>Path
-      </ul><p>
-      since these are used internally by elog.
+      </ul>
+      <p>
+         since these are used internally by elog.
    </li>
    <li>
       <b><code>Options &lt;attribute&gt; = &lt;list&gt;</code></b><br>
@@ -1068,7 +1092,8 @@ Options town = San Francisco, "Paris, Texas", "Paris, France"
       checked for an entry. The attribue value then becomes
       <pre>
 &lt;value1&gt; | &lt;value2&gt; | ...
-</pre>In the "<i>find</i>" page only one of these values can be specified,
+</pre>
+      In the "<i>find</i>" page only one of these values can be specified,
       which is then treated as a substring in the search filter.
    </li>
    <li>
@@ -1079,7 +1104,8 @@ Options town = San Francisco, "Paris, Texas", "Paris, France"
       <pre>
 Attributes = Author, Icon, Subject...
 IOptions Icon = icon1.gif, icon2.gif, icon3.gif, ...
-</pre>New icons are welcome and should be sent back to the author to be
+</pre>
+      New icons are welcome and should be sent back to the author to be
       incorporated in the next version.
    </li>
    <li>
@@ -1120,7 +1146,8 @@ IOptions Icon = icon1.gif, icon2.gif, icon3.gif, ...
       login name for the author field like:
       <pre>
 Preset Author = $long_name
-</pre>If the attribute should be locked at the Web submission, use the
+</pre>
+      If the attribute should be locked at the Web submission, use the
       "<i>Locked Attributes = ...</i>" option. If a preset value is given for an
       attribute which has an options list, the preset value is selected in the drop
       down box by default.<br>
@@ -1247,13 +1274,15 @@ Preset on first reply Subject = Re: $Subject
             <b><code>Delete</code></b> to display a column with a delete icon
             to directly delete and entry
          </li>
-      </ul><br>
+      </ul>
+      <br>
       The restriction to certain attributes can be helpful if many attributes
       are defined in a logbook, which usually makes the table too big to fit
       in the browser. The default is<br>
       <pre>
 List display = ID, Date, &lt;all attributs&gt;
-</pre>Which displays the message number, date, and all attributes. The display
+</pre>
+      Which displays the message number, date, and all attributes. The display
       of the message body is controlled by the <b><code>Display mode</code></b> and
       <b><code>Summary lines</code></b> options. If a search goes over "all
       logbooks", an additional colums with the logbook name of each entry is added in
@@ -1293,7 +1322,8 @@ List display = ID, Date, &lt;all attributs&gt;
          <li>
             <b>$message id</b>: The message ID
          </li>
-      </ul><br>
+      </ul>
+      <br>
       A typical example would be<br>
       <pre>
 Thread display = $subject, posted by $author on $entry time
@@ -1327,7 +1357,8 @@ Thread display = $subject, posted by $author on $entry time
          <li>
             <b>$message id</b>: The message ID
          </li>
-      </ul><br>
+      </ul>
+      <br>
       A typical example would be<br>
       <pre>
 RSS Title = $subject, posted by $author on $entry time
@@ -1387,12 +1418,14 @@ RSS Title = $subject, posted by $author on $entry time
             <b>$shell(&lt;command&gt;)</b>: &lt;command&gt; gets passed to the
             operating system shell and the result is taken for substitution.
          </li>
-      </ul><br>
+      </ul>
+      <br>
       Following example use this feature to add the remote host name to the
       author:<br>
       <pre>
 Subst Author = $author from $remote_host
-</pre><br>
+</pre>
+      <br>
       Following example substitutes an attribute with the contents of a
       file:<br>
       <pre>
@@ -1407,19 +1440,22 @@ Subst Author = $author from $remote_host
       statement
       <pre>
 Subst Number = XYZ-#####
-</pre>results in automatically created attributes <i>"Number"</i> of the form
+</pre>
+      results in automatically created attributes <i>"Number"</i> of the form
       <pre>
 XYZ-00001
 XYZ-00002
 XYZ-00003
-</pre>and so on. In addition to the #'s one may specify format specifiers which
+</pre>
+      and so on. In addition to the #'s one may specify format specifiers which
       are passed to the <a href="strftime.txt">
       strftime</a> function. This allows to create tags wich contain the
       current year, month and so on. Once the date part of the attribute
       changes, the index restarts from one. The statement
       <pre>
 Subst Number = XYZ-%Y-%b-###
-</pre>results in automatically created attributes <i>"Number"</i> of the form
+</pre>
+      results in automatically created attributes <i>"Number"</i> of the form
       <pre>
 XYZ-2005-Oct-001
 XYZ-2005-Oct-002
@@ -1595,8 +1631,8 @@ Style importance severe = background-color:red
         </pre>
       For possible formattings, please refer to some CSS documentation. You can
       change the colors, font styles and sizes. The style is then valid for the
-      whole row of that entry.<br />
-      <br />
+      whole row of that entry.<br/>
+      <br/>
       For empty attributes one can specify "", such as
       <pre>
 Style importance "" = background-color:red
@@ -1626,12 +1662,14 @@ Cell Style Status Under Process  = background-color:yellow
       <br>
       <pre>
 http://any.company.com/telbook.cgi?search=&lt;name&gt;
-</pre>where &lt;name&gt; has to be replaced by a search string. Now one can
+</pre>
+      where &lt;name&gt; has to be replaced by a search string. Now one can
       construct an automatic telephonebook lookup with following options:<br>
       <pre>
 Attributes = Name, Telephone, ...
 Display Telephone = &lt;a href="http://any.company.com/telbook.cgi?search=$Name"&gt;$Name's telephone number&lt;/a&gt;
-</pre>The attribute <b><code>Telephone</code></b> is now automatically
+</pre>
+      The attribute <b><code>Telephone</code></b> is now automatically
       constructed from the attribute <b><code>Name</code></b> and consists of a link
       to the company's telephonebook. The advantage of this system is if the URL of
       the telephonebook changes one day, only one statement in the config file has to
@@ -1658,7 +1696,8 @@ Display Telephone = &lt;a href="http://any.company.com/telbook.cgi?search=$Name"
       writes a notification into some file:
       <pre>
 Execute new = echo "New message wiht ID $message id of type $type from $long_name on $remote_host" &gt;&gt; /tmp/elog.log
-</pre><br>
+</pre>
+      <br>
       It should be noted that this feature can impose a security problem. If
       someone can edit the elogd.cfg through the <b><code>Config</code></b>
       command of elogd, that person can put malicious code into elogd.cfg and
@@ -1687,7 +1726,8 @@ Execute new = echo "New message wiht ID $message id of type $type from $long_nam
 ID display = TAG-$message id
 </pre>
          </li>
-      </ul>would display the entry ID as "TAG-1","TAG-2", ... and so on.
+      </ul>
+      would display the entry ID as "TAG-1","TAG-2", ... and so on.
    </li>
    <li>
       <b><code>Prepend on reply = &lt;string&gt;</code></b><br>
@@ -1723,7 +1763,8 @@ ID display = TAG-$message id
       together with other attributes, since it is sorted as the primary
       key anyhow.
    </li>
-</ul><a name="conditional" id="conditional"></a>
+</ul>
+<a name="conditional" id="conditional"></a>
 <hr>
 <div class="section">
    Conditional attributes
@@ -2240,12 +2281,12 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
 <p>
    Beside the Kerberos authentication, elogd version 3.0 and higher can be configured to accept a authentication done
    by the webserver.
+</p>
 <ul>
    <li>
       <b><code>Authentication = Webserver</code></b>
    </li>
 </ul>
-</p>
 <p>
    You can also combine it with other authentication methods as shown for Kerberos.
 </p>
@@ -2260,7 +2301,8 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
 </h2>
 <p>
    LDAP (lightweight Directory Access Protocol) has been implemented by
-   vykozlov in a separate branch at <a href="https://github.com/vykozlov/elog-ldap">https://github.com/vykozlov/elog-ldap</a>. The code has been merged into this distribution on
+   vykozlov in a separate branch at <a href="https://github.com/vykozlov/elog-ldap">https://github.com/vykozlov/elog-ldap</a>.
+   The code has been merged into this distribution on
    an as-is basis. Following info has copied from the link above:</p>
 
 <p>
@@ -2296,7 +2338,8 @@ Options Location = Main Building{a}, New Building{b}, Old Building{c}
    PAM authentication
 </h2>
 <p>
-PAM (Pluggable authentication modules) support has been implemented by Jan Christoph Terasa as a separate branch at <a href="https://bitbucket.org/ritt/elog/branch/pam">https://bitbucket.org/ritt/elog/branch/pam</a>.
+   PAM (Pluggable authentication modules) support has been implemented by Jan Christoph Terasa as a separate branch at
+   <a href="https://bitbucket.org/ritt/elog/branch/pam">https://bitbucket.org/ritt/elog/branch/pam</a>.
 
 <p>
    To use PAM in elogd, do the following:
@@ -2304,7 +2347,8 @@ PAM (Pluggable authentication modules) support has been implemented by Jan Chris
 
 <ul>
    <li>
-      Compile <b><code>elogd</code></b> with PAM support, by either setting <b><code>USE_PAM = 1</code></b> in the <b><code>Makefile</code></b>, or by specifying it when invoking <b><code>make</code></b>
+      Compile <b><code>elogd</code></b> with PAM support, by either setting <b><code>USE_PAM = 1</code></b> in the
+      <b><code>Makefile</code></b>, or by specifying it when invoking <b><code>make</code></b>
    </li>
    <li>
       Enable PAM authentication in <b><code>elogd.cfg</code></b>:
@@ -2313,16 +2357,25 @@ PAM (Pluggable authentication modules) support has been implemented by Jan Chris
          <li><b><code>Password file = elogd.passwd</code></b></li>
          <li><b><code>Self register = 3</code></b></li>
       </ul>
-      The <b><code>Password file</code></b> is used to store the user names and email addresses of PAM authenticated users, since this information can not be (universally) requested via PAM. For security reasons the password file does <b>not</b> store a hash of the user password.
+      The <b><code>Password file</code></b> is used to store the user names and email addresses of PAM authenticated
+      users, since this information can not be (universally) requested via PAM. For security reasons the password file
+      does <b>not</b> store a hash of the user password.
       Self registration has to be enabled (<b><code>Self register &ge; 1</code></b>) to use PAM authentication.
    </li>
    <li>
-      To be able to use PAM, the PAM module in <b><code>elogd</code></b> needs to be able to access the authentication facilities on the system (e.g. be able to read <code>/etc/shadow</code>). This can be achieved by either running <b><code>elogd</code></b> as <code>root</code>, or by specifying the appropriate SUID/GUID values for the binary.</br>
-      <font color="red"><b>WARNING:</font> When running elogd as root, be careful when using the <code>-x</code> option to enable execution of commands via <code>$shell</code>, since the commands will be executed using the access rights of the user running <code>elogd</code>!</b>
+      To be able to use PAM, the PAM module in <b><code>elogd</code></b> needs to be able to access the authentication
+      facilities on the system (e.g. be able to read <code>/etc/shadow</code>). This can be achieved by either running
+      <code><b>elogd</b></code> as <code>root</code>, or by specifying the appropriate SUID/GUID values for the
+      binary.</br>
+      <span style="color:red"><b>WARNING:</b></span> When running elogd as root, be careful when using the <code>-x</code> option
+      to enable execution of commands via <code>$shell</code>, since the commands will be executed using the access
+      rights of the user running <code>elogd</code>!</b>
+   </li>
 </ul>
 
 <p>
-   Please note that it is not possible to change the PAM password within ELOG. Instead, please use the available methods on the system
+   Please note that it is not possible to change the PAM password within ELOG. Instead, please use the available methods
+   on the system
 </p>
 
 
@@ -2412,7 +2465,7 @@ PAM (Pluggable authentication modules) support has been implemented by Jan Chris
    for the "<i>From:</i>" field in the email. Since more and more email
    servers do not accept invalid <i>"From:"</i> addresses in order to reduce
    spam mail, it might be important that a "real" email address is used in
-   the <i>"From:"</i> field. If  <b><code>Use Email From</code></b> is
+   the <i>"From:"</i> field. If <b><code>Use Email From</code></b> is
    present, it is always used. If not, the email address of the currently
    logged in user is used for the <i>"From:"</i> field. If no user is logged
    in, or the current user has not specified a email address in the password
@@ -2442,7 +2495,7 @@ PAM (Pluggable authentication modules) support has been implemented by Jan Chris
 </p>
 
 <p>
-   The option <b><code>Use Email URL = &lt;URL&gt;</b></code> can be used to
+   The option <code><b>Use Email URL = &lt;URL&gt;</b></code> can be used to
    set the URL of the ELOG logbook used in email notifications. This can be
    useful if no <b><code>URL = ...</code></b> statement is used form some
    reason.
@@ -2542,7 +2595,7 @@ PAM (Pluggable authentication modules) support has been implemented by Jan Chris
    </li>
    <li>
       <b><code>Allowed encoding = &lt;n&gt;</code></b><br>
-      Allowed encoding options. <b><code>&lt;n&gt;</b></code> can be the sum of
+      Allowed encoding options. <code><b>&lt;n&gt;</b></code> can be the sum of
       following flags:
       <ul>
          <li>1 : Plain
@@ -2553,7 +2606,7 @@ PAM (Pluggable authentication modules) support has been implemented by Jan Chris
          </li>
       </ul>
       To allow plain and HTML encoding for example, set
-      <b><code>&lt;n&gt;</b></code> to 5. Default is <b>7</b>. Note that
+      <code><b>&lt;n&gt;</b></code> to 5. Default is <b>7</b>. Note that
       allowing HTML encoding may cause some security risk, since an elog
       entry may contain malicious scripting code. It should therefor only
       be allowed for installations where it is really needed and with no
@@ -2625,7 +2678,8 @@ PAM (Pluggable authentication modules) support has been implemented by Jan Chris
          </li>
          <li>64: Send names of optional attachments
          </li>
-      </ul>So to send for example only the attributes and the URL, set
+      </ul>
+      So to send for example only the attributes and the URL, set
       &lt;n&gt; to <b>6</b>. Default is <b>63</b> (send everything).
    </li>
    <li>
@@ -2640,7 +2694,8 @@ PAM (Pluggable authentication modules) support has been implemented by Jan Chris
          </li>
          <li>4 : Full HTML page as shown in elog
          </li>
-      </ul>So to send email in plain text and full HTML, set &lt;n&gt; to
+      </ul>
+      So to send email in plain text and full HTML, set &lt;n&gt; to
       <b>5</b>. Some email clients have the possibility then to switch from
       one view to the other. Default is <b>2</b>.
    </li>
@@ -2704,7 +2759,8 @@ PAM (Pluggable authentication modules) support has been implemented by Jan Chris
             <b>3</b>: Messages and replies are displayed together with the full
             message body.
          </li>
-      </ul>The default is <b>1</b>.
+      </ul>
+      The default is <b>1</b>.
    </li>
    <li>
       <b><code>Hidden = 0|1</code></b><br>
@@ -3076,7 +3132,8 @@ elogd -v -C http://master.your.domain
                      Once every hour from 7:00 to 18:00 from Monday to Friday
                   </td>
                </tr>
-            </table><br>
+            </table>
+            <br>
             <br>
             Valid ranges for each value are:<br>
             <br>
@@ -3121,7 +3178,8 @@ elogd -v -C http://master.your.domain
                      0-6 with 0=Sunday, 1=Monday, etc.
                   </td>
                </tr>
-            </table><br>
+            </table>
+            <br>
             <br>
             If mirroring is turned on, it is advisable to use the
             <b><code>Logfile =</code></b> option to turn on logging, so that
