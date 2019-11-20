@@ -3375,29 +3375,6 @@ char *loc(char *orig) {
 
 /*-------------------------------------------------------------------*/
 
-/* translate back from localized string to english */
-
-char *unloc(char *orig) {
-   int n;
-
-   if (!_locbuffer)
-      return orig;
-
-   /* search string and return translation */
-   for (n = 0; _ptrans[n]; n++)
-      if (strcmp(orig, _ptrans[n]) == 0) {
-         if (*_porig[n])
-            return _porig[n];
-         return orig;
-      }
-
-   eprintf("Language error: string \"%s\" not found in English\n", orig);
-
-   return orig;
-}
-
-/*-------------------------------------------------------------------*/
-
 char *month_name(int m)
 /* return name of month in current locale, m=0..11 */
 {
@@ -7660,16 +7637,16 @@ void show_html_header(LOGBOOK *lbs, BOOL expires, char *title, BOOL close_head, 
       rsprintf("</head>\n");
 }
 
-void show_browser(char *browser) {
-   if (stristr(browser, "opera"))
+void show_browser(char *br) {
+   if (stristr(br, "opera"))
       rsprintf("var browser = \"Opera\";\n");
-   else if (stristr(browser, "konqueror"))
+   else if (stristr(br, "konqueror"))
       rsprintf("var browser = \"Konqueror\";\n");
-   else if (stristr(browser, "Safari"))
+   else if (stristr(br, "Safari"))
       rsprintf("var browser = \"Safari\";\n");
-   else if (stristr(browser, "MSIE"))
+   else if (stristr(br, "MSIE"))
       rsprintf("var browser = \"MSIE\";\n");
-   else if (stristr(browser, "Mozilla"))
+   else if (stristr(br, "Mozilla"))
       rsprintf("var browser = \"Mozilla\";\n");
    else
       rsprintf("var browser = \"Other\";\n");
@@ -8415,27 +8392,6 @@ void set_sid_cookie(LOGBOOK *lbs, char *sid, char *full_name) {
       set_cookie(lbs, "urem", "1", global, "8760");     /* one year = 24*365 */
    else
       set_cookie(lbs, "urem", "0", global, "8760");
-
-   set_redir(lbs, isparam("redir") ? getparam("redir") : "");
-}
-
-/*------------------------------------------------------------------*/
-
-void remove_all_login_cookies(LOGBOOK *lbs) {
-   int i;
-
-   rsprintf("HTTP/1.1 302 Found\r\n");
-   rsprintf("Server: ELOG HTTP %s-%s\r\n", VERSION, git_revision());
-   if (keep_alive) {
-      rsprintf("Connection: Keep-Alive\r\n");
-      rsprintf("Keep-Alive: timeout=60, max=10\r\n");
-   }
-
-   /* remove global cookies */
-   set_cookie(NULL, "sid", "", TRUE, "");
-
-   for (i = 0; lb_list[i].name[0]; i++)
-      set_cookie(&lb_list[i], "sid", "", 0, "");
 
    set_redir(lbs, isparam("redir") ? getparam("redir") : "");
 }
@@ -14369,17 +14325,8 @@ void show_elog_delete(LOGBOOK *lbs, int message_id) {
    char attrib[MAX_N_ATTR][NAME_LENGTH], mode[80];
 
    /* check for editing interval */
-   if (getcfg(lbs->name, "Restrict edit time", str, sizeof(str))) {
-      for (i = 0; i < *lbs->n_el_index; i++)
-         if (lbs->el_index[i].message_id == message_id)
-            break;
-
-      if (i < *lbs->n_el_index && time(NULL) > lbs->el_index[i].file_time + atof(str) * 3600) {
-         sprintf(str, loc("Entry can only be deleted %1.2lg hours after creation"), atof(str));
-         show_error(str);
-         return;
-      }
-   }
+   if (!(check_edit_time(lbs, message_id)))
+      return;
 
    /* redirect if confirm = NO */
    if (isparam("confirm") && strcmp(getparam("confirm"), loc("No")) == 0) {
@@ -15781,45 +15728,6 @@ int retrieve_remote_md5(LOGBOOK *lbs, char *host, MD5_INDEX **md5_index, char *e
    xfree(text);
 
    return n;
-}
-
-/*------------------------------------------------------------------*/
-
-int send_tcp(int sock, char *buffer, unsigned int buffer_size, int flags)
-/********************************************************************
- Send network data over TCP port. Break buffer in smaller
- parts if larger than maximum TCP buffer size (usually 64k).
-
- \********************************************************************/
-{
-#ifndef NET_TCP_SIZE
-#define NET_TCP_SIZE 65536
-#endif
-
-   unsigned int count;
-   int status;
-
-   /* transfer fragments until complete buffer is transferred */
-
-   for (count = 0; count < buffer_size - NET_TCP_SIZE;) {
-      status = send(sock, buffer + count, NET_TCP_SIZE, flags);
-      if (status != -1)
-         count += status;
-      else {
-         return status;
-      }
-   }
-
-   while (count < buffer_size) {
-      status = send(sock, buffer + count, buffer_size - count, flags);
-      if (status != -1)
-         count += status;
-      else {
-         return status;
-      }
-   }
-
-   return count;
 }
 
 /*------------------------------------------------------------------*/
@@ -22995,32 +22903,8 @@ void submit_elog(LOGBOOK *lbs) {
 
 
    /* check for editing interval */
-   if (is_admin_user(lbs, getparam("unm"))) {
-      if (bedit && getcfg(lbs->name, "Admin Restrict edit time", str, sizeof(str))) {
-         for (i = 0; i < *lbs->n_el_index; i++)
-            if (lbs->el_index[i].message_id == atoi(getparam("edit_id")))
-               break;
-
-         if (i < *lbs->n_el_index && time(NULL) > lbs->el_index[i].file_time + atof(str) * 3600 &&
-             atof(str) > 0) {
-            sprintf(str, loc("Entry can only be edited %1.2lg hours after creation"), atof(str));
-            show_error(str);
-            return;
-         }
-      }
-   } else {
-      if (bedit && getcfg(lbs->name, "Restrict edit time", str, sizeof(str))) {
-         for (i = 0; i < *lbs->n_el_index; i++)
-            if (lbs->el_index[i].message_id == atoi(getparam("edit_id")))
-               break;
-
-         if (i < *lbs->n_el_index && time(NULL) > lbs->el_index[i].file_time + atof(str) * 3600) {
-            sprintf(str, loc("Entry can only be edited %1.2lg hours after creation"), atof(str));
-            show_error(str);
-            return;
-         }
-      }
-   }
+   if (!check_edit_time(lbs, atoi(getparam("edit_id"))))
+      return;
 
    /* check for required attributs */
    missing = 0;
@@ -26837,17 +26721,6 @@ void show_selection_page(void) {
 
 /*------------------------------------------------------------------*/
 
-void get_password(char *password) {
-   static char last_password[32];
-
-   if (strncmp(password, "set=", 4) == 0)
-      strlcpy(last_password, password + 4, sizeof(last_password));
-   else
-      strcpy(password, last_password);
-}
-
-/*------------------------------------------------------------------*/
-
 int do_self_register(LOGBOOK *lbs, char *command)
 /* evaluate self-registration commands */
 {
@@ -28740,7 +28613,6 @@ void decode_post(char *logbook, LOGBOOK *lbs, const char *string, const char *bo
 /*------------------------------------------------------------------*/
 
 #define N_MAX_CONNECTION 100
-#define KEEP_ALIVE_TIME   60
 
 int ka_sock[N_MAX_CONNECTION];
 int ka_time[N_MAX_CONNECTION];
@@ -29306,9 +29178,9 @@ int process_http_request(const char *request, int i_conn) {
 
 #ifdef HAVE_SSL
 
-void send_return(int _sock, SSL *ssl_con, const char *net_buffer)
+void send_return(int s, SSL *ssl_con, const char *net_buffer)
 #else
-void send_return(int _sock, const char *net_buffer)
+void send_return(int s, const char *net_buffer)
 #endif
 {
    int length, header_length;
@@ -29351,8 +29223,8 @@ void send_return(int _sock, const char *net_buffer)
             memcpy(header_buffer, return_buffer, header_length);
             sprintf(header_buffer + header_length, "\r\nContent-Length: %d\r\n\r\n", length);
 
-            send_with_timeout(ssl_con, _sock, header_buffer, strlen(header_buffer));
-            send_with_timeout(ssl_con, _sock, p + 4, length);
+            send_with_timeout(ssl_con, s, header_buffer, strlen(header_buffer));
+            send_with_timeout(ssl_con, s, p + 4, length);
 
             if (get_verbose() < VERBOSE_DEBUG) {
                if (get_verbose() > 0)
@@ -29389,12 +29261,12 @@ void send_return(int _sock, const char *net_buffer)
                sprintf(header_buffer + header_length, "\r\nConnection: Close\r\n\r\n");
             }
 
-            send_with_timeout(ssl_con, _sock, header_buffer, strlen(header_buffer));
-            send_with_timeout(ssl_con, _sock, p + 4, length);
+            send_with_timeout(ssl_con, s, header_buffer, strlen(header_buffer));
+            send_with_timeout(ssl_con, s, p + 4, length);
 
          } else {
 
-            send_with_timeout(ssl_con, _sock, return_buffer, return_length);
+            send_with_timeout(ssl_con, s, return_buffer, return_length);
 
          }
 
