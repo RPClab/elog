@@ -14325,8 +14325,22 @@ void show_elog_delete(LOGBOOK *lbs, int message_id) {
    char attrib[MAX_N_ATTR][NAME_LENGTH], mode[80];
 
    /* check for editing interval */
-   if (!(check_edit_time(lbs, message_id)))
-      return;
+   if (isparam("nsel")) {
+      for (i = 0; i < atoi(getparam("nsel")); i++) {
+         sprintf(str, "s%d", i);
+         if (isparam(str)) {
+            status = check_edit_time(lbs, atoi(getparam(str)));
+            if (!status) {
+               return;
+            }
+         }
+      }
+   } else if (message_id) {
+      status = check_edit_time(lbs, message_id);
+      if (!status) {
+         return;
+      }
+   }
 
    /* redirect if confirm = NO */
    if (isparam("confirm") && strcmp(getparam("confirm"), loc("No")) == 0) {
