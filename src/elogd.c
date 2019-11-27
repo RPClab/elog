@@ -21624,7 +21624,7 @@ void show_elog_list(LOGBOOK *lbs, int past_n, int last_n, int page_n, BOOL defau
                   strcpy(str, "-");
                else
                   my_strftime(str, sizeof(str), format, ptms);
-               sprintf(str + strlen(str), " [%ld]", (long)time);
+               sprintf(str + strlen(str), " [%ld]", (long)ltime);
 
             } else if (attr_flags[i] & AF_DATETIME) {
 
