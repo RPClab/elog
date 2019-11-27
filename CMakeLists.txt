@@ -77,7 +77,7 @@ add_custom_target(git_revision_h
 )
 else(WIN32)
 add_custom_target(git_revision_h
-  COMMAND ${CMAKE_SOURCE_DIR}/makegit
+  COMMAND ${CMAKE_SOURCE_DIR}/makegit > ${GIT_REVISION_TMP}
   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GIT_REVISION_TMP} ${GIT_REVISION}
   COMMAND ${CMAKE_COMMAND} -E remove ${GIT_REVISION_TMP}
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/
