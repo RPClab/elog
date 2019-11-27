@@ -1,1 +1,1 @@
-/cygwin/bin/sh -c /cygdrive/c/elog/makegit > c:\elog\src\git-revision.h
+/cygwin64/bin/sh -c /cygdrive/c/Users/ritt/Documents/elog/makegit > c:\Users\ritt\Documents\elog\src\git-revision.h.tmp

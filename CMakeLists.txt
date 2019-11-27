@@ -19,8 +19,11 @@ set(SRVDIR   /usr/lib/systemd/system)
 include_directories(${CMAKE_SOURCE_DIR}/mxml)
 
 # default compiler flags
-if (!WIN32)
-   add_compile_options(-W -Wall -Wno-deprecated-declarations)
+if (!MSVC)
+  add_compile_options(-W -Wall -Wno-deprecated-declarations)
+endif()
+if (MSVC)
+  add_compile_options(/D_CRT_SECURE_WARNINGS /wd4005 /wd4244 /wd4267 /wd4996 /nologo)
 endif()
 
 # find git
@@ -63,21 +66,23 @@ if (USE_PAM)
   include_directories(${PAM_INCLUDE_DIR})
 endif (USE_PAM)
 
-# execute_process(COMMAND git log -n 1 --pretty=format:"%ad - %h" OUTPUT_VARIABLE GIT_REV)
-# configure_file( ${GIT_REVISION}.in ${GIT_REVISION} )
-
 set(GIT_REVISION_TMP ${GIT_REVISION}.tmp)
 
+if (WIN32)
 add_custom_target(git_revision_h
-  COMMAND ${CMAKE_COMMAND} -E echo_append "\\#define GIT_REVISION \\\"" > ${GIT_REVISION_TMP}
-  COMMAND ${GIT_EXECUTABLE} log -n 1 --pretty=format:"%ad" >> ${GIT_REVISION_TMP}
-  COMMAND ${CMAKE_COMMAND} -E echo_append " - " >> ${GIT_REVISION_TMP}
-  COMMAND ${GIT_EXECUTABLE} log -n 1 --pretty=format:"%h" >> ${GIT_REVISION_TMP}
-  COMMAND ${CMAKE_COMMAND} -E echo \\\" >> ${GIT_REVISION_TMP}
+  COMMAND ${CMAKE_SOURCE_DIR}/makegit.bat
   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GIT_REVISION_TMP} ${GIT_REVISION}
   COMMAND ${CMAKE_COMMAND} -E remove ${GIT_REVISION_TMP}
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/
 )
+else(WIN32)
+add_custom_target(git_revision_h
+  COMMAND ${CMAKE_SOURCE_DIR}/makegit
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GIT_REVISION_TMP} ${GIT_REVISION}
+  COMMAND ${CMAKE_COMMAND} -E remove ${GIT_REVISION_TMP}
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/
+)
+endif()
 
 add_executable(elogd 
   ${CMAKE_SOURCE_DIR}/src/elogd.c
@@ -110,6 +115,11 @@ endif(USE_LDAP)
 if(USE_PAM)
   target_link_libraries(elogd ${PAM_LIBRARIES})
 endif(USE_PAM)
+
+if (WIN32)
+   target_link_libraries(elogd wsock32 ws2_32)
+   target_link_libraries(elog wsock32 ws2_32)
+endif()
 
 install(TARGETS elog 
         DESTINATION bin)
