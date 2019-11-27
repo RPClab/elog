@@ -2545,12 +2545,15 @@ void split_url(const char *url, char *host, int *port, char *subdir, char *param
 
 /*-------------------------------------------------------------------*/
 
-int retrieve_url(LOGBOOK *lbs, const char *url, UNUSED(int ssl), char **buffer) {
+int retrieve_url(LOGBOOK *lbs, const char *url, int ssl, char **buffer) {
    char str[1000], unm[256], upwd[256], host[256], subdir[256], param[256];
    int port, bufsize;
    int i, n;
    fd_set readfds;
    struct timeval timeout;
+
+   UNUSED(ssl);
+
 #ifdef HAVE_SSL
    static SSL *ssl_con = NULL;
 #else
@@ -12761,8 +12764,9 @@ void remove_crlf(char *buffer) {
 
 /*------------------------------------------------------------------*/
 
-void adjust_crlf(char *buffer, UNUSED(int bufsize)) {
+void adjust_crlf(char *buffer, int bufsize) {
    char *p;
+   UNUSED(bufsize);
 
 #ifdef OS_UNIX
 

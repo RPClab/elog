@@ -60,7 +60,7 @@
 #endif
 
 /* unused function parameters */
-#define UNUSED(x) __attribute__((unused)) x
+#define UNUSED(expr) do { (void)(expr); } while (0)
 
 #ifdef _MSC_VER
 
