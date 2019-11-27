@@ -19,7 +19,9 @@ set(SRVDIR   /usr/lib/systemd/system)
 include_directories(${CMAKE_SOURCE_DIR}/mxml)
 
 # default compiler flags
-add_compile_options(-W -Wall -Wno-deprecated-declarations)
+if (!WIN32)
+   add_compile_options(-W -Wall -Wno-deprecated-declarations)
+endif()
 
 # find git
 find_package(Git)
