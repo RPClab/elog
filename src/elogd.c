@@ -438,12 +438,14 @@ int my_read(int fh, void *buffer, unsigned int bytes) {
    return 0;
 }
 
-/* workaround for wong timezone under MAX OSX */
+/* workaround for wong timezone under MacOSX */
 long my_timezone() {
 #if defined(OS_MACOSX) || defined(__FreeBSD__) || defined(__OpenBSD__)
    time_t tp;
    time(&tp);
    return -localtime(&tp)->tm_gmtoff;
+#elif defined(OS_WINNT)
+   return _timezone;
 #else
    return timezone;
 #endif
@@ -21622,7 +21624,7 @@ void show_elog_list(LOGBOOK *lbs, int past_n, int last_n, int page_n, BOOL defau
                   strcpy(str, "-");
                else
                   my_strftime(str, sizeof(str), format, ptms);
-               sprintf(str + strlen(str), " [%ld]", ltime);
+               sprintf(str + strlen(str), " [%ld]", (long)time);
 
             } else if (attr_flags[i] & AF_DATETIME) {
 
@@ -21638,7 +21640,7 @@ void show_elog_list(LOGBOOK *lbs, int past_n, int last_n, int page_n, BOOL defau
                   strcpy(str, "-");
                else
                   my_strftime(str, sizeof(str), format, ptms);
-               sprintf(str + strlen(str), " [%ld]", ltime);
+               sprintf(str + strlen(str), " [%ld]", (long)ltime);
             }
 
             xmlencode(str);
