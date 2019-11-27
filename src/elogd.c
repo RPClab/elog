@@ -333,34 +333,21 @@ BOOL strnieq(const char *str1, const char *str2, int n) {
 }
 
 char *stristr(const char *str, const char *pattern) {
-   char c1, c2, *ps, *pp;
+   size_t i;
 
-   if (str == NULL || pattern == NULL)
-      return NULL;
+   if (!*pattern)
+      return (char *) str;
 
-   while (*str) {
-      ps = (char *) str;
-      pp = (char *) pattern;
-      c1 = *ps;
-      c2 = *pp;
-      if (my_toupper(c1) == my_toupper(c2)) {
-         while (*pp) {
-            c1 = *ps;
-            c2 = *pp;
-
-            if (my_toupper(c1) != my_toupper(c2))
+   for (; *str; str++) {
+      if (toupper(*str) == toupper(*pattern)) {
+         for (i = 1;; i++) {
+            if (!pattern[i])
+               return (char *) str;
+            if (toupper(str[i]) != toupper(pattern[i]))
                break;
-
-            ps++;
-            pp++;
          }
-
-         if (!*pp)
-            return (char *) str;
       }
-      str++;
    }
-
    return NULL;
 }
 
@@ -28683,7 +28670,7 @@ int process_http_request(const char *request, int i_conn) {
    content_length = 0;
 
    /* extract cookies */
-   if ((p = strcasestr(request, "Cookie:")) != NULL) {
+   if ((p = stristr(request, "Cookie:")) != NULL) {
       p += 6;
       do {
          p++;
@@ -28725,7 +28712,7 @@ int process_http_request(const char *request, int i_conn) {
 
    /* extract referer */
    referer[0] = 0;
-   if ((p = strcasestr(request, "Referer:")) != NULL) {
+   if ((p = stristr(request, "Referer:")) != NULL) {
       p += 9;
       while (*p && *p == ' ')
          p++;
@@ -28742,7 +28729,7 @@ int process_http_request(const char *request, int i_conn) {
 
    /* extract browser */
    browser[0] = 0;
-   if ((p = strcasestr(request, "User-Agent:")) != NULL) {
+   if ((p = stristr(request, "User-Agent:")) != NULL) {
       p += 11;
       while (*p && *p == ' ')
          p++;
@@ -28753,7 +28740,7 @@ int process_http_request(const char *request, int i_conn) {
 
    /* extract host */
    http_host[0] = 0;
-   if ((p = strcasestr(request, "Host:")) != NULL) {
+   if ((p = stristr(request, "Host:")) != NULL) {
       p += 5;
       while (*p && *p == ' ')
          p++;
@@ -28763,7 +28750,7 @@ int process_http_request(const char *request, int i_conn) {
    }
 
    /* extract X-Forwarded-Host, overwrite "Host:" if found */
-   if ((p = strcasestr(request, "X-Forwarded-Host:")) != NULL) {
+   if ((p = stristr(request, "X-Forwarded-Host:")) != NULL) {
       p += 17;
       while (*p && *p == ' ')
          p++;
@@ -28774,7 +28761,7 @@ int process_http_request(const char *request, int i_conn) {
 
    /* extract X-Forwarded-User into http_user if Authentication==Webserver */
    http_user[0] = 0;
-   if ((p = strcasestr(request, "X-Forwarded-User:")) != NULL) {
+   if ((p = stristr(request, "X-Forwarded-User:")) != NULL) {
       p += 17;
       while (*p && *p == ' ')
          p++;
@@ -28784,7 +28771,7 @@ int process_http_request(const char *request, int i_conn) {
    }
 
    /* extract "X-Forwarded-For:" */
-   if ((p = strcasestr(request, "X-Forwarded-For:")) != NULL) {
+   if ((p = stristr(request, "X-Forwarded-For:")) != NULL) {
       p += 16;
       while (*p && *p == ' ')
          p++;
@@ -28826,7 +28813,7 @@ int process_http_request(const char *request, int i_conn) {
    return_length = 0;
 
    /* check for Keep-alive */
-   if (strcasestr(request, "Keep-Alive") != NULL && use_keepalive)
+   if (stristr(request, "Keep-Alive") != NULL && use_keepalive)
       keep_alive = TRUE;
 
    /* extract logbook */
