@@ -28496,6 +28496,14 @@ void decode_post(char *logbook, LOGBOOK *lbs, const char *string, const char *bo
 
                   /* check for URL */
                   if (stristr(file_name, "http://") || stristr(file_name, "https://")) {
+
+                     // check for logbook access
+                     if (getcfg(lbs->name, "Password file", str, sizeof(str))) {
+                        if (!check_login(lbs, getparam("sid"))) {
+                           return;
+                        }
+                     }
+
                      size = retrieve_url(lbs, file_name, stristr(file_name, "https://") != NULL, &buffer, FALSE);
                      if (size <= 0) {
                         strencode2(str2, file_name, sizeof(str2));
