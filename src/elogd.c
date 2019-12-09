@@ -2534,7 +2534,7 @@ void split_url(const char *url, char *host, int *port, char *subdir, char *param
 
 /*-------------------------------------------------------------------*/
 
-int retrieve_url(LOGBOOK *lbs, const char *url, int ssl, char **buffer) {
+int retrieve_url(LOGBOOK *lbs, const char *url, int ssl, char **buffer, BOOL send_unm) {
    char str[1000], unm[256], upwd[256], host[256], subdir[256], param[256];
    int port, bufsize;
    int i, n;
@@ -2597,14 +2597,16 @@ int retrieve_url(LOGBOOK *lbs, const char *url, int ssl, char **buffer) {
    sprintf(str, "GET %s%s HTTP/1.0\r\nConnection: Close\r\n", subdir, param);
 
    /* add local username/password */
-   if (isparam("unm")) {
-      strlcpy(unm, getparam("unm"), sizeof(unm));
-      if (isparam("upwd"))
-         strlcpy(upwd, getparam("upwd"), sizeof(upwd));
-      else
-         get_user_line(lbs, getparam("unm"), upwd, NULL, NULL, NULL, NULL, NULL);
+   if (send_unm) {
+      if (isparam("unm")) {
+         strlcpy(unm, getparam("unm"), sizeof(unm));
+         if (isparam("upwd"))
+            strlcpy(upwd, getparam("upwd"), sizeof(upwd));
+         else
+            get_user_line(lbs, getparam("unm"), upwd, NULL, NULL, NULL, NULL, NULL);
 
-      sprintf(str + strlen(str), "Cookie: unm=%s; upwd=%s\r\n", unm, upwd);
+         sprintf(str + strlen(str), "Cookie: unm=%s; upwd=%s\r\n", unm, upwd);
+      }
    }
 
    /* add host (RFC2616, Sec. 14) */
@@ -15644,7 +15646,7 @@ int retrieve_remote_md5(LOGBOOK *lbs, char *host, MD5_INDEX **md5_index, char *e
 
    text = NULL;
    error_str[0] = 0;
-   if (retrieve_url(lbs, url, ssl, &text) < 0) {
+   if (retrieve_url(lbs, url, ssl, &text, TRUE) < 0) {
       sprintf(error_str, loc("Cannot connect to remote server \"%s\""), host);
       return -1;
    }
@@ -16006,7 +16008,7 @@ int receive_message(LOGBOOK *lbs, char *url, int message_id, char *error_str, BO
    combine_url(lbs, url, "", str, sizeof(str), &ssl);
    sprintf(str + strlen(str), "%d?cmd=%s", message_id, loc("Download"));
 
-   retrieve_url(lbs, str, ssl, &message);
+   retrieve_url(lbs, str, ssl, &message, TRUE);
    if (message == NULL) {
       sprintf(error_str, loc("Cannot receive \"%s\""), str);
       return -1;
@@ -16100,7 +16102,7 @@ int receive_message(LOGBOOK *lbs, char *url, int message_id, char *error_str, BO
             str2[13] = '/';
             strlcat(str, str2, sizeof(str));
 
-            size = retrieve_url(lbs, str, ssl, &message);
+            size = retrieve_url(lbs, str, ssl, &message, TRUE);
             p = strstr(message, "\r\n\r\n");
             if (p == NULL) {
                xfree(message);
@@ -16276,7 +16278,7 @@ void receive_config(LOGBOOK *lbs, char *server, char *error_str) {
       else
          strcat(str, "?cmd=Download");  // request config section of logbook
 
-      if (retrieve_url(lbs, str, ssl, &buffer) < 0) {
+      if (retrieve_url(lbs, str, ssl, &buffer, TRUE) < 0) {
          *strchr(str, '?') = 0;
          sprintf(error_str, "Cannot contact elogd server at http://%s", str);
          return;
@@ -16348,6 +16350,12 @@ void receive_config(LOGBOOK *lbs, char *server, char *error_str) {
       return;
    }
    p += 4;
+
+   if (strstr(p, "[global]") == NULL) {
+      strlcpy(error_str, p, 256);
+      xfree(buffer);
+      return;
+   }
 
    if (lbs == NULL) {
       if (!save_config(p, str))
@@ -16464,7 +16472,7 @@ void receive_pwdfile(LOGBOOK *lbs, char *server, char *error_str) {
       strlcpy(str, url, sizeof(str));
       strcat(str, "?cmd=GetPwdFile");   // request password file
 
-      if (retrieve_url(lbs, str, ssl, &buffer) < 0) {
+      if (retrieve_url(lbs, str, ssl, &buffer, TRUE) < 0) {
          *strchr(str, '?') = 0;
          sprintf(error_str, "Cannot contact elogd server at http://%s", str);
          return;
@@ -17401,7 +17409,7 @@ void synchronize_logbook(LOGBOOK *lbs, int mode, BOOL sync_all) {
                         combine_url(lbs, list[index], str, url, sizeof(url), &ssl);
 
                         if (!getcfg(lbs->name, "Mirror simulate", str, sizeof(str)) || atoi(str) == 0) {
-                           retrieve_url(lbs, url, ssl, &buffer);
+                           retrieve_url(lbs, url, ssl, &buffer, TRUE);
 
                            if (strstr(buffer, "Location: ")) {
                               if (mode == SYNC_HTML)
@@ -28112,8 +28120,18 @@ void interprete(char *lbook, char *path)
    }
 
    if (strieq(command, "GetPwdFile")) {
-      if (get_password_file(lbs, file_name, sizeof(file_name)))
-         send_file_direct(file_name);
+      char allow[256];
+      allow[0] = 0;
+      getcfg("global", "Allow clone", allow, sizeof(allow));
+      if (atoi(allow) == 1) {
+         if (get_password_file(lbs, file_name, sizeof(file_name)))
+            send_file_direct(file_name);
+      } else {
+         show_http_header(NULL, FALSE, NULL);
+         rsputs(loc("Cloning not allowed. Set \"Allow clone = 1\" to enable cloning."));
+         rsputs("\r\n");
+         return;
+      }
       return;
    }
 
@@ -28508,7 +28526,7 @@ void decode_post(char *logbook, LOGBOOK *lbs, const char *string, const char *bo
 
                   /* check for URL */
                   if (stristr(file_name, "http://") || stristr(file_name, "https://")) {
-                     size = retrieve_url(lbs, file_name, stristr(file_name, "https://") != NULL, &buffer);
+                     size = retrieve_url(lbs, file_name, stristr(file_name, "https://") != NULL, &buffer, FALSE);
                      if (size <= 0) {
                         strencode2(str2, file_name, sizeof(str2));
                         sprintf(str, loc("Cannot retrieve file from URL \"%s\""), str2);
