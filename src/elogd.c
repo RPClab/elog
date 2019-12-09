@@ -2560,6 +2560,7 @@ int retrieve_url(LOGBOOK *lbs, const char *url, int ssl, char **buffer, BOOL sen
 #ifdef HAVE_SSL
    if (ssl)
       if (ssl_connect(sock, &ssl_con) < 0) {
+         SSL_free(ssl_con);
          printf("Error initiating SSL connection\n");
          return -1;
       }
@@ -2633,6 +2634,11 @@ int retrieve_url(LOGBOOK *lbs, const char *url, int ssl, char **buffer, BOOL sen
       }
 
    } while (1);
+
+#ifdef HAVE_SSL
+   if (ssl)
+      SSL_free(ssl_con);
+#endif
 
    return n;
 }
@@ -15761,6 +15767,7 @@ int submit_message(LOGBOOK *lbs, char *host, int message_id, char *error_str) {
    if (ssl)
       if (ssl_connect(sock, &ssl_con) < 0) {
          strcpy(error_str, "Error initiating SSL connection\n");
+         SSL_free(ssl_con);
          return -1;
       }
 #endif
@@ -15894,7 +15901,6 @@ int submit_message(LOGBOOK *lbs, char *host, int message_id, char *error_str) {
    send_with_timeout(ssl_con, sock, request, header_length);
    send_with_timeout(ssl_con, sock, content, content_length);
 
-
 #ifdef HAVE_SSL
    if (ssl)
       /* receive response */
@@ -15909,6 +15915,10 @@ int submit_message(LOGBOOK *lbs, char *host, int message_id, char *error_str) {
       closesocket(sock);
       xfree(text);
       strcpy(error_str, "Cannot receive response");
+#ifdef HAVE_SSL
+      if (ssl)
+         SSL_free(ssl_con);
+#endif
       return -1;
    }
 
@@ -16198,6 +16208,10 @@ void submit_config(LOGBOOK *lbs, char *server, char *buffer, char *error_str) {
    if (i < 0) {
       closesocket(sock);
       strlcpy(error_str, "Cannot receive response", 256);
+#ifdef HAVE_SSL
+      if (ssl)
+         SSL_free(ssl_con);
+#endif
       return;
    }
 
