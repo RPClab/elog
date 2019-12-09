@@ -123,6 +123,8 @@ endif()
 
 install(TARGETS elog 
         DESTINATION bin)
+install(TARGETS elogd 
+        DESTINATION sbin)
 install(FILES ${CMAKE_SOURCE_DIR}/man/elog.1
         DESTINATION man/man1)
 install(FILES ${CMAKE_SOURCE_DIR}/man/elogd.8
@@ -138,9 +140,11 @@ install(FILES ${CMAKE_SOURCE_DIR}/ssl/server.crt
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/logbooks/demo
         MESSAGE_NEVER
         DESTINATION ${ELOGDIR}/logbooks)
-install(FILES ${CMAKE_SOURCE_DIR}/elogd.cfg.example
-        RENAME elogd.cfg
-        DESTINATION ${ELOGDIR})
+
+# only install elogd.cfg if not existing
+set(COPY_ELOGD_CFG "cp -n ${CMAKE_SOURCE_DIR}/elogd.cfg.example ${ELOGDIR}/elogd.cfg")
+install(CODE "execute_process(COMMAND ${COPY_ELOGD_CFG})")
+
 
 if (${CMAKE_SYSTEM_NAME} MATCHES Darwin)
 install(FILES ${CMAKE_SOURCE_DIR}/elogd.plist
