@@ -8416,7 +8416,17 @@ void send_file_direct(char *file_name) {
       if (filetype[i].ext[0]) {
          if (strncmp(filetype[i].type, "text", 4) == 0)
             rsprintf("Content-Type: %s;charset=%s\r\n", filetype[i].type, charset);
-         else
+         else if (strcmp(filetype[i].ext, ".SVG") == 0) {
+            rsprintf("Content-Type: %s\r\n", filetype[i].type);
+            if (strrchr(file_name, '/'))
+               strlcpy(str, strrchr(file_name, '/')+1, sizeof(str));
+            else
+               strlcpy(str, file_name, sizeof(str));
+            if (str[6] == '_' && str[13] == '_')
+               rsprintf("Content-Disposition: attachment; filename=\"%s\"\r\n", str+14);
+            else
+               rsprintf("Content-Disposition: attachment; filename=\"%s\"\r\n", str);
+         } else
             rsprintf("Content-Type: %s\r\n", filetype[i].type);
       } else if (is_ascii(file_name))
          rsprintf("Content-Type: text/plain;charset=%s\r\n", charset);
