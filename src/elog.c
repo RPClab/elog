@@ -1080,7 +1080,7 @@ int main(int argc, char *argv[])
                printf("     -l logbook/experiment    Name of logbook or experiment\n");
                printf("     -s                       Use SSL for communication\n");
                printf("     [-v]                     For verbose output\n");
-               printf("     [-u username password]   Wser name and password\n");
+               printf("     [-u username password]   User name and password\n");
                printf("     [-f <attachment>]        (up to %d attachments)\n", MAX_ATTACHMENTS);
                printf("     -a <attribute>=<value>   (up to %d attributes)\n", MAX_N_ATTR);
                printf("     [-r <id>]                Reply to existing message\n");

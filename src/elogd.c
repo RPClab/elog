@@ -2544,54 +2544,26 @@ int retrieve_url(LOGBOOK *lbs, const char *url, int ssl, char **buffer, BOOL sen
    UNUSED(ssl);
 
 #ifdef HAVE_SSL
-   static SSL *ssl_con = NULL;
+   SSL *ssl_con = NULL;
 #else
-   static void *ssl_con = NULL;
+   void *ssl_con = NULL;
 #endif
-   static int sock, last_port;
-   static char last_host[256];
+   int sock;
 
    *buffer = NULL;
    split_url(url, host, &port, subdir, param);
 
-   if (sock && (strcmp(host, last_host) != 0 || port != last_port)) {
-#ifdef HAVE_SSL
-      if (ssl) {
-         SSL_shutdown(ssl_con);
-         SSL_free(ssl_con);
-      }
-#endif
-      closesocket(sock);
-      sock = 0;
-   }
-
-   if (sock) {                  // keep-alive does not yet work, requires evaluation of Content-Length !!!
-#ifdef HAVE_SSL
-      if (ssl) {
-         SSL_shutdown(ssl_con);
-         SSL_free(ssl_con);
-      }
-#endif
-      closesocket(sock);
-      sock = 0;
-   }
-
    /* create a new socket for connecting to remote server */
-   if (!sock) {
-      sock = elog_connect(host, port);
-      if (sock == -1)
-         return -1;
+   sock = elog_connect(host, port);
+   if (sock == -1)
+      return -1;
 #ifdef HAVE_SSL
-      if (ssl)
-         if (ssl_connect(sock, &ssl_con) < 0) {
-            printf("Error initiating SSL connection\n");
-            return -1;
-         }
+   if (ssl)
+      if (ssl_connect(sock, &ssl_con) < 0) {
+         printf("Error initiating SSL connection\n");
+         return -1;
+      }
 #endif
-   }
-
-   last_port = port;
-   strcpy(last_host, host);
 
    /* compose GET request, avoid chunked data in HTTP/1.1 protocol */
    sprintf(str, "GET %s%s HTTP/1.0\r\nConnection: Close\r\n", subdir, param);
@@ -2611,10 +2583,6 @@ int retrieve_url(LOGBOOK *lbs, const char *url, int ssl, char **buffer, BOOL sen
 
    /* add host (RFC2616, Sec. 14) */
    sprintf(str + strlen(str), "Host: %s:%d\r\n", host, port);
-
-   /* add keepalive */
-   //sprintf(str + strlen(str), "Keep-Alive: 600\r\n");
-   //sprintf(str + strlen(str), "Connection: keep-alive\r\n");
 
    strcat(str, "\r\n");
 
@@ -27056,7 +27024,10 @@ void show_uploader_json(LOGBOOK *lbs) {
       strcpy(charset, DEFAULT_HTTP_CHARSET);
    rsprintf("Content-Type: application/json;charset=%s\r\n\r\n", charset);
 
-   attch_count = strtol(getparam("drop-count"), NULL, 10);
+   if (isparam("drop-count"))
+      attch_count = strtol(getparam("drop-count"), NULL, 10);
+   else
+      attch_count = 0;
 
    // limit the number of files that can be uploaded
    if (attch_count > MAX_FILE_COUNT) {
@@ -27065,7 +27036,6 @@ void show_uploader_json(LOGBOOK *lbs) {
 
    rsprintf("{\r\n");
    rsprintf("  \"attachments\" : [\r\n");
-
 
    for (i = 0; i < attch_count; i++) {
       sprintf(attchname, "attachment%d", i);
@@ -28555,6 +28525,14 @@ void decode_post(char *logbook, LOGBOOK *lbs, const char *string, const char *bo
                         }
                      }
 
+                     // check for logbook access
+                     if (getcfg(lbs->name, "Password file", str, sizeof(str))) {
+                        if (!check_login(lbs, getparam("sid"))) {
+                           xfree(buffer);
+                           return;
+                        }
+                     }
+
                      el_submit_attachment(lbs, file_name, pbody, size - header_size, full_name);
                      xfree(buffer);
                      sprintf(str, "attachment%d", n_att++);
@@ -28566,6 +28544,13 @@ void decode_post(char *logbook, LOGBOOK *lbs, const char *string, const char *bo
                      return;
                   }
                } else if (file_name[0]) {
+                  // check for logbook access
+                  if (getcfg(lbs->name, "Password file", str, sizeof(str))) {
+                     if (!check_login(lbs, getparam("sid"))) {
+                        return;
+                     }
+                  }
+
                   /* save attachment */
                   if (el_submit_attachment(lbs, file_name, string, (int) (p - string), full_name) < 0)
                      return;
