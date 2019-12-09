@@ -27130,8 +27130,10 @@ void interprete(char *lbook, char *path)
    /* check for localization command */
    if (stricmp(command, "loc") == 0) {
       show_http_header(NULL, FALSE, NULL);
-      if (isparam("value") && *getparam("value"))
-         rsputs(loc(getparam("value")));
+      if (isparam("value") && *getparam("value")) {
+         strencode2(str, getparam("value"), sizeof(str));
+         rsputs(loc(str));
+      }
 
       /* dummy strings for JS-only translations */
       s = loc("Drop attachments here...");
