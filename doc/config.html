@@ -3025,7 +3025,11 @@ elogd -C http://master.your.domain
       <pre>
 elogd -C https://master.your.domain
 </pre>
-      for a remote server running under the SSL protocol.
+      for a remote server running under the SSL protocol. Note that you
+      have to put "Allow clone = 1" temporarily into the elogd.cfg file of
+      your existing server to allow cloning. This opens a password-free
+      access to your existing server, so remove it immediately after you
+      finished cloning.
       <p>
          This command tells elogd to retrieve the configuration file, and
          optionally all logbook entries and password files from the master

@@ -22908,10 +22908,10 @@ void submit_elog(LOGBOOK *lbs) {
    } else
       n_attr = lbs->n_attr;
 
-
    /* check for editing interval */
-   if (!check_edit_time(lbs, atoi(getparam("edit_id"))))
-      return;
+   if (isparam("edit_id"))
+      if (!check_edit_time(lbs, atoi(getparam("edit_id"))))
+         return;
 
    /* check for required attributs */
    missing = 0;
@@ -24037,7 +24037,7 @@ int is_inline_attachment(char *encoding, int message_id, char *text, int i, char
       strlcpy(att_enc, att, sizeof(att_enc));
       att_enc[13] = '/';
       pt = text;
-      while (stristr(pt, att_enc)) {
+      while (*pt && stristr(pt, att_enc)) {
          /* make sure that it's really an inline image */
          for (p = stristr(pt, att_enc); p > pt; p--)
             if (*p == '<')
@@ -24051,7 +24051,7 @@ int is_inline_attachment(char *encoding, int message_id, char *text, int i, char
       }
       retrieve_domain(domain, sizeof(domain));
       sprintf(str, "cid:att%d@%s", i, domain);
-      if (stristr(text, str))
+      if (*text && stristr(text, str))
          return 1;
    }
 
@@ -29102,7 +29102,17 @@ int process_http_request(const char *request, int i_conn) {
    }
 
    if (!logbook[0] && global_cmd[0] && stricmp(global_cmd, "GetConfig") == 0) {
-      download_config();
+      char allow[256];
+      allow[0] = 0;
+      getcfg("global", "Allow clone", allow, sizeof(allow));
+      if (atoi(allow) == 1)
+         download_config();
+      else {
+         show_http_header(NULL, FALSE, NULL);
+         rsputs(loc("Cloning not allowed. Set \"Allow clone = 1\" to enable cloning."));
+         rsputs("\r\n");
+         return 1;
+      }
    } else if (stricmp(global_cmd, "gettimedate") == 0) {
       if (!getcfg(logbook, "Time format", format, sizeof(format)))
          strcpy(format, DEFAULT_TIME_FORMAT);
