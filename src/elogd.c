@@ -4574,8 +4574,8 @@ int el_retrieve(LOGBOOK *lbs, int message_id, char *date, char attr_list[MAX_N_A
 
 int el_submit_attachment(LOGBOOK *lbs, const char *afilename, const char *buffer, int buffer_size,
                          char *full_name) {
-   char file_name[MAX_PATH_LENGTH], ext_file_name[
-           MAX_PATH_LENGTH + 100], str[MAX_PATH_LENGTH], *p, subdir[MAX_PATH_LENGTH];
+   char file_name[MAX_PATH_LENGTH], ext_file_name[MAX_PATH_LENGTH + 100], str[MAX_PATH_LENGTH],
+      *p, subdir[MAX_PATH_LENGTH], path_name[MAX_PATH_LENGTH];
    int fh;
    time_t now;
    struct tm tms;
@@ -4604,23 +4604,44 @@ int el_submit_attachment(LOGBOOK *lbs, const char *afilename, const char *buffer
                  tms.tm_mday, tms.tm_hour, tms.tm_min, tms.tm_sec, file_name);
       }
 
+      strlcpy(path_name, lbs->data_dir, sizeof(str));
+      generate_subdir_name(ext_file_name, subdir, sizeof(subdir));
+      strlcat(path_name, subdir, sizeof(str));
+      if (strlen(path_name) > 0 && path_name[strlen(path_name) - 1] == DIR_SEPARATOR)
+         path_name[strlen(path_name) - 1] = 0;
+
+#ifdef OS_WINNT
+      mkdir(path_name);
+#else
+      mkdir(path_name, 0755);
+#endif
+
+      strlcat(path_name, DIR_SEPARATOR_STR, sizeof(path_name));
+
+
+      /* test if file exists */
+      do {
+         strlcpy(str, path_name, sizeof(str));
+         strlcat(str, ext_file_name, sizeof(path_name));
+
+         fh = open(str, O_RDONLY, 0644);
+         if (fh > 0) {
+            close(fh);
+            strlcpy(str, ext_file_name, sizeof(str));
+            if (strchr(str, '.')) {
+               *strchr(str, '.') = 0;
+               strlcat(str, "_1", sizeof(str));
+               strlcat(str, strchr(ext_file_name, '.'), sizeof(str));
+               strlcpy(ext_file_name, str, sizeof(ext_file_name));
+            }
+         }
+      } while (fh > 0);
+
       if (full_name)
          strlcpy(full_name, ext_file_name, MAX_PATH_LENGTH);
 
-      strlcpy(str, lbs->data_dir, sizeof(str));
-      generate_subdir_name(ext_file_name, subdir, sizeof(subdir));
-      strlcat(str, subdir, sizeof(str));
-      if (strlen(str) > 0 && str[strlen(str) - 1] == DIR_SEPARATOR)
-         str[strlen(str) - 1] = 0;
-
-#ifdef OS_WINNT
-      mkdir(str);
-#else
-      mkdir(str, 0755);
-#endif
-
-      strlcat(str, DIR_SEPARATOR_STR, sizeof(str));
-      strlcat(str, ext_file_name, sizeof(str));
+      strlcpy(str, path_name, sizeof(str));
+      strlcat(str, ext_file_name, sizeof(path_name));
 
       /* save attachment */
       fh = open(str, O_CREAT | O_RDWR | O_BINARY, 0644);
