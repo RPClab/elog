@@ -29,14 +29,13 @@ endif()
 # find git
 find_package(Git)
 
-# git revision file
-set(GIT_REVISION ${CMAKE_SOURCE_DIR}/src/git-revision.h)
-
 # disable warnings for regex.c
 set_source_files_properties(${CMAKE_SOURCE_DIR}/src/regex.c PROPERTIES COMPILE_FLAGS -w)
 
 # Package finders
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
+include(GitVersion)
+include_directories(${CMAKE_BINARY_DIR}/generated/)
 
 # optional SSL library
 if (USE_SSL)
@@ -66,24 +65,6 @@ if (USE_PAM)
   include_directories(${PAM_INCLUDE_DIR})
 endif (USE_PAM)
 
-set(GIT_REVISION_TMP ${GIT_REVISION}.tmp)
-
-if (WIN32)
-add_custom_target(git_revision_h
-  COMMAND ${CMAKE_SOURCE_DIR}/makegit.bat
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GIT_REVISION_TMP} ${GIT_REVISION}
-  COMMAND ${CMAKE_COMMAND} -E remove ${GIT_REVISION_TMP}
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/
-)
-else(WIN32)
-add_custom_target(git_revision_h
-  COMMAND ${CMAKE_SOURCE_DIR}/makegit > ${GIT_REVISION_TMP}
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GIT_REVISION_TMP} ${GIT_REVISION}
-  COMMAND ${CMAKE_COMMAND} -E remove ${GIT_REVISION_TMP}
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/
-)
-endif()
-
 add_executable(elogd 
   ${CMAKE_SOURCE_DIR}/src/elogd.c
   ${CMAKE_SOURCE_DIR}/src/auth.c
@@ -98,9 +79,6 @@ add_executable(elog
   ${CMAKE_SOURCE_DIR}/src/crypt.c
   ${CMAKE_SOURCE_DIR}/mxml/strlcpy.c
 )
-
-add_dependencies(elogd git_revision_h)
-add_dependencies(elog git_revision_h)
 
 if(USE_SSL)
   target_link_libraries(elogd ${OPENSSL_LIBRARIES})
