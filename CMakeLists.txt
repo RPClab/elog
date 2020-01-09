@@ -7,6 +7,7 @@ option(USE_SSL  "Use OpenSSL library for https" ON)
 option(USE_KRB5 "Use Kerberos library for authentication" OFF)
 option(USE_LDAP "Use LDAP library for authentication" OFF)
 option(USE_PAM  "Use PAM library for authentication" OFF)
+option(BUILD_DAEMON  "Build daemon" ON)
 
 # install directory
 set(ELOGDIR  ${CMAKE_INSTALL_PREFIX}/elog)
@@ -64,6 +65,21 @@ if (USE_PAM)
   include_directories(${PAM_INCLUDE_DIR})
 endif (USE_PAM)
 
+add_executable(elog
+  ${CMAKE_SOURCE_DIR}/src/elog.c
+  ${CMAKE_SOURCE_DIR}/src/crypt.c
+  ${CMAKE_SOURCE_DIR}/mxml/strlcpy.c
+)
+
+if(USE_SSL)
+  target_link_libraries(elog ${OPENSSL_LIBRARIES})
+endif(USE_SSL)
+
+if (WIN32)
+   target_link_libraries(elog wsock32 ws2_32)
+endif()
+
+if(BUILD_DAEMON)
 add_executable(elogd 
   ${CMAKE_SOURCE_DIR}/src/elogd.c
   ${CMAKE_SOURCE_DIR}/src/auth.c
@@ -72,16 +88,8 @@ add_executable(elogd
   ${CMAKE_SOURCE_DIR}/src/crypt.c
   ${CMAKE_SOURCE_DIR}/src/regex.c
 )
-
-add_executable(elog
-  ${CMAKE_SOURCE_DIR}/src/elog.c
-  ${CMAKE_SOURCE_DIR}/src/crypt.c
-  ${CMAKE_SOURCE_DIR}/mxml/strlcpy.c
-)
-
 if(USE_SSL)
   target_link_libraries(elogd ${OPENSSL_LIBRARIES})
-  target_link_libraries(elog ${OPENSSL_LIBRARIES})
 endif(USE_SSL)
 if(USE_KRB5)
   target_link_libraries(elogd ${KRB5_LIBRARIES})
@@ -92,18 +100,20 @@ endif(USE_LDAP)
 if(USE_PAM)
   target_link_libraries(elogd ${PAM_LIBRARIES})
 endif(USE_PAM)
-
 if (WIN32)
    target_link_libraries(elogd wsock32 ws2_32)
-   target_link_libraries(elog wsock32 ws2_32)
 endif()
+endif()
+
 
 install(TARGETS elog 
         DESTINATION bin)
-install(TARGETS elogd 
-        DESTINATION sbin)
 install(FILES ${CMAKE_SOURCE_DIR}/man/elog.1
         DESTINATION man/man1)
+        
+if(BUILD_DAEMON)
+install(TARGETS elogd 
+        DESTINATION sbin)
 install(FILES ${CMAKE_SOURCE_DIR}/man/elogd.8
         DESTINATION man/man8)
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/scripts
@@ -129,6 +139,7 @@ install(FILES ${CMAKE_SOURCE_DIR}/elogd.plist
 
 install(CODE "message(\"\nThe elogd servie can be started with:\")")
 install(CODE "message(\"$ sudo launchctl load /Library/LaunchDaemons/ch.psi.elogd.plist\n\")")
+endif()
 
 #install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan 
 #  \"$ sudo launchctl load /Library/LaunchDaemons/ch.psi.elogd.plist\")")
