@@ -9,7 +9,6 @@ option(USE_LDAP "Use LDAP library for authentication" OFF)
 option(USE_PAM  "Use PAM library for authentication" OFF)
 
 # install directory
-set(CMAKE_INSTALL_PREFIX /usr/local)
 set(ELOGDIR  ${CMAKE_INSTALL_PREFIX}/elog)
 set(RCDIR    /etc/rc.d/init.d)
 set(SRVDIR   /usr/lib/systemd/system)
